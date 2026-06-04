@@ -16,8 +16,10 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 
 from bench.tools.generate_compare_taxonomy import (  # noqa: E402
     boundary_by_surface,
+    build_entries,
     load_json,
     parse_structural_families,
+    validate_promoted_subset_alignment,
 )
 
 
@@ -61,6 +63,60 @@ class CompareTaxonomyTests(unittest.TestCase):
         for fam in taxonomy.get("productFamilies", []):
             self.assertIn("product", fam, f"family {fam['id']} missing product field")
             self.assertIn("surface", fam, f"family {fam['id']} missing surface field")
+
+    def test_node_bun_package_developer_profiles_are_reachable(self) -> None:
+        taxonomy = load_json(REPO_ROOT / "config" / "compare-taxonomy.json")
+        promoted_catalog = load_json(REPO_ROOT / "config" / "promoted-compare-catalog.json")
+        families = parse_structural_families(taxonomy)
+        family_by_id = {family.id: family for family in families}
+        promoted_profile_map = validate_promoted_subset_alignment(
+            taxonomy,
+            promoted_catalog,
+            family_by_id=family_by_id,
+        )
+        entries = {
+            row["entryId"]: row
+            for row in build_entries(taxonomy, promoted_profile_map=promoted_profile_map)
+        }
+
+        node_direct_warm = entries[
+            "apple-metal__package_surface__node__doe_native_direct_vs_dawn_node_webgpu_package__warm__workload"
+        ]
+        self.assertEqual(node_direct_warm["providerSet"], "package_node_native_direct_providers")
+        self.assertEqual(node_direct_warm["providers"], ["doe-direct", "node-webgpu"])
+        self.assertEqual(
+            node_direct_warm["promotedCompareProfileIds"],
+            [
+                "apple-metal-gemma270m-node-native-direct-decode-resident-warm",
+                "apple-metal-gemma270m-node-native-direct-decode-warm",
+                "apple-metal-package-developer-node-native-direct-prepared",
+            ],
+        )
+
+        node_public_warm = entries[
+            "apple-metal__package_surface__node__doe_vs_dawn_node_webgpu_package__warm__workload"
+        ]
+        self.assertEqual(node_public_warm["providerSet"], "package_node_providers")
+        self.assertEqual(node_public_warm["providers"], ["doe", "node-webgpu"])
+        self.assertIn("apple-metal-gemma64-package-warm", node_public_warm["promotedCompareProfileIds"])
+        self.assertIn("apple-metal-gemma1b-package-warm", node_public_warm["promotedCompareProfileIds"])
+        self.assertIn(
+            "apple-metal-package-developer-node-prepared",
+            node_public_warm["promotedCompareProfileIds"],
+        )
+
+        bun_warm = entries[
+            "apple-metal__package_surface__bun__doe_vs_dawn_bun_webgpu_package__warm__workload"
+        ]
+        self.assertEqual(bun_warm["providers"], ["bun-webgpu", "doe"])
+        self.assertIn("apple-metal-gemma270m-bun-package-decode-resident-warm", bun_warm["promotedCompareProfileIds"])
+        self.assertIn("apple-metal-gemma270m-bun-package-decode-warm", bun_warm["promotedCompareProfileIds"])
+        self.assertIn("apple-metal-package-developer-bun-prepared", bun_warm["promotedCompareProfileIds"])
+
+        node_package_default = entries[
+            "apple-metal__package_surface__node__doe_vs_dawn_node_webgpu_package__default__workload"
+        ]
+        self.assertEqual(node_package_default["providers"], ["doe", "node-webgpu"])
 
 
 if __name__ == "__main__":

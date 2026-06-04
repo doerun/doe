@@ -21,7 +21,8 @@ Make Doe faster than Dawn without breaking apples-to-apples methodology.
      diagnostic.
    - Decide whether the target is:
      - direct implementation (`doe-plan-executor` vs direct Dawn executor), or
-     - package surface (`doe-gpu` vs Node WebGPU package lane).
+     - package surface (Doe-backed `doe-gpu` vs Dawn-backed WebGPU on the
+       same Node/Bun host lane).
    - Do not mix those two when making a claim.
 
 2. Build the real executors you are about to benchmark.

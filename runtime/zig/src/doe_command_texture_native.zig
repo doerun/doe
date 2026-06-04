@@ -32,6 +32,7 @@ pub export fn doeNativeCommandEncoderClearBuffer(
 ) callconv(.c) void {
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
     const buf = cast(DoeBuffer, buffer_raw) orelse return;
+    if (buf.error_object) return;
     // Resolve WGPU_WHOLE_SIZE sentinel: if size is u64 max, fill to end of buffer.
     const fill_size: u64 = if (size == std.math.maxInt(u64))
         buf.size -| offset
@@ -87,6 +88,7 @@ pub export fn doeNativeCommandEncoderCopyTextureToTexture(
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
     const src = cast(DoeTexture, src_texture_raw) orelse return;
     const dst = cast(DoeTexture, dst_texture_raw) orelse return;
+    if (src.error_object or dst.error_object) return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
             const rt = native_rt_helpers.device_vk_runtime(enc.dev) orelse return;
@@ -158,6 +160,7 @@ pub export fn doeNativeQueueWriteTexture(
         if (comptime has_vulkan) {
             const rt = native_rt_helpers.device_vk_runtime(q.?.dev) orelse return;
             const tex = cast(DoeTexture, texture_raw) orelse return;
+            if (tex.error_object) return;
             if (tex.vk_id != 0) {
                 const rows = if (rows_per_image > 0) rows_per_image else height;
                 const copy_res = model_transfer_types.CopyTextureResource{
@@ -177,6 +180,7 @@ pub export fn doeNativeQueueWriteTexture(
         return;
     }
     const tex = cast(DoeTexture, texture_raw) orelse return;
+    if (tex.error_object) return;
     _ = bridge.metal_bridge_texture_write_region(
         tex.mtl,
         @ptrCast(data_ptr),

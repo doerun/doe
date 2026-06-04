@@ -144,6 +144,7 @@ MetalHandle metal_bridge_cmd_buf_compute_encoder(MetalHandle cmd_buf) {
 void metal_bridge_end_compute_encoding(MetalHandle encoder) { (void)encoder; }
 void metal_bridge_command_buffer_commit(MetalHandle cmd_buf) { (void)cmd_buf; }
 void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf) { (void)cmd_buf; }
+void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf) { (void)cmd_buf; }
 void metal_bridge_command_buffer_setup_fast_wait(MetalHandle cmd_buf) { (void)cmd_buf; }
 void metal_bridge_command_buffer_wait_fast(void) {}
 void metal_bridge_command_buffer_encode_signal_event(MetalHandle cmd_buf, MetalHandle event, uint64_t value) {
@@ -401,6 +402,24 @@ MetalHandle metal_bridge_compute_dispatch_copy_signal_commit(MetalHandle queue, 
     (void)wg_x;
     (void)wg_y;
     (void)wg_z;
+    (void)copy_src;
+    (void)copy_src_off;
+    (void)copy_dst;
+    (void)copy_dst_off;
+    (void)copy_size;
+    (void)event;
+    (void)event_value;
+    return NULL;
+}
+MetalHandle metal_bridge_compute_dispatch_batch_copy_signal_commit(MetalHandle queue, const MetalHandle* pipelines, const MetalHandle* buffers, const uint32_t* buffer_counts, const uint32_t* dispatch_dims, const uint32_t* workgroup_dims, uint32_t dispatch_count, uint32_t max_buffer_count, MetalHandle copy_src, uint64_t copy_src_off, MetalHandle copy_dst, uint64_t copy_dst_off, uint64_t copy_size, MetalHandle event, uint64_t event_value) {
+    (void)queue;
+    (void)pipelines;
+    (void)buffers;
+    (void)buffer_counts;
+    (void)dispatch_dims;
+    (void)workgroup_dims;
+    (void)dispatch_count;
+    (void)max_buffer_count;
     (void)copy_src;
     (void)copy_src_off;
     (void)copy_dst;

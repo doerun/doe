@@ -22,6 +22,7 @@ typedef struct {
 MetalHandle metal_bridge_create_default_device(void);
 MetalHandle metal_bridge_create_surface_host(MetalHandle* layer_out);
 void        metal_bridge_configure_surface_host(MetalHandle host, uint32_t width, uint32_t height);
+MetalHandle metal_bridge_retain(MetalHandle obj);
 void        metal_bridge_release(MetalHandle obj);
 
 MetalHandle metal_bridge_device_new_command_queue(MetalHandle device);
@@ -40,6 +41,7 @@ MetalHandle metal_bridge_encode_blit_copy(
 
 void metal_bridge_command_buffer_commit(MetalHandle cmd_buf);
 void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf);
+void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf);
 
 // === Shared Event (lightweight GPU fence) ===
 
@@ -50,7 +52,7 @@ void metal_bridge_command_buffer_encode_signal_event(
     MetalHandle cmd_buf,
     MetalHandle event,
     uint64_t    value);
-// Spin-wait until the event reaches the given value.
+// Wait until the event reaches the given value.
 void metal_bridge_shared_event_wait(MetalHandle event, uint64_t value);
 
 // Batch-encode multiple blit copies into a single command buffer.
@@ -285,6 +287,34 @@ void metal_bridge_compute_encoder_encode_dispatch(
     uint32_t     wg_x,
     uint32_t     wg_y,
     uint32_t     wg_z);
+
+// Encode multiple compute dispatches on an already-open compute encoder.
+void metal_bridge_compute_encoder_encode_dispatch_batch(
+    MetalHandle         encoder,
+    const MetalHandle*  pipelines,
+    const MetalHandle*  buffers,
+    const uint32_t*     buffer_counts,
+    const uint32_t*     dispatch_dims,
+    const uint32_t*     workgroup_dims,
+    uint32_t            dispatch_count,
+    uint32_t            max_buffer_count);
+
+MetalHandle metal_bridge_compute_dispatch_batch_copy_signal_commit(
+    MetalHandle         queue,
+    const MetalHandle*  pipelines,
+    const MetalHandle*  buffers,
+    const uint32_t*     buffer_counts,
+    const uint32_t*     dispatch_dims,
+    const uint32_t*     workgroup_dims,
+    uint32_t            dispatch_count,
+    uint32_t            max_buffer_count,
+    MetalHandle         copy_src,
+    uint64_t            copy_src_off,
+    MetalHandle         copy_dst,
+    uint64_t            copy_dst_off,
+    uint64_t            copy_size,
+    MetalHandle         event,
+    uint64_t            event_value);
 
 // Encode an indirect compute dispatch into an existing command buffer (no commit).
 // indirect_buffer contains a MTLDispatchThreadgroupsIndirectArguments struct at offset.

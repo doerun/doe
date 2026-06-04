@@ -7,12 +7,13 @@
   "description": "Single-token Gemma-3-270M-shaped decode step using Doe-owned retained inference kernels plus explicit cache/position uniform writes.",
   "planPath": "bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json",
   "commandsPath": "bench/plans/generated/compat/inference_gemma3_270m_decode_1tok_commands.json",
+  "matmulGemvVariant": "row2_helper_exact",
   "commandCount": 37,
   "bufferWriteCount": 6,
   "bufferLoadCount": 13,
   "dispatchCount": 18,
-  "sourceIrSha256": "dbc451744890fdef290ae6466ac3228a5c026c6795276f439167651311209880",
-  "compatibilityCommandsSha256": "d8422d6fde43340e95f543b9a9de151c90b49ee939ba3b96ac61dabdede1134b",
+  "sourceIrSha256": "2af3f800c9fd4ecafd7e2d691a4515ffb5fd3a0ef2a8d9db5ccb4cc5457a45ab",
+  "compatibilityCommandsSha256": "59cecb6a1dee989181076dcfd14ce8c048748be558f287f995a88f1886f58340",
   "commands": [
     {
       "kind": "buffer_write",
@@ -167,8 +168,8 @@
     },
     {
       "kind": "kernel_dispatch",
-      "kernel": "matmul-gemv.wgsl",
-      "x": 24,
+      "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+      "x": 768,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -226,8 +227,8 @@
     },
     {
       "kind": "kernel_dispatch",
-      "kernel": "matmul-gemv.wgsl",
-      "x": 24,
+      "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+      "x": 768,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -285,8 +286,8 @@
     },
     {
       "kind": "kernel_dispatch",
-      "kernel": "matmul-gemv.wgsl",
-      "x": 24,
+      "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+      "x": 768,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -512,8 +513,8 @@
     },
     {
       "kind": "kernel_dispatch",
-      "kernel": "matmul-gemv.wgsl",
-      "x": 24,
+      "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+      "x": 768,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -654,8 +655,8 @@
     },
     {
       "kind": "kernel_dispatch",
-      "kernel": "matmul-gemv.wgsl",
-      "x": 24,
+      "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+      "x": 768,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -713,8 +714,8 @@
     },
     {
       "kind": "kernel_dispatch",
-      "kernel": "matmul-gemv.wgsl",
-      "x": 24,
+      "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+      "x": 768,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -800,8 +801,8 @@
     },
     {
       "kind": "kernel_dispatch",
-      "kernel": "matmul-gemv.wgsl",
-      "x": 24,
+      "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+      "x": 768,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -942,8 +943,8 @@
     },
     {
       "kind": "kernel_dispatch",
-      "kernel": "matmul-gemv.wgsl",
-      "x": 64,
+      "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+      "x": 2048,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -1021,8 +1022,15 @@
           "buffer_size": 4,
           "visibility": "compute"
         }
-      ]
+      ],
+      "captureBufferHandle": 2228,
+      "captureOffset": 0,
+      "captureSize": 4,
+      "semanticOpId": "gemma3_270m_decode_1tok_sample_token",
+      "semanticStage": "inference",
+      "semanticPhase": "decode_sample_token",
+      "semanticTokenIndex": 0
     }
   ],
-  "planSha256": "83ec012a9ff4a2f489aed5d68f505e45ea896d6d77bf3770dfd21fcf5f87dcc4"
+  "planSha256": "efadf93f9ef5cc92a9f0077f1f7840a2ad0a2374852092a2a769aae7a7b13d6a"
 }

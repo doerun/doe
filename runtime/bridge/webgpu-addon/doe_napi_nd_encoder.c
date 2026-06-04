@@ -115,9 +115,7 @@ napi_value native_direct_command_encoder_copy_buffer_to_buffer(napi_env env, nap
     napi_get_value_int64(env, argv[3], &dst_offset);
     napi_get_value_int64(env, argv[4], &size);
     pfn_wgpuCommandEncoderCopyBufferToBuffer(encoder, src, (uint64_t)src_offset, dst, (uint64_t)dst_offset, (uint64_t)size);
-    napi_value undefined_value;
-    napi_get_undefined(env, &undefined_value);
-    return undefined_value;
+    return NULL;
 }
 
 napi_value native_direct_command_encoder_finish(napi_env env, napi_callback_info info) {
@@ -261,9 +259,7 @@ napi_value native_direct_compute_pass_set_pipeline(napi_env env, napi_callback_i
     WGPUComputePassEncoder pass = pass_cache ? (WGPUComputePassEncoder)pass_cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
     WGPUComputePipeline pipeline = pipeline_cache ? (WGPUComputePipeline)pipeline_cache->native : native_direct_unwrap_external_prop(env, argv[0], DOE_DIRECT_NATIVE);
     pfn_wgpuComputePassEncoderSetPipeline(pass, pipeline);
-    napi_value undefined_value;
-    napi_get_undefined(env, &undefined_value);
-    return undefined_value;
+    return NULL;
 }
 
 napi_value native_direct_compute_pass_set_bind_group(napi_env env, napi_callback_info info) {
@@ -279,9 +275,7 @@ napi_value native_direct_compute_pass_set_bind_group(napi_env env, napi_callback
     uint32_t index = 0;
     napi_get_value_uint32(env, argv[0], &index);
     pfn_wgpuComputePassEncoderSetBindGroup(pass, index, bind_group, 0, NULL);
-    napi_value undefined_value;
-    napi_get_undefined(env, &undefined_value);
-    return undefined_value;
+    return NULL;
 }
 
 napi_value native_direct_compute_pass_dispatch_workgroups(napi_env env, napi_callback_info info) {
@@ -297,9 +291,7 @@ napi_value native_direct_compute_pass_dispatch_workgroups(napi_env env, napi_cal
     if (argc >= 2 && argv[1]) napi_get_value_uint32(env, argv[1], &y);
     if (argc >= 3 && argv[2]) napi_get_value_uint32(env, argv[2], &z);
     pfn_wgpuComputePassEncoderDispatchWorkgroups(pass, x, y, z);
-    napi_value undefined_value;
-    napi_get_undefined(env, &undefined_value);
-    return undefined_value;
+    return NULL;
 }
 
 napi_value native_direct_compute_pass_dispatch_workgroups_indirect(napi_env env, napi_callback_info info) {

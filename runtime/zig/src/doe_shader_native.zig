@@ -9,6 +9,7 @@ const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const wgsl_ir = @import("doe_wgsl/ir.zig");
 const wgsl_runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const shader_translation_cache = @import("doe_shader_translation_cache.zig");
+const package_metal_pipeline_cache = @import("doe_package_metal_pipeline_cache.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
@@ -18,6 +19,7 @@ const bridge = resource_ops.metal_bridge;
 const metal_bridge_device_new_compute_pipeline = bridge.metal_bridge_device_new_compute_pipeline;
 const metal_bridge_device_new_library_msl = bridge.metal_bridge_device_new_library_msl;
 const metal_bridge_library_new_function = bridge.metal_bridge_library_new_function;
+const metal_bridge_retain = bridge.metal_bridge_retain;
 const metal_bridge_release = bridge.metal_bridge_release;
 
 const alloc = native_helpers.alloc;
@@ -37,6 +39,7 @@ const LAST_ERROR_CAP: usize = 512;
 const LAST_ERROR_META_CAP: usize = 64;
 const DIAGNOSTIC_DIRECTIVE_INFO: []const u8 =
     "WGSL diagnostic directives are parsed on this path and currently reported as advisory compilation info only.";
+const WGSL_SHADER_MODULE_CACHE_MAX_ENTRIES: usize = 64;
 var last_error_buf: [LAST_ERROR_CAP]u8 = undefined;
 var last_error_len: usize = 0;
 var last_error_stage_buf: [LAST_ERROR_META_CAP]u8 = undefined;
@@ -45,6 +48,96 @@ var last_error_kind_buf: [LAST_ERROR_META_CAP]u8 = undefined;
 var last_error_kind_len: usize = 0;
 var last_error_line: u32 = 0;
 var last_error_col: u32 = 0;
+
+const WgslShaderModuleCacheEntry = struct {
+    source_hash: [32]u8,
+    mtl_library: *anyopaque,
+    wg_x: u32,
+    wg_y: u32,
+    wg_z: u32,
+    needs_sizes_buf: bool,
+    dispatch_preconditions: []const wgsl_ir.DispatchPrecondition,
+};
+
+var wgsl_shader_module_cache_mutex = std.Thread.Mutex{};
+var wgsl_shader_module_cache: std.ArrayListUnmanaged(WgslShaderModuleCacheEntry) = .{};
+
+fn hash_wgsl_source(wgsl: []const u8) [32]u8 {
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(wgsl, &digest, .{});
+    return digest;
+}
+
+fn clone_dispatch_preconditions(source: []const wgsl_ir.DispatchPrecondition) ?[]const wgsl_ir.DispatchPrecondition {
+    if (source.len == 0) return &.{};
+    return alloc.dupe(wgsl_ir.DispatchPrecondition, source) catch null;
+}
+
+fn tryCreateCachedWgslShaderModule(wgsl: []const u8, source_hash: [32]u8) ?*anyopaque {
+    var cached: ?WgslShaderModuleCacheEntry = null;
+    wgsl_shader_module_cache_mutex.lock();
+    for (wgsl_shader_module_cache.items) |entry| {
+        if (std.mem.eql(u8, entry.source_hash[0..], source_hash[0..])) {
+            cached = entry;
+            break;
+        }
+    }
+    wgsl_shader_module_cache_mutex.unlock();
+
+    const entry = cached orelse return null;
+    const sm = make(DoeShaderModule) orelse return null;
+    const dispatch_preconditions = clone_dispatch_preconditions(entry.dispatch_preconditions) orelse {
+        alloc.destroy(sm);
+        return null;
+    };
+    sm.* = .{
+        .mtl_library = entry.mtl_library,
+        .wg_x = entry.wg_x,
+        .wg_y = entry.wg_y,
+        .wg_z = entry.wg_z,
+        .needs_sizes_buf = entry.needs_sizes_buf,
+        .dispatch_preconditions = dispatch_preconditions,
+        .wgsl_source = alloc.dupe(u8, wgsl) catch null,
+        .mtl_library_borrowed = true,
+    };
+    set_module_info_from_diagnostic_directive(sm, wgsl);
+    return toOpaque(sm);
+}
+
+fn storeWgslShaderModuleCache(source_hash: [32]u8, lib: ?*anyopaque, info: *const wgsl_runtime_compile.TranslationInfo) void {
+    const library = lib orelse return;
+    const dispatch_preconditions = clone_dispatch_preconditions(info.dispatch_preconditions) orelse return;
+
+    wgsl_shader_module_cache_mutex.lock();
+    defer wgsl_shader_module_cache_mutex.unlock();
+
+    for (wgsl_shader_module_cache.items) |entry| {
+        if (std.mem.eql(u8, entry.source_hash[0..], source_hash[0..])) {
+            if (dispatch_preconditions.len > 0) alloc.free(dispatch_preconditions);
+            return;
+        }
+    }
+    if (wgsl_shader_module_cache.items.len >= WGSL_SHADER_MODULE_CACHE_MAX_ENTRIES) {
+        if (dispatch_preconditions.len > 0) alloc.free(dispatch_preconditions);
+        return;
+    }
+    const retained_library = metal_bridge_retain(library) orelse {
+        if (dispatch_preconditions.len > 0) alloc.free(dispatch_preconditions);
+        return;
+    };
+    wgsl_shader_module_cache.append(alloc, .{
+        .source_hash = source_hash,
+        .mtl_library = retained_library,
+        .wg_x = info.workgroup_size[0],
+        .wg_y = info.workgroup_size[1],
+        .wg_z = info.workgroup_size[2],
+        .needs_sizes_buf = info.needs_sizes_buf,
+        .dispatch_preconditions = dispatch_preconditions,
+    }) catch {
+        metal_bridge_release(retained_library);
+        if (dispatch_preconditions.len > 0) alloc.free(dispatch_preconditions);
+    };
+}
 
 fn clear_last_error() void {
     last_error_len = 0;
@@ -289,6 +382,26 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
     label_store.set(handle, d.label.data, d.label.length);
     return handle;
 }
+
+pub export fn doeNativeDeviceCreateShaderModuleWgsl(dev_raw: ?*anyopaque, code_ptr: ?[*]const u8, code_len: usize) callconv(.c) ?*anyopaque {
+    if (code_ptr == null) {
+        clear_last_error();
+        set_last_error_stage_name("native_shader_create");
+        set_last_error_kind("InvalidInput");
+        set_last_error("shader module creation failed: WGSL source pointer is null");
+        return null;
+    }
+    var source = abi_pipeline.WGPUShaderSourceWGSL{
+        .chain = .{ .next = null, .sType = abi_core.WGPUSType_ShaderSourceWGSL },
+        .code = .{ .data = code_ptr, .length = code_len },
+    };
+    var desc = abi_pipeline.WGPUShaderModuleDescriptor{
+        .nextInChain = &source.chain,
+        .label = .{ .data = null, .length = 0 },
+    };
+    return doeNativeDeviceCreateShaderModule(dev_raw, &desc);
+}
+
 // ============================================================
 // WGSL path (existing behavior, refactored into helper)
 // ============================================================
@@ -297,6 +410,9 @@ fn createFromWGSL(dev: *DoeDevice, chain: *const abi_callback.WGPUChainedStruct)
     const wgsl = resolveStringView(wgsl_chain.code) orelse return null;
 
     if (dev.backend == .vulkan) return createFromWGSLVulkan(dev, wgsl);
+
+    const source_hash = hash_wgsl_source(wgsl);
+    if (tryCreateCachedWgslShaderModule(wgsl, source_hash)) |cached_module| return cached_module;
 
     var cached_translation: ?shader_translation_cache.CachedTranslation = shader_translation_cache.lookupComputeTranslation(alloc, wgsl);
     var msl_buf: [wgsl_compiler.MAX_OUTPUT]u8 = undefined;
@@ -349,6 +465,7 @@ fn createFromWGSL(dev: *DoeDevice, chain: *const abi_callback.WGPUChainedStruct)
         return null;
     };
     sm.* = .{ .mtl_library = lib };
+    storeWgslShaderModuleCache(source_hash, lib, &translation_info);
     set_module_info_from_diagnostic_directive(sm, wgsl);
     sm.needs_sizes_buf = translation_info.needs_sizes_buf;
     sm.dispatch_preconditions = translation_info.dispatch_preconditions;
@@ -552,7 +669,9 @@ pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeShaderModule, raw)) |sm| {
         if (!native_helpers.object_should_destroy(sm)) return;
         label_store.remove(raw);
-        if (sm.mtl_library) |l| metal_bridge_release(l);
+        if (sm.mtl_library) |l| {
+            if (!sm.mtl_library_borrowed) metal_bridge_release(l);
+        }
         if (sm.dispatch_preconditions.len > 0) alloc.free(sm.dispatch_preconditions);
         if (sm.spirv_data) |s| alloc.free(s);
         if (sm.vertex_spirv_data) |s| alloc.free(s);
@@ -612,6 +731,16 @@ fn createComputePipelineVulkan(sm: *DoeShaderModule, layout: ?*DoePipelineLayout
         return null;
     };
     return toOpaque(cp);
+}
+
+fn stringViewSlice(view: abi_core.WGPUStringView) ?[]const u8 {
+    const data = view.data orelse return null;
+    const len = if (view.length == abi_core.WGPU_STRLEN)
+        std.mem.len(@as([*:0]const u8, @ptrCast(data)))
+    else
+        view.length;
+    if (len == 0) return null;
+    return data[0..len];
 }
 
 // ============================================================
@@ -708,17 +837,7 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
         // Resolve the entry-point name from the descriptor so the
         // Vulkan submit path can match against the SPIR-V's actual
         // OpEntryPoint. Null/empty descriptor → default to "main".
-        const entry_slice: ?[]const u8 = blk: {
-            const ep = d.compute.entryPoint;
-            if (ep.data) |ep_data| {
-                const ep_len = if (ep.length == abi_core.WGPU_STRLEN)
-                    std.mem.len(@as([*:0]const u8, @ptrCast(ep_data)))
-                else
-                    ep.length;
-                if (ep_len > 0) break :blk ep_data[0..ep_len];
-            }
-            break :blk null;
-        };
+        const entry_slice = stringViewSlice(d.compute.entryPoint);
         const result = createComputePipelineVulkan(sm, cast(DoePipelineLayout, d.layout), entry_slice);
         if (result != null) label_store.set(result, d.label.data, d.label.length);
         return result;
@@ -734,11 +853,19 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
     const active_lib = override_lib orelse sm.mtl_library;
 
     // Map entry point name: WGSL "main" → MSL "main_kernel" (Metal forbids "main").
+    var entry_owned: ?[:0]u8 = null;
+    defer if (entry_owned) |owned| alloc.free(owned);
     const entry: [*:0]const u8 = blk: {
-        if (d.compute.entryPoint.data) |ep_data| {
-            const ep_slice: [*:0]const u8 = @ptrCast(ep_data);
-            if (std.mem.eql(u8, std.mem.span(ep_slice), "main")) break :blk "main_kernel";
-            break :blk ep_slice;
+        if (stringViewSlice(d.compute.entryPoint)) |ep_slice| {
+            if (std.mem.eql(u8, ep_slice, "main")) break :blk "main_kernel";
+            entry_owned = alloc.dupeZ(u8, ep_slice) catch {
+                if (override_lib) |ol| metal_bridge_release(ol);
+                set_last_error_stage_name("native_compile");
+                set_last_error_kind("OutOfMemory");
+                set_last_error("compute pipeline creation failed: OOM duplicating entry point");
+                return null;
+            };
+            break :blk entry_owned.?.ptr;
         }
         break :blk "main_kernel";
     };
@@ -754,7 +881,12 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
     defer metal_bridge_release(func);
 
     var err_buf: [ERR_CAP]u8 = undefined;
-    const pso = metal_bridge_device_new_compute_pipeline(dev.mtl_device, func, &err_buf, ERR_CAP) orelse {
+    const pso = blk: {
+        if (package_metal_pipeline_cache.get(dev)) |cache| {
+            if (cache.compile_or_serve_compute(func)) |cached_pso| break :blk cached_pso;
+        }
+        break :blk metal_bridge_device_new_compute_pipeline(dev.mtl_device, func, &err_buf, ERR_CAP);
+    } orelse {
         if (override_lib) |ol| metal_bridge_release(ol);
         const err_msg = std.mem.sliceTo(&err_buf, 0);
         set_last_error_stage_name("native_compile");
@@ -795,6 +927,23 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
     const result = toOpaque(cp);
     label_store.set(result, d.label.data, d.label.length);
     return result;
+}
+
+pub export fn doeNativeDeviceCreateComputePipelineMain(dev_raw: ?*anyopaque, shader_raw: ?*anyopaque, layout_raw: ?*anyopaque) callconv(.c) ?*anyopaque {
+    const main_entry = "main";
+    var desc = abi_pipeline.WGPUComputePipelineDescriptor{
+        .nextInChain = null,
+        .label = .{ .data = null, .length = 0 },
+        .layout = layout_raw,
+        .compute = .{
+            .nextInChain = null,
+            .module = shader_raw,
+            .entryPoint = .{ .data = main_entry.ptr, .length = main_entry.len },
+            .constantCount = 0,
+            .constants = null,
+        },
+    };
+    return doeNativeDeviceCreateComputePipeline(dev_raw, &desc);
 }
 
 pub export fn doeNativeComputePipelineRelease(raw: ?*anyopaque) callconv(.c) void {

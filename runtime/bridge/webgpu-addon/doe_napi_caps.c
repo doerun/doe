@@ -723,3 +723,12 @@ napi_value doe_set_timeout_ms(napi_env env, napi_callback_info info) {
     g_timeout_ns = (uint64_t)timeout_ms * 1000000ULL;
     return NULL;
 }
+
+napi_value doe_package_pipeline_cache_flush(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 0);
+    CHECK_LIB_LOADED(env);
+    if (pfn_doeNativePackagePipelineCacheFlush) {
+        pfn_doeNativePackagePipelineCacheFlush();
+    }
+    return NULL;
+}

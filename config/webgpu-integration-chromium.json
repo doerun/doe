@@ -2,134 +2,134 @@
   "schemaVersion": 1,
   "surfaceId": "doe-chromium",
   "surfaceVersion": 1,
-  "lastUpdated": "2026-05-29",
-  "integrationPhase": "source_selector_required",
-  "description": "Chromium WebGPU integration overlay. Current browser diagnostics are wrapper evidence only; source-level Doe runtime ownership requires the Chromium runtime selector markers checked by check_chromium_source_checkout.py --require-runtime-selector.",
-  "smokeTestArtifact": "browser/chromium/artifacts/20260526T223345Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+  "lastUpdated": "2026-05-30",
+  "integrationPhase": "source_selector_wire_runtime_active",
+  "description": "Chromium WebGPU integration overlay. The source selector markers now pass the check_chromium_source_checkout.py --require-runtime-selector gate under the Chromium lane env, including adapter-denylist detail emitted once adapter identity is available and active-Doe IOSurface shared texture import markers. The Doe Chromium proc-surface checker validates the direct browser-facing WGPU exports, the full Dawn wire proc table resolves through wgpuGetProcAddress, browser interop procs resolve through Doe-local mappings before native fallback, and forced-Doe selection injects a Doe-created WGPUInstance into the WebGPU wire server. Browser diagnostics now include a source-binary forced-Doe smoke artifact, but the overlay stays below chromium_runtime_active until promotion gates accept the capability rows as passing.",
+  "smokeTestArtifact": "browser/chromium/artifacts/20260530T170216Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
   "coverage": [
     {
       "capability": "requestAdapter",
       "status": "diagnostic_wrapper_only",
       "domain": "device",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Observed in browser diagnostics, but not accepted as source-level Doe execution until Chromium owns the runtime selector and fail-closed path."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Observed in source-binary browser diagnostics. Source-level forced-Doe wire ownership is landed, but this capability stays diagnostic until chromium_runtime_active promotion is accepted."
     },
     {
       "capability": "requestDevice",
       "status": "diagnostic_wrapper_only",
       "domain": "device",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Observed in browser diagnostics, but the mounted source checkout must expose Doe load/proc-surface/instance failure handling before this can be marked passing."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Observed in source-binary browser diagnostics. Source-level forced-Doe instance ownership is landed, but this capability stays diagnostic until chromium_runtime_active promotion is accepted."
     },
     {
       "capability": "requestAdapter_xrCompatible",
       "status": "diagnostic_wrapper_only",
       "domain": "device",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Diagnostic coverage remains useful, but it is not proof that Chromium's WebGPUDecoderImpl selected Doe."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Diagnostic coverage is source-binary evidence, but promotion waits on chromium_runtime_active acceptance."
     },
     {
       "capability": "computeDispatch",
       "status": "diagnostic_wrapper_only",
       "domain": "compute",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Smoke coverage exercises WebGPU work through the diagnostic lane; source-level claimability waits on the Chromium selector seam."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Smoke coverage exercises WebGPU work through the source binary; promotion waits on chromium_runtime_active acceptance."
     },
     {
       "capability": "renderDraw",
       "status": "diagnostic_wrapper_only",
       "domain": "render",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Render smoke output remains diagnostic until the browser binary exposes the Doe runtime source markers."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Render smoke output remains diagnostic until chromium_runtime_active promotion is accepted."
     },
     {
       "capability": "canvasContext",
       "status": "diagnostic_wrapper_only",
       "domain": "surface",
-      "blockedBy": "chromium-source-selector-missing",
+      "blockedBy": "chromium-runtime-promotion-pending",
       "notes": "Canvas context evidence does not by itself prove Doe runtime ownership inside Chromium."
     },
     {
       "capability": "bufferMapAsync",
       "status": "diagnostic_wrapper_only",
       "domain": "buffer",
-      "blockedBy": "chromium-source-selector-missing",
+      "blockedBy": "chromium-runtime-promotion-pending",
       "notes": "Readback behavior stays diagnostic until source-level runtime identity is present."
     },
     {
       "capability": "copyTextureToBuffer",
       "status": "diagnostic_wrapper_only",
       "domain": "copy",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Copy readback coverage remains diagnostic without Chromium-owned Doe selection."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Copy readback coverage remains diagnostic until chromium_runtime_active promotion is accepted."
     },
     {
       "capability": "copyBufferToBuffer",
       "status": "diagnostic_wrapper_only",
       "domain": "copy",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Diagnostic coverage is retained, but claim status requires the source selector."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Diagnostic coverage is retained, but source status requires chromium_runtime_active promotion."
     },
     {
       "capability": "queueWriteBuffer",
       "status": "diagnostic_wrapper_only",
       "domain": "queue",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Upload coverage is not source-level Doe evidence until the selector marker gate passes."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Upload coverage remains diagnostic until chromium_runtime_active promotion is accepted."
     },
     {
       "capability": "queueOnSubmittedWorkDone",
       "status": "diagnostic_wrapper_only",
       "domain": "queue",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Queue completion behavior remains diagnostic pending WebGPUDecoderImpl ownership."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Queue completion behavior remains diagnostic pending chromium_runtime_active promotion."
     },
     {
       "capability": "copyExternalImageToTexture",
-      "status": "source_patch_required",
+      "status": "diagnostic_wrapper_only",
       "domain": "external_texture",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Doe-side implementation may exist in native lanes, but Chromium source still needs selector and wire/proc interception before browser evidence can pass."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Active Doe texture mailbox association imports macOS IOSurface shared texture memory through Doe and the current source-binary smoke exercises external copy coverage. Promotion still waits on chromium_runtime_active acceptance."
     },
     {
       "capability": "importExternalTexture",
-      "status": "source_patch_required",
+      "status": "diagnostic_wrapper_only",
       "domain": "external_texture",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Browser-level external texture evidence waits on source-level selector and instance/proc-surface handling."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Active Doe now owns the IOSurface shared texture import path for texture mailboxes; browser-level external texture evidence remains diagnostic until chromium_runtime_active promotion."
     },
     {
       "capability": "textureDestroy",
       "status": "diagnostic_wrapper_only",
       "domain": "resource",
-      "blockedBy": "chromium-source-selector-missing",
+      "blockedBy": "chromium-runtime-promotion-pending",
       "notes": "Resource lifecycle evidence remains diagnostic without source-level Doe runtime identity."
     },
     {
       "capability": "querySetTimestamp",
       "status": "diagnostic_wrapper_only",
       "domain": "query",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Timestamp query coverage is retained as diagnostic browser evidence."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Current source-binary browser smoke exercises timestampWrites and resolveQuerySet readback in both Dawn and forced-Doe modes; promotion remains blocked on chromium_runtime_active acceptance."
     },
     {
       "capability": "renderPassIndirectDraw",
-      "status": "implemented_untested_in_browser",
+      "status": "diagnostic_wrapper_only",
       "domain": "render",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Native implementation exists, but this path is not exercised by current Chromium browser diagnostics."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Current source-binary browser smoke exercises render-pass drawIndirect in both Dawn and forced-Doe modes; promotion remains blocked on chromium_runtime_active acceptance."
     },
     {
       "capability": "renderBundles",
-      "status": "implemented_untested_in_browser",
+      "status": "diagnostic_wrapper_only",
       "domain": "render",
-      "blockedBy": "chromium-source-selector-missing",
-      "notes": "Native implementation exists, but render bundle browser evidence still requires source-level Doe selection."
+      "blockedBy": "chromium-runtime-promotion-pending",
+      "notes": "Current source-binary browser smoke exercises createRenderBundleEncoder, draw, finish, and executeBundles in both Dawn and forced-Doe modes; promotion remains blocked on chromium_runtime_active acceptance."
     }
   ],
   "wireProtocolNotes": {
-    "architecture": "Current source checkout evidence does not show Chromium-owned DoeCommandDecoder or WebGPUDecoderImpl runtime selection markers. Browser smoke artifacts remain diagnostic wrapper evidence until --require-runtime-selector passes.",
-    "instanceLifetime": "Doe instance/proc-surface failure and teardown behavior must be handled in Chromium source before forced-Doe rows can claim source-level runtime identity.",
-    "externalTextureGap": "External texture browser evidence remains blocked until source-level selector and wire/proc interception land in Chromium."
+    "architecture": "Current source checkout evidence shows WebGPUDecoderImpl runtime selector markers and passes the require-runtime-selector gate. Forced Doe now fails closed through typed load, runtime initialization, profile, proc-surface, wire-proc-table, and unknown-selection reasons. Adapter filtering emits adapter_denylist_detail with profile_denylisted, adapter identity fields, and the blocklist reason once adapter identity is available. The required direct proc surface covers browser-facing compute, render, queue, surface, and external texture WGPU exports; the full DawnProcTable surface resolves through wgpuGetProcAddress for the active wire server; required browser interop procs resolve through Doe-local mappings before native fallback.",
+    "instanceLifetime": "Doe proc-surface load validation is handled in Chromium source and the Doe Chromium proc-surface checker validates the dylib export surface, create/release WGPUInstance bootstrap, wgpuGetProcAddress coverage for the generated DawnProcTable, Doe-local resolver coverage for required browser shared-memory and error-object procs, and implementation-source behavior for tagged Doe error objects plus macOS IOSurface shared texture import. Forced Doe injects a Doe-created WGPUInstance into the WebGPU wire server, imports active texture mailboxes through Doe IOSurface shared texture memory, and rejects active shared-buffer mailbox association until a real native buffer handle source is wired.",
+    "externalTextureGap": "External texture browser exports are part of the forced-Doe proc-surface gate. Active Doe texture mailbox association now imports macOS IOSurface shared texture memory through the loaded Doe proc table, injects a raw Doe WGPUTexture into the wire server, and ends shared texture access during present teardown. Shared buffer memory and shared fences remain explicit unsupported until native handle sources exist."
   }
 }

@@ -16,6 +16,30 @@
       ]
     },
     {
+      "artifactPath": "examples/browser-layered-score.sample.json",
+      "kindField": "reportKind",
+      "expectedKind": "browser-layered-score",
+      "identityMode": "layered_score_identity",
+      "requiredPointers": [
+        "/sourceReport/path",
+        "/sourceReport/sha256",
+        "/workloadIdentity/kind",
+        "/browserEnvironmentEvidence",
+        "/modeIdentities/baseline/browserExecutableSha256",
+        "/modeIdentities/baseline/dawnRuntimeSha256",
+        "/modeIdentities/baseline/shaderCompilerIdentity",
+        "/modeIdentities/baseline/adapterIdentity",
+        "/modeIdentities/baseline/traceHash",
+        "/modeIdentities/comparison/browserExecutableSha256",
+        "/modeIdentities/comparison/dawnRuntimeSha256",
+        "/modeIdentities/comparison/doeRuntimeSha256",
+        "/modeIdentities/comparison/shaderCompilerIdentity",
+        "/modeIdentities/comparison/adapterIdentity",
+        "/modeIdentities/comparison/traceHash",
+        "/rows"
+      ]
+    },
+    {
       "artifactPath": "examples/browser-gpu-flight-recorder.sample.json",
       "kindField": "artifactKind",
       "expectedKind": "browser_gpu_flight_recorder",

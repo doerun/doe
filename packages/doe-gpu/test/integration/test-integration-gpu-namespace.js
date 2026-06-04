@@ -576,6 +576,34 @@ try {
   }
 }
 
+// 5d. command encoder rejects finish while a compute pass is open
+try {
+  const bound = await gpu.requestDevice();
+  const encoder = bound.device.createCommandEncoder();
+  const pass = encoder.beginComputePass();
+  try {
+    encoder.finish();
+    check('command encoder finish with open compute pass throws', false, 'did not throw');
+  } catch (err) {
+    check(
+      'command encoder finish with open compute pass throws',
+      err.message.includes('active pass'),
+      err.message,
+    );
+  }
+  pass.end();
+  const commandBuffer = encoder.finish();
+  check('command encoder finish after compute pass end succeeds', commandBuffer != null);
+  commandBuffer.destroy?.();
+  bound.device.destroy();
+} catch (err) {
+  if (isDeviceUnavailableError(err)) {
+    skip('command encoder active pass validation (no GPU available)');
+  } else {
+    check('command encoder active pass validation', false, err.message);
+  }
+}
+
 // ── Results ─────────────────────────────────────────────────────────────
 
 console.log(`\nResults: ${passed} passed, ${failed} failed, ${skipped} skipped`);

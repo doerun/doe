@@ -265,7 +265,7 @@
         "windows_x64"
       ],
       "id": "node_package_compare",
-      "notes": "Governed package-surface compare lane for Doe vs node-webgpu package.",
+      "notes": "Governed package-surface compare lane for Doe-backed WebGPU vs Dawn-backed node-webgpu on Node.",
       "products": [
         "node_webgpu_package",
         "doe"
@@ -285,7 +285,7 @@
         "windows_x64"
       ],
       "id": "bun_package_compare",
-      "notes": "Governed package-surface compare lane for Doe vs bun-webgpu package.",
+      "notes": "Governed package-surface compare lane for Doe-backed WebGPU vs Dawn-backed bun-webgpu on Bun.",
       "products": [
         "bun_webgpu_package",
         "doe_bun"

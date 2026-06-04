@@ -14,7 +14,9 @@ const cast = native_helpers.cast;
 const DoeQueue = native_types.DoeQueue;
 
 pub const flush_pending_work = shared.flush_pending_work;
+pub const flush_pending_work_timed = shared.flush_pending_work_timed;
 pub const flush_before_submit_if_needed = shared.flush_before_submit_if_needed;
+pub const flush_before_submit_if_needed_timed = shared.flush_before_submit_if_needed_timed;
 pub const finalize_submitted_metal_command_buffer = shared.finalize_submitted_metal_command_buffer;
 pub const try_schedule_deferred_copy = shared.try_schedule_deferred_copy;
 pub const drain_global_work_done = lifecycle.drain_global_work_done;
@@ -62,6 +64,28 @@ pub export fn doeNativeQueueWriteBuffer(
     size: usize,
 ) callconv(.c) void {
     copy_ops.doeNativeQueueWriteBuffer(q_raw, buf_raw, offset, data, size);
+}
+
+pub export fn doeNativeQueueWriteBufferBatch(
+    q_raw: ?*anyopaque,
+    count: usize,
+    buf_raws: [*]const ?*anyopaque,
+    offsets: [*]const u64,
+    sizes: [*]const u32,
+    data: [*]const u8,
+) callconv(.c) void {
+    copy_ops.doeNativeQueueWriteBufferBatch(q_raw, count, buf_raws, offsets, sizes, data);
+}
+
+pub export fn doeNativeQueueWriteBufferBatchDataPtrs(
+    q_raw: ?*anyopaque,
+    count: usize,
+    buf_raws: [*]const ?*anyopaque,
+    offsets: [*]const u64,
+    sizes: [*]const u32,
+    data_ptrs: [*]const ?*const anyopaque,
+) callconv(.c) void {
+    copy_ops.doeNativeQueueWriteBufferBatchDataPtrs(q_raw, count, buf_raws, offsets, sizes, data_ptrs);
 }
 
 pub export fn doeNativeQueueCopyTextureForBrowser(

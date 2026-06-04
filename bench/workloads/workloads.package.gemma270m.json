@@ -22,13 +22,13 @@
       "workloadOrigin": "doe_contract_with_dawn_mapping",
       "planPath": "bench/plans/generated/inference_gemma3_270m_prefill_64tok_decode_64tok.plan.json",
       "planSchemaVersion": 1,
-      "planHash": "f5a31776257d1c9e8e9aa544427fa40a2304573ba6434dc63466dc8b67ad1766",
+      "planHash": "05b59172bbbd340f17ddb80c91a7a94b503d3ccc4fdeb9800436dcc29da054ba",
       "planCommandCount": 1583,
       "planDispatchCount": 1170,
       "planBufferWriteCount": 391,
       "planBufferLoadCount": 22,
-      "compatibilityCommandHash": "17269c457340728f87cf69f091e31b7c942569edfba6f714cb0f203f772a101f",
-      "sourceIrSha256": "dbc451744890fdef290ae6466ac3228a5c026c6795276f439167651311209880",
+      "compatibilityCommandHash": "30c837c443ee727c563ca326bfefb0e607463f09b2a96177bc927b9419cdaa4f",
+      "sourceIrSha256": "2af3f800c9fd4ecafd7e2d691a4515ffb5fd3a0ef2a8d9db5ccb4cc5457a45ab",
       "commandsPath": "bench/plans/generated/compat/inference_gemma3_270m_prefill_64tok_decode_64tok_commands.json",
       "cohorts": [
         "exploration"

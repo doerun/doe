@@ -17,6 +17,10 @@ from bench.lib.hash_utils import json_sha256
 REPO_ROOT = Path(__file__).resolve().parents[2]
 IR_SCHEMA_PATH = REPO_ROOT / "bench" / "ir" / "benchmark_ir.schema.json"
 PLAN_SCHEMA_PATH = REPO_ROOT / "bench" / "plans" / "normalized_plan.schema.json"
+MATMUL_GEMV_KERNEL = "matmul-gemv.wgsl"
+MATMUL_GEMV_ROW2_HELPER_EXACT_KERNEL = "matmul_gemv_row2_helper_exact.wgsl"
+MATMUL_GEMV_VARIANT_DEFAULT = "default"
+MATMUL_GEMV_VARIANT_ROW2_HELPER_EXACT = "row2_helper_exact"
 
 
 def load_json(path: Path) -> Any:
@@ -107,6 +111,214 @@ def _count_commands(commands: list[dict[str, Any]]) -> dict[str, int]:
         if kind in counts:
             counts[kind] += 1
     return counts
+
+
+def _command_int(command: dict[str, Any], key: str, default: int = 0) -> int:
+    value = command.get(key)
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, int):
+        return value
+    return default
+
+
+def _binding_by_index(command: dict[str, Any], binding_index: int) -> dict[str, Any]:
+    bindings = command.get("bindings")
+    if not isinstance(bindings, list):
+        raise ValueError("kernel_dispatch bindings must be an array")
+    for binding in bindings:
+        if not isinstance(binding, dict):
+            raise ValueError("kernel_dispatch bindings must be objects")
+        if _command_int(binding, "binding", -1) == binding_index:
+            return binding
+    raise ValueError(f"kernel_dispatch missing binding {binding_index}")
+
+
+def _binding_handle(binding: dict[str, Any]) -> int:
+    return int(
+        binding.get("resource_handle")
+        or binding.get("resourceHandle")
+        or binding.get("handle")
+        or 0
+    )
+
+
+def _binding_buffer_size(binding: dict[str, Any]) -> int:
+    return int(binding.get("buffer_size") or binding.get("bufferSize") or 0)
+
+
+def _matmul_gemv_shape(
+    command: dict[str, Any],
+    *,
+    command_index: int,
+    buffer_writes: dict[int, dict[str, Any]],
+) -> tuple[int, int]:
+    uniform_binding = _binding_by_index(command, 0)
+    matrix_binding = _binding_by_index(command, 1)
+    vector_binding = _binding_by_index(command, 2)
+    output_binding = _binding_by_index(command, 3)
+    uniform_handle = _binding_handle(uniform_binding)
+    uniform_command = buffer_writes.get(uniform_handle)
+    if uniform_command is None:
+        raise ValueError(
+            f"matmul-gemv command[{command_index}] references unwritten uniform handle {uniform_handle}"
+        )
+    uniform_data = uniform_command.get("data")
+    if not isinstance(uniform_data, list) or len(uniform_data) < 2:
+        raise ValueError(f"matmul-gemv command[{command_index}] uniform must provide rows and cols")
+    rows = int(uniform_data[0])
+    cols = int(uniform_data[1])
+    if rows <= 0 or cols <= 0:
+        raise ValueError(f"matmul-gemv command[{command_index}] rows and cols must be positive")
+
+    output_bytes = _binding_buffer_size(output_binding)
+    vector_bytes = _binding_buffer_size(vector_binding)
+    matrix_bytes = _binding_buffer_size(matrix_binding)
+    expected_output_bytes = rows * 4
+    expected_vector_bytes = cols * 4
+    expected_matrix_bytes = rows * cols * 4
+    if output_bytes != expected_output_bytes:
+        raise ValueError(
+            f"matmul-gemv command[{command_index}] output bytes {output_bytes} "
+            f"do not match rows*4 {expected_output_bytes}"
+        )
+    if vector_bytes != expected_vector_bytes:
+        raise ValueError(
+            f"matmul-gemv command[{command_index}] vector bytes {vector_bytes} "
+            f"do not match cols*4 {expected_vector_bytes}"
+        )
+    if matrix_bytes != expected_matrix_bytes:
+        raise ValueError(
+            f"matmul-gemv command[{command_index}] matrix bytes {matrix_bytes} "
+            f"do not match rows*cols*4 {expected_matrix_bytes}"
+        )
+    return rows, cols
+
+
+def _validate_matmul_gemv_dispatch(
+    command: dict[str, Any],
+    *,
+    command_index: int,
+    buffer_writes: dict[int, dict[str, Any]],
+) -> None:
+    rows, _ = _matmul_gemv_shape(
+        command,
+        command_index=command_index,
+        buffer_writes=buffer_writes,
+    )
+    if _command_int(command, "x") != rows or _command_int(command, "y", 1) != 1 or _command_int(command, "z", 1) != 1:
+        raise ValueError(
+            f"matmul-gemv command[{command_index}] dispatch must be [rows,1,1]; "
+            f"got [{_command_int(command, 'x')},{_command_int(command, 'y', 1)},{_command_int(command, 'z', 1)}] "
+            f"for rows={rows}"
+        )
+
+
+def _validate_matmul_gemv_row2_helper_exact_dispatch(
+    command: dict[str, Any],
+    *,
+    command_index: int,
+    buffer_writes: dict[int, dict[str, Any]],
+) -> None:
+    rows, cols = _matmul_gemv_shape(
+        command,
+        command_index=command_index,
+        buffer_writes=buffer_writes,
+    )
+    if rows % 2 != 0:
+        raise ValueError(f"matmul-gemv row2 command[{command_index}] rows must be even")
+    if cols % 4 != 0:
+        raise ValueError(f"matmul-gemv row2 command[{command_index}] cols must be divisible by 4")
+    expected_x = rows // 2
+    if _command_int(command, "x") != expected_x or _command_int(command, "y", 1) != 1 or _command_int(command, "z", 1) != 1:
+        raise ValueError(
+            f"matmul-gemv row2 command[{command_index}] dispatch must be [rows/2,1,1]; "
+            f"got [{_command_int(command, 'x')},{_command_int(command, 'y', 1)},{_command_int(command, 'z', 1)}] "
+            f"for rows={rows}"
+        )
+
+
+def _validate_command_semantics(commands: list[dict[str, Any]]) -> None:
+    buffer_writes: dict[int, dict[str, Any]] = {}
+    for index, command in enumerate(commands):
+        kind = _command_kind(command)
+        if kind == "buffer_write":
+            handle = int(command.get("handle") or 0)
+            if handle > 0:
+                buffer_writes[handle] = command
+            continue
+        if kind != "kernel_dispatch":
+            continue
+        kernel = str(command.get("kernel", ""))
+        if kernel == MATMUL_GEMV_KERNEL:
+            _validate_matmul_gemv_dispatch(
+                command,
+                command_index=index,
+                buffer_writes=buffer_writes,
+            )
+        elif kernel == MATMUL_GEMV_ROW2_HELPER_EXACT_KERNEL:
+            _validate_matmul_gemv_row2_helper_exact_dispatch(
+                command,
+                command_index=index,
+                buffer_writes=buffer_writes,
+            )
+
+
+def _matmul_gemv_variant(scenario: dict[str, Any]) -> str:
+    variant = scenario.get("matmulGemvVariant")
+    if variant is None:
+        return MATMUL_GEMV_VARIANT_DEFAULT
+    return str(variant)
+
+
+def _apply_matmul_gemv_variant(
+    commands: list[dict[str, Any]],
+    *,
+    scenario: dict[str, Any],
+) -> list[dict[str, Any]]:
+    variant = _matmul_gemv_variant(scenario)
+    if variant == MATMUL_GEMV_VARIANT_DEFAULT:
+        return commands
+    if variant != MATMUL_GEMV_VARIANT_ROW2_HELPER_EXACT:
+        raise ValueError(f"unsupported matmulGemvVariant {variant!r}")
+
+    buffer_writes: dict[int, dict[str, Any]] = {}
+    transformed: list[dict[str, Any]] = []
+    for index, command in enumerate(commands):
+        kind = _command_kind(command)
+        if kind == "buffer_write":
+            handle = int(command.get("handle") or 0)
+            if handle > 0:
+                buffer_writes[handle] = command
+            transformed.append(command)
+            continue
+        if kind != "kernel_dispatch" or str(command.get("kernel", "")) != MATMUL_GEMV_KERNEL:
+            transformed.append(command)
+            continue
+
+        rows, cols = _matmul_gemv_shape(
+            command,
+            command_index=index,
+            buffer_writes=buffer_writes,
+        )
+        if rows % 2 != 0:
+            raise ValueError(f"matmulGemvVariant row2_helper_exact command[{index}] requires even rows")
+        if cols % 4 != 0:
+            raise ValueError(f"matmulGemvVariant row2_helper_exact command[{index}] requires cols divisible by 4")
+        if _command_int(command, "x") != rows or _command_int(command, "y", 1) != 1 or _command_int(command, "z", 1) != 1:
+            raise ValueError(
+                f"matmulGemvVariant row2_helper_exact command[{index}] requires source dispatch [rows,1,1]"
+            )
+
+        rewritten = dict(command)
+        rewritten["kernel"] = MATMUL_GEMV_ROW2_HELPER_EXACT_KERNEL
+        rewritten["x"] = rows // 2
+        transformed.append(rewritten)
+    return transformed
+
+
+def _is_default_matmul_gemv_variant(scenario: dict[str, Any]) -> bool:
+    return _matmul_gemv_variant(scenario) == MATMUL_GEMV_VARIANT_DEFAULT
 
 
 def _normalize_binding_buffer_type(binding: dict[str, Any]) -> str:
@@ -246,6 +458,8 @@ def materialize_plan(ir_path: Path, scenario_id: str) -> dict[str, Any]:
         scenario=scenario,
         commands=_expand_commands(scenario["commands"]),
     )
+    commands = _apply_matmul_gemv_variant(commands, scenario=scenario)
+    _validate_command_semantics(commands)
     counts = _count_commands(commands)
     ir_hash = json_sha256(ir_doc)
     compatibility_hash = json_sha256(commands)
@@ -266,6 +480,8 @@ def materialize_plan(ir_path: Path, scenario_id: str) -> dict[str, Any]:
     plan["description"] = scenario.get("description", "")
     plan["planPath"] = scenario.get("planPath", "")
     plan["commandsPath"] = scenario.get("commandsPath", "")
+    if not _is_default_matmul_gemv_variant(scenario):
+        plan["matmulGemvVariant"] = _matmul_gemv_variant(scenario)
     plan["commandCount"] = len(commands)
     plan["bufferWriteCount"] = counts["buffer_write"]
     plan["bufferLoadCount"] = counts["buffer_load"]

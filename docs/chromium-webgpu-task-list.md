@@ -277,6 +277,9 @@ what to build, gate, prove, or remove. Strategy prose belongs in
   [`../bench/tools/check_browser_claim_promotion_receipt.py`](../bench/tools/check_browser_claim_promotion_receipt.py)
 - Browser benchmark superset contract:
   [`../browser/chromium/contracts/browser-benchmark-superset.contract.md`](../browser/chromium/contracts/browser-benchmark-superset.contract.md)
+- Browser layered score:
+  [`../browser/chromium/scripts/score-browser-layered-report.py`](../browser/chromium/scripts/score-browser-layered-report.py),
+  [`../config/browser-layered-score.schema.json`](../config/browser-layered-score.schema.json)
 - Native command graph receipt:
   [`../bench/tools/build_native_command_graph_receipt.py`](../bench/tools/build_native_command_graph_receipt.py)
 - Native command graph replay:

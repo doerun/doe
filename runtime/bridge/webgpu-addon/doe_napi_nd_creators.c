@@ -3,6 +3,7 @@
 /* Forward declarations for methods defined in other nd files */
 napi_value native_direct_queue_submit(napi_env env, napi_callback_info info);
 napi_value native_direct_queue_write_buffer(napi_env env, napi_callback_info info);
+napi_value native_direct_queue_write_buffer_batch(napi_env env, napi_callback_info info);
 napi_value native_direct_queue_write_texture(napi_env env, napi_callback_info info);
 napi_value native_direct_queue_on_submitted_work_done(napi_env env, napi_callback_info info);
 napi_value native_direct_buffer_map_async(napi_env env, napi_callback_info info);
@@ -752,6 +753,7 @@ napi_value create_native_direct_queue_object(napi_env env, WGPUInstance instance
     native_direct_wrap_queue_cache(env, obj, instance, queue);
     native_direct_add_cached_method(env, obj, "submit", native_direct_queue_submit, &native_direct_method_queue_submit_ref);
     native_direct_add_cached_method(env, obj, "writeBuffer", native_direct_queue_write_buffer, &native_direct_method_queue_write_buffer_ref);
+    native_direct_add_cached_method(env, obj, "writeBufferBatch", native_direct_queue_write_buffer_batch, &native_direct_method_queue_write_buffer_batch_ref);
     native_direct_add_cached_method(env, obj, "writeTexture", native_direct_queue_write_texture, &native_direct_method_queue_write_texture_ref);
     native_direct_add_cached_method(env, obj, "onSubmittedWorkDone", native_direct_queue_on_submitted_work_done, &native_direct_method_queue_on_submitted_work_done_ref);
     return obj;
@@ -798,6 +800,12 @@ napi_value create_native_direct_buffer_object(napi_env env, WGPUInstance instanc
     native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_MAP_ASYNC_MS, 0.0);
     native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_MAP_QUEUE_FLUSH_MS, 0.0);
     native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_GET_MAPPED_RANGE_MS, 0.0);
+    native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_QUEUE_WAIT_COMPLETED_MS, 0.0);
+    native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_DEFERRED_COPY_MS, 0.0);
+    native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_DEFERRED_RESOLVE_MS, 0.0);
+    native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_MAP_MS, 0.0);
+    native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_COPY_MS, 0.0);
+    native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_UNMAP_MS, 0.0);
     native_direct_wrap_buffer_cache(env, obj, instance, buffer, size, usage, queue_obj);
     native_direct_add_cached_method(env, obj, "mapAsync", native_direct_buffer_map_async, &native_direct_method_buffer_map_async_ref);
     native_direct_add_cached_method(env, obj, "getMappedRange", native_direct_buffer_get_mapped_range, &native_direct_method_buffer_get_mapped_range_ref);

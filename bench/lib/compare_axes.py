@@ -121,6 +121,7 @@ PROVIDER_SETS: dict[str, tuple[str, ...]] = {
     "backend_native_providers": ("doe", "dawn", "webkit", "wgpu-native"),
     "direct_plan_providers": ("doe", "dawn", "webkit", "wgpu-native"),
     "package_node_providers": ("doe", "node-webgpu"),
+    "package_node_native_direct_providers": ("doe-direct", "node-webgpu"),
     "package_bun_providers": ("doe", "bun-webgpu"),
     "package_deno_providers": ("doe", "deno-webgpu"),
 }
@@ -134,11 +135,15 @@ COMPARISON_VIEWS: dict[str, ComparisonViewMeta] = {
         provider_set="direct_plan_providers",
         providers=("doe", "dawn"),
     ),
-    "doe_vs_node_webgpu_package": ComparisonViewMeta(
+    "doe_vs_dawn_node_webgpu_package": ComparisonViewMeta(
         provider_set="package_node_providers",
         providers=("doe", "node-webgpu"),
     ),
-    "doe_vs_bun_webgpu_package": ComparisonViewMeta(
+    "doe_native_direct_vs_dawn_node_webgpu_package": ComparisonViewMeta(
+        provider_set="package_node_native_direct_providers",
+        providers=("doe-direct", "node-webgpu"),
+    ),
+    "doe_vs_dawn_bun_webgpu_package": ComparisonViewMeta(
         provider_set="package_bun_providers",
         providers=("doe", "bun-webgpu"),
     ),
@@ -172,10 +177,10 @@ def derive_comparison_view(
         return "doe_vs_dawn_direct"
     if normalized_surface == "package":
         if normalized_runtime == "bun":
-            return "doe_vs_bun_webgpu_package"
+            return "doe_vs_dawn_bun_webgpu_package"
         if normalized_runtime == "deno":
             return "doe_vs_deno_webgpu_package"
-        return "doe_vs_node_webgpu_package"
+        return "doe_vs_dawn_node_webgpu_package"
     raise ValueError(
         "cannot derive comparison view for "
         f"surface={surface!r}, runtime_host={runtime_host!r}"

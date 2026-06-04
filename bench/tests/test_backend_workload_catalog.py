@@ -372,6 +372,35 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
             self.assertNotIn("commandsPath", lane)
             self.assertNotIn("commandsPath", shared)
 
+    def test_package_inference_manifest_matches_ir_materialized_plans(self) -> None:
+        manifests = [
+            REPO_ROOT / "bench" / "workloads" / "workloads.package.inference.json",
+            REPO_ROOT / "bench" / "workloads" / "workloads.package.inference.prepared.json",
+        ]
+        for manifest_path in manifests:
+            package_manifest = load_json(manifest_path)
+            for row in package_manifest["workloads"]:
+                ir_path = row.get("irPath")
+                ir_scenario = row.get("irScenario")
+                if not ir_path:
+                    continue
+                artifacts = self.generator.benchmark_ir_mod.materialize_plan_artifacts(
+                    REPO_ROOT / ir_path,
+                    ir_scenario,
+                )
+                self.assertEqual(row["planPath"], artifacts["planPath"])
+                self.assertEqual(row["commandsPath"], artifacts["commandsPath"])
+                self.assertEqual(row["planHash"], artifacts["planSha256"])
+                self.assertEqual(row["sourceIrSha256"], artifacts["sourceIrSha256"])
+                self.assertEqual(
+                    row["compatibilityCommandHash"],
+                    artifacts["compatibilityCommandsSha256"],
+                )
+                self.assertEqual(row["planCommandCount"], artifacts["commandCount"])
+                self.assertEqual(row["planDispatchCount"], artifacts["dispatchCount"])
+                self.assertEqual(row["planBufferWriteCount"], artifacts["bufferWriteCount"])
+                self.assertEqual(row["planBufferLoadCount"], artifacts["bufferLoadCount"])
+
     def test_no_js_pipeline_workloads_remain(self) -> None:
         for lane_id in self.catalog["laneOutputs"]:
             materialized = self.generator.materialize_lane(self.catalog, lane_id)

@@ -25,6 +25,9 @@
       "enum": [
         "wrapper_diagnostic",
         "source_selector_required",
+        "source_selector_wired",
+        "source_selector_runtime_bootstrap_gated",
+        "source_selector_wire_runtime_active",
         "chromium_runtime_active"
       ]
     },

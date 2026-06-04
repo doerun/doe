@@ -15,6 +15,8 @@ const CACHE_VERSION: u32 = 5;
 const FLAG_NEEDS_SIZES_BUF: u32 = 1 << 0;
 const FLAG_BOUNDS_ELISION: u32 = 1 << 1;
 const FLAG_TEXTURE_BOUNDS_ELISION: u32 = 1 << 2;
+const FLAG_DISPATCH_VALIDATED_BOUNDS_ELISION: u32 = 1 << 3;
+const FLAG_UNIFORM_VALIDATED_BOUNDS_ELISION: u32 = 1 << 4;
 const DEFAULT_CACHE_DIR_SUFFIX = "doe/shader_translation_cache";
 const TRANSLATION_CONTRACT_DOMAIN = "doe.shader_translation_cache.contract.v1";
 const TRANSLATION_KEY_DOMAIN = "doe.shader_translation_cache.key.v1";
@@ -234,6 +236,8 @@ fn compilerModeFlags() u32 {
     var flags: u32 = 0;
     if (config.elide_proven_bounds) flags |= FLAG_BOUNDS_ELISION;
     if (config.elide_proven_texture_bounds) flags |= FLAG_TEXTURE_BOUNDS_ELISION;
+    if (config.elide_dispatch_validated_bounds) flags |= FLAG_DISPATCH_VALIDATED_BOUNDS_ELISION;
+    if (config.elide_uniform_validated_bounds) flags |= FLAG_UNIFORM_VALIDATED_BOUNDS_ELISION;
     return flags;
 }
 

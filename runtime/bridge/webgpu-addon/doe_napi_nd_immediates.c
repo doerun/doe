@@ -1,5 +1,7 @@
 #include "doe_napi_internal.h"
 
+#define NATIVE_DIRECT_QUEUE_WRITE_BATCH_STACK_MAX 64u
+
 /* Helper: extract a uint32 from a named property of a JS object.
  * Returns 0 if the property is absent or not a number. */
 static uint32_t get_u32_prop(napi_env env, napi_value obj, const char* key) {
@@ -23,6 +25,37 @@ static void get_extent_3d(napi_env env, napi_value obj, uint32_t* w, uint32_t* h
     *h = get_u32_prop(env, obj, "height");
     *d = get_u32_prop(env, obj, "depthOrArrayLayers");
     if (*d == 0) *d = 1; /* default per WebGPU spec */
+}
+
+static bool native_direct_is_buffer_data(napi_env env, napi_value value) {
+    bool is_typedarray = false;
+    napi_is_typedarray(env, value, &is_typedarray);
+    if (is_typedarray) return true;
+    bool is_arraybuffer = false;
+    napi_is_arraybuffer(env, value, &is_arraybuffer);
+    if (is_arraybuffer) return true;
+    bool is_buffer = false;
+    napi_is_buffer(env, value, &is_buffer);
+    return is_buffer;
+}
+
+static void native_direct_queue_write_buffer_raw(
+    WGPUQueue queue,
+    WGPUBuffer buffer,
+    uint64_t offset,
+    const void* data,
+    size_t byte_length
+) {
+    if (pfn_doeNativeQueueWriteBuffer) {
+        pfn_doeNativeQueueWriteBuffer(queue, buffer, offset, data, byte_length);
+    } else {
+        pfn_wgpuQueueWriteBuffer(queue, buffer, offset, data, byte_length);
+    }
+}
+
+static WGPUBuffer native_direct_read_buffer_handle(napi_env env, napi_value value) {
+    NativeDirectBufferCache* buffer_cache = native_direct_get_buffer_cache(env, value);
+    return buffer_cache ? buffer_cache->buffer : native_direct_unwrap_external_prop(env, value, DOE_DIRECT_NATIVE);
 }
 
 napi_value native_direct_queue_write_buffer(napi_env env, napi_callback_info info) {
@@ -85,7 +118,126 @@ napi_value native_direct_queue_write_buffer(napi_env env, napi_callback_info inf
         if (size < byte_length) byte_length = size;
     }
 
-    pfn_wgpuQueueWriteBuffer(queue, buffer, (uint64_t)offset, data, byte_length);
+    native_direct_queue_write_buffer_raw(queue, buffer, (uint64_t)offset, data, byte_length);
+    napi_value undefined_value;
+    napi_get_undefined(env, &undefined_value);
+    return undefined_value;
+}
+
+napi_value native_direct_queue_write_buffer_batch(napi_env env, napi_callback_info info) {
+    size_t argc = 4;
+    napi_value argv[4];
+    napi_value this_arg;
+    napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+    if (argc < 1) NAPI_THROW(env, "queue.writeBufferBatch requires entries");
+    NativeDirectQueueCache* queue_cache = native_direct_get_queue_cache(env, this_arg);
+    WGPUQueue queue = queue_cache ? queue_cache->queue : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+    if (!queue) NAPI_THROW(env, "queue.writeBufferBatch requires queue");
+
+    bool is_array = false;
+    napi_is_array(env, argv[0], &is_array);
+    if (!is_array) NAPI_THROW(env, "queue.writeBufferBatch buffers or entries must be an array");
+    uint32_t entry_count = 0;
+    napi_get_array_length(env, argv[0], &entry_count);
+
+    if (argc >= 4) {
+        void* offset_bytes = NULL;
+        size_t offset_byte_length = 0;
+        void* size_bytes = NULL;
+        size_t size_byte_length = 0;
+        void* data_bytes = NULL;
+        size_t data_byte_length = 0;
+        extract_buffer_data(env, argv[1], &offset_bytes, &offset_byte_length);
+        extract_buffer_data(env, argv[2], &size_bytes, &size_byte_length);
+        extract_buffer_data(env, argv[3], &data_bytes, &data_byte_length);
+        if (!offset_bytes || offset_byte_length < ((size_t)entry_count * sizeof(uint64_t))) {
+            NAPI_THROW(env, "queue.writeBufferBatch compact offsets must be a BigUint64Array");
+        }
+        if (!size_bytes || size_byte_length < ((size_t)entry_count * sizeof(uint32_t))) {
+            NAPI_THROW(env, "queue.writeBufferBatch compact sizes must be a Uint32Array");
+        }
+        if (!data_bytes && data_byte_length > 0) {
+            NAPI_THROW(env, "queue.writeBufferBatch compact data must be buffer-backed");
+        }
+        if (entry_count > NATIVE_DIRECT_QUEUE_WRITE_BATCH_STACK_MAX) {
+            NAPI_THROW(env, "queue.writeBufferBatch compact entry count exceeds stack batch limit");
+        }
+        WGPUBuffer batch_buffers[NATIVE_DIRECT_QUEUE_WRITE_BATCH_STACK_MAX];
+        uint64_t batch_offsets[NATIVE_DIRECT_QUEUE_WRITE_BATCH_STACK_MAX];
+        uint32_t batch_sizes[NATIVE_DIRECT_QUEUE_WRITE_BATCH_STACK_MAX];
+        const bool use_native_batch = pfn_doeNativeQueueWriteBufferBatch != NULL;
+        const uint8_t empty_batch_data = 0;
+        const uint8_t* batch_data = data_bytes ? (const uint8_t*)data_bytes : &empty_batch_data;
+        size_t data_offset = 0;
+        for (uint32_t i = 0; i < entry_count; i++) {
+            napi_value buffer_value;
+            napi_get_element(env, argv[0], i, &buffer_value);
+            WGPUBuffer buffer = native_direct_read_buffer_handle(env, buffer_value);
+            if (!buffer) NAPI_THROW(env, "queue.writeBufferBatch compact entry requires buffer");
+
+            uint64_t offset = 0;
+            uint32_t byte_length = 0;
+            memcpy(&offset, ((uint8_t*)offset_bytes) + ((size_t)i * sizeof(uint64_t)), sizeof(uint64_t));
+            memcpy(&byte_length, ((uint8_t*)size_bytes) + ((size_t)i * sizeof(uint32_t)), sizeof(uint32_t));
+            if (data_offset + (size_t)byte_length > data_byte_length) {
+                NAPI_THROW(env, "queue.writeBufferBatch compact data is shorter than declared sizes");
+            }
+            batch_buffers[i] = buffer;
+            batch_offsets[i] = offset;
+            batch_sizes[i] = byte_length;
+            if (!use_native_batch) {
+                native_direct_queue_write_buffer_raw(
+                    queue,
+                    buffer,
+                    offset,
+                    batch_data + data_offset,
+                    (size_t)byte_length
+                );
+            }
+            data_offset += (size_t)byte_length;
+        }
+        if (use_native_batch) {
+            pfn_doeNativeQueueWriteBufferBatch(
+                queue,
+                (size_t)entry_count,
+                batch_buffers,
+                batch_offsets,
+                batch_sizes,
+                batch_data
+            );
+        }
+
+        napi_value undefined_value;
+        napi_get_undefined(env, &undefined_value);
+        return undefined_value;
+    }
+
+    for (uint32_t i = 0; i < entry_count; i++) {
+        napi_value entry;
+        napi_get_element(env, argv[0], i, &entry);
+        napi_valuetype entry_type;
+        napi_typeof(env, entry, &entry_type);
+        if (entry_type != napi_object) {
+            NAPI_THROW(env, "queue.writeBufferBatch entries must be objects");
+        }
+
+        napi_value buffer_value = get_prop(env, entry, "buffer");
+        WGPUBuffer buffer = native_direct_read_buffer_handle(env, buffer_value);
+        if (!buffer) NAPI_THROW(env, "queue.writeBufferBatch entry requires buffer");
+
+        int64_t offset = get_int64_prop(env, entry, "offset");
+        if (offset < 0) NAPI_THROW(env, "queue.writeBufferBatch entry offset must be non-negative");
+
+        napi_value data_value = get_prop(env, entry, "data");
+        if (!native_direct_is_buffer_data(env, data_value)) {
+            NAPI_THROW(env, "queue.writeBufferBatch entry data must be TypedArray, ArrayBuffer, or Buffer");
+        }
+        void* data = NULL;
+        size_t byte_length = 0;
+        extract_buffer_data(env, data_value, &data, &byte_length);
+        native_direct_queue_write_buffer_raw(queue, buffer, (uint64_t)offset, data, byte_length);
+    }
+
     napi_value undefined_value;
     napi_get_undefined(env, &undefined_value);
     return undefined_value;
@@ -332,7 +484,13 @@ napi_value native_direct_buffer_map_async(napi_env env, napi_callback_info info)
         .userdata2 = NULL,
     };
     const uint64_t map_started_ns = monotonic_now_ns();
-    if (pfn_wgpuBufferMapAsync2) {
+    if (pfn_doeNativeBufferMapAsync) {
+        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
+        if (future.id == 0 || !result.done) NAPI_THROW(env, "doeNativeBufferMapAsync unavailable");
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "doeNativeBufferMapAsync failed", result.status, result.message);
+        }
+    } else if (pfn_wgpuBufferMapAsync2) {
         WGPUFuture future = pfn_wgpuBufferMapAsync2(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
         if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
         if (!process_events_until(inst, &result.done, current_timeout_ns())) {
@@ -340,12 +498,6 @@ napi_value native_direct_buffer_map_async(napi_env env, napi_callback_info info)
         }
         if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
             return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
-        }
-    } else if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
-        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
-        if (future.id == 0 || !result.done) NAPI_THROW(env, "doeNativeBufferMapAsync unavailable");
-        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
-            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "doeNativeBufferMapAsync failed", result.status, result.message);
         }
     } else {
         NAPI_THROW(env, "bufferMapAsync unavailable");
@@ -427,12 +579,20 @@ napi_value native_direct_buffer_map_read_copy_unmap(napi_env env, napi_callback_
     NativeDirectBufferCache* buffer_cache = native_direct_get_buffer_cache(env, this_arg);
     WGPUBuffer buffer = buffer_cache ? buffer_cache->buffer : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
     if (!buffer) NAPI_THROW(env, "Invalid buffer");
-    uint32_t mode = 0x0001; /* MAP_READ */
+    uint32_t mode = DOE_GPU_MAP_READ;
     int64_t offset = 0;
     int64_t size = buffer_cache ? (int64_t)buffer_cache->size : (int64_t)get_double_prop(env, this_arg, "size");
     if (argc >= 1 && argv[0]) napi_get_value_uint32(env, argv[0], &mode);
     if (argc >= 2 && argv[1]) napi_get_value_int64(env, argv[1], &offset);
     if (argc >= 3 && argv[2]) napi_get_value_int64(env, argv[2], &size);
+    if (mode != DOE_GPU_MAP_READ) NAPI_THROW(env, "mapReadCopyUnmap only supports MAP_READ");
+    if (offset < 0 || size < 0) NAPI_THROW(env, "mapReadCopyUnmap requires non-negative offset and size");
+    double queue_wait_completed_ms = 0.0;
+    double queue_deferred_copy_ms = 0.0;
+    double queue_deferred_resolve_ms = 0.0;
+    double map_ms = 0.0;
+    double copy_ms = 0.0;
+    double unmap_ms = 0.0;
 
     /* flush queue if pending */
     napi_value queue_obj = NULL;
@@ -441,11 +601,59 @@ napi_value native_direct_buffer_map_read_copy_unmap(napi_env env, napi_callback_
     } else {
         queue_obj = get_prop(env, this_arg, DOE_DIRECT_QUEUE);
     }
+    uint32_t should_flush = 0;
+    WGPUQueue queue = NULL;
     if (queue_obj && native_direct_queue_has_pending(env, queue_obj)) {
         NativeDirectQueueCache* queue_cache = native_direct_get_queue_cache(env, queue_obj);
-        WGPUQueue queue = queue_cache ? queue_cache->queue : native_direct_unwrap_external_prop(env, queue_obj, DOE_DIRECT_NATIVE);
-        if (pfn_doeNativeQueueFlush) {
+        queue = queue_cache ? queue_cache->queue : native_direct_unwrap_external_prop(env, queue_obj, DOE_DIRECT_NATIVE);
+        if (!queue) NAPI_THROW(env, "mapReadCopyUnmap requires a valid queue when pending submissions exist");
+        should_flush = 1u;
+    }
+
+    if (pfn_doeBufferMapReadCopyUnmapFlat) {
+        void* copy = NULL;
+        napi_value array_buffer;
+        napi_create_arraybuffer(env, (size_t)size, &copy, &array_buffer);
+        uint64_t breakdown[DOE_READBACK_BREAKDOWN_FIELD_COUNT] = {0};
+        const uint32_t status = pfn_doeBufferMapReadCopyUnmapFlat(
+            queue,
+            buffer,
+            (uint64_t)mode,
+            (size_t)offset,
+            (size_t)size,
+            should_flush,
+            copy,
+            breakdown
+        );
+        if (status != WGPU_STATUS_SUCCESS) {
+            NAPI_THROW(env, "mapReadCopyUnmapFlat failed");
+        }
+        if (should_flush) {
+            native_direct_queue_mark_done(env, queue_obj);
+        }
+        native_direct_invalidate_buffer_mapped_range_cache(env, buffer_cache);
+        native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_QUEUE_WAIT_COMPLETED_MS, (double)breakdown[DOE_READBACK_BREAKDOWN_WAIT_COMPLETED] / 1000000.0);
+        native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_DEFERRED_COPY_MS, (double)breakdown[DOE_READBACK_BREAKDOWN_DEFERRED_COPY] / 1000000.0);
+        native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_DEFERRED_RESOLVE_MS, (double)breakdown[DOE_READBACK_BREAKDOWN_DEFERRED_RESOLVE] / 1000000.0);
+        native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_MAP_MS, (double)breakdown[DOE_READBACK_BREAKDOWN_MAP] / 1000000.0);
+        native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_COPY_MS, (double)breakdown[DOE_READBACK_BREAKDOWN_COPY] / 1000000.0);
+        native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_UNMAP_MS, (double)breakdown[DOE_READBACK_BREAKDOWN_UNMAP] / 1000000.0);
+        return array_buffer;
+    }
+
+    if (should_flush) {
+        if (pfn_doeNativeQueueFlushBreakdown) {
+            uint64_t wait_completed_ns = 0;
+            uint64_t deferred_copy_ns = 0;
+            uint64_t deferred_resolve_ns = 0;
+            pfn_doeNativeQueueFlushBreakdown(queue, &wait_completed_ns, &deferred_copy_ns, &deferred_resolve_ns);
+            queue_wait_completed_ms = (double)wait_completed_ns / 1000000.0;
+            queue_deferred_copy_ms = (double)deferred_copy_ns / 1000000.0;
+            queue_deferred_resolve_ms = (double)deferred_resolve_ns / 1000000.0;
+        } else if (pfn_doeNativeQueueFlush) {
+            const uint64_t flush_started_ns = monotonic_now_ns();
             pfn_doeNativeQueueFlush(queue);
+            queue_wait_completed_ms = native_direct_elapsed_ms(flush_started_ns);
         } else {
             WGPUInstance inst = buffer_cache ? buffer_cache->instance : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_INSTANCE);
             QueueWorkDoneResult qresult = {0};
@@ -458,9 +666,11 @@ napi_value native_direct_buffer_map_read_copy_unmap(napi_env env, napi_callback_
             };
             WGPUFuture future = pfn_wgpuQueueOnSubmittedWorkDone(queue, cb_info);
             if (future.id == 0) NAPI_THROW(env, "queue work-done future unavailable");
+            const uint64_t wait_started_ns = monotonic_now_ns();
             if (!process_events_until(inst, &qresult.done, current_timeout_ns())) {
                 NAPI_THROW(env, "queue wait timed out in mapReadCopyUnmap");
             }
+            queue_wait_completed_ms = native_direct_elapsed_ms(wait_started_ns);
         }
         native_direct_queue_mark_done(env, queue_obj);
     }
@@ -475,23 +685,26 @@ napi_value native_direct_buffer_map_read_copy_unmap(napi_env env, napi_callback_
         .userdata1 = &result,
         .userdata2 = NULL,
     };
-    if (pfn_wgpuBufferMapAsync2) {
+    const uint64_t map_started_ns = monotonic_now_ns();
+    if (pfn_doeNativeBufferMapAsync) {
+        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
+        if (future.id == 0 || !result.done) NAPI_THROW(env, "mapReadCopyUnmap: map failed");
+    } else if (pfn_wgpuBufferMapAsync2) {
         WGPUFuture future = pfn_wgpuBufferMapAsync2(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
         if (future.id == 0) NAPI_THROW(env, "mapReadCopyUnmap: map future unavailable");
         if (!process_events_until(inst, &result.done, current_timeout_ns())) {
             NAPI_THROW(env, "mapReadCopyUnmap: map timed out");
         }
-    } else if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
-        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
-        if (future.id == 0 || !result.done) NAPI_THROW(env, "mapReadCopyUnmap: map failed");
     } else {
         NAPI_THROW(env, "mapReadCopyUnmap: map unavailable");
     }
     if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
         NAPI_THROW(env, "mapReadCopyUnmap: map failed");
     }
+    map_ms = native_direct_elapsed_ms(map_started_ns);
 
     /* copy mapped data into a V8-owned ArrayBuffer */
+    const uint64_t copy_started_ns = monotonic_now_ns();
     void* data = pfn_wgpuBufferGetMappedRange(buffer, (size_t)offset, (size_t)size);
     if (!data) data = (void*)pfn_wgpuBufferGetConstMappedRange(buffer, (size_t)offset, (size_t)size);
     if (!data) {
@@ -502,10 +715,20 @@ napi_value native_direct_buffer_map_read_copy_unmap(napi_env env, napi_callback_
     napi_value array_buffer;
     napi_create_arraybuffer(env, (size_t)size, &copy, &array_buffer);
     if (copy && size > 0) memcpy(copy, data, (size_t)size);
+    copy_ms = native_direct_elapsed_ms(copy_started_ns);
 
     /* unmap and invalidate cache */
+    const uint64_t unmap_started_ns = monotonic_now_ns();
     native_direct_invalidate_buffer_mapped_range_cache(env, buffer_cache);
     pfn_wgpuBufferUnmap(buffer);
+    unmap_ms = native_direct_elapsed_ms(unmap_started_ns);
+
+    native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_QUEUE_WAIT_COMPLETED_MS, queue_wait_completed_ms);
+    native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_DEFERRED_COPY_MS, queue_deferred_copy_ms);
+    native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_DEFERRED_RESOLVE_MS, queue_deferred_resolve_ms);
+    native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_MAP_MS, map_ms);
+    native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_COPY_MS, copy_ms);
+    native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_UNMAP_MS, unmap_ms);
 
     return array_buffer;
 }

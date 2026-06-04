@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import hashlib
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from bench.browser.browser_gate import (
+    stable_hash,
     validate_adapter_identity,
     validate_cts_subset,
     validate_flight_recorder_replay,
@@ -25,6 +27,13 @@ from bench.browser.browser_gate import (
 
 
 SHA256 = "a" * 64
+
+
+def test_stable_hash_matches_javascript_float_canonicalization() -> None:
+    payload = {"delta": -5.960466609168032e-05, "whole": 1.0, "tiny": 1e-07}
+    canonical = b'{"delta":-0.00005960466609168032,"tiny":1e-7,"whole":1}'
+
+    assert stable_hash(payload) == hashlib.sha256(canonical).hexdigest()
 
 
 def _runtime_selection(mode: str = "dawn") -> dict:
@@ -88,6 +97,31 @@ def test_runtime_selection_requires_profile_fields() -> None:
     errors = validate_runtime_selection(payload, "dawn", "smoke dawn")
 
     assert "smoke dawn profile must be object" in errors
+
+
+def test_runtime_selection_requires_denylist_detail_for_profile_denylist() -> None:
+    payload = _runtime_selection("dawn")
+    payload["fallbackReasonCode"] = "profile_denylisted"
+
+    errors = validate_runtime_selection(payload, "dawn", "smoke dawn")
+
+    assert "smoke dawn fallbackReasonCode must be empty" in errors
+    assert "smoke dawn adapterDenylist must be present for profile_denylisted" in errors
+
+
+def test_runtime_selection_accepts_denylist_detail_shape() -> None:
+    payload = _runtime_selection("dawn")
+    payload["adapterDenylist"] = {
+        "matched": False,
+        "reasonCode": "",
+        "profileId": "",
+        "vendor": "",
+        "api": "",
+        "deviceFamily": "",
+        "driverPattern": "",
+    }
+
+    assert validate_runtime_selection(payload, "dawn", "smoke dawn") == []
 
 
 def test_adapter_identity_requires_adapter_info_hash() -> None:
@@ -174,6 +208,86 @@ def test_validate_smoke_report_rejects_hidden_fallback() -> None:
     errors = validate_smoke_report(payload, require_hash_chain=False)
 
     assert "smoke doe fallbackApplied must be false" in errors
+
+
+def test_validate_smoke_report_requires_render_bundle_smoke() -> None:
+    root = Path(__file__).resolve().parents[2]
+    payload = json.loads((root / "examples/browser-smoke-report.sample.json").read_text(encoding="utf-8"))
+    payload["modeResults"][0]["smoke"].pop("renderBundle")
+
+    errors = validate_smoke_report(payload, require_hash_chain=False)
+
+    assert "smoke mode dawn renderBundle pass must be true" in errors
+
+
+def test_validate_smoke_report_requires_render_indirect_smoke() -> None:
+    root = Path(__file__).resolve().parents[2]
+    payload = json.loads((root / "examples/browser-smoke-report.sample.json").read_text(encoding="utf-8"))
+    payload["modeResults"][1]["smoke"]["renderIndirect"]["pass"] = False
+
+    errors = validate_smoke_report(payload, require_hash_chain=False)
+
+    assert "smoke mode doe renderIndirect pass must be true" in errors
+
+
+def test_validate_smoke_report_requires_external_texture_smoke() -> None:
+    root = Path(__file__).resolve().parents[2]
+    payload = json.loads((root / "examples/browser-smoke-report.sample.json").read_text(encoding="utf-8"))
+    payload["modeResults"][1]["smoke"]["importExternalTexture"]["pass"] = False
+
+    errors = validate_smoke_report(payload, require_hash_chain=False)
+
+    assert "smoke mode doe importExternalTexture pass must be true" in errors
+
+
+def test_validate_smoke_report_requires_timestamp_query_smoke() -> None:
+    root = Path(__file__).resolve().parents[2]
+    payload = json.loads((root / "examples/browser-smoke-report.sample.json").read_text(encoding="utf-8"))
+    payload["modeResults"][0]["smoke"]["timestampQuery"]["pass"] = False
+
+    errors = validate_smoke_report(payload, require_hash_chain=False)
+
+    assert "smoke mode dawn timestampQuery pass must be true" in errors
+
+
+def test_validate_smoke_report_requires_bundle_comparison() -> None:
+    root = Path(__file__).resolve().parents[2]
+    payload = json.loads((root / "examples/browser-smoke-report.sample.json").read_text(encoding="utf-8"))
+    payload["comparison"]["bothRenderBundleSmokePass"] = False
+
+    errors = validate_smoke_report(payload, require_hash_chain=False)
+
+    assert "smoke bothRenderBundleSmokePass must be true" in errors
+
+
+def test_validate_smoke_report_requires_timestamp_query_comparison() -> None:
+    root = Path(__file__).resolve().parents[2]
+    payload = json.loads((root / "examples/browser-smoke-report.sample.json").read_text(encoding="utf-8"))
+    payload["comparison"]["bothTimestampQuerySmokePass"] = False
+
+    errors = validate_smoke_report(payload, require_hash_chain=False)
+
+    assert "smoke bothTimestampQuerySmokePass must be true" in errors
+
+
+def test_validate_smoke_report_requires_runtime_selections() -> None:
+    root = Path(__file__).resolve().parents[2]
+    payload = json.loads((root / "examples/browser-smoke-report.sample.json").read_text(encoding="utf-8"))
+    payload.pop("runtimeSelections")
+
+    errors = validate_smoke_report(payload, require_hash_chain=False)
+
+    assert "smoke runtimeSelections must be list" in errors
+
+
+def test_validate_smoke_report_rejects_unknown_runtime_selection_mode() -> None:
+    root = Path(__file__).resolve().parents[2]
+    payload = json.loads((root / "examples/browser-smoke-report.sample.json").read_text(encoding="utf-8"))
+    payload["runtimeSelections"][0]["selectionMode"] = "auto"
+
+    errors = validate_smoke_report(payload, require_hash_chain=False)
+
+    assert "smoke runtimeSelections[0] selectionMode must be dawn or doe" in errors
 
 
 def test_validate_cts_subset_accepts_sample() -> None:

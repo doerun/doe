@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import io
+import json
 import sys
 import tempfile
 import unittest
@@ -47,6 +48,11 @@ class ReceiptFirstCliTests(unittest.TestCase):
                 (workspace / "run-artifacts" / "doe_gpu_node_package").glob("*.run.json")
             )
             self.assertEqual(len(artifacts), 1)
+            receipt = json.loads(artifacts[0].read_text(encoding="utf-8"))
+            self.assertFalse(receipt["execution"]["success"])
+            self.assertEqual(receipt["execution"]["timedSampleCount"], 0)
+            self.assertEqual(receipt["execution"]["returnCodes"], [1])
+            self.assertEqual(receipt["execution"]["aggregates"]["measuredMs"]["count"], 0)
 
     def test_compare_config_shortcut_is_rejected(self) -> None:
         stderr = io.StringIO()

@@ -16,10 +16,12 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 import argparse
 import hashlib
 import json
+import math
 import re
 import subprocess
 import sys
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -96,8 +98,59 @@ def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def js_number_literal(value: int | float) -> str:
+    if isinstance(value, int):
+        return str(value)
+    if not math.isfinite(value):
+        return "null"
+    if value == 0:
+        return "0"
+    absolute = abs(value)
+    if value.is_integer() and absolute < 1e21:
+        return str(int(value))
+
+    text = repr(value).lower()
+    if "e" not in text:
+        return text
+
+    if 1e-6 <= absolute < 1e21:
+        fixed = format(Decimal(text), "f")
+        fixed = fixed.rstrip("0").rstrip(".")
+        return "0" if fixed in {"", "-0"} else fixed
+
+    mantissa, exponent = text.split("e", 1)
+    if "." in mantissa:
+        mantissa = mantissa.rstrip("0").rstrip(".")
+    exponent_value = int(exponent)
+    exponent_prefix = "+" if exponent_value >= 0 else ""
+    return f"{mantissa}e{exponent_prefix}{exponent_value}"
+
+
+def js_canonical_json(payload: Any) -> str:
+    if payload is None:
+        return "null"
+    if isinstance(payload, bool):
+        return "true" if payload else "false"
+    if isinstance(payload, (int, float)):
+        return js_number_literal(payload)
+    if isinstance(payload, str):
+        return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    if isinstance(payload, list):
+        return "[" + ",".join(js_canonical_json(item) for item in payload) + "]"
+    if isinstance(payload, dict):
+        entries = []
+        for key in sorted(payload):
+            entries.append(
+                json.dumps(str(key), ensure_ascii=False, separators=(",", ":"))
+                + ":"
+                + js_canonical_json(payload[key])
+            )
+        return "{" + ",".join(entries) + "}"
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
 def stable_hash(payload: Any) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    encoded = js_canonical_json(payload).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 
 
@@ -337,6 +390,23 @@ def validate_runtime_selection(payload: Any, mode: str, label: str) -> list[str]
         for field in ("vendor", "api", "deviceFamily", "driver"):
             if not isinstance(profile.get(field), str) or not profile[field].strip():
                 errors.append(f"{label} profile.{field} must be non-empty")
+    adapter_denylist = payload.get("adapterDenylist")
+    if adapter_denylist is not None:
+        if not isinstance(adapter_denylist, dict):
+            errors.append(f"{label} adapterDenylist must be object")
+        else:
+            if not isinstance(adapter_denylist.get("matched"), bool):
+                errors.append(f"{label} adapterDenylist.matched must be bool")
+            for field in ("reasonCode", "profileId", "vendor", "api", "deviceFamily", "driverPattern"):
+                if not isinstance(adapter_denylist.get(field), str):
+                    errors.append(f"{label} adapterDenylist.{field} must be string")
+            if payload.get("fallbackReasonCode") == "profile_denylisted":
+                if adapter_denylist.get("matched") is not True:
+                    errors.append(f"{label} adapterDenylist.matched must be true for profile_denylisted")
+                if adapter_denylist.get("reasonCode") != "profile_denylisted":
+                    errors.append(f"{label} adapterDenylist.reasonCode must be profile_denylisted")
+    elif payload.get("fallbackReasonCode") == "profile_denylisted":
+        errors.append(f"{label} adapterDenylist must be present for profile_denylisted")
     if not isinstance(payload.get("selectorVersion"), str) or not payload["selectorVersion"].strip():
         errors.append(f"{label} selectorVersion must be non-empty")
     if not isinstance(payload.get("launchArgsHash"), str) or not re.fullmatch(
@@ -535,6 +605,12 @@ def validate_smoke_report(
             errors.append("smoke bothComputeSmokePass must be true")
         if comparison.get("bothRenderSmokePass") is not True:
             errors.append("smoke bothRenderSmokePass must be true")
+        if comparison.get("bothRenderBundleSmokePass") is not True:
+            errors.append("smoke bothRenderBundleSmokePass must be true")
+        if comparison.get("bothRenderIndirectSmokePass") is not True:
+            errors.append("smoke bothRenderIndirectSmokePass must be true")
+        if comparison.get("bothTimestampQuerySmokePass") is not True:
+            errors.append("smoke bothTimestampQuerySmokePass must be true")
     mode_results = payload.get("modeResults")
     if not isinstance(mode_results, list) or len(mode_results) < len(required_mode_set):
         errors.append(f"smoke modeResults must include {sorted(required_mode_set)}")
@@ -572,7 +648,16 @@ def validate_smoke_report(
         if not isinstance(smoke, dict):
             errors.append(f"smoke mode {mode} missing smoke object")
             continue
-        for key in ("computeIncrement", "renderTriangle"):
+        for key in (
+            "computeIncrement",
+            "renderTriangle",
+            "renderBundle",
+            "renderIndirect",
+            "timestampQuery",
+            "requestAdapterXrCompatible",
+            "copyExternalImageToTexture",
+            "importExternalTexture",
+        ):
             part = smoke.get(key)
             if not isinstance(part, dict) or part.get("pass") is not True:
                 errors.append(f"smoke mode {mode} {key} pass must be true")
@@ -583,6 +668,32 @@ def validate_smoke_report(
     unknown_modes = modes_seen - {"dawn", "doe"}
     if unknown_modes:
         errors.append(f"smoke modeResults contains unknown modes: {sorted(unknown_modes)}")
+    runtime_selections = payload.get("runtimeSelections")
+    if not isinstance(runtime_selections, list):
+        errors.append("smoke runtimeSelections must be list")
+    else:
+        selection_modes = []
+        for index, selection in enumerate(runtime_selections):
+            if not isinstance(selection, dict):
+                errors.append(f"smoke runtimeSelections[{index}] must be object")
+                continue
+            mode = selection.get("selectionMode")
+            if isinstance(mode, str):
+                selection_modes.append(mode)
+                if mode in {"dawn", "doe"}:
+                    errors.extend(
+                        validate_runtime_selection(selection, mode, f"smoke runtimeSelections[{index}]")
+                    )
+                else:
+                    errors.append(
+                        f"smoke runtimeSelections[{index}] selectionMode must be dawn or doe"
+                    )
+            else:
+                errors.append(f"smoke runtimeSelections[{index}] missing selectionMode")
+        if not required_mode_set.issubset(set(selection_modes)):
+            errors.append(
+                f"smoke runtimeSelections must contain {sorted(required_mode_set)}, found {selection_modes}"
+            )
     return errors
 
 

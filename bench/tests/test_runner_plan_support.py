@@ -22,6 +22,7 @@ from bench.native_compare_modules.runner import (
     command_for,
     extract_timing_metrics_ms,
     materialize_repeated_plan,
+    run_workload,
     run_compilation_workload,
     trace_meta_records_terminal_execution_outcome,
     workload_unit_wall_from_trace_meta,
@@ -54,6 +55,16 @@ class _UploadWorkload(_Workload):
     extra_args: list[str] = []
     baseline_upload_buffer_usage = "copy-dst"
     baseline_upload_submit_every = 1
+
+
+class _PlanOnlyWorkload(_Workload):
+    id = "package_pipeline_creation_8kernels"
+    domain = "pipeline"
+    commands_path = ""
+    plan_path = str(REPO_ROOT / "bench/plans/package-developer/package_pipeline_creation_8kernels.plan.json")
+    extra_args: list[str] = []
+    comparable = True
+    strict_normalization_unit = "cycle"
 
 
 class RunnerPlanSupportTests(unittest.TestCase):
@@ -91,7 +102,7 @@ class RunnerPlanSupportTests(unittest.TestCase):
 
     def test_command_for_supports_plan_placeholder(self) -> None:
         command = command_for(
-            "node bench/executors/run-node-webgpu-plan.js --plan {plan} --trace-meta {trace_meta} --trace-jsonl {trace_jsonl} --workload {workload}",
+            "node bench/executors/run-node-webgpu-plan.js --plan {plan} --trace-meta {trace_meta} --trace-jsonl {trace_jsonl} --workload {workload} --command-repeat {command_repeat}",
             workload=_Workload(),
             workload_id="alpha",
             commands_path="",
@@ -102,9 +113,44 @@ class RunnerPlanSupportTests(unittest.TestCase):
             upload_buffer_usage="copy-dst-copy-src",
             upload_submit_every=1,
             extra_args=[],
+            command_repeat=5,
         )
         self.assertIn("bench/executors/run-node-webgpu-plan.js", command[1])
         self.assertIn("bench/plans/alpha.plan.json", command)
+        self.assertIn("--command-repeat", command)
+        self.assertIn("5", command)
+
+    def test_run_workload_leaves_plan_files_unexpanded_when_executor_consumes_repeat(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="doe-runner-repeat-") as tmpdir:
+            result = run_workload(
+                name="node-webgpu",
+                template=(
+                    "node bench/executors/run-node-webgpu-plan.js "
+                    "--plan {plan} --trace-meta {trace_meta} --trace-jsonl {trace_jsonl} "
+                    "--workload {workload} --command-repeat {command_repeat}"
+                ),
+                workload=_PlanOnlyWorkload(),
+                iterations=1,
+                warmup=0,
+                out_dir=Path(tmpdir),
+                gpu_memory_probe="none",
+                resource_sample_ms=100,
+                resource_sample_target_count=0,
+                timing_divisor=5.0,
+                command_repeat=5,
+                ignore_first_ops=0,
+                upload_buffer_usage="copy-dst-copy-src",
+                upload_submit_every=1,
+                inject_upload_runtime_flags=False,
+                required_timing_class="operation",
+                comparability_mode="strict",
+                benchmark_policy=SimpleNamespace(),
+                emit_shell=True,
+            )
+        command = result["commandSamples"][0]["command"]
+        self.assertIn("--command-repeat", command)
+        self.assertIn("5", command)
+        self.assertIn(_PlanOnlyWorkload.plan_path, command)
 
     def test_verify_fawn_upload_runtime_contract_passes_plan_path_to_command_builder(self) -> None:
         captured: dict[str, object] = {}

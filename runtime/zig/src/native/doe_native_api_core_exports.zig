@@ -55,6 +55,7 @@ pub const device_d3d12_runtime = runtime_helpers.device_d3d12_runtime;
 
 const buffer_ops = @import("../doe_buffer_ops_native.zig");
 pub const doeNativeDeviceCreateBuffer = buffer_ops.doeNativeDeviceCreateBuffer;
+pub const doeNativeDeviceCreateBufferFlat = buffer_ops.doeNativeDeviceCreateBufferFlat;
 pub const doeNativeBufferRelease = buffer_ops.doeNativeBufferRelease;
 pub const doeNativeBufferUnmap = buffer_ops.doeNativeBufferUnmap;
 pub const doeNativeBufferGetMapState = buffer_ops.doeNativeBufferGetMapState;
@@ -83,16 +84,21 @@ pub const doeNativeDeviceGetQueue = instance_device.doeNativeDeviceGetQueue;
 
 const shader = @import("../doe_shader_native.zig");
 pub const doeNativeDeviceCreateShaderModule = shader.doeNativeDeviceCreateShaderModule;
+pub const doeNativeDeviceCreateShaderModuleWgsl = shader.doeNativeDeviceCreateShaderModuleWgsl;
 pub const doeNativeShaderModuleRelease = shader.doeNativeShaderModuleRelease;
 pub const doeNativeDeviceCreateComputePipeline = shader.doeNativeDeviceCreateComputePipeline;
+pub const doeNativeDeviceCreateComputePipelineMain = shader.doeNativeDeviceCreateComputePipelineMain;
 pub const doeNativeComputePipelineRelease = shader.doeNativeComputePipelineRelease;
 
 const bind_group = @import("../doe_bind_group_native.zig");
 pub const doeNativeDeviceCreateBindGroupLayout = bind_group.doeNativeDeviceCreateBindGroupLayout;
+pub const doeNativeDeviceCreateBufferBindGroupLayoutFlat4 = bind_group.doeNativeDeviceCreateBufferBindGroupLayoutFlat4;
 pub const doeNativeBindGroupLayoutRelease = bind_group.doeNativeBindGroupLayoutRelease;
 pub const doeNativeDeviceCreateBindGroup = bind_group.doeNativeDeviceCreateBindGroup;
+pub const doeNativeDeviceCreateBufferBindGroupFlat4 = bind_group.doeNativeDeviceCreateBufferBindGroupFlat4;
 pub const doeNativeBindGroupRelease = bind_group.doeNativeBindGroupRelease;
 pub const doeNativeDeviceCreatePipelineLayout = bind_group.doeNativeDeviceCreatePipelineLayout;
+pub const doeNativeDeviceCreatePipelineLayoutOne = bind_group.doeNativeDeviceCreatePipelineLayoutOne;
 pub const doeNativePipelineLayoutRelease = bind_group.doeNativePipelineLayoutRelease;
 
 const encoder = @import("../doe_encoder_native.zig");
@@ -113,7 +119,10 @@ pub const flush_pending_work = queue_submit.flush_pending_work;
 pub const try_schedule_deferred_copy = queue_submit.try_schedule_deferred_copy;
 pub const doeNativeQueueSubmit = queue_submit.doeNativeQueueSubmit;
 pub const doeNativeQueueFlush = queue_submit.doeNativeQueueFlush;
+pub const doeNativeQueueFlushBreakdown = queue_submit.doeNativeQueueFlushBreakdown;
 pub const doeNativeQueueWriteBuffer = queue_submit.doeNativeQueueWriteBuffer;
+pub const doeNativeQueueWriteBufferBatch = queue_submit.doeNativeQueueWriteBufferBatch;
+pub const doeNativeQueueWriteBufferBatchDataPtrs = queue_submit.doeNativeQueueWriteBufferBatchDataPtrs;
 pub const doeNativeQueueCopyTextureForBrowser = queue_submit.doeNativeQueueCopyTextureForBrowser;
 pub const doeNativeQueueAddRef = queue_submit.doeNativeQueueAddRef;
 pub const doeNativeQueueRelease = queue_submit.doeNativeQueueRelease;

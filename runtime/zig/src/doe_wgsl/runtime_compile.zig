@@ -39,6 +39,8 @@ fn elapsedNs(start: i128, end: i128) u64 {
 pub fn compute_runtime_robustness_config() mod.ir_transform_robustness.Config {
     return .{
         .elide_proven_bounds = lean_proof.bounds_elimination_available,
+        .elide_dispatch_validated_bounds = true,
+        .elide_uniform_validated_bounds = true,
         // Runtime translation carries dispatch preconditions into pipeline
         // metadata, so it can safely consume proof-backed texture clamp elision.
         .elide_proven_texture_bounds = lean_proof.boundsProven(.gid_texture_1d_dispatch_fit) or
@@ -376,4 +378,138 @@ test "timed compute runtime translation reports compiler phases" {
     try std.testing.expect(result.phase_timings_ns.emit > 0);
     try std.testing.expect(result.phase_timings_ns.total >= result.phase_timings_ns.parse);
     try std.testing.expect(result.phase_timings_ns.total >= result.phase_timings_ns.emit);
+}
+
+test "compute runtime elides workgroup id storage clamp with dispatch precondition" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(workgroup_id) wid: vec3u) {
+        \\    data[wid.x] = 1.0;
+        \\}
+    ;
+    var out: [mod.MAX_OUTPUT]u8 = undefined;
+    var result = try translateToMslForComputeRuntimeTimed(
+        std.testing.allocator,
+        source,
+        &out,
+        null,
+        0,
+    );
+    defer result.info.deinit(std.testing.allocator);
+
+    try std.testing.expectEqual(@as(usize, 1), result.info.dispatch_preconditions.len);
+    const precondition = result.info.dispatch_preconditions[0];
+    try std.testing.expectEqual(ir.DispatchPreconditionKind.workgroup_component, precondition.kind);
+    try std.testing.expectEqual(@as(u8, 0), precondition.gid_axis);
+    const msl = out[0..result.len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "_doe_sizes") == null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "min(") == null);
+}
+
+test "compute runtime elides uniform guarded GEMV storage clamps" {
+    const source =
+        \\struct Uniforms {
+        \\    rows: u32,
+        \\    cols: u32,
+        \\    _pad0: u32,
+        \\    _pad1: u32,
+        \\}
+        \\@group(0) @binding(0) var<uniform> u: Uniforms;
+        \\@group(0) @binding(1) var<storage, read> matrix: array<f32>;
+        \\@group(0) @binding(2) var<storage, read> vector: array<f32>;
+        \\@group(0) @binding(3) var<storage, read_write> output: array<f32>;
+        \\var<workgroup> partial_sums: array<f32, 64>;
+        \\fn partial(row: u32, lane: u32) -> f32 {
+        \\    let base = row * u.cols;
+        \\    let vec_cols = u.cols & ~3u;
+        \\    var c = lane * 4u;
+        \\    var acc = 0.0;
+        \\    loop {
+        \\        if (c >= vec_cols) { break; }
+        \\        acc = acc + matrix[base + c] + matrix[base + c + 1u] + vector[c + 2u] + vector[c + 3u];
+        \\        c = c + 256u;
+        \\    }
+        \\    c = vec_cols + lane;
+        \\    loop {
+        \\        if (c >= u.cols) { break; }
+        \\        acc = acc + matrix[base + c] * vector[c];
+        \\        c = c + 64u;
+        \\    }
+        \\    return acc;
+        \\}
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(workgroup_id) wid: vec3u, @builtin(local_invocation_id) lid: vec3u) {
+        \\    let row = wid.x;
+        \\    if (row >= u.rows) { return; }
+        \\    let lane = lid.x;
+        \\    partial_sums[lane] = partial(row, lane);
+        \\    workgroupBarrier();
+        \\    if (lane == 0u) { output[row] = partial_sums[0]; }
+        \\}
+    ;
+    var out: [mod.MAX_OUTPUT]u8 = undefined;
+    var result = try translateToMslForComputeRuntimeTimed(
+        std.testing.allocator,
+        source,
+        &out,
+        null,
+        0,
+    );
+    defer result.info.deinit(std.testing.allocator);
+
+    var saw_uniform_extent = false;
+    for (result.info.dispatch_preconditions) |precondition| {
+        if (precondition.kind == .uniform_extent) saw_uniform_extent = true;
+    }
+    try std.testing.expect(saw_uniform_extent);
+    const msl = out[0..result.len];
+    try std.testing.expect(!result.info.needs_sizes_buf);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "_doe_sizes") == null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "min(") == null);
+}
+
+test "compute runtime elides uniform guarded gid storage clamps" {
+    const source =
+        \\struct Params {
+        \\    count: u32,
+        \\    _pad0: u32,
+        \\    _pad1: u32,
+        \\    _pad2: u32,
+        \\}
+        \\@group(0) @binding(0) var<uniform> params: Params;
+        \\@group(0) @binding(1) var<storage, read> input_values: array<f32>;
+        \\@group(0) @binding(2) var<storage, read_write> output_values: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    let index = gid.x;
+        \\    if (index >= params.count) { return; }
+        \\    output_values[index] = (input_values[index] * 1.5) + 0.25;
+        \\}
+    ;
+    var out: [mod.MAX_OUTPUT]u8 = undefined;
+    var result = try translateToMslForComputeRuntimeTimed(
+        std.testing.allocator,
+        source,
+        &out,
+        null,
+        0,
+    );
+    defer result.info.deinit(std.testing.allocator);
+
+    var uniform_extent_count: usize = 0;
+    for (result.info.dispatch_preconditions) |precondition| {
+        if (precondition.kind != .uniform_extent) continue;
+        uniform_extent_count += 1;
+        try std.testing.expectEqual(@as(u32, 0), precondition.uniform_binding.group);
+        try std.testing.expectEqual(@as(u32, 0), precondition.uniform_binding.binding);
+        try std.testing.expectEqual(@as(u32, 0), precondition.uniform_u32_offsets[0]);
+        try std.testing.expectEqual(@as(u8, 1), precondition.uniform_u32_count);
+    }
+    try std.testing.expectEqual(@as(usize, 2), uniform_extent_count);
+
+    const msl = out[0..result.len];
+    try std.testing.expect(!result.info.needs_sizes_buf);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "_doe_sizes") == null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "min(") == null);
 }

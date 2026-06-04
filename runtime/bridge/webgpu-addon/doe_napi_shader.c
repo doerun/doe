@@ -1,5 +1,7 @@
 #include "doe_napi_internal.h"
 
+#define DOE_STACK_WGSL_SOURCE_BYTES 16384
+
 /* ================================================================
  * Shader Module
  * ================================================================ */
@@ -18,7 +20,9 @@ napi_value doe_create_shader_module(napi_env env, napi_callback_info info) {
     /* argv[1] is the WGSL source code string */
     size_t code_len = 0;
     napi_get_value_string_utf8(env, argv[1], NULL, 0, &code_len);
-    char* code = (char*)malloc(code_len + 1);
+    char code_stack[DOE_STACK_WGSL_SOURCE_BYTES + 1];
+    bool code_on_heap = code_len > DOE_STACK_WGSL_SOURCE_BYTES;
+    char* code = code_on_heap ? (char*)malloc(code_len + 1) : code_stack;
     if (!code) NAPI_THROW(env, "createShaderModule: out of memory");
     napi_get_value_string_utf8(env, argv[1], code, code_len + 1, &code_len);
 
@@ -42,7 +46,7 @@ napi_value doe_create_shader_module(napi_env env, napi_callback_info info) {
                 hints = (WGPUShaderModuleCompilationHint*)calloc(hint_count, sizeof(WGPUShaderModuleCompilationHint));
                 hint_entry_points = (char**)calloc(hint_count, sizeof(char*));
                 if (!hints || !hint_entry_points) {
-                    free(code);
+                    if (code_on_heap) free(code);
                     free(hints);
                     free(hint_entry_points);
                     NAPI_THROW(env, "createShaderModule: out of memory while parsing compilationHints");
@@ -61,7 +65,7 @@ napi_value doe_create_shader_module(napi_env env, napi_callback_info info) {
                             napi_get_value_string_utf8(env, ep_val, NULL, 0, &ep_len);
                             hint_entry_points[i] = (char*)malloc(ep_len + 1);
                             if (!hint_entry_points[i]) {
-                                free(code);
+                                if (code_on_heap) free(code);
                                 for (uint32_t j = 0; j < i; j++) free(hint_entry_points[j]);
                                 free(hint_entry_points);
                                 free(hints);
@@ -101,7 +105,7 @@ napi_value doe_create_shader_module(napi_env env, napi_callback_info info) {
         if (napi_typeof(env, argv[3], &label_type) == napi_ok && label_type == napi_string) {
             label_str = dup_string_value(env, argv[3], &label_len);
             if (!label_str) {
-                free(code);
+                if (code_on_heap) free(code);
                 for (size_t i = 0; i < hint_count; i++) free(hint_entry_points[i]);
                 free(hint_entry_points);
                 free(hints);
@@ -118,7 +122,7 @@ napi_value doe_create_shader_module(napi_env env, napi_callback_info info) {
 
     WGPUShaderModule mod = pfn_wgpuDeviceCreateShaderModule(device, &desc);
     free(label_str);
-    free(code);
+    if (code_on_heap) free(code);
     for (size_t i = 0; i < hint_count; i++) {
         free(hint_entry_points[i]);
     }

@@ -1,0 +1,60 @@
+[
+  {
+    "kind": "buffer_load",
+    "handle": 9101,
+    "offset": 0,
+    "bufferSize": 1048576,
+    "byteLength": 1048576,
+    "cacheNamespace": "package_developer",
+    "cacheKey": "22de77673ade23dc91b12a3452752dfde8ff0fa2fd093ad01063e4f69c9e93d9",
+    "assetKey": "vector:handle-9101",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 211,
+    "scale": 0.125
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 9102,
+    "bufferSize": 16,
+    "data": [262144, 0, 0, 0]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "package_vector_scale_add.wgsl",
+    "x": 4096,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 9102,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 9101,
+        "buffer_size": 1048576,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 9103,
+        "buffer_size": 1048576,
+        "visibility": "compute"
+      }
+    ],
+    "captureBufferHandle": 9103,
+    "captureOffset": 0,
+    "captureSize": 16
+  }
+]

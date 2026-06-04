@@ -115,8 +115,8 @@ but the product framing should stay on `doe-gpu`.
 | Host / platform | Legacy helper binding | Reference surface | Kind | Current state | Value / note |
 |------|------|------|------|------|------|
 | Node / Bun / Deno | `@simulatte/webgpu-doe` bound onto Doe runtime objects | same underlying Doe runtime | helper compatibility surface | `supported` | Historical helper shape retained for compatibility/migration context only. |
-| Node | `@simulatte/webgpu-doe` bound onto `webgpu` raw devices | Dawn-backed Node runtime | attribution / compatibility cell | `diagnostic` | Still relevant for old attribution experiments, but not a primary product surface. |
-| Bun | `@simulatte/webgpu-doe` bound onto `bun-webgpu` raw devices | Dawn-backed Bun runtime | compatibility cell | `possible` | Technically within the old helper contract, but not a promoted current package story. |
+| Node | `@simulatte/webgpu-doe` bound onto `webgpu` raw devices | Dawn-backed WebGPU runtime on Node | attribution / compatibility cell | `diagnostic` | Still relevant for old attribution experiments, but not a primary product surface. |
+| Bun | `@simulatte/webgpu-doe` bound onto `bun-webgpu` raw devices | Dawn-backed WebGPU runtime on Bun | compatibility cell | `possible` | Technically within the old helper contract, but not a promoted current package story. |
 | Deno | `@simulatte/webgpu-doe` bound onto built-in Deno WebGPU devices | wgpu-backed Deno runtime | compatibility cell | `possible` | Allowed by the old transport-free helper model; not the preferred framing anymore. |
 | Browser | `@simulatte/webgpu-doe` bound onto browser-provided `GPUDevice` objects | stock browser WebGPU surfaces | helper compatibility surface | `supported` | Useful for legacy browser-helper framing, but still not a Doe runtime replacement claim. |
 | Any host | `@simulatte/webgpu-doe` treated as a standalone WebGPU runtime | runtime incumbents | product cell | `not meaningful` | The helper package does not ship Doe's direct backend implementation path and should not be described as a runtime replacement. |

@@ -76,25 +76,67 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertEqual(resolve_executor_boundary("node_webgpu_package_prepared"), "plan")
         self.assertEqual(resolve_executor_boundary("doe_node_webgpu_prepared"), "plan")
 
+    def test_resolves_resident_buffer_load_node_webgpu_executors(self) -> None:
+        executor_ids = (
+            "node_webgpu_package_prepared_resident_buffer_loads",
+            "doe_node_webgpu_prepared_resident_buffer_loads",
+            "doe_node_native_direct_prepared_resident_buffer_loads",
+        )
+        for executor_id in executor_ids:
+            with self.subTest(executor_id=executor_id):
+                template = resolve_executor_command_template(executor_id)
+                self.assertIn("run-node-webgpu-plan.js", template)
+                self.assertIn("--prepared-session", template)
+                self.assertIn("--resident-buffer-loads", template)
+                self.assertIn("--command-repeat {command_repeat}", template)
+                self.assertEqual(resolve_executor_boundary(executor_id), "plan")
+
     def test_resolves_bun_webgpu_executors(self) -> None:
         bun_template = resolve_executor_command_template("bun_webgpu_package")
         doe_template = resolve_executor_command_template("doe_bun_package")
+        doe_ffi_template = resolve_executor_command_template("doe_bun_package_ffi")
         self.assertIn("run-bun-webgpu-plan.js", bun_template)
         self.assertIn("run-bun-webgpu-plan.js", doe_template)
+        self.assertIn("run-bun-webgpu-plan.js", doe_ffi_template)
         self.assertIn("--provider bun-webgpu", bun_template)
         self.assertIn("--provider doe", doe_template)
+        self.assertIn("--provider doe-ffi", doe_ffi_template)
         self.assertEqual(resolve_executor_boundary("bun_webgpu_package"), "plan")
         self.assertEqual(resolve_executor_boundary("doe_bun_package"), "plan")
+        self.assertEqual(resolve_executor_boundary("doe_bun_package_ffi"), "plan")
 
     def test_resolves_prepared_bun_webgpu_executors(self) -> None:
         bun_template = resolve_executor_command_template("bun_webgpu_package_prepared")
         doe_template = resolve_executor_command_template("doe_bun_package_prepared")
+        doe_ffi_template = resolve_executor_command_template("doe_bun_package_ffi_prepared")
         self.assertIn("--provider bun-webgpu", bun_template)
         self.assertIn("--provider doe", doe_template)
+        self.assertIn("--provider doe-ffi", doe_ffi_template)
         self.assertIn("--prepared-session", bun_template)
         self.assertIn("--prepared-session", doe_template)
+        self.assertIn("--prepared-session", doe_ffi_template)
         self.assertEqual(resolve_executor_boundary("bun_webgpu_package_prepared"), "plan")
         self.assertEqual(resolve_executor_boundary("doe_bun_package_prepared"), "plan")
+        self.assertEqual(resolve_executor_boundary("doe_bun_package_ffi_prepared"), "plan")
+
+    def test_resolves_resident_buffer_load_bun_webgpu_executors(self) -> None:
+        executor_ids = (
+            "bun_webgpu_package_prepared_resident_buffer_loads",
+            "doe_bun_package_prepared_resident_buffer_loads",
+            "doe_bun_package_ffi_prepared_resident_buffer_loads",
+        )
+        for executor_id in executor_ids:
+            with self.subTest(executor_id=executor_id):
+                template = resolve_executor_command_template(executor_id)
+                self.assertIn("run-bun-webgpu-plan.js", template)
+                self.assertIn("--prepared-session", template)
+                self.assertIn("--resident-buffer-loads", template)
+                self.assertIn("--command-repeat {command_repeat}", template)
+                self.assertEqual(resolve_executor_boundary(executor_id), "plan")
+        self.assertIn(
+            "--provider doe-ffi",
+            resolve_executor_command_template("doe_bun_package_ffi_prepared_resident_buffer_loads"),
+        )
 
     def test_resolves_direct_dawn_executor(self) -> None:
         template = resolve_executor_command_template("dawn_direct_metal")

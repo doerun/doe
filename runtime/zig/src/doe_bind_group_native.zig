@@ -36,6 +36,7 @@ const RESOURCE_KIND_SAMPLER: u32 = 2;
 const RESOURCE_KIND_TEXTURE: u32 = 3;
 const RESOURCE_KIND_STORAGE_TEXTURE: u32 = 4;
 const RESOURCE_KIND_EXTERNAL_TEXTURE: u32 = 5;
+const FLAT_BUFFER_BIND_GROUP_ENTRY_LIMIT: u32 = 4;
 
 fn chained_struct(raw: ?*anyopaque) ?*const abi_callback.WGPUChainedStruct {
     const ptr = raw orelse return null;
@@ -251,11 +252,35 @@ pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?
     return result;
 }
 
+pub export fn doeNativeDeviceCreateBufferBindGroupLayoutFlat4(dev_raw: ?*anyopaque, entry_count: u32, b0: u32, b1: u32, b2: u32, b3: u32) callconv(.c) ?*anyopaque {
+    _ = dev_raw;
+    if (entry_count > FLAT_BUFFER_BIND_GROUP_ENTRY_LIMIT) return null;
+    const bgl = make(DoeBindGroupLayout) orelse return null;
+    bgl.* = .{
+        .entry_count = entry_count,
+        .entries_inline = true,
+    };
+    if (entry_count > 0) {
+        const count: usize = @intCast(entry_count);
+        const bindings = [_]u32{ b0, b1, b2, b3 };
+        for (0..count) |i| {
+            bgl.inline_entries[i] = .{
+                .binding = bindings[i],
+                .resource_kind = RESOURCE_KIND_BUFFER,
+            };
+        }
+        bgl.entries = bgl.inline_entries[0..count];
+    }
+    return toOpaque(bgl);
+}
+
 pub export fn doeNativeBindGroupLayoutRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBindGroupLayout, raw)) |l| {
         if (!native_helpers.object_should_destroy(l)) return;
         label_store.remove(raw);
-        if (l.entries) |entries| alloc.free(entries);
+        if (!l.entries_inline) {
+            if (l.entries) |entries| alloc.free(entries);
+        }
         alloc.destroy(l);
     }
 }
@@ -278,6 +303,10 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                         alloc.destroy(bg);
                         return null;
                     };
+                    if (view.tex.error_object) {
+                        alloc.destroy(bg);
+                        return null;
+                    }
                     if (!texture_view_matches_layout(layout_entry, view)) {
                         alloc.destroy(bg);
                         return null;
@@ -287,6 +316,10 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                         alloc.destroy(bg);
                         return null;
                     };
+                    if (view.tex.error_object) {
+                        alloc.destroy(bg);
+                        return null;
+                    }
                     if (!storage_texture_matches_layout(layout_entry, view)) {
                         alloc.destroy(bg);
                         return null;
@@ -309,6 +342,10 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
         }
         if (e.binding < MAX_BIND) {
             if (cast(DoeBuffer, e.buffer)) |doe_buf| {
+                if (doe_buf.error_object) {
+                    alloc.destroy(bg);
+                    return null;
+                }
                 if (is_vulkan) {
                     // Store the DoeBuffer handle — dispatch reads vk_id from it.
                     bg.buffers[e.binding] = toOpaque(doe_buf);
@@ -319,6 +356,10 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                 bg.buffer_sizes[e.binding] = doe_buf.size;
                 retain_buffer(bg, e.binding, doe_buf);
             } else if (cast(DoeTextureView, e.textureView)) |view| {
+                if (view.tex.error_object) {
+                    alloc.destroy(bg);
+                    return null;
+                }
                 bg.textures[e.binding] = if (view.handle) |handle| handle else view.tex.mtl;
                 bg.texture_views[e.binding] = toOpaque(view);
                 retain_texture_view(bg, e.binding, view);
@@ -349,6 +390,52 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
     const bg_result = toOpaque(bg);
     label_store.set(bg_result, d.label.data, d.label.length);
     return bg_result;
+}
+
+pub export fn doeNativeDeviceCreateBufferBindGroupFlat4(
+    dev_raw: ?*anyopaque,
+    layout_raw: ?*anyopaque,
+    entry_count: u32,
+    b0: u32,
+    buffer0_raw: ?*anyopaque,
+    offset0: u64,
+    b1: u32,
+    buffer1_raw: ?*anyopaque,
+    offset1: u64,
+    b2: u32,
+    buffer2_raw: ?*anyopaque,
+    offset2: u64,
+    b3: u32,
+    buffer3_raw: ?*anyopaque,
+    offset3: u64,
+) callconv(.c) ?*anyopaque {
+    if (entry_count > FLAT_BUFFER_BIND_GROUP_ENTRY_LIMIT) return null;
+    const bg = make(DoeBindGroup) orelse return null;
+    bg.* = .{};
+    _ = layout_raw;
+    const is_vulkan = if (cast(DoeDevice, dev_raw)) |dev| dev.backend == .vulkan else false;
+    const bindings = [_]u32{ b0, b1, b2, b3 };
+    const buffers = [_]?*anyopaque{ buffer0_raw, buffer1_raw, buffer2_raw, buffer3_raw };
+    const offsets = [_]u64{ offset0, offset1, offset2, offset3 };
+    const count: usize = @intCast(entry_count);
+    for (0..count) |i| {
+        const binding = bindings[i];
+        if (binding >= MAX_BIND) continue;
+        const doe_buf = cast(DoeBuffer, buffers[i]) orelse {
+            doeNativeBindGroupRelease(toOpaque(bg));
+            return null;
+        };
+        if (doe_buf.error_object) {
+            doeNativeBindGroupRelease(toOpaque(bg));
+            return null;
+        }
+        bg.buffers[binding] = if (is_vulkan) toOpaque(doe_buf) else doe_buf.mtl;
+        bg.offsets[binding] = offsets[i];
+        bg.buffer_sizes[binding] = doe_buf.size;
+        retain_buffer(bg, binding, doe_buf);
+        if (binding + 1 > bg.count) bg.count = binding + 1;
+    }
+    return toOpaque(bg);
 }
 
 pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
@@ -394,6 +481,19 @@ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*
         label_store.set(pl_result, pd.label.data, pd.label.length);
     }
     return pl_result;
+}
+
+pub export fn doeNativeDeviceCreatePipelineLayoutOne(dev_raw: ?*anyopaque, layout_raw: ?*anyopaque, immediate_size: u32) callconv(.c) ?*anyopaque {
+    _ = dev_raw;
+    const layout = cast(DoeBindGroupLayout, layout_raw) orelse return null;
+    const pl = make(DoePipelineLayout) orelse return null;
+    pl.* = .{
+        .immediate_size = immediate_size,
+        .bind_group_layout_count = 1,
+    };
+    native_helpers.object_add_ref(DoeBindGroupLayout, toOpaque(layout));
+    pl.bind_group_layouts[0] = layout;
+    return toOpaque(pl);
 }
 
 pub export fn doeNativePipelineLayoutRelease(raw: ?*anyopaque) callconv(.c) void {

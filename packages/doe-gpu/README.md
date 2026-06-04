@@ -4,12 +4,16 @@
   <img src="https://raw.githubusercontent.com/doe-gpu/doe/main/assets/doe-logo.svg" alt="Doe logo" width="96" />
 </p>
 
-`doe-gpu` is the npm package for Doe, a Zig-first WebGPU runtime for Node.js,
-Bun, and Deno.
+`doe-gpu` is the native, receipt-backed WebGPU runtime for Node.js and Bun.
+Deno support is exposed through the package entrypoints.
 
 It gives JavaScript a small layer over the native Doe runtime, with focused
 subpaths for compute, browser compatibility, capture, plans, and native
 provider access.
+
+For Node.js benchmark and advanced provider-control work, the package also
+exports `createNativeDirect()`. It exposes Doe's native WebGPU surface with the
+same receipt-backed package identity while avoiding the default wrapper path.
 
 ## Install
 
@@ -28,9 +32,10 @@ npm install doe-gpu
 
 ## Current evidence
 
-End-to-end Gemma 3 inference evidence compares Doe with Dawn-backed Node
-`webgpu` and Bun `bun-webgpu` package lanes. Positive percentages mean Doe
-finished faster in that lane.
+End-to-end Gemma 3 inference evidence compares Doe-backed WebGPU with
+Dawn-backed WebGPU on the same host lane: Node.js through `webgpu`, and Bun
+through `bun-webgpu`. Positive percentages mean the Doe-backed lane finished
+faster.
 
 ![doe-gpu benchmark claims](https://raw.githubusercontent.com/doe-gpu/doe/main/assets/readme/package-claims.svg)
 
@@ -48,6 +53,17 @@ for the current scope and artifacts.
 
 ## Usage
 
+Install and run a first real kernel:
+
+```bash
+npm install doe-gpu
+node node_modules/doe-gpu/examples/node-first-kernel.mjs
+bun node_modules/doe-gpu/examples/bun-first-kernel.mjs
+```
+
+Each example prints runtime identity and emits an example-level JSON receipt.
+These smoke examples are not performance claims.
+
 ```js
 import { gpu } from "doe-gpu";
 
@@ -61,6 +77,16 @@ const result = await device.compute({
   output: { type: Float32Array, size: 16 },
   workgroups: 1,
 });
+```
+
+Explicit native-direct Node surface:
+
+```js
+import { createNativeDirect } from "doe-gpu";
+
+const gpu = createNativeDirect();
+const adapter = await gpu.requestAdapter();
+const device = await adapter.requestDevice();
 ```
 
 ## Subpaths

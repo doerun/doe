@@ -105,6 +105,9 @@ class RunBlockingGatesWiringTests(unittest.TestCase):
                     "--with-chromium-patch-manifest-gate",
                     "--with-chromium-source-checkout-gate",
                     "--chromium-source-require-runtime-selector",
+                    "--with-doe-chromium-proc-surface-gate",
+                    "--doe-chromium-proc-surface-library",
+                    "runtime/zig/zig-out/lib/libwebgpu_doe_full.dylib",
                     "--with-webgpu-integration-chromium-gate",
                     "--with-browser-runtime-selector-policy-gate",
                     "--with-browser-runtime-identity-gate",
@@ -168,6 +171,7 @@ class RunBlockingGatesWiringTests(unittest.TestCase):
         self.assertIn("chromium-fork-maintenance-policy", commands_by_label)
         self.assertIn("chromium-patch-manifest", commands_by_label)
         self.assertIn("chromium-source-checkout", commands_by_label)
+        self.assertIn("doe-chromium-proc-surface", commands_by_label)
         self.assertIn("webgpu-integration-chromium", commands_by_label)
         self.assertIn("browser-runtime-selector-policy", commands_by_label)
         self.assertIn("browser-runtime-identity", commands_by_label)
@@ -256,6 +260,10 @@ class RunBlockingGatesWiringTests(unittest.TestCase):
             commands_by_label["webgpu-integration-chromium"],
         )
         self.assertIn(
+            "--verify-artifact-root",
+            commands_by_label["webgpu-integration-chromium"],
+        )
+        self.assertIn(
             "browser/chromium/scripts/check-browser-runtime-identity.py",
             commands_by_label["browser-runtime-identity"][1],
         )
@@ -294,6 +302,18 @@ class RunBlockingGatesWiringTests(unittest.TestCase):
         self.assertIn(
             "--require-runtime-selector",
             commands_by_label["chromium-source-checkout"],
+        )
+        self.assertIn(
+            "bench/tools/check_doe_chromium_proc_surface.py",
+            commands_by_label["doe-chromium-proc-surface"][1],
+        )
+        self.assertIn(
+            "--require-ready",
+            commands_by_label["doe-chromium-proc-surface"],
+        )
+        self.assertIn(
+            "--library",
+            commands_by_label["doe-chromium-proc-surface"],
         )
         self.assertIn(
             "--coverage",

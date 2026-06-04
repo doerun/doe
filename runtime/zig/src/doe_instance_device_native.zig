@@ -14,6 +14,7 @@ const backend_capabilities = @import("backend/dropin_capabilities.zig");
 const backend_lifecycle = @import("backend/dropin_lifecycle.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
+const package_metal_pipeline_cache = @import("doe_package_metal_pipeline_cache.zig");
 
 const alloc = native_helpers.alloc;
 const make = native_helpers.make;
@@ -495,6 +496,7 @@ pub export fn doeNativeDeviceRelease(raw: ?*anyopaque) callconv(.c) void {
                     alloc.destroy(rt);
                 }
             } else {
+                package_metal_pipeline_cache.deinitForDevice(d);
                 if (d.mtl_queue) |q| metal_bridge_release(q);
                 if (d.mtl_device) |dev| metal_bridge_release(dev);
             }
@@ -505,6 +507,7 @@ pub export fn doeNativeDeviceRelease(raw: ?*anyopaque) callconv(.c) void {
                 alloc.destroy(rt);
             }
         } else {
+            package_metal_pipeline_cache.deinitForDevice(d);
             if (d.mtl_queue) |q| metal_bridge_release(q);
             if (d.mtl_device) |dev| metal_bridge_release(dev);
         }

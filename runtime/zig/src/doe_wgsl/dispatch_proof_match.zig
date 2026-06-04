@@ -169,6 +169,39 @@ pub fn try_elide_storage_index(
     return null;
 }
 
+pub fn try_elide_dispatch_validated_storage_index(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    index_data: @FieldType(ir.Expr, "index"),
+) ?ir.DispatchPrecondition {
+    const binding = resolve_storage_binding(module, function, index_data.base) orelse return null;
+    const element_stride_bytes = resolve_runtime_array_element_stride(module, function, index_data.base) orelse return null;
+
+    if (classify_builtin_component(function, index_data.index, .workgroup_id)) |axis| {
+        return .{
+            .kind = .workgroup_component,
+            .gid_axis = axis,
+            .storage_binding = binding,
+            .element_multiplier = 1,
+            .element_stride_bytes = element_stride_bytes,
+            .element_offset = 0,
+        };
+    }
+
+    if (match_gid_component_times_stride_plus_offset(function, index_data.index, .workgroup_id)) |match| {
+        return .{
+            .kind = .workgroup_component,
+            .gid_axis = match.axis,
+            .storage_binding = binding,
+            .element_multiplier = match.multiplier,
+            .element_stride_bytes = element_stride_bytes,
+            .element_offset = match.offset,
+        };
+    }
+
+    return null;
+}
+
 fn resolve_indexable_type(types: *const ir.TypeStore, ty: ir.TypeId) ir.TypeId {
     var current = ty;
     while (true) {

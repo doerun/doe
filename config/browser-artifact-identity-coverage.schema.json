@@ -40,7 +40,8 @@
             "release_bundle_identity",
             "claim_policy_identity",
             "promotion_receipt_identity",
-            "replay_source_identity"
+            "replay_source_identity",
+            "layered_score_identity"
           ]
         },
         "requiredPointers": {

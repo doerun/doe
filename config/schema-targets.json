@@ -74,6 +74,10 @@
       "data": "config/webgpu-integration-chromium.json"
     },
     {
+      "schema": "config/doe-chromium-proc-surface.schema.json",
+      "data": "config/doe-chromium-proc-surface.json"
+    },
+    {
       "schema": "config/webgpu-spec-index.schema.json",
       "data": "config/webgpu-spec-index.jsonl"
     },
@@ -618,6 +622,10 @@
       "data": "examples/browser-smoke-report.sample.json"
     },
     {
+      "schema": "config/browser-layered-score.schema.json",
+      "data": "examples/browser-layered-score.sample.json"
+    },
+    {
       "schema": "config/browser-claim-report.schema.json",
       "data": "examples/browser-claim-report.sample.json"
     },
@@ -896,6 +904,14 @@
     {
       "schema": "config/trace-meta.schema.json",
       "data": "examples/doe-numeric-stability-trace-meta.sample.json"
+    },
+    {
+      "schema": "config/package-dispatch-prefix-profile.schema.json",
+      "data": "examples/package-dispatch-prefix-profile.sample.json"
+    },
+    {
+      "schema": "config/package-order-sensitivity.schema.json",
+      "data": "examples/package-order-sensitivity.sample.json"
     },
     {
       "schema": "config/workload-registry.schema.json",

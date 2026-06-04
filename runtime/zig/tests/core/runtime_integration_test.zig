@@ -477,6 +477,11 @@ test "compute fast: doeNativeComputeDispatchFlush export exists" {
     try testing.expect(@hasDecl(compute_fast, "doeNativeComputeDispatchFlush"));
 }
 
+test "compute fast: command buffer builder exports exist" {
+    try testing.expect(@hasDecl(compute_fast, "doeNativeCreateComputeDispatchCopyCommandBuffer"));
+    try testing.expect(@hasDecl(compute_fast, "doeNativeCreateComputeDispatchBatchCopyCommandBuffer"));
+}
+
 test "compute fast: compute pass exports exist" {
     try testing.expect(@hasDecl(native, "doeNativeComputePassSetPipeline"));
     try testing.expect(@hasDecl(native, "doeNativeComputePassSetBindGroup"));

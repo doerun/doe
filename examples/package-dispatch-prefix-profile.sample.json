@@ -1,0 +1,1262 @@
+{
+  "schemaVersion": 1,
+  "kind": "package_dispatch_prefix_profile",
+  "profileMode": "dispatch-prefix-terminal-wait",
+  "deltaMethod": "adjacent-prefix-subtraction-diagnostic",
+  "runtimeHost": "node",
+  "provider": "doe",
+  "workloadId": "package_queue_submit_completion",
+  "planPath": "bench/plans/package-developer/package_queue_submit_completion.plan.json",
+  "planId": "package_queue_submit_completion",
+  "planHash": "25907741f09d927482efe2f44eb37f00a5b5654d10cfa50e55aa83a0d7c5ba4e",
+  "commandRepeat": 1,
+  "fullPlanCommandRepeat": 1,
+  "sampleCount": 1,
+  "preparedSession": false,
+  "residentBufferLoads": false,
+  "executorDryRun": true,
+  "includeFullPlan": true,
+  "traceDir": "bench/out/scratch/package-dispatch-prefix-profile",
+  "dispatchCount": 1,
+  "adjacentDeltaRankingLimit": 8,
+  "adjacentDeltaRankings": {
+    "executionTotalNs": [
+      {
+        "dispatchOrdinal": 1,
+        "stepIndex": 0,
+        "stepId": "step-0",
+        "moduleId": "queue_signal",
+        "entryPoint": "main",
+        "metric": "executionTotalNs",
+        "previousDispatchOrdinal": null,
+        "previousStepId": null,
+        "currentMedianNs": 0,
+        "previousMedianNs": 0,
+        "deltaNs": 0,
+        "positiveMeansCurrentPrefixAddedCost": true
+      }
+    ],
+    "executionSubmitWaitTotalNs": [
+      {
+        "dispatchOrdinal": 1,
+        "stepIndex": 0,
+        "stepId": "step-0",
+        "moduleId": "queue_signal",
+        "entryPoint": "main",
+        "metric": "executionSubmitWaitTotalNs",
+        "previousDispatchOrdinal": null,
+        "previousStepId": null,
+        "currentMedianNs": 0,
+        "previousMedianNs": 0,
+        "deltaNs": 0,
+        "positiveMeansCurrentPrefixAddedCost": true
+      }
+    ],
+    "submitQueueWaitTotalNs": [
+      {
+        "dispatchOrdinal": 1,
+        "stepIndex": 0,
+        "stepId": "step-0",
+        "moduleId": "queue_signal",
+        "entryPoint": "main",
+        "metric": "submitQueueWaitTotalNs",
+        "previousDispatchOrdinal": null,
+        "previousStepId": null,
+        "currentMedianNs": 0,
+        "previousMedianNs": 0,
+        "deltaNs": 0,
+        "positiveMeansCurrentPrefixAddedCost": true
+      }
+    ],
+    "readbackTotalNs": [
+      {
+        "dispatchOrdinal": 1,
+        "stepIndex": 0,
+        "stepId": "step-0",
+        "moduleId": "queue_signal",
+        "entryPoint": "main",
+        "metric": "readbackTotalNs",
+        "previousDispatchOrdinal": null,
+        "previousStepId": null,
+        "currentMedianNs": 0,
+        "previousMedianNs": 0,
+        "deltaNs": 0,
+        "positiveMeansCurrentPrefixAddedCost": true
+      }
+    ],
+    "hostCommandOrchestrationTotalNs": [
+      {
+        "dispatchOrdinal": 1,
+        "stepIndex": 0,
+        "stepId": "step-0",
+        "moduleId": "queue_signal",
+        "entryPoint": "main",
+        "metric": "hostCommandOrchestrationTotalNs",
+        "previousDispatchOrdinal": null,
+        "previousStepId": null,
+        "currentMedianNs": 0,
+        "previousMedianNs": 0,
+        "deltaNs": 0,
+        "positiveMeansCurrentPrefixAddedCost": true
+      }
+    ]
+  },
+  "stabilityDiagnostics": {
+    "basis": "summary-p95-and-max-to-median-permille",
+    "minSampleCount": 3,
+    "p95ToMedianPermilleThreshold": 1500,
+    "maxToMedianPermilleThreshold": 1500,
+    "overallStatus": "insufficient-samples",
+    "metricCount": 8,
+    "unstableMetricCount": 0,
+    "insufficientSampleMetricCount": 8,
+    "records": [
+      {
+        "scope": "fullPlan",
+        "metric": "executionTotalNs",
+        "sampleCount": 1,
+        "medianNs": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0,
+        "status": "insufficient-samples"
+      },
+      {
+        "scope": "fullPlan",
+        "metric": "executionSubmitWaitTotalNs",
+        "sampleCount": 1,
+        "medianNs": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0,
+        "status": "insufficient-samples"
+      },
+      {
+        "scope": "fullPlan",
+        "metric": "readbackTotalNs",
+        "sampleCount": 1,
+        "medianNs": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0,
+        "status": "insufficient-samples"
+      },
+      {
+        "scope": "fullPlan",
+        "metric": "hostCommandOrchestrationTotalNs",
+        "sampleCount": 1,
+        "medianNs": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0,
+        "status": "insufficient-samples"
+      },
+      {
+        "scope": "dispatchPrefix",
+        "metric": "executionTotalNs",
+        "dispatchOrdinal": 1,
+        "stepId": "step-0",
+        "sampleCount": 1,
+        "medianNs": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0,
+        "status": "insufficient-samples"
+      },
+      {
+        "scope": "dispatchPrefix",
+        "metric": "executionSubmitWaitTotalNs",
+        "dispatchOrdinal": 1,
+        "stepId": "step-0",
+        "sampleCount": 1,
+        "medianNs": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0,
+        "status": "insufficient-samples"
+      },
+      {
+        "scope": "dispatchPrefix",
+        "metric": "readbackTotalNs",
+        "dispatchOrdinal": 1,
+        "stepId": "step-0",
+        "sampleCount": 1,
+        "medianNs": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0,
+        "status": "insufficient-samples"
+      },
+      {
+        "scope": "dispatchPrefix",
+        "metric": "hostCommandOrchestrationTotalNs",
+        "dispatchOrdinal": 1,
+        "stepId": "step-0",
+        "sampleCount": 1,
+        "medianNs": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0,
+        "status": "insufficient-samples"
+      }
+    ]
+  },
+  "dispatches": [
+    {
+      "dispatchOrdinal": 1,
+      "stepIndex": 0,
+      "stepId": "step-0",
+      "moduleId": "queue_signal",
+      "entryPoint": "main",
+      "workgroups": [
+        1,
+        1,
+        1
+      ],
+      "stepLimit": 1,
+      "sampleCount": 1,
+      "executionTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "executionSubmitWaitTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitQueueWaitTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "hostCommandOrchestrationTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "phaseBreakdownNs": {
+        "writeMaterializeTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "writeQueueWriteTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "dispatchEncodeApiTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "copyEncodeApiTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitCommandEncoderFinishTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitQueueSubmitTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitQueueWaitTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitCommandPrepTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitAddonCallTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitAddonCommandReplayTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitAddonQueueSubmitTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitAddonFlushTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitPostSubmitBookkeepingTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitQueueFlushTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitQueueFlushWaitCompletedTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitQueueFlushDeferredCopyTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitQueueFlushDeferredResolveTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitQueueWaitBookkeepingTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackMapReadCopyUnmapTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackMapReadCopyUnmapQueueWaitCompletedTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackMapReadCopyUnmapDeferredCopyTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackMapReadCopyUnmapDeferredResolveTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackMapReadCopyUnmapMapTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackMapReadCopyUnmapCopyTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackMapReadCopyUnmapUnmapTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackMapAsyncTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackGetMappedRangeTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackHostCopyTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackNativeReadCopyTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackUnmapTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackValidationTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "readbackCaptureTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        }
+      },
+      "deltaFromPreviousMedianExecutionTotalNs": 0,
+      "deltaFromPreviousMedianSubmitWaitNs": 0,
+      "samples": [
+        {
+          "sampleIndex": 0,
+          "traceMetaPath": "bench/out/scratch/package-dispatch-prefix-profile/dispatch-001.sample-000.meta.json",
+          "traceJsonlPath": "bench/out/scratch/package-dispatch-prefix-profile/dispatch-001.sample-000.jsonl",
+          "executionTotalNs": 0,
+          "executionSetupTotalNs": 0,
+          "executionEncodeTotalNs": 0,
+          "executionSubmitWaitTotalNs": 0,
+          "hostCommandOrchestrationTotalNs": 0,
+          "executionDispatchCount": 1,
+          "submitQueueWaitTotalNs": 0,
+          "readbackTotalNs": 0,
+          "readbackQueueWaitNs": 0,
+          "phaseBreakdownNs": {
+            "writeMaterializeTotalNs": 0,
+            "writeQueueWriteTotalNs": 0,
+            "dispatchEncodeApiTotalNs": 0,
+            "copyEncodeApiTotalNs": 0,
+            "submitCommandEncoderFinishTotalNs": 0,
+            "submitQueueSubmitTotalNs": 0,
+            "submitQueueWaitTotalNs": 0,
+            "submitCommandPrepTotalNs": 0,
+            "submitAddonCallTotalNs": 0,
+            "submitAddonCommandReplayTotalNs": 0,
+            "submitAddonQueueSubmitTotalNs": 0,
+            "submitAddonFlushTotalNs": 0,
+            "submitPostSubmitBookkeepingTotalNs": 0,
+            "submitQueueFlushTotalNs": 0,
+            "submitQueueFlushWaitCompletedTotalNs": 0,
+            "submitQueueFlushDeferredCopyTotalNs": 0,
+            "submitQueueFlushDeferredResolveTotalNs": 0,
+            "submitQueueWaitBookkeepingTotalNs": 0,
+            "readbackTotalNs": 0,
+            "readbackMapReadCopyUnmapTotalNs": 0,
+            "readbackMapReadCopyUnmapQueueWaitCompletedTotalNs": 0,
+            "readbackMapReadCopyUnmapDeferredCopyTotalNs": 0,
+            "readbackMapReadCopyUnmapDeferredResolveTotalNs": 0,
+            "readbackMapReadCopyUnmapMapTotalNs": 0,
+            "readbackMapReadCopyUnmapCopyTotalNs": 0,
+            "readbackMapReadCopyUnmapUnmapTotalNs": 0,
+            "readbackMapAsyncTotalNs": 0,
+            "readbackGetMappedRangeTotalNs": 0,
+            "readbackHostCopyTotalNs": 0,
+            "readbackNativeReadCopyTotalNs": 0,
+            "readbackUnmapTotalNs": 0,
+            "readbackValidationTotalNs": 0,
+            "readbackCaptureTotalNs": 0
+          },
+          "readbackCaptureCount": 0
+        }
+      ]
+    }
+  ],
+  "fullPlan": {
+    "sampleCount": 1,
+    "executionTotalNs": {
+      "count": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0,
+      "mean": 0,
+      "range": 0,
+      "p95ToMedianPermille": 0,
+      "maxToMedianPermille": 0
+    },
+    "executionSubmitWaitTotalNs": {
+      "count": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0,
+      "mean": 0,
+      "range": 0,
+      "p95ToMedianPermille": 0,
+      "maxToMedianPermille": 0
+    },
+    "submitQueueWaitTotalNs": {
+      "count": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0,
+      "mean": 0,
+      "range": 0,
+      "p95ToMedianPermille": 0,
+      "maxToMedianPermille": 0
+    },
+    "readbackTotalNs": {
+      "count": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0,
+      "mean": 0,
+      "range": 0,
+      "p95ToMedianPermille": 0,
+      "maxToMedianPermille": 0
+    },
+    "hostCommandOrchestrationTotalNs": {
+      "count": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0,
+      "mean": 0,
+      "range": 0,
+      "p95ToMedianPermille": 0,
+      "maxToMedianPermille": 0
+    },
+    "phaseBreakdownNs": {
+      "writeMaterializeTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "writeQueueWriteTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "dispatchEncodeApiTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "copyEncodeApiTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitCommandEncoderFinishTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitQueueSubmitTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitQueueWaitTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitCommandPrepTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitAddonCallTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitAddonCommandReplayTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitAddonQueueSubmitTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitAddonFlushTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitPostSubmitBookkeepingTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitQueueFlushTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitQueueFlushWaitCompletedTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitQueueFlushDeferredCopyTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitQueueFlushDeferredResolveTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitQueueWaitBookkeepingTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackMapReadCopyUnmapTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackMapReadCopyUnmapQueueWaitCompletedTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackMapReadCopyUnmapDeferredCopyTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackMapReadCopyUnmapDeferredResolveTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackMapReadCopyUnmapMapTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackMapReadCopyUnmapCopyTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackMapReadCopyUnmapUnmapTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackMapAsyncTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackGetMappedRangeTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackHostCopyTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackNativeReadCopyTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackUnmapTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackValidationTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "readbackCaptureTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      }
+    },
+    "samples": [
+      {
+        "sampleIndex": 0,
+        "traceMetaPath": "bench/out/scratch/package-dispatch-prefix-profile/full-plan.sample-000.meta.json",
+        "traceJsonlPath": "bench/out/scratch/package-dispatch-prefix-profile/full-plan.sample-000.jsonl",
+        "executionTotalNs": 0,
+        "executionSetupTotalNs": 0,
+        "executionEncodeTotalNs": 0,
+        "executionSubmitWaitTotalNs": 0,
+        "hostCommandOrchestrationTotalNs": 0,
+        "executionDispatchCount": 1,
+        "submitQueueWaitTotalNs": 0,
+        "readbackTotalNs": 0,
+        "readbackQueueWaitNs": 0,
+        "phaseBreakdownNs": {
+          "writeMaterializeTotalNs": 0,
+          "writeQueueWriteTotalNs": 0,
+          "dispatchEncodeApiTotalNs": 0,
+          "copyEncodeApiTotalNs": 0,
+          "submitCommandEncoderFinishTotalNs": 0,
+          "submitQueueSubmitTotalNs": 0,
+          "submitQueueWaitTotalNs": 0,
+          "submitCommandPrepTotalNs": 0,
+          "submitAddonCallTotalNs": 0,
+          "submitAddonCommandReplayTotalNs": 0,
+          "submitAddonQueueSubmitTotalNs": 0,
+          "submitAddonFlushTotalNs": 0,
+          "submitPostSubmitBookkeepingTotalNs": 0,
+          "submitQueueFlushTotalNs": 0,
+          "submitQueueFlushWaitCompletedTotalNs": 0,
+          "submitQueueFlushDeferredCopyTotalNs": 0,
+          "submitQueueFlushDeferredResolveTotalNs": 0,
+          "submitQueueWaitBookkeepingTotalNs": 0,
+          "readbackTotalNs": 0,
+          "readbackMapReadCopyUnmapTotalNs": 0,
+          "readbackMapReadCopyUnmapQueueWaitCompletedTotalNs": 0,
+          "readbackMapReadCopyUnmapDeferredCopyTotalNs": 0,
+          "readbackMapReadCopyUnmapDeferredResolveTotalNs": 0,
+          "readbackMapReadCopyUnmapMapTotalNs": 0,
+          "readbackMapReadCopyUnmapCopyTotalNs": 0,
+          "readbackMapReadCopyUnmapUnmapTotalNs": 0,
+          "readbackMapAsyncTotalNs": 0,
+          "readbackGetMappedRangeTotalNs": 0,
+          "readbackHostCopyTotalNs": 0,
+          "readbackNativeReadCopyTotalNs": 0,
+          "readbackUnmapTotalNs": 0,
+          "readbackValidationTotalNs": 0,
+          "readbackCaptureTotalNs": 0
+        },
+        "readbackCaptureCount": 0
+      }
+    ]
+  },
+  "fullPlanResidualNs": {
+    "basis": "full-plan-median-minus-last-dispatch-prefix-median",
+    "lastDispatchOrdinal": 1,
+    "lastStepId": "step-0",
+    "metrics": {
+      "executionTotalNs": {
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      "executionSubmitWaitTotalNs": {
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      "submitQueueWaitTotalNs": {
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      "readbackTotalNs": {
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      "hostCommandOrchestrationTotalNs": {
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      }
+    }
+  },
+  "fullPlanPhaseResidualRanking": {
+    "basis": "full-plan-phase-median-minus-last-dispatch-prefix-phase-median",
+    "lastDispatchOrdinal": 1,
+    "lastStepId": "step-0",
+    "phases": [
+      {
+        "phase": "copyEncodeApiTotalNs",
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      {
+        "phase": "dispatchEncodeApiTotalNs",
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      {
+        "phase": "readbackCaptureTotalNs",
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      {
+        "phase": "readbackGetMappedRangeTotalNs",
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      {
+        "phase": "readbackHostCopyTotalNs",
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      {
+        "phase": "readbackMapAsyncTotalNs",
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      {
+        "phase": "readbackMapReadCopyUnmapCopyTotalNs",
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      },
+      {
+        "phase": "readbackMapReadCopyUnmapDeferredCopyTotalNs",
+        "fullPlanMedianNs": 0,
+        "lastPrefixMedianNs": 0,
+        "residualNs": 0,
+        "positiveMeansFullPlanHasExtraCost": true
+      }
+    ]
+  },
+  "artifactHash": "bac6c4226e542f09c58a76296fbeaf38c5d6ff9c1be1dcb2ef588bf67461a519"
+}

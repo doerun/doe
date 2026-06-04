@@ -1,0 +1,220 @@
+{
+  "baselineMode": "dawn",
+  "benchmarkClass": "directional",
+  "bottlenecks": {
+    "basis": "comparisonDeltaPercent ascending; negative means comparison mode was slower",
+    "slowerCategoryCount": 0,
+    "slowerPhaseCount": 0,
+    "slowerRowCount": 0,
+    "worstCategories": [],
+    "worstPhases": [],
+    "worstRows": []
+  },
+  "browserExecutables": {
+    "baseline": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "comparison": "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"
+  },
+  "browserEnvironmentEvidence": {
+    "pageTargetKind": "local_http"
+  },
+  "categories": [
+    {
+      "baselineMode": "dawn",
+      "baselineScore": 33.333333333333336,
+      "category": "compute",
+      "comparisonMode": "doe",
+      "comparisonDeltaPercent": 100.0,
+      "comparisonScore": 66.66666666666667,
+      "fasterRowCount": 1,
+      "geomeanRatio": 2.0,
+      "parityRowCount": 0,
+      "rowCount": 1,
+      "score": 200.0,
+      "slowerRowCount": 0
+    }
+  ],
+  "categoryBalancedOverall": {
+    "baselineMode": "dawn",
+    "baselineScore": 33.333333333333336,
+    "categoryCount": 1,
+    "comparisonMode": "doe",
+    "comparisonDeltaPercent": 100.0,
+    "comparisonScore": 66.66666666666667,
+    "fasterCategoryCount": 1,
+    "geomeanRatio": 2.0,
+    "parityCategoryCount": 0,
+    "rowCount": 1,
+    "score": 200.0,
+    "slowerCategoryCount": 0
+  },
+  "claimStatus": "diagnostic",
+  "comparisonMode": "doe",
+  "comparisonStatus": "diagnostic",
+  "excludedRows": [
+    {
+      "baselineStatus": "fail",
+      "category": "render",
+      "comparisonStatus": "ok",
+      "layer": "l1",
+      "reason": "baseline and comparison must both be ok",
+      "rowId": "render_triangle"
+    }
+  ],
+  "generatedAt": "2026-05-30T00:00:00Z",
+  "methodology": {
+    "adapterRequest": {
+      "powerPreference": "high-performance"
+    }
+  },
+  "modeIdentities": {
+    "baseline": {
+      "adapterIdentity": {
+        "adapterInfoSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "featureCount": 0
+      },
+      "browserExecutablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "browserExecutableSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "browserVersion": "Chrome/126.0.0.0",
+      "dawnRuntimePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "dawnRuntimeSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "doeRuntimePath": "",
+      "doeRuntimeSha256": null,
+      "fallbackApplied": false,
+      "fallbackReasonCode": "",
+      "hiddenFallbackAllowed": false,
+      "mode": "dawn",
+      "previousTraceHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "selectedRuntime": "dawn",
+      "selectorVersion": "browser-runtime-selector-v1",
+      "shaderCompilerIdentity": {
+        "compilerArtifactSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "compilerSurface": "dawn_runtime_embedded_shader_compiler"
+      },
+      "traceHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "userAgent": "Mozilla/5.0 Chrome/126.0.0.0"
+    },
+    "comparison": {
+      "adapterIdentity": {
+        "adapterInfoSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "featureCount": 0
+      },
+      "browserExecutablePath": "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium",
+      "browserExecutableSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "browserVersion": "Chrome/126.0.0.0",
+      "dawnRuntimePath": "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium",
+      "dawnRuntimeSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "doeRuntimePath": "runtime/zig/zig-out/lib/libwebgpu_doe_full.dylib",
+      "doeRuntimeSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "fallbackApplied": false,
+      "fallbackReasonCode": "",
+      "hiddenFallbackAllowed": false,
+      "mode": "doe",
+      "previousTraceHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "selectedRuntime": "doe",
+      "selectorVersion": "browser-runtime-selector-v1",
+      "shaderCompilerIdentity": {
+        "compilerArtifactSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "compilerSurface": "doe_runtime_shader_compiler"
+      },
+      "traceHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "userAgent": "Mozilla/5.0 Chrome/126.0.0.0"
+    }
+  },
+  "overall": {
+    "baselineMode": "dawn",
+    "baselineScore": 33.333333333333336,
+    "comparisonMode": "doe",
+    "comparisonDeltaPercent": 100.0,
+    "comparisonScore": 66.66666666666667,
+    "fasterRowCount": 1,
+    "geomeanRatio": 2.0,
+    "parityRowCount": 0,
+    "rowCount": 1,
+    "score": 200.0,
+    "slowerRowCount": 0
+  },
+  "reportKind": "browser-layered-score",
+  "rows": [
+    {
+      "baselineMode": "dawn",
+      "baselineScore": 33.333333333333336,
+      "baselineValue": 10.0,
+      "category": "compute",
+      "comparisonMode": "doe",
+      "comparisonDeltaPercent": 100.0,
+      "comparisonScore": 66.66666666666667,
+      "comparisonValue": 5.0,
+      "layer": "l1",
+      "metric": "usPerOp",
+      "phaseMetrics": [],
+      "ratio": 2.0,
+      "resourcePath": null,
+      "resourceSha256": null,
+      "rowId": "compute_dispatch",
+      "scenarioTemplate": "compute_dispatch_basic",
+      "score": 200.0,
+      "unit": "microseconds"
+    }
+  ],
+  "schemaVersion": 1,
+  "scoreMethod": {
+    "categoryMapping": {
+      "domainRules": {
+        "compute": "compute"
+      },
+      "source": "domain for L1 rows; workflow id for L2 rows",
+      "workflowRules": {
+        "fawn_visual_magnetic_fluids": "visual",
+        "fawn_visual_particle_trails": "visual",
+        "fawn_visual_prismatic_fluids": "visual",
+        "queue_submit_burst": "queue"
+      }
+    },
+    "id": "browser-layered-geomean-lower-is-better-v1",
+    "categoryBalancedScoreFormula": "100 * geometric_mean(categoryGeomeanRatios)",
+    "comparisonDeltaPercentFormula": "(comparisonScore / baselineScore - 1) * 100",
+    "legacyRelativeIndexParityScore": 100.0,
+    "metricPriority": [
+      "usPerOp",
+      "usPerFrame",
+      "usPerSubmit",
+      "avgFrameMs",
+      "p95FrameMs",
+      "msPerPipeline",
+      "msPerResize",
+      "textureMs",
+      "startupMs",
+      "totalMs",
+      "elapsedMs"
+    ],
+    "notes": [
+      "Lower metric values are better.",
+      "baselineScore and comparisonScore are paired mode scores; parity is 50/50.",
+      "comparisonDeltaPercent is positive when the comparison mode was faster.",
+      "Legacy score is 100 * geomeanRatio and is retained for compatibility.",
+      "overall is row-weighted; categoryBalancedOverall gives each category one vote.",
+      "This score is diagnostic and not a release performance claim."
+    ],
+    "pairedModeScoreFormula": "baselineScore=100/(1+ratio), comparisonScore=100*ratio/(1+ratio)",
+    "ratioFormula": "baselineMetric / comparisonMetric",
+    "scoreFormula": "100 * geometric_mean(rowRatios)"
+  },
+  "scoreReportHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "sourceReport": {
+    "path": "browser/chromium/artifacts/sample/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+    "projectionContractHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "reportHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "reportKind": "browser-layered-diagnostic",
+    "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "timingClass": "scenario",
+  "timingSource": "browser-performance-now",
+  "workloadFilter": {
+    "categories": [],
+    "kind": "none"
+  },
+  "workloadIdentity": {
+    "kind": "browser_layered_superset",
+    "projectionContractHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  }
+}

@@ -1,0 +1,551 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Browser layered score",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "baselineMode",
+    "benchmarkClass",
+    "bottlenecks",
+    "browserExecutables",
+    "browserEnvironmentEvidence",
+    "categories",
+    "categoryBalancedOverall",
+    "claimStatus",
+    "comparisonMode",
+    "comparisonStatus",
+    "excludedRows",
+    "generatedAt",
+    "methodology",
+    "modeIdentities",
+    "overall",
+    "reportKind",
+    "rows",
+    "schemaVersion",
+    "scoreMethod",
+    "scoreReportHash",
+    "sourceReport",
+    "timingClass",
+    "timingSource",
+    "workloadFilter",
+    "workloadIdentity"
+  ],
+  "properties": {
+    "baselineMode": { "type": "string" },
+    "benchmarkClass": { "type": "string", "const": "directional" },
+    "bottlenecks": { "$ref": "#/$defs/Bottlenecks" },
+    "browserExecutables": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseline", "comparison"],
+      "properties": {
+        "baseline": { "type": "string" },
+        "comparison": { "type": "string" }
+      }
+    },
+    "browserEnvironmentEvidence": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "categories": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SummaryWithCategory" }
+    },
+    "categoryBalancedOverall": { "$ref": "#/$defs/CategoryBalancedOverall" },
+    "claimStatus": { "type": "string", "const": "diagnostic" },
+    "comparisonMode": { "type": "string" },
+    "comparisonStatus": { "type": "string", "const": "diagnostic" },
+    "excludedRows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ExcludedRow" }
+    },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "methodology": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "modeIdentities": { "$ref": "#/$defs/ModeIdentities" },
+    "overall": { "$ref": "#/$defs/Overall" },
+    "reportKind": { "type": "string", "const": "browser-layered-score" },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ScoreRow" }
+    },
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "scoreMethod": { "$ref": "#/$defs/ScoreMethod" },
+    "scoreReportHash": { "$ref": "#/$defs/Sha256" },
+    "sourceReport": { "$ref": "#/$defs/SourceReport" },
+    "timingClass": { "type": "string" },
+    "timingSource": { "type": "string" },
+    "workloadFilter": { "$ref": "#/$defs/WorkloadFilter" },
+    "workloadIdentity": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "BottleneckCategory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineScore",
+        "category",
+        "comparisonDeltaPercent",
+        "comparisonScore",
+        "rowCount"
+      ],
+      "properties": {
+        "baselineScore": { "type": "number" },
+        "category": { "type": "string" },
+        "comparisonDeltaPercent": { "type": "number" },
+        "comparisonScore": { "type": "number" },
+        "rowCount": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "BottleneckRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineValue",
+        "category",
+        "comparisonDeltaPercent",
+        "comparisonValue",
+        "layer",
+        "metric",
+        "resourcePath",
+        "resourceSha256",
+        "rowId",
+        "scenarioTemplate"
+      ],
+      "properties": {
+        "baselineValue": { "type": "number" },
+        "category": { "type": "string" },
+        "comparisonDeltaPercent": { "type": "number" },
+        "comparisonValue": { "type": "number" },
+        "layer": { "type": "string", "enum": ["l1", "l2"] },
+        "metric": { "type": "string" },
+        "resourcePath": { "type": ["string", "null"] },
+        "resourceSha256": { "$ref": "#/$defs/HashOrNull" },
+        "rowId": { "type": "string" },
+        "scenarioTemplate": { "type": "string" }
+      }
+    },
+    "Bottlenecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis",
+        "slowerCategoryCount",
+        "slowerPhaseCount",
+        "slowerRowCount",
+        "worstCategories",
+        "worstPhases",
+        "worstRows"
+      ],
+      "properties": {
+        "basis": { "type": "string" },
+        "slowerCategoryCount": { "type": "integer", "minimum": 0 },
+        "slowerPhaseCount": { "type": "integer", "minimum": 0 },
+        "slowerRowCount": { "type": "integer", "minimum": 0 },
+        "worstCategories": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/BottleneckCategory" }
+        },
+        "worstPhases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/BottleneckPhase" }
+        },
+        "worstRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/BottleneckRow" }
+        }
+      }
+    },
+    "BottleneckPhase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineValue",
+        "category",
+        "comparisonDelta",
+        "comparisonDeltaPercent",
+        "comparisonValue",
+        "layer",
+        "phaseMetric",
+        "rowId",
+        "scenarioTemplate"
+      ],
+      "properties": {
+        "baselineValue": { "type": "number" },
+        "category": { "type": "string" },
+        "comparisonDelta": { "type": "number" },
+        "comparisonDeltaPercent": { "type": ["number", "null"] },
+        "comparisonValue": { "type": "number" },
+        "layer": { "type": "string", "enum": ["l1", "l2"] },
+        "phaseMetric": { "type": "string" },
+        "rowId": { "type": "string" },
+        "scenarioTemplate": { "type": "string" }
+      }
+    },
+    "CategoryMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domainRules", "source", "workflowRules"],
+      "properties": {
+        "domainRules": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "source": { "type": "string" },
+        "workflowRules": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "CategoryBalancedOverall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineMode",
+        "baselineScore",
+        "categoryCount",
+        "comparisonMode",
+        "comparisonDeltaPercent",
+        "comparisonScore",
+        "fasterCategoryCount",
+        "geomeanRatio",
+        "parityCategoryCount",
+        "rowCount",
+        "score",
+        "slowerCategoryCount"
+      ],
+      "properties": {
+        "baselineMode": { "type": "string" },
+        "baselineScore": { "type": "number" },
+        "categoryCount": { "type": "integer", "minimum": 1 },
+        "comparisonMode": { "type": "string" },
+        "comparisonDeltaPercent": { "type": "number" },
+        "comparisonScore": { "type": "number" },
+        "fasterCategoryCount": { "type": "integer", "minimum": 0 },
+        "geomeanRatio": { "type": "number" },
+        "parityCategoryCount": { "type": "integer", "minimum": 0 },
+        "rowCount": { "type": "integer", "minimum": 1 },
+        "score": { "type": "number" },
+        "slowerCategoryCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ExcludedRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineStatus",
+        "category",
+        "comparisonStatus",
+        "layer",
+        "reason",
+        "rowId"
+      ],
+      "properties": {
+        "baselineStatus": { "type": ["string", "null"] },
+        "category": { "type": "string" },
+        "comparisonStatus": { "type": ["string", "null"] },
+        "layer": { "type": "string", "enum": ["l1", "l2"] },
+        "reason": { "type": "string" },
+        "rowId": { "type": "string" }
+      }
+    },
+    "HashOrNull": {
+      "anyOf": [
+        { "$ref": "#/$defs/Sha256" },
+        { "type": "null" }
+      ]
+    },
+    "ModeIdentities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseline", "comparison"],
+      "properties": {
+        "baseline": { "$ref": "#/$defs/ModeIdentity" },
+        "comparison": { "$ref": "#/$defs/ModeIdentity" }
+      }
+    },
+    "ModeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapterIdentity",
+        "browserExecutablePath",
+        "browserExecutableSha256",
+        "browserVersion",
+        "dawnRuntimePath",
+        "dawnRuntimeSha256",
+        "doeRuntimePath",
+        "doeRuntimeSha256",
+        "fallbackApplied",
+        "fallbackReasonCode",
+        "hiddenFallbackAllowed",
+        "mode",
+        "previousTraceHash",
+        "selectedRuntime",
+        "selectorVersion",
+        "shaderCompilerIdentity",
+        "traceHash",
+        "userAgent"
+      ],
+      "properties": {
+        "adapterIdentity": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "browserExecutablePath": { "type": "string" },
+        "browserExecutableSha256": { "$ref": "#/$defs/HashOrNull" },
+        "browserVersion": { "type": "string" },
+        "dawnRuntimePath": { "type": "string" },
+        "dawnRuntimeSha256": { "$ref": "#/$defs/HashOrNull" },
+        "doeRuntimePath": { "type": ["string", "null"] },
+        "doeRuntimeSha256": { "$ref": "#/$defs/HashOrNull" },
+        "fallbackApplied": { "type": "boolean" },
+        "fallbackReasonCode": { "type": "string" },
+        "hiddenFallbackAllowed": { "type": "boolean" },
+        "mode": { "type": "string" },
+        "previousTraceHash": { "$ref": "#/$defs/HashOrNull" },
+        "selectedRuntime": { "type": "string" },
+        "selectorVersion": { "type": "string" },
+        "shaderCompilerIdentity": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "traceHash": { "$ref": "#/$defs/HashOrNull" },
+        "userAgent": { "type": "string" }
+      }
+    },
+    "Overall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineMode",
+        "baselineScore",
+        "comparisonMode",
+        "comparisonDeltaPercent",
+        "comparisonScore",
+        "fasterRowCount",
+        "geomeanRatio",
+        "parityRowCount",
+        "rowCount",
+        "score",
+        "slowerRowCount"
+      ],
+      "properties": {
+        "baselineMode": { "type": "string" },
+        "baselineScore": { "type": "number" },
+        "comparisonMode": { "type": "string" },
+        "comparisonDeltaPercent": { "type": "number" },
+        "comparisonScore": { "type": "number" },
+        "fasterRowCount": { "type": "integer", "minimum": 0 },
+        "geomeanRatio": { "type": "number" },
+        "parityRowCount": { "type": "integer", "minimum": 0 },
+        "rowCount": { "type": "integer", "minimum": 1 },
+        "score": { "type": "number" },
+        "slowerRowCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ScoreMethod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "categoryBalancedScoreFormula",
+        "categoryMapping",
+        "comparisonDeltaPercentFormula",
+        "id",
+        "legacyRelativeIndexParityScore",
+        "metricPriority",
+        "notes",
+        "pairedModeScoreFormula",
+        "ratioFormula",
+        "scoreFormula"
+      ],
+      "properties": {
+        "categoryBalancedScoreFormula": { "type": "string" },
+        "categoryMapping": { "$ref": "#/$defs/CategoryMapping" },
+        "comparisonDeltaPercentFormula": { "type": "string" },
+        "id": { "type": "string" },
+        "legacyRelativeIndexParityScore": { "type": "number" },
+        "metricPriority": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "pairedModeScoreFormula": { "type": "string" },
+        "ratioFormula": { "type": "string" },
+        "scoreFormula": { "type": "string" }
+      }
+    },
+    "ScoreRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineMode",
+        "baselineScore",
+        "baselineValue",
+        "category",
+        "comparisonMode",
+        "comparisonDeltaPercent",
+        "comparisonScore",
+        "comparisonValue",
+        "layer",
+        "metric",
+        "phaseMetrics",
+        "ratio",
+        "resourcePath",
+        "resourceSha256",
+        "rowId",
+        "scenarioTemplate",
+        "score",
+        "unit"
+      ],
+      "properties": {
+        "baselineMode": { "type": "string" },
+        "baselineScore": { "type": "number" },
+        "baselineValue": { "type": "number" },
+        "category": { "type": "string" },
+        "comparisonMode": { "type": "string" },
+        "comparisonDeltaPercent": { "type": "number" },
+        "comparisonScore": { "type": "number" },
+        "comparisonValue": { "type": "number" },
+        "layer": { "type": "string", "enum": ["l1", "l2"] },
+        "metric": { "type": "string" },
+        "phaseMetrics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PhaseMetric" }
+        },
+        "ratio": { "type": "number" },
+        "resourcePath": { "type": ["string", "null"] },
+        "resourceSha256": { "$ref": "#/$defs/HashOrNull" },
+        "rowId": { "type": "string" },
+        "scenarioTemplate": { "type": "string" },
+        "score": { "type": "number" },
+        "unit": { "type": "string" }
+      }
+    },
+    "PhaseMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineValue",
+        "comparisonDelta",
+        "comparisonDeltaPercent",
+        "comparisonValue",
+        "metric",
+        "unit"
+      ],
+      "properties": {
+        "baselineValue": { "type": "number" },
+        "comparisonDelta": { "type": "number" },
+        "comparisonDeltaPercent": { "type": ["number", "null"] },
+        "comparisonValue": { "type": "number" },
+        "metric": { "type": "string" },
+        "unit": { "type": "string" }
+      }
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "SourceReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "projectionContractHash",
+        "reportHash",
+        "reportKind",
+        "sha256"
+      ],
+      "properties": {
+        "path": { "type": "string" },
+        "projectionContractHash": { "$ref": "#/$defs/HashOrNull" },
+        "reportHash": { "$ref": "#/$defs/HashOrNull" },
+        "reportKind": { "type": "string", "const": "browser-layered-diagnostic" },
+        "sha256": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "Summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineScore",
+        "comparisonDeltaPercent",
+        "comparisonScore",
+        "fasterRowCount",
+        "geomeanRatio",
+        "parityRowCount",
+        "rowCount",
+        "score",
+        "slowerRowCount"
+      ],
+      "properties": {
+        "baselineScore": { "type": "number" },
+        "comparisonDeltaPercent": { "type": "number" },
+        "comparisonScore": { "type": "number" },
+        "fasterRowCount": { "type": "integer", "minimum": 0 },
+        "geomeanRatio": { "type": "number" },
+        "parityRowCount": { "type": "integer", "minimum": 0 },
+        "rowCount": { "type": "integer", "minimum": 1 },
+        "score": { "type": "number" },
+        "slowerRowCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "SummaryWithCategory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineMode",
+        "baselineScore",
+        "category",
+        "comparisonMode",
+        "comparisonDeltaPercent",
+        "comparisonScore",
+        "fasterRowCount",
+        "geomeanRatio",
+        "parityRowCount",
+        "rowCount",
+        "score",
+        "slowerRowCount"
+      ],
+      "properties": {
+        "baselineMode": { "type": "string" },
+        "baselineScore": { "type": "number" },
+        "category": { "type": "string" },
+        "comparisonMode": { "type": "string" },
+        "comparisonDeltaPercent": { "type": "number" },
+        "comparisonScore": { "type": "number" },
+        "fasterRowCount": { "type": "integer", "minimum": 0 },
+        "geomeanRatio": { "type": "number" },
+        "parityRowCount": { "type": "integer", "minimum": 0 },
+        "rowCount": { "type": "integer", "minimum": 1 },
+        "score": { "type": "number" },
+        "slowerRowCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "WorkloadFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["categories", "kind"],
+      "properties": {
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "kind": { "type": "string", "enum": ["none", "category"] },
+        "l1RowsAfterFilter": { "type": "integer", "minimum": 0 },
+        "l1RowsBeforeFilter": { "type": "integer", "minimum": 0 },
+        "l2RowsAfterFilter": { "type": "integer", "minimum": 0 },
+        "l2RowsBeforeFilter": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

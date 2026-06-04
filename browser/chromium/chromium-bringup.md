@@ -20,6 +20,7 @@ browser evidence:
 1. diagnostic: `python3 bench/tools/check_chromium_source_checkout.py --source-root browser/chromium/src --root . --json`
 2. source-ready gate: `python3 bench/runners/run_blocking_gates.py --with-chromium-source-checkout-gate`
 3. source selector gate: `python3 bench/runners/run_blocking_gates.py --with-chromium-source-checkout-gate --chromium-source-require-runtime-selector`
+4. Doe dylib proc surface: `python3 bench/runners/run_blocking_gates.py --with-doe-chromium-proc-surface-gate`
 
 ## Layout options
 
@@ -96,7 +97,7 @@ fetch --nohooks chromium
 cd src
 gclient sync --nohooks --no-history --jobs 1
 gclient runhooks
-gn gen out/fawn_release --args='is_debug=false is_chrome_for_testing=false is_chrome_for_testing_branded=false is_chrome_branded=false'
+gn gen out/fawn_release --args='is_debug=false is_official_build=true dcheck_always_on=false chrome_pgo_phase=0 symbol_level=0 blink_symbol_level=0 v8_symbol_level=0 is_chrome_for_testing=false is_chrome_for_testing_branded=false is_chrome_branded=false'
 autoninja -C out/fawn_release chrome
 
 # copy runnable release artifacts to local lane output
@@ -136,7 +137,7 @@ fetch --nohooks chromium
 cd src
 gclient sync --nohooks --no-history --jobs 1
 gclient runhooks
-gn gen out/fawn_release --args='is_debug=false is_chrome_for_testing=false is_chrome_for_testing_branded=false is_chrome_branded=false'
+gn gen out/fawn_release --args='is_debug=false is_official_build=true dcheck_always_on=false chrome_pgo_phase=0 symbol_level=0 blink_symbol_level=0 v8_symbol_level=0 is_chrome_for_testing=false is_chrome_for_testing_branded=false is_chrome_branded=false'
 autoninja -C out/fawn_release chrome
 
 # copy runnable release artifacts to local lane output
@@ -176,7 +177,20 @@ Do not begin with compositor/layout/media refactors.
 Use existing drop-in artifact lane as initial test substrate:
 
 1. `runtime/zig/zig-out/lib/libwebgpu_doe_full.{so,dylib,dll}`
-2. symbol and behavior gate tools in `bench/`.
+2. `config/doe-chromium-proc-surface.json`
+3. symbol and behavior gate tools in `bench/`.
+
+Forced-Doe source selection now validates a browser-facing WGPU proc surface,
+loads the generated Dawn wire proc table through `wgpuGetProcAddress`, creates
+a Doe `WGPUInstance`, and injects that instance into Chromium's WebGPU wire
+server. The proc-surface gate proves the Doe dylib exports the direct symbols,
+resolves the wire table, maps required browser shared texture, shared buffer,
+shared fence, and error-object procs through Doe-local resolver entries before
+native fallback, checks that error-object procs allocate tagged Doe handles,
+checks that macOS IOSurface shared texture import is native, checks that shared
+buffer/fence imports stay explicitly unsupported, and can bootstrap an
+instance; it does not by itself promote browser smoke to claimable performance
+evidence.
 
 Initial criterion is deterministic compatibility and observability, not performance.
 
@@ -193,23 +207,48 @@ Initial criterion is deterministic compatibility and observability, not performa
 5. `I4`:
    - run strict comparability benchmark lanes for claimable paths.
 
-## Current snapshot (2026-05-29)
+## Current snapshot (2026-05-30)
 
-Repo-owned browser diagnostics and wrapper selectors exist, but the mounted
-Chromium source checkout inspected on this host did not contain the source-level
-runtime selector markers:
+Repo-owned browser diagnostics and wrapper selectors exist. The mounted
+Chromium source checkout now exposes the source-level runtime selector markers:
 
 - `use-webgpu-runtime`,
 - `disable-webgpu-doe`,
 - `doe-webgpu-library-path`,
 - `runtime_artifact_load_failed`,
-- `symbol_surface_incomplete`.
+- `runtime_initialization_failed`,
+- `symbol_surface_incomplete`,
+- `wire_proc_table_incomplete`,
+- `profile_denylisted`,
+- `adapter_denylist_detail`,
+- `vendor_id`,
+- `blocklist_reason`,
+- `doe_shared_image_iosurface_bridge`,
+- `doe_present_shared_texture_end_access`,
+- `doe_shared_buffer_unsupported`,
+- `unknown_selection_error`.
 
-Those markers are now checked by
-`bench/tools/check_chromium_source_checkout.py --require-runtime-selector`.
-Until that gate passes against `browser/chromium/src`, forced-Doe browser smoke
-artifacts remain diagnostic wrapper evidence and must not be described as
-Chromium-owned Doe runtime execution.
+Those markers are checked by
+`bench/tools/check_chromium_source_checkout.py --require-runtime-selector`, and
+the lane env checkout passes that source selector gate. Forced-Doe selection now
+also loads the selected Doe library, checks the browser-facing WGPU proc
+surface, resolves the full generated wire table through `wgpuGetProcAddress`,
+and owns the injected `WGPUInstance` for forced-Doe wire execution. Source-binary
+forced-Doe smoke is now linked through the integration overlay as diagnostic
+evidence; promotion to `chromium_runtime_active` still requires acceptance of
+the capability rows as passing. Active Doe texture mailbox association now
+imports macOS IOSurface-backed shared texture memory through the loaded Doe proc
+table, injects the raw Doe `WGPUTexture` into the wire server, and ends shared
+texture access on present before marking the shared image cleared. Shared buffer
+association now fails closed before wire injection while no native buffer handle
+source exists. The Doe drop-in also owns explicit unsupported shared buffer and
+shared fence proc mappings so the generated wire table cannot pass by falling
+through to native Dawn for browser interop names.
+Chromium adapter filtering now formats source-level denylist detail at the
+adapter selection point: `adapter_denylist_detail` carries the typed
+`profile_denylisted` reason, vendor/device IDs, adapter/backend type, and the
+blocklist reason before the adapter is rejected. The source selector gate
+requires those detail markers and the formatter unit test.
 
 ## Common wrapper scripts
 
@@ -240,6 +279,9 @@ A small Playwright harness now exists for real-browser WebGPU smoke + mini bench
   - adapter features + selected limits capture
   - compute correctness smoke (`[1,2,3,4] -> [2,3,4,5]`)
   - render smoke (triangle draw + center pixel validation)
+  - render bundle smoke (`createRenderBundleEncoder`/`executeBundles` + center pixel validation)
+  - render indirect smoke (`drawIndirect` + center pixel validation)
+  - timestamp query smoke (`timestampWrites` + `resolveQuerySet` readback)
   - explicit `requestAdapter({ xrCompatible: false })` forwarding on the package-browser path
   - `queue.copyExternalImageToTexture` end-to-end readback using browser image sources plus `flipY`/origin dictionaries
   - `device.importExternalTexture` plus `externalTexture` bind-group layout/resource sampling from a `VideoFrame`
@@ -439,8 +481,8 @@ Local forced-Doe adapter acquisition is recorded in
 That run also emits browser flight-recorder, shader-link, canvas/WebGPU fusion,
 media-path, recovery-parity, CTS-subset, scheduler, WebGPU-effect,
 local-AI-workload, pipeline-cache, and fallback-explanation artifacts. These
-artifacts remain diagnostic until source selector markers and hidden-fallback
-state are present in the Chromium checkout.
+artifacts remain diagnostic until source-binary forced-Doe smoke is linked to
+the integration overlay.
 The smoke report itself is now independently checkable through
 `scripts/check-browser-smoke-report.py`, including diagnostic partition,
 runtime identity, hidden-fallback state, strict-mode evidence, report hash, and
@@ -452,8 +494,32 @@ state before `doeRuntimeActive` can be true.
 Flight-recorder replay can also run as a standalone blocking-runner gate with
 `--with-browser-gpu-flight-recorder-replay-gate`.
 
-Remaining source-checkout targets:
+Closed in the current source checkout:
 
-1. Land the fail-closed source selector markers checked by `--require-runtime-selector`.
-2. Add decoder-branch tests for Doe init/load/proc-surface/instance failure and teardown paths.
-3. Continue adapter-level denylist detail propagation and Dawn-native dependency audit in `WebGPUDecoderImpl`.
+- decoder-branch tests now cover successful Doe wire runtime table load,
+  instance creation, event processing, owned-instance release, and teardown
+  clearing through `DoeWireRuntimeOwnsAndReleasesInstanceLifecycle`.
+- active-Doe texture mailbox association now imports macOS IOSurface shared
+  texture memory through Doe, begins access on the imported texture, injects the
+  raw Doe `WGPUTexture` into the wire server, and ends access during present
+  teardown.
+- active-Doe shared buffer mailbox association returns `kInvalidArguments`
+  before wire injection while no native buffer handle source exists, instead of
+  using Dawn-owned shared representations, placeholder buffers, or generated
+  Dawn C++ wrappers with Doe handles.
+- Doe-local proc mappings now own the browser error-object constructors before
+  native fallback; those constructors return Doe-owned releasable handles tagged
+  as error objects.
+- Doe-local proc mappings now own the browser shared texture, shared buffer,
+  and shared fence names before native fallback. Shared texture memory imports
+  macOS IOSurface handles through Doe; shared buffer and shared fence paths
+  remain explicit unsupported until native handle sources land.
+- browser diagnostic selectors now propagate adapter denylist detail through
+  forced modes and `auto` fallback rows via `adapterDenylist`.
+- Chromium source adapter filtering now emits `adapter_denylist_detail` with
+  the profile-denylisted reason, adapter identity fields, and blocklist reason,
+  and the source-checkout gate requires that formatter and test marker.
+
+Source-checkout continuation targets:
+
+1. Add a real active-Doe shared-buffer import path once Chromium exposes a supported native buffer handle source.

@@ -124,6 +124,7 @@ pub export fn doeNativeCommandEncoderResolveQuerySet(
     const enc = native_helpers.cast(native_types.DoeCommandEncoder, enc_raw) orelse return;
     const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return;
     const dst = native_helpers.cast(native_types.DoeBuffer, dst_raw) orelse return;
+    if (dst.error_object) return;
 
     if (first_query + query_count > qs.count) return;
 
@@ -334,6 +335,7 @@ fn vk_runtime_from_qs(qs: *const DoeQuerySet) ?*native_shared.NativeVulkanRuntim
 
 /// Look up the VkBuffer handle for a DoeBuffer via the runtime's compute_buffers map.
 fn vk_buffer_from_doe_buffer(rt: *native_shared.NativeVulkanRuntime, buf: *const native_types.DoeBuffer) ?c.VkBuffer {
+    if (buf.error_object) return null;
     if (buf.vk_id == 0) return null;
     const cb = rt.compute_buffers.get(buf.vk_id) orelse return null;
     return cb.buffer;

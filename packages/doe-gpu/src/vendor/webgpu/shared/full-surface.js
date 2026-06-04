@@ -1,12 +1,14 @@
 import {
   UINT32_MAX,
   failValidation,
+  describeResourceLabel,
   initResource,
   assertObject,
   assertArray,
   assertBoolean,
   assertNonEmptyString,
   assertIntegerInRange,
+  assertOptionalIntegerInRange,
   assertLiveResource,
   destroyResource,
 } from './resource-lifecycle.js';
@@ -63,6 +65,20 @@ function validateWriteBufferInput(data, dataOffset, size, path) {
   return byteSource.subarray(start, end);
 }
 
+function normalizeWriteBufferBatchEntry(entry, index) {
+  const path = `GPUQueue.__doeWriteBufferBatch.entries[${index}]`;
+  const object = assertObject(entry, path, 'entry');
+  const bufferOffset = object.offset ?? object.bufferOffset ?? 0;
+  assertIntegerInRange(bufferOffset, path, 'offset', { min: 0 });
+  const dataOffset = object.dataOffset ?? 0;
+  const view = validateWriteBufferInput(object.data, dataOffset, object.size, path);
+  return {
+    buffer: object.buffer,
+    bufferOffset,
+    view,
+  };
+}
+
 function escapeRegexLiteral(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -107,7 +123,172 @@ function assertShaderEntryPoint(shader, entryPoint, path) {
   }
 }
 
+const FAST_PATH_NOT_APPLIED = Symbol('fastPathNotApplied');
 const NEVER_RESOLVED = new Promise(() => {});
+
+function isObjectRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasActiveNonBufferLayoutMember(entry) {
+  return Boolean(entry.sampler || entry.texture || entry.storageTexture || entry.externalTexture);
+}
+
+function tryCreateBufferBindGroupLayoutFast4(backend, device, layoutDescriptor) {
+  if (typeof backend.deviceCreateBufferBindGroupLayoutFlat4 !== 'function') {
+    return FAST_PATH_NOT_APPLIED;
+  }
+  if (layoutDescriptor.label !== undefined && layoutDescriptor.label !== '') {
+    return FAST_PATH_NOT_APPLIED;
+  }
+  const path = 'GPUDevice.createBindGroupLayout';
+  const entries = layoutDescriptor.entries ?? [];
+  if (!Array.isArray(entries) || entries.length > 4) {
+    return FAST_PATH_NOT_APPLIED;
+  }
+  let b0 = 0;
+  let b1 = 0;
+  let b2 = 0;
+  let b3 = 0;
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    if (!isObjectRecord(entry) || !entry.buffer || hasActiveNonBufferLayoutMember(entry)) {
+      return FAST_PATH_NOT_APPLIED;
+    }
+    const buffer = assertObject(entry.buffer, path, `descriptor.entries[${index}].buffer`);
+    const hasDynamicOffset = buffer.hasDynamicOffset === undefined
+      ? false
+      : assertBoolean(buffer.hasDynamicOffset, path, `descriptor.entries[${index}].buffer.hasDynamicOffset`);
+    if (hasDynamicOffset) {
+      return FAST_PATH_NOT_APPLIED;
+    }
+    assertOptionalIntegerInRange(
+      buffer.minBindingSize ?? 0,
+      path,
+      `descriptor.entries[${index}].buffer.minBindingSize`,
+      { min: 0 },
+    );
+    assertIntegerInRange(entry.visibility, path, `descriptor.entries[${index}].visibility`, { min: 0 });
+    const binding = assertIntegerInRange(entry.binding, path, `descriptor.entries[${index}].binding`, { min: 0, max: UINT32_MAX });
+    if (index === 0) b0 = binding;
+    else if (index === 1) b1 = binding;
+    else if (index === 2) b2 = binding;
+    else b3 = binding;
+  }
+  const native = backend.deviceCreateBufferBindGroupLayoutFlat4(
+    device,
+    entries.length,
+    b0,
+    b1,
+    b2,
+    b3,
+    layoutDescriptor.label || undefined,
+  );
+  return native === undefined ? FAST_PATH_NOT_APPLIED : native;
+}
+
+function resolveFastBufferBindingResource(resource, path, index) {
+  if (!isObjectRecord(resource)) {
+    return null;
+  }
+  if ('buffer' in resource) {
+    const buffer = assertLiveResource(resource.buffer, path, 'GPUBuffer');
+    const offset = assertOptionalIntegerInRange(
+      resource.offset ?? 0,
+      path,
+      `descriptor.entries[${index}].resource.offset`,
+      { min: 0 },
+    );
+    if (resource.size !== undefined) {
+      assertIntegerInRange(resource.size, path, `descriptor.entries[${index}].resource.size`, { min: 1 });
+    }
+    return { buffer, offset: offset ?? 0 };
+  }
+  if ('_native' in resource) {
+    const label = describeResourceLabel(resource);
+    if (label === 'GPUSampler' || label === 'GPUTextureView' || label === 'GPUExternalTexture') {
+      return null;
+    }
+    return {
+      buffer: assertLiveResource(resource, path, 'GPUBuffer'),
+      offset: 0,
+    };
+  }
+  return null;
+}
+
+function tryCreateBufferBindGroupFast4(backend, device, layoutNative, bindGroupDescriptor) {
+  if (typeof backend.deviceCreateBufferBindGroupFlat4 !== 'function') {
+    return FAST_PATH_NOT_APPLIED;
+  }
+  if (bindGroupDescriptor.label !== undefined && bindGroupDescriptor.label !== '') {
+    return FAST_PATH_NOT_APPLIED;
+  }
+  const path = 'GPUDevice.createBindGroup';
+  const entries = bindGroupDescriptor.entries ?? [];
+  if (!Array.isArray(entries) || entries.length > 4) {
+    return FAST_PATH_NOT_APPLIED;
+  }
+  let b0 = 0;
+  let b1 = 0;
+  let b2 = 0;
+  let b3 = 0;
+  let buffer0 = null;
+  let buffer1 = null;
+  let buffer2 = null;
+  let buffer3 = null;
+  let offset0 = 0;
+  let offset1 = 0;
+  let offset2 = 0;
+  let offset3 = 0;
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    if (!isObjectRecord(entry)) {
+      return FAST_PATH_NOT_APPLIED;
+    }
+    const resource = resolveFastBufferBindingResource(entry.resource, path, index);
+    if (resource === null) {
+      return FAST_PATH_NOT_APPLIED;
+    }
+    const binding = assertIntegerInRange(entry.binding, path, `descriptor.entries[${index}].binding`, { min: 0, max: UINT32_MAX });
+    if (index === 0) {
+      b0 = binding;
+      buffer0 = resource.buffer;
+      offset0 = resource.offset;
+    } else if (index === 1) {
+      b1 = binding;
+      buffer1 = resource.buffer;
+      offset1 = resource.offset;
+    } else if (index === 2) {
+      b2 = binding;
+      buffer2 = resource.buffer;
+      offset2 = resource.offset;
+    } else {
+      b3 = binding;
+      buffer3 = resource.buffer;
+      offset3 = resource.offset;
+    }
+  }
+  const native = backend.deviceCreateBufferBindGroupFlat4(
+    device,
+    layoutNative,
+    entries.length,
+    b0,
+    buffer0,
+    offset0,
+    b1,
+    buffer1,
+    offset1,
+    b2,
+    buffer2,
+    offset2,
+    b3,
+    buffer3,
+    offset3,
+    bindGroupDescriptor.label || undefined,
+  );
+  return native === undefined ? FAST_PATH_NOT_APPLIED : native;
+}
 
 class GPUError extends Error {
   constructor(message) { super(message); this.name = 'GPUError'; }
@@ -425,9 +606,9 @@ function createFullSurfaceClasses({
     }
 
     _mapReadCopyUnmap(mode, offset = 0, size = Math.max(0, this.size - offset)) {
-      assertLiveResource(this, 'GPUBuffer._mapReadCopyUnmap', 'GPUBuffer');
+      const native = assertLiveResource(this, 'GPUBuffer._mapReadCopyUnmap', 'GPUBuffer');
       if (typeof backend.bufferMapReadCopyUnmap === 'function') {
-        return backend.bufferMapReadCopyUnmap(this, mode, offset, size);
+        return backend.bufferMapReadCopyUnmap(this, native, mode, offset, size);
       }
       return null;
     }
@@ -451,6 +632,27 @@ function createFullSurfaceClasses({
       initResource(this, 'GPUQueue', device);
       if (backend.initQueueState) {
         backend.initQueueState(this);
+      }
+      if (typeof backend.queueWriteBufferBatch === 'function') {
+        Object.defineProperty(this, '__doeWriteBufferBatch', {
+          value: (entries) => {
+            const queueNative = assertLiveResource(this, 'GPUQueue.__doeWriteBufferBatch', 'GPUQueue');
+            const normalized = assertArray(entries, 'GPUQueue.__doeWriteBufferBatch', 'entries')
+              .map((entry, index) => {
+                const item = normalizeWriteBufferBatchEntry(entry, index);
+                return {
+                  bufferNative: assertLiveResource(
+                    item.buffer,
+                    `GPUQueue.__doeWriteBufferBatch.entries[${index}]`,
+                    'GPUBuffer',
+                  ),
+                  bufferOffset: item.bufferOffset,
+                  view: item.view,
+                };
+              });
+            return backend.queueWriteBufferBatch(this, queueNative, normalized);
+          },
+        });
       }
     }
 
@@ -999,6 +1201,12 @@ function createFullSurfaceClasses({
 
     createBindGroupLayout(descriptor) {
       const layoutDescriptor = assertObject(descriptor, 'GPUDevice.createBindGroupLayout', 'descriptor');
+      const fastNative = tryCreateBufferBindGroupLayoutFast4(backend, this, layoutDescriptor);
+      if (fastNative !== FAST_PATH_NOT_APPLIED) {
+        const bgl = new DoeGPUBindGroupLayout(fastNative, this);
+        bgl.label = layoutDescriptor.label ?? '';
+        return bgl;
+      }
       const entries = assertArray(layoutDescriptor.entries ?? [], 'GPUDevice.createBindGroupLayout', 'descriptor.entries')
         .map((entry, index) => normalizeBindGroupLayoutEntry(entry, index, 'GPUDevice.createBindGroupLayout', this.features));
       const native = backend.deviceCreateBindGroupLayout(this, entries, layoutDescriptor.label || undefined);
@@ -1010,6 +1218,12 @@ function createFullSurfaceClasses({
     createBindGroup(descriptor) {
       const bindGroupDescriptor = assertObject(descriptor, 'GPUDevice.createBindGroup', 'descriptor');
       const layoutNative = assertLiveResource(bindGroupDescriptor.layout, 'GPUDevice.createBindGroup', 'GPUBindGroupLayout');
+      const fastNative = tryCreateBufferBindGroupFast4(backend, this, layoutNative, bindGroupDescriptor);
+      if (fastNative !== FAST_PATH_NOT_APPLIED) {
+        const bg = new DoeGPUBindGroup(fastNative, this);
+        bg.label = bindGroupDescriptor.label ?? '';
+        return bg;
+      }
       const entries = assertArray(bindGroupDescriptor.entries ?? [], 'GPUDevice.createBindGroup', 'descriptor.entries')
         .map((entry, index) => {
           const binding = assertObject(entry, 'GPUDevice.createBindGroup', `descriptor.entries[${index}]`);

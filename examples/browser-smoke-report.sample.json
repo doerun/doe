@@ -16,6 +16,58 @@
   "methodology": {
     "strictMode": true
   },
+  "runtimeSelections": [
+    {
+      "selectionMode": "dawn",
+      "selectedRuntime": "dawn",
+      "forcedMode": "dawn",
+      "fallbackApplied": false,
+      "fallbackReasonCode": "",
+      "hiddenFallbackAllowed": false,
+      "profile": {
+        "profileId": "",
+        "vendor": "unknown",
+        "api": "unknown",
+        "deviceFamily": "unknown",
+        "driver": "unknown"
+      },
+      "selectorVersion": "browser-runtime-selector-v1",
+      "artifactIdentity": {
+        "browserExecutablePath": "/examples/fawn/Chromium",
+        "browserExecutableSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dawnRuntimePath": "/examples/fawn/Chromium",
+        "dawnRuntimeSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "doeLibPath": null,
+        "doeLibSha256": null
+      },
+      "launchArgsHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "selectionMode": "doe",
+      "selectedRuntime": "doe",
+      "forcedMode": "doe",
+      "fallbackApplied": false,
+      "fallbackReasonCode": "",
+      "hiddenFallbackAllowed": false,
+      "profile": {
+        "profileId": "",
+        "vendor": "unknown",
+        "api": "unknown",
+        "deviceFamily": "unknown",
+        "driver": "unknown"
+      },
+      "selectorVersion": "browser-runtime-selector-v1",
+      "artifactIdentity": {
+        "browserExecutablePath": "/examples/fawn/Chromium",
+        "browserExecutableSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dawnRuntimePath": "/examples/fawn/Chromium",
+        "dawnRuntimeSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "doeLibPath": "/examples/libwebgpu_doe.dylib",
+        "doeLibSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "launchArgsHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
   "modeResults": [
     {
       "mode": "dawn",
@@ -63,10 +115,28 @@
         },
         "renderTriangle": {
           "pass": true
+        },
+        "renderBundle": {
+          "pass": true
+        },
+        "renderIndirect": {
+          "pass": true
+        },
+        "timestampQuery": {
+          "pass": true
+        },
+        "requestAdapterXrCompatible": {
+          "pass": true
+        },
+        "copyExternalImageToTexture": {
+          "pass": true
+        },
+        "importExternalTexture": {
+          "pass": true
         }
       },
       "previousHash": null,
-      "hash": "6fc6fc53060f14bda24e5b868c0236d4733b368aba9f18f365a67182d3069e10"
+      "hash": "91449f8ae84c1a38494dd54b04239720e43eed7b08bd97d19b45f76c37599a08"
     },
     {
       "mode": "doe",
@@ -114,15 +184,36 @@
         },
         "renderTriangle": {
           "pass": true
+        },
+        "renderBundle": {
+          "pass": true
+        },
+        "renderIndirect": {
+          "pass": true
+        },
+        "timestampQuery": {
+          "pass": true
+        },
+        "requestAdapterXrCompatible": {
+          "pass": true
+        },
+        "copyExternalImageToTexture": {
+          "pass": true
+        },
+        "importExternalTexture": {
+          "pass": true
         }
       },
-      "previousHash": "6fc6fc53060f14bda24e5b868c0236d4733b368aba9f18f365a67182d3069e10",
-      "hash": "a74f8e74d15f61af7c795c4490c1ca5558348b96a534e13bf809308e041f139a"
+      "previousHash": "91449f8ae84c1a38494dd54b04239720e43eed7b08bd97d19b45f76c37599a08",
+      "hash": "fac2565a1e46f14c619072a14d67aa0526b8aa3f5b57f4ebc8fb7d67d4d6a00a"
     }
   ],
   "comparison": {
     "bothComputeSmokePass": true,
-    "bothRenderSmokePass": true
+    "bothRenderSmokePass": true,
+    "bothRenderBundleSmokePass": true,
+    "bothRenderIndirectSmokePass": true,
+    "bothTimestampQuerySmokePass": true
   },
-  "reportHash": "e22f0d013d41a91182edd4f3ff2c28a5f9ee874b409b4709f5e567cdfb70159f"
+  "reportHash": "38e2d271a93ca8dd6910e8ac29babe14948feb7d101ba4a4636766785e9c9562"
 }

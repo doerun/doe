@@ -48,6 +48,12 @@
       "type": "string",
       "minLength": 1
     },
+    "matmulGemvVariant": {
+      "type": "string",
+      "enum": [
+        "row2_helper_exact"
+      ]
+    },
     "commandCount": {
       "type": "integer",
       "minimum": 0

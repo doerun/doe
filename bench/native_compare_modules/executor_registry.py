@@ -59,6 +59,53 @@ class ExecutorSpec:
     execution_boundary: str
 
 
+_NODE_WEBGPU_PACKAGE_PREPARED_TEMPLATE = (
+    "node bench/executors/run-node-webgpu-plan.js "
+    "--provider node-webgpu --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+    "--trace-meta {trace_meta} --workload {workload} "
+    "--command-repeat {command_repeat}"
+)
+
+_DOE_NODE_WEBGPU_PREPARED_TEMPLATE = (
+    "node bench/executors/run-node-webgpu-plan.js "
+    "--provider doe --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+    "--trace-meta {trace_meta} --workload {workload} "
+    "--command-repeat {command_repeat}"
+)
+
+_DOE_NODE_NATIVE_DIRECT_PREPARED_TEMPLATE = (
+    "node bench/executors/run-node-webgpu-plan.js "
+    "--provider doe-direct --prepared-session --plan {plan} "
+    "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} "
+    "--workload {workload} --command-repeat {command_repeat}"
+)
+
+_BUN_WEBGPU_PACKAGE_PREPARED_TEMPLATE = (
+    "bun bench/executors/run-bun-webgpu-plan.js "
+    "--provider bun-webgpu --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+    "--trace-meta {trace_meta} --workload {workload} "
+    "--command-repeat {command_repeat}"
+)
+
+_DOE_BUN_PACKAGE_PREPARED_TEMPLATE = (
+    "bun bench/executors/run-bun-webgpu-plan.js "
+    "--provider doe --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+    "--trace-meta {trace_meta} --workload {workload} "
+    "--command-repeat {command_repeat}"
+)
+
+_DOE_BUN_PACKAGE_FFI_PREPARED_TEMPLATE = (
+    "bun bench/executors/run-bun-webgpu-plan.js "
+    "--provider doe-ffi --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+    "--trace-meta {trace_meta} --workload {workload} "
+    "--command-repeat {command_repeat}"
+)
+
+
+def _resident_buffer_load_template(command_template: str) -> str:
+    return f"{command_template} --resident-buffer-loads"
+
+
 _REGISTRY: dict[str, ExecutorSpec] = {
     "doe_direct_metal": ExecutorSpec(
         executor_id="doe_direct_metal",
@@ -222,21 +269,48 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary="plan",
     ),
-    "node_webgpu_package_prepared": ExecutorSpec(
-        executor_id="node_webgpu_package_prepared",
+    "doe_node_native_direct": ExecutorSpec(
+        executor_id="doe_node_native_direct",
         command_template=(
             "node bench/executors/run-node-webgpu-plan.js "
-            "--provider node-webgpu --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+            "--provider doe-direct --plan {plan} --trace-jsonl {trace_jsonl} "
             "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="plan",
+    ),
+    "node_webgpu_package_prepared": ExecutorSpec(
+        executor_id="node_webgpu_package_prepared",
+        command_template=_NODE_WEBGPU_PACKAGE_PREPARED_TEMPLATE,
+        execution_boundary="plan",
+    ),
+    "node_webgpu_package_prepared_resident_buffer_loads": ExecutorSpec(
+        executor_id="node_webgpu_package_prepared_resident_buffer_loads",
+        command_template=_resident_buffer_load_template(
+            _NODE_WEBGPU_PACKAGE_PREPARED_TEMPLATE
         ),
         execution_boundary="plan",
     ),
     "doe_node_webgpu_prepared": ExecutorSpec(
         executor_id="doe_node_webgpu_prepared",
-        command_template=(
-            "node bench/executors/run-node-webgpu-plan.js "
-            "--provider doe --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
-            "--trace-meta {trace_meta} --workload {workload}"
+        command_template=_DOE_NODE_WEBGPU_PREPARED_TEMPLATE,
+        execution_boundary="plan",
+    ),
+    "doe_node_webgpu_prepared_resident_buffer_loads": ExecutorSpec(
+        executor_id="doe_node_webgpu_prepared_resident_buffer_loads",
+        command_template=_resident_buffer_load_template(
+            _DOE_NODE_WEBGPU_PREPARED_TEMPLATE
+        ),
+        execution_boundary="plan",
+    ),
+    "doe_node_native_direct_prepared": ExecutorSpec(
+        executor_id="doe_node_native_direct_prepared",
+        command_template=_DOE_NODE_NATIVE_DIRECT_PREPARED_TEMPLATE,
+        execution_boundary="plan",
+    ),
+    "doe_node_native_direct_prepared_resident_buffer_loads": ExecutorSpec(
+        executor_id="doe_node_native_direct_prepared_resident_buffer_loads",
+        command_template=_resident_buffer_load_template(
+            _DOE_NODE_NATIVE_DIRECT_PREPARED_TEMPLATE
         ),
         execution_boundary="plan",
     ),
@@ -258,21 +332,48 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary="plan",
     ),
-    "bun_webgpu_package_prepared": ExecutorSpec(
-        executor_id="bun_webgpu_package_prepared",
+    "doe_bun_package_ffi": ExecutorSpec(
+        executor_id="doe_bun_package_ffi",
         command_template=(
             "bun bench/executors/run-bun-webgpu-plan.js "
-            "--provider bun-webgpu --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+            "--provider doe-ffi --plan {plan} --trace-jsonl {trace_jsonl} "
             "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="plan",
+    ),
+    "bun_webgpu_package_prepared": ExecutorSpec(
+        executor_id="bun_webgpu_package_prepared",
+        command_template=_BUN_WEBGPU_PACKAGE_PREPARED_TEMPLATE,
+        execution_boundary="plan",
+    ),
+    "bun_webgpu_package_prepared_resident_buffer_loads": ExecutorSpec(
+        executor_id="bun_webgpu_package_prepared_resident_buffer_loads",
+        command_template=_resident_buffer_load_template(
+            _BUN_WEBGPU_PACKAGE_PREPARED_TEMPLATE
         ),
         execution_boundary="plan",
     ),
     "doe_bun_package_prepared": ExecutorSpec(
         executor_id="doe_bun_package_prepared",
-        command_template=(
-            "bun bench/executors/run-bun-webgpu-plan.js "
-            "--provider doe --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
-            "--trace-meta {trace_meta} --workload {workload}"
+        command_template=_DOE_BUN_PACKAGE_PREPARED_TEMPLATE,
+        execution_boundary="plan",
+    ),
+    "doe_bun_package_ffi_prepared": ExecutorSpec(
+        executor_id="doe_bun_package_ffi_prepared",
+        command_template=_DOE_BUN_PACKAGE_FFI_PREPARED_TEMPLATE,
+        execution_boundary="plan",
+    ),
+    "doe_bun_package_prepared_resident_buffer_loads": ExecutorSpec(
+        executor_id="doe_bun_package_prepared_resident_buffer_loads",
+        command_template=_resident_buffer_load_template(
+            _DOE_BUN_PACKAGE_PREPARED_TEMPLATE
+        ),
+        execution_boundary="plan",
+    ),
+    "doe_bun_package_ffi_prepared_resident_buffer_loads": ExecutorSpec(
+        executor_id="doe_bun_package_ffi_prepared_resident_buffer_loads",
+        command_template=_resident_buffer_load_template(
+            _DOE_BUN_PACKAGE_FFI_PREPARED_TEMPLATE
         ),
         execution_boundary="plan",
     ),

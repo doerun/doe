@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -174,7 +175,7 @@ def receipt_run_view(receipt: dict[str, Any]) -> dict[str, Any]:
 def group_run_artifacts_by_workload(
     artifacts: list[dict[str, Any]],
 ) -> dict[str, dict[str, dict[str, Any]]]:
-    grouped: dict[str, dict[str, dict[str, Any]]] = {}
+    grouped_lists: dict[str, dict[str, list[dict[str, Any]]]] = {}
     for artifact in artifacts:
         workload = artifact.get("workload", {})
         if not isinstance(workload, dict):
@@ -183,14 +184,96 @@ def group_run_artifacts_by_workload(
         product = str(artifact.get("product", "")).strip()
         if not workload_id or not product:
             raise ValueError("run receipt missing workload.id or product")
-        grouped.setdefault(workload_id, {})
-        if product in grouped[workload_id]:
-            raise ValueError(
-                f"duplicate run receipt for workload {workload_id!r} "
-                f"and product {product!r}"
-            )
-        grouped[workload_id][product] = artifact
+        grouped_lists.setdefault(workload_id, {}).setdefault(product, []).append(artifact)
+
+    grouped: dict[str, dict[str, dict[str, Any]]] = {}
+    for workload_id, product_groups in grouped_lists.items():
+        grouped[workload_id] = {}
+        for product, receipts in product_groups.items():
+            grouped[workload_id][product] = merge_run_receipts(receipts)
     return grouped
+
+
+def _identity_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+
+
+def _assert_merge_field_matches(
+    *,
+    receipts: list[dict[str, Any]],
+    field_name: str,
+    context: str,
+) -> None:
+    first = receipts[0].get(field_name)
+    first_identity = _identity_json(first)
+    for receipt in receipts[1:]:
+        if _identity_json(receipt.get(field_name)) != first_identity:
+            raise ValueError(f"cannot merge run receipts with different {context}")
+
+
+def merge_run_receipts(receipts: list[dict[str, Any]]) -> dict[str, Any]:
+    if not receipts:
+        raise ValueError("cannot merge an empty run receipt list")
+    if len(receipts) == 1:
+        return receipts[0]
+
+    for field_name, context in (
+        ("product", "products"),
+        ("executorId", "executor ids"),
+        ("workload", "workloads"),
+        ("workloadManifest", "workload manifests"),
+        ("normalization", "normalization metadata"),
+    ):
+        _assert_merge_field_matches(
+            receipts=receipts,
+            field_name=field_name,
+            context=context,
+        )
+
+    merged = deepcopy(receipts[0])
+    merged_samples: list[dict[str, Any]] = []
+    receipt_paths: list[str] = []
+    return_codes: list[int] = []
+    timing_sources: set[str] = set()
+    timing_classes: set[str] = set()
+    timed_sample_count = 0
+    success = True
+
+    for receipt in receipts:
+        path = str(receipt.get("_receiptPath", "")).strip()
+        if path:
+            receipt_paths.append(path)
+        execution = receipt.get("execution", {})
+        if not isinstance(execution, dict):
+            execution = {}
+        success = success and bool(execution.get("success", False))
+        timed_sample_count += int(execution.get("timedSampleCount", 0) or 0)
+        for return_code in execution.get("returnCodes", []):
+            try:
+                return_codes.append(int(return_code))
+            except (TypeError, ValueError):
+                continue
+        timing_sources.update(str(value) for value in execution.get("timingSources", []))
+        timing_classes.update(str(value) for value in execution.get("timingClasses", []))
+        for sample in receipt.get("samples", []):
+            if isinstance(sample, dict):
+                merged_samples.append(deepcopy(sample))
+
+    merged["samples"] = merged_samples
+    if receipt_paths:
+        merged["_receiptPath"] = receipt_paths[0]
+        merged["_receiptPaths"] = receipt_paths
+    execution = merged.get("execution", {})
+    if not isinstance(execution, dict):
+        execution = {}
+    execution["success"] = success
+    execution["timedSampleCount"] = timed_sample_count
+    execution["returnCodes"] = sorted(set(return_codes))
+    execution["timingSources"] = sorted(timing_sources)
+    execution["timingClasses"] = sorted(timing_classes)
+    execution["mergedReceiptCount"] = len(receipts)
+    merged["execution"] = execution
+    return merged
 
 
 def _workload_manifest_ref(receipt: dict[str, Any]) -> dict[str, Any]:

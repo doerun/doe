@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "planKind": "package_developer",
+  "planId": "package_queue_submit_completion",
+  "executorId": "node_webgpu_package",
+  "workloadId": "package_queue_submit_completion",
+  "domain": "queue-submit",
+  "comparable": true,
+  "description": "Package-surface tiny compute submission with completion and readback.",
+  "timing": {
+    "iterations": 1,
+    "warmup": 0,
+    "timingSource": "doe-execution-total-ns",
+    "timingClass": "operation"
+  },
+  "adapter": {
+    "powerPreference": "high-performance",
+    "requiredFeatures": [],
+    "requiredLimits": {}
+  },
+  "buffers": [
+    {
+      "id": "queue_out",
+      "size": 4,
+      "usage": ["storage", "copy_src"]
+    },
+    {
+      "id": "queue_readback",
+      "size": 4,
+      "usage": ["copy_dst", "map_read"]
+    }
+  ],
+  "modules": [
+    {
+      "id": "queue_signal",
+      "kind": "compute",
+      "entryPoint": "main",
+      "source": {
+        "kind": "inline",
+        "code": "@group(0) @binding(0) var<storage, read_write> out: array<u32>; @compute @workgroup_size(1) fn main() { out[0] = 1u; }"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "dispatch",
+      "moduleId": "queue_signal",
+      "workgroups": [1, 1, 1],
+      "bindings": [
+        {
+          "binding": 0,
+          "bufferId": "queue_out",
+          "bufferType": "storage",
+          "visibility": ["compute"]
+        }
+      ]
+    },
+    {
+      "kind": "copyBufferToBuffer",
+      "srcBufferId": "queue_out",
+      "dstBufferId": "queue_readback",
+      "srcOffset": 0,
+      "dstOffset": 0,
+      "sizeBytes": 4
+    },
+    {
+      "kind": "readBuffer",
+      "bufferId": "queue_readback",
+      "validate": {
+        "kind": "u32PrefixEquals",
+        "values": [1]
+      }
+    }
+  ]
+}

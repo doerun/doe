@@ -8,15 +8,15 @@
       "comparison": "dawn"
     },
     {
-      "displayName": "Doe vs node-webgpu package",
-      "id": "doe_vs_node_webgpu_package",
+      "displayName": "Doe-backed WebGPU vs Dawn-backed node-webgpu",
+      "id": "doe_vs_dawn_node_webgpu_package",
       "baseline": "doe",
       "providerSet": "package_node_providers",
       "comparison": "node-webgpu"
     },
     {
-      "displayName": "Doe vs bun-webgpu package",
-      "id": "doe_vs_bun_webgpu_package",
+      "displayName": "Doe-backed WebGPU vs Dawn-backed bun-webgpu",
+      "id": "doe_vs_dawn_bun_webgpu_package",
       "baseline": "doe",
       "providerSet": "package_bun_providers",
       "comparison": "bun-webgpu"
@@ -70,8 +70,8 @@
       "surface": "backend_native"
     },
     {
-      "displayName": "Doe vs node-webgpu package",
-      "id": "doe_vs_node_webgpu_package",
+      "displayName": "Doe-backed WebGPU vs Dawn-backed node-webgpu",
+      "id": "doe_vs_dawn_node_webgpu_package",
       "products": [
         "doe",
         "node_webgpu_package"
@@ -79,8 +79,8 @@
       "surface": "node_package"
     },
     {
-      "displayName": "Doe vs bun-webgpu package",
-      "id": "doe_vs_bun_webgpu_package",
+      "displayName": "Doe-backed WebGPU vs Dawn-backed bun-webgpu",
+      "id": "doe_vs_dawn_bun_webgpu_package",
       "products": [
         "doe",
         "bun_webgpu_package"

@@ -251,14 +251,18 @@ pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, 
 pub export fn doeNativeRenderPassSetVertexBuffer(pass_raw: ?*anyopaque, slot: u32, buffer_raw: ?*anyopaque, offset: u64, size: u64) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
     if (slot >= native_shared.MAX_VERTEX_BUFFERS) return;
-    pass.vertex_buffers[slot] = cast(DoeBuffer, buffer_raw);
+    const buffer = cast(DoeBuffer, buffer_raw);
+    if (buffer != null and buffer.?.error_object) return;
+    pass.vertex_buffers[slot] = buffer;
     pass.vertex_buffer_offsets[slot] = offset;
     pass.vertex_buffer_sizes[slot] = size;
 }
 
 pub export fn doeNativeRenderPassSetIndexBuffer(pass_raw: ?*anyopaque, buffer_raw: ?*anyopaque, format: u32, offset: u64, size: u64) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
-    pass.index_buffer = cast(DoeBuffer, buffer_raw);
+    const buffer = cast(DoeBuffer, buffer_raw);
+    if (buffer != null and buffer.?.error_object) return;
+    pass.index_buffer = buffer;
     pass.index_format = format;
     pass.index_offset = offset;
     pass.index_buffer_size = size;
@@ -392,6 +396,7 @@ pub export fn doeNativeRenderPassDrawIndirect(pass_raw: ?*anyopaque, indirect_bu
     }
     const pip = pass.pipeline orelse return;
     const indirect_buffer = cast(DoeBuffer, indirect_buffer_raw) orelse return;
+    if (indirect_buffer.error_object) return;
     var cmd = base_render_cmd(pass, pip);
     cmd.indirect = true;
     cmd.indirect_buffer = indirect_buffer.mtl;
@@ -410,6 +415,7 @@ pub export fn doeNativeRenderPassDrawIndexedIndirect(pass_raw: ?*anyopaque, indi
     }
     const pip = pass.pipeline orelse return;
     const indirect_buffer = cast(DoeBuffer, indirect_buffer_raw) orelse return;
+    if (indirect_buffer.error_object) return;
     var cmd = base_render_cmd(pass, pip);
     cmd.indirect = true;
     cmd.indexed = true;

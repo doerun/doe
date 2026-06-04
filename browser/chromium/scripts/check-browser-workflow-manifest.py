@@ -22,6 +22,9 @@ REQUIRED_APPROVER_ROLES = set(VALID_APPROVER_ROLES)
 VALID_COMPARABILITY = {"component", "none"}
 VALID_REQUIRED_STATUS = {"ok", "optional"}
 VALID_CLAIM_SCOPES = {"l2_component_only", "l2_diagnostic_only"}
+VISUAL_RESOURCE_TEMPLATE = "fawn_visual_resource"
+VISUAL_RESOURCE_PREFIX = "browser/chromium/resources/"
+VISUAL_RESOURCE_REQUIRED_METRICS = {"avgFrameMs", "p95FrameMs", "avgFps", "frameCount"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -128,6 +131,7 @@ def check_workflow_manifest(payload: dict[str, Any]) -> list[dict[str, str]]:
         else:
             seen_ids.add(workflow_id)
 
+        scenario_template = _text(row.get("scenarioTemplate"))
         for field in ("scenarioTemplate", "description", "claimLanguage"):
             if not _text(row.get(field)):
                 failures.append(
@@ -139,12 +143,12 @@ def check_workflow_manifest(payload: dict[str, Any]) -> list[dict[str, str]]:
                 )
 
         metrics = row.get("metrics")
+        metric_names: set[str] = set()
         if not isinstance(metrics, list) or not metrics:
             failures.append(
                 failure("missing_metrics", f"{row_path}.metrics", "metrics must be non-empty")
             )
         else:
-            seen_metrics: set[str] = set()
             for metric_index, metric in enumerate(metrics):
                 metric_name = _text(metric)
                 if not metric_name:
@@ -155,7 +159,7 @@ def check_workflow_manifest(payload: dict[str, Any]) -> list[dict[str, str]]:
                             "metric must be non-empty",
                         )
                     )
-                elif metric_name in seen_metrics:
+                elif metric_name in metric_names:
                     failures.append(
                         failure(
                             "duplicate_metric",
@@ -163,7 +167,7 @@ def check_workflow_manifest(payload: dict[str, Any]) -> list[dict[str, str]]:
                             f"duplicate metric {metric_name}",
                         )
                     )
-                seen_metrics.add(metric_name)
+                metric_names.add(metric_name)
 
         comparability = row.get("comparabilityExpectation")
         claim_scope = row.get("claimScope")
@@ -238,6 +242,69 @@ def check_workflow_manifest(payload: dict[str, Any]) -> list[dict[str, str]]:
                     "unsafe_claim_language",
                     f"{row_path}.claimLanguage",
                     "claimLanguage must state it is never a substitute for L0 parity claims",
+                )
+            )
+
+        resource_path = _text(row.get("resourcePath"))
+        if scenario_template == VISUAL_RESOURCE_TEMPLATE:
+            if not resource_path:
+                failures.append(
+                    failure(
+                        "missing_visual_resource_path",
+                        f"{row_path}.resourcePath",
+                        "fawn visual workflow rows require resourcePath",
+                    )
+                )
+            elif (
+                not resource_path.startswith(VISUAL_RESOURCE_PREFIX)
+                or not resource_path.endswith(".html")
+                or ".." in resource_path
+            ):
+                failures.append(
+                    failure(
+                        "invalid_visual_resource_path",
+                        f"{row_path}.resourcePath",
+                        "resourcePath must be a browser/chromium/resources/*.html path",
+                    )
+                )
+            elif not (REPO_ROOT / resource_path).is_file():
+                failures.append(
+                    failure(
+                        "missing_visual_resource",
+                        f"{row_path}.resourcePath",
+                        f"resourcePath does not exist: {resource_path}",
+                    )
+                )
+            missing_metrics = sorted(VISUAL_RESOURCE_REQUIRED_METRICS - metric_names)
+            if missing_metrics:
+                failures.append(
+                    failure(
+                        "missing_visual_metrics",
+                        f"{row_path}.metrics",
+                        "fawn visual workflow rows require "
+                        + ", ".join(sorted(VISUAL_RESOURCE_REQUIRED_METRICS)),
+                    )
+                )
+            for selector_field in (
+                "statusSelector",
+                "frameSelector",
+                "workloadSelector",
+                "adapterSelector",
+            ):
+                if selector_field in row and not _text(row.get(selector_field)):
+                    failures.append(
+                        failure(
+                            "invalid_visual_selector",
+                            f"{row_path}.{selector_field}",
+                            "optional visual selectors must be non-empty strings",
+                        )
+                    )
+        elif resource_path:
+            failures.append(
+                failure(
+                    "unexpected_resource_path",
+                    f"{row_path}.resourcePath",
+                    "resourcePath is only valid for fawn_visual_resource rows",
                 )
             )
 

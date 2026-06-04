@@ -43,6 +43,23 @@ pub fn required_buffer_bytes(
             const total_elements = try std.math.add(u64, max_accessed, 1);
             break :blk try std.math.mul(u64, total_elements, precondition.element_stride_bytes);
         },
+        .workgroup_component => blk: {
+            const axis = precondition.gid_axis;
+            if (axis >= dispatch_workgroups.len) {
+                return error.DispatchPreconditionFailed;
+            }
+            const total_workgroups: u64 = dispatch_workgroups[axis];
+            if (total_workgroups == 0) break :blk 0;
+            const max_group_scaled = try std.math.mul(u64, total_workgroups - 1, precondition.element_multiplier);
+            const max_loop_scaled: u64 = if (precondition.loop_limit == 0)
+                0
+            else
+                try std.math.mul(u64, precondition.loop_limit - 1, precondition.loop_limit_multiplier);
+            const affine_max = try std.math.add(u64, max_group_scaled, max_loop_scaled);
+            const max_accessed = try std.math.add(u64, affine_max, precondition.element_offset);
+            const total_elements = try std.math.add(u64, max_accessed, 1);
+            break :blk try std.math.mul(u64, total_elements, precondition.element_stride_bytes);
+        },
         .gid_component_tiled => blk: {
             const axis = precondition.gid_axis;
             if (axis >= dispatch_workgroups.len or axis >= workgroup_size.len) {
@@ -74,6 +91,7 @@ pub fn required_buffer_bytes(
             const total_elements = try std.math.add(u64, element_count, precondition.element_offset);
             break :blk try std.math.mul(u64, total_elements, precondition.element_stride_bytes);
         },
+        .uniform_extent => error.DispatchPreconditionFailed,
         .loop_component => blk: {
             // Pure loop-only: max accessed index is
             //   (loop_limit - 1) * loop_limit_multiplier + element_offset
@@ -90,6 +108,22 @@ pub fn required_buffer_bytes(
             break :blk try std.math.mul(u64, total_elements, precondition.element_stride_bytes);
         },
     };
+}
+
+pub fn required_uniform_extent_buffer_bytes(
+    precondition: ir.DispatchPrecondition,
+    uniform_values: [2]u32,
+) ValidationError!u64 {
+    if (precondition.kind != .uniform_extent) return error.DispatchPreconditionFailed;
+    if (precondition.uniform_u32_count == 0 or precondition.uniform_u32_count > uniform_values.len) {
+        return error.DispatchPreconditionFailed;
+    }
+    var total_elements: u64 = 1;
+    for (0..precondition.uniform_u32_count) |index| {
+        total_elements = try std.math.mul(u64, total_elements, uniform_values[index]);
+    }
+    total_elements = try std.math.add(u64, total_elements, precondition.element_offset);
+    return try std.math.mul(u64, total_elements, precondition.element_stride_bytes);
 }
 
 pub fn invocation_extent(dispatch_workgroups: u32, workgroup_size: u32) ValidationError!u64 {
@@ -222,6 +256,19 @@ test "required_buffer_bytes computes loop-only bound independent of dispatch" {
     }, .{ 1, 1, 1 }, .{ 1, 1, 1 });
     // Tight loop-only: (limit-1)*lm + offset + 1 = 2047 + 0 + 1 = 2048; *stride=4 = 8192.
     try std.testing.expectEqual(@as(u64, 8192), required);
+}
+
+test "required_uniform_extent_buffer_bytes multiplies uniform dimensions" {
+    const required = try required_uniform_extent_buffer_bytes(.{
+        .kind = .uniform_extent,
+        .gid_axis = 0,
+        .storage_binding = .{ .group = 0, .binding = 1 },
+        .element_stride_bytes = 4,
+        .uniform_binding = .{ .group = 0, .binding = 0 },
+        .uniform_u32_offsets = .{ 0, 4 },
+        .uniform_u32_count = 2,
+    }, .{ 8, 16 });
+    try std.testing.expectEqual(@as(u64, 512), required);
 }
 
 test "required_buffer_bytes loop-only empty loop needs no capacity" {

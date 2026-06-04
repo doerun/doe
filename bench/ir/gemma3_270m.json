@@ -906,7 +906,14 @@
               "buffer_size": 16,
               "visibility": "compute"
             }
-          ]
+          ],
+          "captureBufferHandle": 2414,
+          "captureOffset": 0,
+          "captureSize": 16,
+          "semanticOpId": "gemma3_270m_prefill_32tok_logits_prefix",
+          "semanticStage": "inference",
+          "semanticPhase": "prefill_logits",
+          "semanticTokenIndex": 31
         }
       ]
     },
@@ -916,6 +923,7 @@
       "planPath": "bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json",
       "commandsPath": "bench/plans/generated/compat/inference_gemma3_270m_decode_1tok_commands.json",
       "timingScope": "operation",
+      "matmulGemvVariant": "row2_helper_exact",
       "commands": [
         {
           "kind": "buffer_write",
@@ -1032,7 +1040,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -1078,7 +1086,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -1124,7 +1132,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -1299,7 +1307,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -1428,7 +1436,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -1474,7 +1482,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -1548,7 +1556,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -1677,7 +1685,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -1755,7 +1763,14 @@
               "buffer_size": 4,
               "visibility": "compute"
             }
-          ]
+          ],
+          "captureBufferHandle": 2228,
+          "captureOffset": 0,
+          "captureSize": 4,
+          "semanticOpId": "gemma3_270m_decode_1tok_sample_token",
+          "semanticStage": "inference",
+          "semanticPhase": "decode_sample_token",
+          "semanticTokenIndex": 0
         }
       ]
     },
@@ -2801,7 +2816,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -2847,7 +2862,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -2893,7 +2908,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -3068,7 +3083,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -3197,7 +3212,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -3243,7 +3258,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -3317,7 +3332,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -3446,7 +3461,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -3641,7 +3656,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -3687,7 +3702,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -3733,7 +3748,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -3908,7 +3923,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4037,7 +4052,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4083,7 +4098,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4157,7 +4172,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4286,7 +4301,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4481,7 +4496,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4527,7 +4542,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4573,7 +4588,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4748,7 +4763,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4877,7 +4892,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4923,7 +4938,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -4997,7 +5012,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -5126,7 +5141,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -5321,7 +5336,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -5367,7 +5382,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -5413,7 +5428,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -5588,7 +5603,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -5717,7 +5732,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -5763,7 +5778,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -5837,7 +5852,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -5966,7 +5981,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -6161,7 +6176,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -6207,7 +6222,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -6253,7 +6268,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -6428,7 +6443,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -6557,7 +6572,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -6603,7 +6618,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -6677,7 +6692,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -6806,7 +6821,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7001,7 +7016,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7047,7 +7062,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7093,7 +7108,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7268,7 +7283,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7397,7 +7412,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7443,7 +7458,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7517,7 +7532,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7646,7 +7661,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7841,7 +7856,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7887,7 +7902,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -7933,7 +7948,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -8108,7 +8123,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -8237,7 +8252,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -8283,7 +8298,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -8357,7 +8372,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -8486,7 +8501,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -8681,7 +8696,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -8727,7 +8742,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -8773,7 +8788,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -8948,7 +8963,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -9077,7 +9092,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -9123,7 +9138,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -9197,7 +9212,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -9326,7 +9341,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -9521,7 +9536,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -9567,7 +9582,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -9613,7 +9628,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -9788,7 +9803,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -9917,7 +9932,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -9963,7 +9978,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -10037,7 +10052,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -10166,7 +10181,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -10361,7 +10376,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -10407,7 +10422,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -10453,7 +10468,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -10628,7 +10643,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -10757,7 +10772,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -10803,7 +10818,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -10877,7 +10892,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -11006,7 +11021,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -11201,7 +11216,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -11247,7 +11262,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -11293,7 +11308,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -11468,7 +11483,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -11597,7 +11612,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -11643,7 +11658,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -11717,7 +11732,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -11846,7 +11861,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12041,7 +12056,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12087,7 +12102,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12133,7 +12148,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12308,7 +12323,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12437,7 +12452,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12483,7 +12498,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12557,7 +12572,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12686,7 +12701,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12881,7 +12896,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12927,7 +12942,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -12973,7 +12988,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -13148,7 +13163,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -13277,7 +13292,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -13323,7 +13338,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -13397,7 +13412,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -13526,7 +13541,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -13721,7 +13736,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -13767,7 +13782,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -13813,7 +13828,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -13988,7 +14003,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -14117,7 +14132,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -14163,7 +14178,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -14237,7 +14252,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -14366,7 +14381,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -14561,7 +14576,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -14607,7 +14622,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -14653,7 +14668,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -14828,7 +14843,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -14957,7 +14972,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -15003,7 +15018,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -15077,7 +15092,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -15206,7 +15221,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -15401,7 +15416,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -15447,7 +15462,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -15493,7 +15508,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -15668,7 +15683,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -15797,7 +15812,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -15843,7 +15858,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -15917,7 +15932,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -16046,7 +16061,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -16241,7 +16256,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -16287,7 +16302,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -16333,7 +16348,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -16508,7 +16523,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -16637,7 +16652,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -16683,7 +16698,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -16757,7 +16772,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -16886,7 +16901,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -17081,7 +17096,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -17127,7 +17142,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -17173,7 +17188,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -17348,7 +17363,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -17477,7 +17492,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -17523,7 +17538,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -17597,7 +17612,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -17726,7 +17741,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -17921,7 +17936,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -17967,7 +17982,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -18013,7 +18028,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -18188,7 +18203,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -18317,7 +18332,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -18363,7 +18378,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -18437,7 +18452,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -18566,7 +18581,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -18761,7 +18776,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -18807,7 +18822,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -18853,7 +18868,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -19028,7 +19043,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -19157,7 +19172,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -19203,7 +19218,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -19277,7 +19292,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -19406,7 +19421,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -19601,7 +19616,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -19647,7 +19662,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -19693,7 +19708,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -19868,7 +19883,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -19997,7 +20012,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -20043,7 +20058,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -20117,7 +20132,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -20246,7 +20261,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -20441,7 +20456,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -20487,7 +20502,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -20533,7 +20548,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -20708,7 +20723,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -20837,7 +20852,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -20883,7 +20898,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -20957,7 +20972,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -21086,7 +21101,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -21281,7 +21296,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -21327,7 +21342,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -21373,7 +21388,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -21548,7 +21563,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -21677,7 +21692,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -21723,7 +21738,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -21797,7 +21812,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -21926,7 +21941,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -22121,7 +22136,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -22167,7 +22182,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -22213,7 +22228,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -22388,7 +22403,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -22517,7 +22532,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -22563,7 +22578,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -22637,7 +22652,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -22766,7 +22781,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -22961,7 +22976,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -23007,7 +23022,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -23053,7 +23068,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -23228,7 +23243,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -23357,7 +23372,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -23403,7 +23418,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -23477,7 +23492,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -23606,7 +23621,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -23801,7 +23816,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -23847,7 +23862,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -23893,7 +23908,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -24068,7 +24083,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -24197,7 +24212,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -24243,7 +24258,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -24317,7 +24332,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -24446,7 +24461,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -24641,7 +24656,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -24687,7 +24702,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -24733,7 +24748,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -24908,7 +24923,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25037,7 +25052,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25083,7 +25098,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25157,7 +25172,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25286,7 +25301,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25481,7 +25496,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25527,7 +25542,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25573,7 +25588,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25748,7 +25763,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25877,7 +25892,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25923,7 +25938,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -25997,7 +26012,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -26126,7 +26141,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -26321,7 +26336,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -26367,7 +26382,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -26413,7 +26428,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -26588,7 +26603,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -26717,7 +26732,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -26763,7 +26778,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -26837,7 +26852,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -26966,7 +26981,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -27161,7 +27176,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -27207,7 +27222,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -27253,7 +27268,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -27428,7 +27443,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -27557,7 +27572,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -27603,7 +27618,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -27677,7 +27692,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -27806,7 +27821,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28001,7 +28016,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28047,7 +28062,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28093,7 +28108,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28268,7 +28283,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28397,7 +28412,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28443,7 +28458,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28517,7 +28532,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28646,7 +28661,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28841,7 +28856,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28887,7 +28902,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -28933,7 +28948,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -29108,7 +29123,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -29237,7 +29252,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -29283,7 +29298,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -29357,7 +29372,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -29486,7 +29501,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -29681,7 +29696,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -29727,7 +29742,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -29773,7 +29788,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -29948,7 +29963,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -30077,7 +30092,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -30123,7 +30138,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -30197,7 +30212,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -30326,7 +30341,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -30521,7 +30536,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -30567,7 +30582,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -30613,7 +30628,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -30788,7 +30803,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -30917,7 +30932,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -30963,7 +30978,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -31037,7 +31052,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -31166,7 +31181,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -31361,7 +31376,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -31407,7 +31422,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -31453,7 +31468,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -31628,7 +31643,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -31757,7 +31772,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -31803,7 +31818,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -31877,7 +31892,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -32006,7 +32021,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -32201,7 +32216,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -32247,7 +32262,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -32293,7 +32308,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -32468,7 +32483,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -32597,7 +32612,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -32643,7 +32658,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -32717,7 +32732,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -32846,7 +32861,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33041,7 +33056,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33087,7 +33102,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33133,7 +33148,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33308,7 +33323,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33437,7 +33452,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33483,7 +33498,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33557,7 +33572,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33686,7 +33701,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33881,7 +33896,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33927,7 +33942,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -33973,7 +33988,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -34148,7 +34163,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -34277,7 +34292,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -34323,7 +34338,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -34397,7 +34412,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -34526,7 +34541,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -34721,7 +34736,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -34767,7 +34782,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -34813,7 +34828,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -34988,7 +35003,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -35117,7 +35132,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -35163,7 +35178,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -35237,7 +35252,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -35366,7 +35381,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -35561,7 +35576,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -35607,7 +35622,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -35653,7 +35668,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -35828,7 +35843,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -35957,7 +35972,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -36003,7 +36018,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -36077,7 +36092,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -36206,7 +36221,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -36401,7 +36416,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -36447,7 +36462,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -36493,7 +36508,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -36668,7 +36683,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -36797,7 +36812,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -36843,7 +36858,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -36917,7 +36932,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -37046,7 +37061,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -37241,7 +37256,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -37287,7 +37302,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -37333,7 +37348,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -37508,7 +37523,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -37637,7 +37652,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -37683,7 +37698,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -37757,7 +37772,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -37886,7 +37901,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -38081,7 +38096,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -38127,7 +38142,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -38173,7 +38188,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -38348,7 +38363,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -38477,7 +38492,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -38523,7 +38538,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -38597,7 +38612,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -38726,7 +38741,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -38921,7 +38936,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -38967,7 +38982,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -39013,7 +39028,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -39188,7 +39203,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -39317,7 +39332,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -39363,7 +39378,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -39437,7 +39452,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -39566,7 +39581,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -39761,7 +39776,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -39807,7 +39822,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -39853,7 +39868,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -40028,7 +40043,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -40157,7 +40172,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -40203,7 +40218,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -40277,7 +40292,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -40406,7 +40421,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -40601,7 +40616,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -40647,7 +40662,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -40693,7 +40708,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -40868,7 +40883,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -40997,7 +41012,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -41043,7 +41058,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -41117,7 +41132,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -41246,7 +41261,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -41441,7 +41456,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -41487,7 +41502,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -41533,7 +41548,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -41708,7 +41723,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -41837,7 +41852,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -41883,7 +41898,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -41957,7 +41972,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -42086,7 +42101,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -42281,7 +42296,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -42327,7 +42342,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -42373,7 +42388,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -42548,7 +42563,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -42677,7 +42692,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -42723,7 +42738,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -42797,7 +42812,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -42926,7 +42941,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -43121,7 +43136,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -43167,7 +43182,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -43213,7 +43228,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -43388,7 +43403,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -43517,7 +43532,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -43563,7 +43578,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -43637,7 +43652,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -43766,7 +43781,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -43961,7 +43976,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -44007,7 +44022,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -44053,7 +44068,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -44228,7 +44243,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -44357,7 +44372,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -44403,7 +44418,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -44477,7 +44492,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -44606,7 +44621,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -44801,7 +44816,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -44847,7 +44862,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -44893,7 +44908,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -45068,7 +45083,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -45197,7 +45212,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -45243,7 +45258,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -45317,7 +45332,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -45446,7 +45461,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -45641,7 +45656,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -45687,7 +45702,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -45733,7 +45748,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -45908,7 +45923,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46037,7 +46052,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46083,7 +46098,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46157,7 +46172,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46286,7 +46301,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46481,7 +46496,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46527,7 +46542,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46573,7 +46588,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46748,7 +46763,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46877,7 +46892,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46923,7 +46938,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -46997,7 +47012,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -47126,7 +47141,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -47321,7 +47336,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -47367,7 +47382,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -47413,7 +47428,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -47588,7 +47603,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -47717,7 +47732,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -47763,7 +47778,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -47837,7 +47852,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -47966,7 +47981,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -48161,7 +48176,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -48207,7 +48222,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -48253,7 +48268,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -48428,7 +48443,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -48557,7 +48572,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -48603,7 +48618,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -48677,7 +48692,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -48806,7 +48821,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49001,7 +49016,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49047,7 +49062,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49093,7 +49108,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49268,7 +49283,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49397,7 +49412,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49443,7 +49458,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49517,7 +49532,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49646,7 +49661,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49841,7 +49856,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49887,7 +49902,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -49933,7 +49948,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -50108,7 +50123,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -50237,7 +50252,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -50283,7 +50298,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -50357,7 +50372,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -50486,7 +50501,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -50681,7 +50696,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -50727,7 +50742,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -50773,7 +50788,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -50948,7 +50963,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -51077,7 +51092,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -51123,7 +51138,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -51197,7 +51212,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -51326,7 +51341,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -51521,7 +51536,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -51567,7 +51582,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -51613,7 +51628,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -51788,7 +51803,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -51917,7 +51932,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -51963,7 +51978,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -52037,7 +52052,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -52166,7 +52181,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -52361,7 +52376,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -52407,7 +52422,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -52453,7 +52468,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -52628,7 +52643,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -52757,7 +52772,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -52803,7 +52818,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -52877,7 +52892,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -53006,7 +53021,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -53201,7 +53216,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -53247,7 +53262,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -53293,7 +53308,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -53468,7 +53483,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -53597,7 +53612,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -53643,7 +53658,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -53717,7 +53732,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -53846,7 +53861,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54041,7 +54056,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54087,7 +54102,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54133,7 +54148,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54308,7 +54323,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54437,7 +54452,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54483,7 +54498,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54557,7 +54572,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54686,7 +54701,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54881,7 +54896,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54927,7 +54942,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -54973,7 +54988,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -55148,7 +55163,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -55277,7 +55292,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -55323,7 +55338,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -55397,7 +55412,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -55526,7 +55541,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -55721,7 +55736,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -55767,7 +55782,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -55813,7 +55828,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -55988,7 +56003,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -56117,7 +56132,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -56163,7 +56178,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -56237,7 +56252,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 24,
+          "x": 1536,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -56366,7 +56381,7 @@
         {
           "kind": "kernel_dispatch",
           "kernel": "matmul-gemv.wgsl",
-          "x": 64,
+          "x": 4096,
           "y": 1,
           "z": 1,
           "initialize_buffers_on_create": true,
@@ -56444,7 +56459,14 @@
               "buffer_size": 4,
               "visibility": "compute"
             }
-          ]
+          ],
+          "captureBufferHandle": 2228,
+          "captureOffset": 0,
+          "captureSize": 4,
+          "semanticOpId": "gemma3_270m_prefill_64tok_decode_64tok_final_sample_token",
+          "semanticStage": "inference",
+          "semanticPhase": "decode_sample_token",
+          "semanticTokenIndex": 63
         }
       ]
     }

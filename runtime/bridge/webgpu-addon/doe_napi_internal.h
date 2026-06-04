@@ -77,6 +77,21 @@ typedef uint32_t WGPUBool;
 #define WGPU_CALLBACK_MODE_WAIT_ANY_ONLY 1
 #define WGPU_QUEUE_WORK_DONE_STATUS_SUCCESS 1
 #define BATCH_MAX_BIND_GROUPS 4
+#define DOE_GPU_MAP_READ 0x0001u
+#define DOE_READBACK_BREAKDOWN_FIELD_COUNT 6u
+#define DOE_READBACK_BREAKDOWN_WAIT_COMPLETED 0u
+#define DOE_READBACK_BREAKDOWN_DEFERRED_COPY 1u
+#define DOE_READBACK_BREAKDOWN_DEFERRED_RESOLVE 2u
+#define DOE_READBACK_BREAKDOWN_MAP 3u
+#define DOE_READBACK_BREAKDOWN_COPY 4u
+#define DOE_READBACK_BREAKDOWN_UNMAP 5u
+#define DOE_DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT 6u
+#define DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY 0u
+#define DOE_DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT 1u
+#define DOE_DISPATCH_FLUSH_BREAKDOWN_FLUSH 2u
+#define DOE_DISPATCH_FLUSH_BREAKDOWN_WAIT_COMPLETED 3u
+#define DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_COPY 4u
+#define DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_RESOLVE 5u
 
 typedef struct { uint64_t id; } WGPUFuture;
 typedef struct { const char* data; size_t length; } WGPUStringView;
@@ -466,6 +481,8 @@ DECL_PFN(void, wgpuComputePassEncoderEnd, (WGPUComputePassEncoder));
 DECL_PFN(void, wgpuComputePassEncoderRelease, (WGPUComputePassEncoder));
 DECL_PFN(void, wgpuQueueSubmit, (WGPUQueue, size_t, const WGPUCommandBuffer*));
 DECL_PFN(void, wgpuQueueWriteBuffer, (WGPUQueue, WGPUBuffer, uint64_t, const void*, size_t));
+DECL_PFN(void, doeNativeQueueWriteBuffer, (WGPUQueue, WGPUBuffer, uint64_t, const void*, size_t));
+DECL_PFN(void, doeNativeQueueWriteBufferBatch, (WGPUQueue, size_t, const WGPUBuffer*, const uint64_t*, const uint32_t*, const void*));
 DECL_PFN(WGPUFuture, wgpuQueueOnSubmittedWorkDone, (WGPUQueue, WGPUQueueWorkDoneCallbackInfo));
 DECL_PFN(void, wgpuQueueRelease, (WGPUQueue));
 DECL_PFN(void, wgpuBufferRelease, (WGPUBuffer));
@@ -506,15 +523,23 @@ DECL_PFN(WGPUFuture, doeNativeAdapterRequestDevice, (WGPUAdapter, const void*, W
 DECL_PFN(WGPUAdapter, doeNativeInstanceCreateAdapter, (WGPUInstance, const void*));
 DECL_PFN(WGPUFuture, doeRequestAdapterFlat, (WGPUInstance, const void*, uint32_t, WGPURequestAdapterCallback, void*, void*));
 DECL_PFN(WGPUFuture, doeRequestDeviceFlat, (WGPUAdapter, const void*, uint32_t, WGPURequestDeviceCallback, void*, void*));
+DECL_PFN(WGPUBindGroupLayout, doeNativeDeviceCreateBufferBindGroupLayoutFlat4, (WGPUDevice, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t));
+DECL_PFN(WGPUBindGroup, doeNativeDeviceCreateBufferBindGroupFlat4, (WGPUDevice, WGPUBindGroupLayout, uint32_t, uint32_t, WGPUBuffer, uint64_t, uint32_t, WGPUBuffer, uint64_t, uint32_t, WGPUBuffer, uint64_t, uint32_t, WGPUBuffer, uint64_t));
+DECL_PFN(WGPUPipelineLayout, doeNativeDeviceCreatePipelineLayoutOne, (WGPUDevice, WGPUBindGroupLayout, uint32_t));
+DECL_PFN(void, doeNativePackagePipelineCacheFlush, (void));
 DECL_PFN(void, doeNativeQueueFlush, (void*));
 DECL_PFN(void, doeNativeQueueFlushBreakdown, (void*, uint64_t*, uint64_t*, uint64_t*));
 DECL_PFN(void, doeNativeComputeDispatchFlush, (void*, void*, void**, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint64_t, void*, uint64_t, uint64_t));
+DECL_PFN(void, doeNativeComputeDispatchFlushBreakdown, (void*, void*, void**, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint64_t, void*, uint64_t, uint64_t, uint64_t*));
 DECL_PFN(void, doeNativeComputeDispatchBatchFlush, (void*, size_t, void**, void**, const uint32_t*, const uint32_t*));
+DECL_PFN(void, doeNativeComputeDispatchBatchCopyFlush, (void*, size_t, void**, void**, const uint32_t*, const uint32_t*, void*, uint64_t, void*, uint64_t, uint64_t));
+DECL_PFN(void, doeNativeComputeDispatchBatchCopyFlushBreakdown, (void*, size_t, void**, void**, const uint32_t*, const uint32_t*, void*, uint64_t, void*, uint64_t, uint64_t, uint64_t*));
 DECL_PFN(WGPUQuerySet, doeNativeDeviceCreateQuerySet, (WGPUDevice, uint32_t, uint32_t));
 DECL_PFN(void, doeNativeCommandEncoderWriteTimestamp, (WGPUCommandEncoder, WGPUQuerySet, uint32_t));
 DECL_PFN(void, doeNativeCommandEncoderResolveQuerySet, (WGPUCommandEncoder, WGPUQuerySet, uint32_t, uint32_t, WGPUBuffer, uint64_t));
 DECL_PFN(void, doeNativeQuerySetDestroy, (WGPUQuerySet));
 DECL_PFN(WGPUFuture, doeNativeBufferMapAsync, (WGPUBuffer, uint64_t, size_t, size_t, WGPUBufferMapCallbackInfo));
+DECL_PFN(uint32_t, doeBufferMapReadCopyUnmapFlat, (WGPUQueue, WGPUBuffer, uint64_t, size_t, size_t, uint32_t, void*, uint64_t*));
 
 typedef WGPUFuture (*PFN_wgpuBufferMapAsync2)(WGPUBuffer, uint64_t, size_t, size_t, WGPUBufferMapCallbackInfo);
 extern PFN_wgpuBufferMapAsync2 pfn_wgpuBufferMapAsync2;
@@ -654,6 +679,12 @@ extern DeviceCallbackBinding* g_lost_bindings;
 #define DOE_DIRECT_DIAG_MAP_ASYNC_MS "__doe_diag_map_async_ms"
 #define DOE_DIRECT_DIAG_MAP_QUEUE_FLUSH_MS "__doe_diag_map_queue_flush_ms"
 #define DOE_DIRECT_DIAG_GET_MAPPED_RANGE_MS "__doe_diag_get_mapped_range_ms"
+#define DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_QUEUE_WAIT_COMPLETED_MS "__doe_diag_map_read_copy_unmap_queue_wait_completed_ms"
+#define DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_DEFERRED_COPY_MS "__doe_diag_map_read_copy_unmap_deferred_copy_ms"
+#define DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_DEFERRED_RESOLVE_MS "__doe_diag_map_read_copy_unmap_deferred_resolve_ms"
+#define DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_MAP_MS "__doe_diag_map_read_copy_unmap_map_ms"
+#define DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_COPY_MS "__doe_diag_map_read_copy_unmap_copy_ms"
+#define DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_UNMAP_MS "__doe_diag_map_read_copy_unmap_unmap_ms"
 
 typedef struct { WGPUInstance instance; void* native; } NativeDirectHandleCache;
 typedef struct { WGPUInstance instance; WGPUQueue queue; uint32_t submitted_serial; uint32_t completed_serial; } NativeDirectQueueCache;
@@ -668,6 +699,7 @@ extern napi_ref native_direct_method_adapter_request_device_ref;
 extern napi_ref native_direct_method_adapter_destroy_ref;
 extern napi_ref native_direct_method_queue_submit_ref;
 extern napi_ref native_direct_method_queue_write_buffer_ref;
+extern napi_ref native_direct_method_queue_write_buffer_batch_ref;
 extern napi_ref native_direct_method_queue_on_submitted_work_done_ref;
 extern napi_ref native_direct_method_device_create_buffer_ref;
 extern napi_ref native_direct_method_device_create_shader_module_ref;

@@ -1,5 +1,10 @@
 #include "doe_napi_internal.h"
 
+#define DOE_STACK_BIND_GROUP_LAYOUT_ENTRIES 8
+#define DOE_STACK_BIND_GROUP_ENTRIES 8
+#define DOE_STACK_PIPELINE_LAYOUTS 4
+#define DOE_STACK_ENTRY_POINT_BYTES 128
+
 /* ================================================================
  * Compute Pipeline
  * createComputePipeline(device, shaderModule, entryPoint, pipelineLayout?, constants?)
@@ -60,7 +65,10 @@ napi_value doe_create_compute_pipeline(napi_env env, napi_callback_info info) {
 
     size_t ep_len = 0;
     napi_get_value_string_utf8(env, _args[2], NULL, 0, &ep_len);
-    char* ep = (char*)malloc(ep_len + 1);
+    char ep_stack[DOE_STACK_ENTRY_POINT_BYTES + 1];
+    bool ep_on_heap = ep_len > DOE_STACK_ENTRY_POINT_BYTES;
+    char* ep = ep_on_heap ? (char*)malloc(ep_len + 1) : ep_stack;
+    if (!ep) NAPI_THROW(env, "createComputePipeline: out of memory while parsing entryPoint");
     napi_get_value_string_utf8(env, _args[2], ep, ep_len + 1, &ep_len);
 
     /* pipelineLayout can be null (auto layout) */
@@ -104,7 +112,7 @@ napi_value doe_create_compute_pipeline(napi_env env, napi_callback_info info) {
     desc.compute.constants = override_entries;
 
     WGPUComputePipeline pipeline = pfn_wgpuDeviceCreateComputePipeline(device, &desc);
-    free(ep);
+    if (ep_on_heap) free(ep);
     free_override_constants(override_entries, override_count);
     if (!pipeline) {
         char msg[DOE_ERROR_BUF_CAP];
@@ -238,8 +246,16 @@ napi_value doe_create_bind_group_layout(napi_env env, napi_callback_info info) {
     uint32_t entry_count = 0;
     napi_get_array_length(env, _args[1], &entry_count);
 
-    WGPUBindGroupLayoutEntry* entries = (WGPUBindGroupLayoutEntry*)calloc(
-        entry_count, sizeof(WGPUBindGroupLayoutEntry));
+    WGPUBindGroupLayoutEntry stack_entries[DOE_STACK_BIND_GROUP_LAYOUT_ENTRIES];
+    memset(stack_entries, 0, sizeof(stack_entries));
+    WGPUBindGroupLayoutEntry* heap_entries = NULL;
+    WGPUBindGroupLayoutEntry* entries = stack_entries;
+    if (entry_count > DOE_STACK_BIND_GROUP_LAYOUT_ENTRIES) {
+        heap_entries = (WGPUBindGroupLayoutEntry*)calloc(
+            entry_count, sizeof(WGPUBindGroupLayoutEntry));
+        if (!heap_entries) NAPI_THROW(env, "createBindGroupLayout: out of memory");
+        entries = heap_entries;
+    }
 
     for (uint32_t i = 0; i < entry_count; i++) {
         napi_value elem;
@@ -309,8 +325,38 @@ napi_value doe_create_bind_group_layout(napi_env env, napi_callback_info info) {
     };
 
     WGPUBindGroupLayout layout = pfn_wgpuDeviceCreateBindGroupLayout(device, &desc);
-    free(entries);
+    free(heap_entries);
     if (!layout) NAPI_THROW(env, "createBindGroupLayout failed");
+    return wrap_ptr(env, layout);
+}
+
+napi_value doe_create_buffer_bind_group_layout_flat4(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 6);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDeviceCreateBufferBindGroupLayoutFlat4) {
+        NAPI_THROW(env, "createBufferBindGroupLayoutFlat4 unavailable");
+    }
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    if (!device) NAPI_THROW(env, "Invalid device");
+    uint32_t entry_count = 0;
+    uint32_t b0 = 0;
+    uint32_t b1 = 0;
+    uint32_t b2 = 0;
+    uint32_t b3 = 0;
+    napi_get_value_uint32(env, _args[1], &entry_count);
+    napi_get_value_uint32(env, _args[2], &b0);
+    napi_get_value_uint32(env, _args[3], &b1);
+    napi_get_value_uint32(env, _args[4], &b2);
+    napi_get_value_uint32(env, _args[5], &b3);
+    WGPUBindGroupLayout layout = pfn_doeNativeDeviceCreateBufferBindGroupLayoutFlat4(
+        device,
+        entry_count,
+        b0,
+        b1,
+        b2,
+        b3
+    );
+    if (!layout) NAPI_THROW(env, "createBufferBindGroupLayoutFlat4 failed");
     return wrap_ptr(env, layout);
 }
 
@@ -337,8 +383,16 @@ napi_value doe_create_bind_group(napi_env env, napi_callback_info info) {
     uint32_t entry_count = 0;
     napi_get_array_length(env, _args[2], &entry_count);
 
-    WGPUBindGroupEntry* entries = (WGPUBindGroupEntry*)calloc(
-        entry_count, sizeof(WGPUBindGroupEntry));
+    WGPUBindGroupEntry stack_entries[DOE_STACK_BIND_GROUP_ENTRIES];
+    memset(stack_entries, 0, sizeof(stack_entries));
+    WGPUBindGroupEntry* heap_entries = NULL;
+    WGPUBindGroupEntry* entries = stack_entries;
+    if (entry_count > DOE_STACK_BIND_GROUP_ENTRIES) {
+        heap_entries = (WGPUBindGroupEntry*)calloc(
+            entry_count, sizeof(WGPUBindGroupEntry));
+        if (!heap_entries) NAPI_THROW(env, "createBindGroup: out of memory");
+        entries = heap_entries;
+    }
 
     for (uint32_t i = 0; i < entry_count; i++) {
         napi_value elem;
@@ -385,8 +439,63 @@ napi_value doe_create_bind_group(napi_env env, napi_callback_info info) {
     };
 
     WGPUBindGroup group = pfn_wgpuDeviceCreateBindGroup(device, &desc);
-    free(entries);
+    free(heap_entries);
     if (!group) NAPI_THROW(env, "createBindGroup failed");
+    return wrap_ptr(env, group);
+}
+
+napi_value doe_create_buffer_bind_group_flat4(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 15);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDeviceCreateBufferBindGroupFlat4) {
+        NAPI_THROW(env, "createBufferBindGroupFlat4 unavailable");
+    }
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    WGPUBindGroupLayout layout = unwrap_ptr(env, _args[1]);
+    if (!device || !layout) NAPI_THROW(env, "Invalid device or layout");
+    uint32_t entry_count = 0;
+    uint32_t b0 = 0;
+    uint32_t b1 = 0;
+    uint32_t b2 = 0;
+    uint32_t b3 = 0;
+    int64_t offset0 = 0;
+    int64_t offset1 = 0;
+    int64_t offset2 = 0;
+    int64_t offset3 = 0;
+    napi_get_value_uint32(env, _args[2], &entry_count);
+    napi_get_value_uint32(env, _args[3], &b0);
+    WGPUBuffer buffer0 = unwrap_ptr(env, _args[4]);
+    napi_get_value_int64(env, _args[5], &offset0);
+    napi_get_value_uint32(env, _args[6], &b1);
+    WGPUBuffer buffer1 = unwrap_ptr(env, _args[7]);
+    napi_get_value_int64(env, _args[8], &offset1);
+    napi_get_value_uint32(env, _args[9], &b2);
+    WGPUBuffer buffer2 = unwrap_ptr(env, _args[10]);
+    napi_get_value_int64(env, _args[11], &offset2);
+    napi_get_value_uint32(env, _args[12], &b3);
+    WGPUBuffer buffer3 = unwrap_ptr(env, _args[13]);
+    napi_get_value_int64(env, _args[14], &offset3);
+    if (offset0 < 0 || offset1 < 0 || offset2 < 0 || offset3 < 0) {
+        NAPI_THROW(env, "createBufferBindGroupFlat4 offsets must be non-negative");
+    }
+    WGPUBindGroup group = pfn_doeNativeDeviceCreateBufferBindGroupFlat4(
+        device,
+        layout,
+        entry_count,
+        b0,
+        buffer0,
+        (uint64_t)offset0,
+        b1,
+        buffer1,
+        (uint64_t)offset1,
+        b2,
+        buffer2,
+        (uint64_t)offset2,
+        b3,
+        buffer3,
+        (uint64_t)offset3
+    );
+    if (!group) NAPI_THROW(env, "createBufferBindGroupFlat4 failed");
     return wrap_ptr(env, group);
 }
 
@@ -411,8 +520,16 @@ napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
     uint32_t layout_count = 0;
     napi_get_array_length(env, _args[1], &layout_count);
 
-    WGPUBindGroupLayout* layouts = (WGPUBindGroupLayout*)calloc(
-        layout_count, sizeof(WGPUBindGroupLayout));
+    WGPUBindGroupLayout stack_layouts[DOE_STACK_PIPELINE_LAYOUTS];
+    memset(stack_layouts, 0, sizeof(stack_layouts));
+    WGPUBindGroupLayout* heap_layouts = NULL;
+    WGPUBindGroupLayout* layouts = stack_layouts;
+    if (layout_count > DOE_STACK_PIPELINE_LAYOUTS) {
+        heap_layouts = (WGPUBindGroupLayout*)calloc(
+            layout_count, sizeof(WGPUBindGroupLayout));
+        if (!heap_layouts) NAPI_THROW(env, "createPipelineLayout: out of memory");
+        layouts = heap_layouts;
+    }
     for (uint32_t i = 0; i < layout_count; i++) {
         napi_value elem;
         napi_get_element(env, _args[1], i, &elem);
@@ -450,9 +567,29 @@ napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info) {
     };
 
     WGPUPipelineLayout pl = pfn_wgpuDeviceCreatePipelineLayout(device, &desc);
-    free(layouts);
+    free(heap_layouts);
     if (!pl) NAPI_THROW(env, "createPipelineLayout failed");
     return wrap_ptr(env, pl);
+}
+
+napi_value doe_create_pipeline_layout_one(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    CHECK_LIB_LOADED(env);
+    if (!pfn_doeNativeDeviceCreatePipelineLayoutOne) {
+        NAPI_THROW(env, "createPipelineLayoutOne unavailable");
+    }
+    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    WGPUBindGroupLayout layout = unwrap_ptr(env, _args[1]);
+    if (!device || !layout) NAPI_THROW(env, "Invalid device or layout");
+    uint32_t immediate_size = 0;
+    napi_get_value_uint32(env, _args[2], &immediate_size);
+    WGPUPipelineLayout pipeline_layout = pfn_doeNativeDeviceCreatePipelineLayoutOne(
+        device,
+        layout,
+        immediate_size
+    );
+    if (!pipeline_layout) NAPI_THROW(env, "createPipelineLayoutOne failed");
+    return wrap_ptr(env, pipeline_layout);
 }
 
 napi_value doe_pipeline_layout_release(napi_env env, napi_callback_info info) {

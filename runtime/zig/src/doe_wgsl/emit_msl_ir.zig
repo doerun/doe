@@ -4,6 +4,7 @@ const maps = @import("emit_msl_maps.zig");
 const stage_render = @import("emit_msl_stage.zig");
 const subgroups = @import("emit_msl_subgroups.zig");
 const call_builtins = @import("emit_msl_ir_builtins.zig");
+const layout = @import("layout_utils.zig");
 
 pub const EmitError = error{
     OutputTooLarge,
@@ -183,6 +184,34 @@ const Emitter = struct {
         }
     }
 
+    fn emit_runtime_array_length_locals(self: *Emitter, function: ir.Function) EmitError!void {
+        if (!self.module_needs_sizes_param()) return;
+        for (self.module.globals.items, 0..) |global, global_index| {
+            if (global.binding == null or global.addr_space != .storage) continue;
+            switch (self.module.types.get(global.ty)) {
+                .array => |arr| {
+                    if (arr.len != null) continue;
+                    if (!self.function_uses_array_length_target(function, @intCast(global_index), null)) continue;
+                    try self.write_runtime_array_length_local(global, arr.elem, null, 0);
+                },
+                .struct_ => |struct_id| {
+                    const struct_def = self.module.structs.items[struct_id];
+                    for (struct_def.fields.items, 0..) |field, field_index| {
+                        const arr = switch (self.module.types.get(field.ty)) {
+                            .array => |value| value,
+                            else => continue,
+                        };
+                        if (arr.len != null) continue;
+                        const field_index_u32: u32 = @intCast(field_index);
+                        if (!self.function_uses_array_length_target(function, @intCast(global_index), field_index_u32)) continue;
+                        try self.write_runtime_array_length_local(global, arr.elem, field_index_u32, layout.struct_field_offset(self.module, struct_def, field_index_u32));
+                    }
+                },
+                else => {},
+            }
+        }
+    }
+
     fn emit_functions(self: *Emitter) EmitError!void {
         for (self.module.functions.items, 0..) |_, index| {
             try self.emit_function(@intCast(index));
@@ -230,9 +259,32 @@ const Emitter = struct {
         if (stage != null and stage.? == .compute) {
             try self.emit_function_scoped_workgroup_globals();
         }
+        try self.emit_runtime_array_length_locals(function);
         try self.emit_stmt(function, function.root_stmt);
         self.indent -= 4;
         try self.write("}\n");
+    }
+
+    fn write_runtime_array_length_local(self: *Emitter, global: ir.Global, elem_ty: ir.TypeId, field_index: ?u32, field_offset: u32) EmitError!void {
+        const binding = global.binding orelse return error.InvalidIr;
+        try self.write_indent();
+        try self.write("const uint ");
+        try self.emit_runtime_array_length_local_name(binding, field_index);
+        try self.write(" = uint(");
+        if (field_index) |_| {
+            try self.write("(_doe_sizes[");
+            try self.write_u32(self.msl_binding_slot(binding));
+            try self.write("] - ");
+            try self.write_u32(field_offset);
+            try self.write(")");
+        } else {
+            try self.write("_doe_sizes[");
+            try self.write_u32(self.msl_binding_slot(binding));
+            try self.write("]");
+        }
+        try self.write(" / sizeof(");
+        try self.emit_type(elem_ty);
+        try self.write("));\n");
     }
 
     fn emit_helper_capture_params(self: *Emitter, need_comma: *bool) EmitError!void {
@@ -320,6 +372,70 @@ const Emitter = struct {
                 try self.write(")]]");
             },
             else => return error.InvalidIr,
+        }
+    }
+
+    pub fn emit_array_length_local_if_available(self: *Emitter, function: ir.Function, target_expr: ir.ExprId) EmitError!bool {
+        const target = self.array_length_target(function, target_expr) orelse return false;
+        try self.emit_runtime_array_length_local_name(self.module.globals.items[target.global_index].binding orelse return error.InvalidIr, target.field_index);
+        return true;
+    }
+
+    pub fn emit_runtime_array_length_local_name(self: *Emitter, binding: ir.BindingPoint, field_index: ?u32) EmitError!void {
+        try self.write("_doe_len_");
+        try self.write_u32(self.msl_binding_slot(binding));
+        if (field_index) |index| {
+            try self.write("_");
+            try self.write_u32(index);
+        }
+    }
+
+    const ArrayLengthTarget = struct {
+        global_index: u32,
+        field_index: ?u32 = null,
+    };
+
+    fn function_uses_array_length_target(self: *Emitter, function: ir.Function, global_index: u32, field_index: ?u32) bool {
+        for (function.exprs.items) |expr| {
+            if (expr.data != .call) continue;
+            const call = expr.data.call;
+            if (call.kind != .builtin or !std.mem.eql(u8, call.name, "arrayLength") or call.args.len != 1) continue;
+            const target_expr = function.expr_args.items[call.args.start];
+            const target = self.array_length_target(function, target_expr) orelse continue;
+            if (target.global_index == global_index and target.field_index == field_index) return true;
+        }
+        return false;
+    }
+
+    fn array_length_target(self: *Emitter, function: ir.Function, target_expr: ir.ExprId) ?ArrayLengthTarget {
+        switch (function.exprs.items[target_expr].data) {
+            .global_ref => |index| {
+                const global = self.module.globals.items[index];
+                const arr = switch (self.module.types.get(global.ty)) {
+                    .array => |value| value,
+                    else => return null,
+                };
+                if (arr.len != null) return null;
+                return .{ .global_index = index };
+            },
+            .member => |member| {
+                const global_index = layout.resolve_member_global(function, member.base) orelse return null;
+                const global = self.module.globals.items[global_index];
+                const struct_id = switch (self.module.types.get(global.ty)) {
+                    .struct_ => |value| value,
+                    else => return null,
+                };
+                const struct_def = self.module.structs.items[struct_id];
+                if (member.field_index >= struct_def.fields.items.len) return null;
+                const field = struct_def.fields.items[member.field_index];
+                const arr = switch (self.module.types.get(field.ty)) {
+                    .array => |value| value,
+                    else => return null,
+                };
+                if (arr.len != null) return null;
+                return .{ .global_index = global_index, .field_index = member.field_index };
+            },
+            else => return null,
         }
     }
 

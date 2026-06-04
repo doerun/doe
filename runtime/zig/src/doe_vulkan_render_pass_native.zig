@@ -193,6 +193,7 @@ pub fn vulkan_render_pass_draw_indexed(
 pub fn vulkan_render_pass_draw_indirect(pass: *shared.DoeRenderPass, indirect_buffer_raw: ?*anyopaque, indirect_offset: u64) void {
     if (comptime !shared.has_vulkan) return;
     const indirect_buf = native_helpers.cast(shared.DoeBuffer, indirect_buffer_raw) orelse return;
+    if (indirect_buf.error_object) return;
     if (indirect_buf.vk_id == 0) return;
     const rt = shared.get_runtime(pass.enc.dev) orelse return;
 
@@ -209,6 +210,7 @@ pub fn vulkan_render_pass_draw_indirect(pass: *shared.DoeRenderPass, indirect_bu
 pub fn vulkan_render_pass_draw_indexed_indirect(pass: *shared.DoeRenderPass, indirect_buffer_raw: ?*anyopaque, indirect_offset: u64) void {
     if (comptime !shared.has_vulkan) return;
     const indirect_buf = native_helpers.cast(shared.DoeBuffer, indirect_buffer_raw) orelse return;
+    if (indirect_buf.error_object) return;
     if (indirect_buf.vk_id == 0) return;
     const rt = shared.get_runtime(pass.enc.dev) orelse return;
 

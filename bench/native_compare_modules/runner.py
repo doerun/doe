@@ -426,6 +426,7 @@ def command_for(
     upload_buffer_usage: str,
     upload_submit_every: int,
     extra_args: list[str],
+    command_repeat: int = 1,
 ) -> list[str]:
     ctx = {
         "commands": shlex.quote(commands_path),
@@ -442,6 +443,7 @@ def command_for(
         "queue_sync_mode": shlex.quote(queue_sync_mode),
         "upload_buffer_usage": shlex.quote(upload_buffer_usage),
         "upload_submit_every": shlex.quote(str(upload_submit_every)),
+        "command_repeat": shlex.quote(str(command_repeat)),
         "extra_args": shlex.join(extra_args),
     }
     resolved = template.format(**ctx)
@@ -662,21 +664,25 @@ def run_workload(
         and bool(workload.commands_path)
         and not getattr(workload, "plan_path", "")
     )
-    commands_path = (
-        workload.commands_path
-        if use_structural_command_repeat
-        else materialize_repeated_commands(
+    template_consumes_command_repeat = "{command_repeat}" in template
+    if use_structural_command_repeat or template_consumes_command_repeat or not workload.commands_path:
+        commands_path = workload.commands_path
+    else:
+        commands_path = materialize_repeated_commands(
             workload.commands_path,
             repeat=command_repeat,
             out_dir=out_dir,
             side_name=name,
         )
-    )
-    plan_path = materialize_repeated_plan(
-        getattr(workload, "plan_path", ""),
-        repeat=command_repeat,
-        out_dir=out_dir,
-        side_name=name,
+    plan_path = (
+        getattr(workload, "plan_path", "")
+        if template_consumes_command_repeat
+        else materialize_repeated_plan(
+            getattr(workload, "plan_path", ""),
+            repeat=command_repeat,
+            out_dir=out_dir,
+            side_name=name,
+        )
     )
     if plan_path:
         synthetic_assets_mod.ensure_plan_assets(Path(plan_path))
@@ -723,6 +729,7 @@ def run_workload(
             upload_buffer_usage=upload_buffer_usage,
             upload_submit_every=upload_submit_every,
             extra_args=effective_extra_args,
+            command_repeat=command_repeat,
         )
         run_once(
             preflight_command,
@@ -773,6 +780,7 @@ def run_workload(
             upload_buffer_usage=upload_buffer_usage,
             upload_submit_every=upload_submit_every,
             extra_args=effective_extra_args,
+            command_repeat=command_repeat,
         )
         if emit_shell:
             run_records.append(

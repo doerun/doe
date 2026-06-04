@@ -14,6 +14,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CLI_PATH = REPO_ROOT / "bench" / "executors" / "run-bun-webgpu-plan.js"
 BUN_FFI_PATH = REPO_ROOT / "packages" / "doe-gpu" / "src" / "vendor" / "webgpu" / "bun-ffi.js"
+BUN_ENTRY_PATH = REPO_ROOT / "packages" / "doe-gpu" / "src" / "vendor" / "webgpu" / "bun.js"
+INDEX_DTS_PATH = REPO_ROOT / "packages" / "doe-gpu" / "src" / "index.d.ts"
+DOE_NAMESPACE_PATH = REPO_ROOT / "packages" / "doe-gpu" / "src" / "vendor" / "doe-namespace.js"
 BUN = shutil.which("bun")
 
 
@@ -118,6 +121,99 @@ def write_plan(path: Path) -> None:
     path.write_text(json.dumps(plan, indent=2), encoding="utf-8")
 
 
+def write_resident_plan(path: Path) -> None:
+    plan = {
+        "schemaVersion": 1,
+        "planId": "resident_roundtrip",
+        "executorId": "bun-webgpu",
+        "workloadId": "resident_roundtrip",
+        "domain": "compute",
+        "comparable": True,
+        "timing": {
+            "iterations": 1,
+            "warmup": 0,
+            "timingSource": "doe-execution-total-ns",
+            "timingClass": "operation",
+        },
+        "buffers": [
+            {
+                "id": "static_input",
+                "size": 16,
+                "usage": ["storage", "copy_dst"],
+            },
+            {
+                "id": "dynamic_input",
+                "size": 16,
+                "usage": ["uniform", "copy_dst"],
+            },
+            {
+                "id": "output",
+                "size": 16,
+                "usage": ["storage"],
+            },
+        ],
+        "modules": [
+            {
+                "id": "noop",
+                "kind": "compute",
+                "entryPoint": "main",
+                "source": {
+                    "kind": "inline",
+                    "code": "@compute @workgroup_size(1) fn main() {}\n",
+                },
+            }
+        ],
+        "steps": [
+            {
+                "id": "static-load",
+                "kind": "writeBuffer",
+                "bufferId": "static_input",
+                "offset": 0,
+                "data": {
+                    "kind": "file",
+                    "cacheNamespace": "unit_test",
+                    "cacheKey": "alpha",
+                    "sizeBytes": 16,
+                },
+            },
+            {
+                "id": "dynamic-write",
+                "kind": "writeBuffer",
+                "bufferId": "dynamic_input",
+                "offset": 0,
+                "data": {
+                    "kind": "f32",
+                    "values": [1.0, 2.0, 3.0, 4.0],
+                },
+            },
+            {
+                "id": "dispatch",
+                "kind": "dispatch",
+                "moduleId": "noop",
+                "bindings": [
+                    {
+                        "binding": 0,
+                        "bufferId": "static_input",
+                        "bufferType": "read-only-storage",
+                    },
+                    {
+                        "binding": 1,
+                        "bufferId": "dynamic_input",
+                        "bufferType": "uniform",
+                    },
+                    {
+                        "binding": 2,
+                        "bufferId": "output",
+                        "bufferType": "storage",
+                    },
+                ],
+                "workgroups": [1, 1, 1],
+            },
+        ],
+    }
+    path.write_text(json.dumps(plan, indent=2), encoding="utf-8")
+
+
 @unittest.skipUnless(BUN, "bun is required for Bun executor tests")
 class BunWebGPUExecutorTests(unittest.TestCase):
     def test_bun_adapter_request_device_keeps_capability_queries_lazy(self) -> None:
@@ -139,6 +235,186 @@ class BunWebGPUExecutorTests(unittest.TestCase):
         self.assertIn("function updatePassBindGroupState(pass, index, bindGroupNative)", source)
         self.assertIn("if (!updatePassPipelineState(pass, pipelineNative)) {", source)
         self.assertIn("if (!updatePassBindGroupState(pass, index, bindGroupNative)) {", source)
+
+    def test_bun_lazy_dispatch_copy_finishes_to_native_command_buffer(self) -> None:
+        source = BUN_FFI_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("function canFinishBunLazyDispatchCopyCommandsAsNativeBuffer(commands)", source)
+        self.assertIn(
+            "function finishBunLazyDispatchCopyCommandsAsNativeCommandBuffer(encoder, commands)",
+            source,
+        )
+        self.assertIn(
+            "function tryFinishBunLazyDispatchCopyCommandsAsNativeCommandBuffer(encoder, commands)",
+            source,
+        )
+        self.assertIn("doeNativeCreateComputeDispatchCopyCommandBuffer", source)
+        self.assertIn("doeNativeCreateComputeDispatchCopyCommandBufferOneBindGroup", source)
+        self.assertIn("doeNativeCreateComputeDispatchBatchCopyCommandBuffer", source)
+        self.assertIn("commandBufferBuild: 0", source)
+        self.assertIn("fastPathStats.commandBufferBuild += 1;", source)
+        self.assertIn("const cmds = buffers[0]._commands;", source)
+        self.assertIn("const allCommands = buffers.length === 1 ? buffers[0]._commands : [];", source)
+        self.assertIn("if (buffers.length !== 1) {", source)
+        self.assertIn("for (const cb of buffers) allCommands.push(...cb._commands);", source)
+        self.assertIn("const DOE_WEBGPU_SUBMIT_BREAKDOWN = envFlagEnabled(process.env.DOE_WEBGPU_SUBMIT_BREAKDOWN);", source)
+        self.assertIn("const dispatchBatchCopyFlushBreakdown = DOE_WEBGPU_SUBMIT_BREAKDOWN", source)
+        self.assertIn("wgpu.symbols.doeNativeComputeDispatchBatchCopyFlush;", source)
+        self.assertIn("doeNativeComputeDispatchFlush", source)
+        self.assertIn("bunCommandBindGroupCount(cmd) === 1", source)
+        self.assertIn("bunCommandBindGroupAt(cmd, 0)", source)
+
+    def test_bun_lazy_submit_breakdown_is_opt_in_and_shader_bytes_are_cached(self) -> None:
+        source = BUN_FFI_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("function envFlagEnabled(value)", source)
+        self.assertIn("DOE_WEBGPU_SUBMIT_BREAKDOWN", source)
+        self.assertIn("const dispatchFlushBreakdown = DOE_WEBGPU_SUBMIT_BREAKDOWN", source)
+        self.assertIn("const dispatchFlush = wgpu.symbols.doeNativeComputeDispatchFlush ?? dispatchFlushBreakdown;", source)
+        self.assertIn("const shaderSourceBytesCache = new Map();", source)
+        self.assertIn("function cachedShaderSourceBytes(code)", source)
+        self.assertIn("const codeBytes = cachedShaderSourceBytes(code);", source)
+
+    def test_bun_lazy_dispatch_uses_compact_single_bind_group_commands(self) -> None:
+        source = BUN_FFI_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("function pushBunLazyDispatchCommand(pass, pipelineNative, x, y, z)", source)
+        self.assertIn("function bunCommandBindGroupCount(cmd)", source)
+        self.assertIn("function bunCommandBindGroupAt(cmd, index)", source)
+        self.assertIn("b: bindGroup", source)
+        self.assertNotIn(
+            "pass._encoder._commands.push({ t: 0, p: pass._pipeline, bg: [...pass._bindGroups], x, y, z });",
+            source,
+        )
+        self.assertNotIn(
+            "pass._encoder._commands.push({ t: 0, p: pipelineNative, bg: [...pass._bindGroups], x, y, z });",
+            source,
+        )
+
+    def test_bun_readback_flush_breakdown_reuses_queue_scratch(self) -> None:
+        source = BUN_FFI_PATH.read_text(encoding="utf-8")
+        start = source.index("bufferMapReadCopyUnmap(wrapper, native, mode, offset, size) {")
+        end = source.index("\n    },\n    bufferGetMappedRange(wrapper, native, offset, size) {", start)
+        block = source[start:end]
+
+        self.assertIn("doeBufferMapReadCopyUnmapFlat", source)
+        self.assertIn("function queueFlushBreakdownScratch(queue)", source)
+        self.assertIn("function queueMapReadCopyUnmapScratch(queue)", source)
+        self.assertIn("queue._flushWaitCompletedNs = new BigUint64Array(1);", source)
+        self.assertIn("queue._flushDeferredCopyNs = new BigUint64Array(1);", source)
+        self.assertIn("queue._flushDeferredResolveNs = new BigUint64Array(1);", source)
+        self.assertIn(
+            "queue._mapReadCopyUnmapNs = new BigUint64Array(READBACK_BREAKDOWN_FIELD_COUNT);",
+            source,
+        )
+        self.assertIn("wgpu.symbols.doeBufferMapReadCopyUnmapFlat(", block)
+        self.assertIn("queueMapReadCopyUnmapScratch(queue)", block)
+        self.assertIn("queueFlushBreakdownScratch(wrapper._queue);", block)
+        self.assertIn("const waitCompletedNs = wrapper._queue._flushWaitCompletedNs;", block)
+        self.assertNotIn("const waitCompletedNs = new BigUint64Array(1);", block)
+        self.assertNotIn("const deferredCopyNs = new BigUint64Array(1);", block)
+        self.assertNotIn("const deferredResolveNs = new BigUint64Array(1);", block)
+
+    def test_bun_queue_submit_reuses_dispatch_scratch_arrays(self) -> None:
+        source = BUN_FFI_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("function ensureBindGroupPtrScratch(queue, count)", source)
+        self.assertIn("function ensureDispatchBatchScratch(queue, dispatchCount)", source)
+        self.assertIn("const bgPtrs = ensureBindGroupPtrScratch(queue, bgCount);", source)
+        self.assertIn("const scratch = ensureDispatchBatchScratch(queue, dispatchCount);", source)
+        self.assertIn("doeQueueSubmitOneAndRelease", source)
+        self.assertIn("wgpu.symbols.doeQueueSubmitOneAndRelease(queueNative, commandBuffer._native);", source)
+        self.assertIn("queue._emptyBindGroupPtrArray = new BigUint64Array(0);", source)
+        self.assertIn("queue._singleBindGroupPtrArray = new BigUint64Array(1);", source)
+
+    def test_bun_queue_write_batch_uses_native_compact_abi(self) -> None:
+        source = BUN_FFI_PATH.read_text(encoding="utf-8")
+        shared_surface = (REPO_ROOT / "packages" / "doe-gpu" / "src" / "vendor" / "webgpu" / "shared" / "full-surface.js").read_text(encoding="utf-8")
+
+        self.assertIn("doeNativeQueueWriteBufferBatch", source)
+        self.assertIn("doeNativeQueueWriteBufferBatchDataPtrs", source)
+        self.assertIn("function ensureQueueWriteBatchScratch(queue, count, byteLength)", source)
+        self.assertIn("queue._writeBatchScratch = {};", source)
+        self.assertIn("queueWriteBufferBatch(queue, native, entries) {", source)
+        self.assertIn("const writeBatchDataPtrs = wgpu.symbols.doeNativeQueueWriteBufferBatchDataPtrs;", source)
+        self.assertIn("const writeBatch = wgpu.symbols.doeNativeQueueWriteBufferBatch;", source)
+        self.assertIn("scratch.dataPtrs[index] = hotU64(dataPtr);", source)
+        self.assertIn("writeBatchDataPtrs(", source)
+        self.assertIn("scratch.buffers[index] = hotU64(entry.bufferNative);", source)
+        self.assertIn("scratch.data.set(entry.view, dataOffset);", source)
+        self.assertIn("writeBatch(", source)
+        self.assertIn("typeof backend.queueWriteBufferBatch === 'function'", shared_surface)
+        self.assertIn("__doeWriteBufferBatch", shared_surface)
+
+    def test_bun_ffi_uses_native_flat_setup_helpers(self) -> None:
+        source = BUN_FFI_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("doeNativeDeviceCreateBufferFlat", source)
+        self.assertIn("doeNativeDeviceCreateShaderModuleWgsl", source)
+        self.assertIn("doeNativeDeviceCreateComputePipelineMain", source)
+        self.assertIn("doeNativeDeviceCreateBufferBindGroupLayoutFlat4", source)
+        self.assertIn("doeNativeDeviceCreateBufferBindGroupFlat4", source)
+        self.assertIn("doeNativeDeviceCreatePipelineLayoutOne", source)
+        self.assertIn("function canCreateBufferBindGroupLayoutFlat4(entries)", source)
+        self.assertIn("function canCreateBufferBindGroupFlat4(entries)", source)
+        self.assertIn("preflightShaderSourceOnCreate: false", source)
+
+        buffer_start = source.index("deviceCreateBuffer(device, validated) {")
+        buffer_end = source.index("\n    },\n    deviceCreateShaderModule", buffer_start)
+        buffer_block = source[buffer_start:buffer_end]
+        self.assertIn("wgpu.symbols.doeNativeDeviceCreateBufferFlat(", buffer_block)
+
+        bind_group_start = source.index("deviceCreateBindGroup(device, layoutNative, entries, _label) {")
+        bind_group_end = source.index("\n    },\n    deviceCreatePipelineLayout", bind_group_start)
+        bind_group_block = source[bind_group_start:bind_group_end]
+        self.assertIn("canCreateBufferBindGroupFlat4(entries)", bind_group_block)
+        self.assertLess(
+            bind_group_block.index("canCreateBufferBindGroupFlat4(entries)"),
+            bind_group_block.index("const normalizedEntries = entries.map"),
+        )
+
+    def test_bun_entry_uses_measured_platform_default(self) -> None:
+        source = BUN_ENTRY_PATH.read_text(encoding="utf-8")
+
+        self.assertIn('const ffiDefaultPlatforms = new Set(["darwin", "linux"]);', source)
+        self.assertIn('const requestedBackend = process.env.DOE_BUN_WEBGPU_BACKEND ?? "";', source)
+        self.assertIn('const runtime = requestedBackend === "full"', source)
+        self.assertIn('requestedBackend === "ffi" || ffiDefaultPlatforms.has(process.platform)', source)
+        self.assertIn("export const fastPathStats = runtime.fastPathStats;", source)
+        self.assertNotIn("const runtime = ffi.providerInfo().loaded ? ffi : full;", source)
+
+    def test_public_types_include_fast_path_stats(self) -> None:
+        source = INDEX_DTS_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("export interface FastPathStats", source)
+        self.assertIn("export const fastPathStats: FastPathStats | undefined;", source)
+        self.assertIn("fastPathStats: typeof fastPathStats;", source)
+
+    def test_doe_namespace_omits_empty_compute_descriptors_for_lazy_paths(self) -> None:
+        source = DOE_NAMESPACE_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("function descriptorWithOptionalLabel(label)", source)
+        self.assertIn("device.createCommandEncoder(descriptorWithOptionalLabel(options.label))", source)
+        self.assertIn(
+            "this._encoder.beginComputePass(descriptorWithOptionalLabel(label ?? this.label))",
+            source,
+        )
+        self.assertIn(
+            "this._encoder.beginComputePass(descriptorWithOptionalLabel(options.label ?? this.label))",
+            source,
+        )
+        self.assertNotIn("device.createCommandEncoder({ label: options.label ?? undefined })", source)
+        self.assertNotIn("beginComputePass({ label: label ?? this.label ?? undefined })", source)
+
+    def test_bun_backend_exposes_combined_readback_copy_path(self) -> None:
+        source = BUN_FFI_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("bufferMapReadCopyUnmap(wrapper, native, mode, offset, size) {", source)
+        self.assertIn("doeNativeQueueFlushBreakdown", source)
+        self.assertIn("const copied = fullSurfaceBackend.bufferReadCopy(wrapper, native, offset, size);", source)
+        self.assertIn("wrapper.__doe_readback_breakdown_ns = readbackBreakdownNs;", source)
+        self.assertIn("bufferReadCopy(_wrapper, native, offset, size) {", source)
+        self.assertIn("wgpu.symbols.wgpuBufferUnmap(native);", source)
 
     def test_dry_run_emits_bun_webgpu_metadata(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-bun-webgpu-executor-") as tmpdir:
@@ -217,6 +493,86 @@ class BunWebGPUExecutorTests(unittest.TestCase):
             self.assertEqual(meta["executionProviderName"], "doe-gpu")
             self.assertTrue(meta["packagePreparedSession"])
             self.assertEqual(meta["workloadUnitWallSource"], "trace-meta-process-wall")
+
+    def test_dry_run_emits_doe_bun_ffi_metadata(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="doe-bun-webgpu-executor-") as tmpdir:
+            tmp = Path(tmpdir)
+            plan_path = tmp / "plan.json"
+            meta_path = tmp / "trace-meta.json"
+            trace_path = tmp / "trace.jsonl"
+            write_plan(plan_path)
+
+            result = subprocess.run(
+                [
+                    str(BUN),
+                    str(CLI_PATH),
+                    "--provider",
+                    "doe-ffi",
+                    "--plan",
+                    str(plan_path),
+                    "--trace-meta",
+                    str(meta_path),
+                    "--trace-jsonl",
+                    str(trace_path),
+                    "--workload",
+                    "simple_compute_roundtrip",
+                    "--dry-run",
+                ],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            self.assertEqual(meta["executionBackend"], "doe_bun_package")
+            self.assertEqual(meta["executionProvider"], "doe-ffi")
+            self.assertEqual(meta["executionProviderName"], "doe-gpu/bun-ffi")
+            self.assertFalse(meta["packagePreparedSession"])
+
+    def test_dry_run_resident_buffer_loads_exclude_static_loads(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="doe-bun-webgpu-executor-") as tmpdir:
+            tmp = Path(tmpdir)
+            plan_path = tmp / "plan.json"
+            meta_path = tmp / "trace-meta.json"
+            trace_path = tmp / "trace.jsonl"
+            write_resident_plan(plan_path)
+
+            result = subprocess.run(
+                [
+                    str(BUN),
+                    str(CLI_PATH),
+                    "--provider",
+                    "doe",
+                    "--prepared-session",
+                    "--resident-buffer-loads",
+                    "--plan",
+                    str(plan_path),
+                    "--trace-meta",
+                    str(meta_path),
+                    "--trace-jsonl",
+                    str(trace_path),
+                    "--workload",
+                    "resident_roundtrip",
+                    "--dry-run",
+                    "--command-repeat",
+                    "2",
+                ],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            rows = [json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+            self.assertTrue(meta["packagePreparedSession"])
+            self.assertTrue(meta["packageResidentBufferLoads"])
+            self.assertEqual(meta["executionRowCount"], 4)
+            self.assertEqual(meta["executionSuccessCount"], 4)
+            self.assertEqual(meta["executionDispatchCount"], 2)
+            self.assertEqual([row["stepIndex"] for row in rows], [1, 2, 1, 2])
 
 
 if __name__ == "__main__":

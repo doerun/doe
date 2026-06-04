@@ -1,0 +1,47 @@
+{
+  "artifactHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "artifactKind": "doe_package_order_sensitivity",
+  "comparisonMethod": "phase-delta-order-swap-sign-check",
+  "deltaField": "comparisonMinusBaselineP50Ms",
+  "inputReports": [
+    {
+      "baselineLabel": "public_bun",
+      "comparisonLabel": "direct_bun_ffi",
+      "orderLabel": "public-then-direct",
+      "path": "bench/out/apple-metal/example-first/package-vector.public-vs-ffi.phase-delta.json",
+      "sha256": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "baselineLabel": "public_bun",
+      "comparisonLabel": "direct_bun_ffi",
+      "orderLabel": "direct-then-public",
+      "path": "bench/out/apple-metal/example-second/package-vector.public-vs-ffi.phase-delta.json",
+      "sha256": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "phaseRows": [
+    {
+      "direction": "sign_flip",
+      "directionStable": false,
+      "firstOrderDeltaMs": -0.25,
+      "phase": "measuredMs",
+      "positiveMeansBaselineLower": true,
+      "secondOrderDeltaMs": 0.18,
+      "section": "timing",
+      "workloadId": "package_vector_scale_add_262k"
+    }
+  ],
+  "positiveMeansBaselineLower": true,
+  "schemaVersion": 1,
+  "status": "order_sensitive_diagnostic",
+  "summary": {
+    "baselineLabel": "public_bun",
+    "comparisonLabel": "direct_bun_ffi",
+    "firstOrderLabel": "public-then-direct",
+    "matchedPhaseCount": 1,
+    "recommendation": "keep_diagnostic_until_order_sensitivity_is_explained",
+    "secondOrderLabel": "direct-then-public",
+    "signFlipCount": 1,
+    "zeroInvolvedCount": 0
+  }
+}

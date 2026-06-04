@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "planKind": "package_developer",
+  "workloadId": "package_buffer_upload_readback_1mb",
+  "domain": "upload-readback",
+  "comparable": true,
+  "description": "Package-surface 1MB buffer upload followed by a small readback capture.",
+  "commandsPath": "bench/plans/package-developer/package_buffer_upload_readback_1mb_commands.json",
+  "commands": [
+    {
+      "kind": "buffer_load",
+      "handle": 9301,
+      "offset": 0,
+      "bufferSize": 1048576,
+      "byteLength": 1048576,
+      "cacheNamespace": "package_developer",
+      "cacheKey": "dd0dfacfe7bf11a30fd4281f4561a6be1134ddd909e8f2f1124ddc44caf3bccc",
+      "assetKey": "upload:handle-9301",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 101,
+      "scale": 0.125,
+      "captureBufferHandle": 9301,
+      "captureOffset": 0,
+      "captureSize": 16
+    }
+  ]
+}

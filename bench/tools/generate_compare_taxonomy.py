@@ -101,9 +101,9 @@ def parse_structural_families(payload: dict) -> list[StructuralFamily]:
             elif surface == "plan" and product in {"doe", "dawn"}:
                 comparison_view = "doe_vs_dawn_direct"
             elif surface == "package" and raw["runtimeHost"] == "node" and product in {"doe", "node_webgpu_package"}:
-                comparison_view = "doe_vs_node_webgpu_package"
+                comparison_view = "doe_vs_dawn_node_webgpu_package"
             elif surface == "package" and raw["runtimeHost"] == "bun" and product in {"doe", "bun_webgpu_package"}:
-                comparison_view = "doe_vs_bun_webgpu_package"
+                comparison_view = "doe_vs_dawn_bun_webgpu_package"
             elif surface == "package" and raw["runtimeHost"] == "deno" and product in {"doe", "deno_webgpu_package"}:
                 comparison_view = "doe_vs_deno_webgpu_package"
             else:
@@ -121,13 +121,11 @@ def parse_structural_families(payload: dict) -> list[StructuralFamily]:
         providers_raw = raw.get("providers")
         if providers_raw:
             providers = tuple(providers_raw)
+        elif comparison_view:
+            comparison_view_providers = compare_axes_mod.providers_for_comparison_view(comparison_view)
+            providers = comparison_view_providers or ((product,) if product else ())
         elif product:
             providers = (product,)
-        elif comparison_view:
-            providers = (
-                compare_axes_mod.providers_for_comparison_view(comparison_view)
-                or (compare_axes_mod.providers_for_provider_set(provider_set) if provider_set else ())
-            )
         else:
             providers = ()
         families.append(

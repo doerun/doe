@@ -9,6 +9,11 @@ import {
   destroyResource,
 } from './resource-lifecycle.js';
 
+const UINT32_RANGE = Object.freeze({ min: 0, max: UINT32_MAX });
+const NON_NEGATIVE_RANGE = Object.freeze({ min: 0 });
+const POSITIVE_RANGE = Object.freeze({ min: 1 });
+const POSITIVE_UINT32_RANGE = Object.freeze({ min: 1, max: UINT32_MAX });
+
 function normalizeImmediateDataInput(data, dataOffset = 0, size, path) {
   const isSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer;
   if (!ArrayBuffer.isView(data) && !(data instanceof ArrayBuffer) && !isSharedArrayBuffer) {
@@ -79,7 +84,7 @@ function createEncoderClasses(backend) {
 
     setBindGroup(index, bindGroup) {
       this._assertOpen('GPUComputePassEncoder.setBindGroup');
-      assertIntegerInRange(index, 'GPUComputePassEncoder.setBindGroup', 'index', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(index, 'GPUComputePassEncoder.setBindGroup', 'index', UINT32_RANGE);
       backend.computePassSetBindGroup(
         this,
         index,
@@ -89,7 +94,7 @@ function createEncoderClasses(backend) {
 
     setImmediates(index, data, dataOffset = 0, size) {
       this._assertOpen('GPUComputePassEncoder.setImmediates');
-      assertIntegerInRange(index, 'GPUComputePassEncoder.setImmediates', 'index', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(index, 'GPUComputePassEncoder.setImmediates', 'index', UINT32_RANGE);
       backend.computePassSetImmediates(
         this,
         index,
@@ -99,17 +104,17 @@ function createEncoderClasses(backend) {
 
     dispatchWorkgroups(x, y = 1, z = 1) {
       this._assertOpen('GPUComputePassEncoder.dispatchWorkgroups');
-      assertIntegerInRange(x, 'GPUComputePassEncoder.dispatchWorkgroups', 'x', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(y, 'GPUComputePassEncoder.dispatchWorkgroups', 'y', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(z, 'GPUComputePassEncoder.dispatchWorkgroups', 'z', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(x, 'GPUComputePassEncoder.dispatchWorkgroups', 'x', UINT32_RANGE);
+      assertIntegerInRange(y, 'GPUComputePassEncoder.dispatchWorkgroups', 'y', UINT32_RANGE);
+      assertIntegerInRange(z, 'GPUComputePassEncoder.dispatchWorkgroups', 'z', UINT32_RANGE);
       backend.computePassDispatchWorkgroups(this, x, y, z);
     }
 
     _dispatchBound(pipeline, bindGroup, x, y = 1, z = 1) {
       this._assertOpen('GPUComputePassEncoder._dispatchBound');
-      assertIntegerInRange(x, 'GPUComputePassEncoder._dispatchBound', 'x', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(y, 'GPUComputePassEncoder._dispatchBound', 'y', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(z, 'GPUComputePassEncoder._dispatchBound', 'z', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(x, 'GPUComputePassEncoder._dispatchBound', 'x', UINT32_RANGE);
+      assertIntegerInRange(y, 'GPUComputePassEncoder._dispatchBound', 'y', UINT32_RANGE);
+      assertIntegerInRange(z, 'GPUComputePassEncoder._dispatchBound', 'z', UINT32_RANGE);
       backend.computePassDispatchBound(
         this,
         assertLiveResource(pipeline, 'GPUComputePassEncoder._dispatchBound', 'GPUComputePipeline'),
@@ -124,7 +129,7 @@ function createEncoderClasses(backend) {
 
     dispatchWorkgroupsIndirect(indirectBuffer, indirectOffset = 0) {
       this._assertOpen('GPUComputePassEncoder.dispatchWorkgroupsIndirect');
-      assertIntegerInRange(indirectOffset, 'GPUComputePassEncoder.dispatchWorkgroupsIndirect', 'indirectOffset', { min: 0 });
+      assertIntegerInRange(indirectOffset, 'GPUComputePassEncoder.dispatchWorkgroupsIndirect', 'indirectOffset', NON_NEGATIVE_RANGE);
       backend.computePassDispatchWorkgroupsIndirect(
         this,
         assertLiveResource(indirectBuffer, 'GPUComputePassEncoder.dispatchWorkgroupsIndirect', 'GPUBuffer'),
@@ -178,7 +183,7 @@ function createEncoderClasses(backend) {
 
     setBindGroup(index, bindGroup) {
       this._assertOpen('GPURenderPassEncoder.setBindGroup');
-      assertIntegerInRange(index, 'GPURenderPassEncoder.setBindGroup', 'index', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(index, 'GPURenderPassEncoder.setBindGroup', 'index', UINT32_RANGE);
       backend.renderPassSetBindGroup(
         this,
         index,
@@ -188,7 +193,7 @@ function createEncoderClasses(backend) {
 
     setImmediates(index, data, dataOffset = 0, size) {
       this._assertOpen('GPURenderPassEncoder.setImmediates');
-      assertIntegerInRange(index, 'GPURenderPassEncoder.setImmediates', 'index', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(index, 'GPURenderPassEncoder.setImmediates', 'index', UINT32_RANGE);
       backend.renderPassSetImmediates(
         this,
         index,
@@ -198,10 +203,10 @@ function createEncoderClasses(backend) {
 
     setVertexBuffer(slot, buffer, offset = 0, size) {
       this._assertOpen('GPURenderPassEncoder.setVertexBuffer');
-      assertIntegerInRange(slot, 'GPURenderPassEncoder.setVertexBuffer', 'slot', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(offset, 'GPURenderPassEncoder.setVertexBuffer', 'offset', { min: 0 });
+      assertIntegerInRange(slot, 'GPURenderPassEncoder.setVertexBuffer', 'slot', UINT32_RANGE);
+      assertIntegerInRange(offset, 'GPURenderPassEncoder.setVertexBuffer', 'offset', NON_NEGATIVE_RANGE);
       if (size !== undefined) {
-        assertIntegerInRange(size, 'GPURenderPassEncoder.setVertexBuffer', 'size', { min: 0 });
+        assertIntegerInRange(size, 'GPURenderPassEncoder.setVertexBuffer', 'size', NON_NEGATIVE_RANGE);
       }
       backend.renderPassSetVertexBuffer(
         this,
@@ -214,9 +219,9 @@ function createEncoderClasses(backend) {
 
     setIndexBuffer(buffer, format, offset = 0, size) {
       this._assertOpen('GPURenderPassEncoder.setIndexBuffer');
-      assertIntegerInRange(offset, 'GPURenderPassEncoder.setIndexBuffer', 'offset', { min: 0 });
+      assertIntegerInRange(offset, 'GPURenderPassEncoder.setIndexBuffer', 'offset', NON_NEGATIVE_RANGE);
       if (size !== undefined) {
-        assertIntegerInRange(size, 'GPURenderPassEncoder.setIndexBuffer', 'size', { min: 0 });
+        assertIntegerInRange(size, 'GPURenderPassEncoder.setIndexBuffer', 'size', NON_NEGATIVE_RANGE);
       }
       backend.renderPassSetIndexBuffer(
         this,
@@ -229,25 +234,25 @@ function createEncoderClasses(backend) {
 
     draw(vertexCount, instanceCount = 1, firstVertex = 0, firstInstance = 0) {
       this._assertOpen('GPURenderPassEncoder.draw');
-      assertIntegerInRange(vertexCount, 'GPURenderPassEncoder.draw', 'vertexCount', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(instanceCount, 'GPURenderPassEncoder.draw', 'instanceCount', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(firstVertex, 'GPURenderPassEncoder.draw', 'firstVertex', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(firstInstance, 'GPURenderPassEncoder.draw', 'firstInstance', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(vertexCount, 'GPURenderPassEncoder.draw', 'vertexCount', UINT32_RANGE);
+      assertIntegerInRange(instanceCount, 'GPURenderPassEncoder.draw', 'instanceCount', UINT32_RANGE);
+      assertIntegerInRange(firstVertex, 'GPURenderPassEncoder.draw', 'firstVertex', UINT32_RANGE);
+      assertIntegerInRange(firstInstance, 'GPURenderPassEncoder.draw', 'firstInstance', UINT32_RANGE);
       backend.renderPassDraw(this, vertexCount, instanceCount, firstVertex, firstInstance);
     }
 
     drawIndexed(indexCount, instanceCount = 1, firstIndex = 0, baseVertex = 0, firstInstance = 0) {
       this._assertOpen('GPURenderPassEncoder.drawIndexed');
-      assertIntegerInRange(indexCount, 'GPURenderPassEncoder.drawIndexed', 'indexCount', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(instanceCount, 'GPURenderPassEncoder.drawIndexed', 'instanceCount', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(firstIndex, 'GPURenderPassEncoder.drawIndexed', 'firstIndex', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(firstInstance, 'GPURenderPassEncoder.drawIndexed', 'firstInstance', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(indexCount, 'GPURenderPassEncoder.drawIndexed', 'indexCount', UINT32_RANGE);
+      assertIntegerInRange(instanceCount, 'GPURenderPassEncoder.drawIndexed', 'instanceCount', UINT32_RANGE);
+      assertIntegerInRange(firstIndex, 'GPURenderPassEncoder.drawIndexed', 'firstIndex', UINT32_RANGE);
+      assertIntegerInRange(firstInstance, 'GPURenderPassEncoder.drawIndexed', 'firstInstance', UINT32_RANGE);
       backend.renderPassDrawIndexed(this, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
     }
 
     drawIndirect(indirectBuffer, indirectOffset = 0) {
       this._assertOpen('GPURenderPassEncoder.drawIndirect');
-      assertIntegerInRange(indirectOffset, 'GPURenderPassEncoder.drawIndirect', 'indirectOffset', { min: 0 });
+      assertIntegerInRange(indirectOffset, 'GPURenderPassEncoder.drawIndirect', 'indirectOffset', NON_NEGATIVE_RANGE);
       backend.renderPassDrawIndirect(
         this,
         assertLiveResource(indirectBuffer, 'GPURenderPassEncoder.drawIndirect', 'GPUBuffer'),
@@ -257,7 +262,7 @@ function createEncoderClasses(backend) {
 
     drawIndexedIndirect(indirectBuffer, indirectOffset = 0) {
       this._assertOpen('GPURenderPassEncoder.drawIndexedIndirect');
-      assertIntegerInRange(indirectOffset, 'GPURenderPassEncoder.drawIndexedIndirect', 'indirectOffset', { min: 0 });
+      assertIntegerInRange(indirectOffset, 'GPURenderPassEncoder.drawIndexedIndirect', 'indirectOffset', NON_NEGATIVE_RANGE);
       backend.renderPassDrawIndexedIndirect(
         this,
         assertLiveResource(indirectBuffer, 'GPURenderPassEncoder.drawIndexedIndirect', 'GPUBuffer'),
@@ -272,10 +277,10 @@ function createEncoderClasses(backend) {
 
     setScissorRect(x, y, width, height) {
       this._assertOpen('GPURenderPassEncoder.setScissorRect');
-      assertIntegerInRange(x, 'GPURenderPassEncoder.setScissorRect', 'x', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(y, 'GPURenderPassEncoder.setScissorRect', 'y', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(width, 'GPURenderPassEncoder.setScissorRect', 'width', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(height, 'GPURenderPassEncoder.setScissorRect', 'height', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(x, 'GPURenderPassEncoder.setScissorRect', 'x', UINT32_RANGE);
+      assertIntegerInRange(y, 'GPURenderPassEncoder.setScissorRect', 'y', UINT32_RANGE);
+      assertIntegerInRange(width, 'GPURenderPassEncoder.setScissorRect', 'width', UINT32_RANGE);
+      assertIntegerInRange(height, 'GPURenderPassEncoder.setScissorRect', 'height', UINT32_RANGE);
       backend.renderPassSetScissorRect(this, x, y, width, height);
     }
 
@@ -289,13 +294,13 @@ function createEncoderClasses(backend) {
 
     setStencilReference(reference) {
       this._assertOpen('GPURenderPassEncoder.setStencilReference');
-      assertIntegerInRange(reference, 'GPURenderPassEncoder.setStencilReference', 'reference', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(reference, 'GPURenderPassEncoder.setStencilReference', 'reference', UINT32_RANGE);
       backend.renderPassSetStencilReference(this, reference);
     }
 
     beginOcclusionQuery(queryIndex) {
       this._assertOpen('GPURenderPassEncoder.beginOcclusionQuery');
-      assertIntegerInRange(queryIndex, 'GPURenderPassEncoder.beginOcclusionQuery', 'queryIndex', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(queryIndex, 'GPURenderPassEncoder.beginOcclusionQuery', 'queryIndex', UINT32_RANGE);
       backend.renderPassBeginOcclusionQuery(this, queryIndex);
     }
 
@@ -368,7 +373,7 @@ function createEncoderClasses(backend) {
 
     setBindGroup(index, bindGroup) {
       this._assertOpen('GPURenderBundleEncoder.setBindGroup');
-      assertIntegerInRange(index, 'GPURenderBundleEncoder.setBindGroup', 'index', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(index, 'GPURenderBundleEncoder.setBindGroup', 'index', UINT32_RANGE);
       backend.renderBundleEncoderSetBindGroup(
         this,
         index,
@@ -378,7 +383,7 @@ function createEncoderClasses(backend) {
 
     setImmediates(index, data, dataOffset = 0, size) {
       this._assertOpen('GPURenderBundleEncoder.setImmediates');
-      assertIntegerInRange(index, 'GPURenderBundleEncoder.setImmediates', 'index', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(index, 'GPURenderBundleEncoder.setImmediates', 'index', UINT32_RANGE);
       backend.renderBundleEncoderSetImmediates(
         this,
         index,
@@ -388,10 +393,10 @@ function createEncoderClasses(backend) {
 
     setVertexBuffer(slot, buffer, offset = 0, size) {
       this._assertOpen('GPURenderBundleEncoder.setVertexBuffer');
-      assertIntegerInRange(slot, 'GPURenderBundleEncoder.setVertexBuffer', 'slot', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(offset, 'GPURenderBundleEncoder.setVertexBuffer', 'offset', { min: 0 });
+      assertIntegerInRange(slot, 'GPURenderBundleEncoder.setVertexBuffer', 'slot', UINT32_RANGE);
+      assertIntegerInRange(offset, 'GPURenderBundleEncoder.setVertexBuffer', 'offset', NON_NEGATIVE_RANGE);
       if (size !== undefined) {
-        assertIntegerInRange(size, 'GPURenderBundleEncoder.setVertexBuffer', 'size', { min: 0 });
+        assertIntegerInRange(size, 'GPURenderBundleEncoder.setVertexBuffer', 'size', NON_NEGATIVE_RANGE);
       }
       backend.renderBundleEncoderSetVertexBuffer(
         this,
@@ -404,9 +409,9 @@ function createEncoderClasses(backend) {
 
     setIndexBuffer(buffer, format, offset = 0, size) {
       this._assertOpen('GPURenderBundleEncoder.setIndexBuffer');
-      assertIntegerInRange(offset, 'GPURenderBundleEncoder.setIndexBuffer', 'offset', { min: 0 });
+      assertIntegerInRange(offset, 'GPURenderBundleEncoder.setIndexBuffer', 'offset', NON_NEGATIVE_RANGE);
       if (size !== undefined) {
-        assertIntegerInRange(size, 'GPURenderBundleEncoder.setIndexBuffer', 'size', { min: 0 });
+        assertIntegerInRange(size, 'GPURenderBundleEncoder.setIndexBuffer', 'size', NON_NEGATIVE_RANGE);
       }
       backend.renderBundleEncoderSetIndexBuffer(
         this,
@@ -419,25 +424,25 @@ function createEncoderClasses(backend) {
 
     draw(vertexCount, instanceCount = 1, firstVertex = 0, firstInstance = 0) {
       this._assertOpen('GPURenderBundleEncoder.draw');
-      assertIntegerInRange(vertexCount, 'GPURenderBundleEncoder.draw', 'vertexCount', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(instanceCount, 'GPURenderBundleEncoder.draw', 'instanceCount', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(firstVertex, 'GPURenderBundleEncoder.draw', 'firstVertex', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(firstInstance, 'GPURenderBundleEncoder.draw', 'firstInstance', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(vertexCount, 'GPURenderBundleEncoder.draw', 'vertexCount', UINT32_RANGE);
+      assertIntegerInRange(instanceCount, 'GPURenderBundleEncoder.draw', 'instanceCount', UINT32_RANGE);
+      assertIntegerInRange(firstVertex, 'GPURenderBundleEncoder.draw', 'firstVertex', UINT32_RANGE);
+      assertIntegerInRange(firstInstance, 'GPURenderBundleEncoder.draw', 'firstInstance', UINT32_RANGE);
       backend.renderBundleEncoderDraw(this, vertexCount, instanceCount, firstVertex, firstInstance);
     }
 
     drawIndexed(indexCount, instanceCount = 1, firstIndex = 0, baseVertex = 0, firstInstance = 0) {
       this._assertOpen('GPURenderBundleEncoder.drawIndexed');
-      assertIntegerInRange(indexCount, 'GPURenderBundleEncoder.drawIndexed', 'indexCount', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(instanceCount, 'GPURenderBundleEncoder.drawIndexed', 'instanceCount', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(firstIndex, 'GPURenderBundleEncoder.drawIndexed', 'firstIndex', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(firstInstance, 'GPURenderBundleEncoder.drawIndexed', 'firstInstance', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(indexCount, 'GPURenderBundleEncoder.drawIndexed', 'indexCount', UINT32_RANGE);
+      assertIntegerInRange(instanceCount, 'GPURenderBundleEncoder.drawIndexed', 'instanceCount', UINT32_RANGE);
+      assertIntegerInRange(firstIndex, 'GPURenderBundleEncoder.drawIndexed', 'firstIndex', UINT32_RANGE);
+      assertIntegerInRange(firstInstance, 'GPURenderBundleEncoder.drawIndexed', 'firstInstance', UINT32_RANGE);
       backend.renderBundleEncoderDrawIndexed(this, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
     }
 
     drawIndirect(indirectBuffer, indirectOffset = 0) {
       this._assertOpen('GPURenderBundleEncoder.drawIndirect');
-      assertIntegerInRange(indirectOffset, 'GPURenderBundleEncoder.drawIndirect', 'indirectOffset', { min: 0 });
+      assertIntegerInRange(indirectOffset, 'GPURenderBundleEncoder.drawIndirect', 'indirectOffset', NON_NEGATIVE_RANGE);
       backend.renderBundleEncoderDrawIndirect(
         this,
         assertLiveResource(indirectBuffer, 'GPURenderBundleEncoder.drawIndirect', 'GPUBuffer'),
@@ -447,7 +452,7 @@ function createEncoderClasses(backend) {
 
     drawIndexedIndirect(indirectBuffer, indirectOffset = 0) {
       this._assertOpen('GPURenderBundleEncoder.drawIndexedIndirect');
-      assertIntegerInRange(indirectOffset, 'GPURenderBundleEncoder.drawIndexedIndirect', 'indirectOffset', { min: 0 });
+      assertIntegerInRange(indirectOffset, 'GPURenderBundleEncoder.drawIndexedIndirect', 'indirectOffset', NON_NEGATIVE_RANGE);
       backend.renderBundleEncoderDrawIndexedIndirect(
         this,
         assertLiveResource(indirectBuffer, 'GPURenderBundleEncoder.drawIndexedIndirect', 'GPUBuffer'),
@@ -530,9 +535,9 @@ function createEncoderClasses(backend) {
 
     copyBufferToBuffer(src, srcOffset, dst, dstOffset, size) {
       this._assertOpen('GPUCommandEncoder.copyBufferToBuffer');
-      assertIntegerInRange(srcOffset, 'GPUCommandEncoder.copyBufferToBuffer', 'srcOffset', { min: 0 });
-      assertIntegerInRange(dstOffset, 'GPUCommandEncoder.copyBufferToBuffer', 'dstOffset', { min: 0 });
-      assertIntegerInRange(size, 'GPUCommandEncoder.copyBufferToBuffer', 'size', { min: 1 });
+      assertIntegerInRange(srcOffset, 'GPUCommandEncoder.copyBufferToBuffer', 'srcOffset', NON_NEGATIVE_RANGE);
+      assertIntegerInRange(dstOffset, 'GPUCommandEncoder.copyBufferToBuffer', 'dstOffset', NON_NEGATIVE_RANGE);
+      assertIntegerInRange(size, 'GPUCommandEncoder.copyBufferToBuffer', 'size', POSITIVE_RANGE);
       backend.commandEncoderCopyBufferToBuffer(
         this,
         assertLiveResource(src, 'GPUCommandEncoder.copyBufferToBuffer', 'GPUBuffer'),
@@ -548,13 +553,13 @@ function createEncoderClasses(backend) {
       const sourceObject = assertObject(source, 'GPUCommandEncoder.copyBufferToTexture', 'source');
       const destinationObject = assertObject(destination, 'GPUCommandEncoder.copyBufferToTexture', 'destination');
       const sizeObject = assertObject(copySize, 'GPUCommandEncoder.copyBufferToTexture', 'copySize');
-      assertIntegerInRange(sourceObject.offset ?? 0, 'GPUCommandEncoder.copyBufferToTexture', 'source.offset', { min: 0 });
-      assertIntegerInRange(sourceObject.bytesPerRow ?? 0, 'GPUCommandEncoder.copyBufferToTexture', 'source.bytesPerRow', { min: 0 });
-      assertIntegerInRange(sourceObject.rowsPerImage ?? 0, 'GPUCommandEncoder.copyBufferToTexture', 'source.rowsPerImage', { min: 0 });
-      assertIntegerInRange(sizeObject.width, 'GPUCommandEncoder.copyBufferToTexture', 'copySize.width', { min: 1, max: UINT32_MAX });
-      assertIntegerInRange(sizeObject.height, 'GPUCommandEncoder.copyBufferToTexture', 'copySize.height', { min: 1, max: UINT32_MAX });
+      assertIntegerInRange(sourceObject.offset ?? 0, 'GPUCommandEncoder.copyBufferToTexture', 'source.offset', NON_NEGATIVE_RANGE);
+      assertIntegerInRange(sourceObject.bytesPerRow ?? 0, 'GPUCommandEncoder.copyBufferToTexture', 'source.bytesPerRow', NON_NEGATIVE_RANGE);
+      assertIntegerInRange(sourceObject.rowsPerImage ?? 0, 'GPUCommandEncoder.copyBufferToTexture', 'source.rowsPerImage', NON_NEGATIVE_RANGE);
+      assertIntegerInRange(sizeObject.width, 'GPUCommandEncoder.copyBufferToTexture', 'copySize.width', POSITIVE_UINT32_RANGE);
+      assertIntegerInRange(sizeObject.height, 'GPUCommandEncoder.copyBufferToTexture', 'copySize.height', POSITIVE_UINT32_RANGE);
       if (sizeObject.depthOrArrayLayers !== undefined) {
-        assertIntegerInRange(sizeObject.depthOrArrayLayers, 'GPUCommandEncoder.copyBufferToTexture', 'copySize.depthOrArrayLayers', { min: 1, max: UINT32_MAX });
+        assertIntegerInRange(sizeObject.depthOrArrayLayers, 'GPUCommandEncoder.copyBufferToTexture', 'copySize.depthOrArrayLayers', POSITIVE_UINT32_RANGE);
       }
       backend.commandEncoderCopyBufferToTexture(
         this,
@@ -590,13 +595,13 @@ function createEncoderClasses(backend) {
       if (sourceObject.origin !== undefined) {
         assertObject(sourceObject.origin, 'GPUCommandEncoder.copyTextureToBuffer', 'source.origin');
       }
-      assertIntegerInRange(destinationObject.offset ?? 0, 'GPUCommandEncoder.copyTextureToBuffer', 'destination.offset', { min: 0 });
-      assertIntegerInRange(destinationObject.bytesPerRow ?? 0, 'GPUCommandEncoder.copyTextureToBuffer', 'destination.bytesPerRow', { min: 0 });
-      assertIntegerInRange(destinationObject.rowsPerImage ?? 0, 'GPUCommandEncoder.copyTextureToBuffer', 'destination.rowsPerImage', { min: 0 });
-      assertIntegerInRange(sizeObject.width, 'GPUCommandEncoder.copyTextureToBuffer', 'copySize.width', { min: 1, max: UINT32_MAX });
-      assertIntegerInRange(sizeObject.height, 'GPUCommandEncoder.copyTextureToBuffer', 'copySize.height', { min: 1, max: UINT32_MAX });
+      assertIntegerInRange(destinationObject.offset ?? 0, 'GPUCommandEncoder.copyTextureToBuffer', 'destination.offset', NON_NEGATIVE_RANGE);
+      assertIntegerInRange(destinationObject.bytesPerRow ?? 0, 'GPUCommandEncoder.copyTextureToBuffer', 'destination.bytesPerRow', NON_NEGATIVE_RANGE);
+      assertIntegerInRange(destinationObject.rowsPerImage ?? 0, 'GPUCommandEncoder.copyTextureToBuffer', 'destination.rowsPerImage', NON_NEGATIVE_RANGE);
+      assertIntegerInRange(sizeObject.width, 'GPUCommandEncoder.copyTextureToBuffer', 'copySize.width', POSITIVE_UINT32_RANGE);
+      assertIntegerInRange(sizeObject.height, 'GPUCommandEncoder.copyTextureToBuffer', 'copySize.height', POSITIVE_UINT32_RANGE);
       if (sizeObject.depthOrArrayLayers !== undefined) {
-        assertIntegerInRange(sizeObject.depthOrArrayLayers, 'GPUCommandEncoder.copyTextureToBuffer', 'copySize.depthOrArrayLayers', { min: 1, max: UINT32_MAX });
+        assertIntegerInRange(sizeObject.depthOrArrayLayers, 'GPUCommandEncoder.copyTextureToBuffer', 'copySize.depthOrArrayLayers', POSITIVE_UINT32_RANGE);
       }
       backend.commandEncoderCopyTextureToBuffer(
         this,
@@ -661,9 +666,9 @@ function createEncoderClasses(backend) {
 
     clearBuffer(buffer, offset = 0, size) {
       this._assertOpen('GPUCommandEncoder.clearBuffer');
-      assertIntegerInRange(offset, 'GPUCommandEncoder.clearBuffer', 'offset', { min: 0 });
+      assertIntegerInRange(offset, 'GPUCommandEncoder.clearBuffer', 'offset', NON_NEGATIVE_RANGE);
       if (size !== undefined) {
-        assertIntegerInRange(size, 'GPUCommandEncoder.clearBuffer', 'size', { min: 0 });
+        assertIntegerInRange(size, 'GPUCommandEncoder.clearBuffer', 'size', NON_NEGATIVE_RANGE);
       }
       backend.commandEncoderClearBuffer(
         this,
@@ -676,7 +681,7 @@ function createEncoderClasses(backend) {
     writeTimestamp(querySet, queryIndex) {
       this._assertOpen('GPUCommandEncoder.writeTimestamp');
       const querySetNative = assertLiveResource(querySet, 'GPUCommandEncoder.writeTimestamp', 'GPUQuerySet');
-      assertIntegerInRange(queryIndex, 'GPUCommandEncoder.writeTimestamp', 'queryIndex', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(queryIndex, 'GPUCommandEncoder.writeTimestamp', 'queryIndex', UINT32_RANGE);
       if (queryIndex >= querySet.count) {
         failValidation('GPUCommandEncoder.writeTimestamp', `queryIndex ${queryIndex} exceeds querySet count ${querySet.count}`);
       }
@@ -686,13 +691,13 @@ function createEncoderClasses(backend) {
     resolveQuerySet(querySet, firstQuery, queryCount, destination, destinationOffset) {
       this._assertOpen('GPUCommandEncoder.resolveQuerySet');
       const querySetNative = assertLiveResource(querySet, 'GPUCommandEncoder.resolveQuerySet', 'GPUQuerySet');
-      assertIntegerInRange(firstQuery, 'GPUCommandEncoder.resolveQuerySet', 'firstQuery', { min: 0, max: UINT32_MAX });
-      assertIntegerInRange(queryCount, 'GPUCommandEncoder.resolveQuerySet', 'queryCount', { min: 1, max: UINT32_MAX });
+      assertIntegerInRange(firstQuery, 'GPUCommandEncoder.resolveQuerySet', 'firstQuery', UINT32_RANGE);
+      assertIntegerInRange(queryCount, 'GPUCommandEncoder.resolveQuerySet', 'queryCount', POSITIVE_UINT32_RANGE);
       if (firstQuery + queryCount > querySet.count) {
         failValidation('GPUCommandEncoder.resolveQuerySet', `firstQuery ${firstQuery} + queryCount ${queryCount} exceeds querySet count ${querySet.count}`);
       }
       const destinationNative = assertLiveResource(destination, 'GPUCommandEncoder.resolveQuerySet', 'GPUBuffer');
-      assertIntegerInRange(destinationOffset, 'GPUCommandEncoder.resolveQuerySet', 'destinationOffset', { min: 0 });
+      assertIntegerInRange(destinationOffset, 'GPUCommandEncoder.resolveQuerySet', 'destinationOffset', NON_NEGATIVE_RANGE);
       backend.commandEncoderResolveQuerySet(this, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset);
     }
 

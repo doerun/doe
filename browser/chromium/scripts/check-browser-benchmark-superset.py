@@ -21,6 +21,7 @@ VALID_L2_CLAIM_SCOPE = {"l2_component_only", "l2_diagnostic_only"}
 VALID_RUNTIME_STATUS = {"ok", "fail", "unsupported", "l0_only"}
 VALID_REPORT_MODES = {"dawn", "doe", "auto"}
 VALID_SELECTED_RUNTIMES = {"dawn", "doe"}
+VALID_POWER_PREFERENCES = {"default", "high-performance", "low-power"}
 VALID_RUNTIME_STATUS_CODES = {
     "ok": {"ok"},
     "fail": {"browser_launch_failed", "mode_setup_failed", "mode_execution_failed", "scenario_runtime_error"},
@@ -37,6 +38,43 @@ VALID_RUNTIME_STATUS_CODES = {
     "l0_only": {"l0_only"},
 }
 VALID_HEX = set("0123456789abcdef")
+VISUAL_RESOURCE_TEMPLATE = "fawn_visual_resource"
+VISUAL_RESOURCE_PREFIX = "browser/chromium/resources/"
+VISUAL_RESOURCE_REQUIRED_METRICS = {"avgFrameMs", "p95FrameMs", "avgFps", "frameCount"}
+CATEGORY_BY_DOMAIN = {
+    "compute": "compute",
+    "p0-compute": "compute",
+    "copy": "memory",
+    "upload": "memory",
+    "resource": "resources",
+    "p0-resource": "resources",
+    "p1-resource-table": "resources",
+    "p1-resource-table-macro": "resources",
+    "pipeline": "pipeline",
+    "pipeline-async": "pipeline",
+    "render": "render",
+    "p0-render": "render",
+    "p0-render-macro": "render",
+    "render-bundle": "render",
+    "render-macro": "render",
+    "surface": "surface",
+    "texture-contract": "texture",
+    "texture-macro": "texture",
+    "texture-raster": "texture",
+    "p1-capability": "capability",
+    "p1-capability-macro": "capability",
+    "p2-lifecycle": "lifecycle",
+    "p2-lifecycle-macro": "lifecycle",
+}
+CATEGORY_BY_WORKFLOW_ID = {
+    "startup_adapter_device": "startup",
+    "canvas_reconfigure_resize": "canvas",
+    "queue_submit_burst": "queue",
+    "async_pipeline_burst": "pipeline",
+    "fawn_visual_particle_trails": "visual",
+    "fawn_visual_magnetic_fluids": "visual",
+    "fawn_visual_prismatic_fluids": "visual",
+}
 PROMOTION_APPROVER_ROLES = {
     "browser_runtime_integration_owner",
     "browser_quality_owner",
@@ -351,6 +389,7 @@ def parse_workflow_manifest(workflows_payload: dict[str, Any]) -> dict[str, Any]
             raise ValueError(f"workflow metrics must be non-empty array for {workflow_id}")
         for metric_index, metric_name in enumerate(metrics):
             require_string(metric_name, f"workflow.rows[{index}].metrics[{metric_index}]")
+        metric_names = {str(metric_name) for metric_name in metrics if isinstance(metric_name, str)}
 
         required = require_bool(row_raw.get("required"), f"workflow.rows[{index}].required")
         required_status = require_string(
@@ -381,19 +420,47 @@ def parse_workflow_manifest(workflows_payload: dict[str, Any]) -> dict[str, Any]
         if comparability == "none" and claim_scope != "l2_diagnostic_only":
             raise ValueError(f"workflow {workflow_id} none comparability requires l2_diagnostic_only")
 
-        rows.append(
-            {
-                "id": workflow_id,
-                "scenarioTemplate": scenario_template,
-                "description": description,
-                "comparabilityExpectation": comparability,
-                "metrics": metrics,
-                "required": required,
-                "requiredStatus": required_status,
-                "claimScope": claim_scope,
-                "claimLanguage": claim_language,
-            }
-        )
+        workflow = {
+            "id": workflow_id,
+            "scenarioTemplate": scenario_template,
+            "description": description,
+            "comparabilityExpectation": comparability,
+            "metrics": metrics,
+            "required": required,
+            "requiredStatus": required_status,
+            "claimScope": claim_scope,
+            "claimLanguage": claim_language,
+        }
+
+        resource_path = row_raw.get("resourcePath")
+        if scenario_template == VISUAL_RESOURCE_TEMPLATE:
+            resource_path = require_string(
+                resource_path,
+                f"workflow.rows[{index}].resourcePath",
+            )
+            if (
+                not resource_path.startswith(VISUAL_RESOURCE_PREFIX)
+                or not resource_path.endswith(".html")
+                or ".." in resource_path
+            ):
+                raise ValueError(
+                    f"workflow {workflow_id} resourcePath must be a browser/chromium/resources/*.html path"
+                )
+            if not (REPO_ROOT / resource_path).is_file():
+                raise ValueError(f"workflow {workflow_id} resourcePath does not exist: {resource_path}")
+            missing_metrics = sorted(VISUAL_RESOURCE_REQUIRED_METRICS - metric_names)
+            if missing_metrics:
+                raise ValueError(
+                    f"workflow {workflow_id} missing visual metrics: {', '.join(missing_metrics)}"
+                )
+            workflow["resourcePath"] = resource_path
+            workflow["resourceSha256"] = file_sha256(REPO_ROOT / resource_path)
+        elif isinstance(resource_path, str) and resource_path.strip():
+            raise ValueError(
+                f"workflow {workflow_id} resourcePath is only valid for {VISUAL_RESOURCE_TEMPLATE}"
+            )
+
+        rows.append(workflow)
 
     return {
         "requiredApprovals": required_approvals,
@@ -638,6 +705,27 @@ def check_runtime_selection(
         for field in ("vendor", "api", "deviceFamily", "driver"):
             if not isinstance(profile.get(field), str) or not profile[field].strip():
                 errors.append(f"{row_label}: runtimeSelection.profile.{field} missing")
+    adapter_denylist = runtime_selection.get("adapterDenylist")
+    if adapter_denylist is not None:
+        if not isinstance(adapter_denylist, dict):
+            errors.append(f"{row_label}: runtimeSelection.adapterDenylist must be object")
+        else:
+            if not isinstance(adapter_denylist.get("matched"), bool):
+                errors.append(f"{row_label}: runtimeSelection.adapterDenylist.matched must be bool")
+            for field in ("reasonCode", "profileId", "vendor", "api", "deviceFamily", "driverPattern"):
+                if not isinstance(adapter_denylist.get(field), str):
+                    errors.append(f"{row_label}: runtimeSelection.adapterDenylist.{field} must be string")
+            if runtime_selection.get("fallbackReasonCode") == "profile_denylisted":
+                if adapter_denylist.get("matched") is not True:
+                    errors.append(
+                        f"{row_label}: runtimeSelection.adapterDenylist.matched must be true for profile_denylisted"
+                    )
+                if adapter_denylist.get("reasonCode") != "profile_denylisted":
+                    errors.append(
+                        f"{row_label}: runtimeSelection.adapterDenylist.reasonCode must be profile_denylisted"
+                    )
+    elif runtime_selection.get("fallbackReasonCode") == "profile_denylisted":
+        errors.append(f"{row_label}: runtimeSelection.adapterDenylist missing for profile_denylisted")
     if not isinstance(runtime_selection.get("selectorVersion"), str) or not runtime_selection["selectorVersion"].strip():
         errors.append(f"{row_label}: runtimeSelection.selectorVersion missing")
 
@@ -725,6 +813,87 @@ def check_workload_identity(payload: Any, manifest: dict[str, Any]) -> list[str]
     return errors
 
 
+def check_report_methodology(payload: Any) -> list[str]:
+    if not isinstance(payload, dict):
+        return ["report missing methodology object"]
+    adapter_request = payload.get("adapterRequest")
+    if not isinstance(adapter_request, dict):
+        return ["report methodology.adapterRequest must be an object"]
+    power_preference = adapter_request.get("powerPreference")
+    if power_preference not in VALID_POWER_PREFERENCES:
+        return [
+            "report methodology.adapterRequest.powerPreference must be one of "
+            f"{sorted(VALID_POWER_PREFERENCES)}"
+        ]
+    return []
+
+
+def category_for_manifest_row(row: dict[str, Any]) -> str:
+    domain = row.get("domain")
+    if isinstance(domain, str) and domain:
+        return CATEGORY_BY_DOMAIN.get(domain, domain)
+    return "uncategorized"
+
+
+def category_for_workflow_row(row: dict[str, Any]) -> str:
+    workflow_id = row.get("id")
+    if isinstance(workflow_id, str) and workflow_id:
+        return CATEGORY_BY_WORKFLOW_ID.get(workflow_id, "workflow")
+    return "workflow"
+
+
+def parse_report_workload_filter(
+    report_payload: dict[str, Any],
+    manifest_rows: list[dict[str, Any]],
+    workflow_rows: list[dict[str, Any]],
+    errors: list[str],
+) -> set[str] | None:
+    filter_payload = report_payload.get("workloadFilter")
+    if filter_payload is None:
+        return None
+    if not isinstance(filter_payload, dict):
+        errors.append("report workloadFilter must be an object")
+        return None
+
+    kind = filter_payload.get("kind")
+    if kind == "none":
+        return None
+    if kind != "category":
+        errors.append(f"report workloadFilter.kind invalid: {kind}")
+        return None
+
+    categories_raw = filter_payload.get("categories")
+    if not isinstance(categories_raw, list) or not categories_raw:
+        errors.append("report workloadFilter.categories must be a non-empty array for category filter")
+        return set()
+    categories: set[str] = set()
+    for index, category in enumerate(categories_raw):
+        if not isinstance(category, str) or not category.strip():
+            errors.append(f"report workloadFilter.categories[{index}] must be a non-empty string")
+            continue
+        categories.add(category)
+
+    expected_l1_after = sum(1 for row in manifest_rows if category_for_manifest_row(row) in categories)
+    expected_l2_after = sum(1 for row in workflow_rows if category_for_workflow_row(row) in categories)
+    expected_counts = {
+        "l1RowsBeforeFilter": len(manifest_rows),
+        "l1RowsAfterFilter": expected_l1_after,
+        "l2RowsBeforeFilter": len(workflow_rows),
+        "l2RowsAfterFilter": expected_l2_after,
+    }
+    for field, expected_value in expected_counts.items():
+        actual_value = filter_payload.get(field)
+        if actual_value != expected_value:
+            errors.append(
+                f"report workloadFilter.{field} mismatch: report={actual_value} expected={expected_value}"
+            )
+    if expected_l1_after == 0 and expected_l2_after == 0:
+        errors.append("report workloadFilter selected no manifest/workflow rows")
+    if report_payload.get("claimStatus") != "diagnostic":
+        errors.append("filtered browser layered report must keep claimStatus=diagnostic")
+    return categories
+
+
 def check_report_coverage(
     report_payload: dict[str, Any],
     manifest: dict[str, Any],
@@ -744,6 +913,7 @@ def check_report_coverage(
             f"report={report_projection_hash} manifest={manifest['projectionContractHash']}"
         )
     errors.extend(check_workload_identity(report_payload.get("workloadIdentity"), manifest))
+    errors.extend(check_report_methodology(report_payload.get("methodology")))
 
     env_evidence = report_payload.get("browserEnvironmentEvidence")
     if not isinstance(env_evidence, dict):
@@ -864,14 +1034,32 @@ def check_report_coverage(
         report_l2_rows[workflow_id] = row_raw
 
     manifest_rows = manifest["rows"]
+    workflow_rows = workflow_manifest["rows"]
+    focus_categories = parse_report_workload_filter(
+        report_payload,
+        manifest_rows,
+        workflow_rows,
+        errors,
+    )
     required_l1_ids = [
         row["sourceWorkloadId"]
         for row in manifest_rows
         if row["projectionClass"] in {"high", "medium"}
+        and (focus_categories is None or category_for_manifest_row(row) in focus_categories)
     ]
+
+    if focus_categories is not None:
+        for workload_id, report_row in report_l1_rows.items():
+            if category_for_manifest_row(report_row) not in focus_categories:
+                errors.append(f"report contains L1 row outside workloadFilter: {workload_id}")
+        for workflow_id, report_row in report_l2_rows.items():
+            if category_for_workflow_row(report_row) not in focus_categories:
+                errors.append(f"report contains L2 row outside workloadFilter: {workflow_id}")
 
     for manifest_row in manifest_rows:
         workload_id = manifest_row["sourceWorkloadId"]
+        if focus_categories is not None and category_for_manifest_row(manifest_row) not in focus_categories:
+            continue
         report_row = report_l1_rows.get(workload_id)
         if report_row is None:
             if workload_id in required_l1_ids:
@@ -896,10 +1084,16 @@ def check_report_coverage(
                     continue
                 errors.extend(check_mode_result(mode_result, f"L1:{workload_id}", mode))
 
-    workflow_rows = workflow_manifest["rows"]
-    required_workflow_ids = [row["id"] for row in workflow_rows if row["required"]]
+    required_workflow_ids = [
+        row["id"]
+        for row in workflow_rows
+        if row["required"]
+        and (focus_categories is None or category_for_workflow_row(row) in focus_categories)
+    ]
     for workflow_row in workflow_rows:
         workflow_id = workflow_row["id"]
+        if focus_categories is not None and category_for_workflow_row(workflow_row) not in focus_categories:
+            continue
         report_row = report_l2_rows.get(workflow_id)
         if report_row is None:
             if workflow_id in required_workflow_ids:
@@ -910,6 +1104,13 @@ def check_report_coverage(
             errors.append(f"L2 row claimScope drift for {workflow_id}")
         if report_row.get("requiredStatus") != workflow_row["requiredStatus"]:
             errors.append(f"L2 row requiredStatus drift for {workflow_id}")
+        if workflow_row.get("scenarioTemplate") == VISUAL_RESOURCE_TEMPLATE:
+            resource_path = workflow_row.get("resourcePath")
+            resource_sha256 = workflow_row.get("resourceSha256")
+            if report_row.get("resourcePath") != resource_path:
+                errors.append(f"L2 row resourcePath drift for {workflow_id}")
+            if report_row.get("resourceSha256") != resource_sha256:
+                errors.append(f"L2 row resourceSha256 drift for {workflow_id}")
 
         if required_modes:
             runtimes = report_row.get("runtimes")
@@ -924,6 +1125,14 @@ def check_report_coverage(
                     )
                     continue
                 errors.extend(check_mode_result(mode_result, f"L2:{workflow_id}", mode))
+                if workflow_row.get("scenarioTemplate") == VISUAL_RESOURCE_TEMPLATE:
+                    metrics = mode_result.get("metrics")
+                    if not isinstance(metrics, dict):
+                        errors.append(f"L2:{workflow_id}: metrics missing for mode '{mode}'")
+                    elif metrics.get("resourceSha256") != workflow_row.get("resourceSha256"):
+                        errors.append(
+                            f"L2:{workflow_id}: metrics.resourceSha256 drift for mode '{mode}'"
+                        )
 
     return errors
 

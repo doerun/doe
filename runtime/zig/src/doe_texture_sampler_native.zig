@@ -172,6 +172,37 @@ fn identity_swizzle(swizzle_r: u32, swizzle_g: u32, swizzle_b: u32, swizzle_a: u
         swizzle_a == abi_texture.WGPUTextureComponentSwizzle_Alpha;
 }
 
+pub fn canBorrowMetalTextureForFullView(
+    tex: *const DoeTexture,
+    resolved_format: u32,
+    resolved_dimension: u32,
+    base_mip_level: u32,
+    resolved_mip_level_count: u32,
+    base_array_layer: u32,
+    resolved_array_layer_count: u32,
+    resolved_aspect: u32,
+    resolved_usage: u64,
+    resolved_swizzle_r: u32,
+    resolved_swizzle_g: u32,
+    resolved_swizzle_b: u32,
+    resolved_swizzle_a: u32,
+) bool {
+    const full_array_layer_count = if (tex.dimension == abi_texture.WGPUTextureDimension_3D)
+        1
+    else
+        tex.depth_or_array_layers;
+    return tex.mtl != null and
+        resolved_format == tex.format and
+        resolved_dimension == default_texture_view_dimension(tex) and
+        base_mip_level == 0 and
+        resolved_mip_level_count == tex.mip_level_count and
+        base_array_layer == 0 and
+        resolved_array_layer_count == full_array_layer_count and
+        resolved_aspect == abi_texture.WGPUTextureAspect_All and
+        (resolved_usage & ~tex.usage) == 0 and
+        identity_swizzle(resolved_swizzle_r, resolved_swizzle_g, resolved_swizzle_b, resolved_swizzle_a);
+}
+
 fn d3d12_texture_descriptor_supported(desc: *const abi_pipeline.WGPUTextureDescriptor) bool {
     if ((desc.usage & (abi_texture.WGPUTextureUsage_TransientAttachment | abi_texture.WGPUTextureUsage_StorageAttachment)) != 0) return false;
     if (desc.dimension == abi_texture.WGPUTextureDimension_1D) return false;
@@ -303,6 +334,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const a
 
 pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUTextureViewDescriptor) callconv(.c) ?*anyopaque {
     const tex = cast(DoeTexture, tex_raw) orelse return null;
+    if (tex.error_object) return null;
     const tv = make(DoeTextureView) orelse return null;
     native_helpers.object_add_ref(DoeTexture, tex_raw);
     const d = desc orelse &abi_pipeline.WGPUTextureViewDescriptor{
@@ -407,19 +439,38 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi
             view_handle = null;
         }
     } else if (tex.mtl != null) {
-        view_handle = metal_bridge_texture_new_view(
-            tex.mtl,
+        const resolved_aspect = if (d.aspect != 0) d.aspect else abi_texture.WGPUTextureAspect_All;
+        if (canBorrowMetalTextureForFullView(
+            tex,
             resolved_format,
             resolved_dimension,
             d.baseMipLevel,
             resolved_mip_level_count,
             d.baseArrayLayer,
             resolved_array_layer_count,
+            resolved_aspect,
+            resolved_usage,
             resolved_swizzle_r,
             resolved_swizzle_g,
             resolved_swizzle_b,
             resolved_swizzle_a,
-        );
+        )) {
+            view_handle = tex.mtl;
+        } else {
+            view_handle = metal_bridge_texture_new_view(
+                tex.mtl,
+                resolved_format,
+                resolved_dimension,
+                d.baseMipLevel,
+                resolved_mip_level_count,
+                d.baseArrayLayer,
+                resolved_array_layer_count,
+                resolved_swizzle_r,
+                resolved_swizzle_g,
+                resolved_swizzle_b,
+                resolved_swizzle_a,
+            );
+        }
     }
     tv.* = .{
         .tex = tex,

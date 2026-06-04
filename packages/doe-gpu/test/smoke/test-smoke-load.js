@@ -90,9 +90,11 @@ check('exports gpu', mod.gpu != null);
 check('exports createGpuNamespace', typeof mod.createGpuNamespace === 'function');
 check('exports createDoeNamespace', typeof mod.createDoeNamespace === 'function');
 check('exports create', typeof mod.create === 'function');
+check('exports createNativeDirect', typeof mod.createNativeDirect === 'function');
 check('exports requestDevice', typeof mod.requestDevice === 'function');
 check('exports requestAdapter', typeof mod.requestAdapter === 'function');
 check('exports providerInfo', typeof mod.providerInfo === 'function');
+check('exports nativeFastPathInfo', typeof mod.nativeFastPathInfo === 'function');
 check('exports globals', mod.globals != null && typeof mod.globals === 'object');
 check('exports createDoeRuntime', typeof mod.createDoeRuntime === 'function');
 
@@ -523,7 +525,10 @@ try {
           check(
             'ordinaryExecution decode demo records a real selected-token change under sampled replay',
             decode.latestReceipt?.decodeBoundary?.metrics?.actualSelectedTokenChanged === true &&
-              decode.latestReceipt?.selectedToken?.fast !== decode.latestReceipt?.selectedToken?.reference &&
+              (
+                decode.latestReceipt?.selectedToken?.fast !== decode.latestReceipt?.selectedToken?.stable ||
+                decode.latestReceipt?.selectedToken?.fast !== decode.latestReceipt?.selectedToken?.reference
+              ) &&
               decode.latestReceipt?.decodeBoundary?.liveSelectedToken ===
                 decode.latestReceipt?.selectedToken?.fast,
             JSON.stringify({

@@ -66,6 +66,57 @@
       "requiredStatus": "optional",
       "claimScope": "l2_component_only",
       "claimLanguage": "Optional workflow diagnostic claim only; never a substitute for L0 parity claims."
+    },
+    {
+      "id": "fawn_visual_particle_trails",
+      "scenarioTemplate": "fawn_visual_resource",
+      "description": "Existing Fawn particle-trail HTML page measured as a visible WebGPU page workload.",
+      "resourcePath": "browser/chromium/resources/fawn-heavy-particles.html",
+      "metrics": [
+        "frameCount",
+        "avgFrameMs",
+        "p95FrameMs",
+        "avgFps"
+      ],
+      "comparabilityExpectation": "none",
+      "required": false,
+      "requiredStatus": "optional",
+      "claimScope": "l2_diagnostic_only",
+      "claimLanguage": "Optional visual page diagnostic claim only; never a substitute for L0 parity claims."
+    },
+    {
+      "id": "fawn_visual_magnetic_fluids",
+      "scenarioTemplate": "fawn_visual_resource",
+      "description": "Existing Fawn magnetic-fluid HTML page measured as a visible WebGPU page workload.",
+      "resourcePath": "browser/chromium/resources/fawn-magnetic-fluids.html",
+      "metrics": [
+        "frameCount",
+        "avgFrameMs",
+        "p95FrameMs",
+        "avgFps"
+      ],
+      "comparabilityExpectation": "none",
+      "required": false,
+      "requiredStatus": "optional",
+      "claimScope": "l2_diagnostic_only",
+      "claimLanguage": "Optional visual page diagnostic claim only; never a substitute for L0 parity claims."
+    },
+    {
+      "id": "fawn_visual_prismatic_fluids",
+      "scenarioTemplate": "fawn_visual_resource",
+      "description": "Existing Fawn prismatic-fluid HTML page measured as a visible WebGPU page workload.",
+      "resourcePath": "browser/chromium/resources/fawn-prismatic-fluids.html",
+      "metrics": [
+        "frameCount",
+        "avgFrameMs",
+        "p95FrameMs",
+        "avgFps"
+      ],
+      "comparabilityExpectation": "none",
+      "required": false,
+      "requiredStatus": "optional",
+      "claimScope": "l2_diagnostic_only",
+      "claimLanguage": "Optional visual page diagnostic claim only; never a substitute for L0 parity claims."
     }
   ]
 }

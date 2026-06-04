@@ -15,8 +15,15 @@ pub fn sizedArrayIndexProvablyInBounds(
     const addr_space = resolve_access_address_space(module, function, base_expr_id) orelse return false;
     if (!eligible_for_static_elision(addr_space)) return false;
 
-    const upper_bound = upper_bound_for_expr(module, function, access_expr_id, index_expr_id, 0) orelse return false;
-    return upper_bound < @as(u64, length);
+    if (upper_bound_for_expr(module, function, access_expr_id, index_expr_id, 0)) |upper_bound| {
+        if (upper_bound < @as(u64, length)) return true;
+    }
+    return guarded_local_invocation_stride_index_in_bounds(
+        function,
+        access_expr_id,
+        index_expr_id,
+        length,
+    );
 }
 
 fn eligible_for_static_elision(addr_space: ir.AddressSpace) bool {
@@ -336,6 +343,295 @@ fn expr_contains_expr(function: *const ir.Function, expr_id: ir.ExprId, target_e
             expr_contains_expr(function, index.index, target_expr_id),
         else => return false,
     }
+}
+
+const LaneStrideIndex = struct {
+    lane_axis: u8,
+    stride_local: u32,
+};
+
+fn guarded_local_invocation_stride_index_in_bounds(
+    function: *const ir.Function,
+    access_expr_id: ir.ExprId,
+    index_expr_id: ir.ExprId,
+    length: u32,
+) bool {
+    const match = match_lane_plus_stride_local(function, index_expr_id) orelse return false;
+    const max_stride = nonincreasing_local_upper_bound(function, match.stride_local) orelse return false;
+    const max_access_plus_one = std.math.mul(u64, max_stride, 2) catch return false;
+    if (max_access_plus_one > @as(u64, length)) return false;
+    return access_guarded_by_lane_less_than_stride(
+        function,
+        function.root_stmt,
+        access_expr_id,
+        match.lane_axis,
+        match.stride_local,
+        false,
+    );
+}
+
+fn match_lane_plus_stride_local(function: *const ir.Function, expr_id: ir.ExprId) ?LaneStrideIndex {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .add) return null;
+    if (classify_local_invocation_axis(function, binary.lhs)) |axis| {
+        if (match_plain_local_ref(function, binary.rhs)) |local_idx| {
+            return .{ .lane_axis = axis, .stride_local = local_idx };
+        }
+    }
+    if (classify_local_invocation_axis(function, binary.rhs)) |axis| {
+        if (match_plain_local_ref(function, binary.lhs)) |local_idx| {
+            return .{ .lane_axis = axis, .stride_local = local_idx };
+        }
+    }
+    return null;
+}
+
+fn access_guarded_by_lane_less_than_stride(
+    function: *const ir.Function,
+    stmt_id: ir.StmtId,
+    target_expr_id: ir.ExprId,
+    lane_axis: u8,
+    stride_local: u32,
+    active_guard: bool,
+) bool {
+    if (stmt_id >= function.stmts.items.len) return false;
+    const stmt = function.stmts.items[stmt_id];
+    switch (stmt) {
+        .block => |range| {
+            for (function.stmt_children.items[range.start .. range.start + range.len]) |child_id| {
+                if (access_guarded_by_lane_less_than_stride(
+                    function,
+                    child_id,
+                    target_expr_id,
+                    lane_axis,
+                    stride_local,
+                    active_guard,
+                )) return true;
+            }
+            return false;
+        },
+        .if_ => |if_stmt| {
+            const then_guard = active_guard or lane_less_than_stride_guard(
+                function,
+                if_stmt.cond,
+                lane_axis,
+                stride_local,
+            );
+            if (access_guarded_by_lane_less_than_stride(
+                function,
+                if_stmt.then_block,
+                target_expr_id,
+                lane_axis,
+                stride_local,
+                then_guard,
+            )) return true;
+            if (if_stmt.else_block) |else_block| {
+                return access_guarded_by_lane_less_than_stride(
+                    function,
+                    else_block,
+                    target_expr_id,
+                    lane_axis,
+                    stride_local,
+                    active_guard,
+                );
+            }
+            return false;
+        },
+        .loop_ => |loop_stmt| {
+            if (loop_stmt.init) |init_stmt| {
+                if (access_guarded_by_lane_less_than_stride(
+                    function,
+                    init_stmt,
+                    target_expr_id,
+                    lane_axis,
+                    stride_local,
+                    active_guard,
+                )) return true;
+            }
+            if (access_guarded_by_lane_less_than_stride(
+                function,
+                loop_stmt.body,
+                target_expr_id,
+                lane_axis,
+                stride_local,
+                active_guard,
+            )) return true;
+            if (loop_stmt.continuing) |continuing_stmt| {
+                return access_guarded_by_lane_less_than_stride(
+                    function,
+                    continuing_stmt,
+                    target_expr_id,
+                    lane_axis,
+                    stride_local,
+                    active_guard,
+                );
+            }
+            return false;
+        },
+        .switch_ => |switch_stmt| {
+            for (function.switch_cases.items[switch_stmt.cases.start .. switch_stmt.cases.start + switch_stmt.cases.len]) |case_node| {
+                if (access_guarded_by_lane_less_than_stride(
+                    function,
+                    case_node.body,
+                    target_expr_id,
+                    lane_axis,
+                    stride_local,
+                    active_guard,
+                )) return true;
+            }
+            return false;
+        },
+        else => return active_guard and stmt_contains_expr(function, stmt_id, target_expr_id),
+    }
+}
+
+fn lane_less_than_stride_guard(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    lane_axis: u8,
+    stride_local: u32,
+) bool {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return false,
+    };
+    return switch (binary.op) {
+        .less => classify_local_invocation_axis(function, binary.lhs) == lane_axis and
+            match_plain_local_ref(function, binary.rhs) == stride_local,
+        .greater => classify_local_invocation_axis(function, binary.rhs) == lane_axis and
+            match_plain_local_ref(function, binary.lhs) == stride_local,
+        else => false,
+    };
+}
+
+fn nonincreasing_local_upper_bound(function: *const ir.Function, local_idx: u32) ?u64 {
+    const initial = local_initializer_u64(function, local_idx) orelse return null;
+    if (!local_writes_are_nonincreasing(function, function.root_stmt, local_idx)) return null;
+    return initial;
+}
+
+fn local_initializer_u64(function: *const ir.Function, local_idx: u32) ?u64 {
+    for (function.stmts.items) |stmt| {
+        switch (stmt) {
+            .local_decl => |decl| {
+                if (decl.local != local_idx) continue;
+                const initializer = decl.initializer orelse return null;
+                return match_u32_literal_value(function, initializer);
+            },
+            else => {},
+        }
+    }
+    return null;
+}
+
+fn local_writes_are_nonincreasing(
+    function: *const ir.Function,
+    stmt_id: ir.StmtId,
+    local_idx: u32,
+) bool {
+    if (stmt_id >= function.stmts.items.len) return true;
+    const stmt = function.stmts.items[stmt_id];
+    switch (stmt) {
+        .block => |range| {
+            for (function.stmt_children.items[range.start .. range.start + range.len]) |child_id| {
+                if (!local_writes_are_nonincreasing(function, child_id, local_idx)) return false;
+            }
+            return true;
+        },
+        .local_decl => |decl| return decl.local != local_idx or decl.initializer != null,
+        .assign => |assign| {
+            if (!is_local_ref(function, assign.lhs, local_idx)) return true;
+            return local_assign_is_nonincreasing(function, assign, local_idx);
+        },
+        .if_ => |if_stmt| {
+            if (!local_writes_are_nonincreasing(function, if_stmt.then_block, local_idx)) return false;
+            if (if_stmt.else_block) |else_block| {
+                if (!local_writes_are_nonincreasing(function, else_block, local_idx)) return false;
+            }
+            return true;
+        },
+        .loop_ => |loop_stmt| {
+            if (loop_stmt.init) |init_stmt| {
+                if (!local_writes_are_nonincreasing(function, init_stmt, local_idx)) return false;
+            }
+            if (!local_writes_are_nonincreasing(function, loop_stmt.body, local_idx)) return false;
+            if (loop_stmt.continuing) |continuing_stmt| {
+                if (!local_writes_are_nonincreasing(function, continuing_stmt, local_idx)) return false;
+            }
+            return true;
+        },
+        .switch_ => |switch_stmt| {
+            for (function.switch_cases.items[switch_stmt.cases.start .. switch_stmt.cases.start + switch_stmt.cases.len]) |case_node| {
+                if (!local_writes_are_nonincreasing(function, case_node.body, local_idx)) return false;
+            }
+            return true;
+        },
+        else => return true,
+    }
+}
+
+fn local_assign_is_nonincreasing(
+    function: *const ir.Function,
+    assign: @FieldType(ir.Stmt, "assign"),
+    local_idx: u32,
+) bool {
+    return switch (assign.op) {
+        .assign => local_expr_is_nonincreasing_update(function, assign.rhs, local_idx),
+        .div => match_positive_const_literal(function, assign.rhs),
+        else => false,
+    };
+}
+
+fn local_expr_is_nonincreasing_update(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    local_idx: u32,
+) bool {
+    if (is_local_ref(function, expr_id, local_idx)) return true;
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return false,
+    };
+    if (!is_local_ref(function, binary.lhs, local_idx)) return false;
+    return switch (binary.op) {
+        .shift_right => match_positive_const_literal(function, binary.rhs),
+        .div => match_positive_const_literal(function, binary.rhs),
+        else => false,
+    };
+}
+
+fn classify_local_invocation_axis(function: *const ir.Function, expr_id: ir.ExprId) ?u8 {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const member = switch (expr.data) {
+        .member => |value| value,
+        else => return null,
+    };
+    const base = function.exprs.items[resolve_value_alias(function, member.base)];
+    const param_idx = switch (base.data) {
+        .param_ref => |value| value,
+        else => return null,
+    };
+    if (param_idx >= function.params.items.len) return null;
+    const io = function.params.items[param_idx].io orelse return null;
+    if (io.builtin != .local_invocation_id) return null;
+    if (std.mem.eql(u8, member.field_name, "x")) return 0;
+    if (std.mem.eql(u8, member.field_name, "y")) return 1;
+    if (std.mem.eql(u8, member.field_name, "z")) return 2;
+    return null;
+}
+
+fn match_plain_local_ref(function: *const ir.Function, expr_id: ir.ExprId) ?u32 {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    return switch (expr.data) {
+        .local_ref => |value| value,
+        else => null,
+    };
 }
 
 fn upper_bound_for_builtin_member(function: *const ir.Function, expr_id: ir.ExprId) ?u64 {

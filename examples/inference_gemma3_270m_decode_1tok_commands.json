@@ -152,8 +152,8 @@
   },
   {
     "kind": "kernel_dispatch",
-    "kernel": "matmul-gemv.wgsl",
-    "x": 24,
+    "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+    "x": 768,
     "y": 1,
     "z": 1,
     "initialize_buffers_on_create": true,
@@ -211,8 +211,8 @@
   },
   {
     "kind": "kernel_dispatch",
-    "kernel": "matmul-gemv.wgsl",
-    "x": 24,
+    "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+    "x": 768,
     "y": 1,
     "z": 1,
     "initialize_buffers_on_create": true,
@@ -270,8 +270,8 @@
   },
   {
     "kind": "kernel_dispatch",
-    "kernel": "matmul-gemv.wgsl",
-    "x": 24,
+    "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+    "x": 768,
     "y": 1,
     "z": 1,
     "initialize_buffers_on_create": true,
@@ -497,8 +497,8 @@
   },
   {
     "kind": "kernel_dispatch",
-    "kernel": "matmul-gemv.wgsl",
-    "x": 24,
+    "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+    "x": 768,
     "y": 1,
     "z": 1,
     "initialize_buffers_on_create": true,
@@ -639,8 +639,8 @@
   },
   {
     "kind": "kernel_dispatch",
-    "kernel": "matmul-gemv.wgsl",
-    "x": 24,
+    "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+    "x": 768,
     "y": 1,
     "z": 1,
     "initialize_buffers_on_create": true,
@@ -698,8 +698,8 @@
   },
   {
     "kind": "kernel_dispatch",
-    "kernel": "matmul-gemv.wgsl",
-    "x": 24,
+    "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+    "x": 768,
     "y": 1,
     "z": 1,
     "initialize_buffers_on_create": true,
@@ -785,8 +785,8 @@
   },
   {
     "kind": "kernel_dispatch",
-    "kernel": "matmul-gemv.wgsl",
-    "x": 24,
+    "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+    "x": 768,
     "y": 1,
     "z": 1,
     "initialize_buffers_on_create": true,
@@ -927,8 +927,8 @@
   },
   {
     "kind": "kernel_dispatch",
-    "kernel": "matmul-gemv.wgsl",
-    "x": 64,
+    "kernel": "matmul_gemv_row2_helper_exact.wgsl",
+    "x": 2048,
     "y": 1,
     "z": 1,
     "initialize_buffers_on_create": true,
@@ -1006,6 +1006,13 @@
         "buffer_size": 4,
         "visibility": "compute"
       }
-    ]
+    ],
+    "captureBufferHandle": 2228,
+    "captureOffset": 0,
+    "captureSize": 4,
+    "semanticOpId": "gemma3_270m_decode_1tok_sample_token",
+    "semanticStage": "inference",
+    "semanticPhase": "decode_sample_token",
+    "semanticTokenIndex": 0
   }
 ]

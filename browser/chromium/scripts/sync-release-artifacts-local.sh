@@ -42,6 +42,8 @@ sync_entry() {
 }
 
 sync_app_bundle
+sync_entry "args.gn"
+sync_entry "fawn-release-build.json"
 sync_entry "chrome"
 sync_entry "chromedriver"
 sync_entry "chrome_sandbox"

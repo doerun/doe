@@ -20,31 +20,45 @@ function defaultChromePath() {
     resolve(ROOT, "browser/chromium/out/fawn_release_local");
   const chromiumLaneOut = resolve(ROOT, "browser/chromium_webgpu_lane/out/fawn_release_local");
   const hostFawnApp = resolve(process.env.HOME ?? "", "Applications/Fawn.app/Contents/MacOS/Chromium");
+  const hostFawnReal = resolve(process.env.HOME ?? "", "Applications/Fawn.app/Contents/MacOS/Chromium-real");
   const envChrome = process.env.FAWN_CHROME_BIN;
   const candidates = [
     envChrome,
     resolve(releaseLocalOut, "chrome"),
+    resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium"),
     resolve(chromiumLaneOut, "chrome"),
+    resolve(chromiumLaneOut, "Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(chromiumLaneOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(chromiumLaneOut, "Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(chromiumLaneOut, "Chromium.app/Contents/MacOS/Chromium"),
+    hostFawnReal,
     hostFawnApp,
     "/usr/bin/google-chrome-stable",
     "/usr/bin/google-chrome",
     "/usr/bin/chromium",
     "/usr/bin/chromium-browser",
     resolve(ROOT, "browser/chromium/src/out/fawn_release/chrome"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/chrome"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
@@ -321,6 +335,9 @@ function makeFailedResult(mode, args, launchArgs, browserVersion, startMs, error
         centerRgba: null,
         error: errorText,
       },
+      renderBundle: { pass: false, centerRgba: null, error: errorText },
+      renderIndirect: { pass: false, centerRgba: null, error: errorText },
+      timestampQuery: { pass: false, actual: null, error: errorText },
       recovery: {
         validationError: { pass: false, captured: false, messageCount: 0, error: errorText },
         deviceLost: { pass: false, promiseAvailable: false, error: errorText },
@@ -1382,6 +1399,9 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
               centerRgba: null,
               error: null,
             },
+            renderBundle: { pass: false, centerRgba: null, error: null },
+            renderIndirect: { pass: false, centerRgba: null, error: null },
+            timestampQuery: { pass: false, actual: null, error: null },
             recovery: {
               validationError: { pass: false, captured: false, messageCount: 0, error: null },
               deviceLost: { pass: false, promiseAvailable: false, error: null },
@@ -1664,6 +1684,195 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
             centerRgba[0] > centerRgba[2] + 20;
         } catch (error) {
           result.smoke.renderTriangle.error = String(error);
+        }
+
+        try {
+          const width = 64;
+          const height = 64;
+          const format = "rgba8unorm";
+          const texture = device.createTexture({
+            size: { width, height, depthOrArrayLayers: 1 },
+            format,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+          });
+          const shader = device.createShaderModule({
+            code: `
+              @vertex
+              fn vs(@builtin(vertex_index) index : u32) -> @builtin(position) vec4<f32> {
+                var pos = array<vec2<f32>, 3>(
+                  vec2<f32>(-0.6, -0.6),
+                  vec2<f32>( 0.6, -0.6),
+                  vec2<f32>( 0.0,  0.6)
+                );
+                return vec4<f32>(pos[index], 0.0, 1.0);
+              }
+
+              @fragment
+              fn fs() -> @location(0) vec4<f32> {
+                return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+              }
+            `,
+          });
+          const pipeline = device.createRenderPipeline({
+            layout: "auto",
+            vertex: { module: shader, entryPoint: "vs" },
+            fragment: {
+              module: shader,
+              entryPoint: "fs",
+              targets: [{ format }],
+            },
+            primitive: { topology: "triangle-list" },
+          });
+          const bundleEncoder = device.createRenderBundleEncoder({
+            colorFormats: [format],
+          });
+          bundleEncoder.setPipeline(pipeline);
+          bundleEncoder.draw(3);
+          const bundle = bundleEncoder.finish();
+          const encoder = device.createCommandEncoder();
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: texture.createView(),
+                clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                loadOp: "clear",
+                storeOp: "store",
+              },
+            ],
+          });
+          pass.executeBundles([bundle]);
+          pass.end();
+          device.queue.submit([encoder.finish()]);
+          const readback = await readTextureRgba(device, texture, width, height, "renderBundle readback");
+          const centerRgba = sampleRgba(readback.bytes, readback.bytesPerRow, 32, 32);
+          texture.destroy();
+          result.smoke.renderBundle.centerRgba = centerRgba;
+          result.smoke.renderBundle.pass = isRedDominant(centerRgba);
+        } catch (error) {
+          result.smoke.renderBundle.error = String(error);
+        }
+
+        try {
+          const width = 64;
+          const height = 64;
+          const format = "rgba8unorm";
+          const texture = device.createTexture({
+            size: { width, height, depthOrArrayLayers: 1 },
+            format,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+          });
+          const shader = device.createShaderModule({
+            code: `
+              @vertex
+              fn vs(@builtin(vertex_index) index : u32) -> @builtin(position) vec4<f32> {
+                var pos = array<vec2<f32>, 3>(
+                  vec2<f32>(-0.6, -0.6),
+                  vec2<f32>( 0.6, -0.6),
+                  vec2<f32>( 0.0,  0.6)
+                );
+                return vec4<f32>(pos[index], 0.0, 1.0);
+              }
+
+              @fragment
+              fn fs() -> @location(0) vec4<f32> {
+                return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+              }
+            `,
+          });
+          const pipeline = device.createRenderPipeline({
+            layout: "auto",
+            vertex: { module: shader, entryPoint: "vs" },
+            fragment: {
+              module: shader,
+              entryPoint: "fs",
+              targets: [{ format }],
+            },
+            primitive: { topology: "triangle-list" },
+          });
+          const indirect = device.createBuffer({
+            size: 16,
+            usage: GPUBufferUsage.INDIRECT | GPUBufferUsage.COPY_DST,
+          });
+          device.queue.writeBuffer(indirect, 0, new Uint32Array([3, 1, 0, 0]));
+          const encoder = device.createCommandEncoder();
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: texture.createView(),
+                clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                loadOp: "clear",
+                storeOp: "store",
+              },
+            ],
+          });
+          pass.setPipeline(pipeline);
+          pass.drawIndirect(indirect, 0);
+          pass.end();
+          device.queue.submit([encoder.finish()]);
+          const readback = await readTextureRgba(device, texture, width, height, "renderIndirect readback");
+          const centerRgba = sampleRgba(readback.bytes, readback.bytesPerRow, 32, 32);
+          indirect.destroy();
+          texture.destroy();
+          result.smoke.renderIndirect.centerRgba = centerRgba;
+          result.smoke.renderIndirect.pass = isRedDominant(centerRgba);
+        } catch (error) {
+          result.smoke.renderIndirect.error = String(error);
+        }
+
+        try {
+          const timestampAdapter = await withOpTimeout("timestamp requestAdapter", () =>
+            gpu.requestAdapter(),
+          );
+          if (!timestampAdapter) {
+            throw new Error("timestamp requestAdapter returned null");
+          }
+          if (!timestampAdapter.features.has("timestamp-query")) {
+            throw new Error("timestamp-query feature unavailable");
+          }
+          const timestampDevice = await withOpTimeout("timestamp requestDevice", () =>
+            timestampAdapter.requestDevice({ requiredFeatures: ["timestamp-query"] }),
+          );
+          let querySet = null;
+          let resolveBuffer = null;
+          let readback = null;
+          try {
+            querySet = timestampDevice.createQuerySet({ type: "timestamp", count: 2 });
+            resolveBuffer = timestampDevice.createBuffer({
+              size: 16,
+              usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
+            });
+            readback = timestampDevice.createBuffer({
+              size: 16,
+              usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            });
+            const encoder = timestampDevice.createCommandEncoder();
+            const pass = encoder.beginComputePass({
+              timestampWrites: {
+                querySet,
+                beginningOfPassWriteIndex: 0,
+                endOfPassWriteIndex: 1,
+              },
+            });
+            pass.end();
+            encoder.resolveQuerySet(querySet, 0, 2, resolveBuffer, 0);
+            encoder.copyBufferToBuffer(resolveBuffer, 0, readback, 0, 16);
+            timestampDevice.queue.submit([encoder.finish()]);
+            await withOpTimeout("timestampQuery readback mapAsync", () =>
+              readback.mapAsync(GPUMapMode.READ),
+            );
+            const values = new BigUint64Array(readback.getMappedRange()).slice(0);
+            const actual = Array.from(values, (value) => value.toString());
+            result.smoke.timestampQuery.actual = actual;
+            result.smoke.timestampQuery.pass = values.length === 2 && values[1] >= values[0];
+            readback.unmap();
+          } finally {
+            readback?.destroy();
+            resolveBuffer?.destroy();
+            querySet?.destroy();
+            timestampDevice.destroy?.();
+          }
+        } catch (error) {
+          result.smoke.timestampQuery.error = String(error);
         }
 
         try {
@@ -2065,6 +2274,9 @@ function computeComparison(modeResults) {
     bothComputeSmokePass:
       dawn.smoke.computeIncrement.pass && doe.smoke.computeIncrement.pass,
     bothRenderSmokePass: dawn.smoke.renderTriangle.pass && doe.smoke.renderTriangle.pass,
+    bothRenderBundleSmokePass: dawn.smoke.renderBundle.pass && doe.smoke.renderBundle.pass,
+    bothRenderIndirectSmokePass: dawn.smoke.renderIndirect.pass && doe.smoke.renderIndirect.pass,
+    bothTimestampQuerySmokePass: dawn.smoke.timestampQuery.pass && doe.smoke.timestampQuery.pass,
   };
 }
 
@@ -2072,6 +2284,9 @@ function hasFailure(result) {
   if (!result.webgpuAvailable || !result.adapterAvailable) return true;
   if (!result.smoke.computeIncrement.pass) return true;
   if (!result.smoke.renderTriangle.pass) return true;
+  if (!result.smoke.renderBundle.pass) return true;
+  if (!result.smoke.renderIndirect.pass) return true;
+  if (!result.smoke.timestampQuery.pass) return true;
   if (!result.smoke.requestAdapterXrCompatible.pass) return true;
   if (!result.smoke.copyExternalImageToTexture.pass) return true;
   if (!result.smoke.importExternalTexture.pass) return true;
@@ -2093,7 +2308,7 @@ async function main() {
       modeResults.push(result);
       const status = hasFailure(result) ? "FAIL" : "PASS";
       console.log(
-        `[${status}] ${mode}: webgpu=${result.webgpuAvailable} adapter=${result.adapterAvailable} compute=${result.smoke.computeIncrement.pass} render=${result.smoke.renderTriangle.pass} xrCompatible=${result.smoke.requestAdapterXrCompatible.pass} copyExternal=${result.smoke.copyExternalImageToTexture.pass} importExternal=${result.smoke.importExternalTexture.pass} canvas=${result.webgpuCanvasApi?.webgpuContextAvailable ?? false} upload64kb_us=${result.benches.writeBuffer64kbUsPerOp?.toFixed(3) ?? "n/a"} dispatch_us=${result.benches.computeDispatchUsPerOp?.toFixed(3) ?? "n/a"}`,
+        `[${status}] ${mode}: webgpu=${result.webgpuAvailable} adapter=${result.adapterAvailable} compute=${result.smoke.computeIncrement.pass} render=${result.smoke.renderTriangle.pass} bundle=${result.smoke.renderBundle.pass} indirect=${result.smoke.renderIndirect.pass} timestamp=${result.smoke.timestampQuery.pass} xrCompatible=${result.smoke.requestAdapterXrCompatible.pass} copyExternal=${result.smoke.copyExternalImageToTexture.pass} importExternal=${result.smoke.importExternalTexture.pass} canvas=${result.webgpuCanvasApi?.webgpuContextAvailable ?? false} upload64kb_us=${result.benches.writeBuffer64kbUsPerOp?.toFixed(3) ?? "n/a"} dispatch_us=${result.benches.computeDispatchUsPerOp?.toFixed(3) ?? "n/a"}`,
       );
       if (hasFailure(result)) {
         failed = true;

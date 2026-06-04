@@ -84,6 +84,20 @@ const WGPU_STATUS_SUCCESS = 1;
 const REQUEST_ADAPTER_STATUS_SUCCESS = 1;
 const REQUEST_DEVICE_STATUS_SUCCESS = 1;
 const MAP_ASYNC_STATUS_SUCCESS = 1;
+const READBACK_BREAKDOWN_FIELD_COUNT = 6;
+const READBACK_BREAKDOWN_WAIT_COMPLETED = 0;
+const READBACK_BREAKDOWN_DEFERRED_COPY = 1;
+const READBACK_BREAKDOWN_DEFERRED_RESOLVE = 2;
+const READBACK_BREAKDOWN_MAP = 3;
+const READBACK_BREAKDOWN_COPY = 4;
+const READBACK_BREAKDOWN_UNMAP = 5;
+const DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT = 6;
+const DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY = 0;
+const DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT = 1;
+const DISPATCH_FLUSH_BREAKDOWN_FLUSH = 2;
+const DISPATCH_FLUSH_BREAKDOWN_WAIT_COMPLETED = 3;
+const DISPATCH_FLUSH_BREAKDOWN_DEFERRED_COPY = 4;
+const DISPATCH_FLUSH_BREAKDOWN_DEFERRED_RESOLVE = 5;
 const STYPE_SHADER_SOURCE_WGSL = 0x00000002;
 const PROCESS_EVENTS_TIMEOUT_NS = 5_000_000_000;
 const NS_PER_MS = 1_000_000;
@@ -152,6 +166,36 @@ const STORAGE_TEXTURE_ACCESS = Object.freeze({
     "read-write": 4,
 });
 const MAX_COMPUTE_BIND_GROUPS = 4;
+const MAX_QUEUE_WRITE_BATCH_BYTES = 4 * 1024 * 1024;
+const SHADER_SOURCE_BYTES_CACHE_MAX_ENTRIES = 128;
+const HOT_U64_CACHE_MAX_ENTRIES = 4096;
+
+function envFlagEnabled(value) {
+    return value === "1" || value === "true" || value === "yes" || value === "on";
+}
+
+const DOE_WEBGPU_SUBMIT_BREAKDOWN = envFlagEnabled(process.env.DOE_WEBGPU_SUBMIT_BREAKDOWN);
+const shaderSourceBytesCache = new Map();
+const hotU64Cache = new Map();
+
+function hotU64(value) {
+    if (value === null || value === undefined || value === 0 || value === 0n) {
+        return 0n;
+    }
+    if (typeof value === "bigint") {
+        return value;
+    }
+    const cached = hotU64Cache.get(value);
+    if (cached !== undefined) {
+        return cached;
+    }
+    const converted = BigInt(value);
+    if (hotU64Cache.size >= HOT_U64_CACHE_MAX_ENTRIES) {
+        hotU64Cache.clear();
+    }
+    hotU64Cache.set(value, converted);
+    return converted;
+}
 
 // Struct layout constants for 64-bit platforms (LP64 / LLP64).
 const PTR_SIZE = 8;
@@ -246,6 +290,7 @@ function openLibrary(path) {
 
         // Buffer
         wgpuDeviceCreateBuffer:   { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
+        doeNativeDeviceCreateBufferFlat: { args: [FFIType.ptr, FFIType.u64, FFIType.u64, FFIType.u32], returns: FFIType.ptr },
         wgpuBufferRelease:        { args: [FFIType.ptr], returns: FFIType.void },
         wgpuBufferUnmap:          { args: [FFIType.ptr], returns: FFIType.void },
         wgpuBufferGetConstMappedRange: { args: [FFIType.ptr, FFIType.u64, FFIType.u64], returns: FFIType.ptr },
@@ -253,29 +298,48 @@ function openLibrary(path) {
         doeNativeBufferGetMapState: { args: [FFIType.ptr], returns: FFIType.u32 },
         doeBufferMapAsyncFlat:    { args: [FFIType.ptr, FFIType.u64, FFIType.u64, FFIType.u64, FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.u64 },
         doeBufferMapSyncFlat:     { args: [FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.u64, FFIType.u64], returns: FFIType.u32 },
+        doeBufferMapReadCopyUnmapFlat: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.u64, FFIType.u64, FFIType.u32, FFIType.ptr, FFIType.ptr], returns: FFIType.u32 },
 
         // Queue
         wgpuQueueSubmit:          { args: [FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
         wgpuQueueWriteBuffer:     { args: [FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        doeNativeQueueWriteBuffer: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.u64], returns: FFIType.void },
+        doeNativeQueueWriteBufferBatch: { args: [FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+        doeNativeQueueWriteBufferBatchDataPtrs: { args: [FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
         wgpuQueueRelease:         { args: [FFIType.ptr], returns: FFIType.void },
         doeQueueOnSubmittedWorkDoneFlat: { args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.u64 },
+        doeQueueSubmitOneAndRelease: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
 
         // Shader
         wgpuDeviceCreateShaderModule: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
+        doeNativeDeviceCreateShaderModuleWgsl: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.ptr },
         wgpuShaderModuleRelease:  { args: [FFIType.ptr], returns: FFIType.void },
         doeNativeShaderModuleGetBindings: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.u64 },
 
         // Compute pipeline
         wgpuDeviceCreateComputePipeline: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
+        doeNativeDeviceCreateComputePipelineMain: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
         wgpuComputePipelineRelease: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuComputePipelineGetBindGroupLayout: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.ptr },
 
         // Bind group layout / bind group / pipeline layout
         wgpuDeviceCreateBindGroupLayout: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
+        doeNativeDeviceCreateBufferBindGroupLayoutFlat4: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.u32, FFIType.u32], returns: FFIType.ptr },
         wgpuBindGroupLayoutRelease: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuDeviceCreateBindGroup: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
+        doeNativeDeviceCreateBufferBindGroupFlat4: {
+            args: [
+                FFIType.ptr, FFIType.ptr, FFIType.u32,
+                FFIType.u32, FFIType.ptr, FFIType.u64,
+                FFIType.u32, FFIType.ptr, FFIType.u64,
+                FFIType.u32, FFIType.ptr, FFIType.u64,
+                FFIType.u32, FFIType.ptr, FFIType.u64,
+            ],
+            returns: FFIType.ptr,
+        },
         wgpuBindGroupRelease:     { args: [FFIType.ptr], returns: FFIType.void },
         wgpuDeviceCreatePipelineLayout: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
+        doeNativeDeviceCreatePipelineLayoutOne: { args: [FFIType.ptr, FFIType.ptr, FFIType.u32], returns: FFIType.ptr },
         wgpuPipelineLayoutRelease: { args: [FFIType.ptr], returns: FFIType.void },
 
         // Command encoder
@@ -410,6 +474,63 @@ function openLibrary(path) {
             args: [FFIType.ptr],
             returns: FFIType.void,
         };
+        symbols.doeNativeQueueFlushBreakdown = {
+            args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr],
+            returns: FFIType.void,
+        };
+        symbols.doeNativePackagePipelineCacheFlush = {
+            args: [],
+            returns: FFIType.void,
+        };
+        symbols.doeNativeCreateComputeDispatchCopyCommandBuffer = {
+            args: [
+                FFIType.ptr,  // device
+                FFIType.ptr,  // pipeline
+                FFIType.ptr,  // bindGroups
+                FFIType.u32,  // bgCount
+                FFIType.u32,  // x
+                FFIType.u32,  // y
+                FFIType.u32,  // z
+                FFIType.ptr,  // copySrc
+                FFIType.u64,  // copySrcOff
+                FFIType.ptr,  // copyDst
+                FFIType.u64,  // copyDstOff
+                FFIType.u64,  // copySize
+            ],
+            returns: FFIType.ptr,
+        };
+        symbols.doeNativeCreateComputeDispatchCopyCommandBufferOneBindGroup = {
+            args: [
+                FFIType.ptr,  // device
+                FFIType.ptr,  // pipeline
+                FFIType.ptr,  // bindGroup0
+                FFIType.u32,  // x
+                FFIType.u32,  // y
+                FFIType.u32,  // z
+                FFIType.ptr,  // copySrc
+                FFIType.u64,  // copySrcOff
+                FFIType.ptr,  // copyDst
+                FFIType.u64,  // copyDstOff
+                FFIType.u64,  // copySize
+            ],
+            returns: FFIType.ptr,
+        };
+        symbols.doeNativeCreateComputeDispatchBatchCopyCommandBuffer = {
+            args: [
+                FFIType.ptr,  // device
+                FFIType.u64,  // dispatchCount
+                FFIType.ptr,  // pipelines
+                FFIType.ptr,  // bindGroups
+                FFIType.ptr,  // bindGroupCounts
+                FFIType.ptr,  // dispatchDims
+                FFIType.ptr,  // copySrc
+                FFIType.u64,  // copySrcOff
+                FFIType.ptr,  // copyDst
+                FFIType.u64,  // copyDstOff
+                FFIType.u64,  // copySize
+            ],
+            returns: FFIType.ptr,
+        };
         symbols.doeNativeComputeDispatchFlush = {
             args: [
                 FFIType.ptr,  // queue
@@ -427,6 +548,24 @@ function openLibrary(path) {
             ],
             returns: FFIType.void,
         };
+        symbols.doeNativeComputeDispatchFlushBreakdown = {
+            args: [
+                FFIType.ptr,  // queue
+                FFIType.ptr,  // pipeline
+                FFIType.ptr,  // bindGroups (ptr array)
+                FFIType.u32,  // bgCount
+                FFIType.u32,  // x
+                FFIType.u32,  // y
+                FFIType.u32,  // z
+                FFIType.ptr,  // copySrc
+                FFIType.u64,  // copySrcOff
+                FFIType.ptr,  // copyDst
+                FFIType.u64,  // copyDstOff
+                FFIType.u64,  // copySize
+                FFIType.ptr,  // u64 breakdown[6]
+            ],
+            returns: FFIType.void,
+        };
         symbols.doeNativeComputeDispatchBatchFlush = {
             args: [
                 FFIType.ptr,  // queue
@@ -435,6 +574,39 @@ function openLibrary(path) {
                 FFIType.ptr,  // bindGroups
                 FFIType.ptr,  // bindGroupCounts
                 FFIType.ptr,  // dispatchDims
+            ],
+            returns: FFIType.void,
+        };
+        symbols.doeNativeComputeDispatchBatchCopyFlush = {
+            args: [
+                FFIType.ptr,  // queue
+                FFIType.u64,  // dispatchCount
+                FFIType.ptr,  // pipelines
+                FFIType.ptr,  // bindGroups
+                FFIType.ptr,  // bindGroupCounts
+                FFIType.ptr,  // dispatchDims
+                FFIType.ptr,  // copySrc
+                FFIType.u64,  // copySrcOff
+                FFIType.ptr,  // copyDst
+                FFIType.u64,  // copyDstOff
+                FFIType.u64,  // copySize
+            ],
+            returns: FFIType.void,
+        };
+        symbols.doeNativeComputeDispatchBatchCopyFlushBreakdown = {
+            args: [
+                FFIType.ptr,  // queue
+                FFIType.u64,  // dispatchCount
+                FFIType.ptr,  // pipelines
+                FFIType.ptr,  // bindGroups
+                FFIType.ptr,  // bindGroupCounts
+                FFIType.ptr,  // dispatchDims
+                FFIType.ptr,  // copySrc
+                FFIType.u64,  // copySrcOff
+                FFIType.ptr,  // copyDst
+                FFIType.u64,  // copyDstOff
+                FFIType.u64,  // copySize
+                FFIType.ptr,  // u64 breakdown[6]
             ],
             returns: FFIType.void,
         };
@@ -596,7 +768,42 @@ function copyNativeErrorMeta(symbolName) {
     return decoder.decode(scratch.subarray(0, Math.min(len, scratch.length - 1)));
 }
 
-const fastPathStats = { dispatchFlush: 0, flushAndMap: 0 };
+const fastPathStats = { dispatchFlush: 0, flushAndMap: 0, commandBufferBuild: 0 };
+
+function nativeFastPathInfoFromSymbols() {
+    if (!DOE_LIB_PATH) {
+        return null;
+    }
+    try {
+        ensureLibrary();
+    } catch (_error) {
+        return null;
+    }
+    const symbols = wgpu?.symbols ?? {};
+    return {
+        appleFastPathCompiled: process.platform === "darwin",
+        queueFlush: typeof symbols.doeNativeQueueFlush === "function",
+        queueFlushBreakdown: typeof symbols.doeNativeQueueFlushBreakdown === "function",
+        computeDispatchFlush: typeof symbols.doeNativeComputeDispatchFlush === "function",
+        computeDispatchFlushBreakdown: typeof symbols.doeNativeComputeDispatchFlushBreakdown === "function",
+        computeDispatchBatchFlush: typeof symbols.doeNativeComputeDispatchBatchFlush === "function",
+        computeDispatchBatchCopyFlush: typeof symbols.doeNativeComputeDispatchBatchCopyFlush === "function",
+        computeDispatchBatchCopyFlushBreakdown: typeof symbols.doeNativeComputeDispatchBatchCopyFlushBreakdown === "function",
+        bufferMapReadCopyUnmap: typeof symbols.doeBufferMapReadCopyUnmapFlat === "function",
+    };
+}
+
+function cachedShaderSourceBytes(code) {
+    const cached = shaderSourceBytesCache.get(code);
+    if (cached) return cached;
+    const encoded = encoder.encode(code);
+    if (shaderSourceBytesCache.size >= SHADER_SOURCE_BYTES_CACHE_MAX_ENTRIES) {
+        const firstKey = shaderSourceBytesCache.keys().next().value;
+        shaderSourceBytesCache.delete(firstKey);
+    }
+    shaderSourceBytesCache.set(code, encoded);
+    return encoded;
+}
 
 function elapsedNsSince(startedAtMs) {
     return Math.max(0, Math.round((performance.now() - startedAtMs) * NS_PER_MS));
@@ -620,6 +827,36 @@ function zeroQueueSubmitBreakdown() {
 
 function accumulateQueueSubmitBreakdown(queue, field, startedAtMs) {
     queue._submitBreakdownNs[field] += elapsedNsSince(startedAtMs);
+}
+
+function queueDispatchFlushBreakdownScratch(queue) {
+    const scratch = queue._dispatchFlushBreakdown ?? new BigUint64Array(DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT);
+    queue._dispatchFlushBreakdown = scratch;
+    for (let index = 0; index < DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT; index += 1) {
+        scratch[index] = 0n;
+    }
+    return scratch;
+}
+
+function accumulateDispatchFlushBreakdown(queue, breakdown) {
+    queue._submitBreakdownNs.submitAddonCommandReplayTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY],
+    );
+    queue._submitBreakdownNs.submitAddonQueueSubmitTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT],
+    );
+    queue._submitBreakdownNs.submitAddonFlushTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_FLUSH],
+    );
+    queue._submitBreakdownNs.submitQueueFlushWaitCompletedTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_WAIT_COMPLETED],
+    );
+    queue._submitBreakdownNs.submitQueueFlushDeferredCopyTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_DEFERRED_COPY],
+    );
+    queue._submitBreakdownNs.submitQueueFlushDeferredResolveTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_DEFERRED_RESOLVE],
+    );
 }
 
 function updatePassPipelineState(pass, pipelineNative) {
@@ -740,6 +977,117 @@ function ensureSubmitPtrScratch(queue, count) {
         queue._submitPtrScratch = new BigUint64Array(count);
     }
     return queue._submitPtrScratch;
+}
+
+function ensureBindGroupPtrScratch(queue, count) {
+    if (count <= 0) {
+        return queue._emptyBindGroupPtrArray;
+    }
+    if (count <= 1) {
+        return queue._singleBindGroupPtrArray;
+    }
+    if (!(queue._bindGroupPtrScratch instanceof BigUint64Array) || queue._bindGroupPtrScratch.length < count) {
+        queue._bindGroupPtrScratch = new BigUint64Array(count);
+    }
+    return queue._bindGroupPtrScratch;
+}
+
+function ensureDispatchBatchScratch(queue, dispatchCount) {
+    let scratch = queue._dispatchBatchScratch;
+    if (!scratch) {
+        scratch = {};
+        queue._dispatchBatchScratch = scratch;
+    }
+    const bindGroupCapacity = dispatchCount * MAX_COMPUTE_BIND_GROUPS;
+    if (!(scratch.pipelines instanceof BigUint64Array) || scratch.pipelines.length < dispatchCount) {
+        scratch.pipelines = new BigUint64Array(dispatchCount);
+    }
+    if (!(scratch.bindGroups instanceof BigUint64Array) || scratch.bindGroups.length < bindGroupCapacity) {
+        scratch.bindGroups = new BigUint64Array(bindGroupCapacity);
+    }
+    if (!(scratch.bindGroupCounts instanceof Uint32Array) || scratch.bindGroupCounts.length < dispatchCount) {
+        scratch.bindGroupCounts = new Uint32Array(dispatchCount);
+    }
+    if (!(scratch.dispatchDims instanceof Uint32Array) || scratch.dispatchDims.length < dispatchCount * 3) {
+        scratch.dispatchDims = new Uint32Array(dispatchCount * 3);
+    }
+    return scratch;
+}
+
+function ensureQueueWriteBatchScratch(queue, count, byteLength) {
+    let scratch = queue._writeBatchScratch;
+    if (!scratch) {
+        scratch = {};
+        queue._writeBatchScratch = scratch;
+    }
+    if (!(scratch.buffers instanceof BigUint64Array) || scratch.buffers.length < count) {
+        scratch.buffers = new BigUint64Array(count);
+    }
+    if (!(scratch.offsets instanceof BigUint64Array) || scratch.offsets.length < count) {
+        scratch.offsets = new BigUint64Array(count);
+    }
+    if (!(scratch.sizes instanceof Uint32Array) || scratch.sizes.length < count) {
+        scratch.sizes = new Uint32Array(count);
+    }
+    if (!(scratch.dataPtrs instanceof BigUint64Array) || scratch.dataPtrs.length < count) {
+        scratch.dataPtrs = new BigUint64Array(count);
+    }
+    if (!(scratch.data instanceof Uint8Array) || scratch.data.length < byteLength) {
+        scratch.data = new Uint8Array(byteLength);
+    }
+    return scratch;
+}
+
+function bunCommandBindGroupCount(cmd) {
+    if (cmd?.b) {
+        return 1;
+    }
+    return Math.min(cmd?.bg?.length ?? 0, MAX_COMPUTE_BIND_GROUPS);
+}
+
+function bunCommandBindGroupAt(cmd, index) {
+    if (index === 0 && cmd?.b) {
+        return cmd.b;
+    }
+    return cmd?.bg?.[index] ?? null;
+}
+
+function pushBunLazyDispatchCommand(pass, pipelineNative, x, y, z) {
+    const bindGroups = pass._bindGroups;
+    if (bindGroups.length > 1) {
+        pass._encoder._commands.push({ t: 0, p: pipelineNative, bg: [...bindGroups], x, y, z });
+        return;
+    }
+    const bindGroup = bindGroups[0] ?? null;
+    if (bindGroup) {
+        pass._encoder._commands.push({ t: 0, p: pipelineNative, b: bindGroup, x, y, z });
+    } else {
+        pass._encoder._commands.push({ t: 0, p: pipelineNative, x, y, z });
+    }
+}
+
+function queueFlushBreakdownScratch(queue) {
+    if (
+        !(queue._flushWaitCompletedNs instanceof BigUint64Array)
+        || !(queue._flushDeferredCopyNs instanceof BigUint64Array)
+        || !(queue._flushDeferredResolveNs instanceof BigUint64Array)
+    ) {
+        queue._flushWaitCompletedNs = new BigUint64Array(1);
+        queue._flushDeferredCopyNs = new BigUint64Array(1);
+        queue._flushDeferredResolveNs = new BigUint64Array(1);
+        queue._mapReadCopyUnmapNs = new BigUint64Array(READBACK_BREAKDOWN_FIELD_COUNT);
+    }
+    queue._flushWaitCompletedNs[0] = 0n;
+    queue._flushDeferredCopyNs[0] = 0n;
+    queue._flushDeferredResolveNs[0] = 0n;
+}
+
+function queueMapReadCopyUnmapScratch(queue) {
+    if (!(queue._mapReadCopyUnmapNs instanceof BigUint64Array)) {
+        queue._mapReadCopyUnmapNs = new BigUint64Array(READBACK_BREAKDOWN_FIELD_COUNT);
+    }
+    queue._mapReadCopyUnmapNs.fill(0n);
+    return queue._mapReadCopyUnmapNs;
 }
 
 /**
@@ -1124,6 +1472,50 @@ function buildBindGroupDescriptor(layoutPtr, entries) {
     writePtr(descView, 40, entries.length > 0 ? bunPtr(entryBufs) : null);
 
     return { desc: new Uint8Array(descBuf), _refs: [entryBufs] };
+}
+
+function canCreateBufferBindGroupLayoutFlat4(entries) {
+    if (entries.length > MAX_COMPUTE_BIND_GROUPS) {
+        return false;
+    }
+    for (const entry of entries) {
+        if (
+            !entry.buffer
+            || entry.sampler
+            || entry.texture
+            || entry.storageTexture
+            || entry.externalTexture
+            || entry.buffer.hasDynamicOffset
+            || (entry.bindingArraySize ?? 0) !== 0
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function flatBindingAt(entries, index) {
+    return entries[index]?.binding ?? 0;
+}
+
+function canCreateBufferBindGroupFlat4(entries) {
+    if (entries.length > MAX_COMPUTE_BIND_GROUPS) {
+        return false;
+    }
+    for (const entry of entries) {
+        if (!entry.buffer || entry.sampler || entry.textureView || entry.externalTexture) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function flatBindGroupBufferAt(entries, index) {
+    return entries[index]?.buffer ?? null;
+}
+
+function flatBindGroupOffsetAt(entries, index) {
+    return BigInt(entries[index]?.offset ?? 0);
 }
 
 // WGPUPipelineLayoutDescriptor: { nextInChain:ptr@0, label:sv@8, bindGroupLayoutCount:size_t@24,
@@ -2163,7 +2555,10 @@ function waitForSubmittedWorkDoneSync(instancePtr, queuePtr) {
 // ---------------------------------------------------------------------------
 
 function ensureBunCommandEncoderNative(encoder) {
-    encoder._assertOpen("GPUCommandEncoder");
+    assertLiveResource(encoder._device, "GPUCommandEncoder", "GPUDevice");
+    if (encoder._finished) {
+        failValidation("GPUCommandEncoder", "command encoder is already finished");
+    }
     if (encoder._native) return;
     encoder._native = wgpu.symbols.wgpuDeviceCreateCommandEncoder(
         assertLiveResource(encoder._device, "GPUCommandEncoder", "GPUDevice"), null);
@@ -2171,9 +2566,11 @@ function ensureBunCommandEncoderNative(encoder) {
         if (cmd.t === 0) {
             const pass = wgpu.symbols.wgpuCommandEncoderBeginComputePass(encoder._native, null);
             wgpu.symbols.wgpuComputePassEncoderSetPipeline(pass, cmd.p);
-            for (let i = 0; i < cmd.bg.length; i += 1) {
-                if (cmd.bg[i]) {
-                    wgpu.symbols.wgpuComputePassEncoderSetBindGroup(pass, i, cmd.bg[i], BigInt(0), null);
+            const bgCount = bunCommandBindGroupCount(cmd);
+            for (let i = 0; i < bgCount; i += 1) {
+                const bindGroup = bunCommandBindGroupAt(cmd, i);
+                if (bindGroup) {
+                    wgpu.symbols.wgpuComputePassEncoderSetBindGroup(pass, i, bindGroup, BigInt(0), null);
                 }
             }
             wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(pass, cmd.x, cmd.y, cmd.z);
@@ -2181,10 +2578,227 @@ function ensureBunCommandEncoderNative(encoder) {
             wgpu.symbols.wgpuComputePassEncoderRelease(pass);
         } else if (cmd.t === 1) {
             wgpu.symbols.wgpuCommandEncoderCopyBufferToBuffer(
-                encoder._native, cmd.s, BigInt(cmd.so), cmd.d, BigInt(cmd.do), BigInt(cmd.sz));
+                encoder._native, cmd.s, hotU64(cmd.so), cmd.d, hotU64(cmd.do), hotU64(cmd.sz));
         }
     }
     encoder._commands = [];
+}
+
+function canFinishBunLazyDispatchCopyCommandsAsNativeBuffer(commands) {
+    if (!Array.isArray(commands) || commands.length < 2) {
+        return false;
+    }
+    const copy = commands[commands.length - 1];
+    if (copy?.t !== 1) {
+        return false;
+    }
+    for (let index = 0; index + 1 < commands.length; index += 1) {
+        const dispatch = commands[index];
+        if (dispatch?.t !== 0 || (dispatch.immediates?.length ?? 0) !== 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function bunCommandBindGroupPtrArray(cmd) {
+    const bgCount = bunCommandBindGroupCount(cmd);
+    const bindGroups = new BigUint64Array(bgCount);
+    for (let bgIndex = 0; bgIndex < bgCount; bgIndex += 1) {
+        bindGroups[bgIndex] = hotU64(bunCommandBindGroupAt(cmd, bgIndex));
+    }
+    return { bindGroups, bgCount };
+}
+
+function tryFinishBunLazyDispatchCopyCommandsAsNativeCommandBuffer(encoder, commands) {
+    const deviceNative = assertLiveResource(encoder._device, "GPUCommandEncoder", "GPUDevice");
+    const dispatchCount = commands.length - 1;
+    const copy = commands[commands.length - 1];
+    if (
+        dispatchCount === 1
+        && typeof wgpu.symbols.doeNativeCreateComputeDispatchCopyCommandBuffer === "function"
+    ) {
+        const cmd = commands[0];
+        if (
+            typeof wgpu.symbols.doeNativeCreateComputeDispatchCopyCommandBufferOneBindGroup === "function"
+            && bunCommandBindGroupCount(cmd) === 1
+        ) {
+            const commandBuffer = wgpu.symbols.doeNativeCreateComputeDispatchCopyCommandBufferOneBindGroup(
+                deviceNative,
+                cmd.p,
+                bunCommandBindGroupAt(cmd, 0),
+                cmd.x,
+                cmd.y,
+                cmd.z,
+                copy.s,
+                hotU64(copy.so),
+                copy.d,
+                hotU64(copy.do),
+                hotU64(copy.sz),
+            );
+            if (commandBuffer) {
+                fastPathStats.commandBufferBuild += 1;
+                return commandBuffer;
+            }
+        }
+        const { bindGroups, bgCount } = bunCommandBindGroupPtrArray(cmd);
+        const commandBuffer = wgpu.symbols.doeNativeCreateComputeDispatchCopyCommandBuffer(
+            deviceNative,
+            cmd.p,
+            bindGroups,
+            bgCount,
+            cmd.x,
+            cmd.y,
+            cmd.z,
+            copy.s,
+            hotU64(copy.so),
+            copy.d,
+            hotU64(copy.do),
+            hotU64(copy.sz),
+        );
+        if (commandBuffer) {
+            fastPathStats.commandBufferBuild += 1;
+            return commandBuffer;
+        }
+    }
+    if (typeof wgpu.symbols.doeNativeCreateComputeDispatchBatchCopyCommandBuffer !== "function") {
+        return null;
+    }
+    const pipelines = new BigUint64Array(dispatchCount);
+    const bindGroups = new BigUint64Array(dispatchCount * MAX_COMPUTE_BIND_GROUPS);
+    const bindGroupCounts = new Uint32Array(dispatchCount);
+    const dispatchDims = new Uint32Array(dispatchCount * 3);
+    for (let index = 0; index < dispatchCount; index += 1) {
+        const cmd = commands[index];
+        pipelines[index] = hotU64(cmd.p);
+        const bgCount = bunCommandBindGroupCount(cmd);
+        bindGroupCounts[index] = bgCount;
+        for (let bgIndex = 0; bgIndex < bgCount; bgIndex += 1) {
+            bindGroups[(index * MAX_COMPUTE_BIND_GROUPS) + bgIndex] = hotU64(
+                bunCommandBindGroupAt(cmd, bgIndex),
+            );
+        }
+        dispatchDims[(index * 3)] = cmd.x;
+        dispatchDims[(index * 3) + 1] = cmd.y;
+        dispatchDims[(index * 3) + 2] = cmd.z;
+    }
+    const commandBuffer = wgpu.symbols.doeNativeCreateComputeDispatchBatchCopyCommandBuffer(
+        deviceNative,
+        hotU64(dispatchCount),
+        pipelines,
+        bindGroups,
+        bindGroupCounts,
+        dispatchDims,
+        copy.s,
+        hotU64(copy.so),
+        copy.d,
+        hotU64(copy.do),
+        hotU64(copy.sz),
+    );
+    if (commandBuffer) {
+        fastPathStats.commandBufferBuild += 1;
+    }
+    return commandBuffer;
+}
+
+function finishBunLazyDispatchCopyCommandsAsNativeCommandBuffer(encoder, commands) {
+    const commandBuffer = tryFinishBunLazyDispatchCopyCommandsAsNativeCommandBuffer(encoder, commands);
+    if (commandBuffer) {
+        return commandBuffer;
+    }
+    const deviceNative = assertLiveResource(encoder._device, "GPUCommandEncoder", "GPUDevice");
+    let nativeEncoder = wgpu.symbols.wgpuDeviceCreateCommandEncoder(deviceNative, null);
+    if (!nativeEncoder) {
+        throw new Error("[doe-gpu] createCommandEncoder failed");
+    }
+    let pass = wgpu.symbols.wgpuCommandEncoderBeginComputePass(nativeEncoder, null);
+    if (!pass) {
+        wgpu.symbols.wgpuCommandEncoderRelease(nativeEncoder);
+        nativeEncoder = null;
+        throw new Error("[doe-gpu] beginComputePass failed");
+    }
+    try {
+        let currentPipeline = null;
+        const currentBindGroups = [];
+        for (let index = 0; index + 1 < commands.length; index += 1) {
+            const cmd = commands[index];
+            if (cmd.p !== currentPipeline) {
+                wgpu.symbols.wgpuComputePassEncoderSetPipeline(pass, cmd.p);
+                currentPipeline = cmd.p;
+                currentBindGroups.length = 0;
+            }
+            const bgCount = bunCommandBindGroupCount(cmd);
+            for (let bgIndex = 0; bgIndex < bgCount; bgIndex += 1) {
+                const bindGroup = bunCommandBindGroupAt(cmd, bgIndex);
+                if (bindGroup && bindGroup !== currentBindGroups[bgIndex]) {
+                    wgpu.symbols.wgpuComputePassEncoderSetBindGroup(
+                        pass,
+                        bgIndex,
+                        bindGroup,
+                        BigInt(0),
+                        null,
+                    );
+                    currentBindGroups[bgIndex] = bindGroup;
+                }
+            }
+            wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(pass, cmd.x, cmd.y, cmd.z);
+        }
+        const copy = commands[commands.length - 1];
+        wgpu.symbols.wgpuComputePassEncoderEnd(pass);
+        wgpu.symbols.wgpuComputePassEncoderRelease(pass);
+        pass = null;
+        wgpu.symbols.wgpuCommandEncoderCopyBufferToBuffer(
+            nativeEncoder,
+            copy.s,
+            hotU64(copy.so),
+            copy.d,
+            hotU64(copy.do),
+            hotU64(copy.sz),
+        );
+        const commandBuffer = wgpu.symbols.wgpuCommandEncoderFinish(nativeEncoder, null);
+        wgpu.symbols.wgpuCommandEncoderRelease(nativeEncoder);
+        nativeEncoder = null;
+        if (!commandBuffer) {
+            throw new Error("[doe-gpu] commandEncoderFinish failed");
+        }
+        return commandBuffer;
+    } finally {
+        if (pass) {
+            wgpu.symbols.wgpuComputePassEncoderRelease(pass);
+        }
+        if (nativeEncoder) {
+            wgpu.symbols.wgpuCommandEncoderRelease(nativeEncoder);
+        }
+    }
+}
+
+function assertBunNoActivePass(encoder, path) {
+    const activePass = encoder._activePass;
+    if (activePass == null) {
+        return;
+    }
+    if (activePass._ended) {
+        encoder._activePass = null;
+        return;
+    }
+    failValidation(path, "command encoder has an active pass");
+}
+
+function materializeLazyBunComputePass(pass) {
+    if (!pass._lazy) {
+        return;
+    }
+    ensureBunCommandEncoderNative(pass._encoder);
+    pass._lazy = false;
+    pass._native = wgpu.symbols.wgpuCommandEncoderBeginComputePass(pass._encoder._native, null);
+    if (pass._pipeline != null) {
+        wgpu.symbols.wgpuComputePassEncoderSetPipeline(pass._native, pass._pipeline);
+    }
+    for (let index = 0; index < pass._bindGroups.length; index += 1) {
+        if (pass._bindGroups[index]) {
+            wgpu.symbols.wgpuComputePassEncoderSetBindGroup(pass._native, index, pass._bindGroups[index], BigInt(0), null);
+        }
+    }
 }
 
 function readIndirectDispatchCounts(bufferNative, offset) {
@@ -2204,6 +2818,7 @@ function readIndirectDispatchCounts(bufferNative, offset) {
 const bunEncoderBackend = {
     computePassInit(pass, native) {
         pass._native = native;
+        pass._lazy = native == null;
         pass._pipeline = null;
         pass._bindGroups = [];
         pass._immediates = [];
@@ -2218,10 +2833,16 @@ const bunEncoderBackend = {
         if (!updatePassPipelineState(pass, pipelineNative)) {
             return;
         }
+        if (pass._lazy) {
+            return;
+        }
         markPassPipelineDirty(pass);
     },
     computePassSetBindGroup(pass, index, bindGroupNative) {
         if (!updatePassBindGroupState(pass, index, bindGroupNative)) {
+            return;
+        }
+        if (pass._lazy) {
             return;
         }
         markPassBindGroupDirty(pass, index);
@@ -2230,6 +2851,7 @@ const bunEncoderBackend = {
         if (!updatePassImmediateState(pass, index, data)) {
             return;
         }
+        materializeLazyBunComputePass(pass);
         wgpu.symbols.wgpuComputePassEncoderSetImmediates(
             assertLiveResource(pass, "GPUComputePassEncoder.setImmediates", "GPUComputePassEncoder"),
             index,
@@ -2240,6 +2862,10 @@ const bunEncoderBackend = {
     computePassDispatchWorkgroups(pass, x, y, z) {
         if (pass._pipeline == null) {
             failValidation("GPUComputePassEncoder.dispatchWorkgroups", "setPipeline() must be called before dispatch");
+        }
+        if (pass._lazy) {
+            pushBunLazyDispatchCommand(pass, pass._pipeline, x, y, z);
+            return;
         }
         const nativePass = assertLiveResource(pass, "GPUComputePassEncoder.dispatchWorkgroups", "GPUComputePassEncoder");
         if (
@@ -2262,6 +2888,12 @@ const bunEncoderBackend = {
         wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(nativePass, x, y, z);
     },
     computePassDispatchBound(pass, pipelineNative, bindGroupNative, x, y, z) {
+        if (pass._lazy) {
+            pass._pipeline = pipelineNative;
+            pass._bindGroups[0] = bindGroupNative;
+            pushBunLazyDispatchCommand(pass, pipelineNative, x, y, z);
+            return;
+        }
         pass._pipeline = pipelineNative;
         const nativePass = assertLiveResource(pass, "GPUComputePassEncoder._dispatchBound", "GPUComputePassEncoder");
         if (typeof wgpu.symbols.doeNativeComputePassDispatchBound === "function") {
@@ -2285,6 +2917,7 @@ const bunEncoderBackend = {
         if (pass._pipeline == null) {
             failValidation("GPUComputePassEncoder.dispatchWorkgroupsIndirect", "setPipeline() must be called before dispatch");
         }
+        materializeLazyBunComputePass(pass);
         const nativePass = assertLiveResource(pass, "GPUComputePassEncoder.dispatchWorkgroupsIndirect", "GPUComputePassEncoder");
         materializeBunPendingComputeState(pass, nativePass);
         wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroupsIndirect(
@@ -2294,12 +2927,22 @@ const bunEncoderBackend = {
         );
     },
     computePassEnd(pass) {
+        if (pass._lazy) {
+            pass._ended = true;
+            if (pass._encoder._activePass === pass) {
+                pass._encoder._activePass = null;
+            }
+            return;
+        }
         wgpu.symbols.wgpuComputePassEncoderEnd(
             assertLiveResource(pass, "GPUComputePassEncoder.end", "GPUComputePassEncoder"),
         );
         wgpu.symbols.wgpuComputePassEncoderRelease(pass._native);
         pass._native = null;
         pass._ended = true;
+        if (pass._encoder._activePass === pass) {
+            pass._encoder._activePass = null;
+        }
     },
     renderPassInit(pass, native) {
         pass._native = native;
@@ -2453,6 +3096,9 @@ const bunEncoderBackend = {
     renderPassEnd(pass) {
         wgpu.symbols.wgpuRenderPassEncoderEnd(assertLiveResource(pass, "GPURenderPassEncoder.end", "GPURenderPassEncoder"));
         pass._ended = true;
+        if (pass._encoder._activePass === pass) {
+            pass._encoder._activePass = null;
+        }
     },
     renderBundleEncoderInit(encoder, native) {
         encoder._native = native;
@@ -2582,21 +3228,32 @@ const bunEncoderBackend = {
         encoder._commands = [];
         encoder._native = null;
         encoder._finished = false;
+        encoder._activePass = null;
     },
     commandEncoderAssertOpen(encoder, path) {
         if (encoder._finished) failValidation(path, "command encoder is already finished");
+        assertBunNoActivePass(encoder, path);
     },
     commandEncoderBeginComputePass(encoder, _descriptor, classes) {
+        if ((_descriptor === undefined || _descriptor === null) && encoder._native == null) {
+            const pass = new classes.DoeGPUComputePassEncoder(null, encoder);
+            encoder._activePass = pass;
+            return pass;
+        }
         ensureBunCommandEncoderNative(encoder);
         const native = wgpu.symbols.wgpuCommandEncoderBeginComputePass(encoder._native, null);
-        return new classes.DoeGPUComputePassEncoder(native, encoder);
+        const pass = new classes.DoeGPUComputePassEncoder(native, encoder);
+        encoder._activePass = pass;
+        return pass;
     },
     commandEncoderBeginRenderPass(encoder, descriptor, classes) {
         ensureBunCommandEncoderNative(encoder);
         const { desc, _refs } = buildRenderPassDescriptor(descriptor);
         const pass = wgpu.symbols.wgpuCommandEncoderBeginRenderPass(encoder._native, desc);
         void _refs;
-        return new classes.DoeGPURenderPassEncoder(pass, encoder);
+        const wrapper = new classes.DoeGPURenderPassEncoder(pass, encoder);
+        encoder._activePass = wrapper;
+        return wrapper;
     },
     commandEncoderCopyBufferToBuffer(encoder, srcNative, srcOffset, dstNative, dstOffset, size) {
         if (encoder._native) {
@@ -2728,6 +3385,109 @@ const fullSurfaceBackend = {
         bufferMapSync(wrapper._instance, native, mode, offset, size);
         wrapper._mapMode = mode;
     },
+    bufferMapReadCopyUnmap(wrapper, native, mode, offset, size) {
+        if (mode !== 0x0001) {
+            failValidation("GPUBuffer._mapReadCopyUnmap", "only MAP_READ mode is supported");
+        }
+        const readbackBreakdownNs = {
+            readbackMapReadCopyUnmapQueueWaitCompletedTotalNs: 0,
+            readbackMapReadCopyUnmapDeferredCopyTotalNs: 0,
+            readbackMapReadCopyUnmapDeferredResolveTotalNs: 0,
+            readbackMapReadCopyUnmapMapTotalNs: 0,
+            readbackMapReadCopyUnmapCopyTotalNs: 0,
+            readbackMapReadCopyUnmapUnmapTotalNs: 0,
+        };
+        if (typeof wgpu.symbols.doeBufferMapReadCopyUnmapFlat === "function") {
+            const queue = wrapper._queue ?? null;
+            const shouldFlush = queue?.hasPendingSubmissions() ? 1 : 0;
+            const queueNative = shouldFlush
+                ? assertLiveResource(queue, "GPUBuffer._mapReadCopyUnmap", "GPUQueue")
+                : null;
+            const breakdown = queue
+                ? queueMapReadCopyUnmapScratch(queue)
+                : new BigUint64Array(READBACK_BREAKDOWN_FIELD_COUNT);
+            const copy = new ArrayBuffer(Number(size));
+            const status = wgpu.symbols.doeBufferMapReadCopyUnmapFlat(
+                queueNative,
+                native,
+                BigInt(mode),
+                BigInt(offset),
+                BigInt(size),
+                shouldFlush,
+                new Uint8Array(copy),
+                breakdown,
+            );
+            if (status !== WGPU_STATUS_SUCCESS) {
+                throw new Error(nativeFailureMessage("[doe-gpu] bufferMapReadCopyUnmapFlat failed"));
+            }
+            if (shouldFlush && queue) {
+                queue.markSubmittedWorkDone();
+                fastPathStats.flushAndMap += 1;
+            }
+            readbackBreakdownNs.readbackMapReadCopyUnmapQueueWaitCompletedTotalNs = Number(
+                breakdown[READBACK_BREAKDOWN_WAIT_COMPLETED],
+            );
+            readbackBreakdownNs.readbackMapReadCopyUnmapDeferredCopyTotalNs = Number(
+                breakdown[READBACK_BREAKDOWN_DEFERRED_COPY],
+            );
+            readbackBreakdownNs.readbackMapReadCopyUnmapDeferredResolveTotalNs = Number(
+                breakdown[READBACK_BREAKDOWN_DEFERRED_RESOLVE],
+            );
+            readbackBreakdownNs.readbackMapReadCopyUnmapMapTotalNs = Number(breakdown[READBACK_BREAKDOWN_MAP]);
+            readbackBreakdownNs.readbackMapReadCopyUnmapCopyTotalNs = Number(breakdown[READBACK_BREAKDOWN_COPY]);
+            readbackBreakdownNs.readbackMapReadCopyUnmapUnmapTotalNs = Number(breakdown[READBACK_BREAKDOWN_UNMAP]);
+            wrapper.__doe_readback_breakdown_ns = readbackBreakdownNs;
+            wrapper._mapMode = 0;
+            wrapper._mappedWriteRanges = [];
+            return copy;
+        }
+        if (wrapper._queue?.hasPendingSubmissions()) {
+            const queueNative = assertLiveResource(wrapper._queue, "GPUBuffer._mapReadCopyUnmap", "GPUQueue");
+            if (typeof wgpu.symbols.doeNativeQueueFlushBreakdown === "function") {
+                queueFlushBreakdownScratch(wrapper._queue);
+                const waitCompletedNs = wrapper._queue._flushWaitCompletedNs;
+                const deferredCopyNs = wrapper._queue._flushDeferredCopyNs;
+                const deferredResolveNs = wrapper._queue._flushDeferredResolveNs;
+                wgpu.symbols.doeNativeQueueFlushBreakdown(
+                    queueNative,
+                    bunPtr(waitCompletedNs),
+                    bunPtr(deferredCopyNs),
+                    bunPtr(deferredResolveNs),
+                );
+                readbackBreakdownNs.readbackMapReadCopyUnmapQueueWaitCompletedTotalNs = Number(waitCompletedNs[0]);
+                readbackBreakdownNs.readbackMapReadCopyUnmapDeferredCopyTotalNs = Number(deferredCopyNs[0]);
+                readbackBreakdownNs.readbackMapReadCopyUnmapDeferredResolveTotalNs = Number(deferredResolveNs[0]);
+                fastPathStats.flushAndMap += 1;
+            } else if (typeof wgpu.symbols.doeNativeQueueFlush === "function") {
+                const flushStartedAt = performance.now();
+                wgpu.symbols.doeNativeQueueFlush(queueNative);
+                readbackBreakdownNs.readbackMapReadCopyUnmapQueueWaitCompletedTotalNs = elapsedNsSince(flushStartedAt);
+                fastPathStats.flushAndMap += 1;
+            } else {
+                const waitStartedAt = performance.now();
+                waitForSubmittedWorkDoneSync(wrapper._instance, queueNative);
+                readbackBreakdownNs.readbackMapReadCopyUnmapQueueWaitCompletedTotalNs = elapsedNsSince(waitStartedAt);
+            }
+            wrapper._queue.markSubmittedWorkDone();
+        }
+        const mapStartedAt = performance.now();
+        bufferMapSync(wrapper._instance, native, mode, offset, size);
+        readbackBreakdownNs.readbackMapReadCopyUnmapMapTotalNs = elapsedNsSince(mapStartedAt);
+        wrapper._mapMode = mode;
+        try {
+            const copyStartedAt = performance.now();
+            const copied = fullSurfaceBackend.bufferReadCopy(wrapper, native, offset, size);
+            readbackBreakdownNs.readbackMapReadCopyUnmapCopyTotalNs = elapsedNsSince(copyStartedAt);
+            return copied;
+        } finally {
+            const unmapStartedAt = performance.now();
+            wgpu.symbols.wgpuBufferUnmap(native);
+            readbackBreakdownNs.readbackMapReadCopyUnmapUnmapTotalNs = elapsedNsSince(unmapStartedAt);
+            wrapper.__doe_readback_breakdown_ns = readbackBreakdownNs;
+            wrapper._mapMode = 0;
+            wrapper._mappedWriteRanges = [];
+        }
+    },
     bufferGetMappedRange(wrapper, native, offset, size) {
         const isWrite = (wrapper._mapMode & 0x0002) !== 0;
         if (isWrite) {
@@ -2740,6 +3500,14 @@ const fullSurfaceBackend = {
         if (DOE_LIBRARY_FLAVOR === "doe-dropin") {
             return toArrayBuffer(dataPtr, 0, size);
         }
+        const nativeView = toArrayBuffer(dataPtr, 0, size);
+        const copy = new ArrayBuffer(size);
+        new Uint8Array(copy).set(new Uint8Array(nativeView));
+        return copy;
+    },
+    bufferReadCopy(_wrapper, native, offset, size) {
+        const dataPtr = wgpu.symbols.wgpuBufferGetConstMappedRange(native, BigInt(offset), BigInt(size));
+        if (!dataPtr) throw new Error("[doe-gpu] bufferReadCopy getMappedRange returned NULL");
         const nativeView = toArrayBuffer(dataPtr, 0, size);
         const copy = new ArrayBuffer(size);
         new Uint8Array(copy).set(new Uint8Array(nativeView));
@@ -2768,6 +3536,15 @@ const fullSurfaceBackend = {
         queue._submitBreakdownNs = zeroQueueSubmitBreakdown();
         queue._singleSubmitPtrArray = new BigUint64Array(1);
         queue._submitPtrScratch = queue._singleSubmitPtrArray;
+        queue._emptyBindGroupPtrArray = new BigUint64Array(0);
+        queue._singleBindGroupPtrArray = new BigUint64Array(1);
+        queue._bindGroupPtrScratch = queue._singleBindGroupPtrArray;
+        queue._dispatchBatchScratch = {};
+        queue._writeBatchScratch = {};
+        queue._dispatchFlushBreakdown = new BigUint64Array(DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT);
+        queue._flushWaitCompletedNs = new BigUint64Array(1);
+        queue._flushDeferredCopyNs = new BigUint64Array(1);
+        queue._flushDeferredResolveNs = new BigUint64Array(1);
     },
     queueHasPendingSubmissions(queue) {
         return queue._pendingSubmissions > 0;
@@ -2783,34 +3560,136 @@ const fullSurfaceBackend = {
                 failValidation("GPUQueue.submit", `commandBuffers[${index}] was already submitted`);
             }
         }
-        const dispatchFlush = wgpu.symbols.doeNativeComputeDispatchFlush;
+        const dispatchFlushBreakdown = DOE_WEBGPU_SUBMIT_BREAKDOWN
+            ? wgpu.symbols.doeNativeComputeDispatchFlushBreakdown
+            : null;
+        const dispatchFlush = wgpu.symbols.doeNativeComputeDispatchFlush ?? dispatchFlushBreakdown;
         if (dispatchFlush && buffers.length === 1 && buffers[0]?._batched) {
             const cmds = buffers[0]._commands;
             if (cmds.length >= 1 && cmds.length <= 2 && cmds[0]?.t === 0 && !(cmds[0]?.immediates?.length) && (cmds.length === 1 || cmds[1]?.t === 1)) {
+                const prepStartedAt = performance.now();
                 const cmd0 = cmds[0];
-                const bgPtrs = new BigUint64Array(cmd0.bg.length);
-                for (let i = 0; i < cmd0.bg.length; i += 1) {
-                    bgPtrs[i] = BigInt(cmd0.bg[i] ?? 0);
+                const bgCount = bunCommandBindGroupCount(cmd0);
+                const bgPtrs = ensureBindGroupPtrScratch(queue, bgCount);
+                for (let i = 0; i < bgCount; i += 1) {
+                    bgPtrs[i] = hotU64(bunCommandBindGroupAt(cmd0, i));
                 }
                 const cmd1 = cmds.length === 2 ? cmds[1] : null;
-                dispatchFlush(
-                    queueNative, cmd0.p, bgPtrs, cmd0.bg.length,
-                    cmd0.x, cmd0.y, cmd0.z,
-                    cmd1?.s ?? null, BigInt(cmd1?.so ?? 0),
-                    cmd1?.d ?? null, BigInt(cmd1?.do ?? 0), BigInt(cmd1?.sz ?? 0));
-                if (cmd1) queue.markSubmittedWorkDone();
+                accumulateQueueSubmitBreakdown(queue, "submitCommandPrepTotalNs", prepStartedAt);
+                const addonStartedAt = performance.now();
+                if (dispatchFlushBreakdown) {
+                    const breakdown = queueDispatchFlushBreakdownScratch(queue);
+                    dispatchFlushBreakdown(
+                        queueNative, cmd0.p, bgPtrs, bgCount,
+                        cmd0.x, cmd0.y, cmd0.z,
+                        cmd1?.s ?? null, hotU64(cmd1?.so),
+                        cmd1?.d ?? null, hotU64(cmd1?.do), hotU64(cmd1?.sz),
+                        breakdown,
+                    );
+                    accumulateQueueSubmitBreakdown(queue, "submitAddonCallTotalNs", addonStartedAt);
+                    accumulateDispatchFlushBreakdown(queue, breakdown);
+                } else {
+                    dispatchFlush(
+                        queueNative, cmd0.p, bgPtrs, bgCount,
+                        cmd0.x, cmd0.y, cmd0.z,
+                        cmd1?.s ?? null, hotU64(cmd1?.so),
+                        cmd1?.d ?? null, hotU64(cmd1?.do), hotU64(cmd1?.sz));
+                    accumulateQueueSubmitBreakdown(queue, "submitAddonCallTotalNs", addonStartedAt);
+                }
                 fastPathStats.dispatchFlush += 1;
+                const bookkeepingStartedAt = performance.now();
                 for (const commandBuffer of buffers) {
                     commandBuffer._submitted = true;
                     commandBuffer.destroy?.();
                 }
+                accumulateQueueSubmitBreakdown(queue, "submitPostSubmitBookkeepingTotalNs", bookkeepingStartedAt);
                 return;
             }
         }
         if (buffers.every((cb) => cb?._batched && Array.isArray(cb._commands))) {
-            const allCommands = [];
-            for (const cb of buffers) allCommands.push(...cb._commands);
-            const dispatchBatchFlush = wgpu.symbols.doeNativeComputeDispatchBatchFlush;
+            const allCommands = buffers.length === 1 ? buffers[0]._commands : [];
+            if (buffers.length !== 1) {
+                for (const cb of buffers) allCommands.push(...cb._commands);
+            }
+            const dispatchBatchCopyFlushBreakdown = DOE_WEBGPU_SUBMIT_BREAKDOWN
+                ? wgpu.symbols.doeNativeComputeDispatchBatchCopyFlushBreakdown
+                : null;
+            const dispatchBatchCopyFlush = dispatchBatchCopyFlushBreakdown
+                ?? wgpu.symbols.doeNativeComputeDispatchBatchCopyFlush;
+            if (process.platform === "darwin" && dispatchBatchCopyFlush && allCommands.length >= 2) {
+                let dispatchThenCopy = allCommands[allCommands.length - 1]?.t === 1;
+                for (let i = 0; dispatchThenCopy && i + 1 < allCommands.length; i += 1) {
+                    const cmd = allCommands[i];
+                    if (cmd?.t !== 0 || (cmd.immediates?.length ?? 0) !== 0) {
+                        dispatchThenCopy = false;
+                    }
+                }
+                if (dispatchThenCopy) {
+                    const prepStartedAt = performance.now();
+                    const dispatchCount = allCommands.length - 1;
+                    const scratch = ensureDispatchBatchScratch(queue, dispatchCount);
+                    const { pipelines, bindGroups, bindGroupCounts, dispatchDims } = scratch;
+                    for (let i = 0; i < dispatchCount; i += 1) {
+                        const cmd = allCommands[i];
+                        pipelines[i] = hotU64(cmd.p);
+                        const bgCount = bunCommandBindGroupCount(cmd);
+                        bindGroupCounts[i] = bgCount;
+                        for (let j = 0; j < bgCount; j += 1) {
+                            bindGroups[(i * MAX_COMPUTE_BIND_GROUPS) + j] = hotU64(bunCommandBindGroupAt(cmd, j));
+                        }
+                        dispatchDims[(i * 3)] = cmd.x;
+                        dispatchDims[(i * 3) + 1] = cmd.y;
+                        dispatchDims[(i * 3) + 2] = cmd.z;
+                    }
+                    const copyCmd = allCommands[allCommands.length - 1];
+                    accumulateQueueSubmitBreakdown(queue, "submitCommandPrepTotalNs", prepStartedAt);
+                    const addonStartedAt = performance.now();
+                    if (dispatchBatchCopyFlushBreakdown) {
+                        const breakdown = queueDispatchFlushBreakdownScratch(queue);
+                        dispatchBatchCopyFlushBreakdown(
+                            queueNative,
+                            hotU64(dispatchCount),
+                            pipelines,
+                            bindGroups,
+                            bindGroupCounts,
+                            dispatchDims,
+                            copyCmd.s,
+                            hotU64(copyCmd.so),
+                            copyCmd.d,
+                            hotU64(copyCmd.do),
+                            hotU64(copyCmd.sz),
+                            breakdown,
+                        );
+                        accumulateQueueSubmitBreakdown(queue, "submitAddonCallTotalNs", addonStartedAt);
+                        accumulateDispatchFlushBreakdown(queue, breakdown);
+                    } else {
+                        dispatchBatchCopyFlush(
+                            queueNative,
+                            hotU64(dispatchCount),
+                            pipelines,
+                            bindGroups,
+                            bindGroupCounts,
+                            dispatchDims,
+                            copyCmd.s,
+                            hotU64(copyCmd.so),
+                            copyCmd.d,
+                            hotU64(copyCmd.do),
+                            hotU64(copyCmd.sz),
+                        );
+                        accumulateQueueSubmitBreakdown(queue, "submitAddonCallTotalNs", addonStartedAt);
+                    }
+                    const bookkeepingStartedAt = performance.now();
+                    fastPathStats.dispatchFlush += 1;
+                    for (const commandBuffer of buffers) {
+                        commandBuffer._submitted = true;
+                        commandBuffer.destroy?.();
+                    }
+                    accumulateQueueSubmitBreakdown(queue, "submitPostSubmitBookkeepingTotalNs", bookkeepingStartedAt);
+                    return;
+                }
+            }
+            const dispatchBatchFlush = wgpu.symbols.doeNativeComputeDispatchBatchFlush
+                ?? dispatchBatchCopyFlushBreakdown;
             if (process.platform === "darwin" && dispatchBatchFlush && allCommands.length > 0) {
                 let allDispatch = true;
                 for (const cmd of allCommands) {
@@ -2820,35 +3699,59 @@ const fullSurfaceBackend = {
                     }
                 }
                 if (allDispatch) {
+                    const prepStartedAt = performance.now();
                     const dispatchCount = allCommands.length;
-                    const pipelines = new BigUint64Array(dispatchCount);
-                    const bindGroups = new BigUint64Array(dispatchCount * MAX_COMPUTE_BIND_GROUPS);
-                    const bindGroupCounts = new Uint32Array(dispatchCount);
-                    const dispatchDims = new Uint32Array(dispatchCount * 3);
+                    const scratch = ensureDispatchBatchScratch(queue, dispatchCount);
+                    const { pipelines, bindGroups, bindGroupCounts, dispatchDims } = scratch;
                     for (let i = 0; i < dispatchCount; i += 1) {
                         const cmd = allCommands[i];
-                        pipelines[i] = BigInt(cmd.p ?? 0);
-                        const bgCount = Math.min(cmd.bg?.length ?? 0, MAX_COMPUTE_BIND_GROUPS);
+                        pipelines[i] = hotU64(cmd.p);
+                        const bgCount = bunCommandBindGroupCount(cmd);
                         bindGroupCounts[i] = bgCount;
                         for (let j = 0; j < bgCount; j += 1) {
-                            bindGroups[(i * MAX_COMPUTE_BIND_GROUPS) + j] = BigInt(cmd.bg[j] ?? 0);
+                            bindGroups[(i * MAX_COMPUTE_BIND_GROUPS) + j] = hotU64(bunCommandBindGroupAt(cmd, j));
                         }
                         dispatchDims[(i * 3)] = cmd.x;
                         dispatchDims[(i * 3) + 1] = cmd.y;
                         dispatchDims[(i * 3) + 2] = cmd.z;
                     }
-                    dispatchBatchFlush(
-                        queueNative,
-                        BigInt(dispatchCount),
-                        pipelines,
-                        bindGroups,
-                        bindGroupCounts,
-                        dispatchDims,
-                    );
+                    accumulateQueueSubmitBreakdown(queue, "submitCommandPrepTotalNs", prepStartedAt);
+                    const addonStartedAt = performance.now();
+                    if (dispatchBatchCopyFlushBreakdown) {
+                        const breakdown = queueDispatchFlushBreakdownScratch(queue);
+                        dispatchBatchCopyFlushBreakdown(
+                            queueNative,
+                            hotU64(dispatchCount),
+                            pipelines,
+                            bindGroups,
+                            bindGroupCounts,
+                            dispatchDims,
+                            null,
+                            0n,
+                            null,
+                            0n,
+                            0n,
+                            breakdown,
+                        );
+                        accumulateQueueSubmitBreakdown(queue, "submitAddonCallTotalNs", addonStartedAt);
+                        accumulateDispatchFlushBreakdown(queue, breakdown);
+                    } else {
+                        dispatchBatchFlush(
+                            queueNative,
+                            hotU64(dispatchCount),
+                            pipelines,
+                            bindGroups,
+                            bindGroupCounts,
+                            dispatchDims,
+                        );
+                        accumulateQueueSubmitBreakdown(queue, "submitAddonCallTotalNs", addonStartedAt);
+                    }
+                    const bookkeepingStartedAt = performance.now();
                     for (const commandBuffer of buffers) {
                         commandBuffer._submitted = true;
                         commandBuffer.destroy?.();
                     }
+                    accumulateQueueSubmitBreakdown(queue, "submitPostSubmitBookkeepingTotalNs", bookkeepingStartedAt);
                     return;
                 }
             }
@@ -2857,8 +3760,10 @@ const fullSurfaceBackend = {
                 if (cmd.t === 0) {
                     const pass = wgpu.symbols.wgpuCommandEncoderBeginComputePass(encoder, null);
                     wgpu.symbols.wgpuComputePassEncoderSetPipeline(pass, cmd.p);
-                    for (let i = 0; i < cmd.bg.length; i += 1) {
-                        if (cmd.bg[i]) wgpu.symbols.wgpuComputePassEncoderSetBindGroup(pass, i, cmd.bg[i], BigInt(0), null);
+                    const bgCount = bunCommandBindGroupCount(cmd);
+                    for (let i = 0; i < bgCount; i += 1) {
+                        const bindGroup = bunCommandBindGroupAt(cmd, i);
+                        if (bindGroup) wgpu.symbols.wgpuComputePassEncoderSetBindGroup(pass, i, bindGroup, BigInt(0), null);
                     }
                     for (const immediate of cmd.immediates ?? []) {
                         wgpu.symbols.wgpuComputePassEncoderSetImmediates(
@@ -2873,12 +3778,12 @@ const fullSurfaceBackend = {
                     wgpu.symbols.wgpuComputePassEncoderRelease(pass);
                 } else if (cmd.t === 1) {
                     wgpu.symbols.wgpuCommandEncoderCopyBufferToBuffer(
-                        encoder, cmd.s, BigInt(cmd.so), cmd.d, BigInt(cmd.do), BigInt(cmd.sz));
+                        encoder, cmd.s, hotU64(cmd.so), cmd.d, hotU64(cmd.do), hotU64(cmd.sz));
                 }
             }
             const cmdBuf = wgpu.symbols.wgpuCommandEncoderFinish(encoder, null);
-            const ptrs = new BigUint64Array([BigInt(cmdBuf)]);
-            wgpu.symbols.wgpuQueueSubmit(queueNative, BigInt(1), ptrs);
+            const ptrs = new BigUint64Array([hotU64(cmdBuf)]);
+            wgpu.symbols.wgpuQueueSubmit(queueNative, hotU64(1), ptrs);
             wgpu.symbols.wgpuCommandBufferRelease(cmdBuf);
             wgpu.symbols.wgpuCommandEncoderRelease(encoder);
             for (const commandBuffer of buffers) {
@@ -2887,14 +3792,31 @@ const fullSurfaceBackend = {
             }
             return;
         }
+        if (
+            buffers.length === 1
+            && buffers[0]?._native
+            && !buffers[0]?._batched
+            && typeof wgpu.symbols.doeQueueSubmitOneAndRelease === "function"
+        ) {
+            const commandBuffer = buffers[0];
+            const submitStartedAt = performance.now();
+            wgpu.symbols.doeQueueSubmitOneAndRelease(queueNative, commandBuffer._native);
+            commandBuffer._native = null;
+            accumulateQueueSubmitBreakdown(queue, "submitAddonQueueSubmitTotalNs", submitStartedAt);
+            const bookkeepingStartedAt = performance.now();
+            commandBuffer._submitted = true;
+            commandBuffer.destroy?.();
+            accumulateQueueSubmitBreakdown(queue, "submitPostSubmitBookkeepingTotalNs", bookkeepingStartedAt);
+            return;
+        }
         const prepStartedAt = performance.now();
         const ptrs = ensureSubmitPtrScratch(queue, buffers.length);
         for (let index = 0; index < buffers.length; index += 1) {
-            ptrs[index] = BigInt(assertLiveResource(buffers[index], "GPUQueue.submit", "GPUCommandBuffer"));
+            ptrs[index] = hotU64(assertLiveResource(buffers[index], "GPUQueue.submit", "GPUCommandBuffer"));
         }
         accumulateQueueSubmitBreakdown(queue, "submitCommandPrepTotalNs", prepStartedAt);
         const submitStartedAt = performance.now();
-        wgpu.symbols.wgpuQueueSubmit(queueNative, BigInt(buffers.length), ptrs);
+        wgpu.symbols.wgpuQueueSubmit(queueNative, hotU64(buffers.length), ptrs);
         accumulateQueueSubmitBreakdown(queue, "submitAddonQueueSubmitTotalNs", submitStartedAt);
         const bookkeepingStartedAt = performance.now();
         for (const commandBuffer of buffers) {
@@ -2904,7 +3826,71 @@ const fullSurfaceBackend = {
         accumulateQueueSubmitBreakdown(queue, "submitPostSubmitBookkeepingTotalNs", bookkeepingStartedAt);
     },
     queueWriteBuffer(_queue, native, bufferNative, bufferOffset, view) {
-        wgpu.symbols.wgpuQueueWriteBuffer(native, bufferNative, BigInt(bufferOffset), view, BigInt(view.byteLength));
+        const writeBuffer = wgpu.symbols.doeNativeQueueWriteBuffer ?? wgpu.symbols.wgpuQueueWriteBuffer;
+        writeBuffer(native, bufferNative, hotU64(bufferOffset), view, hotU64(view.byteLength));
+    },
+    queueWriteBufferBatch(queue, native, entries) {
+        if (!entries.length) {
+            return;
+        }
+        const writeBatchDataPtrs = wgpu.symbols.doeNativeQueueWriteBufferBatchDataPtrs;
+        const writeBatch = wgpu.symbols.doeNativeQueueWriteBufferBatch;
+        if (typeof writeBatchDataPtrs !== "function" && typeof writeBatch !== "function") {
+            for (const entry of entries) {
+                fullSurfaceBackend.queueWriteBuffer(queue, native, entry.bufferNative, entry.bufferOffset, entry.view);
+            }
+            return;
+        }
+        let byteLength = 0;
+        for (const entry of entries) {
+            if (entry.view.byteLength > UINT32_MAX) {
+                failValidation("GPUQueue.__doeWriteBufferBatch", "entry data is too large for the native compact batch ABI");
+            }
+            byteLength += entry.view.byteLength;
+            if (byteLength > MAX_QUEUE_WRITE_BATCH_BYTES) {
+                failValidation("GPUQueue.__doeWriteBufferBatch", "compact batch data exceeds the package batch limit");
+            }
+        }
+        const scratch = ensureQueueWriteBatchScratch(queue, entries.length, byteLength);
+        if (typeof writeBatchDataPtrs === "function") {
+            for (let index = 0; index < entries.length; index += 1) {
+                const entry = entries[index];
+                const dataPtr = bunPtr(entry.view);
+                if (!dataPtr) {
+                    failValidation("GPUQueue.__doeWriteBufferBatch", "entry data pointer is unavailable");
+                }
+                scratch.buffers[index] = hotU64(entry.bufferNative);
+                scratch.offsets[index] = hotU64(entry.bufferOffset);
+                scratch.sizes[index] = entry.view.byteLength;
+                scratch.dataPtrs[index] = hotU64(dataPtr);
+            }
+            writeBatchDataPtrs(
+                native,
+                hotU64(entries.length),
+                scratch.buffers.subarray(0, entries.length),
+                scratch.offsets.subarray(0, entries.length),
+                scratch.sizes.subarray(0, entries.length),
+                scratch.dataPtrs.subarray(0, entries.length),
+            );
+            return;
+        }
+        let dataOffset = 0;
+        for (let index = 0; index < entries.length; index += 1) {
+            const entry = entries[index];
+            scratch.buffers[index] = hotU64(entry.bufferNative);
+            scratch.offsets[index] = hotU64(entry.bufferOffset);
+            scratch.sizes[index] = entry.view.byteLength;
+            scratch.data.set(entry.view, dataOffset);
+            dataOffset += entry.view.byteLength;
+        }
+        writeBatch(
+            native,
+            hotU64(entries.length),
+            scratch.buffers.subarray(0, entries.length),
+            scratch.offsets.subarray(0, entries.length),
+            scratch.sizes.subarray(0, entries.length),
+            scratch.data.subarray(0, byteLength),
+        );
     },
     queueWriteTexture(_queue, native, destination, data, dataLayout, size) {
         const { desc: dstDesc, srcRefs: _dstRefs } = buildTexelCopyTextureInfo(destination);
@@ -2921,6 +3907,30 @@ const fullSurfaceBackend = {
     },
     async queueOnSubmittedWorkDone(queue, native) {
         try {
+            if (typeof wgpu.symbols.doeNativeQueueFlushBreakdown === "function") {
+                queueFlushBreakdownScratch(queue);
+                const waitCompletedNs = queue._flushWaitCompletedNs;
+                const deferredCopyNs = queue._flushDeferredCopyNs;
+                const deferredResolveNs = queue._flushDeferredResolveNs;
+                const flushStartedAt = performance.now();
+                wgpu.symbols.doeNativeQueueFlushBreakdown(
+                    native,
+                    bunPtr(waitCompletedNs),
+                    bunPtr(deferredCopyNs),
+                    bunPtr(deferredResolveNs),
+                );
+                accumulateQueueSubmitBreakdown(queue, "submitQueueFlushTotalNs", flushStartedAt);
+                queue._submitBreakdownNs.submitQueueFlushWaitCompletedTotalNs += Number(waitCompletedNs[0]);
+                queue._submitBreakdownNs.submitQueueFlushDeferredCopyTotalNs += Number(deferredCopyNs[0]);
+                queue._submitBreakdownNs.submitQueueFlushDeferredResolveTotalNs += Number(deferredResolveNs[0]);
+                return;
+            }
+            if (typeof wgpu.symbols.doeNativeQueueFlush === "function") {
+                const flushStartedAt = performance.now();
+                wgpu.symbols.doeNativeQueueFlush(native);
+                accumulateQueueSubmitBreakdown(queue, "submitQueueFlushTotalNs", flushStartedAt);
+                return;
+            }
             waitForSubmittedWorkDoneSync(queue._instance, native);
         } catch (error) {
             if (error?.code === "DOE_QUEUE_UNAVAILABLE") {
@@ -2976,15 +3986,41 @@ const fullSurfaceBackend = {
     adapterLimits,
     adapterFeatures,
     preflightShaderSource,
+    preflightShaderSourceOnCreate: false,
     requireAutoLayoutEntriesFromNative,
     deviceGetQueue(native) {
         return wgpu.symbols.wgpuDeviceGetQueue(native);
     },
     deviceCreateBuffer(device, validated) {
+        if (typeof wgpu.symbols.doeNativeDeviceCreateBufferFlat === "function") {
+            return wgpu.symbols.doeNativeDeviceCreateBufferFlat(
+                assertLiveResource(device, "GPUDevice.createBuffer", "GPUDevice"),
+                BigInt(validated.usage || 0),
+                BigInt(validated.size || 0),
+                validated.mappedAtCreation ? 1 : 0,
+            );
+        }
         const descBytes = buildBufferDescriptor(validated);
         return wgpu.symbols.wgpuDeviceCreateBuffer(assertLiveResource(device, "GPUDevice.createBuffer", "GPUDevice"), descBytes);
     },
     deviceCreateShaderModule(device, code, _compilationHints) {
+        if (typeof wgpu.symbols.doeNativeDeviceCreateShaderModuleWgsl === "function") {
+            const codeBytes = cachedShaderSourceBytes(code);
+            let mod;
+            try {
+                mod = wgpu.symbols.doeNativeDeviceCreateShaderModuleWgsl(
+                    assertLiveResource(device, "GPUDevice.createShaderModule", "GPUDevice"),
+                    codeBytes,
+                    BigInt(codeBytes.length),
+                );
+            } catch (error) {
+                throw enrichNativeCompilerError(error, "GPUDevice.createShaderModule", readLastErrorFields());
+            }
+            if (!mod) {
+                throw compilerErrorFromMessage("GPUDevice.createShaderModule", nativeFailureMessage("createShaderModule failed"), readLastErrorFields());
+            }
+            return mod;
+        }
         const { desc, _refs } = buildShaderModuleDescriptor(code);
         let mod;
         try {
@@ -2999,6 +4035,26 @@ const fullSurfaceBackend = {
         return mod;
     },
     deviceCreateComputePipeline(device, shaderNative, entryPoint, layoutNative, _constants, _label) {
+        if (
+            entryPoint === "main"
+            && !_constants
+            && typeof wgpu.symbols.doeNativeDeviceCreateComputePipelineMain === "function"
+        ) {
+            let native;
+            try {
+                native = wgpu.symbols.doeNativeDeviceCreateComputePipelineMain(
+                    assertLiveResource(device, "GPUDevice.createComputePipeline", "GPUDevice"),
+                    shaderNative,
+                    layoutNative,
+                );
+            } catch (error) {
+                throw pipelineErrorFromError(error, "GPUDevice.createComputePipeline", readLastErrorFields());
+            }
+            if (!native) {
+                throw pipelineErrorFromMessage("GPUDevice.createComputePipeline", nativeFailureMessage("createComputePipeline failed"), readLastErrorFields());
+            }
+            return native;
+        }
         const { desc, _refs } = buildComputePipelineDescriptor(shaderNative, entryPoint, layoutNative);
         let native;
         try {
@@ -3012,6 +4068,16 @@ const fullSurfaceBackend = {
         }
         return native;
     },
+    deviceCreateBufferBindGroupLayoutFlat4(device, entryCount, b0, b1, b2, b3, _label) {
+        return wgpu.symbols.doeNativeDeviceCreateBufferBindGroupLayoutFlat4(
+            assertLiveResource(device, "GPUDevice.createBindGroupLayout", "GPUDevice"),
+            entryCount,
+            b0,
+            b1,
+            b2,
+            b3,
+        );
+    },
     deviceCreateBindGroupLayout(device, entries, _label) {
         if (entries.some((entry) => entry.externalTexture)) {
             failValidation(
@@ -3019,16 +4085,87 @@ const fullSurfaceBackend = {
                 "externalTexture bindings require a browser canvas backend provider, not the headless Doe runtime package surface",
             );
         }
+        if (
+            typeof wgpu.symbols.doeNativeDeviceCreateBufferBindGroupLayoutFlat4 === "function"
+            && canCreateBufferBindGroupLayoutFlat4(entries)
+        ) {
+            return wgpu.symbols.doeNativeDeviceCreateBufferBindGroupLayoutFlat4(
+                assertLiveResource(device, "GPUDevice.createBindGroupLayout", "GPUDevice"),
+                entries.length,
+                flatBindingAt(entries, 0),
+                flatBindingAt(entries, 1),
+                flatBindingAt(entries, 2),
+                flatBindingAt(entries, 3),
+            );
+        }
         const { desc, _refs } = buildBindGroupLayoutDescriptor(entries);
         const native = wgpu.symbols.wgpuDeviceCreateBindGroupLayout(assertLiveResource(device, "GPUDevice.createBindGroupLayout", "GPUDevice"), desc);
         void _refs;
         return native;
+    },
+    deviceCreateBufferBindGroupFlat4(
+        device,
+        layoutNative,
+        entryCount,
+        b0,
+        buffer0,
+        offset0,
+        b1,
+        buffer1,
+        offset1,
+        b2,
+        buffer2,
+        offset2,
+        b3,
+        buffer3,
+        offset3,
+        _label,
+    ) {
+        return wgpu.symbols.doeNativeDeviceCreateBufferBindGroupFlat4(
+            assertLiveResource(device, "GPUDevice.createBindGroup", "GPUDevice"),
+            layoutNative,
+            entryCount,
+            b0,
+            buffer0,
+            BigInt(offset0),
+            b1,
+            buffer1,
+            BigInt(offset1),
+            b2,
+            buffer2,
+            BigInt(offset2),
+            b3,
+            buffer3,
+            BigInt(offset3),
+        );
     },
     deviceCreateBindGroup(device, layoutNative, entries, _label) {
         if (entries.some((entry) => entry.externalTexture)) {
             failValidation(
                 "GPUDevice.createBindGroup",
                 "externalTexture resources require a browser canvas backend provider, not the headless Doe runtime package surface",
+            );
+        }
+        if (
+            typeof wgpu.symbols.doeNativeDeviceCreateBufferBindGroupFlat4 === "function"
+            && canCreateBufferBindGroupFlat4(entries)
+        ) {
+            return wgpu.symbols.doeNativeDeviceCreateBufferBindGroupFlat4(
+                assertLiveResource(device, "GPUDevice.createBindGroup", "GPUDevice"),
+                layoutNative,
+                entries.length,
+                flatBindingAt(entries, 0),
+                flatBindGroupBufferAt(entries, 0),
+                flatBindGroupOffsetAt(entries, 0),
+                flatBindingAt(entries, 1),
+                flatBindGroupBufferAt(entries, 1),
+                flatBindGroupOffsetAt(entries, 1),
+                flatBindingAt(entries, 2),
+                flatBindGroupBufferAt(entries, 2),
+                flatBindGroupOffsetAt(entries, 2),
+                flatBindingAt(entries, 3),
+                flatBindGroupBufferAt(entries, 3),
+                flatBindGroupOffsetAt(entries, 3),
             );
         }
         const normalizedEntries = entries.map((entry) => ({
@@ -3045,6 +4182,16 @@ const fullSurfaceBackend = {
         return native;
     },
     deviceCreatePipelineLayout(device, layouts, _label, immediateSize = 0) {
+        if (
+            typeof wgpu.symbols.doeNativeDeviceCreatePipelineLayoutOne === "function"
+            && layouts.length === 1
+        ) {
+            return wgpu.symbols.doeNativeDeviceCreatePipelineLayoutOne(
+                assertLiveResource(device, "GPUDevice.createPipelineLayout", "GPUDevice"),
+                layouts[0],
+                immediateSize >>> 0,
+            );
+        }
         const { desc, _refs } = buildPipelineLayoutDescriptor(layouts, immediateSize);
         const native = wgpu.symbols.wgpuDeviceCreatePipelineLayout(assertLiveResource(device, "GPUDevice.createPipelineLayout", "GPUDevice"), desc);
         void _refs;
@@ -3241,6 +4388,14 @@ function ensureLibrary() {
         );
     }
     wgpu = openLibrary(DOE_LIB_PATH);
+    if (typeof wgpu.symbols.doeNativePackagePipelineCacheFlush === "function") {
+        process.on("exit", () => {
+            try {
+                wgpu.symbols.doeNativePackagePipelineCacheFlush();
+            } catch (_error) {
+            }
+        });
+    }
     libraryLoaded = true;
 }
 
@@ -3273,6 +4428,7 @@ export async function requestDevice(options = {}) {
 
 export function providerInfo() {
     const flavor = DOE_LIBRARY_FLAVOR;
+    const nativeFastPaths = nativeFastPathInfoFromSymbols();
     return buildProviderInfo({
         loaded: !!DOE_LIB_PATH,
         loadError: !DOE_LIB_PATH ? "libwebgpu_doe not found" : "",
@@ -3284,7 +4440,12 @@ export function providerInfo() {
         buildMetadataPath: DOE_BUILD_METADATA.path,
         leanVerifiedBuild: DOE_BUILD_METADATA.leanVerifiedBuild,
         proofArtifactSha256: DOE_BUILD_METADATA.proofArtifactSha256,
+        nativeFastPaths,
     });
+}
+
+export function nativeFastPathInfo() {
+    return nativeFastPathInfoFromSymbols();
 }
 
 export { createDoeRuntime, runDawnVsDoeCompare };
@@ -3320,6 +4481,7 @@ export default {
     requestAdapter,
     requestDevice,
     providerInfo,
+    nativeFastPathInfo,
     preflightShaderSource,
     setNativeTimeoutMs,
     createDoeRuntime,

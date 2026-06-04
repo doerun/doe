@@ -119,6 +119,163 @@ class BenchmarkIrTests(unittest.TestCase):
         self.assertEqual(buffer_load["generator"], "splitmix64_f32_nonzero_v1")
         self.assertTrue(buffer_load["cacheKey"])
 
+    def test_materialize_plan_rejects_partial_gemv_dispatch(self) -> None:
+        payload = {
+            "schemaVersion": 1,
+            "kind": "benchmark_ir",
+            "description": "test ir",
+            "scenarios": [
+                {
+                    "id": "alpha",
+                    "description": "alpha scenario",
+                    "irPath": "bench/ir/test.json",
+                    "planPath": "bench/plans/generated/alpha.plan.json",
+                    "commandsPath": "bench/plans/generated/compat/alpha_commands.json",
+                    "commands": [
+                        {"kind": "buffer_write", "handle": 1, "bufferSize": 16, "data": [64, 16, 0, 0]},
+                        {
+                            "kind": "kernel_dispatch",
+                            "kernel": "matmul-gemv.wgsl",
+                            "x": 1,
+                            "y": 1,
+                            "z": 1,
+                            "bindings": [
+                                {"binding": 0, "resource_handle": 1, "buffer_size": 16, "buffer_type": "uniform"},
+                                {"binding": 1, "resource_handle": 2, "buffer_size": 4096, "buffer_type": "readonly"},
+                                {"binding": 2, "resource_handle": 3, "buffer_size": 64, "buffer_type": "readonly"},
+                                {"binding": 3, "resource_handle": 4, "buffer_size": 256, "buffer_type": "storage"},
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory(prefix="doe-benchmark-ir-") as tmpdir:
+            ir_path = Path(tmpdir) / "test_ir.json"
+            ir_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, r"dispatch must be \[rows,1,1\]"):
+                benchmark_ir.materialize_plan(ir_path, "alpha")
+
+    def test_materialize_plan_applies_row2_helper_exact_gemv_variant(self) -> None:
+        payload = {
+            "schemaVersion": 1,
+            "kind": "benchmark_ir",
+            "description": "test ir",
+            "scenarios": [
+                {
+                    "id": "alpha",
+                    "description": "alpha scenario",
+                    "irPath": "bench/ir/test.json",
+                    "planPath": "bench/plans/generated/alpha.plan.json",
+                    "commandsPath": "bench/plans/generated/compat/alpha_commands.json",
+                    "matmulGemvVariant": "row2_helper_exact",
+                    "commands": [
+                        {"kind": "buffer_write", "handle": 1, "bufferSize": 16, "data": [64, 16, 0, 0]},
+                        {
+                            "kind": "kernel_dispatch",
+                            "kernel": "matmul-gemv.wgsl",
+                            "x": 64,
+                            "y": 1,
+                            "z": 1,
+                            "bindings": [
+                                {"binding": 0, "resource_handle": 1, "buffer_size": 16, "buffer_type": "uniform"},
+                                {"binding": 1, "resource_handle": 2, "buffer_size": 4096, "buffer_type": "readonly"},
+                                {"binding": 2, "resource_handle": 3, "buffer_size": 64, "buffer_type": "readonly"},
+                                {"binding": 3, "resource_handle": 4, "buffer_size": 256, "buffer_type": "storage"},
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory(prefix="doe-benchmark-ir-") as tmpdir:
+            ir_path = Path(tmpdir) / "test_ir.json"
+            ir_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            plan = benchmark_ir.materialize_plan(ir_path, "alpha")
+
+        dispatch = plan["commands"][1]
+        self.assertEqual(plan["matmulGemvVariant"], "row2_helper_exact")
+        self.assertEqual(dispatch["kernel"], "matmul_gemv_row2_helper_exact.wgsl")
+        self.assertEqual(dispatch["x"], 32)
+        self.assertEqual(dispatch["y"], 1)
+        self.assertEqual(dispatch["z"], 1)
+
+    def test_materialize_plan_rejects_row2_helper_exact_odd_rows(self) -> None:
+        payload = {
+            "schemaVersion": 1,
+            "kind": "benchmark_ir",
+            "description": "test ir",
+            "scenarios": [
+                {
+                    "id": "alpha",
+                    "description": "alpha scenario",
+                    "irPath": "bench/ir/test.json",
+                    "planPath": "bench/plans/generated/alpha.plan.json",
+                    "commandsPath": "bench/plans/generated/compat/alpha_commands.json",
+                    "matmulGemvVariant": "row2_helper_exact",
+                    "commands": [
+                        {"kind": "buffer_write", "handle": 1, "bufferSize": 16, "data": [63, 16, 0, 0]},
+                        {
+                            "kind": "kernel_dispatch",
+                            "kernel": "matmul-gemv.wgsl",
+                            "x": 63,
+                            "y": 1,
+                            "z": 1,
+                            "bindings": [
+                                {"binding": 0, "resource_handle": 1, "buffer_size": 16, "buffer_type": "uniform"},
+                                {"binding": 1, "resource_handle": 2, "buffer_size": 4032, "buffer_type": "readonly"},
+                                {"binding": 2, "resource_handle": 3, "buffer_size": 64, "buffer_type": "readonly"},
+                                {"binding": 3, "resource_handle": 4, "buffer_size": 252, "buffer_type": "storage"},
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory(prefix="doe-benchmark-ir-") as tmpdir:
+            ir_path = Path(tmpdir) / "test_ir.json"
+            ir_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, r"requires even rows"):
+                benchmark_ir.materialize_plan(ir_path, "alpha")
+
+    def test_materialize_plan_rejects_row2_helper_exact_non_vec4_cols(self) -> None:
+        payload = {
+            "schemaVersion": 1,
+            "kind": "benchmark_ir",
+            "description": "test ir",
+            "scenarios": [
+                {
+                    "id": "alpha",
+                    "description": "alpha scenario",
+                    "irPath": "bench/ir/test.json",
+                    "planPath": "bench/plans/generated/alpha.plan.json",
+                    "commandsPath": "bench/plans/generated/compat/alpha_commands.json",
+                    "matmulGemvVariant": "row2_helper_exact",
+                    "commands": [
+                        {"kind": "buffer_write", "handle": 1, "bufferSize": 16, "data": [64, 18, 0, 0]},
+                        {
+                            "kind": "kernel_dispatch",
+                            "kernel": "matmul-gemv.wgsl",
+                            "x": 64,
+                            "y": 1,
+                            "z": 1,
+                            "bindings": [
+                                {"binding": 0, "resource_handle": 1, "buffer_size": 16, "buffer_type": "uniform"},
+                                {"binding": 1, "resource_handle": 2, "buffer_size": 4608, "buffer_type": "readonly"},
+                                {"binding": 2, "resource_handle": 3, "buffer_size": 72, "buffer_type": "readonly"},
+                                {"binding": 3, "resource_handle": 4, "buffer_size": 256, "buffer_type": "storage"},
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory(prefix="doe-benchmark-ir-") as tmpdir:
+            ir_path = Path(tmpdir) / "test_ir.json"
+            ir_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, r"requires cols divisible by 4"):
+                benchmark_ir.materialize_plan(ir_path, "alpha")
+
 
 if __name__ == "__main__":
     unittest.main()

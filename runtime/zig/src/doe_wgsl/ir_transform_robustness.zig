@@ -1,18 +1,6 @@
-// ir_transform_robustness.zig — WebGPU robustness injection IR transform pass.
-//
-// Clamps all array, vector, and matrix index operations to prevent out-of-bounds
-// access, as required by the WebGPU specification for shader robustness.
-//
-// Sized containers:        index = min(index, length - 1)
-// Runtime-sized arrays:    index = min(index, arrayLength(&buf) - 1)
-// textureLoad coords:      coords = clamp(coords, vec(0), textureDimensions(tex, level) - 1)
-// textureStore coords:     coords = clamp(coords, vec(0), textureDimensions(tex) - 1)
-//
-// This is the first IR transform pass in the Doe shader compiler. It runs after
-// IR building and validation, before emission to any backend (MSL, HLSL, SPIR-V).
-
 const std = @import("std");
 const dispatch_proof_match = @import("dispatch_proof_match.zig");
+const dispatch_uniform_bounds = @import("dispatch_uniform_bounds.zig");
 const ir = @import("ir.zig");
 const lean_proof = @import("../lean_proof.zig");
 const robustness_static_bounds = @import("robustness_static_bounds.zig");
@@ -21,17 +9,11 @@ pub const TransformError = error{
     OutOfMemory,
 };
 
-/// Configuration for the robustness transform pass.
 pub const Config = struct {
-    /// When true, pattern-match buf[gid.{x,y,z}] on storage buffers and elide
-    /// the runtime clamp when the access pattern is covered by a Lean proof.
-    /// The caller should set this to lean_proof.bounds_elimination_available.
     elide_proven_bounds: bool = false,
-
-    /// When true, pattern-match direct global_invocation_id texture coords on
-    /// supported compute texture builtins and record host-side texture extent
-    /// preconditions instead of injecting a coordinate clamp.
     elide_proven_texture_bounds: bool = false,
+    elide_dispatch_validated_bounds: bool = false,
+    elide_uniform_validated_bounds: bool = false,
 };
 
 /// Apply robustness clamping to all index and texture expressions in the module.
@@ -76,6 +58,21 @@ fn transform_function(
                                         module.allocator,
                                         precondition,
                                     ) catch return error.OutOfMemory;
+                                    continue;
+                                }
+                            }
+                            if (config.elide_dispatch_validated_bounds) {
+                                if (dispatch_proof_match.try_elide_dispatch_validated_storage_index(module, function, index_data)) |precondition| {
+                                    module.dispatch_preconditions.append(
+                                        module.allocator,
+                                        precondition,
+                                    ) catch return error.OutOfMemory;
+                                    continue;
+                                }
+                            }
+                            if (config.elide_uniform_validated_bounds) {
+                                if (dispatch_uniform_bounds.try_elide_uniform_validated_storage_index(module, function, function_id, i, index_data)) |precondition| {
+                                    module.dispatch_preconditions.append(module.allocator, precondition) catch return error.OutOfMemory;
                                     continue;
                                 }
                             }

@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Package Order Sensitivity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "comparisonMethod",
+    "status",
+    "deltaField",
+    "positiveMeansBaselineLower",
+    "inputReports",
+    "summary",
+    "phaseRows",
+    "artifactHash"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "const": "doe_package_order_sensitivity" },
+    "comparisonMethod": { "const": "phase-delta-order-swap-sign-check" },
+    "status": {
+      "enum": [
+        "order_sensitive_diagnostic",
+        "direction_stable_diagnostic"
+      ]
+    },
+    "deltaField": { "const": "comparisonMinusBaselineP50Ms" },
+    "positiveMeansBaselineLower": { "const": true },
+    "inputReports": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/inputReport" }
+    },
+    "summary": { "$ref": "#/$defs/summary" },
+    "phaseRows": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/phaseRow" }
+    },
+    "artifactHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "inputReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "orderLabel",
+        "baselineLabel",
+        "comparisonLabel"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "orderLabel": { "type": "string", "minLength": 1 },
+        "baselineLabel": { "type": "string", "minLength": 1 },
+        "comparisonLabel": { "type": "string", "minLength": 1 }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineLabel",
+        "comparisonLabel",
+        "firstOrderLabel",
+        "secondOrderLabel",
+        "matchedPhaseCount",
+        "signFlipCount",
+        "zeroInvolvedCount",
+        "recommendation"
+      ],
+      "properties": {
+        "baselineLabel": { "type": "string", "minLength": 1 },
+        "comparisonLabel": { "type": "string", "minLength": 1 },
+        "firstOrderLabel": { "type": "string", "minLength": 1 },
+        "secondOrderLabel": { "type": "string", "minLength": 1 },
+        "matchedPhaseCount": { "type": "integer", "minimum": 1 },
+        "signFlipCount": { "type": "integer", "minimum": 0 },
+        "zeroInvolvedCount": { "type": "integer", "minimum": 0 },
+        "recommendation": {
+          "enum": [
+            "keep_diagnostic_until_order_sensitivity_is_explained",
+            "eligible_for_regular_claim_gates"
+          ]
+        }
+      }
+    },
+    "phaseRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workloadId",
+        "section",
+        "phase",
+        "firstOrderDeltaMs",
+        "secondOrderDeltaMs",
+        "direction",
+        "directionStable",
+        "positiveMeansBaselineLower"
+      ],
+      "properties": {
+        "workloadId": { "type": "string", "minLength": 1 },
+        "section": { "type": "string", "minLength": 1 },
+        "phase": { "type": "string", "minLength": 1 },
+        "firstOrderDeltaMs": { "type": "number" },
+        "secondOrderDeltaMs": { "type": "number" },
+        "direction": {
+          "enum": [
+            "sign_flip",
+            "same_positive",
+            "same_negative",
+            "zero_involved"
+          ]
+        },
+        "directionStable": { "type": "boolean" },
+        "positiveMeansBaselineLower": { "const": true }
+      }
+    }
+  }
+}

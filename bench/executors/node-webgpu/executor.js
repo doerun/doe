@@ -36,10 +36,22 @@ const DOE_BUN_PACKAGE_PATH = join(
   REPO_ROOT,
   'packages/doe-gpu/src/bun.js',
 );
+const DOE_BUN_FFI_PACKAGE_PATH = join(
+  REPO_ROOT,
+  'packages/doe-gpu/src/vendor/webgpu/bun-ffi.js',
+);
 const PACKAGE_EXECUTION_POLICY_PATH = join(
   REPO_ROOT,
   'config/package-execution-policy.json',
 );
+const DOE_DIRECT_READBACK_DIAG_FIELDS = Object.freeze([
+  ['__doe_diag_map_read_copy_unmap_queue_wait_completed_ms', 'readbackMapReadCopyUnmapQueueWaitCompletedTotalNs'],
+  ['__doe_diag_map_read_copy_unmap_deferred_copy_ms', 'readbackMapReadCopyUnmapDeferredCopyTotalNs'],
+  ['__doe_diag_map_read_copy_unmap_deferred_resolve_ms', 'readbackMapReadCopyUnmapDeferredResolveTotalNs'],
+  ['__doe_diag_map_read_copy_unmap_map_ms', 'readbackMapReadCopyUnmapMapTotalNs'],
+  ['__doe_diag_map_read_copy_unmap_copy_ms', 'readbackMapReadCopyUnmapCopyTotalNs'],
+  ['__doe_diag_map_read_copy_unmap_unmap_ms', 'readbackMapReadCopyUnmapUnmapTotalNs'],
+]);
 
 const PROVIDERS_BY_RUNTIME = Object.freeze({
   node: Object.freeze({
@@ -55,6 +67,12 @@ const PROVIDERS_BY_RUNTIME = Object.freeze({
       executionBackend: 'doe_node_webgpu',
       loader: 'node-doe',
     },
+    'doe-direct': {
+      provider: 'doe-direct',
+      providerName: 'doe-gpu/native-direct',
+      executionBackend: 'doe_node_native_direct',
+      loader: 'node-doe-direct',
+    },
   }),
   bun: Object.freeze({
     'bun-webgpu': {
@@ -69,6 +87,12 @@ const PROVIDERS_BY_RUNTIME = Object.freeze({
       executionBackend: 'doe_bun_package',
       loader: 'bun-doe',
     },
+    'doe-ffi': {
+      provider: 'doe-ffi',
+      providerName: 'doe-gpu/bun-ffi',
+      executionBackend: 'doe_bun_package',
+      loader: 'bun-doe-ffi',
+    },
   }),
 });
 
@@ -77,27 +101,287 @@ const DEBUG_PROGRESS_INTERVAL = 64;
 const NODE_WEBGPU_UNSUPPORTED_ERROR_CODE = 'NODE_WEBGPU_UNSUPPORTED';
 const PACKAGE_QUEUE_SYNC_MODE = 'per-command';
 const PACKAGE_QUEUE_WAIT_MODE = 'queue.onSubmittedWorkDone';
-const NODE_PACKAGE_QUEUE_WAIT_MODE = 'sync-readback.mapAsync';
+const NODE_PACKAGE_QUEUE_WAIT_MODE = 'readback-or-fence.mapAsync';
 const PACKAGE_QUEUE_WAIT_SCOPE = 'terminal-or-readback';
 const NODE_PACKAGE_QUEUE_WAIT_SCOPE = PACKAGE_QUEUE_WAIT_SCOPE;
 const NODE_PACKAGE_QUEUE_WAIT_SUBMIT_CADENCE = 0;
 const QUEUE_WAIT_FENCE_SIZE_BYTES = 4;
+const PACKAGE_WRITE_BATCH_METHOD_NONE = 'none';
+const PACKAGE_WRITE_BATCH_METHOD_MIXED = 'mixed';
+const PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE = 'queue.writeBufferBatch.compact';
+const PACKAGE_WRITE_BATCH_METHOD_DOE_QUEUE = 'queue.__doeWriteBufferBatch';
+const MAX_COMPACT_WRITE_BATCH_BYTES = 0xffffffff;
+const READBACK_DIGEST_CACHE_MAX_BYTES = 4096;
+const READBACK_DIGEST_PROCESS_CACHE_MAX_ENTRIES = 1024;
+const readbackDigestProcessCache = new Map();
+const PACKAGE_READBACK_MODE_NATIVE = 'native-map-read-copy-unmap';
+const PACKAGE_READBACK_MODE_MAP_ASYNC = 'mapAsync';
 let packageExecutionPolicyPromise = null;
 
 function nsFromMs(ms) {
   return Math.max(0, Math.round(ms * 1_000_000));
 }
 
-function digestBytes(view) {
-  return createHash('sha256').update(view).digest('hex');
+function readbackDigestCacheKey(view) {
+  if (!(view instanceof Uint8Array) || view.byteLength > READBACK_DIGEST_CACHE_MAX_BYTES) {
+    return '';
+  }
+  if (view.byteLength === 4) {
+    const value = (
+      view[0]
+      | (view[1] << 8)
+      | (view[2] << 16)
+      | (view[3] << 24)
+    ) >>> 0;
+    return `4u32:${value}`;
+  }
+  if (view.byteLength === 8) {
+    const low = (
+      view[0]
+      | (view[1] << 8)
+      | (view[2] << 16)
+      | (view[3] << 24)
+    ) >>> 0;
+    const high = (
+      view[4]
+      | (view[5] << 8)
+      | (view[6] << 16)
+      | (view[7] << 24)
+    ) >>> 0;
+    return `8u32:${low}:${high}`;
+  }
+  let key = `${view.byteLength}:`;
+  for (let index = 0; index < view.byteLength; index += 1) {
+    key += String.fromCharCode(view[index]);
+  }
+  return key;
+}
+
+function rememberProcessReadbackDigest(cacheKey, digest) {
+  if (!cacheKey) {
+    return;
+  }
+  readbackDigestProcessCache.set(cacheKey, digest);
+  if (readbackDigestProcessCache.size > READBACK_DIGEST_PROCESS_CACHE_MAX_ENTRIES) {
+    const oldestKey = readbackDigestProcessCache.keys().next().value;
+    readbackDigestProcessCache.delete(oldestKey);
+  }
+}
+
+function digestBytes(view, cache = null) {
+  const cacheKey = readbackDigestCacheKey(view);
+  if (cacheKey) {
+    const cachedDigest = cache?.get(cacheKey) ?? readbackDigestProcessCache.get(cacheKey);
+    if (cachedDigest) {
+      cache?.set(cacheKey, cachedDigest);
+      return cachedDigest;
+    }
+  }
+  const digest = createHash('sha256').update(view).digest('hex');
+  if (cacheKey) {
+    cache?.set(cacheKey, digest);
+    rememberProcessReadbackDigest(cacheKey, digest);
+  }
+  return digest;
 }
 
 function stableArtifactHash(payload) {
   return createHash('sha256').update(JSON.stringify(payload), 'utf8').digest('hex');
 }
 
+function decodeU32Le(view) {
+  if (!(view instanceof Uint8Array) || view.byteLength < 4) {
+    return undefined;
+  }
+  return (
+    view[0]
+    | (view[1] << 8)
+    | (view[2] << 16)
+    | (view[3] << 24)
+  ) >>> 0;
+}
+
+export function summarizeReadbackCapture({
+  repeatIndex,
+  stepIndex,
+  step,
+  bytes,
+  digestCache = null,
+}) {
+  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes ?? []);
+  const summary = {
+    repeatIndex,
+    stepIndex,
+    stepId: typeof step?.id === 'string' ? step.id : `step-${stepIndex}`,
+    byteLength: view.byteLength,
+    sha256: digestBytes(view, digestCache),
+  };
+  const decodedU32Le = decodeU32Le(view);
+  if (decodedU32Le !== undefined) summary.decodedU32Le = decodedU32Le;
+  if (typeof step?.bufferId === 'string') summary.bufferId = step.bufferId;
+  if (typeof step?.semanticOpId === 'string') summary.semanticOpId = step.semanticOpId;
+  if (typeof step?.semanticStage === 'string') summary.semanticStage = step.semanticStage;
+  if (typeof step?.semanticPhase === 'string') summary.semanticPhase = step.semanticPhase;
+  if (Number.isInteger(step?.semanticTokenIndex)) summary.semanticTokenIndex = step.semanticTokenIndex;
+  if (Number.isInteger(step?.semanticLayerIndex)) summary.semanticLayerIndex = step.semanticLayerIndex;
+  if (typeof step?.semanticExecutionPlanHash === 'string') {
+    summary.semanticExecutionPlanHash = step.semanticExecutionPlanHash;
+  }
+  if (typeof step?.captureSourceBufferId === 'string') {
+    summary.captureSourceBufferId = step.captureSourceBufferId;
+  }
+  if (Number.isInteger(step?.captureOffset)) summary.captureOffset = step.captureOffset;
+  if (Number.isInteger(step?.captureSize)) summary.captureSize = step.captureSize;
+  if (typeof step?.captureDecode === 'string') summary.captureDecode = step.captureDecode;
+  return summary;
+}
+
+export function materializeWriteBufferDataForStep(cache, stepIndex, bufferData) {
+  if (cache.has(stepIndex)) {
+    return cache.get(stepIndex);
+  }
+  const materialized = materializeBufferData(bufferData);
+  cache.set(stepIndex, materialized);
+  return materialized;
+}
+
 function nsDelta(startedAtMs) {
   return nsFromMs(performance.now() - startedAtMs);
+}
+
+function emptyReadbackBreakdownNs() {
+  return {
+    readbackMapReadCopyUnmapTotalNs: 0,
+    readbackMapReadCopyUnmapQueueWaitCompletedTotalNs: 0,
+    readbackMapReadCopyUnmapDeferredCopyTotalNs: 0,
+    readbackMapReadCopyUnmapDeferredResolveTotalNs: 0,
+    readbackMapReadCopyUnmapMapTotalNs: 0,
+    readbackMapReadCopyUnmapCopyTotalNs: 0,
+    readbackMapReadCopyUnmapUnmapTotalNs: 0,
+    readbackMapAsyncTotalNs: 0,
+    readbackGetMappedRangeTotalNs: 0,
+    readbackHostCopyTotalNs: 0,
+    readbackNativeReadCopyTotalNs: 0,
+    readbackUnmapTotalNs: 0,
+    readbackValidationTotalNs: 0,
+    readbackCaptureTotalNs: 0,
+  };
+}
+
+function addReadbackBreakdown(target, source) {
+  for (const [key, value] of Object.entries(source)) {
+    target[key] = (target[key] ?? 0) + value;
+  }
+}
+
+function readDoeDirectReadbackDiagnosticsNs(buffer) {
+  const values = {};
+  const jsBreakdown = buffer?.__doe_readback_breakdown_ns;
+  if (jsBreakdown && typeof jsBreakdown === 'object') {
+    for (const [, breakdownName] of DOE_DIRECT_READBACK_DIAG_FIELDS) {
+      const value = Number(jsBreakdown[breakdownName]);
+      if (Number.isFinite(value) && value > 0) {
+        values[breakdownName] = Math.round(value);
+      }
+    }
+  }
+  for (const [propertyName, breakdownName] of DOE_DIRECT_READBACK_DIAG_FIELDS) {
+    const value = Number(buffer?.[propertyName]);
+    if (Number.isFinite(value) && value > 0) {
+      values[breakdownName] = nsFromMs(value);
+    }
+  }
+  return values;
+}
+
+function viewFromReadbackCopy(value, expectedBytes) {
+  let view;
+  if (value instanceof Uint8Array) {
+    view = value;
+  } else if (ArrayBuffer.isView(value)) {
+    view = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  } else if (value instanceof ArrayBuffer) {
+    view = new Uint8Array(value);
+  } else {
+    throw new Error('readback copy did not return an ArrayBuffer-compatible value');
+  }
+  if (view.byteLength !== expectedBytes) {
+    throw new Error(`readback copy returned ${view.byteLength} bytes, expected ${expectedBytes}`);
+  }
+  return view;
+}
+
+function packageReadbackModeFromEnv() {
+  if (process.env.DOE_PACKAGE_READBACK_MODE === PACKAGE_READBACK_MODE_MAP_ASYNC) {
+    return PACKAGE_READBACK_MODE_MAP_ASYNC;
+  }
+  if (process.env.DOE_PACKAGE_READBACK_MODE === PACKAGE_READBACK_MODE_NATIVE) {
+    return PACKAGE_READBACK_MODE_NATIVE;
+  }
+  return '';
+}
+
+export async function copyReadBufferBytes({
+  buffer,
+  globals,
+  sizeBytes,
+  readbackMode = PACKAGE_READBACK_MODE_NATIVE,
+}) {
+  const expectedBytes = normalizePositiveInt(sizeBytes, 'readBuffer.sizeBytes');
+  const breakdownNs = emptyReadbackBreakdownNs();
+
+  if (
+    readbackMode !== PACKAGE_READBACK_MODE_MAP_ASYNC
+    && typeof buffer?._mapReadCopyUnmap === 'function'
+  ) {
+    const fastStartedAt = performance.now();
+    const copied = buffer._mapReadCopyUnmap(globals.GPUMapMode.READ, 0, expectedBytes);
+    const fastNs = nsDelta(fastStartedAt);
+    if (copied !== null && copied !== undefined) {
+      breakdownNs.readbackMapReadCopyUnmapTotalNs += fastNs;
+      addReadbackBreakdown(breakdownNs, readDoeDirectReadbackDiagnosticsNs(buffer));
+      return {
+        bytes: viewFromReadbackCopy(copied, expectedBytes),
+        breakdownNs,
+        path: 'map-read-copy-unmap',
+      };
+    }
+  }
+
+  const mapStartedAt = performance.now();
+  await buffer.mapAsync(globals.GPUMapMode.READ);
+  breakdownNs.readbackMapAsyncTotalNs += nsDelta(mapStartedAt);
+
+  try {
+    if (typeof buffer?._readCopy === 'function') {
+      const readCopyStartedAt = performance.now();
+      const copied = buffer._readCopy(0, expectedBytes);
+      breakdownNs.readbackNativeReadCopyTotalNs += nsDelta(readCopyStartedAt);
+      if (copied !== null && copied !== undefined) {
+        return {
+          bytes: viewFromReadbackCopy(copied, expectedBytes),
+          breakdownNs,
+          path: 'mapped-native-read-copy',
+        };
+      }
+    }
+
+    const mappedRangeStartedAt = performance.now();
+    const mappedRange = buffer.getMappedRange(0, expectedBytes);
+    breakdownNs.readbackGetMappedRangeTotalNs += nsDelta(mappedRangeStartedAt);
+    const copyStartedAt = performance.now();
+    const bytes = new Uint8Array(mappedRange).slice();
+    breakdownNs.readbackHostCopyTotalNs += nsDelta(copyStartedAt);
+    return {
+      bytes,
+      breakdownNs,
+      path: 'mapped-range-host-copy',
+    };
+  } finally {
+    const unmapStartedAt = performance.now();
+    buffer.unmap();
+    breakdownNs.readbackUnmapTotalNs += nsDelta(unmapStartedAt);
+  }
 }
 
 function parseOptionalPositiveInt(value) {
@@ -108,6 +392,14 @@ function parseOptionalPositiveInt(value) {
   const parsed = Number(normalized);
   if (!Number.isInteger(parsed) || parsed <= 0) {
     throw new Error(`expected a positive integer, got: ${value}`);
+  }
+  return parsed;
+}
+
+function normalizePositiveInt(value, fieldName) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`expected a positive integer for ${fieldName}, got: ${value}`);
   }
   return parsed;
 }
@@ -130,7 +422,9 @@ function queueWaitSubmitCadenceForRuntimeHost(runtimeHost) {
 }
 
 function queueWaitModeForRuntimeHost(runtimeHost) {
-  return runtimeHost === 'node' ? NODE_PACKAGE_QUEUE_WAIT_MODE : PACKAGE_QUEUE_WAIT_MODE;
+  return runtimeHost === 'node' || runtimeHost === 'bun'
+    ? NODE_PACKAGE_QUEUE_WAIT_MODE
+    : PACKAGE_QUEUE_WAIT_MODE;
 }
 
 function providerCreateOptions(spec) {
@@ -143,8 +437,13 @@ function queueWaitScopeForRuntimeHost(runtimeHost) {
     : PACKAGE_QUEUE_WAIT_SCOPE;
 }
 
+export function queueWaitNeedsPreYield(runtime) {
+  return runtime.queueWaitMode === NODE_PACKAGE_QUEUE_WAIT_MODE
+    && !String(runtime.providerSpec?.provider ?? '').startsWith('doe');
+}
+
 async function maybeYieldBeforeQueueWait(runtime) {
-  if (runtime.queueWaitMode !== NODE_PACKAGE_QUEUE_WAIT_MODE) {
+  if (!queueWaitNeedsPreYield(runtime)) {
     return;
   }
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -186,6 +485,34 @@ async function awaitQueueCompletion(runtime) {
   }
   await maybeYieldBeforeQueueWait(runtime);
   await runtime.queue.onSubmittedWorkDone?.();
+}
+
+async function waitForQueuedWrites(runtime) {
+  if (runtime.queueWaitFence) {
+    const encoder = runtime.device.createCommandEncoder();
+    appendQueueWaitFenceCopy(runtime, encoder);
+    runtime.queue.submit([encoder.finish()]);
+    await awaitQueueCompletion(runtime);
+    return;
+  }
+  await awaitQueueCompletion(runtime);
+}
+
+export function readBufferMapCanCompleteSubmit(steps, index, step) {
+  if (index !== steps.length - 1 || step?.kind !== 'readBuffer') {
+    return false;
+  }
+  const previous = steps[index - 1];
+  if (!previous) {
+    return false;
+  }
+  if (previous.kind === 'copyBufferToBuffer') {
+    return previous.dstBufferId === step.bufferId;
+  }
+  if (previous.kind === 'writeBuffer') {
+    return previous.bufferId === step.bufferId;
+  }
+  return false;
 }
 
 function shouldLogProgress(index, total) {
@@ -345,7 +672,239 @@ function zeroPackageStepBreakdown() {
     submitQueueFlushDeferredResolveTotalNs: 0,
     submitQueueWaitBookkeepingTotalNs: 0,
     readbackTotalNs: 0,
+    ...emptyReadbackBreakdownNs(),
   };
+}
+
+export function zeroPackageWriteBreakdown() {
+  return {
+    totalCount: 0,
+    totalBytes: 0,
+    staticBufferLoadCount: 0,
+    staticBufferLoadBytes: 0,
+    dynamicWriteCount: 0,
+    dynamicWriteBytes: 0,
+    unbatchedWriteCount: 0,
+    batchCallCount: 0,
+    batchedWriteCount: 0,
+    batchMethod: PACKAGE_WRITE_BATCH_METHOD_NONE,
+    byDataKind: {},
+    bySemanticPhase: {},
+  };
+}
+
+function incrementWriteBucket(target, key, byteLength) {
+  const normalizedKey = typeof key === 'string' && key ? key : 'unknown';
+  const bucket = target[normalizedKey] ?? { count: 0, bytes: 0 };
+  bucket.count += 1;
+  bucket.bytes += byteLength;
+  target[normalizedKey] = bucket;
+}
+
+export function recordPackageWriteBreakdown(target, step, byteLength) {
+  const safeByteLength = Number.isFinite(byteLength) && byteLength > 0 ? Math.trunc(byteLength) : 0;
+  const dataKind = typeof step?.data?.kind === 'string' ? step.data.kind : 'unknown';
+  const semanticPhase = typeof step?.semanticPhase === 'string' ? step.semanticPhase : '';
+  const isStaticBufferLoad = dataKind === 'file' || semanticPhase === 'buffer_load';
+  target.totalCount += 1;
+  target.totalBytes += safeByteLength;
+  if (isStaticBufferLoad) {
+    target.staticBufferLoadCount += 1;
+    target.staticBufferLoadBytes += safeByteLength;
+  } else {
+    target.dynamicWriteCount += 1;
+    target.dynamicWriteBytes += safeByteLength;
+  }
+  incrementWriteBucket(target.byDataKind, dataKind, safeByteLength);
+  incrementWriteBucket(target.bySemanticPhase, semanticPhase || (isStaticBufferLoad ? 'buffer_load' : 'dynamic_write'), safeByteLength);
+}
+
+function recordPackageUnbatchedWrite(target) {
+  target.unbatchedWriteCount += 1;
+}
+
+function recordPackageBatchedWrites(target, writeCount, method) {
+  target.batchCallCount += 1;
+  target.batchedWriteCount += writeCount;
+  if (target.batchMethod === PACKAGE_WRITE_BATCH_METHOD_NONE) {
+    target.batchMethod = method;
+  } else if (target.batchMethod !== method) {
+    target.batchMethod = PACKAGE_WRITE_BATCH_METHOD_MIXED;
+  }
+}
+
+function packageWriteBatchMethod(queue) {
+  if (typeof queue?.writeBufferBatch === 'function') {
+    return PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE;
+  }
+  if (typeof queue?.__doeWriteBufferBatch === 'function') {
+    return PACKAGE_WRITE_BATCH_METHOD_DOE_QUEUE;
+  }
+  return PACKAGE_WRITE_BATCH_METHOD_NONE;
+}
+
+function buildCompactQueueWriteBatch(entries) {
+  let totalBytes = 0;
+  for (const entry of entries) {
+    const byteLength = entry.data.byteLength;
+    totalBytes += byteLength;
+    if (byteLength > MAX_COMPACT_WRITE_BATCH_BYTES) {
+      throw new Error(`writeBufferBatch entry exceeds compact size limit: ${byteLength}`);
+    }
+  }
+  const buffers = new Array(entries.length);
+  const offsets = new BigUint64Array(entries.length);
+  const sizes = new Uint32Array(entries.length);
+  const data = new Uint8Array(totalBytes);
+  let dataOffset = 0;
+  for (const [index, entry] of entries.entries()) {
+    const offset = entry.offset ?? 0;
+    if (!Number.isSafeInteger(offset) || offset < 0) {
+      throw new Error(`writeBufferBatch entry offset must be a non-negative safe integer: ${offset}`);
+    }
+    buffers[index] = entry.buffer;
+    offsets[index] = BigInt(offset);
+    sizes[index] = entry.data.byteLength;
+    const byteView = entry.data instanceof Uint8Array
+      ? entry.data
+      : new Uint8Array(entry.data.buffer, entry.data.byteOffset, entry.data.byteLength);
+    data.set(byteView, dataOffset);
+    dataOffset += entry.data.byteLength;
+  }
+  return { buffers, offsets, sizes, data };
+}
+
+function compactWriteBatchCacheKey(batchedSteps) {
+  const first = batchedSteps[0]?.index ?? -1;
+  const last = batchedSteps[batchedSteps.length - 1]?.index ?? -1;
+  return `${first}:${last}:${batchedSteps.length}`;
+}
+
+function prepareQueueWriteBufferBatch(method, entries, compactCache, cacheKey) {
+  if (method !== PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
+    return null;
+  }
+  if (compactCache?.has(cacheKey)) {
+    return compactCache.get(cacheKey);
+  }
+  const compact = buildCompactQueueWriteBatch(entries);
+  compactCache?.set(cacheKey, compact);
+  return compact;
+}
+
+function queueWriteBufferBatch(queue, method, entries, preparedCompact = null) {
+  if (method === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
+    const compact = preparedCompact ?? buildCompactQueueWriteBatch(entries);
+    return queue.writeBufferBatch(compact.buffers, compact.offsets, compact.sizes, compact.data);
+  }
+  if (method === PACKAGE_WRITE_BATCH_METHOD_DOE_QUEUE) {
+    return queue.__doeWriteBufferBatch(entries);
+  }
+  throw new Error(`unsupported queue write batch method: ${method}`);
+}
+
+function isDynamicWriteBufferStep(step) {
+  return step?.kind === 'writeBuffer' && !isStaticBufferLoadStep(step);
+}
+
+export function zeroPackageResidentBufferLoadBreakdown() {
+  return {
+    count: 0,
+    bytes: 0,
+    materializeTotalNs: 0,
+    queueWriteTotalNs: 0,
+    queueWaitTotalNs: 0,
+  };
+}
+
+function snapshotPackageFastPathStats(providerModule) {
+  const stats = providerModule?.fastPathStats;
+  if (!stats || typeof stats !== 'object') {
+    return null;
+  }
+  return {
+    dispatchFlush: Math.max(0, Number(stats.dispatchFlush ?? 0) || 0),
+    flushAndMap: Math.max(0, Number(stats.flushAndMap ?? 0) || 0),
+    commandBufferBuild: Math.max(0, Number(stats.commandBufferBuild ?? 0) || 0),
+  };
+}
+
+function snapshotPackageNativeFastPaths(providerModule) {
+  if (typeof providerModule?.nativeFastPathInfo !== 'function') {
+    return null;
+  }
+  let info = null;
+  try {
+    info = providerModule.nativeFastPathInfo();
+  } catch {
+    return null;
+  }
+  if (!info || typeof info !== 'object') {
+    return null;
+  }
+  return {
+    appleFastPathCompiled: Boolean(info.appleFastPathCompiled),
+    queueFlush: Boolean(info.queueFlush),
+    queueFlushBreakdown: Boolean(info.queueFlushBreakdown),
+    computeDispatchFlush: Boolean(info.computeDispatchFlush),
+    computeDispatchFlushBreakdown: Boolean(info.computeDispatchFlushBreakdown),
+    computeDispatchBatchFlush: Boolean(info.computeDispatchBatchFlush),
+    computeDispatchBatchCopyFlush: Boolean(info.computeDispatchBatchCopyFlush),
+    computeDispatchBatchCopyFlushBreakdown: Boolean(info.computeDispatchBatchCopyFlushBreakdown),
+    bufferMapReadCopyUnmap: Boolean(info.bufferMapReadCopyUnmap),
+  };
+}
+
+function diffPackageFastPathStats(start, end) {
+  if (!start || !end) {
+    return null;
+  }
+  return {
+    dispatchFlush: Math.max(0, end.dispatchFlush - start.dispatchFlush),
+    flushAndMap: Math.max(0, end.flushAndMap - start.flushAndMap),
+    commandBufferBuild: Math.max(0, end.commandBufferBuild - start.commandBufferBuild),
+  };
+}
+
+export function isStaticBufferLoadStep(step) {
+  return (
+    step?.kind === 'writeBuffer'
+    && (
+      step?.data?.kind === 'file'
+      || step?.semanticPhase === 'buffer_load'
+    )
+  );
+}
+
+export function validateResidentBufferLoadPlan(normalizedPlan) {
+  const staticBufferIds = new Set();
+  const dynamicBufferIds = new Set();
+  for (const step of normalizedPlan?.steps ?? []) {
+    if (step?.kind !== 'writeBuffer') {
+      continue;
+    }
+    if (isStaticBufferLoadStep(step)) {
+      staticBufferIds.add(step.bufferId);
+    } else {
+      dynamicBufferIds.add(step.bufferId);
+    }
+  }
+  const conflicts = [...staticBufferIds]
+    .filter((bufferId) => dynamicBufferIds.has(bufferId))
+    .sort();
+  if (conflicts.length > 0) {
+    throw new Error(
+      '--resident-buffer-loads cannot preload buffers that also receive dynamic writes: '
+      + conflicts.join(', '),
+    );
+  }
+}
+
+function selectedExecutionSteps(steps, residentBufferLoads) {
+  if (!residentBufferLoads) {
+    return steps;
+  }
+  return steps.filter((step) => !isStaticBufferLoadStep(step));
 }
 
 function fallbackExecutionShape() {
@@ -471,6 +1030,7 @@ export function buildUnsupportedExecutionResult({
   queueWaitMode = PACKAGE_QUEUE_WAIT_MODE,
   queueWaitScope = PACKAGE_QUEUE_WAIT_SCOPE,
   queueWaitSubmitCadence = 0,
+  residentBufferLoads = false,
 }) {
   const planMeta = resolvePlanMetadata({ normalizedPlan, workloadId, planPath });
   const scopedHostTotals = boundaryScopedHostTotals({
@@ -529,6 +1089,9 @@ export function buildUnsupportedExecutionResult({
     packageSetupTotalNs: 0,
     packageSetupBreakdownNs: zeroPackageSetupBreakdown(),
     packageStepBreakdownNs: zeroPackageStepBreakdown(),
+    packageWriteBreakdown: zeroPackageWriteBreakdown(),
+    packageResidentBufferLoads: residentBufferLoads,
+    packageResidentBufferLoadBreakdown: zeroPackageResidentBufferLoadBreakdown(),
     ...(preparedSession ? { workloadUnitWallSource: TRACE_META_PROCESS_WALL_SOURCE } : {}),
     samplesMs: [0],
     stats: {
@@ -560,6 +1123,7 @@ export function buildErrorExecutionResult({
   queueWaitMode = PACKAGE_QUEUE_WAIT_MODE,
   queueWaitScope = PACKAGE_QUEUE_WAIT_SCOPE,
   queueWaitSubmitCadence = 0,
+  residentBufferLoads = false,
 }) {
   const planMeta = resolvePlanMetadata({ normalizedPlan, workloadId, planPath });
   const scopedHostTotals = boundaryScopedHostTotals({
@@ -616,6 +1180,9 @@ export function buildErrorExecutionResult({
     packageSetupTotalNs: 0,
     packageSetupBreakdownNs: zeroPackageSetupBreakdown(),
     packageStepBreakdownNs: zeroPackageStepBreakdown(),
+    packageWriteBreakdown: zeroPackageWriteBreakdown(),
+    packageResidentBufferLoads: residentBufferLoads,
+    packageResidentBufferLoadBreakdown: zeroPackageResidentBufferLoadBreakdown(),
     ...(preparedSession ? { workloadUnitWallSource: TRACE_META_PROCESS_WALL_SOURCE } : {}),
     samplesMs: [0],
     stats: {
@@ -734,6 +1301,107 @@ export function lookupUnsupportedPackageExecutionEntry(policy, {
   }) ?? null;
 }
 
+export function lookupPackageWriteBatchingEntry(policy, {
+  runtimeHost,
+  provider,
+  method,
+}) {
+  const entries = Array.isArray(policy?.writeBatching)
+    ? policy.writeBatching
+    : [];
+  return entries.find((entry) => {
+    if (!hostPolicyValueMatches(runtimeHost, entry.runtimeHost)) {
+      return false;
+    }
+    if (!hostPolicyValueMatches(provider, entry.provider)) {
+      return false;
+    }
+    if (!hostPolicyValueMatches(method, entry.method)) {
+      return false;
+    }
+    return true;
+  }) ?? null;
+}
+
+export function lookupPackageReadbackModeEntry(policy, {
+  runtimeHost,
+  provider,
+  workloadId,
+  packagePreparedSession,
+}) {
+  const entries = Array.isArray(policy?.readbackMode)
+    ? policy.readbackMode
+    : [];
+  return entries.find((entry) => {
+    if (!hostPolicyValueMatches(runtimeHost, entry.runtimeHost)) {
+      return false;
+    }
+    if (!hostPolicyValueMatches(provider, entry.provider)) {
+      return false;
+    }
+    if (!hostPolicyValueMatches(workloadId, entry.workloadId)) {
+      return false;
+    }
+    if (
+      typeof entry.packagePreparedSession === 'boolean'
+      && entry.packagePreparedSession !== Boolean(packagePreparedSession)
+    ) {
+      return false;
+    }
+    return true;
+  }) ?? null;
+}
+
+function packageReadbackModeForExecution(policy, {
+  runtimeHost,
+  provider,
+  workloadId,
+  packagePreparedSession,
+}) {
+  const envMode = packageReadbackModeFromEnv();
+  if (envMode) {
+    return envMode;
+  }
+  const entry = lookupPackageReadbackModeEntry(policy, {
+    runtimeHost,
+    provider,
+    workloadId,
+    packagePreparedSession,
+  });
+  return entry?.mode === PACKAGE_READBACK_MODE_MAP_ASYNC
+    ? PACKAGE_READBACK_MODE_MAP_ASYNC
+    : PACKAGE_READBACK_MODE_NATIVE;
+}
+
+function packagePolicyProvider(runtime) {
+  const provider = runtime?.providerSpec?.provider;
+  if (
+    provider === 'doe'
+    && runtime?.runtimeHost === 'bun'
+    && typeof runtime?.providerModule?.providerInfo === 'function'
+  ) {
+    const info = runtime.providerModule.providerInfo();
+    if (info?.bunRuntimeProvider === 'doe-ffi') {
+      return 'doe-ffi';
+    }
+  }
+  return provider;
+}
+
+function packageWriteBatchMinConsecutiveWrites(policy, {
+  runtimeHost,
+  provider,
+  method,
+}) {
+  const entry = lookupPackageWriteBatchingEntry(policy, {
+    runtimeHost,
+    provider,
+    method,
+  });
+  const value = Number(entry?.minConsecutiveWrites ?? 2);
+  return Number.isInteger(value) && value >= 2 ? value : 2;
+}
+
 function globalsFromGlobalThis() {
   const required = [
     'GPUBufferUsage',
@@ -776,6 +1444,16 @@ async function resolveProviderModule(spec) {
   switch (spec.loader) {
     case 'node-doe':
       return await import(pathToFileURL(DOE_PACKAGE_PATH).href);
+    case 'node-doe-direct': {
+      const mod = await import(pathToFileURL(DOE_PACKAGE_PATH).href);
+      if (typeof mod.createNativeDirect !== 'function') {
+        throw new Error('doe-gpu package does not export createNativeDirect()');
+      }
+      return {
+        ...mod,
+        create: mod.createNativeDirect,
+      };
+    }
     case 'node-dawn':
       try {
         return await import(pathToFileURL(FALLBACK_WEBGPU_PATH).href);
@@ -784,6 +1462,8 @@ async function resolveProviderModule(spec) {
       }
     case 'bun-doe':
       return await import(pathToFileURL(DOE_BUN_PACKAGE_PATH).href);
+    case 'bun-doe-ffi':
+      return await import(pathToFileURL(DOE_BUN_FFI_PACKAGE_PATH).href);
     case 'bun-webgpu':
       return await resolveBunWebGpuModule();
     default:
@@ -816,16 +1496,43 @@ function buildBindingDescriptor(binding, buffers, globals) {
   };
 }
 
+function cacheKeyPart(value) {
+  const text = value === undefined || value === null ? '' : String(value);
+  return `${text.length}:${text}`;
+}
+
+function bindingCacheKey(bindings, fields) {
+  return (bindings ?? []).map((binding) => fields.map((field) => {
+    if (field === 'visibility') {
+      return cacheKeyPart((binding.visibility ?? []).join(','));
+    }
+    if (field === 'offset') {
+      return cacheKeyPart(binding.offset ?? 0);
+    }
+    if (field === 'size') {
+      return cacheKeyPart(binding.size ?? null);
+    }
+    return cacheKeyPart(binding[field]);
+  }).join(',')).join('|');
+}
+
+export function buildDispatchBindingLayoutCacheKey(step) {
+  return bindingCacheKey(step.bindings, [
+    'binding',
+    'bufferType',
+    'visibility',
+    'size',
+  ]);
+}
+
 export function buildDispatchBindingCacheKey(step) {
-  return stableArtifactHash(
-    (step.bindings ?? []).map((binding) => ({
-      binding: binding.binding,
-      bufferId: binding.bufferId,
-      bufferType: binding.bufferType,
-      offset: binding.offset ?? 0,
-      size: binding.size ?? null,
-    })),
-  );
+  return bindingCacheKey(step.bindings, [
+    'binding',
+    'bufferId',
+    'bufferType',
+    'offset',
+    'size',
+  ]);
 }
 
 async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHost }) {
@@ -1009,30 +1716,46 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
     if (!shaderModule) {
       throw new Error(`dispatch references unknown module: ${step.moduleId}`);
     }
-    const bindingLayouts = [];
-    const bindEntries = [];
-    for (const binding of step.bindings) {
-      const { layout, entry } = buildBindingDescriptor(binding, buffers, globals);
-      bindingLayouts.push(layout);
-      bindEntries.push(entry);
-    }
-    const layoutKey = stableArtifactHash(bindingLayouts);
+    let bindingLayouts = null;
+    let bindEntries = null;
+    const ensureBindingDescriptors = () => {
+      if (bindingLayouts !== null && bindEntries !== null) {
+        return;
+      }
+      bindingLayouts = [];
+      bindEntries = [];
+      for (const binding of step.bindings) {
+        const { layout, entry } = buildBindingDescriptor(binding, buffers, globals);
+        bindingLayouts.push(layout);
+        bindEntries.push(entry);
+      }
+    };
+    const layoutKey = buildDispatchBindingLayoutCacheKey(step);
+    const bindGroupKey = `${layoutKey}:${buildDispatchBindingCacheKey(step)}`;
+    const pipelineKey = `${step.moduleId}:${step.entryPoint ?? 'main'}:${layoutKey}`;
     let bindGroupLayout = bindGroupLayoutCache.get(layoutKey);
+    let pipelineLayout = pipelineLayoutCache.get(layoutKey);
+    let pipeline = pipelineCache.get(pipelineKey);
+    let bindGroup = bindGroupCache.get(bindGroupKey);
+
+    if (bindGroupLayout && pipelineLayout && pipeline && bindGroup) {
+      dispatchStates.push({ step, pipeline, bindGroup });
+      dispatchSetupIndex += 1;
+      continue;
+    }
     if (!bindGroupLayout) {
+      ensureBindingDescriptors();
       const bindGroupLayoutStartedAt = performance.now();
       bindGroupLayout = device.createBindGroupLayout({ entries: bindingLayouts });
       setupBreakdownNs.bindGroupLayoutCreateTotalNs += nsDelta(bindGroupLayoutStartedAt);
       bindGroupLayoutCache.set(layoutKey, bindGroupLayout);
     }
-    let pipelineLayout = pipelineLayoutCache.get(layoutKey);
     if (!pipelineLayout) {
       const pipelineLayoutStartedAt = performance.now();
       pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
       setupBreakdownNs.pipelineLayoutCreateTotalNs += nsDelta(pipelineLayoutStartedAt);
       pipelineLayoutCache.set(layoutKey, pipelineLayout);
     }
-    const pipelineKey = `${step.moduleId}:${step.entryPoint ?? 'main'}:${layoutKey}`;
-    let pipeline = pipelineCache.get(pipelineKey);
     if (!pipeline) {
       const pipelineStartedAt = performance.now();
       pipeline = device.createComputePipeline({
@@ -1045,9 +1768,8 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
       setupBreakdownNs.pipelineCreateTotalNs += nsDelta(pipelineStartedAt);
       pipelineCache.set(pipelineKey, pipeline);
     }
-    const bindGroupKey = `${layoutKey}:${buildDispatchBindingCacheKey(step)}`;
-    let bindGroup = bindGroupCache.get(bindGroupKey);
     if (!bindGroup) {
+      ensureBindingDescriptors();
       const bindGroupStartedAt = performance.now();
       bindGroup = device.createBindGroup({
         layout: bindGroupLayout,
@@ -1081,12 +1803,58 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
       : null,
     globals,
     providerSpec: spec,
+    runtimeHost,
+    policyProvider: null,
     buffers,
     dispatchStates,
     hostExecutorInitTotalNs,
     setupTotalNs,
     setupBreakdownNs,
   };
+}
+
+async function preloadResidentBufferLoads(
+  normalizedPlan,
+  runtime,
+  materializedWriteDataCache,
+  residentBufferLoadBreakdown,
+  debugLog,
+) {
+  for (const [index, step] of normalizedPlan.steps.entries()) {
+    if (!isStaticBufferLoadStep(step)) {
+      continue;
+    }
+    const buffer = runtime.buffers.get(step.bufferId);
+    if (!buffer) {
+      throw new Error(`resident buffer load references unknown buffer: ${step.bufferId}`);
+    }
+    const materializeStartedAt = performance.now();
+    const materialized = materializeWriteBufferDataForStep(
+      materializedWriteDataCache,
+      index,
+      step.data,
+    );
+    const materializeNs = nsDelta(materializeStartedAt);
+    const writeStartedAt = performance.now();
+    runtime.queue.writeBuffer(buffer, step.offset ?? 0, materialized);
+    const queueWriteNs = nsDelta(writeStartedAt);
+    residentBufferLoadBreakdown.count += 1;
+    residentBufferLoadBreakdown.bytes += materialized.byteLength;
+    residentBufferLoadBreakdown.materializeTotalNs += materializeNs;
+    residentBufferLoadBreakdown.queueWriteTotalNs += queueWriteNs;
+    debugLog('residentBufferLoad.write', {
+      stepIndex: index,
+      stepId: step.id ?? `step-${index}`,
+      byteLength: materialized.byteLength,
+      materializeNs,
+      queueWriteNs,
+    });
+  }
+  if (residentBufferLoadBreakdown.count > 0) {
+    const waitStartedAt = performance.now();
+    await waitForQueuedWrites(runtime);
+    residentBufferLoadBreakdown.queueWaitTotalNs += nsDelta(waitStartedAt);
+  }
 }
 
 async function executeSample(
@@ -1097,23 +1865,43 @@ async function executeSample(
     debugLog,
     queueWaitScope,
     queueWaitSubmitCadence,
+    commandRepeat,
+    residentBufferLoads,
+    packageExecutionPolicy,
+    runtimeHost,
   },
 ) {
   const rows = [];
   const determinismCaptureRows = new Map();
+  const readbackCaptures = [];
+  const readbackDigestCache = new Map();
+  const materializedWriteDataCache = new Map();
+  const compactWriteBatchCache = new Map();
+  const packageFastPathStatsStart = snapshotPackageFastPathStats(runtime.providerModule);
+  const policyProvider = runtime.policyProvider ?? packagePolicyProvider(runtime);
+  runtime.policyProvider = policyProvider;
+  const packageReadbackMode = packageReadbackModeForExecution(packageExecutionPolicy, {
+    runtimeHost,
+    provider: policyProvider,
+    workloadId: normalizedPlan.workloadId,
+    packagePreparedSession: !includeSetupInSelectedTiming,
+  });
   let executionSetupTotalNs = 0;
   let executionEncodeTotalNs = 0;
   let executionSubmitWaitTotalNs = 0;
   let executionDispatchCount = 0;
   let executionSuccessCount = 0;
   const stepBreakdownNs = zeroPackageStepBreakdown();
+  const writeBreakdown = zeroPackageWriteBreakdown();
+  const residentBufferLoadBreakdown = zeroPackageResidentBufferLoadBreakdown();
   let encoder = null;
   let pass = null;
   let dispatchStateIndex = 0;
   let submitCount = 0;
+  let queueCompletionKnown = false;
   async function flushEncoder({ waitForCompletion }) {
     if (!encoder) {
-      if (waitForCompletion && runtime.queueWaitFence) {
+      if (waitForCompletion && runtime.queueWaitFence && !queueCompletionKnown) {
         const submitStartedAt = performance.now();
         const finishStartedAt = submitStartedAt;
         submitCount += 1;
@@ -1128,6 +1916,7 @@ async function executeSample(
         await awaitQueueCompletion(runtime);
         const queueWaitNs = nsDelta(queueWaitStartedAt);
         const submitNs = nsFromMs(performance.now() - submitStartedAt);
+        queueCompletionKnown = true;
         stepBreakdownNs.submitCommandEncoderFinishTotalNs += finishNs;
         stepBreakdownNs.submitQueueSubmitTotalNs += queueSubmitNs;
         stepBreakdownNs.submitQueueWaitTotalNs += queueWaitNs;
@@ -1205,6 +1994,7 @@ async function executeSample(
     }
     runtime.queue.submit([commandBuffer]);
     const queueSubmitNs = nsDelta(queueSubmitStartedAt);
+    queueCompletionKnown = false;
     debugLog('execution.submit.queueSubmit.done', {
       submitIndex: submitCount,
       queueSubmitNs,
@@ -1233,6 +2023,7 @@ async function executeSample(
       }
       await awaitQueueCompletion(runtime);
       queueWaitNs = nsDelta(queueWaitStartedAt);
+      queueCompletionKnown = true;
       debugLog('execution.submit.queueWait.done', {
         submitIndex: submitCount,
         queueWaitNs,
@@ -1273,58 +2064,198 @@ async function executeSample(
     }
   }
 
+  if (residentBufferLoads) {
+    await preloadResidentBufferLoads(
+      normalizedPlan,
+      runtime,
+      materializedWriteDataCache,
+      residentBufferLoadBreakdown,
+      debugLog,
+    );
+  }
+
   const commandLoopStartedAt = performance.now();
-  for (const [index, step] of normalizedPlan.steps.entries()) {
-    debugLog('execution.step.start', {
-      stepIndex: index,
-      stepCount: normalizedPlan.steps.length,
-      stepKind: step.kind,
-      ...(typeof step.bufferId === 'string' ? { bufferId: step.bufferId } : {}),
-      ...(typeof step.moduleId === 'string' ? { moduleId: step.moduleId } : {}),
-    });
-    if (step.kind === 'writeBuffer') {
-      await flushEncoder({ waitForCompletion: false });
-      const buffer = runtime.buffers.get(step.bufferId);
-      if (!buffer) {
-        throw new Error(`writeBuffer references unknown buffer: ${step.bufferId}`);
-      }
-      const materializeStartedAt = performance.now();
-      const materialized = materializeBufferData(step.data);
-      const materializeNs = nsDelta(materializeStartedAt);
-      const writeStartedAt = performance.now();
-      runtime.queue.writeBuffer(buffer, step.offset ?? 0, materialized);
-      const queueWriteNs = nsDelta(writeStartedAt);
-      const writeNs = materializeNs + queueWriteNs;
-      stepBreakdownNs.writeMaterializeTotalNs += materializeNs;
-      stepBreakdownNs.writeQueueWriteTotalNs += queueWriteNs;
-      executionSetupTotalNs += writeNs;
-      rows.push({
-        schemaVersion: 1,
-        kind: 'node_webgpu_step',
+  for (let repeatIndex = 0; repeatIndex < commandRepeat; repeatIndex += 1) {
+    dispatchStateIndex = 0;
+    for (let index = 0; index < normalizedPlan.steps.length; index += 1) {
+      const step = normalizedPlan.steps[index];
+      debugLog('execution.step.start', {
+        repeatIndex,
+        commandRepeat,
         stepIndex: index,
-        stepId: step.id ?? `step-${index}`,
+        stepCount: normalizedPlan.steps.length,
         stepKind: step.kind,
-        executionBackend: runtime.providerSpec.executionBackend,
-        executionProvider: runtime.providerSpec.provider,
-        executionProviderName: runtime.providerSpec.providerName,
-        executionDurationNs: writeNs,
-        executionSetupNs: writeNs,
-        executionEncodeNs: 0,
-        executionSubmitWaitNs: 0,
-        executionSuccess: true,
-        ...(typeof step.semanticOpId === 'string' ? { semanticOpId: step.semanticOpId } : {}),
-        ...(typeof step.semanticStage === 'string' ? { semanticStage: step.semanticStage } : {}),
-        ...(typeof step.semanticPhase === 'string' ? { semanticPhase: step.semanticPhase } : {}),
-        ...(Number.isInteger(step.semanticTokenIndex) ? { semanticTokenIndex: step.semanticTokenIndex } : {}),
-        timingSource: 'doe-execution-total-ns',
-        timingClass: 'operation',
-        workloadId: normalizedPlan.workloadId,
-        planId: normalizedPlan.planId,
-        planHash: normalizedPlan.planHash,
+        ...(typeof step.bufferId === 'string' ? { bufferId: step.bufferId } : {}),
+        ...(typeof step.moduleId === 'string' ? { moduleId: step.moduleId } : {}),
       });
-      executionSuccessCount += 1;
-      continue;
-    }
+      if (residentBufferLoads && isStaticBufferLoadStep(step)) {
+        debugLog('execution.step.residentBufferLoad.skip', {
+          repeatIndex,
+          commandRepeat,
+          stepIndex: index,
+          stepId: step.id ?? `step-${index}`,
+        });
+        continue;
+      }
+      if (step.kind === 'writeBuffer') {
+        const batchMethod = packageWriteBatchMethod(runtime.queue);
+        const batchedSteps = [];
+        if (batchMethod !== PACKAGE_WRITE_BATCH_METHOD_NONE && isDynamicWriteBufferStep(step)) {
+          for (
+            let batchIndex = index;
+            batchIndex < normalizedPlan.steps.length;
+            batchIndex += 1
+          ) {
+            const batchStep = normalizedPlan.steps[batchIndex];
+            if (!isDynamicWriteBufferStep(batchStep)) {
+              break;
+            }
+            batchedSteps.push({ index: batchIndex, step: batchStep });
+          }
+        }
+
+        const minConsecutiveWrites = packageWriteBatchMinConsecutiveWrites(packageExecutionPolicy, {
+          runtimeHost,
+          provider: runtime.policyProvider ?? runtime.providerSpec.provider,
+          method: batchMethod,
+        });
+
+        if (batchedSteps.length >= minConsecutiveWrites) {
+          await flushEncoder({ waitForCompletion: false });
+          const batchEntries = [];
+          const batchRows = [];
+          let materializeTotalNs = 0;
+          for (const batched of batchedSteps) {
+            const buffer = runtime.buffers.get(batched.step.bufferId);
+            if (!buffer) {
+              throw new Error(`writeBuffer references unknown buffer: ${batched.step.bufferId}`);
+            }
+            const materializeStartedAt = performance.now();
+            const materialized = materializeWriteBufferDataForStep(
+              materializedWriteDataCache,
+              batched.index,
+              batched.step.data,
+            );
+            const materializeNs = nsDelta(materializeStartedAt);
+            materializeTotalNs += materializeNs;
+            batchEntries.push({
+              buffer,
+              offset: batched.step.offset ?? 0,
+              data: materialized,
+            });
+            batchRows.push({
+              index: batched.index,
+              step: batched.step,
+              materializeNs,
+              byteLength: materialized.byteLength,
+            });
+            recordPackageWriteBreakdown(writeBreakdown, batched.step, materialized.byteLength);
+          }
+          let preparedCompact = null;
+          if (batchMethod === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
+            const compactStartedAt = performance.now();
+            preparedCompact = prepareQueueWriteBufferBatch(
+              batchMethod,
+              batchEntries,
+              compactWriteBatchCache,
+              compactWriteBatchCacheKey(batchedSteps),
+            );
+            materializeTotalNs += nsDelta(compactStartedAt);
+          }
+          const writeStartedAt = performance.now();
+          queueWriteBufferBatch(runtime.queue, batchMethod, batchEntries, preparedCompact);
+          const queueWriteNs = nsDelta(writeStartedAt);
+          recordPackageBatchedWrites(writeBreakdown, batchedSteps.length, batchMethod);
+          queueCompletionKnown = false;
+          stepBreakdownNs.writeMaterializeTotalNs += materializeTotalNs;
+          stepBreakdownNs.writeQueueWriteTotalNs += queueWriteNs;
+          executionSetupTotalNs += materializeTotalNs + queueWriteNs;
+          const queueWriteShareNs = Math.floor(queueWriteNs / batchRows.length);
+          let queueWriteRemainderNs = queueWriteNs - queueWriteShareNs * batchRows.length;
+          for (const batchRow of batchRows) {
+            const rowQueueWriteNs = queueWriteShareNs + (queueWriteRemainderNs > 0 ? 1 : 0);
+            if (queueWriteRemainderNs > 0) {
+              queueWriteRemainderNs -= 1;
+            }
+            const writeNs = batchRow.materializeNs + rowQueueWriteNs;
+            rows.push({
+              schemaVersion: 1,
+              kind: 'node_webgpu_step',
+              stepIndex: batchRow.index,
+              stepId: batchRow.step.id ?? `step-${batchRow.index}`,
+              stepKind: batchRow.step.kind,
+              executionBackend: runtime.providerSpec.executionBackend,
+              executionProvider: runtime.providerSpec.provider,
+              executionProviderName: runtime.providerSpec.providerName,
+              executionDurationNs: writeNs,
+              executionSetupNs: writeNs,
+              executionEncodeNs: 0,
+              executionSubmitWaitNs: 0,
+              executionSuccess: true,
+              ...(typeof batchRow.step.semanticOpId === 'string' ? { semanticOpId: batchRow.step.semanticOpId } : {}),
+              ...(typeof batchRow.step.semanticStage === 'string' ? { semanticStage: batchRow.step.semanticStage } : {}),
+              ...(typeof batchRow.step.semanticPhase === 'string' ? { semanticPhase: batchRow.step.semanticPhase } : {}),
+              ...(Number.isInteger(batchRow.step.semanticTokenIndex) ? { semanticTokenIndex: batchRow.step.semanticTokenIndex } : {}),
+              timingSource: 'doe-execution-total-ns',
+              timingClass: 'operation',
+              workloadId: normalizedPlan.workloadId,
+              planId: normalizedPlan.planId,
+              planHash: normalizedPlan.planHash,
+            });
+          }
+          executionSuccessCount += batchedSteps.length;
+          index = batchedSteps[batchedSteps.length - 1].index;
+        } else {
+          await flushEncoder({ waitForCompletion: false });
+          const buffer = runtime.buffers.get(step.bufferId);
+          if (!buffer) {
+            throw new Error(`writeBuffer references unknown buffer: ${step.bufferId}`);
+          }
+          const materializeStartedAt = performance.now();
+          const materialized = materializeWriteBufferDataForStep(
+            materializedWriteDataCache,
+            index,
+            step.data,
+          );
+          const materializeNs = nsDelta(materializeStartedAt);
+          const writeStartedAt = performance.now();
+          runtime.queue.writeBuffer(buffer, step.offset ?? 0, materialized);
+          const queueWriteNs = nsDelta(writeStartedAt);
+          recordPackageWriteBreakdown(writeBreakdown, step, materialized.byteLength);
+          recordPackageUnbatchedWrite(writeBreakdown);
+          queueCompletionKnown = false;
+          const writeNs = materializeNs + queueWriteNs;
+          stepBreakdownNs.writeMaterializeTotalNs += materializeNs;
+          stepBreakdownNs.writeQueueWriteTotalNs += queueWriteNs;
+          executionSetupTotalNs += writeNs;
+          rows.push({
+            schemaVersion: 1,
+            kind: 'node_webgpu_step',
+            stepIndex: index,
+            stepId: step.id ?? `step-${index}`,
+            stepKind: step.kind,
+            executionBackend: runtime.providerSpec.executionBackend,
+            executionProvider: runtime.providerSpec.provider,
+            executionProviderName: runtime.providerSpec.providerName,
+            executionDurationNs: writeNs,
+            executionSetupNs: writeNs,
+            executionEncodeNs: 0,
+            executionSubmitWaitNs: 0,
+            executionSuccess: true,
+            ...(typeof step.semanticOpId === 'string' ? { semanticOpId: step.semanticOpId } : {}),
+            ...(typeof step.semanticStage === 'string' ? { semanticStage: step.semanticStage } : {}),
+            ...(typeof step.semanticPhase === 'string' ? { semanticPhase: step.semanticPhase } : {}),
+            ...(Number.isInteger(step.semanticTokenIndex) ? { semanticTokenIndex: step.semanticTokenIndex } : {}),
+            timingSource: 'doe-execution-total-ns',
+            timingClass: 'operation',
+            workloadId: normalizedPlan.workloadId,
+            planId: normalizedPlan.planId,
+            planHash: normalizedPlan.planHash,
+          });
+          executionSuccessCount += 1;
+        }
+        continue;
+      }
 
     if (step.kind === 'dispatch') {
       if (!encoder) {
@@ -1416,24 +2347,39 @@ async function executeSample(
     }
 
     if (step.kind === 'readBuffer') {
-      await flushEncoder({ waitForCompletion: true });
+      const readbackMapCompletesSubmit = runtime.queueWaitMode === NODE_PACKAGE_QUEUE_WAIT_MODE
+        && readBufferMapCanCompleteSubmit(normalizedPlan.steps, index, step);
+      await flushEncoder({ waitForCompletion: !readbackMapCompletesSubmit });
       const buffer = runtime.buffers.get(step.bufferId);
       if (!buffer) {
         throw new Error(`readBuffer references unknown buffer: ${step.bufferId}`);
       }
       const readStartedAt = performance.now();
-      await buffer.mapAsync(runtime.globals.GPUMapMode.READ);
-      const mapped = new Uint8Array(buffer.getMappedRange(0, buffer.size)).slice();
-      const validation = validateSampleExpectation(mapped, step.validate);
+      const readback = await copyReadBufferBytes({
+        buffer,
+        globals: runtime.globals,
+        sizeBytes: buffer.size,
+        readbackMode: packageReadbackMode,
+      });
+      const validationStartedAt = performance.now();
+      const validation = validateSampleExpectation(readback.bytes, step.validate);
+      readback.breakdownNs.readbackValidationTotalNs += nsDelta(validationStartedAt);
       if (!validation.ok) {
         throw new Error(`validation failed for ${step.bufferId}: ${validation.detail}`);
       }
-      buffer.unmap();
+      const captureStartedAt = performance.now();
+      readbackCaptures.push(summarizeReadbackCapture({
+        repeatIndex,
+        stepIndex: index,
+        step,
+        bytes: readback.bytes,
+        digestCache: readbackDigestCache,
+      }));
       if (typeof step.semanticPhase === 'string') {
         determinismCaptureRows.set(
           `${Number.isInteger(step.semanticTokenIndex) ? step.semanticTokenIndex : 0}:${step.semanticPhase}`,
           {
-            bytes: mapped,
+            bytes: readback.bytes,
             semanticOpId: typeof step.semanticOpId === 'string' ? step.semanticOpId : null,
             semanticStage: typeof step.semanticStage === 'string' ? step.semanticStage : null,
             semanticPhase: step.semanticPhase,
@@ -1441,8 +2387,13 @@ async function executeSample(
           },
         );
       }
+      readback.breakdownNs.readbackCaptureTotalNs += nsDelta(captureStartedAt);
+      if (readbackMapCompletesSubmit) {
+        queueCompletionKnown = true;
+      }
       const stepNs = nsDelta(readStartedAt);
       stepBreakdownNs.readbackTotalNs += stepNs;
+      addReadbackBreakdown(stepBreakdownNs, readback.breakdownNs);
       executionSubmitWaitTotalNs += stepNs;
       rows.push({
         schemaVersion: 1,
@@ -1473,6 +2424,7 @@ async function executeSample(
     }
 
     throw new Error(`unsupported step kind during execution: ${step.kind}`);
+  }
   }
 
   await flushEncoder({ waitForCompletion: true });
@@ -1510,6 +2462,16 @@ async function executeSample(
     executionSubmitWaitTotalNs,
     hostCommandOrchestrationTotalNs,
   });
+  const hostUploadPrewarmTotalNs = (
+    residentBufferLoadBreakdown.materializeTotalNs
+    + residentBufferLoadBreakdown.queueWriteTotalNs
+    + residentBufferLoadBreakdown.queueWaitTotalNs
+  );
+  const packageFastPathStats = diffPackageFastPathStats(
+    packageFastPathStatsStart,
+    snapshotPackageFastPathStats(runtime.providerModule),
+  );
+  const packageNativeFastPaths = snapshotPackageNativeFastPaths(runtime.providerModule);
 
   const meta = {
     schemaVersion: 1,
@@ -1533,7 +2495,7 @@ async function executeSample(
     hostInputParseTotalNs: 0,
     hostWorkloadPrepareTotalNs: 0,
     hostExecutorInitTotalNs: runtime.hostExecutorInitTotalNs,
-    hostUploadPrewarmTotalNs: 0,
+    hostUploadPrewarmTotalNs,
     hostKernelPrewarmTotalNs: 0,
     hostCommandOrchestrationTotalNs,
     hostArtifactFinalizeTotalNs: 0,
@@ -1561,6 +2523,13 @@ async function executeSample(
     packageSetupTotalNs: runtime.setupTotalNs,
     packageSetupBreakdownNs: runtime.setupBreakdownNs,
     packageStepBreakdownNs: stepBreakdownNs,
+    packageWriteBreakdown: writeBreakdown,
+    packageResidentBufferLoads: residentBufferLoads,
+    packageResidentBufferLoadBreakdown: residentBufferLoadBreakdown,
+    packageReadbackMode,
+    ...(packageNativeFastPaths ? { packageNativeFastPaths } : {}),
+    ...(packageFastPathStats ? { packageFastPathStats } : {}),
+    ...(readbackCaptures.length > 0 ? { readbackCaptures } : {}),
     ...(determinismResult ? { determinism: determinismResult.determinism } : {}),
     samplesMs: [timingMs],
     stats: {
@@ -1590,7 +2559,13 @@ export async function executePlanFile({
   preparedSession = false,
   debugBoundaries = false,
   stepLimit = 0,
+  commandRepeat = 1,
+  residentBufferLoads = false,
 }) {
+  const normalizedCommandRepeat = normalizePositiveInt(commandRepeat, 'commandRepeat');
+  if (residentBufferLoads && !preparedSession) {
+    throw new Error('--resident-buffer-loads requires --prepared-session');
+  }
   const debugEnabled = (
     debugBoundaries
     || process.env.DOE_NODE_WEBGPU_DEBUG_BOUNDARIES === '1'
@@ -1613,6 +2588,8 @@ export async function executePlanFile({
     preparedSession,
     dryRun,
     stepLimit: effectiveStepLimit,
+    commandRepeat: normalizedCommandRepeat,
+    residentBufferLoads,
   });
   const spec = providerSpec(provider, runtimeHost);
   const hostInputReadStartedAt = performance.now();
@@ -1638,7 +2615,11 @@ export async function executePlanFile({
   if (workloadId && workloadId !== normalizedPlan.workloadId) {
     throw new Error(`workload mismatch: expected ${workloadId}, got ${normalizedPlan.workloadId}`);
   }
+  if (residentBufferLoads) {
+    validateResidentBufferLoadPlan(normalizedPlan);
+  }
   if (dryRun) {
+    const executionSteps = selectedExecutionSteps(normalizedPlan.steps, residentBufferLoads);
     const meta = {
       schemaVersion: 1,
       kind: 'trace_meta',
@@ -1647,12 +2628,12 @@ export async function executePlanFile({
       executionBackend: spec.executionBackend,
       executionProvider: spec.provider,
       executionProviderName: spec.providerName,
-      executionRowCount: normalizedPlan.executionShape.stepCount,
-      executionSuccessCount: normalizedPlan.executionShape.stepCount,
       executionErrorCount: 0,
       executionSkippedCount: 0,
       executionUnsupportedCount: 0,
-      executionDispatchCount: normalizedPlan.executionShape.dispatchCount,
+      executionRowCount: executionSteps.length * normalizedCommandRepeat,
+      executionSuccessCount: executionSteps.length * normalizedCommandRepeat,
+      executionDispatchCount: normalizedPlan.executionShape.dispatchCount * normalizedCommandRepeat,
       executionTotalNs: 0,
       executionSetupTotalNs: 0,
       executionEncodeTotalNs: 0,
@@ -1682,6 +2663,9 @@ export async function executePlanFile({
       packageSetupTotalNs: 0,
       packageSetupBreakdownNs: zeroPackageSetupBreakdown(),
       packageStepBreakdownNs: zeroPackageStepBreakdown(),
+      packageWriteBreakdown: zeroPackageWriteBreakdown(),
+      packageResidentBufferLoads: residentBufferLoads,
+      packageResidentBufferLoadBreakdown: zeroPackageResidentBufferLoadBreakdown(),
       ...(preparedSession ? { workloadUnitWallSource: TRACE_META_PROCESS_WALL_SOURCE } : {}),
       samplesMs: [0],
       stats: {
@@ -1696,33 +2680,42 @@ export async function executePlanFile({
       },
     };
     meta.artifactHash = stableArtifactHash(meta);
-    const rows = normalizedPlan.steps.map((step, index) => ({
-      schemaVersion: 1,
-      kind: 'node_webgpu_step',
-      stepIndex: index,
-      stepId: step.id ?? `step-${index}`,
-      stepKind: step.kind,
-      executionBackend: spec.executionBackend,
-      executionProvider: spec.provider,
-      executionProviderName: spec.providerName,
-      executionDurationNs: 0,
-      executionSetupNs: 0,
-      executionEncodeNs: 0,
-      executionSubmitWaitNs: 0,
-      executionSuccess: true,
-      timingSource: 'doe-execution-total-ns',
-      timingClass: 'operation',
-      workloadId: normalizedPlan.workloadId,
-      planId: normalizedPlan.planId,
-      planHash: normalizedPlan.planHash,
-    }));
+    const rows = [];
+    for (let repeatIndex = 0; repeatIndex < normalizedCommandRepeat; repeatIndex += 1) {
+      for (const [index, step] of normalizedPlan.steps.entries()) {
+        if (residentBufferLoads && isStaticBufferLoadStep(step)) {
+          continue;
+        }
+        rows.push({
+          schemaVersion: 1,
+          kind: 'node_webgpu_step',
+          stepIndex: index,
+          stepId: step.id ?? `step-${index}`,
+          stepKind: step.kind,
+          executionBackend: spec.executionBackend,
+          executionProvider: spec.provider,
+          executionProviderName: spec.providerName,
+          executionDurationNs: 0,
+          executionSetupNs: 0,
+          executionEncodeNs: 0,
+          executionSubmitWaitNs: 0,
+          executionSuccess: true,
+          timingSource: 'doe-execution-total-ns',
+          timingClass: 'operation',
+          workloadId: normalizedPlan.workloadId,
+          planId: normalizedPlan.planId,
+          planHash: normalizedPlan.planHash,
+        });
+      }
+    }
     await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, meta, rows);
     return { meta, rows };
   }
 
   const executionEnvelopeStartedAt = performance.now();
+  const packageExecutionPolicy = await loadPackageExecutionPolicy();
   const unsupportedEntry = lookupUnsupportedPackageExecutionEntry(
-    await loadPackageExecutionPolicy(),
+    packageExecutionPolicy,
     {
       runtimeHost,
       provider: spec.provider,
@@ -1748,6 +2741,7 @@ export async function executePlanFile({
       queueWaitMode,
       queueWaitScope,
       queueWaitSubmitCadence,
+      residentBufferLoads,
     });
     const artifactFinalizeStartedAt = performance.now();
     await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, unsupportedResult.meta, unsupportedResult.rows);
@@ -1777,6 +2771,10 @@ export async function executePlanFile({
       debugLog,
       queueWaitScope,
       queueWaitSubmitCadence,
+      commandRepeat: normalizedCommandRepeat,
+      residentBufferLoads,
+      packageExecutionPolicy,
+      runtimeHost,
     });
     const processWallMs = (performance.now() - executionStartedAt);
     const artifactFinalizeStartedAt = performance.now();
@@ -1839,6 +2837,7 @@ export async function executePlanFile({
       queueWaitMode,
       queueWaitScope,
       queueWaitSubmitCadence,
+      residentBufferLoads,
     });
       const artifactFinalizeStartedAt = performance.now();
       await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, unsupportedResult.meta, unsupportedResult.rows);
@@ -1859,6 +2858,7 @@ export async function executePlanFile({
       queueWaitMode,
       queueWaitScope,
       queueWaitSubmitCadence,
+      residentBufferLoads,
     });
     const artifactFinalizeStartedAt = performance.now();
     await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, errorResult.meta, errorResult.rows);

@@ -53,6 +53,7 @@ gate depend on the bundle and appendix files; do not rename.
 
 ## Runtime / packaging
 
+- [`node-bun-developer-wedge.md`](node-bun-developer-wedge.md) — Node/Bun package GTM and benchmark wedge
 - [`doe-gpu-node-runtime-scope.md`](doe-gpu-node-runtime-scope.md) — Node runtime scope
 - [`package-model.md`](package-model.md) — npm package contract
 - [`apple-metal-runtime-release.md`](apple-metal-runtime-release.md) — Apple Metal runtime bundle

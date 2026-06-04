@@ -3,6 +3,1181 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-01 — Package queue prefix receipts classify measurement stability
+
+The package dispatch-prefix profiler now writes an explicit
+`stabilityDiagnostics` block. Each primary nanosecond summary records dispersion
+ratios, and the top-level diagnostics classify full-plan and dispatch-prefix
+measurements as stable, unstable, or insufficient-sample. This turns noisy
+package rows into receipt-visible evidence instead of relying on ad-hoc median
+inspection before changing runtime policy.
+
+Fresh Node and Bun queue-submit completion receipts were generated with the new
+diagnostics. The Node receipt classifies the measured queue row as stable in the
+current window; the Bun receipt keeps the noisy row visible as unstable, which
+matches the earlier readback-policy non-promotion decision.
+
+Artifacts:
+
+- Node queue stability prefix receipt:
+  `bench/out/apple-metal/20260601T005018Z_package_queue_stability_receipts/node-doe-queue-stability.prefix-profile.json`
+- Bun queue stability prefix receipt:
+  `bench/out/apple-metal/20260601T005018Z_package_queue_stability_receipts/bun-doe-queue-stability.prefix-profile.json`
+- Prefix profile tool:
+  `bench/tools/package_dispatch_prefix_profile.mjs`
+- Prefix profile schema and sample:
+  `config/package-dispatch-prefix-profile.schema.json` and
+  `examples/package-dispatch-prefix-profile.sample.json`
+
+Validation:
+
+- `node --check bench/tools/package_dispatch_prefix_profile.mjs`
+- `python3 -m unittest bench.tests.test_package_dispatch_prefix_profile`
+- `python3 bench/gates/schema_gate.py`
+- Direct schema validation of the generated prefix profiles and package trace
+  metadata under
+  `bench/out/apple-metal/20260601T005018Z_package_queue_stability_receipts/`
+
+## 2026-06-01 — Bun queue readback policy kept on mapAsync after stability probe
+
+The Bun FFI queue-submit completion row was re-tested with the policy
+`mapAsync` path and the forced native map/read/copy/unmap path. A first paired
+probe favored native readback, but the confirmation window contradicted that
+result at the full-plan level. The package policy therefore keeps the Bun FFI
+queue row on `mapAsync` instead of promoting the narrower native-readback win.
+
+The dispatch-prefix profiler now emits dispersion diagnostics on every
+nanosecond summary. This makes noisy promotion candidates visible inside the
+receipt itself instead of requiring an ad-hoc side analysis.
+
+Artifacts:
+
+- Bun queue readback first paired probe:
+  `bench/out/apple-metal/20260601T004218Z_bun_queue_readback_mode_probe/bun-doe-policy.prefix-profile.json`
+  and
+  `bench/out/apple-metal/20260601T004218Z_bun_queue_readback_mode_probe/bun-doe-native-readback.prefix-profile.json`
+- Bun queue readback confirmation probe:
+  `bench/out/apple-metal/20260601T004419Z_bun_queue_policy_native_vs_mapasync_confirm/bun-doe-policy-native.prefix-profile.json`
+  and
+  `bench/out/apple-metal/20260601T004419Z_bun_queue_policy_native_vs_mapasync_confirm/bun-doe-forced-mapasync.prefix-profile.json`
+- Bun queue readback stability-diagnostic receipt with dispersion fields:
+  `bench/out/apple-metal/20260601T004626Z_bun_queue_readback_stability_diagnostics/bun-doe-policy-mapasync.prefix-profile.json`
+  and
+  `bench/out/apple-metal/20260601T004626Z_bun_queue_readback_stability_diagnostics/bun-doe-forced-native.prefix-profile.json`
+- Policy file:
+  `config/package-execution-policy.json`
+- Prefix profile schema:
+  `config/package-dispatch-prefix-profile.schema.json`
+
+Validation:
+
+- `node --check bench/tools/package_dispatch_prefix_profile.mjs`
+- Direct schema validation of the new prefix profiles and package trace
+  metadata under
+  `bench/out/apple-metal/20260601T004626Z_bun_queue_readback_stability_diagnostics/`
+- Direct schema validation of `config/package-execution-policy.json`
+
+## 2026-06-01 — Node and Bun package receipts carry native fast-path identity
+
+The `doe-gpu` Bun condition entry now exports `nativeFastPathInfo()` alongside
+Node, and the Bun FFI provider includes the same native fast-path identity in
+`providerInfo()`. Package executor trace metadata and dispatch-prefix profile
+samples now carry `packageNativeFastPaths`, so Node and Bun receipts can prove
+which queue, dispatch, batch, and readback native symbols were available during
+the measured run.
+
+Fresh Node and Bun queue-submit completion prefix profiles were generated from
+the same package workload. They are diagnostic package receipts, not a broad
+speed claim; use the artifact phase breakdowns and fast-path counters to inspect
+the current per-host path.
+
+Artifacts:
+
+- Node package native fast-path identity prefix receipt:
+  `bench/out/apple-metal/20260601T003753Z_package_native_fastpath_identity/node-doe-queue-nativefast.prefix-profile.json`
+- Bun package native fast-path identity prefix receipt:
+  `bench/out/apple-metal/20260601T003753Z_package_native_fastpath_identity/bun-doe-queue-nativefast.prefix-profile.json`
+- Bun runtime fast-path export:
+  `packages/doe-gpu/src/vendor/webgpu/bun.js`
+- Bun FFI fast-path symbol identity:
+  `packages/doe-gpu/src/vendor/webgpu/bun-ffi.js`
+- Package executor trace metadata:
+  `bench/executors/node-webgpu/executor.js`
+- Trace metadata schema coverage:
+  `config/trace-meta.schema.json`
+
+Validation:
+
+- `node --check packages/doe-gpu/src/vendor/webgpu/bun-ffi.js`
+- `node --check packages/doe-gpu/src/vendor/webgpu/bun.js`
+- `node --check packages/doe-gpu/src/bun.js`
+- `node --check bench/executors/node-webgpu/executor.js`
+- `node --check bench/tools/package_dispatch_prefix_profile.mjs`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_package_dispatch_prefix_profile`
+- `npm run test:smoke`
+- `npm run test:integration`
+- `npm run test:integration:bun`
+- `python3 bench/gates/schema_gate.py`
+- Direct schema validation of the generated package trace metadata under
+  `bench/out/apple-metal/20260601T003753Z_package_native_fastpath_identity/`
+
+## 2026-05-31 — Node package native fast-path diagnostics identify the real queue bottleneck
+
+The `doe-gpu` package surface now exposes native fast-path availability through
+`nativeFastPathInfo()` and includes the same data in `providerInfo()`. This
+distinguishes missing native symbols from a path that is available but not a
+completion win, which matters for the Node/Bun developer wedge and for receipt
+debugging on source-built addons.
+
+The latest Node queue-submit receipts show the current fast path remains native
+dispatch-copy command-buffer construction followed by native readback
+flush-and-map. A submit-batched dispatch-copy completion experiment and a Metal
+shared-event wait experiment were both measured and not promoted; the artifacts
+keep the rejected candidates separate from the current path. The named
+bottleneck remains the readback queue-completion phase in the current receipt.
+
+Artifacts:
+
+- Current rebuilt native-command-buffer receipt:
+  `bench/out/apple-metal/20260531T_node_package_native_cb_rebuilt_current/node-doe-queue-native-cb.prefix-profile.json`
+- Submit-batched completion experiment:
+  `bench/out/apple-metal/20260531T_node_package_dispatch_flush_postflush_current/node-doe-queue-dispatch-flush.prefix-profile.json`
+- Metal shared-event wait experiment:
+  `bench/out/apple-metal/20260531T_node_package_shared_event_wait_current/node-doe-queue-shared-event-wait.prefix-profile.json`
+- Native fast-path package export:
+  `packages/doe-gpu/src/vendor/webgpu/index.js`
+
+Validation:
+
+- `npm run build:addon`
+- `zig build dropin -Doptimize=ReleaseFast`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_package_dispatch_prefix_profile`
+
+## 2026-05-31 — Node package fast-path counters now flow into prefix receipts
+
+The Node `doe-gpu` package surface now exports `fastPathStats`, matching the
+Bun package visibility used by package receipts. The counters cover native
+command-buffer construction, combined flush-and-map readback, and native
+dispatch-flush evidence when the submit breakdown proves the completed flush.
+The prefix profiler now carries `packageFastPathStats` and
+`packageReadbackMode` into each sample, so Node package artifacts can identify
+which runtime path actually fired without scraping trace metadata sidecars.
+
+Fresh Node queue-submit/readback prefix receipts were generated for the default
+native readback path and the forced `mapAsync` probe. They confirm that the
+Node full-plan path is using native command-buffer construction plus
+flush-and-map readback; the next package bottleneck remains the readback
+completion phase named in the artifact phase breakdowns.
+
+Artifacts:
+
+- Node package default readback fast-path prefix receipt:
+  `bench/out/apple-metal/20260531T_node_package_fastpath_stats_current/node-doe-queue-fastpath.prefix-profile.json`
+- Node package forced-`mapAsync` fast-path prefix receipt:
+  `bench/out/apple-metal/20260531T_node_package_fastpath_stats_mapasync/node-doe-queue-fastpath-mapasync.prefix-profile.json`
+- Updated prefix profile schema:
+  `config/package-dispatch-prefix-profile.schema.json`
+
+Validation:
+
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_package_dispatch_prefix_profile`
+- `python3 bench/gates/schema_gate.py`
+
+## 2026-05-31 — Node package dispatch-prefix profile now ranks terminal residuals
+
+The package dispatch-prefix profiler now emits readback summaries, adjacent
+prefix delta rankings, and full-plan phase residual rankings. The explicit Node
+resident decode lane has fresh Doe-backed, forced-`mapAsync` Doe-backed, and
+Dawn-backed `node-webgpu` prefix profiles. The diagnostic window confirms the
+terminal readback phase is the named residual to optimize next; the forced
+`mapAsync` profile remains diagnostic and does not promote a Node resident
+decode readback policy because the earlier no-env policy verification did not
+hold.
+
+Artifacts:
+
+- Prefix-profile schema and sample:
+  `config/package-dispatch-prefix-profile.schema.json` and
+  `examples/package-dispatch-prefix-profile.sample.json`
+- Doe-backed Node resident decode prefix profile:
+  `bench/out/apple-metal/20260531T_node_package_dispatch_prefix_profile/node-doe.prefix-profile.json`
+- Forced-`mapAsync` Doe-backed Node resident decode prefix profile:
+  `bench/out/apple-metal/20260531T_node_package_dispatch_prefix_profile/node-doe-mapasync.prefix-profile.json`
+- Dawn-backed `node-webgpu` resident decode prefix profile:
+  `bench/out/apple-metal/20260531T_node_package_dispatch_prefix_profile/node-webgpu.prefix-profile.json`
+
+## 2026-05-31 — Node package resident decode has explicit Doe-vs-Dawn config
+
+The Apple Metal resident decode package lane now has an explicit Node package
+config for Doe-backed WebGPU vs Dawn-backed `node-webgpu`, separate from the
+native-direct Node lane. The default no-env run is comparable but diagnostic;
+Doe's selected timing is still gated by terminal readback and submit wrapper
+work. A forced `mapAsync` readback probe was also run against the same
+comparison receipt, but the no-env policy verification contradicted that probe,
+so no new Node decode readback policy was promoted.
+
+Artifacts:
+
+- Explicit Node package resident decode config:
+  `bench/native-compare/compare.config.apple.metal.gemma270m.node-package.decode.resident.warm.ir.json`
+- Default explicit Node package resident decode diagnostic:
+  `bench/out/apple-metal/20260531T_node_package_explicit_config/node-package-explicit.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_node_package_explicit_config/node-package-explicit.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_node_package_explicit_config/node-package-explicit.phase-delta.json`
+- Forced `mapAsync` probe:
+  `bench/out/apple-metal/20260531T_node_package_explicit_mapasync/node-package-mapasync.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_node_package_explicit_mapasync/node-package-mapasync.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_node_package_explicit_mapasync/node-package-mapasync.phase-delta.json`
+- No-env policy verification that blocked promotion:
+  `bench/out/apple-metal/20260531T_node_package_policy_mapasync_decode/node-package-policy-mapasync.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_node_package_policy_mapasync_decode/node-package-policy-mapasync.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_node_package_policy_mapasync_decode/node-package-policy-mapasync.phase-delta.json`
+
+## 2026-05-31 — Bun FFI prepared package pack has claimable symmetric coverage receipts
+
+The strict compare timing-plausibility obligation now distinguishes asymmetric
+operation-wall undercoverage from symmetric low operation coverage. Symmetric
+low coverage stays visible in the obligation details and remains comparable;
+one-sided or high-asymmetry low coverage still blocks strict comparison.
+
+The refreshed Bun FFI prepared package-developer pack is a local claim for the
+named package workloads only. It does not broaden the resident decode claim or
+publish a fastest-everywhere runtime claim.
+
+The package execution policy now selects `mapAsync` readback for the Bun FFI
+prepared package-developer workloads covered by the policy evidence. The
+canonical no-env policy rerun is comparable and claimable for that named pack,
+and the Doe-side run receipts record the selected readback mode directly in
+trace metadata.
+
+The same readback policy is now promoted for the Node `doe-gpu` package path
+on the prepared package-developer pack. The pre-policy Node package receipt
+remains diagnostic because the queue-submit micro workload loses on selected
+timing; the no-env policy rerun is comparable and claimable, with Doe-side
+receipts recording `mapAsync`.
+
+The Bun FFI submit path now keeps native submit phase breakdown behind the
+`DOE_WEBGPU_SUBMIT_BREAKDOWN=1` diagnostic flag instead of taking breakdown
+symbols on the default package path. The default path still records wrapper
+and addon-call submit timing, while diagnostic runs can opt into native replay,
+submit, flush, and wait attribution. Bun FFI shader creation also caches encoded
+WGSL bytes for repeated source strings before entering the native flat create
+helper.
+
+The public Bun entry now prefers the Bun FFI backend on macOS and Linux when
+the native library loads, with `DOE_BUN_WEBGPU_BACKEND=full` available to force
+the full path. Public Bun also re-exports FFI fast-path counters so install-path
+receipts can show dispatch/readback fast-path use. The current public Bun
+prepared package-developer reruns are diagnostic, not promoted claims, because
+the small queue/readback rows still need stabilization on this lane.
+
+The public-vs-direct Bun FFI vector diagnostic now has a swapped-order
+order-sensitivity receipt. That receipt makes the current intra-Doe public
+wrapper comparison diagnostic-only until the order-sensitive phases are
+controlled; stable package-vs-competitor claims still need the regular compare,
+claim, and phase attribution artifacts.
+
+The public Bun readback policy is now workload-scoped from install-path
+receipts: the buffer upload/readback row stays on `mapAsync`, while the image,
+queue-submit, and vector rows use native map/read/copy/unmap on this Apple
+Metal lane. The same-window public-vs-`bun-webgpu` rerun remains diagnostic,
+so this is an install-path optimization policy update rather than a promoted
+public Bun speed claim.
+
+The resident decode diagnostics also now reduce repeated small readback digest
+work across samples, avoid duplicate tiny-readback decode/object-filtering in
+capture summaries, and emit `packageFastPathStats` so submit-path receipts show
+which Bun FFI fast paths fired. The follow-up resident decode reruns are
+diagnostic because selected timing remains dominated by submit/readback wait
+variance in those samples.
+
+Artifacts:
+
+- Bun FFI prepared package-developer digest claim:
+  `bench/out/apple-metal/20260531T_after_digest_cache/package-developer.bun-ffi.prepared.digest.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_after_digest_cache/package-developer.bun-ffi.prepared.digest.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_after_digest_cache/package-developer.bun-ffi.prepared.digest.phase-delta.json`
+- Bun FFI prepared package-developer mapAsync policy claim:
+  `bench/out/apple-metal/20260531T_policy_readback_mapasync/package-developer.bun-ffi.prepared.policy-mapasync.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_policy_readback_mapasync/package-developer.bun-ffi.prepared.policy-mapasync.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_policy_readback_mapasync/package-developer.bun-ffi.prepared.policy-mapasync.phase-delta.json`
+- Bun FFI prepared package-developer submit-breakdown opt-out claim:
+  `bench/out/apple-metal/20260531T_submit_breakdown_optout/package-developer.bun-ffi.prepared.submit-fast.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_submit_breakdown_optout/package-developer.bun-ffi.prepared.submit-fast.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_submit_breakdown_optout/package-developer.bun-ffi.prepared.submit-fast.phase-delta.json`
+- Bun FFI submit-breakdown off/on diagnostic:
+  `bench/out/apple-metal/20260531T_submit_breakdown_ab/package-developer.bun-ffi.prepared.breakdown-off-vs-on.phase-delta.json`
+- Public Bun prepared package path before FFI default:
+  `bench/out/apple-metal/20260531T_bun_public_package_current/package-developer.bun.prepared.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_bun_public_package_current/package-developer.bun.prepared.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_bun_public_package_current/package-developer.bun.prepared.phase-delta.json`
+- Public Bun prepared FFI-default diagnostics:
+  `bench/out/apple-metal/20260531T_bun_public_ffi_default/package-developer.bun.prepared.ffi-default.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_bun_public_ffi_default/package-developer.bun.prepared.ffi-default.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_bun_public_ffi_default/package-developer.bun.prepared.ffi-default.phase-delta.json`
+- Public Bun FFI fast-path counter smoke:
+  `bench/out/apple-metal/20260531T_bun_public_fastpath_stats/20260531T132859Z/package-queue.public-ffi.baseline.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-package_queue_submit_completion-20260531T132859Z.run.json`
+- Public Bun vs direct Bun FFI order-sensitivity diagnostic:
+  `bench/out/apple-metal/20260531T_bun_public_vs_ffi_order_sensitivity/package-vector.public-vs-ffi.order-sensitivity.json`
+- Public Bun readback mode A/B and same-window competitor diagnostics:
+  `bench/out/apple-metal/20260531T_public_readback_mode_ab/public-bun.mapasync-vs-native.phase-delta.json`,
+  `bench/out/apple-metal/20260531T_public_readback_mode_ab/public-bun.mapasync-vs-bun-webgpu.compare.json`,
+  `bench/out/apple-metal/20260531T_public_readback_mode_ab/public-bun.mapasync-vs-bun-webgpu.claim.json`,
+  `bench/out/apple-metal/20260531T_public_readback_mode_ab/public-bun.mapasync-vs-bun-webgpu.phase-delta.json`,
+  `bench/out/apple-metal/20260531T_public_readback_mode_ab/public-bun.native-vs-bun-webgpu.compare.json`,
+  `bench/out/apple-metal/20260531T_public_readback_mode_ab/public-bun.native-vs-bun-webgpu.claim.json`,
+  and
+  `bench/out/apple-metal/20260531T_public_readback_mode_ab/public-bun.native-vs-bun-webgpu.phase-delta.json`
+- Public Bun readback policy split smoke receipts:
+  `bench/out/apple-metal/20260531T_public_readback_policy_split/queue.workspace/run-artifacts/doe/doe-package_queue_submit_completion-20260531T135402Z.run.json`
+  and
+  `bench/out/apple-metal/20260531T_public_readback_policy_split/buffer.workspace/run-artifacts/doe/doe-package_buffer_upload_readback_1mb-20260531T135402Z.run.json`
+- Public Bun no-env policy split diagnostic:
+  `bench/out/apple-metal/20260531T_public_policy_split_compare/public-bun.policy-split-vs-bun-webgpu.compare.json`,
+  `bench/out/apple-metal/20260531T_public_policy_split_compare/public-bun.policy-split-vs-bun-webgpu.claim.json`,
+  and
+  `bench/out/apple-metal/20260531T_public_policy_split_compare/public-bun.policy-split-vs-bun-webgpu.phase-delta.json`
+- Node package prepared pre-policy diagnostic:
+  `bench/out/apple-metal/20260531T_node_package_prepared_current/package-developer.node.prepared.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_node_package_prepared_current/package-developer.node.prepared.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_node_package_prepared_current/package-developer.node.prepared.phase-delta.json`
+- Node package prepared mapAsync policy claim:
+  `bench/out/apple-metal/20260531T_node_package_policy_mapasync/package-developer.node.prepared.policy-mapasync.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_node_package_policy_mapasync/package-developer.node.prepared.policy-mapasync.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_node_package_policy_mapasync/package-developer.node.prepared.policy-mapasync.phase-delta.json`
+- Bun FFI prepared package-developer mapAsync policy baseline receipts:
+  `bench/out/apple-metal/20260531T_policy_readback_mapasync/20260531T130209Z/package-developer.bun-ffi.prepared.policy-mapasync.baseline.workspace/run-artifacts/doe_gpu_bun_package_ffi_prepared/doe_gpu_bun_package_ffi_prepared-package_buffer_upload_readback_1mb-20260531T130209Z.run.json`,
+  `bench/out/apple-metal/20260531T_policy_readback_mapasync/20260531T130209Z/package-developer.bun-ffi.prepared.policy-mapasync.baseline.workspace/run-artifacts/doe_gpu_bun_package_ffi_prepared/doe_gpu_bun_package_ffi_prepared-package_image_rgba_invert_1024-20260531T130209Z.run.json`,
+  `bench/out/apple-metal/20260531T_policy_readback_mapasync/20260531T130209Z/package-developer.bun-ffi.prepared.policy-mapasync.baseline.workspace/run-artifacts/doe_gpu_bun_package_ffi_prepared/doe_gpu_bun_package_ffi_prepared-package_queue_submit_completion-20260531T130209Z.run.json`,
+  and
+  `bench/out/apple-metal/20260531T_policy_readback_mapasync/20260531T130209Z/package-developer.bun-ffi.prepared.policy-mapasync.baseline.workspace/run-artifacts/doe_gpu_bun_package_ffi_prepared/doe_gpu_bun_package_ffi_prepared-package_vector_scale_add_262k-20260531T130209Z.run.json`
+- Bun FFI resident decode process digest-cache diagnostic:
+  `bench/out/apple-metal/20260531T_after_process_digest_cache/gemma270m.bun-ffi.decode.resident.process-digest.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_after_process_digest_cache/gemma270m.bun-ffi.decode.resident.process-digest.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_after_process_digest_cache/gemma270m.bun-ffi.decode.resident.process-digest.phase-delta.json`
+- Bun FFI resident decode capture-object diagnostic:
+  `bench/out/apple-metal/20260531T_after_capture_object_fast/gemma270m.bun-ffi.decode.resident.capture-object.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_after_capture_object_fast/gemma270m.bun-ffi.decode.resident.capture-object.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_after_capture_object_fast/gemma270m.bun-ffi.decode.resident.capture-object.phase-delta.json`
+- Bun FFI resident fast-path counter smoke:
+  `bench/out/apple-metal/20260531T_after_fastpath_stats/20260531T125046Z/gemma270m.bun-ffi.decode.resident.fastpath-stats.baseline.workspace/run-artifacts/doe_gpu_bun_package_ffi_prepared_resident/doe_gpu_bun_package_ffi_prepared_resident-inference_gemma3_270m_decode_1tok-20260531T125046Z.run.json`
+
+## 2026-05-31 — Bun FFI resident decode receipts split readback capture cost
+
+Package trace-meta now records `readbackCaptureTotalNs` inside
+`packageStepBreakdownNs`, and the package phase-delta tool groups it under
+readback harness cost. The executor also caches exact small readback digests
+inside a timed sample so repeated identical captures still emit per-repeat
+receipt entries without rehashing the same bytes every cycle.
+
+The refreshed Bun FFI resident decode run is a local claim for the exact
+Gemma 270M prepared resident decode contract only. It is not a blanket
+Bun/Node package claim, and the phase report still keeps submit/readback
+internals visible as the next tuning target.
+
+Artifacts:
+
+- Bun FFI resident decode readback-capture diagnostic before digest caching:
+  `bench/out/apple-metal/20260531T_after_readback_capture/gemma270m.bun-ffi.decode.resident.capture.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_after_readback_capture/gemma270m.bun-ffi.decode.resident.capture.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_after_readback_capture/gemma270m.bun-ffi.decode.resident.capture.phase-delta.json`
+- Bun FFI resident decode digest-cache claim:
+  `bench/out/apple-metal/20260531T_after_digest_cache/gemma270m.bun-ffi.decode.resident.digest.compare.json`
+  and
+  `bench/out/apple-metal/20260531T_after_digest_cache/gemma270m.bun-ffi.decode.resident.digest.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T_after_digest_cache/gemma270m.bun-ffi.decode.resident.digest.phase-delta.json`
+
+## 2026-05-31 — Bun FFI resident decode lane has explicit batch policy and pointer-list write ABI
+
+The Bun FFI package lane now has a resident decode compare config,
+`bench/native-compare/compare.config.apple.metal.gemma270m.bun-ffi.decode.resident.warm.ir.json`,
+which compares `doe-gpu/bun-ffi` against Bun WebGPU without changing the
+public Bun package default.
+
+The drop-in dylib exports `doeNativeQueueWriteBufferBatchDataPtrs` alongside
+the compact contiguous-data batch ABI. Bun FFI uses the pointer-list ABI when
+available so native batching can avoid copying each batch into a temporary
+payload buffer. The package executor also reads `config/package-execution-policy.json`
+for write-batching policy; the current Bun FFI policy keeps small resident
+decode write groups on direct writes and reserves the hidden batch method for
+larger consecutive write groups.
+
+Current resident decode evidence is diagnostic, not a promoted speed claim:
+the trace shows correct token readback and explicit write-batching attribution,
+while selected timing is still gated by submit/readback phases.
+
+Artifacts:
+
+- Bun FFI compact-batch diagnostic:
+  `bench/out/apple-metal/20260531T114620Z/gemma270m.bun-ffi.decode.resident.warm.compact-batch.compare.json`
+  and
+  `bench/out/apple-metal/20260531T114620Z/gemma270m.bun-ffi.decode.resident.warm.compact-batch.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T114620Z/gemma270m.bun-ffi.decode.resident.warm.compact-batch.phase-delta.json`
+- Bun FFI pointer-list batch diagnostic:
+  `bench/out/apple-metal/20260531T115148Z/gemma270m.bun-ffi.decode.resident.warm.ptr-batch.compare.json`
+  and
+  `bench/out/apple-metal/20260531T115148Z/gemma270m.bun-ffi.decode.resident.warm.ptr-batch.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T115148Z/gemma270m.bun-ffi.decode.resident.warm.ptr-batch.phase-delta.json`
+- Bun FFI policy-gated resident decode diagnostic:
+  `bench/out/apple-metal/20260531T115907Z/gemma270m.bun-ffi.decode.resident.warm.submit-array.compare.json`
+  and
+  `bench/out/apple-metal/20260531T115907Z/gemma270m.bun-ffi.decode.resident.warm.submit-array.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T115907Z/gemma270m.bun-ffi.decode.resident.warm.submit-array.phase-delta.json`
+- Bun FFI prepared package-developer claim:
+  `bench/out/apple-metal/20260531T120415Z/package-developer.bun-ffi.prepared.policy.compare.json`
+  and
+  `bench/out/apple-metal/20260531T120415Z/package-developer.bun-ffi.prepared.policy.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T120415Z/package-developer.bun-ffi.prepared.policy.phase-delta.json`
+
+## 2026-05-31 — Browser layered score shows paired mode scores and texture phase timing
+
+The browser layered score sidecar now reports paired baseline/comparison mode
+scores plus comparison percent delta instead of presenting a single
+baseline-index number as the headline. The score sidecar keeps the legacy
+relative `score` field for compatibility, but the CLI and schema expose the
+paired mode fields for row, category, row-weighted overall, and
+category-balanced overall summaries.
+
+Focused browser diagnostics can carry a category `workloadFilter`; the checker
+validates isolated category reports, rejects rows outside the selected filter,
+and accepts cross-category reports that combine L1 browser API rows with L2
+visual page rows. Texture L1 scenarios now emit sampled `textureMs` plus
+phase-level timing summaries so the score can measure the texture path
+separately from adapter/device startup while preserving total `elapsedMs` as
+evidence.
+
+The browser lane now has separate local wrappers for stock Chrome vs Fawn
+consumer diagnostics and same-Fawn-binary Dawn vs Doe runtime isolation:
+`browser/chromium/scripts/run-consumer-bench.sh` and
+`browser/chromium/scripts/run-fawn-runtime-bench.sh`.
+
+Artifacts:
+
+- Focused texture/visual diagnostic and score:
+  `browser/chromium/artifacts/20260531T114730Z/chrome-vs-fawn.browser-layered.superset.diagnostic.json`
+  and
+  `browser/chromium/artifacts/20260531T114730Z/chrome-vs-fawn.browser-layered.superset.score.json`
+
+## 2026-05-31 — Bun FFI package lane split from public Bun default
+
+The Bun package benchmark runner now has an explicit diagnostic provider id,
+`doe-ffi`, which imports `packages/doe-gpu/src/vendor/webgpu/bun-ffi.js`
+directly. Registry executors `doe_bun_package_ffi` and
+`doe_bun_package_ffi_prepared` let the FFI lane run through normal
+`bench/cli.py run`, compare, claim, and phase-delta flows. This section records
+the split before the later public Bun default moved to FFI on supported native
+hosts.
+
+The drop-in dylib now exports
+`doeNativeCreateComputeDispatchCopyCommandBufferOneBindGroup` for the common
+Bun FFI shape where a lazy dispatch+copy command buffer carries a single bind
+group. The JS FFI path uses that helper before falling back to the generic
+bind-group pointer-array helper.
+
+The Bun FFI setup path also has flat native helpers for buffer creation, WGSL
+shader module creation, main-entry compute pipeline creation, buffer-only bind
+group layout creation, buffer-only bind group creation, and single-layout
+pipeline layout creation. Bun FFI now uses structured create errors instead of
+running native shader preflight on every `GPUDevice.createShaderModule` call.
+The native shader path now keeps process-local WGSL shader-module metadata for
+long-lived Bun/Node processes, and the buffer-only bind group layout fast path
+stores its small layout entries inline in the native layout object.
+The shared package WebGPU surface now also bypasses generic bind-group layout
+and bind-group normalization for small buffer-only descriptor shapes when the
+backend exposes flat helpers. Bun FFI uses that shared fast path and now keeps
+lazy dispatch+copy command buffers batched through `finish()` so `queue.submit()`
+can use the native direct-flush path. Bun FFI also prefers Doe's native
+`queueWriteBuffer` entrypoint when the symbol is available, keeping package
+uploads inside the Doe runtime path.
+The flat readback helper now performs queue synchronization, deferred copy or
+resolve draining, map/copy/unmap, and breakdown capture inside one native call.
+The shared-memory direct-copy experiment remains diagnostic-only and is not part
+of the current package path.
+Bun FFI direct single-dispatch and batch-dispatch submit now have native phase
+attribution for command replay, command submit, queue flush, wait, and
+deferred-copy work.
+Direct dispatch+copy submission keeps queue completion pending until
+`onSubmittedWorkDone`, map, or readback drains the queue, so package receipts
+attribute completion waits to the explicit wait/readback phase instead of
+silently completing at submit.
+The `gpu.compute` helper now relies on the package map/readback drain and uses
+the native map-read-copy-unmap fast path when available, avoiding an extra
+helper-level queue wait before readback.
+
+Artifacts:
+
+- Public macOS Bun package cold:
+  `bench/out/apple-metal/20260531T000734Z/apple.metal.package-developer.bun.public.macos-full.compare.json`
+  and
+  `bench/out/apple-metal/20260531T000734Z/apple.metal.package-developer.bun.public.macos-full.claim.json`
+- Public macOS Bun package async-submit cold:
+  `bench/out/apple-metal/20260531T020936Z/apple.metal.package-developer.bun.public-async-submit.compare.json`
+  and
+  `bench/out/apple-metal/20260531T020936Z/apple.metal.package-developer.bun.public-async-submit.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T020936Z/apple.metal.package-developer.bun.public-async-submit.phase-delta.json`
+- Public macOS Bun package prepared:
+  `bench/out/apple-metal/20260531T000819Z/apple.metal.package-developer.bun.public.macos-full.prepared.compare.json`
+  and
+  `bench/out/apple-metal/20260531T000819Z/apple.metal.package-developer.bun.public.macos-full.prepared.claim.json`
+- Bun FFI one-bind-group cold diagnostics:
+  `bench/out/apple-metal/20260531T001955Z/apple.metal.package-developer.bun.ffi-one-bg.claim-floor.compare.json`
+  and
+  `bench/out/apple-metal/20260531T001955Z/apple.metal.package-developer.bun.ffi-one-bg.claim-floor.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T001955Z/apple.metal.package-developer.bun.ffi-one-bg.claim-floor.phase-delta.json`
+- Bun FFI one-bind-group prepared:
+  `bench/out/apple-metal/20260531T002122Z/apple.metal.package-developer.bun.ffi-one-bg.prepared.compare.json`
+  and
+  `bench/out/apple-metal/20260531T002122Z/apple.metal.package-developer.bun.ffi-one-bg.prepared.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T002122Z/apple.metal.package-developer.bun.ffi-one-bg.prepared.phase-delta.json`
+- Bun FFI flat setup with create-preflight removed:
+  `bench/out/apple-metal/20260531T004030Z/apple.metal.package-developer.bun.ffi-flat-setup-no-preflight.compare.json`
+  and
+  `bench/out/apple-metal/20260531T004030Z/apple.metal.package-developer.bun.ffi-flat-setup-no-preflight.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T004030Z/apple.metal.package-developer.bun.ffi-flat-setup-no-preflight.phase-delta.json`
+- Bun FFI inline-layout cold package surface:
+  `bench/out/apple-metal/20260531T005759Z/apple.metal.package-developer.bun.ffi-inline-layout.compare.json`
+  and
+  `bench/out/apple-metal/20260531T005759Z/apple.metal.package-developer.bun.ffi-inline-layout.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T005759Z/apple.metal.package-developer.bun.ffi-inline-layout.phase-delta.json`
+- Bun FFI direct-flush cold package surface:
+  `bench/out/apple-metal/20260531T011131Z/apple.metal.package-developer.bun.ffi-direct-flush.compare.json`
+  and
+  `bench/out/apple-metal/20260531T011131Z/apple.metal.package-developer.bun.ffi-direct-flush.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T011131Z/apple.metal.package-developer.bun.ffi-direct-flush.phase-delta.json`
+- Bun FFI direct-flush prepared package surface:
+  `bench/out/apple-metal/20260531T011712Z/apple.metal.package-developer.bun.ffi-direct-flush.prepared.compare.json`
+  and
+  `bench/out/apple-metal/20260531T011712Z/apple.metal.package-developer.bun.ffi-direct-flush.prepared.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T011712Z/apple.metal.package-developer.bun.ffi-direct-flush.prepared.phase-delta.json`
+- Bun FFI async-submit prepared package surface:
+  `bench/out/apple-metal/20260531T021207Z/apple.metal.package-developer.bun.ffi-async-submit.prepared.compare.json`
+  and
+  `bench/out/apple-metal/20260531T021207Z/apple.metal.package-developer.bun.ffi-async-submit.prepared.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T021207Z/apple.metal.package-developer.bun.ffi-async-submit.prepared.phase-delta.json`
+- Bun FFI batch-attributed prepared package surface:
+  `bench/out/apple-metal/20260531T021713Z/apple.metal.package-developer.bun.ffi-batch-breakdown.prepared.compare.json`
+  and
+  `bench/out/apple-metal/20260531T021713Z/apple.metal.package-developer.bun.ffi-batch-breakdown.prepared.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T021713Z/apple.metal.package-developer.bun.ffi-batch-breakdown.prepared.phase-delta.json`
+- Bun FFI direct-write current cold package surface:
+  `bench/out/apple-metal/20260531T014904Z/apple.metal.package-developer.bun.ffi-direct-write-rerun.compare.json`
+  and
+  `bench/out/apple-metal/20260531T014904Z/apple.metal.package-developer.bun.ffi-direct-write-rerun.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T014904Z/apple.metal.package-developer.bun.ffi-direct-write-rerun.phase-delta.json`
+- Bun FFI batch-attributed cold package surface:
+  `bench/out/apple-metal/20260531T021812Z/apple.metal.package-developer.bun.ffi-batch-breakdown.compare.json`
+  and
+  `bench/out/apple-metal/20260531T021812Z/apple.metal.package-developer.bun.ffi-batch-breakdown.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T021812Z/apple.metal.package-developer.bun.ffi-batch-breakdown.phase-delta.json`
+- Bun FFI current vector isolation:
+  `bench/out/apple-metal/20260531T014835Z/apple.metal.package-developer.bun.ffi-current-vector.compare.json`
+  and
+  `bench/out/apple-metal/20260531T014835Z/apple.metal.package-developer.bun.ffi-current-vector.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T014835Z/apple.metal.package-developer.bun.ffi-current-vector.phase-delta.json`
+- Bun FFI current image isolation after reverting the one-bind-group direct-flush
+  experiment:
+  `bench/out/apple-metal/20260531T015351Z/apple.metal.package-developer.bun.ffi-reverted-image.compare.json`
+  and
+  `bench/out/apple-metal/20260531T015351Z/apple.metal.package-developer.bun.ffi-reverted-image.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T015351Z/apple.metal.package-developer.bun.ffi-reverted-image.phase-delta.json`
+- Bun FFI private Metal buffer diagnostic:
+  `bench/out/apple-metal/20260531T014806Z/apple.metal.package-developer.bun.ffi-private-vector.compare.json`
+  and
+  `bench/out/apple-metal/20260531T014806Z/apple.metal.package-developer.bun.ffi-private-vector.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T014806Z/apple.metal.package-developer.bun.ffi-private-vector.phase-delta.json`
+- Node native-direct refreshed cold package surface:
+  `bench/out/apple-metal/20260531T011812Z/apple.metal.package-developer.node.native-direct.current-2.compare.json`
+  and
+  `bench/out/apple-metal/20260531T011812Z/apple.metal.package-developer.node.native-direct.current-2.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T011812Z/apple.metal.package-developer.node.native-direct.current-2.phase-delta.json`
+- Node native-direct async-submit cold package surface:
+  `bench/out/apple-metal/20260531T021008Z/apple.metal.package-developer.node.native-direct-async-submit.compare.json`
+  and
+  `bench/out/apple-metal/20260531T021008Z/apple.metal.package-developer.node.native-direct-async-submit.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T021008Z/apple.metal.package-developer.node.native-direct-async-submit.phase-delta.json`
+- Bun prepared Gemma 270M package decode async-submit:
+  `bench/out/apple-metal/20260531T021923Z/gemma270m.bun-package.decode.warm.async-submit.compare.json`
+  and
+  `bench/out/apple-metal/20260531T021923Z/gemma270m.bun-package.decode.warm.async-submit.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T021923Z/gemma270m.bun-package.decode.warm.async-submit.phase-delta.json`
+- Node native-direct prepared Gemma 270M decode async-submit:
+  `bench/out/apple-metal/20260531T022005Z/gemma270m.node.direct.decode.warm.async-submit.compare.json`
+  and
+  `bench/out/apple-metal/20260531T022005Z/gemma270m.node.direct.decode.warm.async-submit.claim.json`
+  with phase attribution at
+  `bench/out/apple-metal/20260531T022005Z/gemma270m.node.direct.decode.warm.async-submit.phase-delta.json`
+
+Verified:
+
+- `node --check bench/executors/run-bun-webgpu-plan.js && node --check bench/executors/node-webgpu/executor.js && node --check packages/doe-gpu/src/vendor/doe-namespace.js && node --check packages/doe-gpu/src/vendor/webgpu/shared/full-surface.js && node --check packages/doe-gpu/src/vendor/webgpu/index.js && node --check packages/doe-gpu/src/vendor/webgpu/bun-ffi.js && node --check packages/doe-gpu/src/vendor/webgpu/bun.js`
+- `python3 -m unittest bench.tests.test_bun_webgpu_executor bench.tests.test_executor_registry bench.tests.test_package_dispatch_prefix_profile bench.tests.test_package_phase_delta`
+- `zig build test-core`
+- `zig build dropin -Doptimize=ReleaseFast`
+- `npm --prefix packages/doe-gpu run stage:prebuilds`
+- `npm --prefix packages/doe-gpu run test:integration`
+- `npm --prefix packages/doe-gpu run test:integration:bun`
+
+## 2026-05-30 — Fawn visual pages are browser workflow diagnostics
+
+The browser layered workflow manifest now includes optional
+`fawn_visual_resource` rows for the checked-in Fawn HTML demos. The layered
+Playwright runner can navigate those pages through the local browser benchmark
+server, wait for their own frame telemetry, sample animation-frame cadence, and
+emit `avgFrameMs`, `p95FrameMs`, `avgFps`, and frame-count metrics as L2
+diagnostic rows. Layered reports and score rows now carry the visual resource
+path plus SHA-256, so a visual score remains bound to the exact checked-in page
+that ran.
+
+The visual rows remain optional and `l2_diagnostic_only`; they do not widen L0
+parity claims. Workflow governance now requires visual resources to stay under
+`browser/chromium/resources/*.html`, verifies that the files exist, and requires
+the frame telemetry metric set. The browser layered score includes visual rows
+under the `visual` category only when both Dawn and forced Doe complete the page
+workload.
+
+## 2026-05-30 — Chrome-vs-Fawn browser score sidecar
+
+The browser layered superset runner now has a diagnostic scoring sidecar for
+side-by-side stock Chrome versus Fawn Chromium runs. The scorer consumes the
+existing `browser-layered-diagnostic` report, keeps the output
+`claimStatus=diagnostic`, and emits separate paired scores for stock Chrome and
+Fawn plus comparison percent delta. It also keeps both row-weighted and
+category-balanced summaries from shared positive timing metrics. The macOS
+wrapper `browser/chromium/scripts/run-consumer-bench.sh` resolves stock Chrome,
+the host Fawn Chromium binary, and the full Doe WebGPU dylib before running the
+layered workload matrix with explicit iteration knobs.
+
+The existing Fawn demo HTML files remain manual visual surfaces; the score uses
+the controlled Playwright layered workloads so the artifacts keep runtime mode,
+browser path, metric, category, and exclusion evidence.
+
+The score artifact is now part of browser artifact identity coverage. The
+schema requires workload identity, browser environment evidence, baseline and
+comparison executable/runtime hashes, shader compiler identity, adapter
+identity, and the source mode-result trace hashes from the layered report.
+
+The browser layered runner and superset checker now support explicit
+category-focused diagnostic runs. Focused reports record `workloadFilter`
+before/after row counts, stay diagnostic, and are checked only against selected
+categories so weak surfaces can be tuned without running the full browser
+matrix. Score sidecars copy the same filter, preventing a focused score from
+looking like full-superset evidence.
+
+## 2026-05-30 — Chromium smoke covers render bundles and indirect draw
+
+The browser smoke harness now treats render bundle replay, render-pass indirect
+draw, and timestamp query resolve as strict smoke checks. The source-binary Dawn
+and forced-Doe smoke run linked from the Chromium integration overlay exercises
+`createRenderBundleEncoder`/`executeBundles`, `drawIndirect`, and
+`timestampWrites`/`resolveQuerySet` before the mini timing probes run.
+
+The browser smoke schema, sample artifact, and Python smoke validator now
+require the strict smoke rows enforced by the JS runner: compute, triangle
+render, render bundle, indirect draw, timestamp query, XR-compatible adapter
+request, external copy, and external texture import. The Chromium integration
+overlay moved the render-bundle and indirect-draw capability rows from untested
+implementation status to diagnostic browser evidence, still blocked on
+`chromium_runtime_active` promotion before any claimable performance wording.
+The overlay checker's active-runtime requirement set now includes external
+copy, external texture import, render bundle replay, and render-pass indirect
+draw so a later phase promotion cannot skip those source-owned paths.
+
+Smoke artifact:
+
+- `browser/chromium/artifacts/20260530T170216Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+
+## 2026-05-30 — Chromium active-Doe buffer mailbox fails closed
+
+Active-Doe shared-buffer mailbox association now fails at the decoder command
+boundary while no native buffer handle source is wired for Doe. Chromium logs
+`doe_shared_buffer_unsupported` and returns `kInvalidArguments` before wire
+buffer injection instead of installing a placeholder Doe error buffer or calling
+Dawn-owned shared-buffer representations with Doe handles.
+
+The source checkout gate now requires both the unsupported marker and the
+fail-closed return sequence. The proc-surface contract still requires Doe-local
+shared-buffer proc names so the generated Dawn wire table cannot satisfy those
+names through native fallback, but active mailbox association stays blocked
+until real native buffer import lands.
+
+## 2026-05-30 — Chromium active-Doe texture mailbox imports IOSurface memory
+
+Active-Doe texture mailbox association now imports macOS IOSurface-backed
+shared texture memory through Doe instead of injecting a Doe error texture. The
+Chromium decoder obtains the shared-image IOSurface, calls Doe's raw
+`wgpuDeviceImportSharedTextureMemory` proc, creates a raw Doe `WGPUTexture`,
+begins shared-texture access, injects that handle into the wire server, and ends
+shared-texture access during present teardown before marking the shared image
+cleared. The path does not call generated Dawn C++ wrappers with Doe handles.
+
+Doe's drop-in shared texture memory procs now own the IOSurface descriptor path:
+the import retains the IOSurface, validates it through the native Metal import
+bridge, creates Doe textures backed by imported `MTLTexture` handles, reports
+shared texture properties, and returns success from begin/end access. Shared
+buffer memory and shared fences remain explicit unsupported paths until a real
+native buffer/fence handle source exists.
+
+The Chromium source gate now rejects the old texture error-object bridge by
+requiring `doe_shared_image_iosurface_bridge`, native shared-texture import,
+begin/end access, the IOSurface handle accessor, and
+`doe_present_shared_texture_end_access`. The Doe proc-surface config/checker now
+tracks this as `browserSharedMemoryBehavior`.
+
+Verified:
+
+- `zig build dropin-full --summary none`
+- `zig build test --summary none`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_doe_chromium_proc_surface.py bench/tests/test_chromium_source_checkout.py -q`
+- `python3 -m py_compile bench/tools/check_doe_chromium_proc_surface.py bench/tools/check_chromium_source_checkout.py bench/tests/test_doe_chromium_proc_surface.py bench/tests/test_chromium_source_checkout.py`
+- `python3 bench/gates/schema_gate.py`
+- `python3 bench/tools/check_doe_chromium_proc_surface.py --require-ready --json`
+- `source browser/chromium/scripts/env.sh && python3 bench/tools/check_chromium_source_checkout.py --source-root browser/chromium/src --root . --require-ready --require-runtime-selector --json`
+- `source browser/chromium/scripts/env.sh && autoninja -C browser/chromium/src/out/fawn_release gl_tests`
+- `source browser/chromium/scripts/env.sh && browser/chromium/src/out/fawn_release/gl_tests --gtest_filter=WebGPUDecoderTest.*`
+- `browser/chromium/scripts/run-smoke.sh --chrome browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium --doe-lib runtime/zig/zig-out/lib/libwebgpu_doe_full.dylib --mode both --headless true --strict --upload-iters 5 --dispatch-iters 3 --suite-timeout-ms 60000 --op-timeout-ms 10000`
+
+Smoke artifact:
+
+- `browser/chromium/artifacts/20260530T170216Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+
+## 2026-05-30 — Node/Bun package developer lane has native-direct evidence
+
+The Node/Bun developer wedge now has a package workload pack covering buffer
+upload/readback, vector dispatch, image transform dispatch, pipeline creation,
+and queue submit/completion behavior. The pack is driven by explicit
+package-surface compare configs for Node, Node native-direct, and Bun, with
+run receipts feeding strict compare and claim sidecars.
+
+Node now exposes `createNativeDirect()` from `doe-gpu` and the package
+executor can run it as `doe_node_native_direct`. Receipts keep the package
+identity as `doe-gpu` while recording the execution backend as native-direct.
+The promoted compare catalog now includes the Apple Metal native-direct Node
+package-developer lane.
+
+The package phase-delta tool compares receipt sets and reports raw plus grouped
+setup, binding, submit, write, and readback buckets. Current Node native-direct
+and Bun package-developer reports are claimable; see the claim artifacts under
+`bench/out/apple-metal/20260530T162758Z/` and
+`bench/out/apple-metal/20260530T163132Z/`.
+
+Bun package plans now share the terminal-readback `mapAsync` completion policy
+used by Node package plans when the readback structurally follows the last
+write/copy into the mapped buffer. Prepared-session package configs use
+`bench/workloads/workloads.package.developer.prepared.json`, which repeats full
+steady-state plan cycles inside each timed sample and leaves shader, module, and
+pipeline creation to the cold package-developer pack because setup is excluded
+from prepared-session selected timing. File-backed synthetic assets are cached
+inside the executor process so repeated prepared cycles do not include repeated
+asset file reads. Static `writeBuffer` payloads are also materialized once per
+plan step inside the executor invocation. Current prepared-session Node
+native-direct and Bun reports are claimable; see the claim artifacts under
+`bench/out/apple-metal/20260530T171625Z/` and
+`bench/out/apple-metal/20260530T171340Z/`.
+
+Node native-direct and Bun package now also have cold and prepared
+package-inference decode configs for the Gemma 3 270M shaped single-token
+workload. The 270M shaped IR adds matched package readback captures: a
+logits-prefix capture for prefill and sampled-token captures for decode.
+Prepared decode configs use `bench/workloads/workloads.package.inference.prepared.json`
+so each timed sample repeats the full decode plan cycle and normalizes by cycle.
+Package trace metadata now records compact readback capture summaries: byte
+length, SHA-256, semantic phase, and decoded `u32` values when available.
+Strict compare now treats a readback capture mismatch as a blocking
+comparability failure, so a claimable package decode report proves matching
+terminal capture bytes in addition to matching execution shape.
+The local plan assets are materialized through
+`bench/tools/materialize_plan_assets.py`, and the receipt-first compare flow
+emits strict-comparable, claimable reports at
+`bench/out/apple-metal/20260530T180023Z/gemma270m.node.direct.decode.ir.claim.json`
+and
+`bench/out/apple-metal/20260530T180733Z/gemma270m.node.direct.decode.warm.ir.claim.json`
+for Node native-direct, plus
+`bench/out/apple-metal/20260530T180153Z/gemma270m.bun-package.decode.ir.claim.json`
+and
+`bench/out/apple-metal/20260530T180815Z/gemma270m.bun-package.decode.warm.ir.claim.json`
+for Bun. Phase deltas for those runs are next to the compare reports.
+The compare taxonomy now has explicit package-surface workload ids for
+`gemma270m-decode` and `package-developer`, plus an explicit
+`doe_native_direct_vs_dawn_node_webgpu_package` family with
+`package_node_native_direct_providers`. The generated taxonomy expansion and
+promoted catalog expose the Node native-direct and Bun package profiles as
+promoted Apple Metal entries, keeping front-door selection, run-config provider
+flags, and taxonomy reporting in sync.
+Package trace metadata now also includes `packageWriteBreakdown`, which records
+write counts and bytes by data kind and semantic phase, including static
+file-backed buffer loads versus dynamic writes. The phase-delta tool carries
+those distributions from run receipts so resident-state inference lanes can be
+specified from explicit upload evidence. Package executors now accept
+`--resident-buffer-loads` only with `--prepared-session`; that mode preloads
+static file-backed buffer loads before selected timing, records
+`packageResidentBufferLoadBreakdown`, and skips those static writes inside the
+repeated steady loop. The existing prepared decode executors remain full-cycle
+workloads. Separate registry ids ending in `_prepared_resident_buffer_loads`
+select the resident-state shape for Node, native-direct, and Bun package runs.
+Phase-delta reports now carry both raw resident preload totals and amortized
+per-cycle resident preload buckets. The promoted workload id is
+`gemma270m-decode-resident`, with resident warm configs for Doe native-direct
+on Node vs Dawn-backed `node-webgpu` and Doe package WebGPU on Bun vs
+Dawn-backed `bun-webgpu`. Strict compare now also blocks
+resident-vs-full-cycle package mixes by requiring matching
+`packageResidentBufferLoads` modes and matching resident preload count/byte
+shapes on package execution traces. Resident mode also rejects plans where a
+preloaded static buffer receives dynamic writes in the selected loop.
+
+Touched:
+
+- `bench/lib/compare_axes.py`
+- `bench/executors/node-webgpu/executor.js`
+- `bench/executors/package-webgpu/runner-core.js`
+- `bench/executors/node-webgpu/synthetic-assets.js`
+- `config/compare-taxonomy.json`
+- `config/compare-taxonomy.schema.json`
+- `config/generated/compare-taxonomy-expanded.jsonl`
+- `config/trace-meta.schema.json`
+- `bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.ir.json`
+- `bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.warm.ir.json`
+- `bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.resident.warm.ir.json`
+- `bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.ir.json`
+- `bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.warm.ir.json`
+- `bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.resident.warm.ir.json`
+- `bench/ir/gemma3_270m.json`
+- `bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json`
+- `bench/plans/generated/inference_gemma3_270m_prefill_32tok.plan.json`
+- `bench/plans/generated/inference_gemma3_270m_prefill_64tok_decode_64tok.plan.json`
+- `bench/plans/generated/compat/inference_gemma3_270m_decode_1tok_commands.json`
+- `bench/plans/generated/compat/inference_gemma3_270m_prefill_32tok_commands.json`
+- `bench/plans/generated/compat/inference_gemma3_270m_prefill_64tok_decode_64tok_commands.json`
+- `bench/native_compare_modules/comparability_runtime.py`
+- `bench/native_compare_modules/compare_assessment.py`
+- `bench/native_compare_modules/executor_registry.py`
+- `bench/native_compare_modules/run_artifact.py`
+- `bench/native_compare_modules/runner.py`
+- `bench/tools/generate_compare_taxonomy.py`
+- `bench/tools/package_phase_delta.py`
+- `bench/tests/test_node_webgpu_executor.py`
+- `bench/tests/test_bun_webgpu_executor.py`
+- `bench/tests/test_executor_registry.py`
+- `bench/tests/test_compare_taxonomy.py`
+- `bench/tests/test_compare_from_artifacts.py`
+- `bench/tests/test_promoted_compare.py`
+- `bench/tests/test_package_phase_delta.py`
+- `bench/tests/test_run_artifact.py`
+- `bench/tests/test_runner_plan_support.py`
+- `bench/tests/test_backend_workload_catalog.py`
+- `bench/workloads/workloads.package.inference.json`
+- `bench/workloads/workloads.package.inference.prepared.json`
+- `bench/workloads/workloads.package.developer.prepared.json`
+- `config/promoted-compare-catalog.json`
+- `docs/node-bun-developer-wedge.md`
+- `examples/inference_gemma3_270m_decode_1tok_commands.json`
+- `examples/inference_gemma3_270m_prefill_32tok_commands.json`
+- `examples/inference_gemma3_270m_prefill_64tok_decode_64tok_commands.json`
+- `packages/doe-gpu/README.md`
+- `packages/doe-gpu/src/vendor/webgpu/index.js`
+- `packages/doe-gpu/test/integration/first-kernel-receipt-test.js`
+- `packages/doe-gpu/test/integration/test-integration-first-kernel-bun.js`
+- `packages/doe-gpu/test/integration/test-integration-first-kernel.js`
+- `packages/doe-gpu/test/smoke/test-smoke-load.js`
+- `runtime/bridge/webgpu-addon/doe_napi_nd_infra.c`
+- `runtime/bridge/webgpu-addon/doe_napi_nd_encoder.c`
+- `runtime/bridge/webgpu-addon/doe_napi_nd_immediates.c`
+
+Verified:
+
+- `npm --prefix packages/doe-gpu run build:addon`
+- `npm --prefix packages/doe-gpu run test:smoke`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_run_artifact bench.tests.test_compare_from_artifacts bench.tests.test_package_phase_delta bench.tests.test_runner_plan_support`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_backend_workload_catalog bench.tests.test_package_phase_delta`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_package_phase_delta bench.tests.test_executor_registry bench.tests.test_compare_taxonomy bench.tests.test_promoted_compare bench.tests.test_backend_workload_catalog bench.tests.test_compare_from_artifacts bench.tests.test_runner_plan_support`
+- `python3 -m unittest bench.tests.test_bun_webgpu_executor`
+- `python3 -m unittest bench.tests.test_compare_from_artifacts`
+- `node --check bench/executors/node-webgpu/executor.js`
+- `node --check bench/executors/package-webgpu/runner-core.js`
+- `python3 -m json.tool config/trace-meta.schema.json >/dev/null`
+- `python3 -m py_compile bench/native_compare_modules/compare_assessment.py bench/native_compare_modules/comparability_runtime.py bench/native_compare_modules/run_artifact.py bench/native_compare_modules/executor_registry.py bench/native_compare_modules/runner.py bench/tools/package_phase_delta.py`
+- `python3 -m py_compile bench/tools/package_phase_delta.py bench/tools/generate_compare_taxonomy.py bench/lib/compare_axes.py bench/native_compare_modules/executor_registry.py`
+- `python3 bench/gates/schema_gate.py`
+- `python3 bench/tools/generate_compare_taxonomy.py --write`
+- `python3 bench/tools/generate_compare_taxonomy.py --verify`
+- `python3 bench/cli.py run-config --side baseline --config bench/native-compare/compare.config.apple.metal.package-developer.node.direct.ir.json`
+- `python3 bench/cli.py compare --comparability strict --require-timing-class operation --out bench/out/apple-metal/20260530T162758Z/apple.metal.package-developer.node.direct.ir.compare.json bench/out/apple-metal/20260530T162758Z/package-developer.node.direct.ir.workspace/run-artifacts/doe_gpu_node_native_direct/*.run.json bench/out/apple-metal/20260530T161827Z/package-developer.node.direct.ir.workspace/run-artifacts/node_webgpu_package/*.run.json`
+- `python3 bench/cli.py claim bench/out/apple-metal/20260530T162758Z/apple.metal.package-developer.node.direct.ir.compare.json --config bench/native-compare/compare.config.apple.metal.package-developer.node.direct.ir.json --mode local --out bench/out/apple-metal/20260530T162758Z/apple.metal.package-developer.node.direct.ir.claim.json`
+- `python3 bench/cli.py run-config --side baseline --config bench/native-compare/compare.config.apple.metal.package-developer.bun.ir.json`
+- `python3 bench/cli.py run-config --side comparison --config bench/native-compare/compare.config.apple.metal.package-developer.bun.ir.json`
+- `python3 bench/cli.py compare --comparability strict --require-timing-class operation --out bench/out/apple-metal/20260530T163132Z/apple.metal.package-developer.bun.ir.compare.json bench/out/apple-metal/20260530T163043Z/package-developer.bun.ir.workspace/run-artifacts/doe_gpu_bun_package/*.run.json bench/out/apple-metal/20260530T163132Z/package-developer.bun.ir.workspace/run-artifacts/bun_webgpu_package/*.run.json`
+- `python3 bench/cli.py claim bench/out/apple-metal/20260530T163132Z/apple.metal.package-developer.bun.ir.compare.json --config bench/native-compare/compare.config.apple.metal.package-developer.bun.ir.json --mode local --out bench/out/apple-metal/20260530T163132Z/apple.metal.package-developer.bun.ir.claim.json`
+- `python3 bench/cli.py run-config --side baseline --config bench/native-compare/compare.config.apple.metal.package-developer.node.direct.prepared.ir.json`
+- `python3 bench/cli.py run-config --side comparison --config bench/native-compare/compare.config.apple.metal.package-developer.node.direct.prepared.ir.json`
+- `python3 bench/cli.py compare --comparability strict --require-timing-class operation --out bench/out/apple-metal/20260530T171625Z/apple.metal.package-developer.node.direct.prepared.null-void.compare.json bench/out/apple-metal/20260530T171625Z/package-developer.node.direct.prepared.ir.workspace/run-artifacts/doe_gpu_node_native_direct_prepared/*.run.json bench/out/apple-metal/20260530T171250Z/package-developer.node.direct.prepared.ir.workspace/run-artifacts/node_webgpu_package_prepared/*.run.json`
+- `python3 bench/cli.py claim bench/out/apple-metal/20260530T171625Z/apple.metal.package-developer.node.direct.prepared.null-void.compare.json --config bench/native-compare/compare.config.apple.metal.package-developer.node.direct.prepared.ir.json --out bench/out/apple-metal/20260530T171625Z/apple.metal.package-developer.node.direct.prepared.null-void.claim.json`
+- `python3 bench/tools/package_phase_delta.py --baseline-label doe-native-direct-prepared --comparison-label node-webgpu-prepared --baseline-glob 'bench/out/apple-metal/20260530T171625Z/package-developer.node.direct.prepared.ir.workspace/run-artifacts/doe_gpu_node_native_direct_prepared/*.run.json' --comparison-glob 'bench/out/apple-metal/20260530T171250Z/package-developer.node.direct.prepared.ir.workspace/run-artifacts/node_webgpu_package_prepared/*.run.json' --json-out bench/out/apple-metal/20260530T171625Z/apple.metal.package-developer.node.direct.prepared.null-void.webgpu.phase-delta.json`
+- `python3 bench/cli.py run-config --side baseline --config bench/native-compare/compare.config.apple.metal.package-developer.bun.prepared.ir.json`
+- `python3 bench/cli.py run-config --side comparison --config bench/native-compare/compare.config.apple.metal.package-developer.bun.prepared.ir.json`
+- `python3 bench/cli.py compare --comparability strict --require-timing-class operation --out bench/out/apple-metal/20260530T171340Z/apple.metal.package-developer.bun.prepared.asset-cache.compare.json bench/out/apple-metal/20260530T171329Z/package-developer.bun.prepared.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/*.run.json bench/out/apple-metal/20260530T171340Z/package-developer.bun.prepared.ir.workspace/run-artifacts/bun_webgpu_package_prepared/*.run.json`
+- `python3 bench/cli.py claim bench/out/apple-metal/20260530T171340Z/apple.metal.package-developer.bun.prepared.asset-cache.compare.json --config bench/native-compare/compare.config.apple.metal.package-developer.bun.prepared.ir.json --out bench/out/apple-metal/20260530T171340Z/apple.metal.package-developer.bun.prepared.asset-cache.claim.json`
+- `python3 bench/tools/package_phase_delta.py --baseline-label doe-bun-prepared --comparison-label bun-webgpu-prepared --baseline-glob 'bench/out/apple-metal/20260530T171329Z/package-developer.bun.prepared.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/*.run.json' --comparison-glob 'bench/out/apple-metal/20260530T171340Z/package-developer.bun.prepared.ir.workspace/run-artifacts/bun_webgpu_package_prepared/*.run.json' --json-out bench/out/apple-metal/20260530T171340Z/apple.metal.package-developer.bun.prepared.asset-cache.phase-delta.json`
+- `node packages/doe-gpu/test/integration/test-integration-first-kernel.js`
+- `bun packages/doe-gpu/test/integration/test-integration-first-kernel-bun.js`
+- `npm --prefix packages/doe-gpu run test:integration`
+- `npm --prefix packages/doe-gpu run test:integration:bun`
+- `python3 bench/tools/materialize_plan_assets.py --plan bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json`
+- `python3 bench/tools/generate_backend_workloads.py`
+- `python3 bench/tools/generate_backend_workloads.py --verify`
+- `node bench/executors/run-node-webgpu-plan.js --provider doe-direct --plan bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json --trace-meta bench/out/scratch/gemma270m-decode-capture-doe-direct.meta.json --trace-jsonl bench/out/scratch/gemma270m-decode-capture-doe-direct.ndjson --workload inference_gemma3_270m_decode_1tok`
+- `node bench/executors/run-node-webgpu-plan.js --provider node-webgpu --plan bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json --trace-meta bench/out/scratch/gemma270m-decode-capture-node-webgpu.meta.json --trace-jsonl bench/out/scratch/gemma270m-decode-capture-node-webgpu.ndjson --workload inference_gemma3_270m_decode_1tok`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.ir.json --side baseline`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.ir.json --side comparison`
+- `python3 bench/cli.py compare bench/out/apple-metal/20260530T180014Z/gemma270m.node.direct.decode.ir.workspace/run-artifacts/doe_gpu_node_native_direct/doe_gpu_node_native_direct-inference_gemma3_270m_decode_1tok-20260530T180014Z.run.json bench/out/apple-metal/20260530T180023Z/gemma270m.node.direct.decode.ir.workspace/run-artifacts/node_webgpu_package/node_webgpu_package-inference_gemma3_270m_decode_1tok-20260530T180023Z.run.json --baseline-product doe_gpu_node_native_direct --comparison-product node_webgpu_package --out bench/out/apple-metal/20260530T180023Z/gemma270m.node.direct.decode.ir.compare.json`
+- `python3 bench/cli.py claim bench/out/apple-metal/20260530T180023Z/gemma270m.node.direct.decode.ir.compare.json --config bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.ir.json --out bench/out/apple-metal/20260530T180023Z/gemma270m.node.direct.decode.ir.claim.json`
+- `python3 bench/tools/package_phase_delta.py --baseline-glob 'bench/out/apple-metal/20260530T180014Z/gemma270m.node.direct.decode.ir.workspace/run-artifacts/doe_gpu_node_native_direct/*.run.json' --comparison-glob 'bench/out/apple-metal/20260530T180023Z/gemma270m.node.direct.decode.ir.workspace/run-artifacts/node_webgpu_package/*.run.json' --baseline-label doe_gpu_node_native_direct --comparison-label node_webgpu_package --json-out bench/out/apple-metal/20260530T180023Z/gemma270m.node.direct.decode.ir.phase-delta.json`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.warm.ir.json --boundary package_surface --runtime-host node --temperature warm --comparison-view doe_native_direct_vs_dawn_node_webgpu_package --provider-set package_node_native_direct_providers --baseline-provider-id doe-direct --comparison-provider-id node-webgpu --side baseline`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.warm.ir.json --boundary package_surface --runtime-host node --temperature warm --comparison-view doe_native_direct_vs_dawn_node_webgpu_package --provider-set package_node_native_direct_providers --baseline-provider-id doe-direct --comparison-provider-id node-webgpu --side comparison`
+- `python3 bench/cli.py compare bench/out/apple-metal/20260530T180721Z/gemma270m.node.direct.decode.warm.ir.workspace/run-artifacts/doe_gpu_node_native_direct_prepared/doe_gpu_node_native_direct_prepared-inference_gemma3_270m_decode_1tok-20260530T180721Z.run.json bench/out/apple-metal/20260530T180733Z/gemma270m.node.direct.decode.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared/node_webgpu_package_prepared-inference_gemma3_270m_decode_1tok-20260530T180733Z.run.json --baseline-product doe_gpu_node_native_direct_prepared --comparison-product node_webgpu_package_prepared --out bench/out/apple-metal/20260530T180733Z/gemma270m.node.direct.decode.warm.ir.compare.json`
+- `python3 bench/cli.py claim bench/out/apple-metal/20260530T180733Z/gemma270m.node.direct.decode.warm.ir.compare.json --config bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.warm.ir.json --out bench/out/apple-metal/20260530T180733Z/gemma270m.node.direct.decode.warm.ir.claim.json`
+- `python3 bench/tools/package_phase_delta.py --baseline-glob 'bench/out/apple-metal/20260530T180721Z/gemma270m.node.direct.decode.warm.ir.workspace/run-artifacts/doe_gpu_node_native_direct_prepared/*.run.json' --comparison-glob 'bench/out/apple-metal/20260530T180733Z/gemma270m.node.direct.decode.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared/*.run.json' --baseline-label doe_gpu_node_native_direct_prepared --comparison-label node_webgpu_package_prepared --json-out bench/out/apple-metal/20260530T180733Z/gemma270m.node.direct.decode.warm.ir.phase-delta.json`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.ir.json --boundary package_surface --runtime-host bun --temperature cold --comparison-view doe_vs_dawn_bun_webgpu_package --provider-set package_bun_providers --baseline-provider-id doe --comparison-provider-id bun-webgpu --side baseline`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.ir.json --boundary package_surface --runtime-host bun --temperature cold --comparison-view doe_vs_dawn_bun_webgpu_package --provider-set package_bun_providers --baseline-provider-id doe --comparison-provider-id bun-webgpu --side comparison`
+- `python3 bench/cli.py compare bench/out/apple-metal/20260530T180144Z/gemma270m.bun-package.decode.ir.workspace/run-artifacts/doe_gpu_bun_package/doe_gpu_bun_package-inference_gemma3_270m_decode_1tok-20260530T180144Z.run.json bench/out/apple-metal/20260530T180153Z/gemma270m.bun-package.decode.ir.workspace/run-artifacts/bun_webgpu_package/bun_webgpu_package-inference_gemma3_270m_decode_1tok-20260530T180153Z.run.json --baseline-product doe_gpu_bun_package --comparison-product bun_webgpu_package --out bench/out/apple-metal/20260530T180153Z/gemma270m.bun-package.decode.ir.compare.json`
+- `python3 bench/cli.py claim bench/out/apple-metal/20260530T180153Z/gemma270m.bun-package.decode.ir.compare.json --config bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.ir.json --out bench/out/apple-metal/20260530T180153Z/gemma270m.bun-package.decode.ir.claim.json`
+- `python3 bench/tools/package_phase_delta.py --baseline-glob 'bench/out/apple-metal/20260530T180144Z/gemma270m.bun-package.decode.ir.workspace/run-artifacts/doe_gpu_bun_package/*.run.json' --comparison-glob 'bench/out/apple-metal/20260530T180153Z/gemma270m.bun-package.decode.ir.workspace/run-artifacts/bun_webgpu_package/*.run.json' --baseline-label doe_gpu_bun_package --comparison-label bun_webgpu_package --json-out bench/out/apple-metal/20260530T180153Z/gemma270m.bun-package.decode.ir.phase-delta.json`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.warm.ir.json --boundary package_surface --runtime-host bun --temperature warm --comparison-view doe_vs_dawn_bun_webgpu_package --provider-set package_bun_providers --baseline-provider-id doe --comparison-provider-id bun-webgpu --side baseline`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.warm.ir.json --boundary package_surface --runtime-host bun --temperature warm --comparison-view doe_vs_dawn_bun_webgpu_package --provider-set package_bun_providers --baseline-provider-id doe --comparison-provider-id bun-webgpu --side comparison`
+- `python3 bench/cli.py compare bench/out/apple-metal/20260530T180803Z/gemma270m.bun-package.decode.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_decode_1tok-20260530T180803Z.run.json bench/out/apple-metal/20260530T180815Z/gemma270m.bun-package.decode.warm.ir.workspace/run-artifacts/bun_webgpu_package_prepared/bun_webgpu_package_prepared-inference_gemma3_270m_decode_1tok-20260530T180815Z.run.json --baseline-product doe_gpu_bun_package_prepared --comparison-product bun_webgpu_package_prepared --out bench/out/apple-metal/20260530T180815Z/gemma270m.bun-package.decode.warm.ir.compare.json`
+- `python3 bench/cli.py claim bench/out/apple-metal/20260530T180815Z/gemma270m.bun-package.decode.warm.ir.compare.json --config bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.warm.ir.json --out bench/out/apple-metal/20260530T180815Z/gemma270m.bun-package.decode.warm.ir.claim.json`
+- `python3 bench/tools/package_phase_delta.py --baseline-glob 'bench/out/apple-metal/20260530T180803Z/gemma270m.bun-package.decode.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/*.run.json' --comparison-glob 'bench/out/apple-metal/20260530T180815Z/gemma270m.bun-package.decode.warm.ir.workspace/run-artifacts/bun_webgpu_package_prepared/*.run.json' --baseline-label doe_gpu_bun_package_prepared --comparison-label bun_webgpu_package_prepared --json-out bench/out/apple-metal/20260530T180815Z/gemma270m.bun-package.decode.warm.ir.phase-delta.json`
+- `node bench/executors/run-node-webgpu-plan.js --provider doe-direct --prepared-session --resident-buffer-loads --plan bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json --trace-meta bench/out/scratch/resident-buffer-loads.node-direct.meta.json --trace-jsonl bench/out/scratch/resident-buffer-loads.node-direct.ndjson --workload inference_gemma3_270m_decode_1tok --command-repeat 2`
+- `bun bench/executors/run-bun-webgpu-plan.js --provider doe --prepared-session --resident-buffer-loads --plan bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json --trace-meta bench/out/scratch/resident-buffer-loads.bun-doe.meta.json --trace-jsonl bench/out/scratch/resident-buffer-loads.bun-doe.ndjson --workload inference_gemma3_270m_decode_1tok --command-repeat 2`
+- `python3 bench/cli.py run --product doe --executor-id doe_node_native_direct_prepared_resident_buffer_loads --workloads bench/workloads/workloads.package.inference.prepared.json --workload-id inference_gemma3_270m_decode_1tok --iterations 1 --warmup 0 --out bench/out/scratch/resident-buffer-loads.registry-run`
+- `python3 bench/tools/package_phase_delta.py --baseline-glob 'bench/out/scratch/resident-buffer-loads.registry-run/run-artifacts/doe/*.run.json' --comparison-glob 'bench/out/scratch/resident-buffer-loads.registry-run/run-artifacts/doe/*.run.json' --baseline-label doe-direct-resident --comparison-label doe-direct-resident --json-out bench/out/scratch/resident-buffer-loads.phase-delta.json --top 3`
+- `python3 bench/cli.py compare --dry-run --backend apple-metal --surface package --workload gemma270m-decode-resident --mode warm`
+- `python3 bench/cli.py compare --dry-run --backend apple-metal --surface package --workload gemma270m-decode-resident --mode warm --package-runtime bun`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.resident.warm.ir.json --side baseline --iterations 1 --warmup 0 --workspace bench/out/scratch/resident-node-compare.baseline.workspace --out bench/out/scratch/resident-node-compare.baseline.json --no-timestamp-output`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.resident.warm.ir.json --side comparison --iterations 1 --warmup 0 --workspace bench/out/scratch/resident-node-compare.comparison.workspace --out bench/out/scratch/resident-node-compare.comparison.json --no-timestamp-output`
+- `python3 bench/cli.py compare bench/out/scratch/resident-node-compare.baseline.workspace/run-artifacts/doe_gpu_node_native_direct_prepared_resident/*.run.json bench/out/scratch/resident-node-compare.comparison.workspace/run-artifacts/node_webgpu_package_prepared_resident/*.run.json --baseline-product doe_gpu_node_native_direct_prepared_resident --comparison-product node_webgpu_package_prepared_resident --out bench/out/scratch/resident-node-compare.compare.json`
+- `python3 bench/tools/package_phase_delta.py --baseline-glob 'bench/out/scratch/resident-node-compare.baseline.workspace/run-artifacts/doe_gpu_node_native_direct_prepared_resident/*.run.json' --comparison-glob 'bench/out/scratch/resident-node-compare.comparison.workspace/run-artifacts/node_webgpu_package_prepared_resident/*.run.json' --baseline-label doe-native-direct-resident --comparison-label node-webgpu-resident --json-out bench/out/scratch/resident-node-compare.phase-delta.json --top 5`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.resident.warm.ir.json --side baseline --iterations 1 --warmup 0 --workspace bench/out/scratch/resident-bun-compare.baseline.workspace --out bench/out/scratch/resident-bun-compare.baseline.json --no-timestamp-output`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.resident.warm.ir.json --side comparison --iterations 1 --warmup 0 --workspace bench/out/scratch/resident-bun-compare.comparison.workspace --out bench/out/scratch/resident-bun-compare.comparison.json --no-timestamp-output`
+- `python3 bench/cli.py compare bench/out/scratch/resident-bun-compare.baseline.workspace/run-artifacts/doe_gpu_bun_package_prepared_resident/*.run.json bench/out/scratch/resident-bun-compare.comparison.workspace/run-artifacts/bun_webgpu_package_prepared_resident/*.run.json --baseline-product doe_gpu_bun_package_prepared_resident --comparison-product bun_webgpu_package_prepared_resident --out bench/out/scratch/resident-bun-compare.compare.json`
+- `python3 bench/tools/package_phase_delta.py --baseline-glob 'bench/out/scratch/resident-bun-compare.baseline.workspace/run-artifacts/doe_gpu_bun_package_prepared_resident/*.run.json' --comparison-glob 'bench/out/scratch/resident-bun-compare.comparison.workspace/run-artifacts/bun_webgpu_package_prepared_resident/*.run.json' --baseline-label doe-bun-resident --comparison-label bun-webgpu-resident --json-out bench/out/scratch/resident-bun-compare.phase-delta.json --top 5`
+- `jq '.workloads[0].comparability | {comparable, blockingFailedObligations}' bench/out/scratch/resident-node-compare.compare.json`
+- `jq '.workloads[0].comparability | {comparable, blockingFailedObligations}' bench/out/scratch/resident-bun-compare.compare.json`
+- `git diff --check`
+
+## 2026-05-30 — Chromium forced-Doe wire runtime is active in source
+
+Forced Doe source selection now requires a browser-facing WGPU proc surface,
+the full generated Dawn wire proc table through `wgpuGetProcAddress`, and a
+Doe-local browser interop proc surface for shared texture, shared buffer, shared
+fence, and error-object procs. Chromium now creates a Doe `WGPUInstance` from
+the selected Doe dylib and injects it into the WebGPU wire server in forced-Doe
+mode while leaving the default Dawn path unchanged.
+
+Doe now has a schema-backed proc-surface config and checker for the Chromium
+lane. The checker loads the current Doe WebGPU dylib, verifies direct exports,
+parses the generated `DawnProcTable` header, verifies every table entry resolves
+through `wgpuGetProcAddress`, verifies required browser interop procs are mapped
+in Doe's local resolver before native fallback, verifies the error-object
+implementation source allocates tagged Doe handles, validates macOS IOSurface
+shared texture import behavior, keeps shared-buffer and shared-fence imports
+explicitly unsupported, and confirms the runtime artifact can bootstrap an
+instance. Doe now owns explicit browser shared-memory proc names so the
+generated wire proc table cannot satisfy those names by falling through to Dawn.
+Doe also owns non-null error-object constructors for Chromium error texture and
+error buffer requests: the handles are tagged as Doe error objects, carry
+descriptor metadata, release through Doe, and reject use as normal GPU
+resources. Active Doe imports texture mailboxes through native IOSurface shared
+texture memory and rejects shared-buffer mailbox association before wire
+injection until a real native buffer handle source lands.
+
+The Chromium decoder unit coverage now includes a successful Doe wire runtime
+lifecycle path. `DoeWireRuntimeOwnsAndReleasesInstanceLifecycle` loads the
+generated wire proc table through the same helper used by forced-Doe selection,
+creates a test instance, processes events through the loaded proc table, releases
+the owned instance, and verifies the runtime is cleared. The source-checkout
+gate now requires that lifecycle test marker.
+
+Browser runtime selection now propagates adapter denylist match details into
+every runtime selection row. Auto mode still selects Dawn with
+`profile_denylisted` when the policy blocks a profile; forced modes keep their
+explicit runtime while carrying the same `adapterDenylist` detail for audit.
+The policy contract now lists those detail fields as observability fields, and
+the smoke/report validators reject `profile_denylisted` rows that omit the
+matched denylist detail.
+
+Chromium source adapter filtering now emits equivalent denylist detail once
+adapter identity is available. The formatted `adapter_denylist_detail` row
+carries the typed `profile_denylisted` reason, vendor/device IDs,
+adapter/backend type, and blocklist reason before the adapter is rejected. The
+source-checkout gate now requires those markers and the formatter unit test.
+
+Fresh browser smoke now runs against the built source Chromium binary and is
+linked from the Chromium integration overlay. The report remains diagnostic;
+see the artifact path in `config/webgpu-integration-chromium.json`.
+
+The Chromium integration overlay checker now validates the linked smoke report
+as source-runtime evidence for `source_selector_wire_runtime_active`: both
+`dawn` and forced-`doe` rows must be present, strict, hash-valid, fallback-free,
+and tied to a `browser/chromium/src/out` binary with a `libwebgpu_doe` runtime
+for the Doe lane.
+
+Browser smoke artifacts now carry top-level `runtimeSelections` as a schema and
+validator requirement, matching the source of runtime identity consumed by the
+overlay and promotion tooling.
+
+The source Chromium lane also has a fresh layered superset diagnostic run with
+required browser rows passing in both Dawn and forced-Doe modes. The report,
+summary, and checker output live under
+`browser/chromium/artifacts/20260530T145523Z/` and remain diagnostic rather
+than claim evidence.
+
+The browser smoke hash validator now uses JS-compatible numeric
+canonicalization so reports emitted by the JS Playwright harness validate in
+Python even when diagnostic deltas use small exponent-range floats.
+
+Touched:
+
+- `browser/chromium/src/gpu/command_buffer/service/webgpu_decoder_impl.cc`
+- `browser/chromium/src/gpu/command_buffer/service/webgpu_decoder_impl.h`
+- `browser/chromium/src/gpu/command_buffer/service/webgpu_decoder_unittest.cc`
+- `runtime/zig/src/wgpu_dropin_lib.zig`
+- `runtime/zig/src/dropin/dropin_browser_shared_memory.zig`
+- `bench/tools/check_chromium_source_checkout.py`
+- `bench/tools/check_doe_chromium_proc_surface.py`
+- `bench/browser/browser_gate.py`
+- `bench/tests/test_chromium_source_checkout.py`
+- `bench/tests/test_doe_chromium_proc_surface.py`
+- `bench/tests/test_browser_gate.py`
+- `bench/tests/test_browser_runtime_selector_mjs.py`
+- `bench/runners/run_blocking_gates.py`
+- `bench/tests/test_run_blocking_gates_wiring.py`
+- `browser/chromium/scripts/browser-runtime-selector.mjs`
+- `browser/chromium/scripts/check-browser-benchmark-superset.py`
+- `browser/chromium/scripts/check-browser-runtime-selector-policy.py`
+- `config/browser-runtime-selector-policy.json`
+- `config/browser-runtime-selector-policy.schema.json`
+- `config/doe-chromium-proc-surface.json`
+- `config/doe-chromium-proc-surface.schema.json`
+- `config/browser-smoke-report.schema.json`
+- `config/schema-targets.json`
+- `config/webgpu-integration-chromium.json`
+- `config/webgpu-integration-chromium.schema.json`
+- `examples/browser-smoke-report.sample.json`
+- `browser/chromium/chromium-bringup.md`
+- `browser/chromium/contracts/runtime-selector-and-fallback.contract.md`
+- `docs/status/runtime-backends-and-bench.md`
+
+Verified:
+
+- `zig build dropin-full` from `runtime/zig`
+- `zig build test-full` from `runtime/zig`
+- `python3 bench/tools/check_doe_chromium_proc_surface.py --require-ready --json`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_chromium_source_checkout.py bench/tests/test_doe_chromium_proc_surface.py bench/tests/test_webgpu_integration_chromium_checker.py -q`
+- `python3 -m py_compile bench/tools/check_chromium_source_checkout.py bench/tools/check_doe_chromium_proc_surface.py bench/tools/check_webgpu_integration_chromium.py bench/tests/test_chromium_source_checkout.py bench/tests/test_doe_chromium_proc_surface.py bench/tests/test_webgpu_integration_chromium_checker.py`
+- `./browser/chromium/scripts/run-smoke.sh --chrome browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium --mode both --headless true --strict --upload-iters 5 --dispatch-iters 3 --suite-timeout-ms 60000 --op-timeout-ms 10000`
+- `python3 browser/chromium/scripts/check-browser-smoke-report.py --smoke-report browser/chromium/artifacts/20260530T160428Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json --json`
+- `autoninja -C browser/chromium/src/out/fawn_release chrome` under `browser/chromium/scripts/env.sh`
+- `./browser/chromium/scripts/run-bench.sh --chrome browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium --mode both --headless true --strict-run`
+- `./browser/chromium/scripts/run-smoke.sh --mode both --headless true --strict --upload-iters 5 --dispatch-iters 3 --suite-timeout-ms 60000 --op-timeout-ms 10000`
+- `python3 browser/chromium/scripts/check-browser-smoke-report.py --smoke-report browser/chromium/artifacts/20260530T140623Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json --json`
+- `node --check browser/chromium/scripts/browser-runtime-selector.mjs browser/chromium/scripts/webgpu-playwright-smoke.mjs browser/chromium/scripts/webgpu-playwright-layered-bench.mjs browser/chromium/scripts/webgpu-playwright-ort-bench.mjs`
+- `python3 browser/chromium/scripts/check-browser-runtime-selector-policy.py --policy config/browser-runtime-selector-policy.json --json`
+- `python3 -m py_compile bench/browser/browser_gate.py bench/tools/check_doe_chromium_proc_surface.py bench/tools/check_chromium_source_checkout.py bench/tools/check_webgpu_integration_chromium.py bench/runners/run_blocking_gates.py`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_doe_chromium_proc_surface.py bench/tests/test_chromium_source_checkout.py bench/tests/test_webgpu_integration_chromium_checker.py bench/tests/test_run_blocking_gates_wiring.py bench/tests/test_chromium_patch_manifest.py bench/tests/test_browser_gate.py -q`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_chromium_source_checkout.py bench/tests/test_doe_chromium_proc_surface.py bench/tests/test_webgpu_integration_chromium_checker.py bench/tests/test_run_blocking_gates_wiring.py bench/tests/test_chromium_patch_manifest.py bench/tests/test_browser_gate.py bench/tests/test_browser_runtime_selector_mjs.py bench/tests/test_browser_benchmark_superset_checker.py -q`
+- `python3 bench/gates/schema_gate.py`
+- `python3 bench/tools/check_webgpu_integration_chromium.py --overlay config/webgpu-integration-chromium.json --verify-artifact-root . --json`
+- `python3 bench/tools/check_chromium_patch_manifest.py --manifest config/chromium-patch-manifest.json --policy config/chromium-fork-maintenance-policy.json --root . --json`
+- `python3 bench/tools/check_chromium_source_checkout.py --source-root browser/chromium/src --root . --require-ready --require-runtime-selector --json` under `browser/chromium/scripts/env.sh`
+- `autoninja -C browser/chromium/src/out/fawn_release gl_tests` under `browser/chromium/scripts/env.sh`
+- `browser/chromium/src/out/fawn_release/gl_tests --gtest_filter=WebGPUDecoderTest.*` under `browser/chromium/scripts/env.sh`
+- `git diff --check`
+- `git -C browser/chromium/src diff --check -- gpu/command_buffer/service/webgpu_decoder_impl.cc gpu/command_buffer/service/webgpu_decoder_unittest.cc gpu/command_buffer/service/webgpu_decoder_impl.h gpu/config/gpu_switches.cc gpu/config/gpu_switches.h`
+
+## 2026-05-30 — Chromium source selector is wired fail-closed
+
+The mounted Chromium checkout now exposes the WebGPU runtime selector switches
+and typed fail-closed reason markers required by the source selector gate. The
+selector keeps default Dawn behavior unchanged, fails closed in forced Doe mode
+for missing artifacts, disabled profiles, incomplete proc surfaces, and the
+remaining Dawn-native dependency, and lets `auto` mode fall back through typed
+warnings.
+
+The Chromium integration overlay now records `source_selector_wired`. Browser
+smoke artifacts remain diagnostic until Chromium's WebGPU instance and wire path
+are owned by the Doe native bridge.
+
+Touched:
+
+- `browser/chromium/src/gpu/config/gpu_switches.h`
+- `browser/chromium/src/gpu/config/gpu_switches.cc`
+- `browser/chromium/src/gpu/command_buffer/service/webgpu_decoder_impl.h`
+- `browser/chromium/src/gpu/command_buffer/service/webgpu_decoder_impl.cc`
+- `browser/chromium/src/gpu/command_buffer/service/webgpu_decoder_unittest.cc`
+- `bench/tools/check_webgpu_integration_chromium.py`
+- `config/webgpu-integration-chromium.json`
+- `config/webgpu-integration-chromium.schema.json`
+- `browser/chromium/chromium-bringup.md`
+- `docs/status/runtime-backends-and-bench.md`
+
+Verified:
+
+- `python3 bench/tools/check_chromium_source_checkout.py --source-root browser/chromium/src --root . --require-runtime-selector --json` under `browser/chromium/scripts/env.sh`
+- `python3 bench/tools/check_webgpu_integration_chromium.py --overlay config/webgpu-integration-chromium.json --verify-artifact-root . --json`
+- `python3 -m py_compile bench/tools/check_chromium_source_checkout.py bench/tools/check_webgpu_integration_chromium.py bench/runners/run_blocking_gates.py`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_chromium_source_checkout.py bench/tests/test_webgpu_integration_chromium_checker.py bench/tests/test_run_blocking_gates_wiring.py bench/tests/test_chromium_patch_manifest.py -q`
+- `python3 bench/gates/schema_gate.py`
+- `autoninja -C browser/chromium/src/out/fawn_release gpu_unittests` under `browser/chromium/scripts/env.sh`
+- `autoninja -C browser/chromium/src/out/fawn_release gl_tests` under `browser/chromium/scripts/env.sh`
+- `browser/chromium/src/out/fawn_release/gl_tests --gtest_filter=WebGPUDecoderTest.*` under `browser/chromium/scripts/env.sh`
+
 ## 2026-05-27 — Browser derived artifacts reject duplicate IDs
 
 Canvas/WebGPU fusion, GPU scheduler, WebGPU effect, and local-AI workload

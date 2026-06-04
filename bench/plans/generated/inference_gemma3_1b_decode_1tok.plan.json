@@ -11,8 +11,8 @@
   "bufferWriteCount": 6,
   "bufferLoadCount": 13,
   "dispatchCount": 18,
-  "sourceIrSha256": "2ac0053470006e3f1a042f7ed76697800da45ab467bce22017259d9d6ce14671",
-  "compatibilityCommandsSha256": "5547ee2e2bbd6ad3f140cdeef33d3697e3ffbb8ad62b2f8e6d86bb29ff4322dc",
+  "sourceIrSha256": "d716a5bd8c3687ebeca57d7aa5d3d301b3b99f3ce80a879f1d62bdb0d95fd927",
+  "compatibilityCommandsSha256": "195ac9244c71308d7d5bfc5ef95e89d55414630f5264df831a48aa149070a082",
   "commands": [
     {
       "kind": "buffer_write",
@@ -168,7 +168,7 @@
     {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
-      "x": 48,
+      "x": 3072,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -227,7 +227,7 @@
     {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
-      "x": 48,
+      "x": 3072,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -286,7 +286,7 @@
     {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
-      "x": 48,
+      "x": 3072,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -513,7 +513,7 @@
     {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
-      "x": 48,
+      "x": 3072,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -655,7 +655,7 @@
     {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
-      "x": 48,
+      "x": 3072,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -714,7 +714,7 @@
     {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
-      "x": 48,
+      "x": 3072,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -801,7 +801,7 @@
     {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
-      "x": 48,
+      "x": 3072,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -943,7 +943,7 @@
     {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
-      "x": 128,
+      "x": 8192,
       "y": 1,
       "z": 1,
       "initialize_buffers_on_create": true,
@@ -1024,5 +1024,5 @@
       ]
     }
   ],
-  "planSha256": "288411b2f56865af48f77402ce464aa1bcb737ce6ba3db095643bc335215d410"
+  "planSha256": "7c743ebada56bfc91670411715336a18c3870f58fd222b3a20f93bf6a7ea42c0"
 }

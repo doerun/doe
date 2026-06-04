@@ -1,4 +1,87 @@
 {
   "schemaVersion": 1,
+  "writeBatching": [
+    {
+      "id": "bun-ffi-pointer-batch-min-count",
+      "runtimeHost": "bun",
+      "provider": "doe-ffi",
+      "method": "queue.__doeWriteBufferBatch",
+      "minConsecutiveWrites": 16,
+      "evidence": "bench/out/apple-metal/20260531T115148Z/gemma270m.bun-ffi.decode.resident.warm.ptr-batch.phase-delta.json",
+      "detail": "Bun FFI pointer-list batching is retained for larger consecutive write groups; this policy keeps smaller resident decode groups on direct writes."
+    }
+  ],
+  "readbackMode": [
+    {
+      "id": "bun-ffi-package-developer-mapasync-readback",
+      "runtimeHost": "bun",
+      "provider": "doe-ffi",
+      "workloadId": [
+        "package_buffer_upload_readback_1mb",
+        "package_image_rgba_invert_1024",
+        "package_queue_submit_completion",
+        "package_vector_scale_add_262k"
+      ],
+      "mode": "mapAsync",
+      "evidence": "bench/out/apple-metal/20260531T_bun_public_effective_ffi_policy/bun-public-effective-ffi.public-bun-pack.vs-bun-webgpu.claim.json",
+      "detail": "The install-facing Bun wrapper resolves to the FFI runtime on supported native hosts; listener-backed public package receipts are claimable with mapAsync on these FFI readback rows while pipeline creation stays on the native default."
+    },
+    {
+      "id": "node-package-developer-native-readback-public",
+      "runtimeHost": "node",
+      "provider": "doe",
+      "workloadId": [
+        "package_buffer_upload_readback_1mb",
+        "package_image_rgba_invert_1024",
+        "package_pipeline_creation_8kernels",
+        "package_queue_submit_completion",
+        "package_vector_scale_add_262k"
+      ],
+      "packagePreparedSession": false,
+      "mode": "native-map-read-copy-unmap",
+      "evidence": "bench/out/apple-metal/20260531T_shared_event_listener_node_bun/node-listener.native-vs-mapasync.phase-delta.json",
+      "detail": "Cold public Node package-developer receipts select listener-backed native map/read/copy/unmap for the package rows; the same-window native-vs-node-webgpu pack remains diagnostic on vector and queue completion."
+    },
+    {
+      "id": "node-package-developer-mapasync-readback-prepared",
+      "runtimeHost": "node",
+      "provider": "doe",
+      "workloadId": [
+        "package_buffer_upload_readback_1mb",
+        "package_image_rgba_invert_1024",
+        "package_queue_submit_completion",
+        "package_vector_scale_add_262k"
+      ],
+      "packagePreparedSession": true,
+      "mode": "mapAsync",
+      "evidence": "bench/out/apple-metal/20260531T_shared_event_listener_node_bun/node-prepared-listener.native-vs-policy.phase-delta.json",
+      "detail": "Prepared Node package-developer receipts keep the existing mapAsync session policy while native readback remains available through the session-specific cold public entry."
+    },
+    {
+      "id": "bun-package-developer-native-readback-vector",
+      "runtimeHost": "bun",
+      "provider": "doe",
+      "workloadId": [
+        "package_vector_scale_add_262k"
+      ],
+      "mode": "native-map-read-copy-unmap",
+      "evidence": "bench/out/apple-metal/20260531T_shared_event_listener_node_bun/bun-listener.native-vs-mapasync.phase-delta.json",
+      "detail": "The install-facing Bun entry defaults to the Bun FFI runtime on supported native hosts. On the public Bun package path, the listener-backed native readback path is retained for the vector row."
+    },
+    {
+      "id": "bun-package-developer-mapasync-readback-public",
+      "runtimeHost": "bun",
+      "provider": "doe",
+      "workloadId": [
+        "package_buffer_upload_readback_1mb",
+        "package_image_rgba_invert_1024",
+        "package_pipeline_creation_8kernels",
+        "package_queue_submit_completion"
+      ],
+      "mode": "mapAsync",
+      "evidence": "bench/out/apple-metal/20260531T_shared_event_listener_node_bun/bun-listener.native-vs-mapasync.phase-delta.json",
+      "detail": "The listener-backed public Bun package receipts select mapAsync for buffer, image, pipeline, and queue completion rows while the vector row keeps the native entry."
+    }
+  ],
   "unsupportedExecutions": []
 }

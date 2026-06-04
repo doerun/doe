@@ -115,6 +115,11 @@ IR-backed authoring rule:
 - generated backend workload files may still carry `commandsPath`, but for
   IR-backed workloads those command files are compatibility artifacts, not the
   authored source of truth
+- IR scenarios may set `matmulGemvVariant: row2_helper_exact` only when every
+  `matmul-gemv.wgsl` dispatch in that scenario has even rows, columns
+  divisible by four, and source dispatch `[rows,1,1]`; materialization rewrites
+  those dispatches to `matmul_gemv_row2_helper_exact.wgsl` with dispatch
+  `[rows/2,1,1]` and fails fast if the preconditions are not met.
 
 ### 3.2 Synthetic readonly assets for IR-backed inference workloads
 

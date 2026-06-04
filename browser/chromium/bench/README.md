@@ -56,7 +56,18 @@ This module implements a layered browser benchmark superset for Chromium Track A
    - validates projection completeness/hash sync, optional report coverage, and optional promotion approvals.
 6. `scripts/run-browser-benchmark-superset.py`
    - one-command orchestration (generate -> run -> check -> summary + checker artifact).
-7. `scripts/check-browser-milestones.py`
+7. `scripts/score-browser-layered-report.py`
+   - emits a diagnostic score sidecar from a layered dawn/doe report:
+     row-weighted score, category-balanced score, per-category scores,
+     included rows, and excluded rows.
+8. `scripts/run-consumer-bench.sh`
+   - macOS/local side-by-side wrapper that compares stock Chrome as the Dawn
+     baseline against the host Fawn Chromium build with Doe forced on.
+9. `scripts/run-fawn-runtime-bench.sh`
+   - macOS/local wrapper that keeps the same host Fawn Chromium binary on both
+     sides and compares its Dawn runtime path against its forced Doe runtime
+     path.
+10. `scripts/check-browser-milestones.py`
    - validates milestone state and required local evidence for M0-M6.
 
 ## Quick Start
@@ -76,6 +87,71 @@ To run dawn/doe against different browser executables in one benchmark run:
   --dawn-chrome /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
   --doe-chrome /path/to/your/doe-chromium-binary
 ```
+
+On a macOS host with stock Chrome and a local Fawn source build, run the
+consumer-facing diagnostic wrapper:
+
+```bash
+./browser/chromium/scripts/run-consumer-bench.sh --headless true --strict-run
+```
+
+To isolate the runtime swap inside the same local Fawn binary:
+
+```bash
+./browser/chromium/scripts/run-fawn-runtime-bench.sh --headless true --strict-run
+```
+
+The wrapper writes the same layered diagnostic artifacts plus:
+
+- `browser/chromium/artifacts/<timestamp>/chrome-vs-fawn.browser-layered.superset.score.json`
+
+The CLI prints separate paired scores for the baseline and comparison modes,
+plus the comparison percent delta. `overall` is row-weighted.
+`categoryBalancedOverall` uses the geometric mean of per-category geomeans so a
+dense category cannot dominate the headline view. The legacy relative index is
+still present in JSON as `score` for compatibility, but it is not the primary
+readout. `bottlenecks` lists the slowest categories, rows, and measured phases
+so regressions do not require manual row sorting. The score is directional
+diagnostic evidence, not a release performance claim. The score sidecar carries
+source report, workload, browser executable, runtime, shader compiler, adapter,
+and trace-hash identity anchors and is covered by the browser artifact identity
+coverage gate.
+
+The L2 workflow manifest includes optional `fawn_visual_resource` rows for the
+checked-in Fawn HTML pages under `browser/chromium/resources/`. Those rows load
+the visible pages through the same local Playwright server and score shared
+frame-time telemetry only when both Dawn and forced Doe emit it. Reports and
+score rows carry the checked-in HTML resource path and SHA-256 so visual rows
+stay tied to the exact page source that ran.
+
+Layered runs request the high-performance WebGPU adapter by default on both
+browser modes. Override with `--power-preference default` or
+`--power-preference low-power` only when the artifact is meant to describe that
+adapter policy; the raw report records the selected adapter request policy.
+
+Texture L1 rows emit `textureMs` in addition to total `elapsedMs`. The score
+sidecar prefers `textureMs` so adapter/device startup remains visible evidence
+without dominating the texture-path category score. Texture rows also emit
+phase-level diagnostic medians and tails, including texture creation,
+texture write, view creation, render pipeline creation, submit/readback,
+map/read, wait, and destroy where the scenario exercises those phases. Use
+`--iters-texture` to set the texture sample count.
+
+Render-readback L1 rows emit `renderMs` plus render-path phase timings so
+adapter/device setup stays outside the render category score while remaining in
+the raw scenario evidence.
+
+For tuning one weak area without running the full diagnostic surface, pass one
+or more focused categories:
+
+```bash
+./browser/chromium/scripts/run-consumer-bench.sh --headless true --focus-category texture --focus-category render
+```
+
+Focused reports remain diagnostic and carry `workloadFilter` counts. The
+superset checker validates only rows in the selected categories and rejects
+rows that leak in from outside the filter. Score sidecars copy the same
+`workloadFilter` so focused scores are self-describing.
 
 Default outputs are lane-local diagnostic artifacts under:
 

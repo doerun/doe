@@ -1,0 +1,45 @@
+{
+  "workloads": "bench/workloads/workloads.package.inference.prepared.json",
+  "baseline": {
+    "name": "doe_gpu_node_native_direct_prepared",
+    "executorId": "doe_node_native_direct_prepared"
+  },
+  "comparison": {
+    "name": "node_webgpu_package_prepared",
+    "executorId": "node_webgpu_package_prepared"
+  },
+  "run": {
+    "iterations": 16,
+    "warmup": 1,
+    "out": "bench/out/apple-metal/gemma270m.node.direct.decode.warm.ir.compare.json",
+    "workspace": "bench/out/apple-metal/gemma270m.node.direct.decode.warm.ir.workspace",
+    "workloadFilter": "",
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "operation",
+    "allowBaselineNoExecution": false
+  },
+  "claimability": {
+    "mode": "local",
+    "minTimedSamples": 15
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  },
+  "selector": {
+    "cohorts": [],
+    "benchmarkClass": [
+      "comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "inference_gemma3_270m_decode_1tok"
+    ],
+    "excludeIds": []
+  }
+}

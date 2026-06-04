@@ -54,6 +54,24 @@ fn tiledPrecondition(overrides: struct {
     };
 }
 
+fn workgroupPrecondition(overrides: struct {
+    axis: u8 = 0,
+    multiplier: u64 = 1,
+    stride_bytes: u64 = 4,
+    offset: u64 = 0,
+}) Precondition {
+    return .{
+        .kind = .workgroup_component,
+        .gid_axis = overrides.axis,
+        .storage_binding = .{ .group = 0, .binding = 0 },
+        .element_multiplier = overrides.multiplier,
+        .loop_limit = 0,
+        .loop_limit_multiplier = 0,
+        .element_stride_bytes = overrides.stride_bytes,
+        .element_offset = overrides.offset,
+    };
+}
+
 fn flat2dPrecondition(overrides: struct {
     stride_bytes: u64 = 4,
     offset: u64 = 0,
@@ -421,6 +439,24 @@ test "gid component: large offset causes overflow" {
     try testing.expectError(error.Overflow, result);
 }
 
+test "workgroup component: bound uses dispatch workgroup count" {
+    const result = try dispatch.required_buffer_bytes(
+        workgroupPrecondition(.{}),
+        .{ 8, 1, 1 },
+        .{ 64, 1, 1 },
+    );
+    try testing.expectEqual(@as(u64, 32), result);
+}
+
+test "workgroup component: offset contributes to byte count" {
+    const result = try dispatch.required_buffer_bytes(
+        workgroupPrecondition(.{ .multiplier = 4, .offset = 2 }),
+        .{ 8, 1, 1 },
+        .{ 64, 1, 1 },
+    );
+    try testing.expectEqual(@as(u64, 124), result);
+}
+
 test "flat 2d: large workgroups cause element count overflow" {
     const result = dispatch.required_buffer_bytes(
         flat2dPrecondition(.{ .stride_bytes = std.math.maxInt(u64) }),
@@ -434,16 +470,18 @@ test "flat 2d: large workgroups cause element count overflow" {
 // DispatchPreconditionKind enum — exhaustiveness
 // ============================================================
 
-test "DispatchPreconditionKind has exactly 5 variants" {
+test "DispatchPreconditionKind has exactly 7 variants" {
     const fields = @typeInfo(ir.DispatchPreconditionKind).@"enum".fields;
-    try testing.expectEqual(@as(usize, 5), fields.len);
+    try testing.expectEqual(@as(usize, 7), fields.len);
 }
 
 test "DispatchPreconditionKind names are stable" {
     try testing.expectEqualStrings("gid_component", @tagName(ir.DispatchPreconditionKind.gid_component));
+    try testing.expectEqualStrings("workgroup_component", @tagName(ir.DispatchPreconditionKind.workgroup_component));
     try testing.expectEqualStrings("gid_component_tiled", @tagName(ir.DispatchPreconditionKind.gid_component_tiled));
     try testing.expectEqualStrings("flat_index_2d_dispatch_x", @tagName(ir.DispatchPreconditionKind.flat_index_2d_dispatch_x));
     try testing.expectEqualStrings("flat_index_3d_dispatch_xy", @tagName(ir.DispatchPreconditionKind.flat_index_3d_dispatch_xy));
+    try testing.expectEqualStrings("uniform_extent", @tagName(ir.DispatchPreconditionKind.uniform_extent));
     try testing.expectEqualStrings("loop_component", @tagName(ir.DispatchPreconditionKind.loop_component));
 }
 

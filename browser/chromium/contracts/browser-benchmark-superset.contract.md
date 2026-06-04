@@ -75,6 +75,50 @@ These hashes are blocking for contract synchronization.
 8. `claimScope` (`l2_component_only`, `l2_diagnostic_only`)
 9. `claimLanguage`
 
+`fawn_visual_resource` workflow entries additionally define `resourcePath`,
+which must point to a checked-in `browser/chromium/resources/*.html` page. These
+rows are optional diagnostics for visible Fawn pages and must use
+`comparabilityExpectation=none`, `requiredStatus=optional`, and
+`claimScope=l2_diagnostic_only`. Layered reports and score rows must include
+the current SHA-256 for each referenced visual resource; checker drift means the
+artifact no longer proves which page source ran.
+
+## Browser layered score
+
+The browser layered score sidecar remains diagnostic. It preserves the
+row-weighted `overall` summary for existing consumers and also emits
+`categoryBalancedOverall`, computed from the geometric mean of category
+geomeans. Both summaries must carry separate paired scores for baseline and
+comparison modes plus comparison percent delta. The category-balanced summary is
+the browser-bench style headline: each category contributes once, while
+row-level evidence remains available for auditing. Score sidecars must also
+emit `bottlenecks`, sorted by negative comparison delta, so weak categories,
+rows, and measured phases are explicit in the artifact.
+
+Texture scenario rows must expose `textureMs` when the row can measure the
+texture path separately from scenario startup. The score metric priority prefers
+that scenario-local value before falling back to total `elapsedMs`. Sampled
+texture rows must also expose the texture iteration count, warmup count, and
+phase-level timing summaries for the phases exercised by the scenario:
+texture creation, texture write, view creation, render pipeline creation,
+submit/readback, map/read, wait, property query, and destroy.
+Render-readback rows must expose `renderMs` plus the render-path phases they
+exercise so render scoring is not dominated by adapter/device setup.
+
+## Focused diagnostic runs
+
+The layered runner may accept explicit category filters for tuning weak browser
+surfaces. A filtered report must stay `claimStatus=diagnostic`, must include a
+`workloadFilter` object with selected categories and before/after row counts,
+and must not contain L1 or L2 rows outside the selected categories. The checker
+validates coverage only for rows in the filter. Filtered reports are engineering
+diagnostics, not full-superset evidence. Score sidecars produced from filtered
+reports must carry the same `workloadFilter`.
+
+The layered runner must make adapter policy explicit. The default diagnostic
+policy is `powerPreference=high-performance` for both modes; alternate adapter
+policy runs must record the selected value in report methodology.
+
 ## Gate Requirements
 
 Nursery superset gate must fail when:

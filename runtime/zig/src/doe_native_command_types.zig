@@ -8,6 +8,8 @@ pub const DeferredCopy = struct {
 
 pub const MAX_DEFERRED_COPIES: u32 = 16;
 
+pub const MAX_DEFERRED_RELEASES: u32 = 64;
+
 pub const DeferredResolve = struct {
     counter_buffer: ?*anyopaque,
     first_query: u32,

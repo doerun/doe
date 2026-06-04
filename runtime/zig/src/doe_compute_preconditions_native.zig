@@ -2,9 +2,11 @@ const std = @import("std");
 const dispatch_preconditions = @import("dispatch_preconditions.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
+const queue_submit_ops = @import("backend/dropin_queue_submit.zig");
 const ir = @import("doe_wgsl/ir.zig");
 
 pub const ValidationError = dispatch_preconditions.ValidationError;
+const bridge = queue_submit_ops.metal_bridge;
 
 pub fn validate_bind_groups(
     preconditions: []const ir.DispatchPrecondition,
@@ -20,7 +22,10 @@ pub fn validate_bind_groups(
         const bind_group = bind_groups[group] orelse return error.DispatchPreconditionFailed;
         if (binding >= bind_group.buffers.len) return error.DispatchPreconditionFailed;
         if (bind_group.buffers[binding] == null) return error.DispatchPreconditionFailed;
-        const required = try dispatch_preconditions.required_buffer_bytes(precondition, dispatch_workgroups, workgroup_size);
+        const required = if (precondition.kind == .uniform_extent)
+            try required_uniform_extent_bytes(precondition, bind_groups)
+        else
+            try dispatch_preconditions.required_buffer_bytes(precondition, dispatch_workgroups, workgroup_size);
         if (required > bind_group.buffer_sizes[binding]) return error.DispatchPreconditionFailed;
     }
     for (texture_preconditions) |precondition| {
@@ -47,6 +52,28 @@ pub fn validate_bind_groups(
             if (required_z > mip_extent(view.tex.depth_or_array_layers, precondition.mip_level)) return error.DispatchPreconditionFailed;
         }
     }
+}
+
+fn required_uniform_extent_bytes(
+    precondition: ir.DispatchPrecondition,
+    bind_groups: []const ?*native_types.DoeBindGroup,
+) ValidationError!u64 {
+    const group = precondition.uniform_binding.group;
+    const binding = precondition.uniform_binding.binding;
+    if (group >= bind_groups.len) return error.DispatchPreconditionFailed;
+    const bind_group = bind_groups[group] orelse return error.DispatchPreconditionFailed;
+    if (binding >= bind_group.retained_buffers.len) return error.DispatchPreconditionFailed;
+    const buffer = bind_group.retained_buffers[binding] orelse return error.DispatchPreconditionFailed;
+    const contents = bridge.metal_bridge_buffer_contents(buffer.mtl) orelse return error.DispatchPreconditionFailed;
+    var values = [_]u32{ 0, 0 };
+    for (0..precondition.uniform_u32_count) |index| {
+        const byte_offset = try std.math.add(u64, bind_group.offsets[binding], precondition.uniform_u32_offsets[index]);
+        const end_offset = try std.math.add(u64, byte_offset, @sizeOf(u32));
+        if (end_offset > buffer.size) return error.DispatchPreconditionFailed;
+        const ptr: *align(1) const u32 = @ptrCast(contents + @as(usize, @intCast(byte_offset)));
+        values[index] = ptr.*;
+    }
+    return dispatch_preconditions.required_uniform_extent_buffer_bytes(precondition, values);
 }
 
 fn required_texture_axis_extent(

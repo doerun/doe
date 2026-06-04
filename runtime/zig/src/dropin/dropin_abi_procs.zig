@@ -4,8 +4,18 @@ const abi_base = proc_types.base;
 const abi_descriptor = proc_types.descriptor;
 const ptypes = @import("../wgpu_types_procs.zig");
 const native = @import("../doe_wgpu_native.zig");
+const native_helpers = @import("../doe_native_object_helpers.zig");
+const native_types = @import("../doe_native_object_types.zig");
+const queue_flush_breakdown = @import("../doe_queue_flush_breakdown.zig");
 
 const BUFFER_MAP_SYNC_TIMEOUT_NS = 5 * std.time.ns_per_s;
+const MAP_READ_COPY_UNMAP_BREAKDOWN_FIELD_COUNT: usize = 6;
+const BREAKDOWN_WAIT_COMPLETED_INDEX: usize = 0;
+const BREAKDOWN_DEFERRED_COPY_INDEX: usize = 1;
+const BREAKDOWN_DEFERRED_RESOLVE_INDEX: usize = 2;
+const BREAKDOWN_MAP_INDEX: usize = 3;
+const BREAKDOWN_COPY_INDEX: usize = 4;
+const BREAKDOWN_UNMAP_INDEX: usize = 5;
 
 extern fn wgpuGetProcAddress(name: abi_base.WGPUStringView) callconv(.c) ?*const fn () callconv(.c) void;
 
@@ -256,6 +266,15 @@ pub export fn wgpuQueueSubmit(a0: abi_base.WGPUQueue, a1: usize, a2: [*c]abi_bas
     native.doeNativeQueueSubmit(a0, a1, a2);
 }
 
+pub export fn doeQueueSubmitOneAndRelease(
+    queue: abi_base.WGPUQueue,
+    command_buffer: abi_base.WGPUCommandBuffer,
+) callconv(.c) void {
+    var command_buffers = [_]abi_base.WGPUCommandBuffer{command_buffer};
+    native.doeNativeQueueSubmit(queue, command_buffers.len, &command_buffers);
+    native.doeNativeCommandBufferRelease(command_buffer);
+}
+
 pub export fn wgpuQueueOnSubmittedWorkDone(a0: abi_base.WGPUQueue, a1: abi_descriptor.WGPUQueueWorkDoneCallbackInfo) callconv(.c) abi_base.WGPUFuture {
     return native.doeNativeQueueOnSubmittedWorkDone(a0, a1);
 }
@@ -411,6 +430,78 @@ pub export fn doeBufferMapSyncFlat(
         if (std.time.nanoTimestamp() - start_ns >= BUFFER_MAP_SYNC_TIMEOUT_NS) return 0;
     }
     return result.status;
+}
+
+pub export fn doeBufferMapReadCopyUnmapFlat(
+    queue: abi_base.WGPUQueue,
+    buffer: abi_base.WGPUBuffer,
+    mode: abi_base.WGPUMapMode,
+    offset: usize,
+    size: usize,
+    should_flush: u32,
+    dst_ptr: ?*anyopaque,
+    breakdown_ptr: ?[*]u64,
+) callconv(.c) abi_base.WGPUStatus {
+    const dst_raw = dst_ptr orelse return 0;
+    const breakdown = breakdown_ptr orelse return 0;
+    if (mode != abi_base.WGPUMapMode_Read) return 0;
+    for (0..MAP_READ_COPY_UNMAP_BREAKDOWN_FIELD_COUNT) |index| {
+        breakdown[index] = 0;
+    }
+
+    if (should_flush != 0) {
+        if (native_helpers.cast(native_types.DoeQueue, queue)) |q| {
+            const dst: [*]u8 = @ptrCast(dst_raw);
+            const flush = queue_flush_breakdown.flushPendingWorkTimedDirectReadback(q, buffer, offset, size, dst);
+            breakdown[BREAKDOWN_WAIT_COMPLETED_INDEX] = flush.breakdown.waitCompletedNs;
+            breakdown[BREAKDOWN_DEFERRED_COPY_INDEX] = flush.breakdown.deferredCopyNs;
+            breakdown[BREAKDOWN_DEFERRED_RESOLVE_INDEX] = flush.breakdown.deferredResolveNs;
+            if (flush.copied_direct) return abi_base.WGPUStatus_Success;
+        } else {
+            var wait_completed_ns: u64 = 0;
+            var deferred_copy_ns: u64 = 0;
+            var deferred_resolve_ns: u64 = 0;
+            native.doeNativeQueueFlushBreakdown(
+                queue,
+                &wait_completed_ns,
+                &deferred_copy_ns,
+                &deferred_resolve_ns,
+            );
+            breakdown[BREAKDOWN_WAIT_COMPLETED_INDEX] = wait_completed_ns;
+            breakdown[BREAKDOWN_DEFERRED_COPY_INDEX] = deferred_copy_ns;
+            breakdown[BREAKDOWN_DEFERRED_RESOLVE_INDEX] = deferred_resolve_ns;
+        }
+    }
+
+    var result = BufferMapSyncResult{};
+    const info = abi_descriptor.WGPUBufferMapCallbackInfo{
+        .nextInChain = null,
+        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
+        .callback = buffer_map_sync_callback,
+        .userdata1 = @ptrCast(&result),
+        .userdata2 = null,
+    };
+    const map_started_ns = std.time.nanoTimestamp();
+    const future = native.doeNativeBufferMapAsync(buffer, mode, offset, size, info);
+    if (future.id == 0 or !result.done or result.status != abi_base.WGPUMapAsyncStatus_Success) {
+        return 0;
+    }
+    breakdown[BREAKDOWN_MAP_INDEX] = @intCast(std.time.nanoTimestamp() - map_started_ns);
+
+    const copy_started_ns = std.time.nanoTimestamp();
+    const src_ptr = native.doeNativeBufferGetConstMappedRange(buffer, offset, size) orelse {
+        native.doeNativeBufferUnmap(buffer);
+        return 0;
+    };
+    const src: [*]const u8 = @ptrCast(src_ptr);
+    const dst: [*]u8 = @ptrCast(dst_raw);
+    @memcpy(dst[0..size], src[0..size]);
+    breakdown[BREAKDOWN_COPY_INDEX] = @intCast(std.time.nanoTimestamp() - copy_started_ns);
+
+    const unmap_started_ns = std.time.nanoTimestamp();
+    native.doeNativeBufferUnmap(buffer);
+    breakdown[BREAKDOWN_UNMAP_INDEX] = @intCast(std.time.nanoTimestamp() - unmap_started_ns);
+    return abi_base.WGPUStatus_Success;
 }
 
 // FFI-friendly queue work-done: flattened args for runtimes that cannot pass WGPUQueueWorkDoneCallbackInfo by value.

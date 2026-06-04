@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 
 const CACHE_ENV_VAR = 'DOE_BENCH_ASSET_CACHE_DIR';
 const DEFAULT_CACHE_DIR_SUFFIX = 'doe/bench_synthetic_assets';
+const syntheticAssetDataCache = new Map();
 
 export function resolveSyntheticAssetCacheRoot() {
   const override = typeof process.env[CACHE_ENV_VAR] === 'string'
@@ -26,6 +27,11 @@ export function resolveSyntheticAssetPath(cacheNamespace, cacheKey) {
 
 export function readSyntheticAssetData({ cacheNamespace, cacheKey, sizeBytes }) {
   const path = resolveSyntheticAssetPath(cacheNamespace, cacheKey);
+  const cacheId = `${path}\0${sizeBytes}`;
+  const cached = syntheticAssetDataCache.get(cacheId);
+  if (cached) {
+    return cached;
+  }
   const payload = readFileSync(path);
   if (!Number.isInteger(sizeBytes) || sizeBytes <= 0) {
     throw new Error('synthetic asset descriptors require positive sizeBytes');
@@ -35,5 +41,7 @@ export function readSyntheticAssetData({ cacheNamespace, cacheKey, sizeBytes }) 
       `synthetic asset ${cacheNamespace}/${cacheKey} expected ${sizeBytes} bytes, got ${payload.byteLength}`,
     );
   }
-  return new Uint8Array(payload.buffer, payload.byteOffset, payload.byteLength);
+  const view = new Uint8Array(payload.buffer, payload.byteOffset, payload.byteLength);
+  syntheticAssetDataCache.set(cacheId, view);
+  return view;
 }

@@ -24,8 +24,10 @@ function parseCliArgs(defaultProvider) {
       workload: { type: 'string', default: '' },
       'dry-run': { type: 'boolean', default: false },
       'prepared-session': { type: 'boolean', default: false },
+      'resident-buffer-loads': { type: 'boolean', default: false },
       'debug-boundaries': { type: 'boolean', default: false },
       'step-limit': { type: 'string', default: '' },
+      'command-repeat': { type: 'string', default: '' },
     },
   }).values;
 }
@@ -34,9 +36,22 @@ function validateArgs(args, { usageCommand, providerUsage }) {
   if (!args.plan || !args['trace-meta'] || !args['trace-jsonl'] || !args.workload) {
     throw new Error(
       `usage: ${usageCommand} --provider <${providerUsage}> --plan <path> `
-      + '--trace-meta <path> --trace-jsonl <path> --workload <id> [--prepared-session]',
+      + '--trace-meta <path> --trace-jsonl <path> --workload <id> '
+      + '[--prepared-session] [--resident-buffer-loads]',
     );
   }
+}
+
+function parseCommandRepeat(commandRepeat) {
+  const normalized = typeof commandRepeat === 'string' ? commandRepeat.trim() : '';
+  if (!normalized) {
+    return 1;
+  }
+  const parsed = Number(normalized);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`expected a positive integer for --command-repeat, got: ${commandRepeat}`);
+  }
+  return parsed;
 }
 
 function parseStepLimit(stepLimit) {
@@ -88,6 +103,23 @@ async function readTraceMeta(traceMetaPath) {
   }
 }
 
+export function successfulRunUnexpectedStderr(stderr) {
+  return String(stderr ?? '')
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => {
+      if (!line) {
+        return false;
+      }
+      try {
+        const payload = JSON.parse(line);
+        return payload?.kind !== 'package_webgpu_debug';
+      } catch {
+        return true;
+      }
+    });
+}
+
 function childArgv(args, cliPath, overrides = {}) {
   const resolved = {
     provider: overrides.provider ?? args.provider,
@@ -97,8 +129,10 @@ function childArgv(args, cliPath, overrides = {}) {
     workload: overrides.workload ?? args.workload,
     dryRun: overrides.dryRun ?? Boolean(args['dry-run']),
     preparedSession: overrides.preparedSession ?? Boolean(args['prepared-session']),
+    residentBufferLoads: overrides.residentBufferLoads ?? Boolean(args['resident-buffer-loads']),
     debugBoundaries: overrides.debugBoundaries ?? Boolean(args['debug-boundaries']),
     stepLimit: overrides.stepLimit ?? args['step-limit'],
+    commandRepeat: overrides.commandRepeat ?? args['command-repeat'],
   };
   const argv = [
     cliPath,
@@ -114,11 +148,17 @@ function childArgv(args, cliPath, overrides = {}) {
   if (resolved.preparedSession) {
     argv.push('--prepared-session');
   }
+  if (resolved.residentBufferLoads) {
+    argv.push('--resident-buffer-loads');
+  }
   if (resolved.debugBoundaries) {
     argv.push('--debug-boundaries');
   }
   if (resolved.stepLimit) {
     argv.push('--step-limit', String(resolved.stepLimit));
+  }
+  if (resolved.commandRepeat) {
+    argv.push('--command-repeat', String(resolved.commandRepeat));
   }
   return argv;
 }
@@ -179,6 +219,7 @@ async function writeSupervisorFailureArtifacts(
         normalizedPlan,
         spec,
         preparedSession: Boolean(args['prepared-session']),
+        residentBufferLoads: Boolean(args['resident-buffer-loads']),
         hostInputReadTotalNs: 0,
         hostInputParseTotalNs: 0,
         hostWorkloadPrepareTotalNs: 0,
@@ -191,6 +232,7 @@ async function writeSupervisorFailureArtifacts(
         normalizedPlan,
         spec,
         preparedSession: Boolean(args['prepared-session']),
+        residentBufferLoads: Boolean(args['resident-buffer-loads']),
         hostInputReadTotalNs: 0,
         hostInputParseTotalNs: 0,
         hostWorkloadPrepareTotalNs: 0,
@@ -212,8 +254,10 @@ async function runWorker(args, { runtimeHost }) {
     traceJsonlPath: args['trace-jsonl'],
     dryRun: Boolean(args['dry-run']),
     preparedSession: Boolean(args['prepared-session']),
+    residentBufferLoads: Boolean(args['resident-buffer-loads']),
     debugBoundaries: Boolean(args['debug-boundaries']),
     stepLimit: args['step-limit'] ? Number(args['step-limit']) : 0,
+    commandRepeat: parseCommandRepeat(args['command-repeat']),
   });
 }
 
@@ -261,6 +305,17 @@ async function runWithSupervisor(args, {
   });
 
   if (outcome.code === 0) {
+    const unexpectedStderr = successfulRunUnexpectedStderr(stderr);
+    if (unexpectedStderr.length > 0) {
+      await writeSupervisorFailureArtifacts(args, started_at_ms, false, {
+        runtimeHost,
+      });
+      process.stderr.write(
+        `${label} supervisor rejected successful child run with stderr output\n`,
+      );
+      process.exitCode = 1;
+      return;
+    }
     return;
   }
 

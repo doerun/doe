@@ -50,6 +50,7 @@
   },
   "files": [
     "src/",
+    "examples/",
     "!src/vendor/build/",
     "scripts/",
     "binding.gyp",

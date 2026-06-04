@@ -38,6 +38,7 @@ napi_value doe_buffer_get_mapped_range(napi_env env, napi_callback_info info);
 napi_value doe_buffer_get_staged_range(napi_env env, napi_callback_info info);
 napi_value doe_buffer_flush_staged_range(napi_env env, napi_callback_info info);
 napi_value doe_buffer_read_copy(napi_env env, napi_callback_info info);
+napi_value doe_buffer_map_read_copy_unmap(napi_env env, napi_callback_info info);
 napi_value doe_buffer_write_mapped_range(napi_env env, napi_callback_info info);
 napi_value doe_buffer_read_indirect_counts(napi_env env, napi_callback_info info);
 napi_value doe_buffer_assert_mapped_prefix_f32(napi_env env, napi_callback_info info);
@@ -57,12 +58,15 @@ napi_value doe_compute_pipeline_get_bind_group_layout(napi_env env, napi_callbac
 
 /* Bind group layout / bind group */
 napi_value doe_create_bind_group_layout(napi_env env, napi_callback_info info);
+napi_value doe_create_buffer_bind_group_layout_flat4(napi_env env, napi_callback_info info);
 napi_value doe_bind_group_layout_release(napi_env env, napi_callback_info info);
 napi_value doe_create_bind_group(napi_env env, napi_callback_info info);
+napi_value doe_create_buffer_bind_group_flat4(napi_env env, napi_callback_info info);
 napi_value doe_bind_group_release(napi_env env, napi_callback_info info);
 
 /* Pipeline layout */
 napi_value doe_create_pipeline_layout(napi_env env, napi_callback_info info);
+napi_value doe_create_pipeline_layout_one(napi_env env, napi_callback_info info);
 napi_value doe_pipeline_layout_release(napi_env env, napi_callback_info info);
 
 /* Command encoder / buffer */
@@ -74,6 +78,8 @@ napi_value doe_command_encoder_copy_texture_to_buffer(napi_env env, napi_callbac
 napi_value doe_command_encoder_clear_buffer(napi_env env, napi_callback_info info);
 napi_value doe_command_encoder_copy_texture_to_texture(napi_env env, napi_callback_info info);
 napi_value doe_command_encoder_finish(napi_env env, napi_callback_info info);
+napi_value doe_create_compute_dispatch_copy_command_buffer(napi_env env, napi_callback_info info);
+napi_value doe_create_compute_dispatch_batch_copy_command_buffer(napi_env env, napi_callback_info info);
 napi_value doe_command_buffer_release(napi_env env, napi_callback_info info);
 napi_value doe_command_encoder_write_timestamp(napi_env env, napi_callback_info info);
 napi_value doe_command_encoder_resolve_query_set(napi_env env, napi_callback_info info);
@@ -94,11 +100,13 @@ napi_value doe_compute_pass_release(napi_env env, napi_callback_info info);
 
 /* Queue */
 napi_value doe_queue_submit(napi_env env, napi_callback_info info);
+napi_value doe_queue_submit_one(napi_env env, napi_callback_info info);
 napi_value doe_queue_write_buffer(napi_env env, napi_callback_info info);
 napi_value doe_queue_write_texture(napi_env env, napi_callback_info info);
 napi_value doe_queue_flush(napi_env env, napi_callback_info info);
 napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info);
 napi_value doe_queue_submit_compute_dispatch_copy(napi_env env, napi_callback_info info);
+napi_value doe_native_fast_path_info(napi_env env, napi_callback_info info);
 napi_value doe_compute_dispatch_flush_and_map_sync(napi_env env, napi_callback_info info);
 napi_value doe_queue_release(napi_env env, napi_callback_info info);
 
@@ -178,6 +186,7 @@ napi_value doe_query_set_destroy(napi_env env, napi_callback_info info);
 
 /* Diagnostics / error inspection */
 napi_value doe_set_timeout_ms(napi_env env, napi_callback_info info);
+napi_value doe_package_pipeline_cache_flush(napi_env env, napi_callback_info info);
 
 /* ================================================================
  * Module initialization
@@ -204,6 +213,7 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("bufferGetStagedRange",                     doe_buffer_get_staged_range),
         EXPORT_FN("bufferFlushStagedRange",                   doe_buffer_flush_staged_range),
         EXPORT_FN("bufferReadCopy",                           doe_buffer_read_copy),
+        EXPORT_FN("bufferMapReadCopyUnmap",                   doe_buffer_map_read_copy_unmap),
         EXPORT_FN("bufferWriteMappedRange",                   doe_buffer_write_mapped_range),
         EXPORT_FN("bufferReadIndirectCounts",                 doe_buffer_read_indirect_counts),
         EXPORT_FN("bufferAssertMappedPrefixF32",              doe_buffer_assert_mapped_prefix_f32),
@@ -217,10 +227,13 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("computePipelineRelease",                   doe_compute_pipeline_release),
         EXPORT_FN("computePipelineGetBindGroupLayout",        doe_compute_pipeline_get_bind_group_layout),
         EXPORT_FN("createBindGroupLayout",                    doe_create_bind_group_layout),
+        EXPORT_FN("createBufferBindGroupLayoutFlat4",         doe_create_buffer_bind_group_layout_flat4),
         EXPORT_FN("bindGroupLayoutRelease",                   doe_bind_group_layout_release),
         EXPORT_FN("createBindGroup",                          doe_create_bind_group),
+        EXPORT_FN("createBufferBindGroupFlat4",               doe_create_buffer_bind_group_flat4),
         EXPORT_FN("bindGroupRelease",                         doe_bind_group_release),
         EXPORT_FN("createPipelineLayout",                     doe_create_pipeline_layout),
+        EXPORT_FN("createPipelineLayoutOne",                  doe_create_pipeline_layout_one),
         EXPORT_FN("pipelineLayoutRelease",                    doe_pipeline_layout_release),
         EXPORT_FN("createCommandEncoder",                     doe_create_command_encoder),
         EXPORT_FN("commandEncoderRelease",                    doe_command_encoder_release),
@@ -230,6 +243,8 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("commandEncoderClearBuffer",                doe_command_encoder_clear_buffer),
         EXPORT_FN("commandEncoderCopyTextureToTexture",       doe_command_encoder_copy_texture_to_texture),
         EXPORT_FN("commandEncoderFinish",                     doe_command_encoder_finish),
+        EXPORT_FN("createComputeDispatchCopyCommandBuffer",   doe_create_compute_dispatch_copy_command_buffer),
+        EXPORT_FN("createComputeDispatchBatchCopyCommandBuffer", doe_create_compute_dispatch_batch_copy_command_buffer),
         EXPORT_FN("commandBufferRelease",                     doe_command_buffer_release),
         EXPORT_FN("beginComputePass",                         doe_begin_compute_pass),
         EXPORT_FN("computePassSetPipeline",                   doe_compute_pass_set_pipeline),
@@ -244,11 +259,13 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("computePassEnd",                           doe_compute_pass_end),
         EXPORT_FN("computePassRelease",                       doe_compute_pass_release),
         EXPORT_FN("queueSubmit",                              doe_queue_submit),
+        EXPORT_FN("queueSubmitOne",                           doe_queue_submit_one),
         EXPORT_FN("queueWriteBuffer",                         doe_queue_write_buffer),
         EXPORT_FN("queueWriteTexture",                        doe_queue_write_texture),
         EXPORT_FN("queueFlush",                               doe_queue_flush),
         EXPORT_FN("submitBatched",                            doe_queue_submit_batched),
         EXPORT_FN("submitComputeDispatchCopy",                doe_queue_submit_compute_dispatch_copy),
+        EXPORT_FN("nativeFastPathInfo",                       doe_native_fast_path_info),
         EXPORT_FN("flushAndMapSync",                          doe_compute_dispatch_flush_and_map_sync),
         EXPORT_FN("queueRelease",                             doe_queue_release),
         EXPORT_FN("createTexture",                            doe_create_texture),
@@ -314,6 +331,7 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("commandEncoderResolveQuerySet",            doe_command_encoder_resolve_query_set),
         EXPORT_FN("querySetDestroy",                          doe_query_set_destroy),
         EXPORT_FN("setTimeoutMs",                             doe_set_timeout_ms),
+        EXPORT_FN("packagePipelineCacheFlush",                doe_package_pipeline_cache_flush),
     };
 
     size_t count = sizeof(descriptors) / sizeof(descriptors[0]);

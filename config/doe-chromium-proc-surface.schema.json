@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/doe-chromium-proc-surface.schema.json",
+  "title": "Doe Chromium proc surface",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "surfaceId",
+    "surfaceVersion",
+    "lastUpdated",
+    "libraryPath",
+    "selectionMode",
+    "description",
+    "instanceBootstrap",
+    "wireProcTable",
+    "localWireProcSurface",
+    "browserSharedMemoryBehavior",
+    "requiredSymbols"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "surfaceId": { "type": "string", "const": "doe-chromium-proc-surface" },
+    "surfaceVersion": { "type": "integer", "minimum": 1 },
+    "lastUpdated": { "type": "string", "minLength": 1 },
+    "libraryPath": { "type": "string", "minLength": 1 },
+    "selectionMode": {
+      "type": "string",
+      "enum": ["forced_doe_source_selector"]
+    },
+    "description": { "type": "string", "minLength": 1 },
+    "instanceBootstrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required"],
+      "properties": {
+        "required": { "type": "boolean", "const": true }
+      }
+    },
+    "wireProcTable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "lookupSymbol", "tableHeaderPath"],
+      "properties": {
+        "required": { "type": "boolean", "const": true },
+        "lookupSymbol": { "type": "string", "const": "wgpuGetProcAddress" },
+        "tableHeaderPath": {
+          "type": "string",
+          "pattern": "^browser/chromium/src/.+dawn_proc_table\\.h$"
+        }
+      }
+    },
+    "localWireProcSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "resolverSourcePath", "description", "requiredSymbols"],
+      "properties": {
+        "required": { "type": "boolean", "const": true },
+        "resolverSourcePath": {
+          "type": "string",
+          "const": "runtime/zig/src/wgpu_dropin_lib.zig"
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "requiredSymbols": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["symbol", "domain"],
+            "properties": {
+              "symbol": {
+                "type": "string",
+                "pattern": "^wgpu[A-Za-z0-9]+$"
+              },
+              "domain": {
+                "type": "string",
+                "enum": [
+                  "error_object",
+                  "shared_buffer_memory",
+                  "shared_fence",
+                  "shared_texture_memory"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "browserSharedMemoryBehavior": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "implementationSourcePath", "description"],
+      "properties": {
+        "required": { "type": "boolean", "const": true },
+        "implementationSourcePath": {
+          "type": "string",
+          "const": "runtime/zig/src/dropin/dropin_browser_shared_memory.zig"
+        },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "requiredSymbols": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["symbol", "domain"],
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "pattern": "^wgpu[A-Za-z0-9]+$"
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "adapter",
+              "device",
+              "buffer",
+              "command",
+              "compute",
+              "render",
+              "queue",
+              "resource",
+              "surface",
+              "external_texture"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

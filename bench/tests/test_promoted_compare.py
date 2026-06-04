@@ -73,7 +73,7 @@ class PromotedCompareTests(unittest.TestCase):
         self.assertEqual(entry.package_runtime, "node")
         self.assertEqual(entry.runtime_host, "node")
         self.assertEqual(entry.temperature, "warm")
-        self.assertEqual(entry.comparison_view, "doe_vs_node_webgpu_package")
+        self.assertEqual(entry.comparison_view, "doe_vs_dawn_node_webgpu_package")
         self.assertEqual(entry.baseline_executor_id, "doe_node_webgpu_prepared")
         self.assertEqual(entry.comparison_executor_id, "node_webgpu_package_prepared")
 
@@ -90,9 +90,79 @@ class PromotedCompareTests(unittest.TestCase):
         self.assertEqual(entry.id, "apple-metal-gemma64-bun-package-warm")
         self.assertEqual(entry.package_runtime, "bun")
         self.assertEqual(entry.runtime_host, "bun")
-        self.assertEqual(entry.comparison_view, "doe_vs_bun_webgpu_package")
+        self.assertEqual(entry.comparison_view, "doe_vs_dawn_bun_webgpu_package")
         self.assertEqual(entry.baseline_executor_id, "doe_bun_package_prepared")
         self.assertEqual(entry.comparison_executor_id, "bun_webgpu_package_prepared")
+
+    def test_native_direct_package_entry_uses_native_direct_provider_set(self) -> None:
+        entries = load_catalog(REPO_ROOT / "config" / "promoted-compare-catalog.json")
+        entry = resolve_entry(
+            entries,
+            profile_id="apple-metal-gemma270m-node-native-direct-decode-warm",
+        )
+        self.assertEqual(entry.comparison_view, "doe_native_direct_vs_dawn_node_webgpu_package")
+        self.assertEqual(entry.provider_set, "package_node_native_direct_providers")
+        self.assertEqual(entry.providers, ("doe-direct", "node-webgpu"))
+        argvs = build_run_config_argvs(entry)
+        for argv in argvs:
+            self.assertIn("--provider-set", argv)
+            self.assertEqual(
+                argv[argv.index("--provider-set") + 1],
+                "package_node_native_direct_providers",
+            )
+
+    def test_resolve_resident_buffer_load_package_entries_by_workload(self) -> None:
+        entries = load_catalog(REPO_ROOT / "config" / "promoted-compare-catalog.json")
+        node_entry = resolve_entry(
+            entries,
+            backend="apple-metal",
+            surface="package",
+            workload="gemma270m-decode-resident",
+            mode="warm",
+        )
+        self.assertEqual(
+            node_entry.id,
+            "apple-metal-gemma270m-node-native-direct-decode-resident-warm",
+        )
+        self.assertEqual(
+            node_entry.baseline_executor_id,
+            "doe_node_native_direct_prepared_resident_buffer_loads",
+        )
+        self.assertEqual(
+            node_entry.comparison_executor_id,
+            "node_webgpu_package_prepared_resident_buffer_loads",
+        )
+
+        bun_entry = resolve_entry(
+            entries,
+            backend="apple-metal",
+            surface="package",
+            workload="gemma270m-decode-resident",
+            mode="warm",
+            package_runtime="bun",
+        )
+        self.assertEqual(
+            bun_entry.id,
+            "apple-metal-gemma270m-bun-package-decode-resident-warm",
+        )
+        self.assertEqual(
+            bun_entry.baseline_executor_id,
+            "doe_bun_package_prepared_resident_buffer_loads",
+        )
+        self.assertEqual(
+            bun_entry.comparison_executor_id,
+            "bun_webgpu_package_prepared_resident_buffer_loads",
+        )
+
+    def test_node_package_provider_sets_match_comparison_view(self) -> None:
+        entries = load_catalog(REPO_ROOT / "config" / "promoted-compare-catalog.json")
+        for entry in entries:
+            if entry.comparison_view == "doe_native_direct_vs_dawn_node_webgpu_package":
+                self.assertEqual(entry.provider_set, "package_node_native_direct_providers", entry.id)
+                self.assertEqual(entry.providers, ("doe-direct", "node-webgpu"), entry.id)
+            elif entry.comparison_view == "doe_vs_dawn_node_webgpu_package":
+                self.assertEqual(entry.provider_set, "package_node_providers", entry.id)
+                self.assertEqual(entry.providers, ("doe", "node-webgpu"), entry.id)
 
     def test_resolve_entry_by_profile_id(self) -> None:
         entries = load_catalog(REPO_ROOT / "config" / "promoted-compare-catalog.json")
@@ -123,7 +193,7 @@ class PromotedCompareTests(unittest.TestCase):
             self.assertIn("--temperature", argv)
             self.assertIn("cold", argv)
             self.assertIn("--comparison-view", argv)
-            self.assertIn("doe_vs_node_webgpu_package", argv)
+            self.assertIn("doe_vs_dawn_node_webgpu_package", argv)
             self.assertIn("--iterations", argv)
             self.assertIn("20", argv)
             self.assertIn(

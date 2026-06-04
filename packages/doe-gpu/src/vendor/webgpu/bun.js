@@ -2,7 +2,15 @@ import * as ffi from "./bun-ffi.js";
 import * as full from "./full.js";
 import { createDoeNamespace } from '../doe-namespace.js';
 
-const runtime = process.platform === "linux" ? ffi : full;
+const ffiDefaultPlatforms = new Set(["darwin", "linux"]);
+const requestedBackend = process.env.DOE_BUN_WEBGPU_BACKEND ?? "";
+const ffiLoaded = ffi.providerInfo().loaded;
+const runtime = requestedBackend === "full"
+  ? full
+  : (requestedBackend === "ffi" || ffiDefaultPlatforms.has(process.platform)) && ffiLoaded
+    ? ffi
+    : full;
+const runtimeProvider = runtime === ffi ? "doe-ffi" : "doe-full";
 
 export const doe = createDoeNamespace({
   requestDevice: runtime.requestDevice,
@@ -15,7 +23,12 @@ export const globals = runtime.globals;
 export const setupGlobals = runtime.setupGlobals;
 export const requestAdapter = runtime.requestAdapter;
 export const requestDevice = runtime.requestDevice;
-export const providerInfo = runtime.providerInfo;
+export const providerInfo = () => ({
+  ...runtime.providerInfo(),
+  bunRuntimeProvider: runtimeProvider,
+});
+export const nativeFastPathInfo = runtime.nativeFastPathInfo ?? full.nativeFastPathInfo;
+export const fastPathStats = runtime.fastPathStats;
 export const preflightShaderSource = runtime.preflightShaderSource ?? full.preflightShaderSource;
 export const setNativeTimeoutMs = runtime.setNativeTimeoutMs ?? full.setNativeTimeoutMs;
 export const createDoeRuntime = runtime.createDoeRuntime;
@@ -38,6 +51,8 @@ export default {
   createCanvasContext,
   createBrowserSurfaceClasses,
   createNativeBrowserCanvasBackend,
+  nativeFastPathInfo,
+  fastPathStats,
   preflightShaderSource,
   setNativeTimeoutMs,
   doe,

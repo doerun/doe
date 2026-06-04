@@ -52,8 +52,8 @@
       "status": "active",
       "owner": "runtime-core",
       "inputs": ["browser-workflow-manifest", "browser-promotion-approvals", "browser-ownership"],
-      "outputs": ["browser-smoke-report", "browser-layered-report", "browser-gate-report"],
-      "contracts": ["browser-workflow-manifest.schema.json", "browser-promotion-approvals.schema.json", "browser-ownership.schema.json"]
+      "outputs": ["browser-smoke-report", "browser-layered-report", "browser-layered-score", "browser-gate-report"],
+      "contracts": ["browser-workflow-manifest.schema.json", "browser-promotion-approvals.schema.json", "browser-ownership.schema.json", "browser-layered-score.schema.json"]
     },
     {
       "moduleId": "browser_claimability",

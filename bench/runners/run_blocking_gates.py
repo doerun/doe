@@ -582,6 +582,21 @@ def parse_args() -> argparse.Namespace:
         help="Require source markers for Chromium's fail-closed Doe runtime selector seam.",
     )
     parser.add_argument(
+        "--with-doe-chromium-proc-surface-gate",
+        action="store_true",
+        help="Run check_doe_chromium_proc_surface.py on the Doe WebGPU dylib.",
+    )
+    parser.add_argument(
+        "--doe-chromium-proc-surface",
+        default="config/doe-chromium-proc-surface.json",
+        help="Doe Chromium proc-surface config passed to the checker.",
+    )
+    parser.add_argument(
+        "--doe-chromium-proc-surface-library",
+        default="",
+        help="Optional Doe WebGPU library override passed to the proc-surface checker.",
+    )
+    parser.add_argument(
         "--with-webgpu-integration-chromium-gate",
         action="store_true",
         help="Run check_webgpu_integration_chromium.py on the Chromium integration overlay.",
@@ -593,7 +608,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--webgpu-integration-chromium-verify-artifact-root",
-        default="",
+        default=".",
         help="Optional root forwarded to the Chromium integration overlay checker.",
     )
     parser.add_argument(
@@ -1286,6 +1301,7 @@ def main() -> int:
     )
     chromium_patch_manifest_check = tools_dir / "check_chromium_patch_manifest.py"
     chromium_source_checkout_check = tools_dir / "check_chromium_source_checkout.py"
+    doe_chromium_proc_surface_check = tools_dir / "check_doe_chromium_proc_surface.py"
     webgpu_integration_chromium_check = (
         tools_dir / "check_webgpu_integration_chromium.py"
     )
@@ -1874,6 +1890,32 @@ def main() -> int:
                 command.append("--require-runtime-selector")
             run_gate(
                 "chromium-source-checkout",
+                command,
+            )
+
+        if args.with_doe_chromium_proc_surface_gate:
+            config_path = require_existing_path(
+                args.doe_chromium_proc_surface,
+                "--doe-chromium-proc-surface",
+            )
+            if config_path is None:
+                return 1
+            command = [
+                sys.executable,
+                str(doe_chromium_proc_surface_check),
+                "--config",
+                str(config_path),
+                "--require-ready",
+            ]
+            if args.doe_chromium_proc_surface_library.strip():
+                command.extend(
+                    [
+                        "--library",
+                        args.doe_chromium_proc_surface_library.strip(),
+                    ]
+                )
+            run_gate(
+                "doe-chromium-proc-surface",
                 command,
             )
 

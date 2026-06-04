@@ -83,6 +83,65 @@ function omitUndefinedFields(value) {
   );
 }
 
+function normalizeStringList(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return [...new Set(value
+    .map((entry) => String(entry).trim())
+    .filter((entry) => entry.length > 0))]
+    .sort();
+}
+
+function commandPlanAdapterDescriptor(plan) {
+  const adapter = isPlainObject(plan.adapter) ? plan.adapter : {};
+  const requiredFeatures = normalizeStringList(
+    adapter.requiredFeatures
+      ?? adapter.required_features
+      ?? plan.requiredFeatures
+      ?? plan.required_features
+      ?? [],
+  );
+  const requiredLimits = isPlainObject(adapter.requiredLimits)
+    ? adapter.requiredLimits
+    : isPlainObject(adapter.required_limits)
+      ? adapter.required_limits
+      : isPlainObject(plan.requiredLimits)
+        ? plan.requiredLimits
+        : isPlainObject(plan.required_limits)
+          ? plan.required_limits
+          : {};
+  return {
+    powerPreference: typeof adapter.powerPreference === 'string'
+      ? adapter.powerPreference
+      : typeof adapter.power_preference === 'string'
+        ? adapter.power_preference
+        : typeof plan.powerPreference === 'string'
+          ? plan.powerPreference
+          : typeof plan.power_preference === 'string'
+            ? plan.power_preference
+            : 'high-performance',
+    requiredFeatures,
+    requiredLimits,
+  };
+}
+
+function commandCaptureValidate(command) {
+  const explicit = command.captureValidate ?? command.capture_validate ?? command.validate;
+  if (isPlainObject(explicit)) {
+    return explicit;
+  }
+  const expectedU32Le = command.captureExpectedU32Le
+    ?? command.capture_expected_u32_le
+    ?? command.expectedU32Le
+    ?? command.expected_u32_le;
+  const parsed = Number(expectedU32Le);
+  if (Number.isInteger(parsed) && parsed >= 0) {
+    return { kind: 'u32PrefixEquals', values: [parsed] };
+  }
+  return undefined;
+}
+
 function commandPlanToNeutralPlan(plan) {
   const commands = Array.isArray(plan.commands) ? plan.commands : [];
   const buffers = new Map();
@@ -144,6 +203,7 @@ function commandPlanToNeutralPlan(plan) {
       captureSize,
       { writable: true, readableMap: true },
     );
+    const validate = commandCaptureValidate(command);
     steps.push({
       id: `step-${index}-capture-copy`,
       kind: 'copyBufferToBuffer',
@@ -187,6 +247,7 @@ function commandPlanToNeutralPlan(plan) {
       captureOffset,
       captureSize,
       captureDecode: typeof command.decode === 'string' ? command.decode : undefined,
+      validate,
     }));
   }
 
@@ -240,11 +301,16 @@ function commandPlanToNeutralPlan(plan) {
     if (kind === 'kernel_dispatch') {
       const kernel = typeof command.kernel === 'string' ? command.kernel : '';
       const moduleId = basename(kernel, extname(kernel)) || `module_${index}`;
+      const entryPoint = typeof command.entryPoint === 'string'
+        ? command.entryPoint
+        : typeof command.entry_point === 'string'
+          ? command.entry_point
+          : 'main';
       if (!modules.has(moduleId)) {
         modules.set(moduleId, {
           id: moduleId,
           kind: 'compute',
-          entryPoint: 'main',
+          entryPoint,
           source: {
             kind: 'file',
             path: inferKernelSourcePath(kernel),
@@ -271,12 +337,39 @@ function commandPlanToNeutralPlan(plan) {
         id: `step-${index}`,
         kind: 'dispatch',
         moduleId,
+        entryPoint,
         workgroups: [
           Number(command.x ?? 1),
           Number(command.y ?? 1),
           Number(command.z ?? 1),
         ],
         bindings,
+        semanticOpId: typeof command.semanticOpId === 'string'
+          ? command.semanticOpId
+          : typeof command.semantic_op_id === 'string'
+            ? command.semantic_op_id
+            : undefined,
+        semanticStage: typeof command.semanticStage === 'string'
+          ? command.semanticStage
+          : typeof command.semantic_stage === 'string'
+            ? command.semantic_stage
+            : undefined,
+        semanticPhase: typeof command.semanticPhase === 'string'
+          ? command.semanticPhase
+          : typeof command.semantic_phase === 'string'
+            ? command.semantic_phase
+            : undefined,
+        semanticTokenIndex: Number.isInteger(Number(command.semanticTokenIndex ?? command.semantic_token_index))
+          ? Number(command.semanticTokenIndex ?? command.semantic_token_index)
+          : undefined,
+        semanticLayerIndex: Number.isInteger(Number(command.semanticLayerIndex ?? command.semantic_layer_index))
+          ? Number(command.semanticLayerIndex ?? command.semantic_layer_index)
+          : undefined,
+        semanticExecutionPlanHash: typeof command.semanticExecutionPlanHash === 'string'
+          ? command.semanticExecutionPlanHash
+          : typeof command.semantic_execution_plan_hash === 'string'
+            ? command.semantic_execution_plan_hash
+            : undefined,
       });
       appendCaptureSteps(command, index);
     }
@@ -304,11 +397,7 @@ function commandPlanToNeutralPlan(plan) {
       timingSource: 'doe-execution-total-ns',
       timingClass: 'operation',
     },
-    adapter: {
-      powerPreference: 'high-performance',
-      requiredFeatures: [],
-      requiredLimits: {},
-    },
+    adapter: commandPlanAdapterDescriptor(plan),
     buffers: [...buffers.values()].map((buffer) => ({
       id: buffer.id,
       size: buffer.size,
@@ -623,6 +712,7 @@ function normalizeStep(step, index, problems) {
     return {
       kind,
       moduleId,
+      ...(typeof step.id === 'string' ? { id: step.id } : {}),
       entryPoint: typeof step.entryPoint === 'string' ? step.entryPoint : undefined,
       workgroups: normalizeWorkgroups(step.workgroups, `steps[${index}].workgroups`, problems),
       bindings: Array.isArray(step.bindings)
@@ -729,7 +819,8 @@ export function validatePlan(plan) {
   if (buffers.length === 0) {
     problems.push('buffers must contain at least one buffer definition');
   }
-  if (modules.length === 0) {
+  const hasDispatchStep = steps.some((step) => isPlainObject(step) && step.kind === 'dispatch');
+  if (modules.length === 0 && hasDispatchStep) {
     problems.push('modules must contain at least one module definition');
   }
   if (steps.length === 0) {

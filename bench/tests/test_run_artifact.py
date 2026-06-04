@@ -115,6 +115,37 @@ def _make_run_result() -> dict:
     }
 
 
+def _make_command_only_run_result() -> dict:
+    return {
+        "commandSamples": [
+            {
+                "runIndex": 0,
+                "command": [
+                    "runtime/zig/zig-out/bin/doe-zig-runtime",
+                    "--backend",
+                    "native",
+                ],
+                "commandRepeat": 4,
+                "uploadIgnoreFirstOps": 0,
+                "uploadBufferUsage": "copy-dst-copy-src",
+                "uploadSubmitEvery": 1,
+                "timingNormalizationDivisor": 2.0,
+                "workloadUnitNormalizationDivisor": 4.0,
+                "workloadDomain": "compute",
+                "strictNormalizationUnit": "",
+            }
+        ],
+        "stats": {"count": 0},
+        "timingsMs": [],
+        "lastMeta": {},
+        "timingSources": [],
+        "timingClasses": [],
+        "resourceStats": {},
+        "timingMetricsRawStatsMs": {},
+        "timingMetricsNormalizedStatsMs": {},
+    }
+
+
 def _with_sample_command_and_backend(
     run_result: dict,
     *,
@@ -125,6 +156,17 @@ def _with_sample_command_and_backend(
     sample = cloned["commandSamples"][0]
     sample["command"] = command
     sample["traceMeta"]["executionBackend"] = execution_backend
+    return cloned
+
+
+def _with_package_provider_name(
+    run_result: dict,
+    provider_name: str,
+) -> dict:
+    cloned = json.loads(json.dumps(run_result))
+    trace_meta = cloned["commandSamples"][0]["traceMeta"]
+    trace_meta["providerName"] = provider_name
+    trace_meta["executionProviderName"] = provider_name
     return cloned
 
 
@@ -149,6 +191,24 @@ class TestRunReceiptRoundTrip(unittest.TestCase):
         self.assertEqual(artifact["invocation"]["iterations"], 2)
         self.assertEqual(len(artifact["samples"]), 1)
         self.assertEqual(artifact["execution"]["timedSampleCount"], 1)
+
+    def test_command_only_receipt_is_not_timed_execution_evidence(self) -> None:
+        artifact = build_run_artifact(
+            run_result=_make_command_only_run_result(),
+            product="doe",
+            executor_id="doe_direct_vulkan",
+            workload_spec=_make_spec(),
+            run_config=_make_run_config(),
+            iterations=1,
+            warmup=0,
+            workload_contract_path=WORKLOAD_MANIFEST_PATH,
+        )
+        self.assertEqual(len(artifact["samples"]), 1)
+        self.assertEqual(artifact["samples"][0]["returnCode"], 1)
+        self.assertFalse(artifact["samples"][0]["success"])
+        self.assertFalse(artifact["execution"]["success"])
+        self.assertEqual(artifact["execution"]["timedSampleCount"], 0)
+        self.assertEqual(artifact["execution"]["returnCodes"], [1])
 
     def test_env_wrapped_command_resolves_runner_binary(self) -> None:
         artifact = build_run_artifact(
@@ -211,6 +271,26 @@ class TestRunReceiptRoundTrip(unittest.TestCase):
                     "librarySha256": hashlib.sha256(library_path.read_bytes()).hexdigest(),
                 },
             )
+
+    def test_doe_native_direct_receipt_uses_doe_package_identity(self) -> None:
+        artifact = build_run_artifact(
+            run_result=_with_package_provider_name(
+                _make_run_result(),
+                "doe-gpu/native-direct",
+            ),
+            product="doe",
+            executor_id="doe_node_native_direct",
+            workload_spec=_make_spec(),
+            run_config=_make_run_config(),
+            iterations=2,
+            warmup=0,
+            workload_contract_path=WORKLOAD_MANIFEST_PATH,
+        )
+        identity = artifact["runtimeIdentity"]
+        self.assertEqual(identity["providerName"], "doe-gpu/native-direct")
+        self.assertEqual(identity["packageName"], "doe-gpu")
+        self.assertTrue(identity["packageVersion"])
+        self.assertTrue(identity["packageLockHash"])
 
     def test_write_and_load_round_trip(self) -> None:
         artifact = build_run_artifact(

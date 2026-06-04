@@ -51,7 +51,10 @@
     "workloadIds": [
       "gemma64",
       "gemma1b",
-      "gemma270m-literal"
+      "gemma270m-literal",
+      "gemma270m-decode",
+      "gemma270m-decode-resident",
+      "package-developer"
     ],
     "executorInputBoundaries": [
       "commands",
@@ -240,7 +243,8 @@
       "theoreticalConcreteTargetIds": [
         "gemma64",
         "gemma1b",
-        "gemma270m-literal"
+        "gemma270m-literal",
+        "package-developer"
       ]
     },
     {
@@ -278,7 +282,113 @@
       "theoreticalConcreteTargetIds": [
         "gemma64",
         "gemma1b",
-        "gemma270m-literal"
+        "gemma270m-literal",
+        "package-developer"
+      ]
+    },
+    {
+      "id": "doe_package_node_default",
+      "surface": "package",
+      "product": "doe",
+      "runtimeHost": "node",
+      "temperature": "default",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "package-developer"
+      ]
+    },
+    {
+      "id": "dawn_node_webgpu_node_default",
+      "surface": "package",
+      "product": "node_webgpu_package",
+      "runtimeHost": "node",
+      "temperature": "default",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "package-developer"
+      ]
+    },
+    {
+      "id": "doe_package_node_native_direct_default",
+      "surface": "package",
+      "product": "doe",
+      "comparisonView": "doe_native_direct_vs_dawn_node_webgpu_package",
+      "providerSet": "package_node_native_direct_providers",
+      "providers": [
+        "doe-direct",
+        "node-webgpu"
+      ],
+      "runtimeHost": "node",
+      "temperature": "default",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "package-developer"
+      ]
+    },
+    {
+      "id": "doe_package_node_native_direct_cold",
+      "surface": "package",
+      "product": "doe",
+      "comparisonView": "doe_native_direct_vs_dawn_node_webgpu_package",
+      "providerSet": "package_node_native_direct_providers",
+      "providers": [
+        "doe-direct",
+        "node-webgpu"
+      ],
+      "runtimeHost": "node",
+      "temperature": "cold",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma270m-decode"
+      ]
+    },
+    {
+      "id": "doe_package_node_native_direct_warm",
+      "surface": "package",
+      "product": "doe",
+      "comparisonView": "doe_native_direct_vs_dawn_node_webgpu_package",
+      "providerSet": "package_node_native_direct_providers",
+      "providers": [
+        "doe-direct",
+        "node-webgpu"
+      ],
+      "runtimeHost": "node",
+      "temperature": "warm",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma270m-decode",
+        "gemma270m-decode-resident",
+        "package-developer"
       ]
     },
     {
@@ -297,7 +407,8 @@
       "theoreticalConcreteTargetIds": [
         "gemma64",
         "gemma1b",
-        "gemma270m-literal"
+        "gemma270m-literal",
+        "gemma270m-decode"
       ]
     },
     {
@@ -316,7 +427,10 @@
       "theoreticalConcreteTargetIds": [
         "gemma64",
         "gemma1b",
-        "gemma270m-literal"
+        "gemma270m-literal",
+        "gemma270m-decode",
+        "gemma270m-decode-resident",
+        "package-developer"
       ]
     },
     {
@@ -335,7 +449,8 @@
       "theoreticalConcreteTargetIds": [
         "gemma64",
         "gemma1b",
-        "gemma270m-literal"
+        "gemma270m-literal",
+        "gemma270m-decode"
       ]
     },
     {
@@ -354,7 +469,44 @@
       "theoreticalConcreteTargetIds": [
         "gemma64",
         "gemma1b",
-        "gemma270m-literal"
+        "gemma270m-literal",
+        "gemma270m-decode",
+        "gemma270m-decode-resident",
+        "package-developer"
+      ]
+    },
+    {
+      "id": "doe_package_bun_default",
+      "surface": "package",
+      "product": "doe",
+      "runtimeHost": "bun",
+      "temperature": "default",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "package-developer"
+      ]
+    },
+    {
+      "id": "bun_webgpu_package_bun_default",
+      "surface": "package",
+      "product": "bun_webgpu_package",
+      "runtimeHost": "bun",
+      "temperature": "default",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "package-developer"
       ]
     },
     {
@@ -596,7 +748,8 @@
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
-        "gemma1b"
+        "gemma1b",
+        "package-developer"
       ]
     },
     {
@@ -644,7 +797,8 @@
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
-        "gemma1b"
+        "gemma1b",
+        "package-developer"
       ]
     },
     {
@@ -664,11 +818,49 @@
       ]
     },
     {
+      "familyId": "doe_package_node_default",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "package-developer"
+      ]
+    },
+    {
+      "familyId": "dawn_node_webgpu_node_default",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "package-developer"
+      ]
+    },
+    {
+      "familyId": "doe_package_node_native_direct_default",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "package-developer"
+      ]
+    },
+    {
+      "familyId": "doe_package_node_native_direct_cold",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma270m-decode"
+      ]
+    },
+    {
+      "familyId": "doe_package_node_native_direct_warm",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma270m-decode",
+        "gemma270m-decode-resident",
+        "package-developer"
+      ]
+    },
+    {
       "familyId": "doe_package_bun_cold",
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
-        "gemma1b"
+        "gemma1b",
+        "gemma270m-decode"
       ]
     },
     {
@@ -692,7 +884,10 @@
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
-        "gemma1b"
+        "gemma1b",
+        "gemma270m-decode",
+        "gemma270m-decode-resident",
+        "package-developer"
       ]
     },
     {
@@ -716,7 +911,8 @@
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
-        "gemma1b"
+        "gemma1b",
+        "gemma270m-decode"
       ]
     },
     {
@@ -740,7 +936,10 @@
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
-        "gemma1b"
+        "gemma1b",
+        "gemma270m-decode",
+        "gemma270m-decode-resident",
+        "package-developer"
       ]
     },
     {
@@ -757,6 +956,20 @@
       "targetIds": [
         "gemma64",
         "gemma1b"
+      ]
+    },
+    {
+      "familyId": "doe_package_bun_default",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "package-developer"
+      ]
+    },
+    {
+      "familyId": "bun_webgpu_package_bun_default",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "package-developer"
       ]
     }
   ]

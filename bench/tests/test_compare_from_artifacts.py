@@ -18,6 +18,7 @@ from native_compare_modules.compare_from_artifacts import (
     build_compare_report,
     compare_workload_from_artifacts,
     group_run_artifacts_by_workload,
+    merge_run_receipts,
     receipt_run_view,
     write_compare_report,
 )
@@ -162,6 +163,62 @@ def _make_receipt(product: str, manifest_hash: str = "a" * 64) -> dict:
     }
 
 
+def _make_command_only_receipt(product: str) -> dict:
+    receipt = _make_receipt(product)
+    receipt["execution"] = {
+        "success": False,
+        "timedSampleCount": 0,
+        "returnCodes": [1],
+        "timingSources": [],
+        "timingClasses": [],
+    }
+    for sample in receipt["samples"]:
+        sample["wallMs"] = None
+        sample["measuredRawMs"] = None
+        sample["measuredMs"] = None
+        sample["timingSource"] = ""
+        sample["timingClass"] = ""
+        sample["timing"] = {}
+        sample["traceArtifacts"] = {
+            "jsonlPath": "",
+            "metaPath": "",
+        }
+        sample["subphasesMs"] = {
+            "executionMs": None,
+            "setupMs": None,
+            "encodeMs": None,
+            "submitWaitMs": None,
+            "gpuTimestampMs": None,
+        }
+        sample["returnCode"] = 1
+        sample["success"] = False
+        sample["traceMeta"] = {}
+    return receipt
+
+
+def _attach_readback_capture(receipt: dict, sha256: str, decoded_u32: int = 47) -> dict:
+    for sample in receipt["samples"]:
+        sample["traceMeta"]["readbackCaptures"] = [
+            {
+                "repeatIndex": 0,
+                "stepIndex": 38,
+                "stepId": "step-36-capture-read",
+                "bufferId": "buffer_capture_36_2228",
+                "byteLength": 4,
+                "sha256": sha256,
+                "decodedU32Le": decoded_u32,
+                "semanticOpId": "gemma3_270m_decode_1tok_sample_token",
+                "semanticStage": "inference",
+                "semanticPhase": "decode_sample_token",
+                "semanticTokenIndex": 0,
+                "captureSourceBufferId": "buffer_2228",
+                "captureOffset": 0,
+                "captureSize": 4,
+            }
+        ]
+    return receipt
+
+
 def _benchmark_policy() -> object:
     return type(
         "Policy",
@@ -203,6 +260,165 @@ class TestCompareFromArtifacts(unittest.TestCase):
         self.assertFalse(entry["comparability"]["comparable"])
         self.assertTrue(
             any("workload manifest hash mismatch" in reason for reason in entry["comparability"]["reasons"])
+        )
+
+    def test_command_only_receipt_is_not_comparable_sample_evidence(self) -> None:
+        entry = compare_workload_from_artifacts(
+            baseline=_make_command_only_receipt("doe"),
+            comparison=_make_receipt("dawn"),
+        )
+        self.assertFalse(entry["comparability"]["comparable"])
+        self.assertTrue(
+            any(
+                "baseline side has no measured samples" in reason
+                for reason in entry["comparability"]["reasons"]
+            )
+        )
+        obligations = {
+            obligation["id"]: obligation
+            for obligation in entry["comparability"]["obligations"]
+        }
+        self.assertFalse(obligations["left_samples_present"]["passes"])
+        self.assertEqual(
+            obligations["left_samples_present"]["details"]["baselineSampleCount"],
+            0,
+        )
+
+    def test_readback_capture_mismatch_blocks_comparability(self) -> None:
+        baseline = _attach_readback_capture(_make_receipt("doe"), "a" * 64, 47)
+        comparison = _attach_readback_capture(_make_receipt("dawn"), "b" * 64, 48)
+        entry = compare_workload_from_artifacts(
+            baseline=baseline,
+            comparison=comparison,
+        )
+        self.assertFalse(entry["comparability"]["comparable"])
+        obligations = {
+            obligation["id"]: obligation
+            for obligation in entry["comparability"]["obligations"]
+        }
+        obligation = obligations["baseline_comparison_readback_capture_match"]
+        self.assertTrue(obligation["applicable"])
+        self.assertFalse(obligation["passes"])
+        self.assertTrue(
+            any(
+                "readback capture mismatch" in reason
+                for reason in entry["comparability"]["reasons"]
+            )
+        )
+
+    def test_matching_readback_captures_keep_comparability(self) -> None:
+        baseline = _attach_readback_capture(_make_receipt("doe"), "a" * 64, 47)
+        comparison = _attach_readback_capture(_make_receipt("dawn"), "a" * 64, 47)
+        entry = compare_workload_from_artifacts(
+            baseline=baseline,
+            comparison=comparison,
+        )
+        self.assertTrue(entry["comparability"]["comparable"])
+        obligations = {
+            obligation["id"]: obligation
+            for obligation in entry["comparability"]["obligations"]
+        }
+        self.assertTrue(
+            obligations["baseline_comparison_readback_capture_match"]["passes"]
+        )
+
+    def test_package_resident_buffer_load_mode_mismatch_blocks_comparability(self) -> None:
+        baseline = _make_receipt("doe")
+        comparison = _make_receipt("dawn")
+        for sample in baseline["samples"]:
+            sample["traceMeta"]["executionBackend"] = "doe_node_native_direct"
+            sample["traceMeta"]["packageResidentBufferLoads"] = True
+        for sample in comparison["samples"]:
+            sample["traceMeta"]["executionBackend"] = "node_webgpu_package"
+            sample["traceMeta"]["packageResidentBufferLoads"] = False
+
+        entry = compare_workload_from_artifacts(
+            baseline=baseline,
+            comparison=comparison,
+        )
+
+        self.assertFalse(entry["comparability"]["comparable"])
+        obligations = {
+            obligation["id"]: obligation
+            for obligation in entry["comparability"]["obligations"]
+        }
+        obligation = obligations[
+            "baseline_comparison_package_resident_buffer_load_mode_match"
+        ]
+        self.assertTrue(obligation["applicable"])
+        self.assertFalse(obligation["passes"])
+        self.assertTrue(
+            any(
+                "resident buffer-load mode mismatch" in reason
+                for reason in entry["comparability"]["reasons"]
+            )
+        )
+
+    def test_mixed_package_resident_buffer_load_mode_blocks_comparability(self) -> None:
+        baseline = _make_receipt("doe")
+        comparison = _make_receipt("dawn")
+        for index, sample in enumerate(baseline["samples"]):
+            sample["traceMeta"]["executionBackend"] = "doe_node_native_direct"
+            sample["traceMeta"]["packageResidentBufferLoads"] = index % 2 == 0
+        for sample in comparison["samples"]:
+            sample["traceMeta"]["executionBackend"] = "node_webgpu_package"
+            sample["traceMeta"]["packageResidentBufferLoads"] = True
+
+        entry = compare_workload_from_artifacts(
+            baseline=baseline,
+            comparison=comparison,
+        )
+
+        obligations = {
+            obligation["id"]: obligation
+            for obligation in entry["comparability"]["obligations"]
+        }
+        obligation = obligations[
+            "baseline_comparison_package_resident_buffer_load_mode_match"
+        ]
+        self.assertFalse(entry["comparability"]["comparable"])
+        self.assertFalse(obligation["passes"])
+        self.assertEqual(
+            obligation["details"]["baselinePackageResidentBufferLoadModes"],
+            ["False", "True"],
+        )
+
+    def test_package_resident_buffer_load_shape_mismatch_blocks_comparability(self) -> None:
+        baseline = _make_receipt("doe")
+        comparison = _make_receipt("dawn")
+        for sample in baseline["samples"]:
+            sample["traceMeta"]["executionBackend"] = "doe_node_native_direct"
+            sample["traceMeta"]["packageResidentBufferLoads"] = True
+            sample["traceMeta"]["packageResidentBufferLoadBreakdown"] = {
+                "count": 13,
+                "bytes": 1024,
+            }
+        for sample in comparison["samples"]:
+            sample["traceMeta"]["executionBackend"] = "node_webgpu_package"
+            sample["traceMeta"]["packageResidentBufferLoads"] = True
+            sample["traceMeta"]["packageResidentBufferLoadBreakdown"] = {
+                "count": 12,
+                "bytes": 1024,
+            }
+
+        entry = compare_workload_from_artifacts(
+            baseline=baseline,
+            comparison=comparison,
+        )
+
+        obligations = {
+            obligation["id"]: obligation
+            for obligation in entry["comparability"]["obligations"]
+        }
+        obligation = obligations[
+            "baseline_comparison_package_resident_buffer_load_shape_match"
+        ]
+        self.assertFalse(entry["comparability"]["comparable"])
+        self.assertTrue(obligation["applicable"])
+        self.assertFalse(obligation["passes"])
+        self.assertEqual(
+            obligation["details"]["baselineResidentBufferLoadShapes"],
+            [{"count": 13, "bytes": 1024}],
         )
 
     def test_build_compare_report_and_claim_report(self) -> None:
@@ -288,6 +504,32 @@ class TestCompareFromArtifacts(unittest.TestCase):
         self.assertEqual(sorted(grouped), ["compute_test"])
         self.assertIn("doe", grouped["compute_test"])
         self.assertIn("dawn", grouped["compute_test"])
+
+    def test_duplicate_product_workload_receipts_are_merged(self) -> None:
+        first = _make_receipt("doe")
+        second = _make_receipt("doe")
+        first["_receiptPath"] = "bench/out/order-a/doe.run.json"
+        second["_receiptPath"] = "bench/out/order-b/doe.run.json"
+
+        grouped = group_run_artifacts_by_workload([first, second])
+        merged = grouped["compute_test"]["doe"]
+
+        self.assertEqual(merged["execution"]["mergedReceiptCount"], 2)
+        self.assertEqual(merged["_receiptPaths"], [
+            "bench/out/order-a/doe.run.json",
+            "bench/out/order-b/doe.run.json",
+        ])
+        self.assertEqual(len(merged["samples"]), 8)
+        self.assertEqual(receipt_run_view(merged)["stats"]["count"], 8)
+
+    def test_merge_receipts_rejects_mismatched_normalization(self) -> None:
+        first = _make_receipt("doe")
+        second = _make_receipt("doe")
+        second["normalization"] = dict(second["normalization"])
+        second["normalization"]["timingDivisor"] = 4.0
+
+        with self.assertRaises(ValueError):
+            merge_run_receipts([first, second])
 
     def test_receipt_run_view_exposes_legacy_stats(self) -> None:
         view = receipt_run_view(_make_receipt("doe"))

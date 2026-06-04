@@ -343,14 +343,17 @@
       ],
       "properties": {
         "success": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "True only when every recorded sample is successful timed execution evidence."
         },
         "timedSampleCount": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "description": "Count of samples with returnCode=0 and non-null measuredMs. Command-only receipts emitted by --emit-shell must report 0."
         },
         "returnCodes": {
           "type": "array",
+          "description": "Observed sample return codes. Command-only samples that were not executed use a non-zero return code and success=false.",
           "items": {
             "type": "integer"
           }
@@ -618,10 +621,12 @@
           "type": "string"
         },
         "returnCode": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Subprocess or sample return code. A missing execution result is encoded as non-zero so command-only rows cannot pass as successful execution."
         },
         "success": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "True only for executed samples with returnCode=0."
         },
         "traceMeta": {
           "type": "object"

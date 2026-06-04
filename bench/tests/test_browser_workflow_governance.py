@@ -181,6 +181,44 @@ def test_browser_workflow_manifest_rejects_duplicate_metrics() -> None:
     } in failures
 
 
+def test_browser_workflow_manifest_rejects_visual_resource_escape() -> None:
+    checker = _load_module(WORKFLOWS_CHECKER_PATH, "browser_workflow_manifest")
+    payload = _load_json(WORKFLOWS_PATH)
+    visual_index, visual_row = next(
+        (index, row)
+        for index, row in enumerate(payload["rows"])
+        if row["scenarioTemplate"] == "fawn_visual_resource"
+    )
+    visual_row["resourcePath"] = "../outside.html"
+
+    failures = checker.check_workflow_manifest(payload)
+
+    assert {
+        "code": "invalid_visual_resource_path",
+        "path": f"rows[{visual_index}].resourcePath",
+        "message": "resourcePath must be a browser/chromium/resources/*.html path",
+    } in failures
+
+
+def test_browser_workflow_manifest_requires_visual_metrics() -> None:
+    checker = _load_module(WORKFLOWS_CHECKER_PATH, "browser_workflow_manifest")
+    payload = _load_json(WORKFLOWS_PATH)
+    visual_index, visual_row = next(
+        (index, row)
+        for index, row in enumerate(payload["rows"])
+        if row["scenarioTemplate"] == "fawn_visual_resource"
+    )
+    visual_row["metrics"] = ["avgFrameMs"]
+
+    failures = checker.check_workflow_manifest(payload)
+
+    assert {
+        "code": "missing_visual_metrics",
+        "path": f"rows[{visual_index}].metrics",
+        "message": "fawn visual workflow rows require avgFps, avgFrameMs, frameCount, p95FrameMs",
+    } in failures
+
+
 def test_browser_milestones_reject_evidence_path_escape() -> None:
     checker = _load_module(MILESTONES_CHECKER_PATH, "browser_milestones")
     payload = _load_json(MILESTONES_PATH)

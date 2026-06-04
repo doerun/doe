@@ -66,15 +66,7 @@ napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
         .userdata2 = NULL,
     };
 
-    if (pfn_wgpuBufferMapAsync2) {
-        WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
-            (size_t)offset_i, (size_t)size_i, cb_info);
-        if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
-        if (!process_events_until(inst, &result.done, current_timeout_ns()))
-            return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
-        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
-            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
-    } else if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
+    if (pfn_doeNativeBufferMapAsync) {
         WGPUFuture future = pfn_doeNativeBufferMapAsync(
             buf,
             (uint64_t)mode,
@@ -85,6 +77,14 @@ napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
         if (future.id == 0 || !result.done) NAPI_THROW(env, "doeNativeBufferMapAsync unavailable");
         if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
             return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "doeNativeBufferMapAsync failed", result.status, result.message);
+    } else if (pfn_wgpuBufferMapAsync2) {
+        WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
+            (size_t)offset_i, (size_t)size_i, cb_info);
+        if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
+        if (!process_events_until(inst, &result.done, current_timeout_ns()))
+            return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
     } else {
         NAPI_THROW(env, "bufferMapAsync unavailable");
     }
@@ -131,6 +131,170 @@ napi_value doe_buffer_read_copy(napi_env env, napi_callback_info info) {
         memcpy(copy, data, (size_t)size_i);
     }
     return ab;
+}
+
+/* bufferMapReadCopyUnmap(instance, queueOrNull, buffer, mode, offset, size, shouldFlush) */
+napi_value doe_buffer_map_read_copy_unmap(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 7);
+    CHECK_LIB_LOADED(env);
+    WGPUInstance inst = unwrap_ptr(env, _args[0]);
+    WGPUBuffer buf = unwrap_ptr(env, _args[2]);
+    uint32_t mode = 0;
+    int64_t offset_i = 0;
+    int64_t size_i = 0;
+    bool should_flush = false;
+    napi_get_value_uint32(env, _args[3], &mode);
+    napi_get_value_int64(env, _args[4], &offset_i);
+    napi_get_value_int64(env, _args[5], &size_i);
+    napi_get_value_bool(env, _args[6], &should_flush);
+    if (!inst || !buf) NAPI_THROW(env, "bufferMapReadCopyUnmap requires instance and buffer");
+    if (mode != DOE_GPU_MAP_READ) NAPI_THROW(env, "bufferMapReadCopyUnmap only supports MAP_READ");
+    if (offset_i < 0 || size_i < 0) NAPI_THROW(env, "bufferMapReadCopyUnmap requires non-negative offset and size");
+
+    uint64_t wait_completed_ns = 0;
+    uint64_t deferred_copy_ns = 0;
+    uint64_t deferred_resolve_ns = 0;
+    uint64_t map_ns = 0;
+    uint64_t copy_ns = 0;
+    uint64_t unmap_ns = 0;
+
+    if (pfn_doeBufferMapReadCopyUnmapFlat) {
+        WGPUQueue queue = NULL;
+        if (should_flush) {
+            queue = unwrap_ptr(env, _args[1]);
+            if (!queue) NAPI_THROW(env, "bufferMapReadCopyUnmap requires queue when shouldFlush is true");
+        }
+
+        void* copy = NULL;
+        napi_value bytes;
+        napi_create_arraybuffer(env, (size_t)size_i, &copy, &bytes);
+        uint64_t breakdown[DOE_READBACK_BREAKDOWN_FIELD_COUNT] = {0};
+        const uint32_t status = pfn_doeBufferMapReadCopyUnmapFlat(
+            queue,
+            buf,
+            (uint64_t)mode,
+            (size_t)offset_i,
+            (size_t)size_i,
+            should_flush ? 1u : 0u,
+            copy,
+            breakdown
+        );
+        if (status != WGPU_STATUS_SUCCESS) {
+            NAPI_THROW(env, "bufferMapReadCopyUnmapFlat failed");
+        }
+
+        napi_value result_obj;
+        napi_create_object(env, &result_obj);
+        napi_set_named_property(env, result_obj, "bytes", bytes);
+        napi_value value;
+        napi_create_double(env, (double)breakdown[DOE_READBACK_BREAKDOWN_WAIT_COMPLETED], &value);
+        napi_set_named_property(env, result_obj, "waitCompletedNs", value);
+        napi_create_double(env, (double)breakdown[DOE_READBACK_BREAKDOWN_DEFERRED_COPY], &value);
+        napi_set_named_property(env, result_obj, "deferredCopyNs", value);
+        napi_create_double(env, (double)breakdown[DOE_READBACK_BREAKDOWN_DEFERRED_RESOLVE], &value);
+        napi_set_named_property(env, result_obj, "deferredResolveNs", value);
+        napi_create_double(env, (double)breakdown[DOE_READBACK_BREAKDOWN_MAP], &value);
+        napi_set_named_property(env, result_obj, "mapNs", value);
+        napi_create_double(env, (double)breakdown[DOE_READBACK_BREAKDOWN_COPY], &value);
+        napi_set_named_property(env, result_obj, "copyNs", value);
+        napi_create_double(env, (double)breakdown[DOE_READBACK_BREAKDOWN_UNMAP], &value);
+        napi_set_named_property(env, result_obj, "unmapNs", value);
+        return result_obj;
+    }
+
+    if (should_flush) {
+        WGPUQueue queue = unwrap_ptr(env, _args[1]);
+        if (!queue) NAPI_THROW(env, "bufferMapReadCopyUnmap requires queue when shouldFlush is true");
+        if (pfn_doeNativeQueueFlushBreakdown) {
+            pfn_doeNativeQueueFlushBreakdown(queue, &wait_completed_ns, &deferred_copy_ns, &deferred_resolve_ns);
+        } else if (pfn_doeNativeQueueFlush) {
+            const uint64_t flush_started_ns = monotonic_now_ns();
+            pfn_doeNativeQueueFlush(queue);
+            wait_completed_ns = monotonic_now_ns() - flush_started_ns;
+        } else {
+            QueueWorkDoneResult qresult = {0};
+            WGPUQueueWorkDoneCallbackInfo cb_info = {
+                .nextInChain = NULL,
+                .mode = WGPU_CALLBACK_MODE_WAIT_ANY_ONLY,
+                .callback = queue_work_done_callback,
+                .userdata1 = &qresult,
+                .userdata2 = NULL,
+            };
+            WGPUFuture future = pfn_wgpuQueueOnSubmittedWorkDone(queue, cb_info);
+            if (future.id == 0) NAPI_THROW(env, "bufferMapReadCopyUnmap: queue work-done future unavailable");
+            const uint64_t wait_started_ns = monotonic_now_ns();
+            if (!process_events_until(inst, &qresult.done, current_timeout_ns())) {
+                NAPI_THROW(env, "bufferMapReadCopyUnmap: queue wait timed out");
+            }
+            wait_completed_ns = monotonic_now_ns() - wait_started_ns;
+            if (qresult.status != WGPU_QUEUE_WORK_DONE_STATUS_SUCCESS) {
+                return throw_status_error(env, "DOE_QUEUE_FLUSH_ERROR", "bufferMapReadCopyUnmap: queue work did not complete", qresult.status, qresult.message);
+            }
+        }
+    }
+
+    BufferMapResult result = {0};
+    WGPUBufferMapCallbackInfo cb_info = {
+        .nextInChain = NULL,
+        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+        .callback = buffer_map_callback,
+        .userdata1 = &result,
+        .userdata2 = NULL,
+    };
+    const uint64_t map_started_ns = monotonic_now_ns();
+    if (pfn_doeNativeBufferMapAsync) {
+        WGPUFuture future = pfn_doeNativeBufferMapAsync(buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i, cb_info);
+        if (future.id == 0 || !result.done) NAPI_THROW(env, "bufferMapReadCopyUnmap: doeNativeBufferMapAsync unavailable");
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapReadCopyUnmap: doeNativeBufferMapAsync failed", result.status, result.message);
+    } else if (pfn_wgpuBufferMapAsync2) {
+        WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i, cb_info);
+        if (future.id == 0) NAPI_THROW(env, "bufferMapReadCopyUnmap: bufferMapAsync future unavailable");
+        if (!process_events_until(inst, &result.done, current_timeout_ns()))
+            return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapReadCopyUnmap: bufferMapAsync timed out", result.status, result.message);
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapReadCopyUnmap: bufferMapAsync failed", result.status, result.message);
+    } else {
+        NAPI_THROW(env, "bufferMapReadCopyUnmap: bufferMapAsync unavailable");
+    }
+    map_ns = monotonic_now_ns() - map_started_ns;
+
+    const uint64_t copy_started_ns = monotonic_now_ns();
+    void* data = (void*)pfn_wgpuBufferGetConstMappedRange(buf, (size_t)offset_i, (size_t)size_i);
+    if (!data) data = pfn_wgpuBufferGetMappedRange(buf, (size_t)offset_i, (size_t)size_i);
+    if (!data) {
+        pfn_wgpuBufferUnmap(buf);
+        NAPI_THROW(env, "bufferMapReadCopyUnmap: getMappedRange returned NULL");
+    }
+    void* copy = NULL;
+    napi_value bytes;
+    napi_create_arraybuffer(env, (size_t)size_i, &copy, &bytes);
+    if (copy && size_i > 0) {
+        memcpy(copy, data, (size_t)size_i);
+    }
+    copy_ns = monotonic_now_ns() - copy_started_ns;
+
+    const uint64_t unmap_started_ns = monotonic_now_ns();
+    pfn_wgpuBufferUnmap(buf);
+    unmap_ns = monotonic_now_ns() - unmap_started_ns;
+
+    napi_value result_obj;
+    napi_create_object(env, &result_obj);
+    napi_set_named_property(env, result_obj, "bytes", bytes);
+    napi_value value;
+    napi_create_double(env, (double)wait_completed_ns, &value);
+    napi_set_named_property(env, result_obj, "waitCompletedNs", value);
+    napi_create_double(env, (double)deferred_copy_ns, &value);
+    napi_set_named_property(env, result_obj, "deferredCopyNs", value);
+    napi_create_double(env, (double)deferred_resolve_ns, &value);
+    napi_set_named_property(env, result_obj, "deferredResolveNs", value);
+    napi_create_double(env, (double)map_ns, &value);
+    napi_set_named_property(env, result_obj, "mapNs", value);
+    napi_create_double(env, (double)copy_ns, &value);
+    napi_set_named_property(env, result_obj, "copyNs", value);
+    napi_create_double(env, (double)unmap_ns, &value);
+    napi_set_named_property(env, result_obj, "unmapNs", value);
+    return result_obj;
 }
 
 /* bufferGetStagedRange(buf, offset, size) → V8-heap ArrayBuffer for WRITE-mode maps.

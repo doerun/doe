@@ -3,6 +3,69 @@
   "required": ["schemaVersion", "unsupportedExecutions"],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
+    "writeBatching": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "runtimeHost",
+          "provider",
+          "method",
+          "minConsecutiveWrites",
+          "evidence",
+          "detail"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "runtimeHost": { "type": "string", "enum": ["node", "bun"] },
+          "provider": { "type": "string", "minLength": 1 },
+          "method": { "type": "string", "minLength": 1 },
+          "minConsecutiveWrites": { "type": "integer", "minimum": 2 },
+          "evidence": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "readbackMode": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "runtimeHost",
+          "provider",
+          "workloadId",
+          "mode",
+          "evidence",
+          "detail"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "runtimeHost": { "type": "string", "enum": ["node", "bun"] },
+          "provider": { "type": "string", "minLength": 1 },
+          "workloadId": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 },
+                "minItems": 1
+              }
+            ]
+          },
+          "packagePreparedSession": { "type": "boolean" },
+          "mode": {
+            "type": "string",
+            "enum": ["native-map-read-copy-unmap", "mapAsync"]
+          },
+          "evidence": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
     "unsupportedExecutions": {
       "type": "array",
       "items": {

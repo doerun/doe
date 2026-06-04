@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "reportKind": "webgpu-surface-report",
   "surfaceId": "doe-compute",
-  "generatedAt": "2026-03-24T21:12:18.151018+00:00",
+  "generatedAt": "2026-05-30T17:03:31.084662+00:00",
   "derivedFrom": {
     "commandCoverage": "config/webgpu-command-coverage-core.json",
     "capabilityInventory": "config/webgpu-capability-inventory.json",
@@ -14,9 +14,9 @@
   ],
   "commandCoverage": {
     "surfaceId": "doe-core",
-    "commandCount": 10,
+    "commandCount": 11,
     "statusSummary": {
-      "implemented": 10
+      "implemented": 11
     },
     "commands": [
       {
@@ -27,6 +27,15 @@
         "benchmarkClass": "comparable",
         "gateStatus": "blocking",
         "notes": "Buffer upload with configurable usage flags and submit cadence."
+      },
+      {
+        "commandKind": "buffer_write",
+        "domain": "copy",
+        "status": "implemented",
+        "owner": "runtime-core",
+        "benchmarkClass": "comparable",
+        "gateStatus": "blocking",
+        "notes": "Immediate queue.writeBuffer-style host-to-buffer update."
       },
       {
         "commandKind": "copy_buffer_to_texture",

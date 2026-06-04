@@ -111,6 +111,7 @@ pub export fn doeNativeRenderBundleEncoderSetVertexBuffer(
     _ = size;
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const buf = cast(DoeBuffer, buf_raw) orelse return;
+    if (buf.error_object) return;
     bundle.bundle_encoder_push(enc, .{ .set_vertex_buffer = .{
         .slot = slot,
         .buffer_handle = buf.mtl,
@@ -127,6 +128,7 @@ pub export fn doeNativeRenderBundleEncoderSetIndexBuffer(
 ) callconv(.c) void {
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const buf = cast(DoeBuffer, buf_raw) orelse return;
+    if (buf.error_object) return;
     bundle.bundle_encoder_push(enc, .{ .set_index_buffer = .{
         .buffer_handle = buf.mtl,
         .format = format,
@@ -176,6 +178,7 @@ pub export fn doeNativeRenderBundleEncoderDrawIndirect(
 ) callconv(.c) void {
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const ibuf = cast(DoeBuffer, indirect_buf_raw) orelse return;
+    if (ibuf.error_object) return;
     bundle.bundle_encoder_push(enc, .{ .draw_indirect = .{
         .indirect_buffer = ibuf.mtl,
         .indirect_offset = indirect_offset,
@@ -189,6 +192,7 @@ pub export fn doeNativeRenderBundleEncoderDrawIndexedIndirect(
 ) callconv(.c) void {
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const ibuf = cast(DoeBuffer, indirect_buf_raw) orelse return;
+    if (ibuf.error_object) return;
     bundle.bundle_encoder_push(enc, .{ .draw_indexed_indirect = .{
         .indirect_buffer = ibuf.mtl,
         .indirect_offset = indirect_offset,

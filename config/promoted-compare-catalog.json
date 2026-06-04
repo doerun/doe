@@ -531,9 +531,9 @@
       "backend": "apple-metal",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.apple.metal.gemma64.node-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs node-webgpu on the Gemma64 shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma64 shaped workload.",
       "id": "apple-metal-gemma64-package-cold",
       "baselineExecutorId": "doe_node_webgpu",
       "mode": "cold",
@@ -563,9 +563,9 @@
       "backend": "apple-metal",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.apple.metal.gemma64.node-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs node-webgpu on the Gemma64 shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma64 shaped workload.",
       "id": "apple-metal-gemma64-package-warm",
       "baselineExecutorId": "doe_node_webgpu_prepared",
       "mode": "warm",
@@ -595,9 +595,9 @@
       "backend": "apple-metal",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.apple.metal.gemma1b.node-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs node-webgpu on the Gemma1B shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma1B shaped workload.",
       "id": "apple-metal-gemma1b-package-cold",
       "baselineExecutorId": "doe_node_webgpu",
       "mode": "cold",
@@ -627,9 +627,9 @@
       "backend": "apple-metal",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.apple.metal.gemma1b.node-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs node-webgpu on the Gemma1B shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma1B shaped workload.",
       "id": "apple-metal-gemma1b-package-warm",
       "baselineExecutorId": "doe_node_webgpu_prepared",
       "mode": "warm",
@@ -659,9 +659,329 @@
       "backend": "apple-metal",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.package-developer.node.ir.json",
+      "description": "Package developer workload pack for Doe-backed WebGPU vs Dawn-backed node-webgpu on Apple Metal.",
+      "id": "apple-metal-package-developer-node",
+      "baselineExecutorId": "doe_node_webgpu",
+      "mode": "default",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "default",
+      "workload": "package-developer"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_native_direct_vs_dawn_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.package-developer.node.direct.ir.json",
+      "description": "Package developer workload pack for Doe native-direct vs Dawn-backed node-webgpu on Apple Metal.",
+      "id": "apple-metal-package-developer-node-native-direct",
+      "baselineExecutorId": "doe_node_native_direct",
+      "mode": "default",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_native_direct",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_native_direct_providers",
+      "providers": [
+        "doe-direct",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "default",
+      "workload": "package-developer"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.package-developer.node.prepared.ir.json",
+      "description": "Prepared-session steady-state package developer workload pack for Doe-backed WebGPU vs Dawn-backed node-webgpu on Apple Metal.",
+      "id": "apple-metal-package-developer-node-prepared",
+      "baselineExecutorId": "doe_node_webgpu_prepared",
+      "mode": "warm",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package_prepared",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package_prepared",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "package-developer"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_native_direct_vs_dawn_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.package-developer.node.direct.prepared.ir.json",
+      "description": "Prepared-session steady-state package developer workload pack for Doe native-direct vs Dawn-backed node-webgpu on Apple Metal.",
+      "id": "apple-metal-package-developer-node-native-direct-prepared",
+      "baselineExecutorId": "doe_node_native_direct_prepared",
+      "mode": "warm",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_native_direct_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package_prepared",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_native_direct_providers",
+      "providers": [
+        "doe-direct",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package_prepared",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "package-developer"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_native_direct_vs_dawn_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.ir.json",
+      "description": "Cold package-surface Gemma 3 270M decode compare for Doe native-direct vs Dawn-backed node-webgpu on Apple Metal.",
+      "id": "apple-metal-gemma270m-node-native-direct-decode-cold",
+      "baselineExecutorId": "doe_node_native_direct",
+      "mode": "cold",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_native_direct",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_native_direct_providers",
+      "providers": [
+        "doe-direct",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma270m-decode"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_native_direct_vs_dawn_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.warm.ir.json",
+      "description": "Prepared-session package-surface Gemma 3 270M decode compare for Doe native-direct vs Dawn-backed node-webgpu on Apple Metal.",
+      "id": "apple-metal-gemma270m-node-native-direct-decode-warm",
+      "baselineExecutorId": "doe_node_native_direct_prepared",
+      "mode": "warm",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_native_direct_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package_prepared",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_native_direct_providers",
+      "providers": [
+        "doe-direct",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package_prepared",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma270m-decode"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_native_direct_vs_dawn_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.gemma270m.node.direct.decode.resident.warm.ir.json",
+      "description": "Resident-buffer-load prepared package-surface Gemma 3 270M decode compare for Doe native-direct vs Dawn-backed node-webgpu on Apple Metal.",
+      "id": "apple-metal-gemma270m-node-native-direct-decode-resident-warm",
+      "baselineExecutorId": "doe_node_native_direct_prepared_resident_buffer_loads",
+      "mode": "warm",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_native_direct_prepared_resident_buffer_loads",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package_prepared_resident_buffer_loads",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_native_direct_providers",
+      "providers": [
+        "doe-direct",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package_prepared_resident_buffer_loads",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma270m-decode-resident"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.ir.json",
+      "description": "Cold package-surface Gemma 3 270M decode compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on Apple Metal.",
+      "id": "apple-metal-gemma270m-bun-package-decode-cold",
+      "baselineExecutorId": "doe_bun_package",
+      "mode": "cold",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma270m-decode"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.warm.ir.json",
+      "description": "Prepared-session package-surface Gemma 3 270M decode compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on Apple Metal.",
+      "id": "apple-metal-gemma270m-bun-package-decode-warm",
+      "baselineExecutorId": "doe_bun_package_prepared",
+      "mode": "warm",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package_prepared",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package_prepared",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma270m-decode"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.gemma270m.bun-package.decode.resident.warm.ir.json",
+      "description": "Resident-buffer-load prepared package-surface Gemma 3 270M decode compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on Apple Metal.",
+      "id": "apple-metal-gemma270m-bun-package-decode-resident-warm",
+      "baselineExecutorId": "doe_bun_package_prepared_resident_buffer_loads",
+      "mode": "warm",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package_prepared_resident_buffer_loads",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package_prepared_resident_buffer_loads",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package_prepared_resident_buffer_loads",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma270m-decode-resident"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.apple.metal.gemma64.bun-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma64 shaped workload.",
       "id": "apple-metal-gemma64-bun-package-cold",
       "baselineExecutorId": "doe_bun_package",
       "mode": "cold",
@@ -691,9 +1011,9 @@
       "backend": "apple-metal",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.apple.metal.gemma64.bun-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma64 shaped workload.",
       "id": "apple-metal-gemma64-bun-package-warm",
       "baselineExecutorId": "doe_bun_package_prepared",
       "mode": "warm",
@@ -723,9 +1043,9 @@
       "backend": "apple-metal",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.apple.metal.gemma1b.bun-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma1B shaped workload.",
       "id": "apple-metal-gemma1b-bun-package-cold",
       "baselineExecutorId": "doe_bun_package",
       "mode": "cold",
@@ -755,9 +1075,9 @@
       "backend": "apple-metal",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.apple.metal.gemma1b.bun-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma1B shaped workload.",
       "id": "apple-metal-gemma1b-bun-package-warm",
       "baselineExecutorId": "doe_bun_package_prepared",
       "mode": "warm",
@@ -782,6 +1102,70 @@
       "surface": "package",
       "temperature": "warm",
       "workload": "gemma1b"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.package-developer.bun.ir.json",
+      "description": "Package developer workload pack for Doe-backed WebGPU vs Dawn-backed bun-webgpu on Apple Metal.",
+      "id": "apple-metal-package-developer-bun",
+      "baselineExecutorId": "doe_bun_package",
+      "mode": "default",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "default",
+      "workload": "package-developer"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.apple.metal.package-developer.bun.prepared.ir.json",
+      "description": "Prepared-session steady-state package developer workload pack for Doe-backed WebGPU vs Dawn-backed bun-webgpu on Apple Metal.",
+      "id": "apple-metal-package-developer-bun-prepared",
+      "baselineExecutorId": "doe_bun_package_prepared",
+      "mode": "warm",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package_prepared",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package_prepared",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "package-developer"
     },
     {
       "backend": "local-d3d12",
@@ -973,9 +1357,9 @@
       "backend": "amd-vulkan",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma64.node-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs node-webgpu on the Gemma64 shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma64 shaped workload.",
       "id": "amd-vulkan-gemma64-cold",
       "baselineExecutorId": "doe_node_webgpu",
       "mode": "cold",
@@ -1005,9 +1389,9 @@
       "backend": "amd-vulkan",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma64.node-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs node-webgpu on the Gemma64 shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma64 shaped workload.",
       "id": "amd-vulkan-gemma64-warm",
       "baselineExecutorId": "doe_node_webgpu_prepared",
       "mode": "warm",
@@ -1037,9 +1421,9 @@
       "backend": "amd-vulkan",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma1b.node-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs node-webgpu on the Gemma1B shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma1B shaped workload.",
       "id": "amd-vulkan-gemma1b-cold",
       "baselineExecutorId": "doe_node_webgpu",
       "mode": "cold",
@@ -1069,9 +1453,9 @@
       "backend": "amd-vulkan",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma1b.node-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs node-webgpu on the Gemma1B shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma1B shaped workload.",
       "id": "amd-vulkan-gemma1b-warm",
       "baselineExecutorId": "doe_node_webgpu_prepared",
       "mode": "warm",
@@ -1101,9 +1485,9 @@
       "backend": "amd-vulkan",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma64.bun-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma64 shaped workload.",
       "id": "amd-vulkan-gemma64-bun-package-cold",
       "baselineExecutorId": "doe_bun_package",
       "mode": "cold",
@@ -1133,9 +1517,9 @@
       "backend": "amd-vulkan",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma64.bun-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma64 shaped workload.",
       "id": "amd-vulkan-gemma64-bun-package-warm",
       "baselineExecutorId": "doe_bun_package_prepared",
       "mode": "warm",
@@ -1165,9 +1549,9 @@
       "backend": "amd-vulkan",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma1b.bun-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma1B shaped workload.",
       "id": "amd-vulkan-gemma1b-bun-package-cold",
       "baselineExecutorId": "doe_bun_package",
       "mode": "cold",
@@ -1197,9 +1581,9 @@
       "backend": "amd-vulkan",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma1b.bun-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma1B shaped workload.",
       "id": "amd-vulkan-gemma1b-bun-package-warm",
       "baselineExecutorId": "doe_bun_package_prepared",
       "mode": "warm",
@@ -1229,9 +1613,9 @@
       "backend": "local-d3d12",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.local.d3d12.gemma64.node-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs node-webgpu on the Gemma64 shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma64 shaped workload.",
       "id": "local-d3d12-gemma64-cold",
       "baselineExecutorId": "doe_node_webgpu",
       "mode": "cold",
@@ -1261,9 +1645,9 @@
       "backend": "local-d3d12",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.local.d3d12.gemma64.node-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs node-webgpu on the Gemma64 shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma64 shaped workload.",
       "id": "local-d3d12-gemma64-warm",
       "baselineExecutorId": "doe_node_webgpu_prepared",
       "mode": "warm",
@@ -1293,9 +1677,9 @@
       "backend": "local-d3d12",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.local.d3d12.gemma1b.node-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs node-webgpu on the Gemma1B shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma1B shaped workload.",
       "id": "local-d3d12-gemma1b-cold",
       "baselineExecutorId": "doe_node_webgpu",
       "mode": "cold",
@@ -1325,9 +1709,9 @@
       "backend": "local-d3d12",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_node_webgpu_package",
+      "comparisonView": "doe_vs_dawn_node_webgpu_package",
       "configPath": "bench/native-compare/compare.config.local.d3d12.gemma1b.node-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs node-webgpu on the Gemma1B shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed node-webgpu on the Gemma1B shaped workload.",
       "id": "local-d3d12-gemma1b-warm",
       "baselineExecutorId": "doe_node_webgpu_prepared",
       "mode": "warm",
@@ -1357,9 +1741,9 @@
       "backend": "local-d3d12",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.local.d3d12.gemma64.bun-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma64 shaped workload.",
       "id": "local-d3d12-gemma64-bun-package-cold",
       "baselineExecutorId": "doe_bun_package",
       "mode": "cold",
@@ -1389,9 +1773,9 @@
       "backend": "local-d3d12",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.local.d3d12.gemma64.bun-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma64 shaped workload.",
       "id": "local-d3d12-gemma64-bun-package-warm",
       "baselineExecutorId": "doe_bun_package_prepared",
       "mode": "warm",
@@ -1421,9 +1805,9 @@
       "backend": "local-d3d12",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.local.d3d12.gemma1b.bun-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped workload.",
+      "description": "Cold package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma1B shaped workload.",
       "id": "local-d3d12-gemma1b-bun-package-cold",
       "baselineExecutorId": "doe_bun_package",
       "mode": "cold",
@@ -1453,9 +1837,9 @@
       "backend": "local-d3d12",
       "benchmarkClass": "package-runtime-workload",
       "boundary": "package_surface",
-      "comparisonView": "doe_vs_bun_webgpu_package",
+      "comparisonView": "doe_vs_dawn_bun_webgpu_package",
       "configPath": "bench/native-compare/compare.config.local.d3d12.gemma1b.bun-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped workload.",
+      "description": "Prepared-session package-surface compare for Doe-backed WebGPU vs Dawn-backed bun-webgpu on the Gemma1B shaped workload.",
       "id": "local-d3d12-gemma1b-bun-package-warm",
       "baselineExecutorId": "doe_bun_package_prepared",
       "mode": "warm",

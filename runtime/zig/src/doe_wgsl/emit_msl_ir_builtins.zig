@@ -357,6 +357,7 @@ pub fn emit_call(self: anytype, function: ir.Function, result_ty: ir.TypeId, cal
 
 fn emit_array_length(self: anytype, function: ir.Function, call: @FieldType(ir.Expr, "call")) EmitError!void {
     const target_expr = function.expr_args.items[call.args.start];
+    if (try self.emit_array_length_local_if_available(function, target_expr)) return;
     switch (function.exprs.items[target_expr].data) {
         .global_ref => |index| {
             const global = self.module.globals.items[index];

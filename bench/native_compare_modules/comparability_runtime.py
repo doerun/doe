@@ -46,6 +46,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 _PACKAGE_EXECUTION_BACKENDS = frozenset({
     "node_webgpu_package",
     "doe_node_webgpu",
+    "doe_node_native_direct",
     "bun_webgpu_package",
     "doe_bun_package",
 })
@@ -358,4 +359,3 @@ def assess_native_shader_artifact_equivalence(
         "strict native Vulkan compare requires explicit SPIR-V artifacts for kernel_dispatch workloads; "
         f"missing {missing_summary}",
     )
-

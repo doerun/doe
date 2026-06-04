@@ -50,6 +50,7 @@ function buildProviderInfo({
   buildMetadataPath,
   leanVerifiedBuild,
   proofArtifactSha256,
+  nativeFastPaths = null,
 }) {
   return {
     module: moduleName,
@@ -63,6 +64,7 @@ function buildProviderInfo({
     buildMetadataPath,
     leanVerifiedBuild,
     proofArtifactSha256,
+    nativeFastPaths,
   };
 }
 

@@ -19,31 +19,45 @@ function defaultChromePath() {
     resolve(ROOT, "browser/chromium/out/fawn_release_local");
   const chromiumLaneOut = resolve(ROOT, "browser/chromium_webgpu_lane/out/fawn_release_local");
   const hostFawnApp = resolve(process.env.HOME ?? "", "Applications/Fawn.app/Contents/MacOS/Chromium");
+  const hostFawnReal = resolve(process.env.HOME ?? "", "Applications/Fawn.app/Contents/MacOS/Chromium-real");
   const envChrome = process.env.FAWN_CHROME_BIN;
   const candidates = [
     envChrome,
     resolve(releaseLocalOut, "chrome"),
+    resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium"),
     resolve(chromiumLaneOut, "chrome"),
+    resolve(chromiumLaneOut, "Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(chromiumLaneOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(chromiumLaneOut, "Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(chromiumLaneOut, "Chromium.app/Contents/MacOS/Chromium"),
+    hostFawnReal,
     hostFawnApp,
     "/usr/bin/google-chrome-stable",
     "/usr/bin/google-chrome",
     "/usr/bin/chromium",
     "/usr/bin/chromium-browser",
     resolve(ROOT, "browser/chromium/src/out/fawn_release/chrome"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/chrome"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
@@ -94,8 +108,43 @@ const BENCH_OUT_SCRATCH_ROOT = resolve(ROOT, "bench/out/scratch");
 const ARTIFACTS_ROOT = resolve(ROOT, "browser/chromium/artifacts");
 const DEFAULT_OUT_FILE = "dawn-vs-doe.browser-layered.diagnostic.json";
 const DEFAULT_API_SURFACE = "native";
+const DEFAULT_POWER_PREFERENCE = "high-performance";
 const HASH_ALGORITHM = "sha256";
 const RUNTIME_SELECTOR_VERSION = "browser-runtime-selector-v1";
+const CATEGORY_BY_DOMAIN = {
+  compute: "compute",
+  "p0-compute": "compute",
+  copy: "memory",
+  upload: "memory",
+  resource: "resources",
+  "p0-resource": "resources",
+  "p1-resource-table": "resources",
+  "p1-resource-table-macro": "resources",
+  pipeline: "pipeline",
+  "pipeline-async": "pipeline",
+  render: "render",
+  "p0-render": "render",
+  "p0-render-macro": "render",
+  "render-bundle": "render",
+  "render-macro": "render",
+  surface: "surface",
+  "texture-contract": "texture",
+  "texture-macro": "texture",
+  "texture-raster": "texture",
+  "p1-capability": "capability",
+  "p1-capability-macro": "capability",
+  "p2-lifecycle": "lifecycle",
+  "p2-lifecycle-macro": "lifecycle",
+};
+const CATEGORY_BY_WORKFLOW_ID = {
+  startup_adapter_device: "startup",
+  canvas_reconfigure_resize: "canvas",
+  queue_submit_burst: "queue",
+  async_pipeline_burst: "pipeline",
+  fawn_visual_particle_trails: "visual",
+  fawn_visual_magnetic_fluids: "visual",
+  fawn_visual_prismatic_fluids: "visual",
+};
 
 const DEFAULT_ITERATIONS = {
   upload: 300,
@@ -104,6 +153,7 @@ const DEFAULT_ITERATIONS = {
   pipeline: 20,
   asyncPipeline: 10,
   workflow: 80,
+  texture: 16,
 };
 
 function timestampId() {
@@ -139,6 +189,7 @@ Options:
   --allow-data-url-fallback Allow data: URL fallback if local server bind fails
   --headless true|false     Launch headless (default: true)
   --api-surface SURFACE     Browser API surface: native|package-browser (default: ${DEFAULT_API_SURFACE})
+  --power-preference VALUE  requestAdapter powerPreference: default|high-performance|low-power (default: ${DEFAULT_POWER_PREFERENCE})
   --chrome-arg ARG          Extra Chromium arg (repeatable)
   --iters-upload N          Upload scenario iterations (default: 300)
   --iters-dispatch N        Dispatch scenario iterations (default: 200)
@@ -146,6 +197,8 @@ Options:
   --iters-pipeline N        Pipeline scenario iterations (default: 20)
   --iters-async-pipeline N  Async pipeline iterations (default: 10)
   --iters-workflow N        Workflow loop iterations (default: 80)
+  --iters-texture N         Texture scenario iterations (default: 16)
+  --focus-category CATEGORY Run only rows in this diagnostic category (repeatable or comma-separated)
   --strict                  Exit non-zero when required rows fail
   --help                    Show this message
 `);
@@ -171,6 +224,24 @@ function readOptionValue(argv, optionIndex, flag) {
     throw new Error(`${flag} requires a value`);
   }
   return value;
+}
+
+function parseListOption(text, flag) {
+  const values = text
+    .split(",")
+    .map((segment) => segment.trim().toLowerCase())
+    .filter((segment) => segment.length > 0);
+  if (values.length === 0) {
+    throw new Error(`${flag} requires at least one value`);
+  }
+  return values;
+}
+
+function parsePowerPreference(text) {
+  if (["default", "high-performance", "low-power"].includes(text)) {
+    return text;
+  }
+  throw new Error("--power-preference must be default, high-performance, or low-power");
 }
 
 function pathWithin(pathValue, rootPath) {
@@ -219,6 +290,72 @@ function fileHashHex(pathValue) {
   return createHash(HASH_ALGORITHM).update(readFileSync(pathValue)).digest("hex");
 }
 
+function readTextFile(pathValue) {
+  if (!pathValue || !existsSync(pathValue)) return null;
+  return readFileSync(pathValue, "utf8");
+}
+
+function releaseClassForChromePath(chromePath) {
+  if (typeof chromePath !== "string" || chromePath.length === 0) return "unknown";
+  if (chromePath.includes("/Google Chrome.app/")) return "stock_chrome_release";
+  if (chromePath.includes("/Google Chrome Canary.app/")) return "stock_chrome_release";
+  if (chromePath.includes("/out/fawn_debug/")) return "fawn_debug";
+  if (chromePath.includes("/out/fawn_release/") || chromePath.includes("/out/fawn_release_local/")) {
+    return "fawn_release";
+  }
+  if (chromePath.includes("/Fawn.app/")) return "fawn_release";
+  return "unknown";
+}
+
+function fawnReleaseArgsPathFromChromePath(chromePath) {
+  if (typeof chromePath !== "string" || chromePath.length === 0) return null;
+  for (const marker of ["/out/fawn_release/", "/out/fawn_release_local/"]) {
+    const markerIndex = chromePath.indexOf(marker);
+    if (markerIndex >= 0) {
+      return resolve(chromePath.slice(0, markerIndex + marker.length - 1), "args.gn");
+    }
+  }
+  return null;
+}
+
+function fawnReleaseArgsCandidates(chromePath) {
+  const envArgsPath = process.env.FAWN_CHROMIUM_RELEASE_ARGS_GN;
+  return [
+    envArgsPath,
+    fawnReleaseArgsPathFromChromePath(chromePath),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/args.gn"),
+    resolve(ROOT, "browser/chromium/out/fawn_release_local/args.gn"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/args.gn"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/out/fawn_release_local/args.gn"),
+  ].filter((value) => typeof value === "string" && value.length > 0);
+}
+
+function fawnReleaseArgsEvidence(chromePath) {
+  if (releaseClassForChromePath(chromePath) !== "fawn_release") return null;
+  for (const candidate of fawnReleaseArgsCandidates(chromePath)) {
+    if (!existsSync(candidate)) continue;
+    return {
+      argsPath: candidate,
+      argsSha256: fileHashHex(candidate),
+      argsText: readTextFile(candidate),
+    };
+  }
+  return null;
+}
+
+function browserBuildConfigurationEvidence(args) {
+  return Object.fromEntries(
+    Object.entries(args.modeChromePaths).map(([mode, chromePath]) => [
+      mode,
+      {
+        chromePath,
+        releaseClass: releaseClassForChromePath(chromePath),
+        fawnReleaseArgs: fawnReleaseArgsEvidence(chromePath),
+      },
+    ]),
+  );
+}
+
 function attachHashChain(entries, moduleName) {
   let previousHash = "0".repeat(64);
   return entries.map((entry, index) => {
@@ -259,7 +396,9 @@ function parseArgs(argv) {
     allowDataUrlFallback: false,
     headless: true,
     apiSurface: DEFAULT_API_SURFACE,
+    powerPreference: DEFAULT_POWER_PREFERENCE,
     chromeArgs: [],
+    focusCategories: [],
     strict: false,
     iterations: { ...DEFAULT_ITERATIONS },
   };
@@ -311,8 +450,14 @@ function parseArgs(argv) {
     } else if (token === "--api-surface") {
       args.apiSurface = readOptionValue(argv, i, "--api-surface").toLowerCase();
       i += 1;
+    } else if (token === "--power-preference") {
+      args.powerPreference = parsePowerPreference(readOptionValue(argv, i, "--power-preference"));
+      i += 1;
     } else if (token === "--chrome-arg") {
       args.chromeArgs.push(readOptionValue(argv, i, "--chrome-arg"));
+      i += 1;
+    } else if (token === "--focus-category") {
+      args.focusCategories.push(...parseListOption(readOptionValue(argv, i, "--focus-category"), "--focus-category"));
       i += 1;
     } else if (token === "--iters-upload") {
       args.iterations.upload = parsePositiveInt(
@@ -350,6 +495,12 @@ function parseArgs(argv) {
         "--iters-workflow",
       );
       i += 1;
+    } else if (token === "--iters-texture") {
+      args.iterations.texture = parsePositiveInt(
+        readOptionValue(argv, i, "--iters-texture"),
+        "--iters-texture",
+      );
+      i += 1;
     } else {
       throw new Error(`unknown argument: ${token}`);
     }
@@ -365,6 +516,7 @@ function parseArgs(argv) {
   if (!["native", "package-browser"].includes(args.apiSurface)) {
     throw new Error("--api-surface must be one of native, package-browser");
   }
+  args.focusCategories = [...new Set(args.focusCategories)].sort();
   ensureAllowedOutPath(args.outPath, args.allowBenchOut);
   const modeChromePaths = {
     dawn: args.dawnChromePath || args.chromePath,
@@ -525,7 +677,7 @@ function loadWorkflowManifest(path) {
         `workflow row required=false must use requiredStatus=optional at index ${index}`,
       );
     }
-    return {
+    const workflow = {
       id: requireString(row.id, `rows[${index}].id`),
       scenarioTemplate: requireString(
         row.scenarioTemplate,
@@ -543,8 +695,71 @@ function loadWorkflowManifest(path) {
       required,
       runtimes: {},
     };
+
+    if (workflow.scenarioTemplate === "fawn_visual_resource") {
+      const resourcePath = requireString(row.resourcePath, `rows[${index}].resourcePath`);
+      if (
+        !resourcePath.startsWith("browser/chromium/resources/") ||
+        !resourcePath.endsWith(".html") ||
+        resourcePath.includes("..")
+      ) {
+        throw new Error(
+          `workflow row ${workflow.id} resourcePath must be a browser/chromium/resources/*.html path`,
+        );
+      }
+      const resourceSha256 = fileHashHex(resolve(ROOT, resourcePath));
+      if (!resourceSha256) {
+        throw new Error(`workflow row ${workflow.id} resourcePath does not exist: ${resourcePath}`);
+      }
+      workflow.resourcePath = resourcePath;
+      workflow.resourceSha256 = resourceSha256;
+      workflow.statusSelector = row.statusSelector ?? "#status";
+      workflow.frameSelector = row.frameSelector ?? "#frame";
+      workflow.workloadSelector = row.workloadSelector ?? "#workload";
+      workflow.adapterSelector = row.adapterSelector ?? "#adapter";
+    }
+
+    return workflow;
   });
   return { promotionGateRequiredApprovals, rows };
+}
+
+function categoryForProjectionRow(row) {
+  if (row && typeof row.domain === "string" && row.domain.length > 0) {
+    return CATEGORY_BY_DOMAIN[row.domain] ?? row.domain;
+  }
+  return "uncategorized";
+}
+
+function categoryForWorkflowRow(row) {
+  if (row && typeof row.id === "string" && row.id.length > 0) {
+    return CATEGORY_BY_WORKFLOW_ID[row.id] ?? "workflow";
+  }
+  return "workflow";
+}
+
+function applyFocusCategories(l1Rows, l2Rows, focusCategories) {
+  const filter = {
+    kind: focusCategories.length > 0 ? "category" : "none",
+    categories: focusCategories,
+    l1RowsBeforeFilter: l1Rows.length,
+    l1RowsAfterFilter: l1Rows.length,
+    l2RowsBeforeFilter: l2Rows.length,
+    l2RowsAfterFilter: l2Rows.length,
+  };
+  if (focusCategories.length === 0) {
+    return { l1Rows, l2Rows, filter };
+  }
+
+  const categorySet = new Set(focusCategories);
+  const filteredL1Rows = l1Rows.filter((row) => categorySet.has(categoryForProjectionRow(row)));
+  const filteredL2Rows = l2Rows.filter((row) => categorySet.has(categoryForWorkflowRow(row)));
+  filter.l1RowsAfterFilter = filteredL1Rows.length;
+  filter.l2RowsAfterFilter = filteredL2Rows.length;
+  if (filteredL1Rows.length === 0 && filteredL2Rows.length === 0) {
+    throw new Error(`--focus-category selected no browser rows: ${focusCategories.join(",")}`);
+  }
+  return { l1Rows: filteredL1Rows, l2Rows: filteredL2Rows, filter };
 }
 
 async function loadChromiumDriver() {
@@ -623,6 +838,10 @@ function makeDataPageUrl() {
 
 function browserSurfaceModuleUrl(baseUrl) {
   return new URL("/packages/doe-gpu/src/browser.js", baseUrl).href;
+}
+
+function resourceUrl(baseUrl, resourcePath) {
+  return new URL(resourcePath, baseUrl).href;
 }
 
 async function resolvePageTarget(allowDataUrlFallback, apiSurface) {
@@ -752,7 +971,7 @@ function adapterIdentityFromProbe(probe) {
 }
 
 async function probeRuntime(page, browserSurfaceArgs) {
-  return page.evaluate(async ({ apiSurface, browserModuleUrl }) => {
+  return page.evaluate(async ({ apiSurface, browserModuleUrl, powerPreference }) => {
     const browserSurface = apiSurface === "package-browser"
       ? await import(browserModuleUrl)
       : null;
@@ -783,7 +1002,9 @@ async function probeRuntime(page, browserSurfaceArgs) {
     }
 
     try {
-      const adapter = await gpu.requestAdapter();
+      const adapterOptions =
+        powerPreference === "default" ? undefined : { powerPreference };
+      const adapter = await gpu.requestAdapter(adapterOptions);
       if (!adapter) {
         response.errors.push("requestAdapter returned null");
         return response;
@@ -793,6 +1014,7 @@ async function probeRuntime(page, browserSurfaceArgs) {
       if ("info" in adapter) {
         response.adapterInfo = adapter.info;
       }
+      response.adapterRequestOptions = adapterOptions ?? {};
       response.webgpuCanvasApi.preferredCanvasFormatSupported =
         typeof gpu.getPreferredCanvasFormat === "function";
       if (response.webgpuCanvasApi.preferredCanvasFormatSupported) {
@@ -821,9 +1043,9 @@ async function probeRuntime(page, browserSurfaceArgs) {
   }, browserSurfaceArgs);
 }
 
-async function runScenario(page, template, iterations, browserSurfaceArgs) {
+async function runScenario(page, template, iterations, browserSurfaceArgs, scenarioConfig = {}) {
   return page.evaluate(
-    async ({ scenarioTemplate, runIterations, apiSurface, browserModuleUrl }) => {
+    async ({ scenarioTemplate, runIterations, apiSurface, browserModuleUrl, powerPreference, scenarioConfig }) => {
       const result = {
         apiSurface,
         status: "fail",
@@ -845,12 +1067,54 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
         if (typeof gpu === "undefined") {
           throw new Error("WebGPU surface unavailable");
         }
-        const adapter = await gpu.requestAdapter();
+        const adapterOptions =
+          powerPreference === "default" ? undefined : { powerPreference };
+        const adapter = await gpu.requestAdapter(adapterOptions);
         if (!adapter) {
           throw new Error("requestAdapter returned null");
         }
         const device = await adapter.requestDevice();
         return { adapter, device };
+      }
+
+      function percentile(sortedValues, fraction) {
+        if (sortedValues.length === 0) {
+          return 0;
+        }
+        const index = Math.min(
+          sortedValues.length - 1,
+          Math.max(0, Math.ceil(sortedValues.length * fraction) - 1),
+        );
+        return sortedValues[index];
+      }
+
+      function summarizeValues(values) {
+        const numeric = values
+          .filter((value) => Number.isFinite(value))
+          .sort((left, right) => left - right);
+        if (numeric.length === 0) {
+          return null;
+        }
+        const sum = numeric.reduce((acc, value) => acc + value, 0);
+        return {
+          avg: sum / numeric.length,
+          p10: percentile(numeric, 0.10),
+          p50: percentile(numeric, 0.50),
+          p95: percentile(numeric, 0.95),
+          p99: percentile(numeric, 0.99),
+        };
+      }
+
+      function addTimingStats(samples, sampleKey, metricName) {
+        const summary = summarizeValues(samples.map((sample) => sample[sampleKey]));
+        if (!summary) {
+          return;
+        }
+        result.metrics[metricName] = summary.p50;
+        result.metrics[`${metricName}Avg`] = summary.avg;
+        result.metrics[`${metricName}P10`] = summary.p10;
+        result.metrics[`${metricName}P95`] = summary.p95;
+        result.metrics[`${metricName}P99`] = summary.p99;
       }
 
       async function runWriteBuffer(device) {
@@ -914,12 +1178,17 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
         const width = 64;
         const height = 64;
         const format = "rgba8unorm";
+        const totalStart = nowMs();
+
+        let t0 = nowMs();
         const renderTarget = device.createTexture({
           size: { width, height, depthOrArrayLayers: 1 },
           format,
           usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
         });
+        result.metrics.createRenderTargetMs = nowMs() - t0;
 
+        t0 = nowMs();
         const shader = device.createShaderModule({
           code: `
             @vertex
@@ -938,19 +1207,27 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
             }
           `,
         });
+        result.metrics.shaderModuleMs = nowMs() - t0;
 
+        t0 = nowMs();
         const pipeline = device.createRenderPipeline({
           layout: "auto",
           vertex: { module: shader, entryPoint: "vs" },
           fragment: { module: shader, entryPoint: "fs", targets: [{ format }] },
           primitive: { topology: "triangle-list" },
         });
+        result.metrics.renderPipelineMs = nowMs() - t0;
 
+        t0 = nowMs();
+        const renderTargetView = renderTarget.createView();
+        result.metrics.createViewMs = nowMs() - t0;
+
+        t0 = nowMs();
         const encoder = device.createCommandEncoder();
         const pass = encoder.beginRenderPass({
           colorAttachments: [
             {
-              view: renderTarget.createView(),
+              view: renderTargetView,
               clearValue: { r: 0, g: 0, b: 0, a: 1 },
               loadOp: "clear",
               storeOp: "store",
@@ -972,12 +1249,22 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
           { width, height, depthOrArrayLayers: 1 },
         );
         device.queue.submit([encoder.finish()]);
+        result.metrics.submitReadbackMs = nowMs() - t0;
+
+        t0 = nowMs();
         await device.queue.onSubmittedWorkDone();
         await readback.mapAsync(GPUMapMode.READ);
         const data = new Uint8Array(readback.getMappedRange());
         const centerOffset = Math.floor(height / 2) * bytesPerRow + Math.floor(width / 2) * 4;
         const centerRgba = Array.from(data.slice(centerOffset, centerOffset + 4));
         readback.unmap();
+        result.metrics.mapReadMs = nowMs() - t0;
+
+        t0 = nowMs();
+        renderTarget.destroy();
+        readback.destroy();
+        result.metrics.destroyMs = nowMs() - t0;
+        result.metrics.renderMs = nowMs() - totalStart;
         result.metrics.centerRgba = centerRgba;
         result.metrics.pass =
           centerRgba[0] > 100 &&
@@ -1086,119 +1373,185 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
       }
 
       async function runTextureSampleRaster(device) {
+        const iterations = runIterations.texture;
         const width = 4;
         const height = 4;
         const outputWidth = 64;
         const outputHeight = 64;
-        const texture = device.createTexture({
-          size: { width, height, depthOrArrayLayers: 1 },
-          format: "rgba8unorm",
-          usage:
-            GPUTextureUsage.TEXTURE_BINDING |
-            GPUTextureUsage.COPY_DST,
-        });
+        const bytesPerRow = 256;
         const data = new Uint8Array(width * height * 4);
         for (let i = 0; i < data.length; i += 4) {
           data[i] = 255;
           data[i + 3] = 255;
         }
-        device.queue.writeTexture(
-          { texture },
-          data,
-          { bytesPerRow: width * 4, rowsPerImage: height },
-          { width, height, depthOrArrayLayers: 1 },
-        );
-
         const format = "rgba8unorm";
-        const renderTarget = device.createTexture({
-          size: { width: outputWidth, height: outputHeight, depthOrArrayLayers: 1 },
-          format,
-          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-        });
+        const samples = [];
+        let center = [];
 
-        const shader = device.createShaderModule({
-          code: `
-            struct VsOut {
-              @builtin(position) pos: vec4<f32>,
-              @location(0) uv: vec2<f32>,
-            };
+        async function sampleOnce(collect) {
+          const sample = {};
+          const totalStart = nowMs();
 
-            @vertex
-            fn vs(@builtin(vertex_index) index : u32) -> VsOut {
-              var pos = array<vec2<f32>, 3>(
-                vec2<f32>(-1.0, -1.0),
-                vec2<f32>( 3.0, -1.0),
-                vec2<f32>(-1.0,  3.0)
-              );
-              var uv = array<vec2<f32>, 3>(
-                vec2<f32>(0.0, 0.0),
-                vec2<f32>(2.0, 0.0),
-                vec2<f32>(0.0, 2.0)
-              );
-              var out: VsOut;
-              out.pos = vec4<f32>(pos[index], 0.0, 1.0);
-              out.uv = uv[index];
-              return out;
-            }
+          let t0 = nowMs();
+          const texture = device.createTexture({
+            size: { width, height, depthOrArrayLayers: 1 },
+            format: "rgba8unorm",
+            usage:
+              GPUTextureUsage.TEXTURE_BINDING |
+              GPUTextureUsage.COPY_DST,
+          });
+          sample.createTextureMs = nowMs() - t0;
 
-            @group(0) @binding(0) var tex: texture_2d<f32>;
-            @group(0) @binding(1) var samp: sampler;
+          t0 = nowMs();
+          device.queue.writeTexture(
+            { texture },
+            data,
+            { bytesPerRow: width * 4, rowsPerImage: height },
+            { width, height, depthOrArrayLayers: 1 },
+          );
+          sample.writeTextureMs = nowMs() - t0;
 
-            @fragment
-            fn fs(in: VsOut) -> @location(0) vec4<f32> {
-              return textureSample(tex, samp, in.uv * 0.5);
-            }
-          `,
-        });
+          t0 = nowMs();
+          const renderTarget = device.createTexture({
+            size: { width: outputWidth, height: outputHeight, depthOrArrayLayers: 1 },
+            format,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+          });
+          sample.createRenderTargetMs = nowMs() - t0;
 
-        const pipeline = device.createRenderPipeline({
-          layout: "auto",
-          vertex: { module: shader, entryPoint: "vs" },
-          fragment: { module: shader, entryPoint: "fs", targets: [{ format }] },
-          primitive: { topology: "triangle-list" },
-        });
+          t0 = nowMs();
+          const shader = device.createShaderModule({
+            code: `
+              struct VsOut {
+                @builtin(position) pos: vec4<f32>,
+                @location(0) uv: vec2<f32>,
+              };
 
-        const bindGroup = device.createBindGroup({
-          layout: pipeline.getBindGroupLayout(0),
-          entries: [
-            { binding: 0, resource: texture.createView() },
-            { binding: 1, resource: device.createSampler({ magFilter: "nearest", minFilter: "nearest" }) },
-          ],
-        });
+              @vertex
+              fn vs(@builtin(vertex_index) index : u32) -> VsOut {
+                var pos = array<vec2<f32>, 3>(
+                  vec2<f32>(-1.0, -1.0),
+                  vec2<f32>( 3.0, -1.0),
+                  vec2<f32>(-1.0,  3.0)
+                );
+                var uv = array<vec2<f32>, 3>(
+                  vec2<f32>(0.0, 0.0),
+                  vec2<f32>(2.0, 0.0),
+                  vec2<f32>(0.0, 2.0)
+                );
+                var out: VsOut;
+                out.pos = vec4<f32>(pos[index], 0.0, 1.0);
+                out.uv = uv[index];
+                return out;
+              }
 
-        const encoder = device.createCommandEncoder();
-        const pass = encoder.beginRenderPass({
-          colorAttachments: [
-            {
-              view: renderTarget.createView(),
-              clearValue: { r: 0, g: 0, b: 0, a: 1 },
-              loadOp: "clear",
-              storeOp: "store",
-            },
-          ],
-        });
-        pass.setPipeline(pipeline);
-        pass.setBindGroup(0, bindGroup);
-        pass.draw(3);
-        pass.end();
+              @group(0) @binding(0) var tex: texture_2d<f32>;
+              @group(0) @binding(1) var samp: sampler;
 
-        const bytesPerRow = 256;
-        const readback = device.createBuffer({
-          size: bytesPerRow * 64,
-          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-        });
-        encoder.copyTextureToBuffer(
-          { texture: renderTarget },
-          { buffer: readback, bytesPerRow, rowsPerImage: 64 },
-          { width: 64, height: 64, depthOrArrayLayers: 1 },
-        );
-        device.queue.submit([encoder.finish()]);
-        await readback.mapAsync(GPUMapMode.READ);
-        const mapped = new Uint8Array(readback.getMappedRange());
-        const offset = 32 * bytesPerRow + 32 * 4;
-        const center = Array.from(mapped.slice(offset, offset + 4));
-        readback.unmap();
+              @fragment
+              fn fs(in: VsOut) -> @location(0) vec4<f32> {
+                return textureSample(tex, samp, in.uv * 0.5);
+              }
+            `,
+          });
+          sample.shaderModuleMs = nowMs() - t0;
+
+          t0 = nowMs();
+          const pipeline = device.createRenderPipeline({
+            layout: "auto",
+            vertex: { module: shader, entryPoint: "vs" },
+            fragment: { module: shader, entryPoint: "fs", targets: [{ format }] },
+            primitive: { topology: "triangle-list" },
+          });
+          sample.renderPipelineMs = nowMs() - t0;
+
+          t0 = nowMs();
+          const textureView = texture.createView();
+          const renderTargetView = renderTarget.createView();
+          sample.createViewMs = nowMs() - t0;
+
+          t0 = nowMs();
+          const sampler = device.createSampler({ magFilter: "nearest", minFilter: "nearest" });
+          sample.createSamplerMs = nowMs() - t0;
+
+          t0 = nowMs();
+          const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: textureView },
+              { binding: 1, resource: sampler },
+            ],
+          });
+          sample.createBindGroupMs = nowMs() - t0;
+
+          const readback = device.createBuffer({
+            size: bytesPerRow * outputHeight,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+          });
+
+          t0 = nowMs();
+          const encoder = device.createCommandEncoder();
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: renderTargetView,
+                clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                loadOp: "clear",
+                storeOp: "store",
+              },
+            ],
+          });
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, bindGroup);
+          pass.draw(3);
+          pass.end();
+          encoder.copyTextureToBuffer(
+            { texture: renderTarget },
+            { buffer: readback, bytesPerRow, rowsPerImage: outputHeight },
+            { width: outputWidth, height: outputHeight, depthOrArrayLayers: 1 },
+          );
+          const commandBuffer = encoder.finish();
+          device.queue.submit([commandBuffer]);
+          sample.submitReadbackMs = nowMs() - t0;
+
+          t0 = nowMs();
+          await readback.mapAsync(GPUMapMode.READ);
+          const mapped = new Uint8Array(readback.getMappedRange());
+          const offset = 32 * bytesPerRow + 32 * 4;
+          center = Array.from(mapped.slice(offset, offset + 4));
+          readback.unmap();
+          sample.mapReadMs = nowMs() - t0;
+
+          t0 = nowMs();
+          texture.destroy();
+          renderTarget.destroy();
+          readback.destroy();
+          sample.destroyMs = nowMs() - t0;
+          sample.textureMs = nowMs() - totalStart;
+          if (collect) {
+            samples.push(sample);
+          }
+        }
+
+        await sampleOnce(false);
+        for (let i = 0; i < iterations; i += 1) {
+          await sampleOnce(true);
+        }
+        addTimingStats(samples, "textureMs", "textureMs");
+        addTimingStats(samples, "createTextureMs", "createTextureMs");
+        addTimingStats(samples, "writeTextureMs", "writeTextureMs");
+        addTimingStats(samples, "createRenderTargetMs", "createRenderTargetMs");
+        addTimingStats(samples, "shaderModuleMs", "shaderModuleMs");
+        addTimingStats(samples, "renderPipelineMs", "renderPipelineMs");
+        addTimingStats(samples, "createViewMs", "createViewMs");
+        addTimingStats(samples, "createSamplerMs", "createSamplerMs");
+        addTimingStats(samples, "createBindGroupMs", "createBindGroupMs");
+        addTimingStats(samples, "submitReadbackMs", "submitReadbackMs");
+        addTimingStats(samples, "mapReadMs", "mapReadMs");
+        addTimingStats(samples, "destroyMs", "destroyMs");
         result.metrics.centerRgba = center;
+        result.metrics.textureIterations = iterations;
+        result.metrics.textureWarmupIterations = 1;
         result.metrics.pass = center[0] > 100;
         if (!result.metrics.pass) {
           throw new Error("texture sample raster check failed");
@@ -1206,39 +1559,79 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
       }
 
       async function runTextureWriteQueryDestroy(device) {
-        const texture = device.createTexture({
-          size: { width: 128, height: 128, depthOrArrayLayers: 1 },
-          format: "rgba8unorm",
-          usage:
-            GPUTextureUsage.TEXTURE_BINDING |
-            GPUTextureUsage.COPY_DST |
-            GPUTextureUsage.RENDER_ATTACHMENT,
-          mipLevelCount: 1,
-          sampleCount: 1,
-        });
-
+        const iterations = runIterations.texture;
         const payload = new Uint8Array(128 * 128 * 4);
         payload.fill(17);
-        device.queue.writeTexture(
-          { texture },
-          payload,
-          { bytesPerRow: 128 * 4, rowsPerImage: 128 },
-          { width: 128, height: 128, depthOrArrayLayers: 1 },
-        );
-        await device.queue.onSubmittedWorkDone();
+        const samples = [];
 
-        const view = texture.createView();
-        result.metrics.width = texture.width;
-        result.metrics.height = texture.height;
-        result.metrics.depthOrArrayLayers = texture.depthOrArrayLayers;
-        result.metrics.mipLevelCount = texture.mipLevelCount;
-        result.metrics.sampleCount = texture.sampleCount;
-        result.metrics.dimension = texture.dimension;
-        result.metrics.format = texture.format;
-        result.metrics.usage = texture.usage;
-        result.metrics.viewCreated = Boolean(view);
+        async function sampleOnce(collect) {
+          const sample = {};
+          const totalStart = nowMs();
 
-        texture.destroy();
+          let t0 = nowMs();
+          const texture = device.createTexture({
+            size: { width: 128, height: 128, depthOrArrayLayers: 1 },
+            format: "rgba8unorm",
+            usage:
+              GPUTextureUsage.TEXTURE_BINDING |
+              GPUTextureUsage.COPY_DST |
+              GPUTextureUsage.RENDER_ATTACHMENT,
+            mipLevelCount: 1,
+            sampleCount: 1,
+          });
+          sample.createTextureMs = nowMs() - t0;
+
+          t0 = nowMs();
+          device.queue.writeTexture(
+            { texture },
+            payload,
+            { bytesPerRow: 128 * 4, rowsPerImage: 128 },
+            { width: 128, height: 128, depthOrArrayLayers: 1 },
+          );
+          sample.writeTextureMs = nowMs() - t0;
+
+          t0 = nowMs();
+          await device.queue.onSubmittedWorkDone();
+          sample.waitMs = nowMs() - t0;
+
+          t0 = nowMs();
+          const view = texture.createView();
+          sample.createViewMs = nowMs() - t0;
+
+          t0 = nowMs();
+          result.metrics.width = texture.width;
+          result.metrics.height = texture.height;
+          result.metrics.depthOrArrayLayers = texture.depthOrArrayLayers;
+          result.metrics.mipLevelCount = texture.mipLevelCount;
+          result.metrics.sampleCount = texture.sampleCount;
+          result.metrics.dimension = texture.dimension;
+          result.metrics.format = texture.format;
+          result.metrics.usage = texture.usage;
+          result.metrics.viewCreated = Boolean(view);
+          sample.propertyQueryMs = nowMs() - t0;
+
+          t0 = nowMs();
+          texture.destroy();
+          sample.destroyMs = nowMs() - t0;
+          sample.textureMs = nowMs() - totalStart;
+          if (collect) {
+            samples.push(sample);
+          }
+        }
+
+        await sampleOnce(false);
+        for (let i = 0; i < iterations; i += 1) {
+          await sampleOnce(true);
+        }
+        addTimingStats(samples, "textureMs", "textureMs");
+        addTimingStats(samples, "createTextureMs", "createTextureMs");
+        addTimingStats(samples, "writeTextureMs", "writeTextureMs");
+        addTimingStats(samples, "waitMs", "waitMs");
+        addTimingStats(samples, "createViewMs", "createViewMs");
+        addTimingStats(samples, "propertyQueryMs", "propertyQueryMs");
+        addTimingStats(samples, "destroyMs", "destroyMs");
+        result.metrics.textureIterations = iterations;
+        result.metrics.textureWarmupIterations = 1;
         result.metrics.destroyed = true;
       }
 
@@ -1385,9 +1778,68 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
         result.metrics.usPerSubmit = ((t1 - t0) * 1000) / iterations;
       }
 
+      function readText(selector) {
+        if (typeof selector !== "string" || selector.length === 0) {
+          return "";
+        }
+        return document.querySelector(selector)?.textContent?.trim() ?? "";
+      }
+
+      function nextFrame() {
+        return new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+
+      async function waitForVisualFrameTelemetry() {
+        const deadline = nowMs() + 10000;
+        const statusSelector = scenarioConfig.statusSelector ?? "#status";
+        const frameSelector = scenarioConfig.frameSelector ?? "#frame";
+        while (nowMs() < deadline) {
+          const statusText = readText(statusSelector);
+          const frameText = readText(frameSelector);
+          if (/^error:/i.test(statusText)) {
+            throw new Error(statusText);
+          }
+          if (frameText && frameText !== "--" && frameText.includes("fps")) {
+            return { statusText, frameText };
+          }
+          await nextFrame();
+        }
+        throw new Error("fawn visual page did not emit frame telemetry");
+      }
+
+      async function runFawnVisualResource() {
+        const firstTelemetry = await waitForVisualFrameTelemetry();
+        const frameTarget = Math.max(1, runIterations.workflow);
+        const samples = [];
+        let previous = await nextFrame();
+        for (let i = 0; i < frameTarget; i += 1) {
+          const current = await nextFrame();
+          samples.push(Math.max(0.001, current - previous));
+          previous = current;
+        }
+        const sorted = [...samples].sort((a, b) => a - b);
+        const sum = samples.reduce((acc, value) => acc + value, 0);
+        const avgFrameMs = sum / samples.length;
+        const p95Index = Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.95) - 1);
+        result.metrics.resourcePath = scenarioConfig.resourcePath ?? "";
+        result.metrics.resourceSha256 = scenarioConfig.resourceSha256 ?? "";
+        result.metrics.statusText = readText(scenarioConfig.statusSelector ?? "#status") || firstTelemetry.statusText;
+        result.metrics.frameText = readText(scenarioConfig.frameSelector ?? "#frame") || firstTelemetry.frameText;
+        result.metrics.workloadText = readText(scenarioConfig.workloadSelector ?? "#workload");
+        result.metrics.adapterText = readText(scenarioConfig.adapterSelector ?? "#adapter");
+        result.metrics.frameCount = samples.length;
+        result.metrics.avgFrameMs = avgFrameMs;
+        result.metrics.minFrameMs = sorted[0];
+        result.metrics.maxFrameMs = sorted[sorted.length - 1];
+        result.metrics.p95FrameMs = sorted[p95Index];
+        result.metrics.avgFps = 1000 / Math.max(avgFrameMs, 0.001);
+      }
+
       const scenarioStart = nowMs();
       try {
-        const { device } = await initDevice();
+        const deviceSetup =
+          scenarioTemplate === "fawn_visual_resource" ? null : await initDevice();
+        const device = deviceSetup?.device ?? null;
 
         if (scenarioTemplate === "write_buffer_upload") {
           await runWriteBuffer(device);
@@ -1416,6 +1868,8 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
           await runQueueSubmitBurst(device);
         } else if (scenarioTemplate === "async_pipeline_burst") {
           await runPipelineCompileStress(device, true);
+        } else if (scenarioTemplate === "fawn_visual_resource") {
+          await runFawnVisualResource();
         } else if (scenarioTemplate === "generic_webgpu_api") {
           await runComputeDispatch(device, Math.max(1, Math.floor(runIterations.dispatch / 4)));
         } else {
@@ -1458,6 +1912,7 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
       scenarioTemplate: template,
       runIterations: iterations,
       ...browserSurfaceArgs,
+      scenarioConfig,
     },
   );
 }
@@ -1612,6 +2067,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
     const browserSurfaceArgs = {
       apiSurface: args.apiSurface,
       browserModuleUrl: browserSurfaceModuleUrl(pageTarget.url),
+      powerPreference: args.powerPreference,
     };
     runtimeEvidence.browserVersion = browser.version();
     runtimeEvidence.userAgent = await page.evaluate(() => navigator.userAgent);
@@ -1642,12 +2098,27 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
     }
 
     for (const workflow of l2Rows) {
-      await page.goto(pageTarget.url, { waitUntil: "load", timeout: 120000 });
+      if (workflow.resourcePath && pageTarget.kind !== "server") {
+        workflowResultsById.set(
+          workflow.id,
+          makeModeRowResult(
+            "unsupported",
+            "mode_execution_unavailable",
+            "resource workflows require the local browser benchmark server",
+          ),
+        );
+        continue;
+      }
+      const workflowUrl = workflow.resourcePath
+        ? resourceUrl(pageTarget.url, workflow.resourcePath)
+        : pageTarget.url;
+      await page.goto(workflowUrl, { waitUntil: "load", timeout: 120000 });
       const scenarioResult = await runScenario(
         page,
         workflow.scenarioTemplate,
         args.iterations,
         browserSurfaceArgs,
+        workflow,
       );
       workflowResultsById.set(
         workflow.id,
@@ -1763,8 +2234,13 @@ async function main() {
 
   const projectionManifest = loadProjectionManifest(args.manifestPath);
   const workflowManifest = loadWorkflowManifest(args.workflowsPath);
-  const l1Rows = projectionManifest.rows;
-  const l2Rows = workflowManifest.rows;
+  const filteredWorkloads = applyFocusCategories(
+    projectionManifest.rows,
+    workflowManifest.rows,
+    args.focusCategories,
+  );
+  const l1Rows = filteredWorkloads.l1Rows;
+  const l2Rows = filteredWorkloads.l2Rows;
 
   const modes = args.mode === "both" ? ["dawn", "doe"] : [args.mode];
   const modeRunDetails = [];
@@ -1947,8 +2423,10 @@ async function main() {
     modeOrder: modes,
     headless: args.headless,
     chromeArgs: args.chromeArgs,
+    powerPreference: args.powerPreference,
     manifestPath: args.manifestPath,
     workflowsPath: args.workflowsPath,
+    workloadFilter: filteredWorkloads.filter,
     workflowPromotionGateRequiredApprovals: workflowManifest.promotionGateRequiredApprovals,
     browserEnvironmentEvidence: {
       pageTargetKind: pageTarget.kind,
@@ -1959,6 +2437,11 @@ async function main() {
     runtimeSelections: modeRunDetailsWithHashes.map((entry) => entry.runtimeSelection),
     methodology: {
       scenarioIterations: args.iterations,
+      browserBuildConfigurationEvidence: browserBuildConfigurationEvidence(args),
+      adapterRequest: {
+        powerPreference: args.powerPreference,
+      },
+      workloadFilter: filteredWorkloads.filter,
       strictMode: args.strict,
       requiredStatusPolicy: {
         l1: "requiredStatus=ok rows are required",

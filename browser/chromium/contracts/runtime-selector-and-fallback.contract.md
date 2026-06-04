@@ -39,6 +39,33 @@ and validates against
 The policy records the selection modes, control precedence, emergency kill
 switch, auto-mode preconditions, denylist reason, fallback taxonomy,
 forced-Doe failure behavior, and required observability fields.
+Chromium source adapter filtering must also carry denylist detail once adapter
+identity is available: `adapter_denylist_detail` includes
+`profile_denylisted`, vendor/device IDs, adapter/backend type, and the
+blocklist reason before the adapter is rejected.
+
+The forced-Doe Chromium proc surface is
+[`config/doe-chromium-proc-surface.json`](../../../config/doe-chromium-proc-surface.json)
+and validates against
+[`config/doe-chromium-proc-surface.schema.json`](../../../config/doe-chromium-proc-surface.schema.json).
+The proc-surface checker verifies the selected Doe WebGPU library exports the
+browser-facing WGPU symbols, resolves the generated Dawn wire proc table
+through `wgpuGetProcAddress`, verifies required browser interop procs are
+mapped in the Doe local resolver before native fallback, and can bootstrap a Doe
+`WGPUInstance` before Chromium injects that instance into the WebGPU wire
+server. It also checks the browser shared-memory implementation source so
+error-object constructors allocate tagged Doe handles, macOS shared texture
+memory imports IOSurface handles through Doe, and shared buffer/fence imports
+stay explicitly unsupported until Chromium exposes native handle sources. Shared
+texture, shared buffer, and shared fence proc names must be Doe-owned before
+native fallback can satisfy the generated wire proc table. Error-object procs
+must be Doe-owned and return releasable Doe error handles, not null
+native-fallback placeholders. Chromium texture mailbox paths must use the loaded
+Doe proc table and raw `WGPUTexture` handles rather than generated Dawn C++
+wrapper calls when forced Doe is active; active-Doe present teardown must end Doe
+shared texture access before clearing the association. Chromium buffer mailbox
+paths must fail closed before wire injection when forced Doe is active and no
+native buffer handle source is available.
 
 ## Control surfaces
 
@@ -69,9 +96,12 @@ All required:
 1. Emergency disable inactive.
 2. Runtime artifact available.
 3. Runtime artifact load success.
-4. Required symbol surface available.
-5. Required capability checks pass.
-6. Profile not denylisted.
+4. Runtime artifact initializes.
+5. Required symbol surface available.
+6. Required wire proc table available.
+7. Required browser interop procs resolve locally.
+8. Required capability checks pass.
+9. Profile not denylisted.
 
 If any precondition fails, select `dawn` with explicit fallback reason.
 The current Playwright diagnostic selector implements the emergency-disable,
@@ -85,12 +115,14 @@ language.
 1. `global_disable_active`
 2. `runtime_artifact_missing`
 3. `runtime_artifact_load_failed`
-4. `symbol_surface_incomplete`
-5. `profile_denylisted`
-6. `capability_requirement_failed`
-7. `runtime_health_degraded`
-8. `explicit_operator_override`
-9. `unknown_selection_error`
+4. `runtime_initialization_failed`
+5. `symbol_surface_incomplete`
+6. `wire_proc_table_incomplete`
+7. `profile_denylisted`
+8. `capability_requirement_failed`
+9. `runtime_health_degraded`
+10. `explicit_operator_override`
+11. `unknown_selection_error`
 
 No free-form fallback reasons in reporting; reasons must be typed from this taxonomy.
 
@@ -109,15 +141,23 @@ Per runtime session:
    - `api`,
    - `deviceFamily`,
    - `driver`.
-8. `selectorVersion`
-9. `artifactIdentity`:
+8. `adapterDenylist`:
+   - `matched`,
+   - `reasonCode`,
+   - `profileId`,
+   - `vendor`,
+   - `api`,
+   - `deviceFamily`,
+   - `driverPattern`.
+9. `selectorVersion`
+10. `artifactIdentity`:
    - `browserExecutablePath`,
    - `browserExecutableSha256`,
    - `dawnRuntimePath`,
    - `dawnRuntimeSha256`,
    - `doeLibPath`,
    - `doeLibSha256`.
-10. `launchArgsHash`
+11. `launchArgsHash`
 
 ## Trace and report contract
 
@@ -148,9 +188,19 @@ Advisory:
 
 1. Missing artifact -> deterministic fallback with `runtime_artifact_missing`.
 2. Missing required symbols -> deterministic fallback with `symbol_surface_incomplete`.
-3. Denylisted profile -> deterministic fallback with `profile_denylisted`.
+3. Denylisted profile -> deterministic fallback with `profile_denylisted`
+   in `auto` mode and an `adapterDenylist` detail row in forced modes.
+   Chromium source selection must emit equivalent adapter denylist detail at
+   adapter filtering time.
 4. Global kill switch -> deterministic fallback with `global_disable_active`.
 5. Forced `doe` with failed init -> explicit hard failure, not silent Dawn selection.
+6. Forced `doe` with a runtime artifact that cannot create a Doe
+   `WGPUInstance` -> explicit `runtime_initialization_failed` hard failure.
+7. Forced `doe` with a missing browser-facing WGPU proc -> explicit
+   `symbol_surface_incomplete` hard failure.
+8. Forced `doe` with a missing local browser interop proc mapping -> explicit
+   `wire_proc_table_incomplete` hard failure before native fallback can satisfy
+   the generated wire proc table.
 
 ## Rollback contract
 

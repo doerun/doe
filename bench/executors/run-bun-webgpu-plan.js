@@ -12,7 +12,7 @@ runPackageWebGpuPlanCli({
   cliPath: CLI_PATH,
   childEnv: 'DOE_BUN_WEBGPU_CHILD',
   label: 'bun-webgpu',
-  providerUsage: 'doe|bun-webgpu',
+  providerUsage: 'doe|doe-ffi|bun-webgpu',
   usageCommand: 'bun bench/executors/run-bun-webgpu-plan.js',
 }).catch((err) => {
   process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);

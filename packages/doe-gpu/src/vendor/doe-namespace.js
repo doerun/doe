@@ -225,6 +225,14 @@ function validateNonNegativeInteger(value, label) {
   }
 }
 
+function tryMapReadCopyUnmap(buffer, type, offset, size) {
+  if (typeof buffer?._mapReadCopyUnmap !== 'function') {
+    return null;
+  }
+  const copy = buffer._mapReadCopyUnmap(DOE_GPU_MAP_MODE.READ, offset, size);
+  return copy == null ? null : new type(copy);
+}
+
 function resolveStableTokenTieBreakRule(value) {
   const rule = value ?? DOE_STABLE_TOKEN_TIE_BREAK_RULE;
   if (rule !== DOE_STABLE_TOKEN_TIE_BREAK_RULE) {
@@ -1323,6 +1331,10 @@ function submitCommands(device, encoder) {
   deferCommandBuffer(device, encoder.finish());
 }
 
+function descriptorWithOptionalLabel(label) {
+  return label == null ? undefined : { label };
+}
+
 /**
  * Reusable bind group compiled for a specific `DoeKernel`.
  *
@@ -1430,7 +1442,7 @@ class DoeComputeBatch {
   constructor(device, options = {}) {
     this.device = device;
     this.label = options.label;
-    this._encoder = device.createCommandEncoder({ label: options.label ?? undefined });
+    this._encoder = device.createCommandEncoder(descriptorWithOptionalLabel(options.label));
     this._pass = null;
     this._submitted = false;
   }
@@ -1440,7 +1452,7 @@ class DoeComputeBatch {
       throw new Error('Doe compute batch cannot be reused after submit().');
     }
     if (!this._pass) {
-      this._pass = this._encoder.beginComputePass({ label: label ?? this.label ?? undefined });
+      this._pass = this._encoder.beginComputePass(descriptorWithOptionalLabel(label ?? this.label));
     }
     return this._pass;
   }
@@ -1617,7 +1629,7 @@ class DoeCommandEncoder {
   constructor(device, options = {}) {
     this.device = device;
     this.label = options.label;
-    this._encoder = device.createCommandEncoder({ label: options.label ?? undefined });
+    this._encoder = device.createCommandEncoder(descriptorWithOptionalLabel(options.label));
     this._activePass = null;
     this._submitted = false;
   }
@@ -1655,7 +1667,7 @@ class DoeCommandEncoder {
     }
     const pass = new DoeComputePass(
       this,
-      this._encoder.beginComputePass({ label: options.label ?? this.label ?? undefined }),
+      this._encoder.beginComputePass(descriptorWithOptionalLabel(options.label ?? this.label)),
     );
     this._activePass = pass;
     return pass;
@@ -1891,9 +1903,10 @@ async function readBuffer(device, buffer, type, options = {}) {
     const pendingCommands = drainPendingEncoders(device);
     if (pendingCommands.length > 0) {
       device.queue.submit(pendingCommands);
-      if (typeof device.queue.onSubmittedWorkDone === 'function') {
-        await device.queue.onSubmittedWorkDone();
-      }
+    }
+    const fastRead = tryMapReadCopyUnmap(buffer, type, offset, size);
+    if (fastRead !== null) {
+      return fastRead;
     }
     await buffer.mapAsync(DOE_GPU_MAP_MODE.READ, offset, size);
     const copy = typeof buffer._readCopy === 'function'
@@ -1916,12 +1929,13 @@ async function readBuffer(device, buffer, type, options = {}) {
   if (pendingCommands.length > 0) {
     commands.push(...pendingCommands);
   }
-  const encoder = device.createCommandEncoder({ label: options.label ?? undefined });
+  const encoder = device.createCommandEncoder(descriptorWithOptionalLabel(options.label));
   encoder.copyBufferToBuffer(buffer, offset, staging, 0, size);
   commands.push(encoder.finish());
   device.queue.submit(commands);
-  if (typeof device.queue.onSubmittedWorkDone === 'function') {
-    await device.queue.onSubmittedWorkDone();
+  const fastRead = tryMapReadCopyUnmap(staging, type, 0, size);
+  if (fastRead !== null) {
+    return fastRead;
   }
   await staging.mapAsync(DOE_GPU_MAP_MODE.READ);
   const copy = typeof staging._readCopy === 'function'

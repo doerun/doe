@@ -83,14 +83,20 @@ bool native_direct_queue_has_pending(napi_env env, napi_value queue_obj) {
 
 void native_direct_queue_mark_submitted(napi_env env, napi_value queue_obj) {
     NativeDirectQueueCache* cache = native_direct_get_queue_cache(env, queue_obj);
-    if (cache) cache->submitted_serial += 1;
+    if (cache) {
+        cache->submitted_serial += 1;
+        return;
+    }
     uint32_t submitted = native_direct_get_uint32_prop(env, queue_obj, DOE_DIRECT_SUBMITTED_SERIAL);
     native_direct_set_uint32_prop(env, queue_obj, DOE_DIRECT_SUBMITTED_SERIAL, submitted + 1);
 }
 
 void native_direct_queue_mark_done(napi_env env, napi_value queue_obj) {
     NativeDirectQueueCache* cache = native_direct_get_queue_cache(env, queue_obj);
-    if (cache) cache->completed_serial = cache->submitted_serial;
+    if (cache) {
+        cache->completed_serial = cache->submitted_serial;
+        return;
+    }
     uint32_t submitted = native_direct_get_uint32_prop(env, queue_obj, DOE_DIRECT_SUBMITTED_SERIAL);
     native_direct_set_uint32_prop(env, queue_obj, DOE_DIRECT_COMPLETED_SERIAL, submitted);
 }

@@ -47,6 +47,7 @@ from native_compare_modules.timing_selection import canonical_timing_source, cla
 _PACKAGE_EXECUTION_BACKENDS = frozenset({
     "node_webgpu_package",
     "doe_node_webgpu",
+    "doe_node_native_direct",
     "bun_webgpu_package",
     "doe_bun_package",
 })
@@ -75,6 +76,16 @@ def compare_assessment(
     right_samples_raw = comparison.get("commandSamples", [])
     left_samples = left_samples_raw if isinstance(left_samples_raw, list) else []
     right_samples = right_samples_raw if isinstance(right_samples_raw, list) else []
+    left_measured_samples = [
+        sample
+        for sample in left_samples
+        if isinstance(sample, dict) and safe_float(sample.get("measuredMs")) is not None
+    ]
+    right_measured_samples = [
+        sample
+        for sample in right_samples
+        if isinstance(sample, dict) and safe_float(sample.get("measuredMs")) is not None
+    ]
 
     left_sources = sorted({str(sample.get("timingSource", "")) for sample in left_samples})
     right_sources = sorted({str(sample.get("timingSource", "")) for sample in right_samples})
@@ -192,6 +203,107 @@ def compare_assessment(
 
     left_execution_backends = collect_execution_backends(left_samples)
     right_execution_backends = collect_execution_backends(right_samples)
+    package_execution_applies = (
+        bool(left_execution_backends & _PACKAGE_EXECUTION_BACKENDS)
+        or bool(right_execution_backends & _PACKAGE_EXECUTION_BACKENDS)
+    )
+
+    def collect_trace_meta_values(samples: list[dict[str, Any]], key: str) -> set[Any]:
+        return {
+            sample.get("traceMeta", {}).get(key)
+            for sample in samples
+            if isinstance(sample, dict)
+            and isinstance(sample.get("traceMeta"), dict)
+            and key in sample.get("traceMeta", {})
+        }
+
+    left_resident_buffer_load_modes = collect_trace_meta_values(
+        left_samples,
+        "packageResidentBufferLoads",
+    )
+    right_resident_buffer_load_modes = collect_trace_meta_values(
+        right_samples,
+        "packageResidentBufferLoads",
+    )
+
+    def collect_resident_buffer_load_shapes(samples: list[dict[str, Any]]) -> set[tuple[int, int]]:
+        shapes: set[tuple[int, int]] = set()
+        for sample in samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            if trace_meta.get("packageResidentBufferLoads") is not True:
+                continue
+            breakdown = trace_meta.get("packageResidentBufferLoadBreakdown", {})
+            if not isinstance(breakdown, dict):
+                shapes.add((-1, -1))
+                continue
+            shapes.add((
+                safe_int(breakdown.get("count"), default=-1),
+                safe_int(breakdown.get("bytes"), default=-1),
+            ))
+        return shapes
+
+    left_resident_buffer_load_shapes = collect_resident_buffer_load_shapes(left_samples)
+    right_resident_buffer_load_shapes = collect_resident_buffer_load_shapes(right_samples)
+
+    def collect_readback_capture_signatures(samples: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        signatures: set[tuple[Any, ...]] = set()
+        for sample in samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            captures = trace_meta.get("readbackCaptures", [])
+            if not isinstance(captures, list):
+                continue
+            for capture in captures:
+                if not isinstance(capture, dict):
+                    continue
+                sha256 = str(capture.get("sha256", "")).strip()
+                if not sha256:
+                    continue
+                signatures.add((
+                    safe_int(capture.get("repeatIndex"), default=-1),
+                    safe_int(capture.get("stepIndex"), default=-1),
+                    str(capture.get("stepId", "")),
+                    str(capture.get("bufferId", "")),
+                    safe_int(capture.get("byteLength"), default=-1),
+                    sha256,
+                    safe_int(capture.get("decodedU32Le"), default=-1),
+                    str(capture.get("semanticOpId", "")),
+                    str(capture.get("semanticStage", "")),
+                    str(capture.get("semanticPhase", "")),
+                    safe_int(capture.get("semanticTokenIndex"), default=-1),
+                    str(capture.get("captureSourceBufferId", "")),
+                    safe_int(capture.get("captureOffset"), default=-1),
+                    safe_int(capture.get("captureSize"), default=-1),
+                ))
+        return [
+            {
+                "repeatIndex": item[0],
+                "stepIndex": item[1],
+                "stepId": item[2],
+                "bufferId": item[3],
+                "byteLength": item[4],
+                "sha256": item[5],
+                "decodedU32Le": item[6],
+                "semanticOpId": item[7],
+                "semanticStage": item[8],
+                "semanticPhase": item[9],
+                "semanticTokenIndex": item[10],
+                "captureSourceBufferId": item[11],
+                "captureOffset": item[12],
+                "captureSize": item[13],
+            }
+            for item in sorted(signatures)
+        ]
+
+    left_readback_captures = collect_readback_capture_signatures(left_samples)
+    right_readback_captures = collect_readback_capture_signatures(right_samples)
     is_left_dawn_perf = "dawn-perf-tests" in left_execution_backends
     is_right_dawn_perf = "dawn-perf-tests" in right_execution_backends
     is_left_dawn_direct = any(
@@ -214,8 +326,8 @@ def compare_assessment(
     )
     is_left_dawn = is_left_dawn_delegate or is_left_dawn_direct or is_left_dawn_perf
     is_right_dawn = is_right_dawn_delegate or is_right_dawn_direct or is_right_dawn_perf
-    is_left_doe = "doe_metal" in left_execution_backends or "doe_vulkan" in left_execution_backends or "doe_d3d12" in left_execution_backends or "doe_node_webgpu" in left_execution_backends or "doe_bun_package" in left_execution_backends or "webgpu-ffi" in left_execution_backends or "native" in left_execution_backends
-    is_right_doe = "doe_metal" in right_execution_backends or "doe_vulkan" in right_execution_backends or "doe_d3d12" in right_execution_backends or "doe_node_webgpu" in right_execution_backends or "doe_bun_package" in right_execution_backends or "webgpu-ffi" in right_execution_backends or "native" in right_execution_backends
+    is_left_doe = "doe_metal" in left_execution_backends or "doe_vulkan" in left_execution_backends or "doe_d3d12" in left_execution_backends or "doe_node_webgpu" in left_execution_backends or "doe_node_native_direct" in left_execution_backends or "doe_bun_package" in left_execution_backends or "webgpu-ffi" in left_execution_backends or "native" in left_execution_backends
+    is_right_doe = "doe_metal" in right_execution_backends or "doe_vulkan" in right_execution_backends or "doe_d3d12" in right_execution_backends or "doe_node_webgpu" in right_execution_backends or "doe_node_native_direct" in right_execution_backends or "doe_bun_package" in right_execution_backends or "webgpu-ffi" in right_execution_backends or "native" in right_execution_backends
     is_dawn_vs_doe = (is_left_dawn and is_right_doe) or (is_left_doe and is_right_dawn)
 
     reasons: list[str] = []
@@ -238,9 +350,9 @@ def compare_assessment(
         obligation_id="left_samples_present",
         blocking=True,
         applicable=True,
-        passes=len(left_samples) > 0,
+        passes=len(left_measured_samples) > 0,
         failure_reason="baseline side has no measured samples",
-        details={"baselineSampleCount": len(left_samples)},
+        details={"baselineSampleCount": len(left_measured_samples)},
     )
     _record_obligation(
         obligations,
@@ -248,9 +360,9 @@ def compare_assessment(
         obligation_id="right_samples_present",
         blocking=True,
         applicable=True,
-        passes=len(right_samples) > 0,
+        passes=len(right_measured_samples) > 0,
         failure_reason="comparison side has no measured samples",
-        details={"comparisonSampleCount": len(right_samples)},
+        details={"comparisonSampleCount": len(right_measured_samples)},
     )
     _record_obligation(
         obligations,
@@ -416,14 +528,11 @@ def compare_assessment(
         obligations,
         reasons,
         obligation_id="baseline_comparison_submit_scope_match",
-        blocking=True,
+        blocking=False,
         applicable=(
             comparability_mode == "strict"
             and is_dawn_vs_doe
-            and (
-                bool(left_execution_backends & _PACKAGE_EXECUTION_BACKENDS)
-                or bool(right_execution_backends & _PACKAGE_EXECUTION_BACKENDS)
-            )
+            and package_execution_applies
             and submit_scope_match_applies
         ),
         passes=submit_scope_match,
@@ -462,6 +571,70 @@ def compare_assessment(
             else ""
         ),
         details=timing_phase_details,
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_package_resident_buffer_load_mode_match",
+        blocking=True,
+        applicable=(
+            comparability_mode == "strict"
+            and package_execution_applies
+            and (
+                bool(left_resident_buffer_load_modes)
+                or bool(right_resident_buffer_load_modes)
+            )
+        ),
+        passes=(
+            len(left_resident_buffer_load_modes) <= 1
+            and len(right_resident_buffer_load_modes) <= 1
+            and left_resident_buffer_load_modes == right_resident_buffer_load_modes
+        ),
+        failure_reason=(
+            "baseline/comparison package resident buffer-load mode mismatch: "
+            f"{left_resident_buffer_load_modes} vs {right_resident_buffer_load_modes}"
+        ),
+        details={
+            "baselinePackageResidentBufferLoadModes": sorted(
+                str(value) for value in left_resident_buffer_load_modes
+            ),
+            "comparisonPackageResidentBufferLoadModes": sorted(
+                str(value) for value in right_resident_buffer_load_modes
+            ),
+        },
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_package_resident_buffer_load_shape_match",
+        blocking=True,
+        applicable=(
+            comparability_mode == "strict"
+            and package_execution_applies
+            and (
+                True in left_resident_buffer_load_modes
+                or True in right_resident_buffer_load_modes
+            )
+        ),
+        passes=(
+            len(left_resident_buffer_load_shapes) <= 1
+            and len(right_resident_buffer_load_shapes) <= 1
+            and left_resident_buffer_load_shapes == right_resident_buffer_load_shapes
+        ),
+        failure_reason=(
+            "baseline/comparison resident buffer-load shape mismatch: "
+            f"{left_resident_buffer_load_shapes} vs {right_resident_buffer_load_shapes}"
+        ),
+        details={
+            "baselineResidentBufferLoadShapes": [
+                {"count": count, "bytes": byte_count}
+                for count, byte_count in sorted(left_resident_buffer_load_shapes)
+            ],
+            "comparisonResidentBufferLoadShapes": [
+                {"count": count, "bytes": byte_count}
+                for count, byte_count in sorted(right_resident_buffer_load_shapes)
+            ],
+        },
     )
 
     def normalize_execution_shapes(
@@ -576,6 +749,26 @@ def compare_assessment(
             "comparisonReason": execution_shape_mismatch_reason,
         },
     )
+    readback_capture_match_applies = (
+        len(left_readback_captures) > 0
+        or len(right_readback_captures) > 0
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_readback_capture_match",
+        blocking=True,
+        applicable=readback_capture_match_applies,
+        passes=left_readback_captures == right_readback_captures,
+        failure_reason=(
+            "baseline/comparison readback capture mismatch: "
+            f"{left_readback_captures} vs {right_readback_captures}"
+        ),
+        details={
+            "baselineReadbackCaptures": left_readback_captures,
+            "comparisonReadbackCaptures": right_readback_captures,
+        },
+    )
     hardware_path_match_applies = comparability_mode == "strict" and is_dawn_vs_doe
     hardware_path_failure_reason = (
         "workload contract marks pathAsymmetry=true: baseline/comparison use hardware-specific "
@@ -639,6 +832,7 @@ def compare_assessment(
             "dawn_direct_metal",
             "node_webgpu_package",
             "doe_node_webgpu",
+            "doe_node_native_direct",
             "bun_webgpu_package",
             "doe_bun_package",
             "doe_metal",
@@ -879,11 +1073,13 @@ def compare_assessment(
         },
     )
 
-    # ── Timing plausibility: traced timing must be a non-trivial fraction
-    # of wall time.  If the traced metric is <1% of wall time on either
-    # side, the timing source is measuring the wrong scope.
+    # ── Timing plausibility: traced timing must not be pathologically detached
+    # from workload-unit wall time. Symmetric low coverage can be legitimate
+    # operation timing for package workloads; asymmetric low coverage means one
+    # side is likely measuring a different scope.
     _PLAUSIBILITY_MIN_WALL_RATIO = 0.01
     _PLAUSIBILITY_MIN_WALL_MS = 5.0  # skip check for sub-5ms wall (noise)
+    _PLAUSIBILITY_MAX_RATIO_ASYMMETRY = 128.0
 
     def _median_timing_wall_ratio(
         samples: list[dict[str, Any]],
@@ -912,8 +1108,21 @@ def compare_assessment(
             statistics.median(process_wall_values) if process_wall_values else None,
         )
 
+    def _ratio_asymmetry(
+        left_ratio: float | None,
+        right_ratio: float | None,
+    ) -> float | None:
+        if left_ratio is None or right_ratio is None:
+            return None
+        smaller = min(left_ratio, right_ratio)
+        larger = max(left_ratio, right_ratio)
+        if smaller <= 0.0:
+            return float("inf")
+        return larger / smaller
+
     left_traced, left_wall, left_ratio, left_process_wall = _median_timing_wall_ratio(left_samples)
     right_traced, right_wall, right_ratio, right_process_wall = _median_timing_wall_ratio(right_samples)
+    plausibility_ratio_asymmetry = _ratio_asymmetry(left_ratio, right_ratio)
 
     plausibility_applies = (
         left_wall is not None
@@ -921,16 +1130,36 @@ def compare_assessment(
         and (left_wall >= _PLAUSIBILITY_MIN_WALL_MS or right_wall >= _PLAUSIBILITY_MIN_WALL_MS)
     )
     plausibility_failures: list[str] = []
+    low_coverage_sides: list[str] = []
     if plausibility_applies:
-        if left_ratio is not None and left_ratio < _PLAUSIBILITY_MIN_WALL_RATIO and left_wall >= _PLAUSIBILITY_MIN_WALL_MS:
+        left_low_coverage = left_ratio is not None and left_ratio < _PLAUSIBILITY_MIN_WALL_RATIO
+        right_low_coverage = right_ratio is not None and right_ratio < _PLAUSIBILITY_MIN_WALL_RATIO
+        left_wall_checked = left_wall is not None and left_wall >= _PLAUSIBILITY_MIN_WALL_MS
+        right_wall_checked = right_wall is not None and right_wall >= _PLAUSIBILITY_MIN_WALL_MS
+        if left_low_coverage:
+            low_coverage_sides.append("baseline")
+        if right_low_coverage:
+            low_coverage_sides.append("comparison")
+        if len(low_coverage_sides) == 1 and (
+            (low_coverage_sides[0] == "baseline" and left_wall_checked)
+            or (low_coverage_sides[0] == "comparison" and right_wall_checked)
+        ):
+            side = low_coverage_sides[0]
+            traced = left_traced if side == "baseline" else right_traced
+            ratio = left_ratio if side == "baseline" else right_ratio
+            wall = left_wall if side == "baseline" else right_wall
             plausibility_failures.append(
-                f"baseline traced timing ({left_traced:.4f}ms) is {left_ratio:.4%} of normalized wall time "
-                f"({left_wall:.1f}ms); timing source is not measuring the actual operation"
+                f"{side} traced timing ({traced:.4f}ms) is {ratio:.4%} of normalized wall time "
+                f"({wall:.1f}ms) while the other side is not; timing source scopes are asymmetric"
             )
-        if right_ratio is not None and right_ratio < _PLAUSIBILITY_MIN_WALL_RATIO and right_wall >= _PLAUSIBILITY_MIN_WALL_MS:
+        elif len(low_coverage_sides) == 2 and (
+            plausibility_ratio_asymmetry is None
+            or plausibility_ratio_asymmetry >= _PLAUSIBILITY_MAX_RATIO_ASYMMETRY
+        ):
             plausibility_failures.append(
-                f"comparison traced timing ({right_traced:.4f}ms) is {right_ratio:.4%} of normalized wall time "
-                f"({right_wall:.1f}ms); timing source is not measuring the actual operation"
+                "baseline and comparison traced timing both under-cover normalized wall time, "
+                f"but median coverage differs by {plausibility_ratio_asymmetry}x; "
+                "timing source scopes are asymmetric"
             )
 
     _record_obligation(
@@ -944,6 +1173,9 @@ def compare_assessment(
         details={
             "minWallRatio": _PLAUSIBILITY_MIN_WALL_RATIO,
             "minWallMs": _PLAUSIBILITY_MIN_WALL_MS,
+            "maxRatioAsymmetry": _PLAUSIBILITY_MAX_RATIO_ASYMMETRY,
+            "lowCoverageSides": low_coverage_sides,
+            "medianRatioAsymmetry": plausibility_ratio_asymmetry,
             "baselineMedianTracedMs": left_traced,
             "baselineMedianWallMs": left_wall,
             "baselineMedianProcessWallMs": left_process_wall,

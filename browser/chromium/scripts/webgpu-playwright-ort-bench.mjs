@@ -90,31 +90,45 @@ function defaultChromePath() {
     resolve(ROOT, "browser/chromium/out/fawn_release_local");
   const chromiumLaneOut = resolve(ROOT, "browser/chromium_webgpu_lane/out/fawn_release_local");
   const hostFawnApp = resolve(process.env.HOME ?? "", "Applications/Fawn.app/Contents/MacOS/Chromium");
+  const hostFawnReal = resolve(process.env.HOME ?? "", "Applications/Fawn.app/Contents/MacOS/Chromium-real");
   const envChrome = process.env.FAWN_CHROME_BIN;
   const candidates = [
     envChrome,
     resolve(releaseLocalOut, "chrome"),
+    resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium"),
     resolve(chromiumLaneOut, "chrome"),
+    resolve(chromiumLaneOut, "Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(chromiumLaneOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(chromiumLaneOut, "Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(chromiumLaneOut, "Chromium.app/Contents/MacOS/Chromium"),
+    hostFawnReal,
     hostFawnApp,
     "/usr/bin/google-chrome-stable",
     "/usr/bin/google-chrome",
     "/usr/bin/chromium",
     "/usr/bin/chromium-browser",
     resolve(ROOT, "browser/chromium/src/out/fawn_release/chrome"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/chrome"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium-real"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 

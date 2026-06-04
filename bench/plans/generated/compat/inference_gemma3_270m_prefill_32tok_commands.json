@@ -1015,6 +1015,13 @@
         "buffer_size": 16,
         "visibility": "compute"
       }
-    ]
+    ],
+    "captureBufferHandle": 2414,
+    "captureOffset": 0,
+    "captureSize": 16,
+    "semanticOpId": "gemma3_270m_prefill_32tok_logits_prefix",
+    "semanticStage": "inference",
+    "semanticPhase": "prefill_logits",
+    "semanticTokenIndex": 31
   }
 ]

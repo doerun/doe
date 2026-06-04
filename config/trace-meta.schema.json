@@ -3,15 +3,70 @@
   "title": "Fawn Trace Run Metadata",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "traceVersion",
-    "module",
-    "seqMax",
-    "rowCount",
-    "hash",
-    "previousHash"
+  "anyOf": [
+    {
+      "required": [
+        "traceVersion",
+        "module",
+        "seqMax",
+        "rowCount",
+        "hash",
+        "previousHash"
+      ]
+    },
+    {
+      "required": [
+        "schemaVersion",
+        "kind",
+        "provider",
+        "providerName",
+        "executionBackend",
+        "executionProvider",
+        "executionProviderName",
+        "executionRowCount",
+        "executionSuccessCount",
+        "executionErrorCount",
+        "executionSkippedCount",
+        "executionUnsupportedCount",
+        "executionDispatchCount",
+        "executionTotalNs",
+        "executionSetupTotalNs",
+        "executionEncodeTotalNs",
+        "executionSubmitWaitTotalNs",
+        "timingMs",
+        "timingSource",
+        "timingClass",
+        "queueSyncMode",
+        "queueWaitMode",
+        "queueWaitScope",
+        "queueWaitSubmitCadence",
+        "workload",
+        "canonicalWorkloadId",
+        "planId",
+        "planHash",
+        "planSummary",
+        "executionShape",
+        "packagePreparedSession",
+        "packageSetupIncludedInSelectedTiming",
+        "packageSetupTotalNs",
+        "packageSetupBreakdownNs",
+        "packageStepBreakdownNs",
+        "packageWriteBreakdown",
+        "packageResidentBufferLoads",
+        "packageResidentBufferLoadBreakdown",
+        "packageReadbackMode",
+        "samplesMs",
+        "stats",
+        "artifactHash"
+      ],
+      "properties": {
+        "kind": { "const": "trace_meta" }
+      }
+    }
   ],
   "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "kind": { "type": "string" },
     "traceVersion": { "type": "integer", "const": 1 },
     "module": { "type": "string" },
     "seqMax": { "type": "integer", "minimum": 0 },
@@ -54,6 +109,10 @@
     "queueWaitMode": { "type": "string" },
     "queueWaitScope": { "type": "string" },
     "queueWaitSubmitCadence": { "type": "integer", "minimum": 0 },
+    "provider": { "type": "string" },
+    "providerName": { "type": "string" },
+    "executionProvider": { "type": "string" },
+    "executionProviderName": { "type": "string" },
     "executionRowCount": { "type": "integer", "minimum": 0 },
     "executionSuccessCount": { "type": "integer", "minimum": 0 },
     "executionErrorCount": { "type": "integer", "minimum": 0 },
@@ -88,6 +147,10 @@
     "operatorRecordManifestHash": { "type": "string" },
     "schema": { "type": "string" },
     "workload": { "type": "string" },
+    "canonicalWorkloadId": { "type": "string" },
+    "planId": { "type": "string" },
+    "planHash": { "type": "string" },
+    "artifactHash": { "type": "string" },
     "gtestFilter": { "type": "string" },
     "selectedFilter": { "type": "string" },
     "command": { "type": "string" },
@@ -104,8 +167,48 @@
       "type": "string",
       "enum": ["trace-meta-process-wall"]
     },
+    "adapterInfo": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "adapterLimits": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "planSummary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "executionShape": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "samplesMs": {
+      "type": "array",
+      "items": { "type": "number", "minimum": 0 }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "min", "max", "median", "p95", "p99", "mean", "stdev"],
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "min": { "type": "number", "minimum": 0 },
+        "max": { "type": "number", "minimum": 0 },
+        "median": { "type": "number", "minimum": 0 },
+        "p95": { "type": "number", "minimum": 0 },
+        "p99": { "type": "number", "minimum": 0 },
+        "mean": { "type": "number", "minimum": 0 },
+        "stdev": { "type": "number", "minimum": 0 }
+      }
+    },
     "packagePreparedSession": { "type": "boolean" },
     "packageSetupIncludedInSelectedTiming": { "type": "boolean" },
+    "packageResidentBufferLoads": { "type": "boolean" },
+    "packageReadbackMode": {
+      "type": "string",
+      "enum": ["native-map-read-copy-unmap", "mapAsync"]
+    },
     "packageSetupTotalNs": { "type": "integer", "minimum": 0 },
     "packageSetupBreakdownNs": {
       "type": "object",
@@ -142,7 +245,140 @@
         "submitQueueFlushDeferredCopyTotalNs": { "type": "integer", "minimum": 0 },
         "submitQueueFlushDeferredResolveTotalNs": { "type": "integer", "minimum": 0 },
         "submitQueueWaitBookkeepingTotalNs": { "type": "integer", "minimum": 0 },
-        "readbackTotalNs": { "type": "integer", "minimum": 0 }
+        "readbackTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackMapReadCopyUnmapTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackMapReadCopyUnmapQueueWaitCompletedTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackMapReadCopyUnmapDeferredCopyTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackMapReadCopyUnmapDeferredResolveTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackMapReadCopyUnmapMapTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackMapReadCopyUnmapCopyTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackMapReadCopyUnmapUnmapTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackMapAsyncTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackGetMappedRangeTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackHostCopyTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackNativeReadCopyTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackUnmapTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackValidationTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackCaptureTotalNs": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "packageWriteBreakdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalCount",
+        "totalBytes",
+        "staticBufferLoadCount",
+        "staticBufferLoadBytes",
+        "dynamicWriteCount",
+        "dynamicWriteBytes",
+        "byDataKind",
+        "bySemanticPhase"
+      ],
+      "properties": {
+        "totalCount": { "type": "integer", "minimum": 0 },
+        "totalBytes": { "type": "integer", "minimum": 0 },
+        "staticBufferLoadCount": { "type": "integer", "minimum": 0 },
+        "staticBufferLoadBytes": { "type": "integer", "minimum": 0 },
+        "dynamicWriteCount": { "type": "integer", "minimum": 0 },
+        "dynamicWriteBytes": { "type": "integer", "minimum": 0 },
+        "unbatchedWriteCount": { "type": "integer", "minimum": 0 },
+        "batchCallCount": { "type": "integer", "minimum": 0 },
+        "batchedWriteCount": { "type": "integer", "minimum": 0 },
+        "batchMethod": { "type": "string" },
+        "byDataKind": { "$ref": "#/$defs/packageWriteBuckets" },
+        "bySemanticPhase": { "$ref": "#/$defs/packageWriteBuckets" }
+      }
+    },
+    "packageResidentBufferLoadBreakdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "bytes",
+        "materializeTotalNs",
+        "queueWriteTotalNs",
+        "queueWaitTotalNs"
+      ],
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "materializeTotalNs": { "type": "integer", "minimum": 0 },
+        "queueWriteTotalNs": { "type": "integer", "minimum": 0 },
+        "queueWaitTotalNs": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "packageFastPathStats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dispatchFlush",
+        "flushAndMap",
+        "commandBufferBuild"
+      ],
+      "properties": {
+        "dispatchFlush": { "type": "integer", "minimum": 0 },
+        "flushAndMap": { "type": "integer", "minimum": 0 },
+        "commandBufferBuild": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "packageNativeFastPaths": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "appleFastPathCompiled",
+        "queueFlush",
+        "queueFlushBreakdown",
+        "computeDispatchFlush",
+        "computeDispatchFlushBreakdown",
+        "computeDispatchBatchFlush",
+        "computeDispatchBatchCopyFlush",
+        "computeDispatchBatchCopyFlushBreakdown",
+        "bufferMapReadCopyUnmap"
+      ],
+      "properties": {
+        "appleFastPathCompiled": { "type": "boolean" },
+        "queueFlush": { "type": "boolean" },
+        "queueFlushBreakdown": { "type": "boolean" },
+        "computeDispatchFlush": { "type": "boolean" },
+        "computeDispatchFlushBreakdown": { "type": "boolean" },
+        "computeDispatchBatchFlush": { "type": "boolean" },
+        "computeDispatchBatchCopyFlush": { "type": "boolean" },
+        "computeDispatchBatchCopyFlushBreakdown": { "type": "boolean" },
+        "bufferMapReadCopyUnmap": { "type": "boolean" }
+      }
+    },
+    "readbackCaptures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "repeatIndex",
+          "stepIndex",
+          "stepId",
+          "byteLength",
+          "sha256"
+        ],
+        "properties": {
+          "repeatIndex": { "type": "integer", "minimum": 0 },
+          "stepIndex": { "type": "integer", "minimum": 0 },
+          "stepId": { "type": "string", "minLength": 1 },
+          "bufferId": { "type": "string", "minLength": 1 },
+          "byteLength": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "decodedU32Le": { "type": "integer", "minimum": 0 },
+          "semanticOpId": { "type": "string", "minLength": 1 },
+          "semanticStage": { "type": "string", "minLength": 1 },
+          "semanticPhase": { "type": "string", "minLength": 1 },
+          "semanticTokenIndex": { "type": "integer", "minimum": 0 },
+          "semanticLayerIndex": { "type": "integer", "minimum": 0 },
+          "semanticExecutionPlanHash": { "type": "string", "minLength": 1 },
+          "captureSourceBufferId": { "type": "string", "minLength": 1 },
+          "captureOffset": { "type": "integer", "minimum": 0 },
+          "captureSize": { "type": "integer", "minimum": 1 },
+          "captureDecode": { "type": "string", "minLength": 1 }
+        }
       }
     },
     "determinism": {
@@ -161,6 +397,18 @@
     }
   },
   "$defs": {
+    "packageWriteBuckets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["count", "bytes"],
+        "properties": {
+          "count": { "type": "integer", "minimum": 0 },
+          "bytes": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
     "determinismCommon": {
       "type": "object",
       "required": [

@@ -11,6 +11,7 @@ const dropin_runtime_config = @import("dropin/dropin_runtime_config.zig");
 const dropin_router = @import("dropin/dropin_router.zig");
 const dropin_diagnostics = @import("dropin/dropin_diagnostics.zig");
 const dropin_abi_procs = @import("dropin/dropin_abi_procs.zig");
+const dropin_browser_shared_memory = @import("dropin/dropin_browser_shared_memory.zig");
 const dropin_build_info = @import("dropin/dropin_build_info.zig");
 
 const build_options = @import("build_options");
@@ -24,6 +25,7 @@ comptime {
     _ = dropin_symbol_ownership;
     _ = dropin_router;
     _ = dropin_diagnostics;
+    _ = dropin_browser_shared_memory;
     _ = dropin_build_info;
     _ = @import("doe_wgpu_native.zig");
     if (@import("builtin").os.tag == .macos) {
@@ -285,6 +287,8 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuComputePassEncoderAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuComputePassEncoderAddRef);
     if (symbolViewEq(name, "wgpuComputePassEncoderSetLabel")) return fnPtr(&dropin_ext_c.wgpuComputePassEncoderSetLabel);
     if (symbolViewEq(name, "wgpuDeviceCreateComputePipeline")) return fnPtr(&N.doeNativeDeviceCreateComputePipeline);
+    if (symbolViewEq(name, "wgpuDeviceCreateErrorBuffer")) return fnPtr(&dropin_browser_shared_memory.wgpuDeviceCreateErrorBuffer);
+    if (symbolViewEq(name, "wgpuDeviceCreateErrorTexture")) return fnPtr(&dropin_browser_shared_memory.wgpuDeviceCreateErrorTexture);
     if (symbolViewEq(name, "wgpuComputePipelineAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuComputePipelineAddRef);
     if (symbolViewEq(name, "wgpuComputePipelineGetBindGroupLayout")) return fnPtr(&N.doeNativeComputePipelineGetBindGroupLayout);
     if (symbolViewEq(name, "wgpuComputePipelineSetLabel")) return fnPtr(&dropin_ext_c.wgpuComputePipelineSetLabel);
@@ -330,6 +334,9 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuDeviceGetFeatures")) return fnPtr(&dropin_ext_a.exports.wgpuDeviceGetFeatures);
     if (symbolViewEq(name, "wgpuDeviceGetLimits")) return fnPtr(&dropin_ext_a.exports.wgpuDeviceGetLimits);
     if (symbolViewEq(name, "wgpuDeviceGetQueue")) return fnPtr(&P.wgpuDeviceGetQueue);
+    if (symbolViewEq(name, "wgpuDeviceImportSharedBufferMemory")) return fnPtr(&dropin_browser_shared_memory.wgpuDeviceImportSharedBufferMemory);
+    if (symbolViewEq(name, "wgpuDeviceImportSharedFence")) return fnPtr(&dropin_browser_shared_memory.wgpuDeviceImportSharedFence);
+    if (symbolViewEq(name, "wgpuDeviceImportSharedTextureMemory")) return fnPtr(&dropin_browser_shared_memory.wgpuDeviceImportSharedTextureMemory);
     if (symbolViewEq(name, "wgpuPipelineLayoutAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuPipelineLayoutAddRef);
     if (symbolViewEq(name, "wgpuPipelineLayoutSetLabel")) return fnPtr(&dropin_ext_c.wgpuPipelineLayoutSetLabel);
     if (symbolViewEq(name, "wgpuQuerySetAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuQuerySetAddRef);
@@ -397,6 +404,27 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuExternalTextureRefresh")) return fnPtr(&dropin_ext_c.wgpuExternalTextureRefresh);
     if (symbolViewEq(name, "wgpuExternalTextureRelease")) return fnPtr(&dropin_ext_c.wgpuExternalTextureRelease);
     if (symbolViewEq(name, "wgpuExternalTextureSetLabel")) return fnPtr(&dropin_ext_c.wgpuExternalTextureSetLabel);
+    if (symbolViewEq(name, "wgpuSharedBufferMemoryBeginAccess")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedBufferMemoryBeginAccess);
+    if (symbolViewEq(name, "wgpuSharedBufferMemoryCreateBuffer")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedBufferMemoryCreateBuffer);
+    if (symbolViewEq(name, "wgpuSharedBufferMemoryEndAccess")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedBufferMemoryEndAccess);
+    if (symbolViewEq(name, "wgpuSharedBufferMemoryGetProperties")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedBufferMemoryGetProperties);
+    if (symbolViewEq(name, "wgpuSharedBufferMemoryIsDeviceLost")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedBufferMemoryIsDeviceLost);
+    if (symbolViewEq(name, "wgpuSharedBufferMemorySetLabel")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedBufferMemorySetLabel);
+    if (symbolViewEq(name, "wgpuSharedBufferMemoryAddRef")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedBufferMemoryAddRef);
+    if (symbolViewEq(name, "wgpuSharedBufferMemoryRelease")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedBufferMemoryRelease);
+    if (symbolViewEq(name, "wgpuSharedBufferMemoryEndAccessStateFreeMembers")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedBufferMemoryEndAccessStateFreeMembers);
+    if (symbolViewEq(name, "wgpuSharedFenceExportInfo")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedFenceExportInfo);
+    if (symbolViewEq(name, "wgpuSharedFenceAddRef")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedFenceAddRef);
+    if (symbolViewEq(name, "wgpuSharedFenceRelease")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedFenceRelease);
+    if (symbolViewEq(name, "wgpuSharedTextureMemoryBeginAccess")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryBeginAccess);
+    if (symbolViewEq(name, "wgpuSharedTextureMemoryCreateTexture")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryCreateTexture);
+    if (symbolViewEq(name, "wgpuSharedTextureMemoryEndAccess")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryEndAccess);
+    if (symbolViewEq(name, "wgpuSharedTextureMemoryGetProperties")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryGetProperties);
+    if (symbolViewEq(name, "wgpuSharedTextureMemoryIsDeviceLost")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryIsDeviceLost);
+    if (symbolViewEq(name, "wgpuSharedTextureMemorySetLabel")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemorySetLabel);
+    if (symbolViewEq(name, "wgpuSharedTextureMemoryAddRef")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryAddRef);
+    if (symbolViewEq(name, "wgpuSharedTextureMemoryRelease")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryRelease);
+    if (symbolViewEq(name, "wgpuSharedTextureMemoryEndAccessStateFreeMembers")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryEndAccessStateFreeMembers);
     // Render bundle operations
     if (symbolViewEq(name, "wgpuDeviceCreateRenderBundleEncoder")) return fnPtr(&dropin_ext_a.exports.wgpuDeviceCreateRenderBundleEncoder);
     if (symbolViewEq(name, "wgpuRenderBundleAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuRenderBundleAddRef);
@@ -514,6 +542,29 @@ test "shared compute pass proc routes to native implementation instead of recurs
     try std.testing.expectEqual(fnPtr(&N.doeNativeCommandEncoderBeginComputePass), resolveLocalProc(view));
     try std.testing.expectEqual(fnPtr(&N.doeNativeCommandEncoderBeginComputePass), wgpuGetProcAddress(view));
     try std.testing.expect(resolveLocalProc(view) != fnPtr(&dropin_abi_procs.wgpuCommandEncoderBeginComputePass));
+}
+
+test "browser shared-memory procs resolve locally instead of native fallback" {
+    const symbols = .{
+        .{ "wgpuDeviceImportSharedTextureMemory", &dropin_browser_shared_memory.wgpuDeviceImportSharedTextureMemory },
+        .{ "wgpuSharedTextureMemoryBeginAccess", &dropin_browser_shared_memory.wgpuSharedTextureMemoryBeginAccess },
+        .{ "wgpuSharedTextureMemoryEndAccess", &dropin_browser_shared_memory.wgpuSharedTextureMemoryEndAccess },
+        .{ "wgpuDeviceImportSharedBufferMemory", &dropin_browser_shared_memory.wgpuDeviceImportSharedBufferMemory },
+        .{ "wgpuSharedBufferMemoryBeginAccess", &dropin_browser_shared_memory.wgpuSharedBufferMemoryBeginAccess },
+        .{ "wgpuSharedFenceExportInfo", &dropin_browser_shared_memory.wgpuSharedFenceExportInfo },
+        .{ "wgpuDeviceCreateErrorTexture", &dropin_browser_shared_memory.wgpuDeviceCreateErrorTexture },
+        .{ "wgpuDeviceCreateErrorBuffer", &dropin_browser_shared_memory.wgpuDeviceCreateErrorBuffer },
+    };
+
+    inline for (symbols) |entry| {
+        const symbol: [:0]const u8 = entry[0];
+        const view = abi_base.WGPUStringView{
+            .data = symbol.ptr,
+            .length = abi_base.WGPU_STRLEN,
+        };
+        try std.testing.expectEqual(fnPtr(entry[1]), resolveLocalProc(view));
+        try std.testing.expectEqual(fnPtr(entry[1]), wgpuGetProcAddress(view));
+    }
 }
 
 comptime {

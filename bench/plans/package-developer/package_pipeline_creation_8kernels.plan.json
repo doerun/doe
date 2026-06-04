@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "planKind": "package_developer",
+  "planId": "package_pipeline_creation_8kernels",
+  "executorId": "node_webgpu_package",
+  "workloadId": "package_pipeline_creation_8kernels",
+  "domain": "pipeline",
+  "comparable": true,
+  "description": "Package-surface shader module and compute pipeline creation over eight tiny kernels.",
+  "timing": {
+    "iterations": 1,
+    "warmup": 0,
+    "timingSource": "doe-execution-total-ns",
+    "timingClass": "operation"
+  },
+  "adapter": {
+    "powerPreference": "high-performance",
+    "requiredFeatures": [],
+    "requiredLimits": {}
+  },
+  "buffers": [
+    {
+      "id": "pipeline_out",
+      "size": 32,
+      "usage": ["storage", "copy_src"]
+    },
+    {
+      "id": "pipeline_readback",
+      "size": 32,
+      "usage": ["copy_dst", "map_read"]
+    }
+  ],
+  "modules": [
+    {
+      "id": "pipeline_kernel_0",
+      "kind": "compute",
+      "entryPoint": "main",
+      "source": {"kind": "inline", "code": "@group(0) @binding(0) var<storage, read_write> out: array<u32>; @compute @workgroup_size(1) fn main() { out[0] = 1u; }"}
+    },
+    {
+      "id": "pipeline_kernel_1",
+      "kind": "compute",
+      "entryPoint": "main",
+      "source": {"kind": "inline", "code": "@group(0) @binding(0) var<storage, read_write> out: array<u32>; @compute @workgroup_size(1) fn main() { out[1] = 2u; }"}
+    },
+    {
+      "id": "pipeline_kernel_2",
+      "kind": "compute",
+      "entryPoint": "main",
+      "source": {"kind": "inline", "code": "@group(0) @binding(0) var<storage, read_write> out: array<u32>; @compute @workgroup_size(1) fn main() { out[2] = 3u; }"}
+    },
+    {
+      "id": "pipeline_kernel_3",
+      "kind": "compute",
+      "entryPoint": "main",
+      "source": {"kind": "inline", "code": "@group(0) @binding(0) var<storage, read_write> out: array<u32>; @compute @workgroup_size(1) fn main() { out[3] = 4u; }"}
+    },
+    {
+      "id": "pipeline_kernel_4",
+      "kind": "compute",
+      "entryPoint": "main",
+      "source": {"kind": "inline", "code": "@group(0) @binding(0) var<storage, read_write> out: array<u32>; @compute @workgroup_size(1) fn main() { out[4] = 5u; }"}
+    },
+    {
+      "id": "pipeline_kernel_5",
+      "kind": "compute",
+      "entryPoint": "main",
+      "source": {"kind": "inline", "code": "@group(0) @binding(0) var<storage, read_write> out: array<u32>; @compute @workgroup_size(1) fn main() { out[5] = 6u; }"}
+    },
+    {
+      "id": "pipeline_kernel_6",
+      "kind": "compute",
+      "entryPoint": "main",
+      "source": {"kind": "inline", "code": "@group(0) @binding(0) var<storage, read_write> out: array<u32>; @compute @workgroup_size(1) fn main() { out[6] = 7u; }"}
+    },
+    {
+      "id": "pipeline_kernel_7",
+      "kind": "compute",
+      "entryPoint": "main",
+      "source": {"kind": "inline", "code": "@group(0) @binding(0) var<storage, read_write> out: array<u32>; @compute @workgroup_size(1) fn main() { out[7] = 8u; }"}
+    }
+  ],
+  "steps": [
+    {"kind": "dispatch", "moduleId": "pipeline_kernel_0", "workgroups": [1, 1, 1], "bindings": [{"binding": 0, "bufferId": "pipeline_out", "bufferType": "storage", "visibility": ["compute"]}]},
+    {"kind": "dispatch", "moduleId": "pipeline_kernel_1", "workgroups": [1, 1, 1], "bindings": [{"binding": 0, "bufferId": "pipeline_out", "bufferType": "storage", "visibility": ["compute"]}]},
+    {"kind": "dispatch", "moduleId": "pipeline_kernel_2", "workgroups": [1, 1, 1], "bindings": [{"binding": 0, "bufferId": "pipeline_out", "bufferType": "storage", "visibility": ["compute"]}]},
+    {"kind": "dispatch", "moduleId": "pipeline_kernel_3", "workgroups": [1, 1, 1], "bindings": [{"binding": 0, "bufferId": "pipeline_out", "bufferType": "storage", "visibility": ["compute"]}]},
+    {"kind": "dispatch", "moduleId": "pipeline_kernel_4", "workgroups": [1, 1, 1], "bindings": [{"binding": 0, "bufferId": "pipeline_out", "bufferType": "storage", "visibility": ["compute"]}]},
+    {"kind": "dispatch", "moduleId": "pipeline_kernel_5", "workgroups": [1, 1, 1], "bindings": [{"binding": 0, "bufferId": "pipeline_out", "bufferType": "storage", "visibility": ["compute"]}]},
+    {"kind": "dispatch", "moduleId": "pipeline_kernel_6", "workgroups": [1, 1, 1], "bindings": [{"binding": 0, "bufferId": "pipeline_out", "bufferType": "storage", "visibility": ["compute"]}]},
+    {"kind": "dispatch", "moduleId": "pipeline_kernel_7", "workgroups": [1, 1, 1], "bindings": [{"binding": 0, "bufferId": "pipeline_out", "bufferType": "storage", "visibility": ["compute"]}]},
+    {"kind": "copyBufferToBuffer", "srcBufferId": "pipeline_out", "dstBufferId": "pipeline_readback", "srcOffset": 0, "dstOffset": 0, "sizeBytes": 32},
+    {"kind": "readBuffer", "bufferId": "pipeline_readback", "validate": {"kind": "u32PrefixEquals", "values": [1, 2, 3, 4, 5, 6, 7, 8]}}
+  ]
+}

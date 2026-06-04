@@ -9,6 +9,14 @@ import sys
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+BENCH_ROOT = REPO_ROOT / "bench"
+for path in (str(REPO_ROOT), str(BENCH_ROOT)):
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+from bench.browser.browser_gate import validate_runtime_selection, validate_smoke_report
+
 
 EXPECTED_SURFACE_ID = "doe-chromium"
 VALID_STATUSES = {
@@ -21,32 +29,41 @@ VALID_STATUSES = {
 VALID_PHASES = {
     "wrapper_diagnostic",
     "source_selector_required",
+    "source_selector_wired",
+    "source_selector_runtime_bootstrap_gated",
+    "source_selector_wire_runtime_active",
     "chromium_runtime_active",
 }
 REQUIRED_PASSING_CAPABILITIES = {
+    "copyExternalImageToTexture",
     "requestAdapter",
     "requestDevice",
     "requestAdapter_xrCompatible",
     "computeDispatch",
     "renderDraw",
+    "renderBundles",
+    "renderPassIndirectDraw",
     "canvasContext",
     "bufferMapAsync",
     "copyTextureToBuffer",
     "copyBufferToBuffer",
     "queueWriteBuffer",
     "queueOnSubmittedWorkDone",
+    "importExternalTexture",
     "textureDestroy",
     "querySetTimestamp",
-}
-REQUIRED_BLOCKED_CAPABILITIES = {
-    "copyExternalImageToTexture",
-    "importExternalTexture",
 }
 REQUIRED_WIRE_NOTES = {
     "architecture",
     "instanceLifetime",
     "externalTextureGap",
 }
+SOURCE_RUNTIME_EVIDENCE_PHASES = {
+    "source_selector_wire_runtime_active",
+    "chromium_runtime_active",
+}
+REQUIRED_SOURCE_MODES = ("dawn", "doe")
+SOURCE_CHROMIUM_OUT_PARTS = ("browser", "chromium", "src", "out")
 
 
 def parse_args() -> argparse.Namespace:
@@ -85,6 +102,33 @@ def resolve_repo_path(root: Path, path_text: str) -> Path:
     return root.joinpath(*PurePosixPath(path_text).parts)
 
 
+def path_contains_parts(path_text: str, required_parts: tuple[str, ...]) -> bool:
+    if not path_text:
+        return False
+    parts = PurePosixPath(path_text.replace("\\", "/")).parts
+    required_count = len(required_parts)
+    return any(
+        parts[index : index + required_count] == required_parts
+        for index in range(0, len(parts) - required_count + 1)
+    )
+
+
+def source_chromium_binary_path(path_text: str) -> bool:
+    return path_contains_parts(path_text, SOURCE_CHROMIUM_OUT_PARTS)
+
+
+def doe_runtime_library_path(path_text: str) -> bool:
+    if not path_text:
+        return False
+    name = PurePosixPath(path_text.replace("\\", "/")).name
+    return name.startswith("libwebgpu_doe")
+
+
+def runtime_selection_artifact(selection: dict[str, Any]) -> dict[str, Any]:
+    artifact = selection.get("artifactIdentity")
+    return artifact if isinstance(artifact, dict) else {}
+
+
 def check_overlay(
     payload: dict[str, Any],
     *,
@@ -109,7 +153,7 @@ def check_overlay(
             failure(
                 "invalid_integration_phase",
                 "integrationPhase",
-                "integrationPhase must be wrapper_diagnostic, source_selector_required, or chromium_runtime_active",
+                "integrationPhase must be wrapper_diagnostic, source_selector_required, source_selector_wired, source_selector_runtime_bootstrap_gated, source_selector_wire_runtime_active, or chromium_runtime_active",
             )
         )
 
@@ -203,34 +247,6 @@ def check_overlay(
                 )
             )
 
-    for capability in sorted(REQUIRED_BLOCKED_CAPABILITIES):
-        row = coverage_by_capability.get(capability)
-        if row is None:
-            failures.append(
-                failure(
-                    "missing_blocked_capability",
-                    "coverage",
-                    f"missing blocked browser capability {capability}",
-                )
-            )
-            continue
-        if row.get("status") == "passing":
-            failures.append(
-                failure(
-                    "blocked_capability_marked_passing",
-                    f"coverage[{capability}].status",
-                    f"{capability} must not be passing until the browser wire gap is closed",
-                )
-            )
-        if not _text(row.get("blockedBy")):
-            failures.append(
-                failure(
-                    "missing_blocked_by",
-                    f"coverage[{capability}].blockedBy",
-                    f"{capability} must name the browser integration blocker",
-                )
-            )
-
     wire_notes = payload.get("wireProtocolNotes")
     if not isinstance(wire_notes, dict):
         failures.append(
@@ -265,12 +281,17 @@ def check_overlay(
             )
 
     if verify_artifact_root is not None:
-        failures.extend(check_smoke_artifact(payload, verify_artifact_root))
+        failures.extend(check_smoke_artifact(payload, verify_artifact_root, phase=_text(phase)))
 
     return failures
 
 
-def check_smoke_artifact(payload: dict[str, Any], root: Path) -> list[dict[str, str]]:
+def check_smoke_artifact(
+    payload: dict[str, Any],
+    root: Path,
+    *,
+    phase: str = "",
+) -> list[dict[str, str]]:
     failures: list[dict[str, str]] = []
     smoke_path = _text(payload.get("smokeTestArtifact"))
     if not smoke_path:
@@ -324,6 +345,135 @@ def check_smoke_artifact(payload: dict[str, Any], root: Path) -> list[dict[str, 
                 "invalid_smoke_benchmark_class",
                 "smokeTestArtifact.benchmarkClass",
                 "smoke artifact must remain diagnostic",
+            )
+        )
+    if phase in SOURCE_RUNTIME_EVIDENCE_PHASES:
+        failures.extend(check_source_runtime_smoke_evidence(artifact))
+    return failures
+
+
+def check_source_runtime_smoke_evidence(artifact: dict[str, Any]) -> list[dict[str, str]]:
+    failures: list[dict[str, str]] = []
+    for message in validate_smoke_report(
+        artifact,
+        required_modes=REQUIRED_SOURCE_MODES,
+        require_strict=True,
+        require_hash_chain=True,
+    ):
+        failures.append(
+            failure(
+                "invalid_source_smoke_report_contract",
+                "smokeTestArtifact",
+                message,
+            )
+        )
+
+    chrome_path = _text(artifact.get("chromePath"))
+    if chrome_path and not source_chromium_binary_path(chrome_path):
+        failures.append(
+            failure(
+                "non_source_chromium_binary",
+                "smokeTestArtifact.chromePath",
+                "source runtime evidence must use a browser/chromium/src/out Chromium binary",
+            )
+        )
+
+    runtime_selections = artifact.get("runtimeSelections")
+    if not isinstance(runtime_selections, list):
+        failures.append(
+            failure(
+                "missing_source_runtime_selections",
+                "smokeTestArtifact.runtimeSelections",
+                "source runtime evidence must include top-level runtimeSelections",
+            )
+        )
+    else:
+        failures.extend(check_runtime_selection_rows(runtime_selections, "runtimeSelections"))
+
+    mode_results = artifact.get("modeResults")
+    if isinstance(mode_results, list):
+        mode_rows = [
+            row for row in mode_results
+            if isinstance(row, dict) and row.get("mode") in REQUIRED_SOURCE_MODES
+        ]
+        failures.extend(
+            check_runtime_selection_rows(
+                [row.get("runtimeSelection") for row in mode_rows],
+                "modeResults.runtimeSelection",
+            )
+        )
+    else:
+        failures.append(
+            failure(
+                "missing_source_mode_results",
+                "smokeTestArtifact.modeResults",
+                "source runtime evidence must include modeResults",
+            )
+        )
+
+    return failures
+
+
+def check_runtime_selection_rows(rows: list[Any], path_name: str) -> list[dict[str, str]]:
+    failures: list[dict[str, str]] = []
+    seen_modes: set[str] = set()
+    for index, row in enumerate(rows):
+        row_path = f"smokeTestArtifact.{path_name}[{index}]"
+        if not isinstance(row, dict):
+            failures.append(
+                failure(
+                    "invalid_source_runtime_selection",
+                    row_path,
+                    "runtime selection must be an object",
+                )
+            )
+            continue
+        mode = _text(row.get("selectionMode"))
+        if mode in REQUIRED_SOURCE_MODES:
+            seen_modes.add(mode)
+            for message in validate_runtime_selection(row, mode, row_path):
+                failures.append(
+                    failure(
+                        "invalid_source_runtime_selection",
+                        row_path,
+                        message,
+                    )
+                )
+        else:
+            failures.append(
+                failure(
+                    "missing_source_runtime_selection_mode",
+                    f"{row_path}.selectionMode",
+                    "runtime selection mode must be dawn or doe",
+                )
+            )
+
+        artifact = runtime_selection_artifact(row)
+        browser_path = _text(artifact.get("browserExecutablePath"))
+        if not source_chromium_binary_path(browser_path):
+            failures.append(
+                failure(
+                    "non_source_chromium_binary",
+                    f"{row_path}.artifactIdentity.browserExecutablePath",
+                    "source runtime evidence must use a browser/chromium/src/out Chromium binary",
+                )
+            )
+        if mode == "doe" and not doe_runtime_library_path(_text(artifact.get("doeLibPath"))):
+            failures.append(
+                failure(
+                    "invalid_doe_runtime_library",
+                    f"{row_path}.artifactIdentity.doeLibPath",
+                    "Doe runtime evidence must name a libwebgpu_doe runtime library",
+                )
+            )
+
+    missing = set(REQUIRED_SOURCE_MODES) - seen_modes
+    if missing:
+        failures.append(
+            failure(
+                "missing_source_runtime_selection",
+                f"smokeTestArtifact.{path_name}",
+                f"source runtime evidence must include {sorted(missing)} runtime selection rows",
             )
         )
     return failures

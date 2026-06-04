@@ -787,6 +787,36 @@ test "robustness: sized array index emits min() in MSL output" {
     try std.testing.expect(std.mem.indexOf(u8, msl, "min(") != null);
 }
 
+test "robustness: guarded local stride workgroup index elides sized-array clamp" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> out: array<f32, 1>;
+        \\var<workgroup> partial_sums: array<f32, 64>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(local_invocation_id) local_invocation_id: vec3u) {
+        \\    let lane = local_invocation_id.x;
+        \\    partial_sums[lane] = 1.0;
+        \\    workgroupBarrier();
+        \\    var stride = 32u;
+        \\    loop {
+        \\        if (stride == 0u) { break; }
+        \\        if (lane < stride) {
+        \\            partial_sums[lane] = partial_sums[lane] + partial_sums[lane + stride];
+        \\        }
+        \\        workgroupBarrier();
+        \\        stride = stride >> 1u;
+        \\    }
+        \\    if (lane == 0u) {
+        \\        out[0] = partial_sums[0];
+        \\    }
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "partial_sums[min") == null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "min((lane + stride)") == null);
+}
+
 test "robustness: runtime-sized array index emits arrayLength in MSL output" {
     const source =
         \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;

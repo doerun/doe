@@ -427,6 +427,7 @@ test "DoeShaderModule: default-initialized has correct magic and zero fields" {
     try std.testing.expect(native.cast(native.DoeShaderModule, native.toOpaque(&mutable_sm)) != null);
     try std.testing.expectEqual(@as(u32, 1), sm.ref_count);
     try std.testing.expectEqual(@as(?*anyopaque, null), sm.mtl_library);
+    try std.testing.expect(!sm.mtl_library_borrowed);
     try std.testing.expectEqual(@as(u32, 0), sm.binding_count);
     try std.testing.expectEqual(@as(u32, 0), sm.wg_x);
     try std.testing.expectEqual(@as(u32, 0), sm.wg_y);
@@ -625,12 +626,11 @@ test "check: invalid syntax sets error kind to a TranslateError name" {
     const kind = readErrorKind(&kind_buf);
     // Kind should be one of TranslateError names.
     const known_kinds = [_][]const u8{
-        "InvalidWgsl",        "InvalidIr",          "DuplicateSymbol",
-        "InvalidAttribute",   "InvalidType",        "OutputTooLarge",
-        "OutOfMemory",        "ShaderToolchainUnavailable",
-        "UnexpectedToken",    "TypeMismatch",        "UnknownIdentifier",
-        "UnknownType",        "UnsupportedBuiltin", "UnsupportedConstruct",
-        "UnsupportedWgsl",
+        "InvalidWgsl",        "InvalidIr",                  "DuplicateSymbol",
+        "InvalidAttribute",   "InvalidType",                "OutputTooLarge",
+        "OutOfMemory",        "ShaderToolchainUnavailable", "UnexpectedToken",
+        "TypeMismatch",       "UnknownIdentifier",          "UnknownType",
+        "UnsupportedBuiltin", "UnsupportedConstruct",       "UnsupportedWgsl",
     };
     var found = false;
     for (known_kinds) |kk| {

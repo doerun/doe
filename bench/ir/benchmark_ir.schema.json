@@ -93,6 +93,13 @@
           "type": "string",
           "minLength": 1
         },
+        "matmulGemvVariant": {
+          "type": "string",
+          "enum": [
+            "default",
+            "row2_helper_exact"
+          ]
+        },
         "commands": {
           "type": "array",
           "minItems": 1,

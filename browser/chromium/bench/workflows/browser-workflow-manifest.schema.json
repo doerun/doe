@@ -126,8 +126,62 @@
         "claimLanguage": {
           "type": "string",
           "minLength": 1
+        },
+        "resourcePath": {
+          "type": "string",
+          "pattern": "^browser/chromium/resources/[^.][^\\n]*\\.html$"
+        },
+        "statusSelector": {
+          "type": "string",
+          "minLength": 1
+        },
+        "frameSelector": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workloadSelector": {
+          "type": "string",
+          "minLength": 1
+        },
+        "adapterSelector": {
+          "type": "string",
+          "minLength": 1
         }
       },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "scenarioTemplate": {
+                "const": "fawn_visual_resource"
+              }
+            },
+            "required": ["scenarioTemplate"]
+          },
+          "then": {
+            "required": ["resourcePath"],
+            "properties": {
+              "comparabilityExpectation": {
+                "const": "none"
+              },
+              "required": {
+                "const": false
+              },
+              "requiredStatus": {
+                "const": "optional"
+              },
+              "claimScope": {
+                "const": "l2_diagnostic_only"
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": ["resourcePath"]
+            }
+          }
+        }
+      ],
       "additionalProperties": false
     }
   }

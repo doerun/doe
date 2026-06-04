@@ -119,6 +119,7 @@ def _receipt_samples(run_result: dict[str, Any]) -> list[dict[str, Any]]:
     for sample in run_result.get("commandSamples", []):
         if not isinstance(sample, dict):
             continue
+        return_code = int(sample.get("returnCode", 1))
         trace_meta = sample.get("traceMeta", {})
         if not isinstance(trace_meta, dict):
             trace_meta = {}
@@ -137,8 +138,8 @@ def _receipt_samples(run_result: dict[str, Any]) -> list[dict[str, Any]]:
                 },
                 "subphasesMs": _subphase_ms(trace_meta),
                 "resource": sample.get("resource", {}),
-                "returnCode": int(sample.get("returnCode", 0)),
-                "success": _sample_success(sample),
+                "returnCode": return_code,
+                "success": return_code == 0,
                 "traceMeta": trace_meta,
                 **_copy_optional_sample_fields(sample),
             }
@@ -280,12 +281,12 @@ def _package_identity(provider_name: str) -> dict[str, str]:
             "packageVersion": "",
             "packageLockHash": "",
         }
-    if package_name == "doe-gpu":
+    if package_name == "doe-gpu" or package_name.startswith("doe-gpu/"):
         package_path = REPO_ROOT / "packages" / "doe-gpu" / "package.json"
         if package_path.exists():
             payload = json.loads(package_path.read_text(encoding="utf-8"))
             return {
-                "packageName": package_name,
+                "packageName": "doe-gpu",
                 "packageVersion": str(payload.get("version", "")).strip(),
                 "packageLockHash": file_sha256(package_path),
             }
@@ -427,6 +428,12 @@ def _sample_aggregates(samples: list[dict[str, Any]]) -> dict[str, dict[str, flo
 
 
 def _execution_summary(samples: list[dict[str, Any]]) -> dict[str, Any]:
+    timed_samples = [
+        sample
+        for sample in samples
+        if sample.get("success") is True
+        and isinstance(sample.get("measuredMs"), (int, float))
+    ]
     timing_sources = sorted(
         {
             str(sample.get("timingSource", "")).strip()
@@ -442,8 +449,8 @@ def _execution_summary(samples: list[dict[str, Any]]) -> dict[str, Any]:
         }
     )
     return {
-        "success": bool(samples) and all(sample.get("success") is True for sample in samples),
-        "timedSampleCount": len(samples),
+        "success": bool(samples) and len(timed_samples) == len(samples),
+        "timedSampleCount": len(timed_samples),
         "returnCodes": sorted(
             {int(sample.get("returnCode", 0)) for sample in samples}
         ),
@@ -629,6 +636,7 @@ def _legacy_samples(data: dict[str, Any]) -> list[dict[str, Any]]:
     for sample in data.get("commandSamples", []):
         if not isinstance(sample, dict):
             continue
+        return_code = int(sample.get("returnCode", 1))
         trace_meta = sample.get("traceMeta", {})
         if not isinstance(trace_meta, dict):
             trace_meta = {}
@@ -649,8 +657,8 @@ def _legacy_samples(data: dict[str, Any]) -> list[dict[str, Any]]:
                 },
                 "subphasesMs": _subphase_ms(trace_meta),
                 "resource": sample.get("resource", {}),
-                "returnCode": int(sample.get("returnCode", 0)),
-                "success": _sample_success(sample),
+                "returnCode": return_code,
+                "success": return_code == 0,
                 "traceMeta": trace_meta,
                 **_copy_optional_sample_fields(sample),
             }

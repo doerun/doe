@@ -9,6 +9,15 @@ const DEFAULT_PROFILE = Object.freeze({
   deviceFamily: "unknown",
   driver: "unknown",
 });
+const DEFAULT_ADAPTER_DENYLIST = Object.freeze({
+  matched: false,
+  reasonCode: "",
+  profileId: "",
+  vendor: "",
+  api: "",
+  deviceFamily: "",
+  driverPattern: "",
+});
 
 function envFlagEnabled(env, name) {
   const value = env?.[name];
@@ -42,16 +51,70 @@ export function normalizeRuntimeProfile(profile = {}) {
   };
 }
 
-function profileDenylisted(policy, profile) {
-  if (!profile.profileId) {
+function driverMatches(pattern, driver) {
+  if (pattern === driver) {
+    return true;
+  }
+  try {
+    return new RegExp(pattern).test(driver);
+  } catch {
     return false;
   }
+}
+
+function denylistRowMatchesProfile(row, profile) {
+  if (!row || typeof row !== "object" || Array.isArray(row)) {
+    return false;
+  }
+  if (typeof row.profileId !== "string" || row.profileId.length === 0) {
+    return false;
+  }
+  if (profile.profileId && row.profileId === profile.profileId) {
+    return true;
+  }
+  return (
+    row.vendor === profile.vendor &&
+    row.api === profile.api &&
+    row.deviceFamily === profile.deviceFamily &&
+    typeof row.driverPattern === "string" &&
+    driverMatches(row.driverPattern, profile.driver)
+  );
+}
+
+function adapterDenylistMatch(policy, profile) {
+  if (!profile.profileId) {
+    const hasAdapterFields =
+      profile.vendor !== DEFAULT_PROFILE.vendor ||
+      profile.api !== DEFAULT_PROFILE.api ||
+      profile.deviceFamily !== DEFAULT_PROFILE.deviceFamily ||
+      profile.driver !== DEFAULT_PROFILE.driver;
+    if (!hasAdapterFields) {
+      return { ...DEFAULT_ADAPTER_DENYLIST };
+    }
+  }
+  const reasonCode =
+    typeof policy?.denylist?.reasonCode === "string" && policy.denylist.reasonCode.length > 0
+      ? policy.denylist.reasonCode
+      : "profile_denylisted";
   const rows = Array.isArray(policy?.denylist?.profiles) ? policy.denylist.profiles : [];
-  return rows.some((row) => row && typeof row === "object" && row.profileId === profile.profileId);
+  const row = rows.find((candidate) => denylistRowMatchesProfile(candidate, profile));
+  if (!row) {
+    return { ...DEFAULT_ADAPTER_DENYLIST };
+  }
+  return {
+    matched: true,
+    reasonCode,
+    profileId: row.profileId,
+    vendor: row.vendor,
+    api: row.api,
+    deviceFamily: row.deviceFamily,
+    driverPattern: row.driverPattern,
+  };
 }
 
 export function resolveRuntimeSelection({ requestedMode, doeLibPath, policy, profile, env = process.env }) {
   const normalizedProfile = normalizeRuntimeProfile(profile);
+  const adapterDenylist = adapterDenylistMatch(policy, normalizedProfile);
   if (requestedMode === "dawn" || requestedMode === "doe") {
     return {
       selectionMode: requestedMode,
@@ -61,6 +124,7 @@ export function resolveRuntimeSelection({ requestedMode, doeLibPath, policy, pro
       fallbackReasonCode: "",
       hiddenFallbackAllowed: false,
       profile: normalizedProfile,
+      adapterDenylist,
     };
   }
 
@@ -87,18 +151,20 @@ export function resolveRuntimeSelection({ requestedMode, doeLibPath, policy, pro
       fallbackReasonCode: killSwitchReason,
       hiddenFallbackAllowed: false,
       profile: normalizedProfile,
+      adapterDenylist,
     };
   }
 
-  if (profileDenylisted(policy, normalizedProfile)) {
+  if (adapterDenylist.matched) {
     return {
       selectionMode: "auto",
       selectedRuntime: "dawn",
       forcedMode: null,
       fallbackApplied: true,
-      fallbackReasonCode: policy?.denylist?.reasonCode ?? "profile_denylisted",
+      fallbackReasonCode: adapterDenylist.reasonCode,
       hiddenFallbackAllowed: false,
       profile: normalizedProfile,
+      adapterDenylist,
     };
   }
 
@@ -111,6 +177,7 @@ export function resolveRuntimeSelection({ requestedMode, doeLibPath, policy, pro
       fallbackReasonCode: "runtime_artifact_missing",
       hiddenFallbackAllowed: false,
       profile: normalizedProfile,
+      adapterDenylist,
     };
   }
 
@@ -122,5 +189,6 @@ export function resolveRuntimeSelection({ requestedMode, doeLibPath, policy, pro
     fallbackReasonCode: "",
     hiddenFallbackAllowed: false,
     profile: normalizedProfile,
+    adapterDenylist,
   };
 }

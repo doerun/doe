@@ -52,6 +52,24 @@ export type {
   DoeCommandEncoder,
 } from "./vendor/doe-namespace.js";
 
+export interface FastPathStats {
+  dispatchFlush: number;
+  flushAndMap: number;
+  commandBufferBuild: number;
+}
+
+export interface NativeFastPathInfo {
+  appleFastPathCompiled: boolean;
+  queueFlush: boolean;
+  queueFlushBreakdown: boolean;
+  computeDispatchFlush: boolean;
+  computeDispatchFlushBreakdown: boolean;
+  computeDispatchBatchFlush: boolean;
+  computeDispatchBatchCopyFlush: boolean;
+  computeDispatchBatchCopyFlushBreakdown: boolean;
+  bufferMapReadCopyUnmap: boolean;
+}
+
 export interface ProviderInfo {
   module: string;
   loaded: boolean;
@@ -64,6 +82,7 @@ export interface ProviderInfo {
   buildMetadataPath: string;
   leanVerifiedBuild: boolean | null;
   proofArtifactSha256: string | null;
+  nativeFastPaths: NativeFastPathInfo | null;
 }
 
 export interface DoeRuntimeRunResult {
@@ -198,6 +217,8 @@ export function requestAdapter(
 ): Promise<GPUAdapter | null>;
 export function requestDevice(options?: RequestDeviceOptions): Promise<GPUDevice>;
 export function providerInfo(): ProviderInfo;
+export function nativeFastPathInfo(): NativeFastPathInfo | null;
+export const fastPathStats: FastPathStats | undefined;
 export function createDoeRuntime(options?: {
   binPath?: string;
   libPath?: string;
@@ -263,6 +284,8 @@ declare const _default: {
   requestAdapter: typeof requestAdapter;
   requestDevice: typeof requestDevice;
   providerInfo: typeof providerInfo;
+  nativeFastPathInfo: typeof nativeFastPathInfo;
+  fastPathStats: typeof fastPathStats;
   createDoeRuntime: typeof createDoeRuntime;
   runDawnVsDoeCompare: typeof runDawnVsDoeCompare;
   preflightShaderSource: typeof preflightShaderSource;

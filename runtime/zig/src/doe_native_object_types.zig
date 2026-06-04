@@ -66,12 +66,21 @@ pub const DoeQueue = struct {
     ref_count: u32 = 1,
     dev: *DoeDevice,
     pending_cmd: ?*anyopaque = null,
+    staged_write_cmd: ?*anyopaque = null,
+    staged_write_blit: ?*anyopaque = null,
+    staged_write_buffer: ?*anyopaque = null,
+    staged_write_contents: ?[*]u8 = null,
+    staged_write_capacity: usize = 0,
+    staged_write_offset: usize = 0,
+    staged_write_count: u32 = 0,
     mtl_event: ?*anyopaque = null,
     event_counter: u64 = 0,
     completed_event_counter: u64 = 0,
     gpu_timeline: gpu_timeline.GpuTimeline = gpu_timeline.GpuTimeline.init(null),
     deferred_copies: [command_types.MAX_DEFERRED_COPIES]command_types.DeferredCopy = undefined,
     deferred_copy_count: u32 = 0,
+    deferred_releases: [command_types.MAX_DEFERRED_RELEASES]?*anyopaque = undefined,
+    deferred_release_count: u32 = 0,
     deferred_resolves: [command_types.MAX_DEFERRED_RESOLVES]command_types.DeferredResolve = undefined,
     deferred_resolve_count: u32 = 0,
 };
@@ -80,8 +89,10 @@ pub const DoeBuffer = struct {
     pub const TYPE_MAGIC = MAGIC_BUFFER;
     magic: u32 = TYPE_MAGIC,
     ref_count: u32 = 1,
+    error_object: bool = false,
     backend: shared.BackendKind = .metal,
     mtl: ?*anyopaque = null,
+    metal_private_storage: bool = false,
     size: u64 = 0,
     usage: u64 = 0,
     mapped: bool = false,
@@ -115,6 +126,7 @@ pub const DoeShaderModule = struct {
     compilation_message: ?[]const u8 = null,
     compilation_message_line: u32 = 0,
     compilation_message_column: u32 = 0,
+    mtl_library_borrowed: bool = false,
 };
 
 pub const DoeComputePipeline = struct {
@@ -150,6 +162,8 @@ pub const DoeBindGroupLayout = struct {
     ref_count: u32 = 1,
     entry_count: u32 = 0,
     entries: ?[]shared.DoeBindGroupLayoutEntry = null,
+    inline_entries: [4]shared.DoeBindGroupLayoutEntry = undefined,
+    entries_inline: bool = false,
 };
 
 pub const DoePipelineLayout = struct {
@@ -207,6 +221,7 @@ pub const DoeTexture = struct {
     pub const TYPE_MAGIC = MAGIC_TEXTURE;
     magic: u32 = TYPE_MAGIC,
     ref_count: u32 = 1,
+    error_object: bool = false,
     backend: shared.BackendKind = .metal,
     mtl: ?*anyopaque = null,
     format: u32 = 0,

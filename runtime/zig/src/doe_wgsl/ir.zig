@@ -545,9 +545,13 @@ pub const OverrideEntry = struct {
 /// runtime clamp. The host must verify this condition before dispatching.
 pub const DispatchPreconditionKind = enum {
     gid_component,
+    /// Workgroup ID component (`workgroup_id.{x,y,z}`) indexed storage access.
+    /// The host bound check uses dispatch workgroup count, not invocations.
+    workgroup_component,
     gid_component_tiled,
     flat_index_2d_dispatch_x,
     flat_index_3d_dispatch_xy,
+    uniform_extent,
     /// Pure loop-only access (`i * loop_stride + offset` with no gid term).
     /// The host bound check is independent of dispatch geometry: only the
     /// loop limit, stride, and offset are needed.
@@ -574,6 +578,9 @@ pub const DispatchPrecondition = struct {
     element_stride_bytes: u64,
     /// Additional element offset for affine gid + constant access patterns.
     element_offset: u64 = 0,
+    uniform_binding: BindingPoint = .{ .group = 0, .binding = 0 },
+    uniform_u32_offsets: [2]u32 = .{ 0, 0 },
+    uniform_u32_count: u8 = 0,
 };
 
 pub const TextureDispatchPreconditionKind = enum {

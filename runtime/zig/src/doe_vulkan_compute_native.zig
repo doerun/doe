@@ -151,6 +151,7 @@ fn collect_recorded_bindings(
     for (bufs, 0..) |maybe_raw, slot| {
         const raw_ptr = maybe_raw orelse continue;
         const buf = cast(DoeBuffer, raw_ptr) orelse continue;
+        if (buf.error_object) continue;
         if (buf.vk_id == 0) continue;
         if (count >= out_bindings.len) break;
         const group_u32: u32 = @intCast(slot / MAX_BIND);
@@ -271,6 +272,7 @@ fn resolve_indirect_dims(
     if (comptime !has_vulkan) return .{ 0, 0, 0 };
     const NULL_DIMS = [3]u32{ 0, 0, 0 };
     const buf = cast(DoeBuffer, buf_raw) orelse return NULL_DIMS;
+    if (buf.error_object) return NULL_DIMS;
     if (buf.vk_id == 0) return NULL_DIMS;
     const cb = rt.compute_buffers.get(buf.vk_id) orelse return NULL_DIMS;
     const base: [*]const u8 = @ptrCast(cb.mapped orelse return NULL_DIMS);

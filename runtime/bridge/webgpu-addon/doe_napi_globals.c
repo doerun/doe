@@ -67,6 +67,8 @@ PFN_wgpuComputePassEncoderEnd pfn_wgpuComputePassEncoderEnd = NULL;
 PFN_wgpuComputePassEncoderRelease pfn_wgpuComputePassEncoderRelease = NULL;
 PFN_wgpuQueueSubmit pfn_wgpuQueueSubmit = NULL;
 PFN_wgpuQueueWriteBuffer pfn_wgpuQueueWriteBuffer = NULL;
+PFN_doeNativeQueueWriteBuffer pfn_doeNativeQueueWriteBuffer = NULL;
+PFN_doeNativeQueueWriteBufferBatch pfn_doeNativeQueueWriteBufferBatch = NULL;
 PFN_wgpuQueueOnSubmittedWorkDone pfn_wgpuQueueOnSubmittedWorkDone = NULL;
 PFN_wgpuQueueRelease pfn_wgpuQueueRelease = NULL;
 PFN_wgpuBufferRelease pfn_wgpuBufferRelease = NULL;
@@ -107,15 +109,23 @@ PFN_doeNativeAdapterRequestDevice pfn_doeNativeAdapterRequestDevice = NULL;
 PFN_doeNativeInstanceCreateAdapter pfn_doeNativeInstanceCreateAdapter = NULL;
 PFN_doeRequestAdapterFlat pfn_doeRequestAdapterFlat = NULL;
 PFN_doeRequestDeviceFlat pfn_doeRequestDeviceFlat = NULL;
+PFN_doeNativeDeviceCreateBufferBindGroupLayoutFlat4 pfn_doeNativeDeviceCreateBufferBindGroupLayoutFlat4 = NULL;
+PFN_doeNativeDeviceCreateBufferBindGroupFlat4 pfn_doeNativeDeviceCreateBufferBindGroupFlat4 = NULL;
+PFN_doeNativeDeviceCreatePipelineLayoutOne pfn_doeNativeDeviceCreatePipelineLayoutOne = NULL;
+PFN_doeNativePackagePipelineCacheFlush pfn_doeNativePackagePipelineCacheFlush = NULL;
 PFN_doeNativeQueueFlush pfn_doeNativeQueueFlush = NULL;
 PFN_doeNativeQueueFlushBreakdown pfn_doeNativeQueueFlushBreakdown = NULL;
 PFN_doeNativeComputeDispatchFlush pfn_doeNativeComputeDispatchFlush = NULL;
+PFN_doeNativeComputeDispatchFlushBreakdown pfn_doeNativeComputeDispatchFlushBreakdown = NULL;
 PFN_doeNativeComputeDispatchBatchFlush pfn_doeNativeComputeDispatchBatchFlush = NULL;
+PFN_doeNativeComputeDispatchBatchCopyFlush pfn_doeNativeComputeDispatchBatchCopyFlush = NULL;
+PFN_doeNativeComputeDispatchBatchCopyFlushBreakdown pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown = NULL;
 PFN_doeNativeDeviceCreateQuerySet pfn_doeNativeDeviceCreateQuerySet = NULL;
 PFN_doeNativeCommandEncoderWriteTimestamp pfn_doeNativeCommandEncoderWriteTimestamp = NULL;
 PFN_doeNativeCommandEncoderResolveQuerySet pfn_doeNativeCommandEncoderResolveQuerySet = NULL;
 PFN_doeNativeQuerySetDestroy pfn_doeNativeQuerySetDestroy = NULL;
 PFN_doeNativeBufferMapAsync pfn_doeNativeBufferMapAsync = NULL;
+PFN_doeBufferMapReadCopyUnmapFlat pfn_doeBufferMapReadCopyUnmapFlat = NULL;
 
 PFN_wgpuBufferMapAsync2 pfn_wgpuBufferMapAsync2 = NULL;
 
@@ -187,6 +197,7 @@ napi_ref native_direct_method_adapter_request_device_ref = NULL;
 napi_ref native_direct_method_adapter_destroy_ref = NULL;
 napi_ref native_direct_method_queue_submit_ref = NULL;
 napi_ref native_direct_method_queue_write_buffer_ref = NULL;
+napi_ref native_direct_method_queue_write_buffer_batch_ref = NULL;
 napi_ref native_direct_method_queue_on_submitted_work_done_ref = NULL;
 napi_ref native_direct_method_device_create_buffer_ref = NULL;
 napi_ref native_direct_method_device_create_shader_module_ref = NULL;
@@ -313,6 +324,8 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuComputePassEncoderRelease);
     LOAD_SYM(wgpuQueueSubmit);
     LOAD_SYM(wgpuQueueWriteBuffer);
+    pfn_doeNativeQueueWriteBuffer = (PFN_doeNativeQueueWriteBuffer)LIB_SYM(g_lib, "doeNativeQueueWriteBuffer");
+    pfn_doeNativeQueueWriteBufferBatch = (PFN_doeNativeQueueWriteBufferBatch)LIB_SYM(g_lib, "doeNativeQueueWriteBufferBatch");
     LOAD_SYM(wgpuQueueOnSubmittedWorkDone);
     LOAD_SYM(wgpuQueueRelease);
     LOAD_SYM(wgpuBufferRelease);
@@ -355,6 +368,7 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativeAdapterRequestDevice = (PFN_doeNativeAdapterRequestDevice)LIB_SYM(g_lib, "doeNativeAdapterRequestDevice");
     pfn_doeNativeInstanceCreateAdapter = (PFN_doeNativeInstanceCreateAdapter)LIB_SYM(g_lib, "doeNativeInstanceCreateAdapter");
     pfn_doeNativeBufferMapAsync = (PFN_doeNativeBufferMapAsync)LIB_SYM(g_lib, "doeNativeBufferMapAsync");
+    pfn_doeBufferMapReadCopyUnmapFlat = (PFN_doeBufferMapReadCopyUnmapFlat)LIB_SYM(g_lib, "doeBufferMapReadCopyUnmapFlat");
     pfn_doeNativeBufferGetMapState = (PFN_doeNativeBufferGetMapState)LIB_SYM(g_lib, "doeNativeBufferGetMapState");
     pfn_doeRequestAdapterFlat = (PFN_doeRequestAdapterFlat)LIB_SYM(g_lib, "doeRequestAdapterFlat");
     if (!pfn_doeRequestAdapterFlat) {
@@ -362,10 +376,17 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     }
     pfn_doeRequestDeviceFlat = (PFN_doeRequestDeviceFlat)LIB_SYM(g_lib, "doeRequestDeviceFlat");
     pfn_wgpuBufferMapAsync2 = (PFN_wgpuBufferMapAsync2)LIB_SYM(g_lib, "wgpuBufferMapAsync");
+    pfn_doeNativeDeviceCreateBufferBindGroupLayoutFlat4 = (PFN_doeNativeDeviceCreateBufferBindGroupLayoutFlat4)LIB_SYM(g_lib, "doeNativeDeviceCreateBufferBindGroupLayoutFlat4");
+    pfn_doeNativeDeviceCreateBufferBindGroupFlat4 = (PFN_doeNativeDeviceCreateBufferBindGroupFlat4)LIB_SYM(g_lib, "doeNativeDeviceCreateBufferBindGroupFlat4");
+    pfn_doeNativeDeviceCreatePipelineLayoutOne = (PFN_doeNativeDeviceCreatePipelineLayoutOne)LIB_SYM(g_lib, "doeNativeDeviceCreatePipelineLayoutOne");
+    pfn_doeNativePackagePipelineCacheFlush = (PFN_doeNativePackagePipelineCacheFlush)LIB_SYM(g_lib, "doeNativePackagePipelineCacheFlush");
     pfn_doeNativeQueueFlush = (PFN_doeNativeQueueFlush)LIB_SYM(g_lib, "doeNativeQueueFlush");
     pfn_doeNativeQueueFlushBreakdown = (PFN_doeNativeQueueFlushBreakdown)LIB_SYM(g_lib, "doeNativeQueueFlushBreakdown");
     pfn_doeNativeComputeDispatchFlush = (PFN_doeNativeComputeDispatchFlush)LIB_SYM(g_lib, "doeNativeComputeDispatchFlush");
+    pfn_doeNativeComputeDispatchFlushBreakdown = (PFN_doeNativeComputeDispatchFlushBreakdown)LIB_SYM(g_lib, "doeNativeComputeDispatchFlushBreakdown");
     pfn_doeNativeComputeDispatchBatchFlush = (PFN_doeNativeComputeDispatchBatchFlush)LIB_SYM(g_lib, "doeNativeComputeDispatchBatchFlush");
+    pfn_doeNativeComputeDispatchBatchCopyFlush = (PFN_doeNativeComputeDispatchBatchCopyFlush)LIB_SYM(g_lib, "doeNativeComputeDispatchBatchCopyFlush");
+    pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown = (PFN_doeNativeComputeDispatchBatchCopyFlushBreakdown)LIB_SYM(g_lib, "doeNativeComputeDispatchBatchCopyFlushBreakdown");
     pfn_doeNativeDeviceCreateQuerySet = (PFN_doeNativeDeviceCreateQuerySet)LIB_SYM(g_lib, "doeNativeDeviceCreateQuerySet");
     pfn_doeNativeCommandEncoderWriteTimestamp = (PFN_doeNativeCommandEncoderWriteTimestamp)LIB_SYM(g_lib, "doeNativeCommandEncoderWriteTimestamp");
     pfn_doeNativeCommandEncoderResolveQuerySet = (PFN_doeNativeCommandEncoderResolveQuerySet)LIB_SYM(g_lib, "doeNativeCommandEncoderResolveQuerySet");

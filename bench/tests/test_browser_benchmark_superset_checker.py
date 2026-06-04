@@ -100,12 +100,19 @@ def _mode_detail(mode: str, selected_runtime: str | None = None) -> dict[str, An
 def _report() -> dict[str, Any]:
     return {
         "reportKind": "browser-layered-diagnostic",
+        "comparisonStatus": "diagnostic",
+        "claimStatus": "diagnostic",
         "projectionContractHash": HASH_A,
         "workloadIdentity": {
             "kind": "browser_layered_superset",
             "sourceWorkloadsSha256": HASH_A,
             "projectionContractHash": HASH_A,
             "workflowManifestSha256": HASH_B,
+        },
+        "methodology": {
+            "adapterRequest": {
+                "powerPreference": "high-performance",
+            },
         },
         "browserEnvironmentEvidence": {},
         "modeOrder": ["dawn", "doe"],
@@ -114,6 +121,7 @@ def _report() -> dict[str, Any]:
             "rows": [
                 {
                     "sourceWorkloadId": "copy_buffer",
+                    "domain": "copy",
                     "claimScope": "l1_strict_candidate",
                     "requiredStatus": "ok",
                     "runtimes": {
@@ -144,6 +152,7 @@ def _manifest() -> dict[str, Any]:
         "rows": [
             {
                 "sourceWorkloadId": "copy_buffer",
+                "domain": "copy",
                 "projectionClass": "high",
                 "claimScope": "l1_strict_candidate",
                 "requiredStatus": "ok",
@@ -201,6 +210,223 @@ class BrowserBenchmarkSupersetCheckerTests(unittest.TestCase):
         )
 
         self.assertEqual(errors, [])
+
+    def test_report_coverage_rejects_missing_adapter_request_policy(self) -> None:
+        report = _report()
+        report["methodology"] = {}
+
+        errors = self.module.check_report_coverage(
+            report,
+            _manifest(),
+            {"rows": []},
+            ["dawn", "doe"],
+        )
+
+        self.assertIn("report methodology.adapterRequest must be an object", errors)
+
+    def test_report_coverage_accepts_category_filtered_report(self) -> None:
+        manifest = _manifest()
+        manifest["rows"].append(
+            {
+                "sourceWorkloadId": "render_triangle",
+                "domain": "render",
+                "projectionClass": "high",
+                "claimScope": "l1_strict_candidate",
+                "requiredStatus": "ok",
+            }
+        )
+        report = _report()
+        report["workloadFilter"] = {
+            "kind": "category",
+            "categories": ["memory"],
+            "l1RowsBeforeFilter": 2,
+            "l1RowsAfterFilter": 1,
+            "l2RowsBeforeFilter": 0,
+            "l2RowsAfterFilter": 0,
+        }
+
+        errors = self.module.check_report_coverage(
+            report,
+            manifest,
+            {"rows": []},
+            ["dawn", "doe"],
+        )
+
+        self.assertEqual(errors, [])
+
+    def test_report_coverage_rejects_category_filtered_row_outside_filter(self) -> None:
+        manifest = _manifest()
+        manifest["rows"].append(
+            {
+                "sourceWorkloadId": "render_triangle",
+                "domain": "render",
+                "projectionClass": "high",
+                "claimScope": "l1_strict_candidate",
+                "requiredStatus": "ok",
+            }
+        )
+        report = _report()
+        report["workloadFilter"] = {
+            "kind": "category",
+            "categories": ["memory"],
+            "l1RowsBeforeFilter": 2,
+            "l1RowsAfterFilter": 1,
+            "l2RowsBeforeFilter": 0,
+            "l2RowsAfterFilter": 0,
+        }
+        report["l1"]["rows"].append(
+            {
+                "sourceWorkloadId": "render_triangle",
+                "domain": "render",
+                "claimScope": "l1_strict_candidate",
+                "requiredStatus": "ok",
+                "runtimes": {
+                    "dawn": {"status": "ok", "statusCode": "ok"},
+                    "doe": {"status": "ok", "statusCode": "ok"},
+                },
+            }
+        )
+
+        errors = self.module.check_report_coverage(
+            report,
+            manifest,
+            {"rows": []},
+            ["dawn", "doe"],
+        )
+
+        self.assertIn("report contains L1 row outside workloadFilter: render_triangle", errors)
+
+    def test_report_coverage_accepts_cross_category_l1_and_l2_filtered_report(self) -> None:
+        resource_path = "browser/chromium/resources/fawn-heavy-particles.html"
+        resource_sha256 = self.module.file_sha256(REPO_ROOT / resource_path)
+        manifest = _manifest()
+        manifest["rows"].append(
+            {
+                "sourceWorkloadId": "texture_sampling",
+                "domain": "texture-raster",
+                "projectionClass": "high",
+                "claimScope": "l1_strict_candidate",
+                "requiredStatus": "ok",
+            }
+        )
+        workflow = {
+            "rows": [
+                {
+                    "id": "fawn_visual_particle_trails",
+                    "scenarioTemplate": "fawn_visual_resource",
+                    "resourcePath": resource_path,
+                    "resourceSha256": resource_sha256,
+                    "claimScope": "l2_diagnostic_only",
+                    "required": False,
+                    "requiredStatus": "optional",
+                }
+            ]
+        }
+        report = _report()
+        report["workloadFilter"] = {
+            "kind": "category",
+            "categories": ["texture", "visual"],
+            "l1RowsBeforeFilter": 2,
+            "l1RowsAfterFilter": 1,
+            "l2RowsBeforeFilter": 1,
+            "l2RowsAfterFilter": 1,
+        }
+        report["l1"]["rows"] = [
+            {
+                "sourceWorkloadId": "texture_sampling",
+                "domain": "texture-raster",
+                "claimScope": "l1_strict_candidate",
+                "requiredStatus": "ok",
+                "runtimes": {
+                    "dawn": {"status": "ok", "statusCode": "ok"},
+                    "doe": {"status": "ok", "statusCode": "ok"},
+                },
+            }
+        ]
+        report["l2"]["rows"] = [
+            {
+                "id": "fawn_visual_particle_trails",
+                "scenarioTemplate": "fawn_visual_resource",
+                "resourcePath": resource_path,
+                "resourceSha256": resource_sha256,
+                "claimScope": "l2_diagnostic_only",
+                "requiredStatus": "optional",
+                "runtimes": {
+                    "dawn": {
+                        "status": "ok",
+                        "statusCode": "ok",
+                        "metrics": {"resourceSha256": resource_sha256},
+                    },
+                    "doe": {
+                        "status": "ok",
+                        "statusCode": "ok",
+                        "metrics": {"resourceSha256": resource_sha256},
+                    },
+                },
+            }
+        ]
+
+        errors = self.module.check_report_coverage(
+            report,
+            manifest,
+            workflow,
+            ["dawn", "doe"],
+        )
+
+        self.assertEqual(errors, [])
+
+    def test_report_coverage_rejects_visual_resource_hash_drift(self) -> None:
+        resource_path = "browser/chromium/resources/fawn-heavy-particles.html"
+        resource_sha256 = self.module.file_sha256(REPO_ROOT / resource_path)
+        workflow = {
+            "rows": [
+                {
+                    "id": "fawn_visual_particle_trails",
+                    "scenarioTemplate": "fawn_visual_resource",
+                    "resourcePath": resource_path,
+                    "resourceSha256": resource_sha256,
+                    "claimScope": "l2_diagnostic_only",
+                    "required": False,
+                    "requiredStatus": "optional",
+                }
+            ]
+        }
+        report = _report()
+        report["l2"]["rows"] = [
+            {
+                "id": "fawn_visual_particle_trails",
+                "scenarioTemplate": "fawn_visual_resource",
+                "resourcePath": resource_path,
+                "resourceSha256": HASH_A,
+                "claimScope": "l2_diagnostic_only",
+                "requiredStatus": "optional",
+                "runtimes": {
+                    "dawn": {
+                        "status": "ok",
+                        "statusCode": "ok",
+                        "metrics": {"resourceSha256": resource_sha256},
+                    },
+                    "doe": {
+                        "status": "ok",
+                        "statusCode": "ok",
+                        "metrics": {"resourceSha256": HASH_B},
+                    },
+                },
+            }
+        ]
+
+        errors = self.module.check_report_coverage(
+            report,
+            _manifest(),
+            workflow,
+            ["dawn", "doe"],
+        )
+
+        self.assertIn("L2 row resourceSha256 drift for fawn_visual_particle_trails", errors)
+        self.assertIn(
+            "L2:fawn_visual_particle_trails: metrics.resourceSha256 drift for mode 'doe'",
+            errors,
+        )
 
     def test_required_modes_accepts_auto(self) -> None:
         self.assertEqual(self.module.parse_required_modes("auto"), ["auto"])

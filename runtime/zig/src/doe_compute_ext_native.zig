@@ -53,6 +53,7 @@ fn validate_dispatch_preconditions(pass: *const DoeComputePass, pip: *const DoeC
 }
 
 fn read_indirect_dispatch_counts(buffer: *const DoeBuffer, offset: u64) ?[3]u32 {
+    if (buffer.error_object) return null;
     const byte_offset: usize = @intCast(offset);
     const counts_bytes = 3 * @sizeOf(u32);
     if (byte_offset + counts_bytes > buffer.size) return null;
@@ -255,6 +256,7 @@ pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_ra
     const pass = cast(DoeComputePass, pass_raw) orelse return;
     const pip = pass.pipeline orelse return;
     const indirect_buf = cast(DoeBuffer, buf_raw) orelse return;
+    if (indirect_buf.error_object) return;
     if (pip.dispatch_preconditions.len > 0) {
         const counts = read_indirect_dispatch_counts(indirect_buf, offset) orelse {
             std.log.err("doe_compute_ext_native: indirect dispatch preconditions require readable counts", .{});

@@ -60,31 +60,11 @@ pub export fn doeNativeCopyBufferToBuffer(enc_raw: ?*anyopaque, src_raw: ?*anyop
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
     const src = cast(DoeBuffer, src_raw) orelse return;
     const dst = cast(DoeBuffer, dst_raw) orelse return;
-    // Record the copy as a deferred .copy_buf command on every backend
-    // (not just Metal). Executing the copy immediately at record-time
-    // is an ordering bug when the same encoder also has pending
-    // compute dispatches: the copy would run before the dispatch, so
-    // the destination reads pre-dispatch (uninitialized) bytes. The
-    // backend-specific submit handlers replay .copy_buf in the order
-    // it was recorded.
-    //
-    // On Vulkan, `src.mtl` and `dst.mtl` are null (Metal handles); the
-    // Vulkan submit replay reads back the DoeBuffer via the encoder's
-    // recorded pointer. Since the .copy_buf payload stores the raw
-    // DoeBuffer pointer, we pass the DoeBuffer itself (cast to the
-    // same `?*anyopaque` slot the Metal path uses).
-    const src_handle: ?*anyopaque = if (enc.dev.backend == .vulkan)
-        @ptrCast(src)
-    else
-        src.mtl;
-    const dst_handle: ?*anyopaque = if (enc.dev.backend == .vulkan)
-        @ptrCast(dst)
-    else
-        dst.mtl;
+    if (src.error_object or dst.error_object) return;
     enc.cmds.append(alloc, .{ .copy_buf = .{
-        .src = src_handle,
+        .src = @ptrCast(src),
         .src_off = src_off,
-        .dst = dst_handle,
+        .dst = @ptrCast(dst),
         .dst_off = dst_off,
         .size = size,
     } }) catch std.debug.panic("doe_encoder_native: OOM recording copy command", .{});
@@ -105,6 +85,7 @@ pub export fn doeNativeCommandEncoderCopyBufferToTexture(
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
     const src_buffer = cast(DoeBuffer, src_buffer_raw) orelse return;
     const dst_texture = cast(DoeTexture, dst_texture_raw) orelse return;
+    if (src_buffer.error_object or dst_texture.error_object) return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
             const rt = native_rt_helpers.device_vk_runtime(enc.dev) orelse return;
@@ -161,6 +142,7 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
     const src_texture = cast(DoeTexture, src_texture_raw) orelse return;
     const dst_buffer = cast(DoeBuffer, dst_buffer_raw) orelse return;
+    if (src_texture.error_object or dst_buffer.error_object) return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
             const rt = native_rt_helpers.device_vk_runtime(enc.dev) orelse return;

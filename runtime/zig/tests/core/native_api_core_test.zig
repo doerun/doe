@@ -8,6 +8,9 @@ const builtin = @import("builtin");
 const native = @import("../../src/doe_wgpu_native.zig");
 const caps = @import("../../src/doe_device_caps.zig");
 const types = @import("../../src/core/abi/wgpu_runtime_abi.zig");
+const buffer_ops = @import("../../src/doe_buffer_ops_native.zig");
+const texture_sampler = @import("../../src/doe_texture_sampler_native.zig");
+const abi_texture = @import("../../src/core/abi/wgpu_texture_base_types.zig");
 
 // ============================================================
 // 1. doe_wgpu_native.zig — Export existence via comptime @hasDecl
@@ -16,6 +19,7 @@ const types = @import("../../src/core/abi/wgpu_runtime_abi.zig");
 test "doe_wgpu_native: all re-exported C ABI symbols exist" {
     // Buffer lifecycle
     try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreateBuffer"));
+    try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreateBufferFlat"));
     try std.testing.expect(@hasDecl(native, "doeNativeBufferRelease"));
     try std.testing.expect(@hasDecl(native, "doeNativeBufferUnmap"));
     try std.testing.expect(@hasDecl(native, "doeNativeBufferMapAsync"));
@@ -36,16 +40,21 @@ test "doe_wgpu_native: all re-exported C ABI symbols exist" {
 
     // Shader module and compute pipeline (re-exported from doe_shader_native)
     try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreateShaderModule"));
+    try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreateShaderModuleWgsl"));
     try std.testing.expect(@hasDecl(native, "doeNativeShaderModuleRelease"));
     try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreateComputePipeline"));
+    try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreateComputePipelineMain"));
     try std.testing.expect(@hasDecl(native, "doeNativeComputePipelineRelease"));
 
     // Bind group, bind group layout, pipeline layout (re-exported from doe_bind_group_native)
     try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreateBindGroupLayout"));
+    try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreateBufferBindGroupLayoutFlat4"));
     try std.testing.expect(@hasDecl(native, "doeNativeBindGroupLayoutRelease"));
     try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreateBindGroup"));
+    try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreateBufferBindGroupFlat4"));
     try std.testing.expect(@hasDecl(native, "doeNativeBindGroupRelease"));
     try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreatePipelineLayout"));
+    try std.testing.expect(@hasDecl(native, "doeNativeDeviceCreatePipelineLayoutOne"));
     try std.testing.expect(@hasDecl(native, "doeNativePipelineLayoutRelease"));
 
     // Command encoder and command buffer (re-exported from doe_encoder_native)
@@ -62,6 +71,8 @@ test "doe_wgpu_native: all re-exported C ABI symbols exist" {
     try std.testing.expect(@hasDecl(native, "doeNativeQueueSubmit"));
     try std.testing.expect(@hasDecl(native, "doeNativeQueueFlush"));
     try std.testing.expect(@hasDecl(native, "doeNativeQueueWriteBuffer"));
+    try std.testing.expect(@hasDecl(native, "doeNativeQueueWriteBufferBatch"));
+    try std.testing.expect(@hasDecl(native, "doeNativeQueueWriteBufferBatchDataPtrs"));
     try std.testing.expect(@hasDecl(native, "doeNativeQueueRelease"));
     try std.testing.expect(@hasDecl(native, "doeNativeQueueOnSubmittedWorkDone"));
 
@@ -160,6 +171,43 @@ test "doe_wgpu_native: handle magic values follow 0xD0E1 prefix convention" {
 
     const queue_magic = native.DoeQueue.TYPE_MAGIC;
     try std.testing.expectEqual(@as(u32, 0xD0E1_0000), queue_magic & 0xFFFF_0000);
+}
+
+fn testBufferDescriptor(usage: types.WGPUBufferUsage, mapped_at_creation: types.WGPUBool) types.WGPUBufferDescriptor {
+    return .{
+        .nextInChain = null,
+        .label = .{ .data = null, .length = 0 },
+        .usage = usage,
+        .size = 256,
+        .mappedAtCreation = mapped_at_creation,
+    };
+}
+
+test "Metal buffer storage: GPU-only buffers prefer private storage" {
+    var storage = testBufferDescriptor(types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopyDst, types.WGPU_FALSE);
+    try std.testing.expect(buffer_ops.metalBufferUsageEligibleForPrivateStorage(&storage));
+
+    var uniform = testBufferDescriptor(types.WGPUBufferUsage_Uniform | types.WGPUBufferUsage_CopyDst, types.WGPU_FALSE);
+    try std.testing.expect(buffer_ops.metalBufferUsageEligibleForPrivateStorage(&uniform));
+}
+
+test "Metal buffer storage: host-visible and query-resolve buffers stay shared" {
+    var readback = testBufferDescriptor(types.WGPUBufferUsage_MapRead | types.WGPUBufferUsage_CopyDst, types.WGPU_FALSE);
+    try std.testing.expect(!buffer_ops.metalBufferUsageEligibleForPrivateStorage(&readback));
+
+    var mapped = testBufferDescriptor(types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopyDst, types.WGPU_TRUE);
+    try std.testing.expect(!buffer_ops.metalBufferUsageEligibleForPrivateStorage(&mapped));
+
+    var query_resolve = testBufferDescriptor(types.WGPUBufferUsage_QueryResolve | types.WGPUBufferUsage_CopySrc, types.WGPU_FALSE);
+    try std.testing.expect(!buffer_ops.metalBufferUsageEligibleForPrivateStorage(&query_resolve));
+
+    var transfer_only = testBufferDescriptor(types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst, types.WGPU_FALSE);
+    try std.testing.expect(!buffer_ops.metalBufferUsageEligibleForPrivateStorage(&transfer_only));
+}
+
+test "Metal buffer storage: private storage is opt-in while upload path remains benchmarked" {
+    var storage = testBufferDescriptor(types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopyDst, types.WGPU_FALSE);
+    try std.testing.expect(!buffer_ops.metalBufferShouldUsePrivateStorage(&storage));
 }
 
 // ============================================================
@@ -321,6 +369,14 @@ test "DoeShaderModule: workgroup size defaults to zero" {
     try std.testing.expectEqual(@as(u32, 0), sm.wg_z);
     try std.testing.expectEqual(@as(u32, 0), sm.binding_count);
     try std.testing.expectEqual(@as(?*anyopaque, null), sm.mtl_library);
+    try std.testing.expect(!sm.mtl_library_borrowed);
+}
+
+test "DoeBindGroupLayout: inline entries are disabled by default" {
+    const layout = native.DoeBindGroupLayout{};
+    try std.testing.expectEqual(@as(u32, 0), layout.entry_count);
+    try std.testing.expect(layout.entries == null);
+    try std.testing.expect(!layout.entries_inline);
 }
 
 // ============================================================
@@ -696,6 +752,12 @@ test "doe_compute_fast: doeNativeComputeDispatchFlush export exists" {
     try std.testing.expect(@hasDecl(compute_fast, "doeNativeComputeDispatchFlush"));
 }
 
+test "doe_compute_fast: command buffer builder exports exist" {
+    const compute_fast = @import("../../src/doe_compute_fast.zig");
+    try std.testing.expect(@hasDecl(compute_fast, "doeNativeCreateComputeDispatchCopyCommandBuffer"));
+    try std.testing.expect(@hasDecl(compute_fast, "doeNativeCreateComputeDispatchBatchCopyCommandBuffer"));
+}
+
 // ============================================================
 // 20. doe_compute_fast.zig — Null-safety of dispatch flush
 // ============================================================
@@ -741,6 +803,48 @@ test "doeNativeComputeDispatchFlush: null pipeline is safe" {
         0,
         0,
     );
+}
+
+test "doeNativeCreateComputeDispatchCopyCommandBuffer: null inputs return null" {
+    const compute_fast = @import("../../src/doe_compute_fast.zig");
+    var bg_ptrs = [_]?*anyopaque{null} ** 4;
+    const command_buffer = compute_fast.doeNativeCreateComputeDispatchCopyCommandBuffer(
+        null,
+        null,
+        &bg_ptrs,
+        0,
+        1,
+        1,
+        1,
+        null,
+        0,
+        null,
+        0,
+        0,
+    );
+    try std.testing.expect(command_buffer == null);
+}
+
+test "doeNativeCreateComputeDispatchBatchCopyCommandBuffer: null inputs return null" {
+    const compute_fast = @import("../../src/doe_compute_fast.zig");
+    var pipes = [_]?*anyopaque{null};
+    var bg_ptrs = [_]?*anyopaque{null} ** 4;
+    var bg_counts = [_]u32{0};
+    var dispatch_dims = [_]u32{ 1, 1, 1 };
+    const command_buffer = compute_fast.doeNativeCreateComputeDispatchBatchCopyCommandBuffer(
+        null,
+        1,
+        &pipes,
+        &bg_ptrs,
+        &bg_counts,
+        &dispatch_dims,
+        null,
+        0,
+        null,
+        0,
+        0,
+    );
+    try std.testing.expect(command_buffer == null);
 }
 
 // ============================================================
@@ -937,6 +1041,66 @@ test "doeNativeDeviceCreateTexture: null device returns null" {
 test "doeNativeTextureCreateView: null texture returns null" {
     const result = native.doeNativeTextureCreateView(null, null);
     try std.testing.expectEqual(@as(?*anyopaque, null), result);
+}
+
+test "texture view: default full Metal view can borrow texture handle" {
+    var tex = native.DoeTexture{
+        .mtl = @ptrFromInt(0x1000),
+        .format = abi_texture.WGPUTextureFormat_RGBA8Unorm,
+        .width = 128,
+        .height = 128,
+        .depth_or_array_layers = 1,
+        .dimension = abi_texture.WGPUTextureDimension_2D,
+        .mip_level_count = 1,
+        .sample_count = 1,
+        .usage = abi_texture.WGPUTextureUsage_TextureBinding | abi_texture.WGPUTextureUsage_CopyDst,
+    };
+
+    try std.testing.expect(texture_sampler.canBorrowMetalTextureForFullView(
+        &tex,
+        tex.format,
+        texture_sampler.default_texture_view_dimension(&tex),
+        0,
+        tex.mip_level_count,
+        0,
+        tex.depth_or_array_layers,
+        abi_texture.WGPUTextureAspect_All,
+        abi_texture.WGPUTextureUsage_TextureBinding,
+        abi_texture.WGPUTextureComponentSwizzle_Red,
+        abi_texture.WGPUTextureComponentSwizzle_Green,
+        abi_texture.WGPUTextureComponentSwizzle_Blue,
+        abi_texture.WGPUTextureComponentSwizzle_Alpha,
+    ));
+}
+
+test "texture view: non-default Metal view cannot borrow texture handle" {
+    var tex = native.DoeTexture{
+        .mtl = @ptrFromInt(0x1000),
+        .format = abi_texture.WGPUTextureFormat_RGBA8Unorm,
+        .width = 128,
+        .height = 128,
+        .depth_or_array_layers = 4,
+        .dimension = abi_texture.WGPUTextureDimension_2D,
+        .mip_level_count = 2,
+        .sample_count = 1,
+        .usage = abi_texture.WGPUTextureUsage_TextureBinding | abi_texture.WGPUTextureUsage_CopyDst,
+    };
+
+    try std.testing.expect(!texture_sampler.canBorrowMetalTextureForFullView(
+        &tex,
+        tex.format,
+        texture_sampler.default_texture_view_dimension(&tex),
+        1,
+        1,
+        0,
+        tex.depth_or_array_layers,
+        abi_texture.WGPUTextureAspect_All,
+        tex.usage,
+        abi_texture.WGPUTextureComponentSwizzle_Red,
+        abi_texture.WGPUTextureComponentSwizzle_Green,
+        abi_texture.WGPUTextureComponentSwizzle_Blue,
+        abi_texture.WGPUTextureComponentSwizzle_Alpha,
+    ));
 }
 
 test "doeNativeDeviceCreateSampler: null device returns null" {
