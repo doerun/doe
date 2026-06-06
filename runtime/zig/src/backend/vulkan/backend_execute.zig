@@ -138,6 +138,7 @@ fn execute_dispatch_command(
     y: u32,
     z: u32,
     repeat: u32,
+    repeat_synchronization: model_compute_types.KernelDispatchRepeatSynchronization,
     warmup_dispatch_count: u32,
 ) !webgpu.NativeExecutionResult {
     const runtime = try self.ensure_runtime_bootstrapped();
@@ -169,6 +170,29 @@ fn execute_dispatch_command(
     }
 
     const dispatch_count = if (repeat > 0) repeat else 1;
+
+    if (dispatch_sync_mode == .per_command and dispatch_count > 1) {
+        const metrics = try runtime.run_dispatch_repeat(
+            x,
+            y,
+            z,
+            dispatch_count,
+            repeat_synchronization,
+            self.queue_wait_mode,
+            dispatch_gpu_timestamp_mode,
+        );
+        return .{
+            .status = .ok,
+            .status_message = "",
+            .setup_ns = setup_ns,
+            .encode_ns = metrics.encode_ns,
+            .submit_wait_ns = metrics.submit_wait_ns,
+            .dispatch_count = dispatch_count,
+            .gpu_timestamp_ns = metrics.gpu_timestamp_ns,
+            .gpu_timestamp_attempted = metrics.gpu_timestamp_attempted,
+            .gpu_timestamp_valid = metrics.gpu_timestamp_valid,
+        };
+    }
 
     var encode_ns: u64 = 0;
     var submit_wait_ns: u64 = 0;
@@ -284,6 +308,7 @@ fn execute_kernel_dispatch(self: anytype, setup_ns: u64, kernel_dispatch: model.
         kernel_dispatch.y,
         kernel_dispatch.z,
         kernel_dispatch.repeat,
+        kernel_dispatch.repeat_synchronization,
         kernel_dispatch.warmup_dispatch_count,
     );
 }
@@ -420,7 +445,7 @@ fn execute_runtime_command(self: anytype, command: model.Command) !webgpu.Native
         .upload => |upload| try execute_upload(self, setup_ns, upload),
         .buffer_write => |bw| try execute_buffer_write(self, setup_ns, bw),
         .barrier => try execute_barrier(self, setup_ns),
-        .dispatch => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, 0),
+        .dispatch => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, .dependent, 0),
         .dispatch_indirect => |dispatch| try execute_dispatch_indirect_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z),
         .kernel_dispatch => |kernel_dispatch| try execute_kernel_dispatch(self, setup_ns, kernel_dispatch),
         .render_draw => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),
@@ -517,10 +542,21 @@ pub fn prewarm_upload_path(self: anytype, max_upload_bytes: u64) anyerror!void {
     try runtime.prewarm_upload_path(max_upload_bytes, self.upload_buffer_usage_mode, self.upload_path_policy);
 }
 
-pub fn prewarm_kernel_dispatch(self: anytype, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
+pub fn prewarm_kernel_dispatch(
+    self: anytype,
+    kernel: []const u8,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model.KernelBinding,
+    initialize_buffers_on_create: bool,
+) anyerror!void {
     const runtime = try self.ensure_runtime_bootstrapped();
     const spirv_words = try runtime.ensure_kernel_spirv_cached(kernel);
-    try runtime.set_compute_shader_spirv(spirv_words, null, bindings, false);
+    try runtime.set_compute_shader_spirv(
+        spirv_words,
+        entry_point,
+        bindings,
+        initialize_buffers_on_create,
+    );
 }
 
 pub fn capture_buffer(self: anytype, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {
@@ -530,6 +566,7 @@ pub fn capture_buffer(self: anytype, allocator: std.mem.Allocator, handle: u64, 
     }
     if (size == 0) return error.InvalidArgument;
     const buffer = runtime.compute_buffers.get(handle) orelse return error.InvalidArgument;
+    try runtime.make_compute_writes_visible_for_capture(buffer.memory_kind);
     const vk_resources = @import("vk_resources.zig");
     return try vk_resources.capture_compute_buffer(runtime, allocator, buffer, offset, size);
 }

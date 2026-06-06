@@ -94,6 +94,9 @@ pub fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Comman
             try stdout.print("{}", .{kernel_cmd.z});
             try stdout.writeAll(",\"repeat\":");
             try stdout.print("{}", .{kernel_cmd.repeat});
+            try stdout.writeAll(",\"repeatSynchronization\":\"");
+            try stdout.writeAll(@tagName(kernel_cmd.repeat_synchronization));
+            try stdout.writeAll("\"");
             try stdout.writeAll("}\n");
         },
         .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => |render_cmd| {

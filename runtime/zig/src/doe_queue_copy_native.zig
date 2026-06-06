@@ -155,7 +155,10 @@ fn writeBufferValidated(q: *DoeQueue, buf: *DoeBuffer, offset: u64, data: [*]con
     if (q.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
             if (buf.vk_id != 0) {
-                const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return;
+                const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse {
+                    shared.deliverInternalError(q.dev, "doe_queue_write_buffer: vulkan runtime unavailable", .{});
+                    return false;
+                };
                 if (rt.compute_buffers.get(buf.vk_id)) |cb| {
                     vk_resources.stage_compute_buffer_write(rt, cb, offset, data[0..size]) catch |err| {
                         shared.deliverInternalError(

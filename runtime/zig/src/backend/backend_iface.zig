@@ -20,7 +20,13 @@ pub const BackendVTable = struct {
     set_gpu_timestamp_mode: *const fn (ctx: *anyopaque, mode: runtime_types.GpuTimestampMode) void,
     flush_queue: *const fn (ctx: *anyopaque) anyerror!u64,
     prewarm_upload_path: *const fn (ctx: *anyopaque, max_upload_bytes: u64) anyerror!void,
-    prewarm_kernel_dispatch: *const fn (ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void,
+    prewarm_kernel_dispatch: *const fn (
+        ctx: *anyopaque,
+        kernel: []const u8,
+        entry_point: ?[]const u8,
+        bindings: ?[]const model.KernelBinding,
+        initialize_buffers_on_create: bool,
+    ) anyerror!void,
     capture_buffer: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8,
 };
 
@@ -66,8 +72,20 @@ pub const BackendIface = struct {
         try self.vtable.prewarm_upload_path(self.context, max_upload_bytes);
     }
 
-    pub fn prewarm_kernel_dispatch(self: *BackendIface, kernel: []const u8, bindings: ?[]const model.KernelBinding) !void {
-        try self.vtable.prewarm_kernel_dispatch(self.context, kernel, bindings);
+    pub fn prewarm_kernel_dispatch(
+        self: *BackendIface,
+        kernel: []const u8,
+        entry_point: ?[]const u8,
+        bindings: ?[]const model.KernelBinding,
+        initialize_buffers_on_create: bool,
+    ) !void {
+        try self.vtable.prewarm_kernel_dispatch(
+            self.context,
+            kernel,
+            entry_point,
+            bindings,
+            initialize_buffers_on_create,
+        );
     }
 
     pub fn capture_buffer(self: *BackendIface, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) ![]u8 {

@@ -6,16 +6,23 @@ Doe is a Zig-first WebGPU runtime and compiler for replacing hidden,
 heavyweight GPU execution stacks with a source-preserving, receipt-backed
 accelerator path.
 
-Dawn is the WebGPU runtime baseline used in Chromium and most browser-shaped
-deployments. Tint is Dawn's shader compiler. Doe's flagship strategic target is
-to beat that Dawn/Tint stack on claimable compiler, runtime, and browser-lane
-evidence, then become the best open-source WebGPU implementation path for
-Chromium-family browsers.
+Doe's core roadmap is two-pronged under that same source-preserving contract:
 
-That target does not mean Doe is already the browser default. Package, embedded,
-native, and server-side JavaScript lanes such as Node.js and Bun are the proof
-ladder: they establish strict Dawn-vs-Doe methodology, hot-path behavior,
-compiler correctness, traces, and receipts before browser promotion.
+1. Chromium-family WebGPU implementation. Dawn is the WebGPU runtime baseline
+   used in Chromium and most browser-shaped deployments; Tint is Dawn's shader
+   compiler. Doe must beat that Dawn/Tint stack on claimable compiler, runtime,
+   and browser-lane evidence, then become the best open-source WebGPU
+   implementation path for Chromium-family browsers.
+2. Doppler -> Doe -> Cerebras retargeting. Doe consumes a closed
+   Doppler-authored Program Bundle, preserves the declared model/program
+   identity through WGSL, TSIR, HostPlan, and CSL, then emits simulator and
+   hardware receipts that prove what ran on the Cerebras lane.
+
+Those targets do not mean Doe is already the browser default or that the
+Cerebras lane already has hardware parity receipts. Package, embedded, native,
+and server-side JavaScript lanes such as Node.js and Bun are proof ladders:
+they establish strict methodology, hot-path behavior, compiler correctness,
+traces, and receipts before claims promote into either roadmap prong.
 
 One concrete integration lane for that scope is a Doe-backed ONNX Runtime
 plugin EP — a native ML-host surface, not a claim that Doe has displaced
@@ -42,12 +49,17 @@ runtimes:
 
 Scope boundary:
 
+- Doe has two core roadmap prongs: Chromium-family WebGPU replacement and
+  Doppler -> Doe -> Cerebras retargeting.
 - Dawn and Tint are the incumbent runtime/compiler baselines.
+- The Doppler Program Bundle is the source identity for the Cerebras prong;
+  Doe does not compile arbitrary JavaScript or raw model files.
 - Package, native, embedded, and server-side JavaScript lanes are evidence
   ladders, not the final product ceiling.
-- Chromium/browser replacement is the flagship product target, but claims only
-  promote from browser-lane artifacts that pass compatibility, trace,
-  correctness, and comparability gates.
+- Chromium/browser replacement claims only promote from browser-lane artifacts
+  that pass compatibility, trace, correctness, and comparability gates.
+- Cerebras claims only promote from Program Bundle, lowering, transcript,
+  simulator, or hardware receipts with intact identity links.
 
 ## Why this exists
 
@@ -77,11 +89,13 @@ describes the proof categories and integration boundary.
 Dawn, Tint, and wgpu are comparison baselines, not runtime dependencies.
 
 That matters for how Doe should be evaluated. The immediate question is not
-"has Doe replaced the browser runtime?" The immediate question is whether each
-evidence lane closes a concrete gap toward a forced-Doe Chromium path: compiler
-quality against Tint, runtime behavior against Dawn, browser compatibility at
-the `navigator.gpu` seam, and diagnostic receipts that explain failures instead
-of hiding them behind fallback.
+"has Doe replaced the browser runtime?" or "has Doe run the full model on
+Cerebras hardware?" The immediate question is whether each evidence lane closes
+a concrete gap toward one of the two roadmap prongs: compiler quality against
+Tint, runtime behavior against Dawn, browser compatibility at the
+`navigator.gpu` seam, Doppler Program Bundle ingest, TSIR/HostPlan/CSL
+lowering, transcript parity, and diagnostic receipts that explain failures
+instead of hiding them behind fallback.
 
 ## Verification stance
 
@@ -121,6 +135,8 @@ For v0, success is trend-based rather than slogan-based:
 - proof coverage only where it deletes meaningful runtime logic
 - browser-lane progress that keeps the Chromium fork delta small and WebGPU
   focused
+- Doppler -> Cerebras progress that keeps Program Bundle identity, lowering
+  identity, transcript parity, and hardware promotion receipts linked
 
 ## Related docs
 
@@ -129,6 +145,10 @@ For v0, success is trend-based rather than slogan-based:
 - [`architecture.md`](./architecture.md) for system surfaces
 - [`chromium-webgpu-task-list.md`](./chromium-webgpu-task-list.md) for the
   Dawn/Tint/Chromium task list
+- [`cerebras.md`](./cerebras.md) for the Doppler -> Doe -> Cerebras lane front
+  door
+- [`doppler-ingest.md`](./doppler-ingest.md) for the Doe-owned Program Bundle
+  ingest boundary
 - [`performance-strategy.md`](./performance-strategy.md) for Dawn comparison
   methodology
 

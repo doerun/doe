@@ -5,7 +5,8 @@
 `doe-gpu` is the native, receipt-backed WebGPU runtime for Node and Bun.
 
 WebGPU compatibility is the adoption hook. Doe runtime control, receipts,
-diagnostics, explicit failure, and measured package performance are the moat.
+diagnostics, explicit failure, and measured package performance are the
+developer advantage.
 
 ## Boundary
 

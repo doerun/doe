@@ -455,13 +455,23 @@ pub fn prewarm_upload_path(self: anytype, max_upload_bytes: u64) anyerror!void {
     try rt.prewarm_upload_path(max_upload_bytes, self.upload_buffer_usage_mode);
 }
 
-pub fn prewarm_kernel_dispatch(self: anytype, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
+pub fn prewarm_kernel_dispatch(
+    self: anytype,
+    kernel: []const u8,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model.KernelBinding,
+    initialize_buffers_on_create: bool,
+) anyerror!void {
     const rt = self.get_runtime();
-    _ = try rt.ensure_kernel_pipeline(kernel, null);
+    _ = try rt.ensure_kernel_pipeline(kernel, entry_point);
     if (bindings) |bs| {
         for (bs) |b| {
             if (b.resource_kind != .buffer) continue;
-            _ = try rt.ensure_compute_buffer(b.resource_handle, b.buffer_size, false);
+            _ = try rt.ensure_compute_buffer(
+                b.resource_handle,
+                b.buffer_size,
+                initialize_buffers_on_create,
+            );
         }
     }
 }

@@ -39,7 +39,7 @@ def _sample(
 
 
 class KernelPrewarmTimingTests(unittest.TestCase):
-    def test_operation_timing_folds_host_kernel_prewarm(self) -> None:
+    def test_operation_timing_keeps_host_kernel_prewarm_outside_selected_timing(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             trace_path = Path(tmpdir) / "trace.ndjson"
             trace_path.write_text('{"command":"kernel_dispatch"}\n', encoding="utf-8")
@@ -63,9 +63,11 @@ class KernelPrewarmTimingTests(unittest.TestCase):
                 workload_domain="compute",
             )
 
-        self.assertEqual(measured_ms, 12.0)
-        self.assertEqual(source, "doe-execution-total-ns+host-kernel-prewarm")
-        self.assertEqual(meta["operationTotalWithHostKernelPrewarmNs"], 12_000_000)
+        self.assertEqual(measured_ms, 10.0)
+        self.assertEqual(source, "doe-execution-total-ns")
+        self.assertEqual(meta["hostKernelPrewarmTotalNs"], 2_000_000)
+        self.assertEqual(meta["hostKernelPrewarmScope"], "outside-selected-execution-timing")
+        self.assertNotIn("operationTotalWithHostKernelPrewarmNs", meta)
 
     def test_operation_timing_ignores_empty_kernel_prewarm_loop(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

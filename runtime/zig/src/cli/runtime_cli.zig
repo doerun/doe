@@ -59,7 +59,12 @@ fn prewarmKernelDispatches(ctx: *execution.ExecutionContext, commands: []const m
     for (commands) |command| {
         switch (command) {
             .kernel_dispatch => |kd| {
-                ctx.prewarmKernelDispatch(kd.kernel, kd.bindings) catch |err| {
+                ctx.prewarmKernelDispatch(
+                    kd.kernel,
+                    kd.entry_point,
+                    kd.bindings,
+                    kd.initialize_buffers_on_create,
+                ) catch |err| {
                     std.debug.print("warn: runtime_cli: kernel dispatch prewarm: {s}\n", .{@errorName(err)});
                 };
             },

@@ -35,10 +35,12 @@ fn main(
 
     let v = vectorData[col];
     let base = 4u * (rowBy4 * kPackedCols + col);
-    laneSum.x = laneSum.x + dot(matrixData[base + 0u], v);
-    laneSum.y = laneSum.y + dot(matrixData[base + 1u], v);
-    laneSum.z = laneSum.z + dot(matrixData[base + 2u], v);
-    laneSum.w = laneSum.w + dot(matrixData[base + 3u], v);
+    laneSum = laneSum + vec4<f32>(
+      dot(matrixData[base + 0u], v),
+      dot(matrixData[base + 1u], v),
+      dot(matrixData[base + 2u], v),
+      dot(matrixData[base + 3u], v)
+    );
     i = i + 1u;
   }
 

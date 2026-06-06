@@ -196,6 +196,7 @@ test "parse kernel_dispatch command with minimal fields" {
     try std.testing.expectEqual(@as(u32, 1), cmds[0].kernel_dispatch.y);
     try std.testing.expectEqual(@as(u32, 1), cmds[0].kernel_dispatch.z);
     try std.testing.expectEqual(@as(u32, 1), cmds[0].kernel_dispatch.repeat);
+    try std.testing.expectEqual(model.KernelDispatchRepeatSynchronization.dependent, cmds[0].kernel_dispatch.repeat_synchronization);
     try std.testing.expect(cmds[0].kernel_dispatch.entry_point == null);
     try std.testing.expect(cmds[0].kernel_dispatch.bindings == null);
 }
@@ -208,6 +209,32 @@ test "parse kernel_dispatch command with entry_point and repeat" {
     );
     try std.testing.expectEqualStrings("main", cmds[0].kernel_dispatch.entry_point.?);
     try std.testing.expectEqual(@as(u32, 5), cmds[0].kernel_dispatch.repeat);
+}
+
+test "parse kernel_dispatch independent repeat synchronization" {
+    var arena = testArena();
+    defer arena.deinit();
+    const cmds = try parseCommands(arena.allocator(),
+        \\[{"command": "kernel_dispatch", "kernel": "compute.wgsl", "repeat": 5, "repeatSynchronization": "independent"}]
+    );
+    try std.testing.expectEqual(model.KernelDispatchRepeatSynchronization.independent, cmds[0].kernel_dispatch.repeat_synchronization);
+}
+
+test "parse kernel_dispatch repeat_synchronization alias" {
+    var arena = testArena();
+    defer arena.deinit();
+    const cmds = try parseCommands(arena.allocator(),
+        \\[{"command": "kernel_dispatch", "kernel": "compute.wgsl", "repeat": 5, "repeat_synchronization": "dependent"}]
+    );
+    try std.testing.expectEqual(model.KernelDispatchRepeatSynchronization.dependent, cmds[0].kernel_dispatch.repeat_synchronization);
+}
+
+test "parse kernel_dispatch rejects unknown repeat synchronization" {
+    var arena = testArena();
+    defer arena.deinit();
+    try std.testing.expectError(ParseError.InvalidCommandPayload, parseCommands(arena.allocator(),
+        \\[{"command": "kernel_dispatch", "kernel": "compute.wgsl", "repeatSynchronization": "hidden-fast"}]
+    ));
 }
 
 test "parse kernel_dispatch with bindings" {

@@ -61,6 +61,17 @@ pub fn parseKernelBindingKind(raw_kind: ?[]const u8) ?model_compute_types.Kernel
     return null;
 }
 
+pub fn parseKernelDispatchRepeatSynchronization(raw: ?[]const u8) ParseError!model_compute_types.KernelDispatchRepeatSynchronization {
+    const value = raw orelse return .dependent;
+    if (eqIgnoreCase(value, "dependent") or eqIgnoreCase(value, "inter-dispatch-barrier") or eqIgnoreCase(value, "inter_dispatch_barrier")) {
+        return .dependent;
+    }
+    if (eqIgnoreCase(value, "independent") or eqIgnoreCase(value, "none")) {
+        return .independent;
+    }
+    return ParseError.InvalidCommandPayload;
+}
+
 pub fn parseShaderStage(raw_stage: ?[]const u8) ?model_texture_types.WGPUFlags {
     const value = raw_stage orelse return null;
     if (eqIgnoreCase(value, "compute") or eqIgnoreCase(value, "compute-only") or eqIgnoreCase(value, "computeOnly")) {

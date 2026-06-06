@@ -12,9 +12,18 @@ In practice that means embedding where Dawn is too heavy, lowering kernels to
 multiple GPU and spatial backends from the same IR, and emitting
 artifact-backed receipts that bind every claim to a specific build.
 
-The flagship target is Chromium-family WebGPU: make Doe the evidence-backed
-open-source runtime and compiler path that can beat Dawn/Tint without silent
-fallbacks or broad browser-fork drift.
+The core roadmap is two-pronged:
+
+- **Chromium-family WebGPU:** make Doe the evidence-backed open-source runtime
+  and compiler path that can beat Dawn/Tint without silent fallbacks or broad
+  browser-fork drift.
+- **Doppler -> Doe -> Cerebras:** consume a closed Doppler Program Bundle,
+  lower the same declared WGSL/program identity through TSIR, HostPlan, and
+  CSL, and produce parity receipts for simulator and hardware promotion.
+
+These are not separate theses. Both prongs use the same discipline:
+source-visible programs, explicit lowering contracts, and receipt-backed
+claims.
 
 Published npm surface: [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md).
 
@@ -67,7 +76,9 @@ Receipt paths for these charted lanes are listed in
 
 ## Current product surface
 
-- Strategic target: Chromium-family WebGPU implementation.
+- Strategic runtime target: Chromium-family WebGPU implementation.
+- Strategic retargeting target: Doppler-authored model programs lowered to
+  Cerebras WSE through receipt-backed TSIR / HostPlan / CSL artifacts.
 - Competitive evidence today: native, package, embedded, and server-side
   JavaScript lanes.
 - `doe-gpu/browser` is a browser shim over the browser's incumbent WebGPU

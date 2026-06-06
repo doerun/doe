@@ -561,6 +561,7 @@ Lane policy is contractized in `config/backend-runtime-policy.json`. Trace metad
 
 - `kernel_dispatch` with `kernel` label and dispatch dimensions: `examples/kernel_dispatch_commands.json`
 - `kernel_dispatch` accepts optional `repeat` (aliases: `dispatch_count`, `dispatchCount`), default `1`.
+- `kernel_dispatch` accepts optional `repeatSynchronization` (`repeat_synchronization`) to declare whether repeated dispatches need inter-dispatch shader-memory visibility. Values are `dependent` (default) and `independent`.
 - `kernel_dispatch` accepts optional `warmup_dispatch_count` (`warmupDispatchCount`) to run untimed warmup dispatches before timed dispatch execution, default `0`.
 - `kernel_dispatch` accepts optional `initialize_buffers_on_create` (`initializeBuffersOnCreate`) to zero-fill newly created bound buffers before first use, default `false`.
 - `render_draw` supports repeated draw-call submission via `draw_count`/`drawCount`,

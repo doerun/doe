@@ -1,6 +1,6 @@
 import Doe.Core.Model
 
-def comparabilityContractSha256 : String := "b4c4327fc41f6845c4ce0edc044126d2578c9ba355364c1306ec4686eef40269"
+def comparabilityContractSha256 : String := "35df458142977e4dbba448c7b60c344ba65af8f7c9f16ee478d8ef504e89c99e"
 
 inductive ComparabilityObligationId where
   | workloadMarkedComparable
@@ -16,7 +16,10 @@ inductive ComparabilityObligationId where
   | baselineComparisonQueueSyncModeMatch
   | baselineComparisonSubmitScopeMatch
   | baselineComparisonTimingPhaseMatch
+  | baselineComparisonPackageResidentBufferLoadModeMatch
+  | baselineComparisonPackageResidentBufferLoadShapeMatch
   | baselineComparisonExecutionShapeMatch
+  | baselineComparisonReadbackCaptureMatch
   | baselineComparisonHardwarePathMatch
   | baselineComparisonExplicitNativeShaderArtifactMatch
   | baselineNativeOperationTimingForWebgpuFfi
@@ -78,8 +81,14 @@ structure ComparabilityFacts where
   baselineComparisonSubmitScopeMatch : Bool
   timingPhaseMatchApplies : Bool
   baselineComparisonTimingPhaseMatch : Bool
+  packageResidentBufferLoadModeMatchApplies : Bool
+  baselineComparisonPackageResidentBufferLoadModeMatch : Bool
+  packageResidentBufferLoadShapeMatchApplies : Bool
+  baselineComparisonPackageResidentBufferLoadShapeMatch : Bool
   executionShapeMatchApplies : Bool
   baselineComparisonExecutionShapeMatch : Bool
+  readbackCaptureMatchApplies : Bool
+  baselineComparisonReadbackCaptureMatch : Bool
   hardwarePathMatchApplies : Bool
   baselineComparisonHardwarePathMatch : Bool
   explicitNativeShaderArtifactMatchApplies : Bool
@@ -165,10 +174,22 @@ def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObliga
       blocking := true
       applicable := facts.timingPhaseMatchApplies
       passes := facts.baselineComparisonTimingPhaseMatch },
+    { id := .baselineComparisonPackageResidentBufferLoadModeMatch
+      blocking := true
+      applicable := facts.packageResidentBufferLoadModeMatchApplies
+      passes := facts.baselineComparisonPackageResidentBufferLoadModeMatch },
+    { id := .baselineComparisonPackageResidentBufferLoadShapeMatch
+      blocking := true
+      applicable := facts.packageResidentBufferLoadShapeMatchApplies
+      passes := facts.baselineComparisonPackageResidentBufferLoadShapeMatch },
     { id := .baselineComparisonExecutionShapeMatch
       blocking := true
       applicable := facts.executionShapeMatchApplies
       passes := facts.baselineComparisonExecutionShapeMatch },
+    { id := .baselineComparisonReadbackCaptureMatch
+      blocking := true
+      applicable := facts.readbackCaptureMatchApplies
+      passes := facts.baselineComparisonReadbackCaptureMatch },
     { id := .baselineComparisonHardwarePathMatch
       blocking := true
       applicable := facts.hardwarePathMatchApplies

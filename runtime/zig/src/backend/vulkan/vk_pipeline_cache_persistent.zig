@@ -144,7 +144,10 @@ pub fn create_process_pipeline_cache(device: c.VkDevice) !void {
 }
 
 fn try_read_cache_blob(path: []const u8) ?[]u8 {
-    const file = std.fs.openFileAbsolute(path, .{ .mode = .read_only }) catch return null;
+    const file = if (std.fs.path.isAbsolute(path))
+        std.fs.openFileAbsolute(path, .{ .mode = .read_only }) catch return null
+    else
+        std.fs.cwd().openFile(path, .{ .mode = .read_only }) catch return null;
     defer file.close();
     const stat = file.stat() catch return null;
     if (stat.size < CACHE_BLOB_MIN_BYTES or stat.size > CACHE_BLOB_MAX_BYTES) return null;
@@ -204,10 +207,14 @@ fn try_write_cache_blob(
 
     // Parent dir must exist; create it idempotently.
     if (std.fs.path.dirname(path)) |dir| {
-        std.fs.makeDirAbsolute(dir) catch |err| switch (err) {
-            error.PathAlreadyExists => {},
-            else => return err,
-        };
+        if (std.fs.path.isAbsolute(path)) {
+            std.fs.makeDirAbsolute(dir) catch |err| switch (err) {
+                error.PathAlreadyExists => {},
+                else => return err,
+            };
+        } else {
+            try std.fs.cwd().makePath(dir);
+        }
     }
 
     var tmp_buf: [520]u8 = undefined;
@@ -216,14 +223,25 @@ fn try_write_cache_blob(
     @memcpy(tmp_buf[path.len..][0..4], ".tmp");
     const tmp_path = tmp_buf[0 .. path.len + 4];
 
-    const tmp_file = std.fs.createFileAbsolute(tmp_path, .{ .truncate = true }) catch return;
+    const tmp_file = if (std.fs.path.isAbsolute(path))
+        std.fs.createFileAbsolute(tmp_path, .{ .truncate = true }) catch return
+    else
+        std.fs.cwd().createFile(tmp_path, .{ .truncate = true }) catch return;
     var keep_tmp = false;
     defer if (!keep_tmp) {
-        std.fs.deleteFileAbsolute(tmp_path) catch {};
+        if (std.fs.path.isAbsolute(path)) {
+            std.fs.deleteFileAbsolute(tmp_path) catch {};
+        } else {
+            std.fs.cwd().deleteFile(tmp_path) catch {};
+        }
     };
     defer tmp_file.close();
     tmp_file.writeAll(buf[0..written]) catch return;
-    std.fs.renameAbsolute(tmp_path, path) catch return;
+    if (std.fs.path.isAbsolute(path)) {
+        std.fs.renameAbsolute(tmp_path, path) catch return;
+    } else {
+        std.fs.cwd().rename(tmp_path, path) catch return;
+    }
     keep_tmp = true;
 }
 

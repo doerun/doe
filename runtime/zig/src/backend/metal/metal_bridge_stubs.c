@@ -33,6 +33,10 @@ void metal_bridge_configure_surface_host(MetalHandle host, uint32_t width, uint3
     (void)width;
     (void)height;
 }
+MetalHandle metal_bridge_retain(MetalHandle obj) {
+    (void)obj;
+    return NULL;
+}
 void metal_bridge_release(MetalHandle obj) { (void)obj; }
 
 MetalHandle metal_bridge_device_new_command_queue(MetalHandle device) {
@@ -379,6 +383,16 @@ void metal_bridge_compute_encoder_encode_dispatch(MetalHandle encoder, MetalHand
     (void)wg_x;
     (void)wg_y;
     (void)wg_z;
+}
+void metal_bridge_compute_encoder_encode_dispatch_batch(MetalHandle encoder, const MetalHandle* pipelines, const MetalHandle* buffers, const uint32_t* buffer_counts, const uint32_t* dispatch_dims, const uint32_t* workgroup_dims, uint32_t dispatch_count, uint32_t max_buffer_count) {
+    (void)encoder;
+    (void)pipelines;
+    (void)buffers;
+    (void)buffer_counts;
+    (void)dispatch_dims;
+    (void)workgroup_dims;
+    (void)dispatch_count;
+    (void)max_buffer_count;
 }
 void metal_bridge_cmd_buf_encode_compute_dispatch_indirect(MetalHandle cmd_buf, MetalHandle pipeline, MetalHandle* buffers, uint32_t buffer_count, MetalHandle indirect_buffer, uint64_t indirect_offset, uint32_t wg_x, uint32_t wg_y, uint32_t wg_z) {
     (void)cmd_buf;

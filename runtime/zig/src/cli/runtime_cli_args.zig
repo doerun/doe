@@ -72,6 +72,7 @@ const OPTIONS_WITH_VALUE = [_][]const u8{
     "--gpu-timestamp-mode",
     "--queue-wait-mode",
     "--queue-sync-mode",
+    "--pipeline-cache-dir",
     "--replay",
 };
 

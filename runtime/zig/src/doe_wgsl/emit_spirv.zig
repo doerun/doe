@@ -34,12 +34,8 @@ pub const Emitter = struct {
     global_ids: []u32,
     global_buffer_wrapped: []bool,
     /// Parallel to `global_ids`. For WGSL `const` globals with a compile-time
-    /// literal initializer, holds the SPIR-V constant id directly. Load sites
-    /// short-circuit against this table and return the constant id instead of
-    /// emitting OpLoad of a Private variable. Zero means "not a const-with-
-    /// initializer", fall through to the variable-backed load path. Added to
-    /// remove per-iteration OpLoad of `const kPackedCols : u32 = 512u` style
-    /// declarations which were costing ~2% on the matvec inner loop on RADV.
+    /// literal initializer, holds the SPIR-V constant id directly. Zero means
+    /// "not a lowered const global".
     global_constant_ids: []u32,
     function_ids: []u32,
     entry_wrapper_ids: []u32,
@@ -146,6 +142,15 @@ pub const Emitter = struct {
             }
             if (global.binding != null) return error.UnsupportedConstruct;
 
+            if (global.class == .const_) {
+                if (global.initializer) |initializer| {
+                    const constant_id = try self.lower_constant(initializer, global.ty);
+                    self.global_constant_ids[index] = constant_id;
+                    self.global_ids[index] = constant_id;
+                    continue;
+                }
+            }
+
             const value_type = try self.lower_type(global.ty);
             const storage_class = try self.global_storage_class(global);
             const ptr_type = try self.builder.type_pointer(storage_class, value_type);
@@ -157,18 +162,6 @@ pub const Emitter = struct {
 
             try self.builder.emit_name(var_id, global.name);
             self.global_ids[index] = var_id;
-
-            // For WGSL `const` globals with a compile-time initializer, also
-            // record the constant id so load sites can short-circuit the
-            // Private-variable OpLoad. The Private OpVariable stays live as a
-            // fallback so any caller that still does OpAccessChain / OpLoad
-            // (e.g., pointer-taken contexts) continues to work unchanged.
-            if (global.class == .const_) {
-                if (global.initializer) |initializer| {
-                    self.global_constant_ids[index] =
-                        try self.lower_constant(initializer, global.ty);
-                }
-            }
         }
     }
 
@@ -208,8 +201,7 @@ pub const Emitter = struct {
         const block_member_type = try self.lower_type(global.ty);
         // Emit a distinct block struct per storage-buffer binding so the
         // driver's alias analysis does not treat same-type bindings as
-        // potentially aliased. Matches Tint's storage-buffer emission shape
-        // and closes the matvec naive_swizzle0 residual on RADV.
+        // potentially aliased.
         const block_type = try self.builder.type_struct_fresh(&.{block_member_type});
         try self.builder.emit_block_decoration(block_type);
         try self.builder.emit_member_offset_decoration(block_type, 0, 0);

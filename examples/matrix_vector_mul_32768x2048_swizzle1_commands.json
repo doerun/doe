@@ -6,6 +6,7 @@
     "y": 1,
     "z": 1,
     "repeat": 100,
+    "repeatSynchronization": "independent",
     "bindings": [
       {
         "binding": 0,

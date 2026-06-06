@@ -62,9 +62,12 @@ Use two labels only:
 4. timing-scope consistency:
 - do not treat mixed-source derived timings as claimable (example: `doe-execution-dispatch-window-ns+ignore-first-ops` where base and adjustment measure different scopes)
 - for upload claims, use a single operation-scope timing method consistently and document it in workload/report artifacts
+- for compute/pipeline operation claims, selected operation timing is authoritative. Do not use `workloadUnitWall` to promote a row after selected operation timing loses.
+- host kernel/pipeline prewarm belongs outside selected execution timing unless a workload contract declares a separate timing class. Record prewarm provenance as diagnostic metadata, not as an addition to `doe-execution-total-ns`.
 5. operation-vs-wall sanity:
 - selected operation timing must not cover an implausibly tiny share of process wall on one side while the peer side shows materially higher operation-to-wall coverage
 - treat large baseline/comparison operation-to-wall coverage asymmetry as diagnostic until the timing scope is audited
+- if selected operation timing and workload-unit wall disagree on claim sign, classify the row as diagnostic and fix the timing-scope explanation before citing the result.
 6. no execution errors and no filter/adapter validity failures.
 7. structural work equivalence:
 - both sides must execute the same commands with non-zero work output. If one side reports 0 dispatches while the other reports >0, the comparison is invalid regardless of other metadata.
@@ -77,6 +80,28 @@ Use two labels only:
 - the gap from path asymmetry would vanish or invert on hardware where the shortcut does not apply (e.g. discrete GPUs with separate VRAM).
 
 If any condition fails, classify the run as `diagnostic`.
+
+## Prewarm and wall fallback retrospective
+
+The 2026-06-06 AMD Vulkan audit caught a bad promotion path: a compute/pipeline
+row could lose on selected operation timing while `workloadUnitWall` made the
+row look claimable. That is not a valid operation-speed claim.
+
+Current rule:
+
+- keep `hostKernelPrewarmTotalNs` and related provenance outside selected
+  execution timing.
+- keep selected operation timing as the claim metric for compute/pipeline
+  operation-speed claims.
+- use workload-unit wall for diagnosis of missing work, prewarm behavior, and
+  process-level overhead, not for claim promotion when selected timing loses.
+- when selected timing and wall disagree on direction, label the row diagnostic
+  and audit the methodology before making a speed claim.
+
+The relevant fixed audit artifacts are:
+
+- `bench/out/scratch/current-vulkan-fairness/dawn-vs-doe.amd.vulkan.current-fairness.fixed.json`
+- `bench/out/scratch/current-vulkan-fairness/dawn-vs-doe.amd.vulkan.current-fairness.fixed.claim.json`
 
 Harness support:
 
@@ -156,6 +181,8 @@ Target advantage is not "Zig magic"; it is lower hot-path complexity plus faster
 - reporting deltas when execution/adapter/filter validity failed
 - claiming speed when one side reports 0 dispatches and the other dispatches >0
 - claiming speed from zero-phase asymmetry (e.g. baseline submit_wait=0, comparison submit_wait=40ms — the "win" is that baseline did not measure GPU submission, not that it was faster)
+- claiming compute/pipeline operation speed from workload-unit wall after selected operation timing loses
+- folding host kernel/pipeline prewarm into selected operation timing without an explicit timing-class contract
 - claiming speed from hardware-path shortcuts (e.g. UMA memset vs staging+copy) without transferability caveats
 - treating zero setup_ns across all workloads as genuine when the comparison side reports material setup cost — this indicates an instrumentation gap
 - marking a workload `comparable: true` when the two sides perform structurally different GPU operations, even if methodology metadata matches

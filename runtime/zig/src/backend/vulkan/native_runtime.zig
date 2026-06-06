@@ -25,6 +25,7 @@ const vk_pipeline = @import("vk_pipeline.zig");
 const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 const vk_resources = @import("vk_resources.zig");
 const vk_render = @import("vk_render.zig");
+const vk_dispatch_repeat = @import("vk_dispatch_repeat.zig");
 const vk_metrics = @import("vk_metrics.zig");
 const surface_ops = @import("vk_runtime_surface_ops.zig");
 const render_bundle = @import("../../render_bundle.zig");
@@ -121,6 +122,7 @@ pub const NativeVulkanRuntime = struct {
     has_current_descriptor_bindings_hash: bool = false,
     has_deferred_submissions: bool = false,
     has_depth_clip_enable_ext: bool = false,
+    has_pending_compute_writes: bool = false,
     recorded_submit_replay_active: bool = false,
     replay_recording_active: bool = false,
     replay_command_buffer: c.VkCommandBuffer = null,
@@ -368,28 +370,6 @@ pub const NativeVulkanRuntime = struct {
         if (want_timestamps) {
             c.vkCmdWriteTimestamp(command_buffer, c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, self.timestamp_query_pool, 1);
         }
-        // HOST_COHERENT guarantees CPU sees coherent memory but does not establish
-        // the execution/memory-visibility dependency between a compute shader write
-        // and a subsequent host read. Without this barrier, storage-buffer writes
-        // can be invisible to mapped readback even after queue-fence wait.
-        const post_dispatch_barrier = c.VkMemoryBarrier{
-            .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-            .pNext = null,
-            .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = c.VK_ACCESS_HOST_READ_BIT,
-        };
-        c.vkCmdPipelineBarrier(
-            command_buffer,
-            c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            c.VK_PIPELINE_STAGE_HOST_BIT,
-            0,
-            1,
-            @ptrCast(&post_dispatch_barrier),
-            0,
-            null,
-            0,
-            null,
-        );
         if (!replay_deferred) {
             try c.check_vk(c.vkEndCommandBuffer(command_buffer));
         }
@@ -397,6 +377,7 @@ pub const NativeVulkanRuntime = struct {
         const encode_end = common_timing.now_ns();
         const encode_ns = common_timing.ns_delta(encode_end, encode_start);
         if (replay_deferred) {
+            self.has_pending_compute_writes = true;
             return .{
                 .encode_ns = encode_ns,
                 .submit_wait_ns = 0,
@@ -471,6 +452,7 @@ pub const NativeVulkanRuntime = struct {
             if (queue_sync_mode != .per_command and gpu_timestamp_mode == .require) return error.TimingPolicyMismatch;
             if (queue_sync_mode == .per_command and gpu_timestamp_mode == .require) return error.TimingPolicyMismatch;
         }
+        self.has_pending_compute_writes = true;
         return .{
             .encode_ns = encode_ns,
             .submit_wait_ns = common_timing.ns_delta(submit_end, submit_start),
@@ -478,6 +460,19 @@ pub const NativeVulkanRuntime = struct {
             .gpu_timestamp_attempted = gpu_timestamp_attempted,
             .gpu_timestamp_valid = gpu_timestamp_valid,
         };
+    }
+
+    pub fn run_dispatch_repeat(
+        self: *NativeVulkanRuntime,
+        x: u32,
+        y: u32,
+        z: u32,
+        repeat_count: u32,
+        repeat_synchronization: model_compute_types.KernelDispatchRepeatSynchronization,
+        queue_wait_mode: webgpu.QueueWaitMode,
+        gpu_timestamp_mode: webgpu.GpuTimestampMode,
+    ) !DispatchMetrics {
+        return vk_dispatch_repeat.run(self, x, y, z, repeat_count, repeat_synchronization, queue_wait_mode, gpu_timestamp_mode);
     }
 
     pub fn run_dispatch_indirect(
@@ -527,6 +522,7 @@ pub const NativeVulkanRuntime = struct {
         const encode_end = common_timing.now_ns();
         const encode_ns = common_timing.ns_delta(encode_end, encode_start);
         if (replay_deferred) {
+            self.has_pending_compute_writes = true;
             return .{
                 .encode_ns = encode_ns,
                 .submit_wait_ns = 0,
@@ -575,6 +571,7 @@ pub const NativeVulkanRuntime = struct {
         }
         const submit_end = common_timing.now_ns();
 
+        self.has_pending_compute_writes = true;
         return .{
             .encode_ns = encode_ns,
             .submit_wait_ns = common_timing.ns_delta(submit_end, submit_start),
@@ -615,6 +612,70 @@ pub const NativeVulkanRuntime = struct {
             self.deferred_command_buffer_index = 0;
         }
         return waited_ns +| common_timing.ns_delta(common_timing.now_ns(), cleanup_start);
+    }
+
+    pub fn make_compute_writes_visible_for_capture(
+        self: *NativeVulkanRuntime,
+        memory_kind: vk_resources.ComputeBufferMemoryKind,
+    ) !void {
+        if (!self.has_pending_compute_writes) return;
+        if (self.streaming_copy_active or self.has_deferred_submissions or self.hot_pending_upload != null or self.pending_uploads.items.len > 0) {
+            _ = try self.flush_queue();
+        }
+        try vk_device.ensure_submission_state(self);
+        try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
+
+        var begin_info = c.VkCommandBufferBeginInfo{
+            .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = null,
+            .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            .pInheritanceInfo = null,
+        };
+        try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
+
+        const dst_access_mask: u32 = switch (memory_kind) {
+            .host_visible => c.VK_ACCESS_HOST_READ_BIT,
+            .device_local => c.VK_ACCESS_TRANSFER_READ_BIT,
+        };
+        const dst_stage_mask: u32 = switch (memory_kind) {
+            .host_visible => c.VK_PIPELINE_STAGE_HOST_BIT,
+            .device_local => c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+        };
+        const visibility_barrier = c.VkMemoryBarrier{
+            .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            .pNext = null,
+            .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT,
+            .dstAccessMask = dst_access_mask,
+        };
+        c.vkCmdPipelineBarrier(
+            self.primary_command_buffer,
+            c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            dst_stage_mask,
+            0,
+            1,
+            @ptrCast(&visibility_barrier),
+            0,
+            null,
+            0,
+            null,
+        );
+        try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
+
+        var submit_info = c.VkSubmitInfo{
+            .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = null,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = null,
+            .pWaitDstStageMask = null,
+            .commandBufferCount = 1,
+            .pCommandBuffers = @ptrCast(&self.primary_command_buffer),
+            .signalSemaphoreCount = 0,
+            .pSignalSemaphores = null,
+        };
+        try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+        try vk_upload.wait_for_fence_fast(self, self.fence);
+        self.has_pending_compute_writes = false;
     }
 
     // --- Streaming copy API ---

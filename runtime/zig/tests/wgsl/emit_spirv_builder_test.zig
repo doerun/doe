@@ -36,6 +36,36 @@ fn find_spirv_word_sequence(binary: []const u8, needle: []const u32) bool {
     return false;
 }
 
+fn has_spirv_variable_with_storage_class(binary: []const u8, storage_class: u32) bool {
+    const word_count = binary.len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == spirv.Opcode.Variable and wc >= 4) {
+            if (read_u32_le(binary, (i + 3) * 4) == storage_class) return true;
+        }
+        i += wc;
+    }
+    return false;
+}
+
+fn has_spirv_u32_constant_literal(binary: []const u8, literal: u32) bool {
+    const word_count = binary.len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == spirv.Opcode.Constant and wc >= 4) {
+            if (read_u32_le(binary, (i + 3) * 4) == literal) return true;
+        }
+        i += wc;
+    }
+    return false;
+}
+
 test "spirv header: magic number is 0x07230203" {
     const source =
         \\@compute @workgroup_size(1)
@@ -223,6 +253,41 @@ test "spirv binding: OpDecorate Binding appears for bound resources" {
         i += wc;
     }
     try testing.expect(found_binding);
+}
+
+test "spirv const global: scalar literal emits constant without private variable" {
+    const source =
+        \\const kValue: u32 = 7u;
+        \\@group(0) @binding(0) var<storage, read_write> result: array<u32, 1>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    result[0] = kValue;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(has_spirv_u32_constant_literal(binary, 7));
+    try testing.expect(!has_spirv_variable_with_storage_class(binary, spirv.StorageClass.Private));
+}
+
+test "spirv private global: variable remains private storage" {
+    const source =
+        \\var<private> value: u32 = 1u;
+        \\@group(0) @binding(0) var<storage, read_write> result: array<u32, 1>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    result[0] = value;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(has_spirv_variable_with_storage_class(binary, spirv.StorageClass.Private));
 }
 
 test "spirv compute: OpEntryPoint GLCompute appears" {

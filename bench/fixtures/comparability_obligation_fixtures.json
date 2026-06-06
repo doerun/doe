@@ -54,7 +54,13 @@
         "baseline_resource_sampling_not_truncated": true,
         "comparison_resource_sampling_not_truncated": true,
         "baseline_resource_sample_density_sufficient": false,
-        "comparison_resource_sample_density_sufficient": false
+        "comparison_resource_sample_density_sufficient": false,
+        "package_resident_buffer_load_mode_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_mode_match": true,
+        "package_resident_buffer_load_shape_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "readback_capture_match_applies": false,
+        "baseline_comparison_readback_capture_match": true
       },
       "expectedComparable": true,
       "expectedBlockingFailedObligations": []
@@ -112,7 +118,13 @@
         "baseline_resource_sampling_not_truncated": false,
         "comparison_resource_sampling_not_truncated": false,
         "baseline_resource_sample_density_sufficient": false,
-        "comparison_resource_sample_density_sufficient": false
+        "comparison_resource_sample_density_sufficient": false,
+        "package_resident_buffer_load_mode_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_mode_match": true,
+        "package_resident_buffer_load_shape_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "readback_capture_match_applies": false,
+        "baseline_comparison_readback_capture_match": true
       },
       "expectedComparable": false,
       "expectedBlockingFailedObligations": [
@@ -176,7 +188,13 @@
         "baseline_resource_sampling_not_truncated": false,
         "comparison_resource_sampling_not_truncated": false,
         "baseline_resource_sample_density_sufficient": false,
-        "comparison_resource_sample_density_sufficient": true
+        "comparison_resource_sample_density_sufficient": true,
+        "package_resident_buffer_load_mode_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_mode_match": true,
+        "package_resident_buffer_load_shape_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "readback_capture_match_applies": false,
+        "baseline_comparison_readback_capture_match": true
       },
       "expectedComparable": false,
       "expectedBlockingFailedObligations": [
@@ -236,7 +254,13 @@
         "baseline_resource_sampling_not_truncated": false,
         "comparison_resource_sampling_not_truncated": false,
         "baseline_resource_sample_density_sufficient": false,
-        "comparison_resource_sample_density_sufficient": false
+        "comparison_resource_sample_density_sufficient": false,
+        "package_resident_buffer_load_mode_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_mode_match": true,
+        "package_resident_buffer_load_shape_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "readback_capture_match_applies": false,
+        "baseline_comparison_readback_capture_match": true
       },
       "expectedComparable": false,
       "expectedBlockingFailedObligations": [
@@ -296,7 +320,13 @@
         "baseline_resource_sampling_not_truncated": false,
         "comparison_resource_sampling_not_truncated": false,
         "baseline_resource_sample_density_sufficient": false,
-        "comparison_resource_sample_density_sufficient": false
+        "comparison_resource_sample_density_sufficient": false,
+        "package_resident_buffer_load_mode_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_mode_match": true,
+        "package_resident_buffer_load_shape_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "readback_capture_match_applies": false,
+        "baseline_comparison_readback_capture_match": true
       },
       "expectedComparable": false,
       "expectedBlockingFailedObligations": [
@@ -356,7 +386,13 @@
         "baseline_resource_sampling_not_truncated": false,
         "comparison_resource_sampling_not_truncated": false,
         "baseline_resource_sample_density_sufficient": false,
-        "comparison_resource_sample_density_sufficient": false
+        "comparison_resource_sample_density_sufficient": false,
+        "package_resident_buffer_load_mode_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_mode_match": true,
+        "package_resident_buffer_load_shape_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "readback_capture_match_applies": false,
+        "baseline_comparison_readback_capture_match": true
       },
       "expectedComparable": false,
       "expectedBlockingFailedObligations": [
@@ -416,7 +452,13 @@
         "baseline_resource_sampling_not_truncated": false,
         "comparison_resource_sampling_not_truncated": false,
         "baseline_resource_sample_density_sufficient": false,
-        "comparison_resource_sample_density_sufficient": false
+        "comparison_resource_sample_density_sufficient": false,
+        "package_resident_buffer_load_mode_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_mode_match": true,
+        "package_resident_buffer_load_shape_match_applies": false,
+        "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "readback_capture_match_applies": false,
+        "baseline_comparison_readback_capture_match": true
       },
       "expectedComparable": false,
       "expectedBlockingFailedObligations": [

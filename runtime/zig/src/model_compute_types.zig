@@ -33,6 +33,11 @@ pub const KernelBinding = struct {
     texture_multisampled: bool = false,
 };
 
+pub const KernelDispatchRepeatSynchronization = enum(u8) {
+    dependent,
+    independent,
+};
+
 pub const KernelDispatchCommand = struct {
     kernel: []const u8,
     entry_point: ?[]const u8 = null,
@@ -40,6 +45,7 @@ pub const KernelDispatchCommand = struct {
     y: u32,
     z: u32,
     repeat: u32 = 1,
+    repeat_synchronization: KernelDispatchRepeatSynchronization = .dependent,
     warmup_dispatch_count: u32 = 0,
     initialize_buffers_on_create: bool = false,
     bindings: ?[]const KernelBinding = null,

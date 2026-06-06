@@ -87,6 +87,9 @@ pub fn parseDispatchCommand(allocator: Allocator, kind: command_kind.NormalizedK
         errdefer if (entry_point) |entry| allocator.free(entry);
         const kernel_bindings = if (raw.bindings) |raw_bindings| try parseKernelBindings(allocator, raw_bindings) else null;
         errdefer if (kernel_bindings) |bindings| allocator.free(bindings);
+        const repeat_synchronization = parse_helpers.parseKernelDispatchRepeatSynchronization(
+            raw.repeat_synchronization orelse raw.repeatSynchronization,
+        ) catch return ParseError.InvalidCommandPayload;
         return .{
             .kernel_dispatch = .{
                 .kernel = kernel_name,
@@ -95,6 +98,7 @@ pub fn parseDispatchCommand(allocator: Allocator, kind: command_kind.NormalizedK
                 .y = dispatch.y,
                 .z = dispatch.z,
                 .repeat = repeat_count,
+                .repeat_synchronization = repeat_synchronization,
                 .warmup_dispatch_count = raw.warmup_dispatch_count orelse raw.warmupDispatchCount orelse 0,
                 .initialize_buffers_on_create = raw.initialize_buffers_on_create orelse raw.initializeBuffersOnCreate orelse false,
                 .bindings = kernel_bindings,

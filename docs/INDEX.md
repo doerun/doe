@@ -20,6 +20,16 @@ the shards under [`docs/status/`](status/).
 - [`licensing.md`](licensing.md) — license surface and third-party
 - [`upgrade-policy.md`](upgrade-policy.md) — version compatibility and deprecation rules
 
+## Core roadmap front doors
+
+Doe's roadmap is two-pronged. Both prongs use source-preserving lowering,
+schema-backed contracts, gates, and receipts.
+
+- [`chromium-webgpu-task-list.md`](chromium-webgpu-task-list.md) — Chromium-family
+  WebGPU replacement: Doe vs Tint, Doe vs Dawn, and forced-Doe browser work
+- [`cerebras.md`](cerebras.md) — Doppler -> Doe -> Cerebras retargeting:
+  Program Bundle ingest, TSIR / HostPlan / CSL, simulator and hardware receipts
+
 ## Chromium WebGPU tasks
 
 - [`chromium-webgpu-task-list.md`](chromium-webgpu-task-list.md) — canonical

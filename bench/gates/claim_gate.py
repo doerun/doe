@@ -20,6 +20,7 @@ from typing import Any
 
 from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import report_conformance
+from native_compare_modules.config_support import load_workloads
 
 
 VALID_COMPARISON_STATUSES = {"comparable", "diagnostic"}
@@ -67,6 +68,14 @@ def parse_args() -> argparse.Namespace:
         "--comparability-obligations",
         default="config/comparability-obligations.json",
         help="Canonical comparability-obligation contract path.",
+    )
+    parser.add_argument(
+        "--config",
+        default="",
+        help=(
+            "Optional compare config. When supplied with --require-workload-id-set-match, "
+            "expected workload IDs are scoped by the config selector."
+        ),
     )
     parser.add_argument(
         "--expected-workload-contract",
@@ -227,7 +236,38 @@ def workload_is_dawn_vs_doe(workload: dict[str, Any]) -> bool:
     return (baseline_dawn and comparison_doe) or (baseline_doe and comparison_dawn)
 
 
-def load_expected_comparable_workload_ids(path: Path) -> set[str]:
+def load_expected_comparable_workload_ids(path: Path, config_path: Path | None = None) -> set[str]:
+    if config_path is not None:
+        config_payload = json.loads(config_path.read_text(encoding="utf-8"))
+        if not isinstance(config_payload, dict):
+            raise ValueError(f"invalid compare config: expected top-level object at {config_path}")
+        run_config = config_payload.get("run")
+        if not isinstance(run_config, dict):
+            run_config = {}
+        selector = config_payload.get("selector")
+        if selector is not None and not isinstance(selector, dict):
+            raise ValueError(f"invalid compare config: selector must be an object in {config_path}")
+        workload_filter_raw = run_config.get("workloadFilter", "")
+        workload_filter = workload_filter_raw if isinstance(workload_filter_raw, str) else ""
+        workloads = load_workloads(
+            path,
+            workload_filter=workload_filter,
+            include_noncomparable=True,
+            include_extended=True,
+            workload_cohort="all",
+            selector=selector,
+        )
+        workload_ids = {
+            workload.id
+            for workload in workloads
+            if workload.comparable and workload.benchmark_class == "comparable"
+        }
+        if not workload_ids:
+            raise ValueError(
+                f"invalid workload contract/config: no comparable workload IDs selected by {config_path}"
+            )
+        return workload_ids
+
     raw_workloads = load_workload_contract_rows(path).values()
     workload_ids: set[str] = set()
     for row in raw_workloads:
@@ -278,6 +318,13 @@ def main() -> int:
     )
     if expected_workload_contract_path is not None and not expected_workload_contract_path.is_absolute():
         expected_workload_contract_path = (repo_root / expected_workload_contract_path).resolve()
+    compare_config_path = (
+        Path(args.config)
+        if isinstance(args.config, str) and args.config.strip()
+        else None
+    )
+    if compare_config_path is not None and not compare_config_path.is_absolute():
+        compare_config_path = (repo_root / compare_config_path).resolve()
     if not report_path.exists():
         fail(f"missing report: {report_path}")
         return 1
@@ -294,6 +341,9 @@ def main() -> int:
         return 1
     if expected_workload_contract_path is not None and not expected_workload_contract_path.exists():
         fail(f"missing expected workload contract: {expected_workload_contract_path}")
+        return 1
+    if compare_config_path is not None and not compare_config_path.exists():
+        fail(f"missing compare config: {compare_config_path}")
         return 1
 
     if args.require_comparison_status not in VALID_COMPARISON_STATUSES:
@@ -375,7 +425,8 @@ def main() -> int:
             expected_workload_hash = report_conformance.file_sha256(expected_workload_contract_path)
             expected_workload_rows = load_workload_contract_rows(expected_workload_contract_path)
             expected_workload_ids = load_expected_comparable_workload_ids(
-                expected_workload_contract_path
+                expected_workload_contract_path,
+                compare_config_path,
             )
         except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
             fail(str(exc))

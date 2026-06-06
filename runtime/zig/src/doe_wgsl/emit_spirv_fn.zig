@@ -34,10 +34,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
         // Parallel to locals.items. Non-zero means the local is SSA-promoted
         // (immutable scalar/vector `let`) and the entry holds the current
         // SPIR-V value id; reads short-circuit to this id instead of doing
-        // OpAccessChain+OpLoad on a Function OpVariable. Cutting those
-        // per-use memory round-trips in the matvec inner loop matches the
-        // emission shape Tint produces and closes the residual RADV
-        // optimizer gap on AMD Vulkan.
+        // OpAccessChain+OpLoad on a Function OpVariable.
         local_value_ids: []u32,
         // Per-function CSE cache for OpAccessChain results. Keyed by the
         // (root_id, indices...) tuple that the chain walker collects; when
@@ -342,6 +339,8 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 },
                 .param_ref, .local_ref => return error.InvalidIr,
                 .global_ref => |index| blk: {
+                    const constant_id = self.emitter.global_constant_ids[index];
+                    if (constant_id != 0) break :blk constant_id;
                     const global = self.emitter.module.globals.items[index];
                     switch (self.emitter.module.types.get(global.ty)) {
                         .sampler, .sampler_comparison, .texture_1d, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d => {
@@ -451,12 +450,9 @@ pub fn FunctionState(comptime EmitterT: type) type {
 
         fn emit_load_from_ref(self: *@This(), ref_expr_id: ir.ExprId) EmitError!u32 {
             const ref_expr = self.function.exprs.items[ref_expr_id];
-            // Short-circuit: loading a WGSL `const` global returns the pre-
-            // computed constant id directly, skipping the Private-variable
-            // OpLoad. Removes per-iteration memory loads for declarations like
-            // `const kPackedCols : u32 = 512u;` that the RADV optimizer does
-            // not fully fold back to immediates. Zero is the "not a const"
-            // sentinel so non-const globals fall through unchanged.
+            // WGSL `const` globals are emitted as constants, not storage.
+            // Reads return the constant id directly so callers never try to
+            // load them through a pointer.
             if (ref_expr.data == .global_ref) {
                 const index = ref_expr.data.global_ref;
                 const constant_id = self.emitter.global_constant_ids[index];

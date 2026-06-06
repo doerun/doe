@@ -12,6 +12,10 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
     return;
   }
 
+  let row0Base = (4u * rowBy4 + 0u) * kPackedCols;
+  let row1Base = (4u * rowBy4 + 1u) * kPackedCols;
+  let row2Base = (4u * rowBy4 + 2u) * kPackedCols;
+  let row3Base = (4u * rowBy4 + 3u) * kPackedCols;
   var sum : vec4<f32> = vec4<f32>(0.0);
   var col : u32 = 0u;
   loop {
@@ -19,12 +23,32 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
       break;
     }
 
-    let v = vectorData[col];
-    sum.x = sum.x + dot(matrixData[(4u * rowBy4 + 0u) * kPackedCols + col], v);
-    sum.y = sum.y + dot(matrixData[(4u * rowBy4 + 1u) * kPackedCols + col], v);
-    sum.z = sum.z + dot(matrixData[(4u * rowBy4 + 2u) * kPackedCols + col], v);
-    sum.w = sum.w + dot(matrixData[(4u * rowBy4 + 3u) * kPackedCols + col], v);
-    col = col + 1u;
+    let v0 = vectorData[col + 0u];
+    let v1 = vectorData[col + 1u];
+    let v2 = vectorData[col + 2u];
+    let v3 = vectorData[col + 3u];
+    sum = sum + vec4<f32>(
+      dot(matrixData[row0Base + col + 0u], v0),
+      dot(matrixData[row1Base + col + 0u], v0),
+      dot(matrixData[row2Base + col + 0u], v0),
+      dot(matrixData[row3Base + col + 0u], v0)
+    ) + vec4<f32>(
+      dot(matrixData[row0Base + col + 1u], v1),
+      dot(matrixData[row1Base + col + 1u], v1),
+      dot(matrixData[row2Base + col + 1u], v1),
+      dot(matrixData[row3Base + col + 1u], v1)
+    ) + vec4<f32>(
+      dot(matrixData[row0Base + col + 2u], v2),
+      dot(matrixData[row1Base + col + 2u], v2),
+      dot(matrixData[row2Base + col + 2u], v2),
+      dot(matrixData[row3Base + col + 2u], v2)
+    ) + vec4<f32>(
+      dot(matrixData[row0Base + col + 3u], v3),
+      dot(matrixData[row1Base + col + 3u], v3),
+      dot(matrixData[row2Base + col + 3u], v3),
+      dot(matrixData[row3Base + col + 3u], v3)
+    );
+    col = col + 4u;
   }
 
   outData[rowBy4] = sum;

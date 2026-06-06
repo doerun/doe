@@ -72,6 +72,33 @@ def make_timing_interpretation(
 
 
 class ClaimabilityMetricScopeTests(unittest.TestCase):
+    def _compute_prewarm_samples(self, *, elapsed_ms: float, measured_ms: float) -> list[dict[str, object]]:
+        return [
+            {
+                "runIndex": i,
+                "elapsedMs": elapsed_ms,
+                "measuredRawMs": measured_ms,
+                "measuredMs": measured_ms,
+                "timingSource": "doe-execution-total-ns+host-kernel-prewarm",
+                "timing": {
+                    "traceMetaSource": "doe-execution-total-ns+host-kernel-prewarm",
+                    "timingRawMs": measured_ms,
+                    "timingNormalizationDivisor": 1.0,
+                    "commandRepeat": 1,
+                },
+                "traceMeta": {
+                    "executionTotalNs": int((measured_ms - 1.0) * 1_000_000),
+                    "executionSetupTotalNs": 0,
+                    "executionEncodeTotalNs": 100_000,
+                    "executionSubmitWaitTotalNs": int((measured_ms - 1.1) * 1_000_000),
+                    "hostKernelPrewarmTotalNs": 1_000_000,
+                },
+                "commandRepeat": 1,
+                "timingNormalizationDivisor": 1.0,
+            }
+            for i in range(19)
+        ]
+
     def test_copy_prefers_headline_when_operation_total_undercovers_end_to_end(self) -> None:
         workload = SimpleNamespace(
             id="copy_texture_to_texture",
@@ -133,6 +160,116 @@ class ClaimabilityMetricScopeTests(unittest.TestCase):
 
         self.assertTrue(claimability["claimable"])
         self.assertEqual(claimability["claimMetricScope"], "workloadUnitWall")
+
+    def test_compute_prewarm_stays_on_selected_timing_when_selected_operation_loses(self) -> None:
+        workload = SimpleNamespace(
+            id="compute_workgroup_non_atomic_1024",
+            domain="compute",
+            path_asymmetry=False,
+            path_asymmetry_note="",
+        )
+        left = {
+            "stats": make_stats(25.0, 26.0),
+            "commandSamples": self._compute_prewarm_samples(elapsed_ms=31.0, measured_ms=25.0),
+        }
+        right = {
+            "stats": make_stats(13.0, 14.0),
+            "commandSamples": self._compute_prewarm_samples(elapsed_ms=164.0, measured_ms=13.0),
+        }
+        timing_interpretation = make_timing_interpretation(
+            headline_p50=0.31,
+            headline_p95=0.32,
+            headline_delta_p50=400.0,
+            headline_delta_p95=390.0,
+        )
+
+        claimability = assess_claimability(
+            mode="local",
+            min_timed_samples=19,
+            workload=workload,
+            baseline=left,
+            comparison=right,
+            delta={"p50Percent": -48.0, "p95Percent": -46.0, "p99Percent": -46.0},
+            timing_interpretation=timing_interpretation,
+            comparability={"comparable": True},
+            benchmark_policy=BENCHMARK_POLICY,
+        )
+
+        self.assertFalse(claimability["claimable"])
+        self.assertEqual(claimability["claimMetricScope"], "selectedTiming")
+
+    def test_compute_without_prewarm_provenance_stays_on_selected_timing(self) -> None:
+        workload = SimpleNamespace(
+            id="compute_workgroup_non_atomic_1024",
+            domain="compute",
+            path_asymmetry=False,
+            path_asymmetry_note="",
+        )
+        left_samples = self._compute_prewarm_samples(elapsed_ms=31.0, measured_ms=25.0)
+        right_samples = self._compute_prewarm_samples(elapsed_ms=164.0, measured_ms=13.0)
+        for sample in [*left_samples, *right_samples]:
+            sample["timingSource"] = "doe-execution-total-ns"
+            sample["timing"]["traceMetaSource"] = "doe-execution-total-ns"
+        left = {"stats": make_stats(25.0, 26.0), "commandSamples": left_samples}
+        right = {"stats": make_stats(13.0, 14.0), "commandSamples": right_samples}
+        timing_interpretation = make_timing_interpretation(
+            headline_p50=0.31,
+            headline_p95=0.32,
+            headline_delta_p50=400.0,
+            headline_delta_p95=390.0,
+        )
+
+        claimability = assess_claimability(
+            mode="local",
+            min_timed_samples=19,
+            workload=workload,
+            baseline=left,
+            comparison=right,
+            delta={"p50Percent": -48.0, "p95Percent": -46.0, "p99Percent": -46.0},
+            timing_interpretation=timing_interpretation,
+            comparability={"comparable": True},
+            benchmark_policy=BENCHMARK_POLICY,
+        )
+
+        self.assertFalse(claimability["claimable"])
+        self.assertEqual(claimability["claimMetricScope"], "selectedTiming")
+
+    def test_pipeline_prewarm_stays_on_selected_timing_when_selected_operation_loses(self) -> None:
+        workload = SimpleNamespace(
+            id="pipeline_compile_stress",
+            domain="pipeline",
+            path_asymmetry=False,
+            path_asymmetry_note="",
+        )
+        left = {
+            "stats": make_stats(24.0, 25.0),
+            "commandSamples": self._compute_prewarm_samples(elapsed_ms=31.5, measured_ms=24.0),
+        }
+        right = {
+            "stats": make_stats(14.0, 15.0),
+            "commandSamples": self._compute_prewarm_samples(elapsed_ms=164.0, measured_ms=14.0),
+        }
+        timing_interpretation = make_timing_interpretation(
+            headline_p50=0.63,
+            headline_p95=0.64,
+            headline_delta_p50=400.0,
+            headline_delta_p95=390.0,
+        )
+
+        claimability = assess_claimability(
+            mode="local",
+            min_timed_samples=19,
+            workload=workload,
+            baseline=left,
+            comparison=right,
+            delta={"p50Percent": -41.0, "p95Percent": -40.0, "p99Percent": -40.0},
+            timing_interpretation=timing_interpretation,
+            comparability={"comparable": True},
+            benchmark_policy=BENCHMARK_POLICY,
+        )
+
+        self.assertFalse(claimability["claimable"])
+        self.assertEqual(claimability["claimMetricScope"], "selectedTiming")
 
     def test_upload_workload_unit_claim_not_blocked_by_operation_scope_asymmetry(self) -> None:
         """When an upload workload's claim has been promoted to workloadUnitWall

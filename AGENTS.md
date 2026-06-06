@@ -137,6 +137,9 @@ claim-discipline gate depend on `docs/cerebras-evidence-bundle.md` and
 - fail fast on comparability mismatch instead of reporting timings.
 - structural work equivalence is required: both sides must execute the same operations with equivalent GPU work. A comparison where one side skips commands, reports zero dispatches while the other dispatches, or takes a hardware-specific shortcut that bypasses operations the other side performs is not apples-to-apples regardless of methodology metadata.
 - timing-phase symmetry is required: if one side reports zero in a timing phase (setup, encode, or submit_wait) while the other side reports material cost in that phase, the timing scopes are measuring different things. This is a comparability failure, not a speed win.
+- compute/pipeline operation-speed claims stay on selected operation timing. Do not promote a row to claimable by falling back to workload-unit wall when selected operation timing loses.
+- host kernel/pipeline prewarm is diagnostic host overhead outside selected execution timing unless the workload contract declares a separate timing class for it. Record the provenance, but do not fold it into `doe-execution-total-ns` for a selected operation-timing claim.
+- if selected operation timing and workload-unit wall disagree on claim sign, classify the row as diagnostic and audit timing scope before accepting any speed claim.
 - hardware-path asymmetry (e.g. UMA shared-memory memset vs staging-buffer GPU copy) must carry explicit transferability caveats and cannot be presented as a general speed claim. Mark such workloads with `"pathAsymmetry": true` and document the non-transferable condition.
 
 8. Incumbent development discipline
@@ -158,6 +161,7 @@ claim-discipline gate depend on `docs/cerebras-evidence-bundle.md` and
 - for comparable workloads, both sides must report non-trivial timing in the same phases. If LEFT measures only encode while RIGHT measures setup+encode+submit_wait, the comparison is measuring different scopes.
 - render workloads that never commit/wait on the GPU (submit_wait=0) while the comparison side does a full submit+wait are not comparable.
 - upload workloads where one side uses a hardware-specific path (UMA memset, shared memory) that skips operations the other side performs (staging buffer allocation, blit copy, GPU transfer) are not structurally equivalent. The delta measures architectural path choice, not implementation quality.
+- workload-unit wall can be used to diagnose missing work, prewarm behavior, or process-level overhead. It must not rescue a compute/pipeline operation claim after selected operation timing fails the sign or tail requirements.
 
 ## Stage discipline (must preserve order)
 

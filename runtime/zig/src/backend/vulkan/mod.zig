@@ -386,8 +386,20 @@ fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     return backend_execute.prewarm_upload_path(cast(ctx), max_upload_bytes);
 }
 
-fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
-    return backend_execute.prewarm_kernel_dispatch(cast(ctx), kernel, bindings);
+fn prewarm_kernel_dispatch(
+    ctx: *anyopaque,
+    kernel: []const u8,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model.KernelBinding,
+    initialize_buffers_on_create: bool,
+) anyerror!void {
+    return backend_execute.prewarm_kernel_dispatch(
+        cast(ctx),
+        kernel,
+        entry_point,
+        bindings,
+        initialize_buffers_on_create,
+    );
 }
 
 fn capture_buffer(ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {

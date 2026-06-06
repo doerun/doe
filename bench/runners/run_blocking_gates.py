@@ -2726,6 +2726,8 @@ def main() -> int:
                 "--require-min-timed-samples",
                 str(args.claim_require_min_timed_samples),
             ]
+            if args.claim_config.strip():
+                claim_command.extend(["--config", args.claim_config.strip()])
             if args.claim_expected_workload_contract.strip():
                 claim_command.extend(
                     [

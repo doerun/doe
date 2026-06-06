@@ -263,7 +263,7 @@ def pick_measured_timing_ms(
     execution_dispatch_count = safe_int(trace_meta.get("executionDispatchCount"), default=0)
     execution_row_count = safe_int(trace_meta.get("executionRowCount"), default=0)
     execution_success_count = safe_int(trace_meta.get("executionSuccessCount"), default=0)
-    include_host_kernel_prewarm = trace_has_kernel_dispatch(trace_jsonl)
+    has_kernel_dispatch = trace_has_kernel_dispatch(trace_jsonl)
 
     has_execution_evidence = (
         execution_dispatch_count > 0
@@ -330,24 +330,21 @@ def pick_measured_timing_ms(
             pass
         else:
             if canonical_source == "doe-execution-total-ns":
-                operation_total_ns = operation_total_with_host_kernel_prewarm_ns(
-                    trace_meta,
-                    include_host_kernel_prewarm=include_host_kernel_prewarm,
+                source_host_prewarm_ns = (
+                    host_kernel_prewarm_ns(trace_meta) if has_kernel_dispatch else 0
                 )
-                if operation_total_ns > execution_total_ns:
-                    measured_ms = float(operation_total_ns) / NS_PER_MS
-                    source = f"{source}+{HOST_KERNEL_PREWARM_TIMING_SUFFIX}"
+                if source_host_prewarm_ns > 0:
                     timing_meta = {
                         "source": "trace-meta",
                         "traceMetaSource": source,
-                        "traceMetaTimingMs": measured_ms,
+                        "traceMetaTimingMs": meta_timing_ms,
                         "executionTotalNs": execution_total_ns,
-                        "hostKernelPrewarmTotalNs": host_kernel_prewarm_ns(trace_meta),
-                        "operationTotalWithHostKernelPrewarmNs": operation_total_ns,
+                        "hostKernelPrewarmTotalNs": source_host_prewarm_ns,
+                        "hostKernelPrewarmScope": "outside-selected-execution-timing",
                         "wallTimeMs": wall_ms,
                     }
                     measured_ms = maybe_normalize_by_repeat(
-                        measured_ms,
+                        meta_timing_ms,
                         timing_meta,
                         canonical_source=canonical_source,
                     )
@@ -415,21 +412,15 @@ def pick_measured_timing_ms(
         return measured_ms, "doe-execution-encode-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
-        operation_total_ns = operation_total_with_host_kernel_prewarm_ns(
-            trace_meta,
-            include_host_kernel_prewarm=include_host_kernel_prewarm,
-        )
         source = "doe-execution-total-ns"
-        if operation_total_ns > execution_total_ns:
-            source = f"{source}+{HOST_KERNEL_PREWARM_TIMING_SUFFIX}"
-        measured_ms = float(operation_total_ns) / NS_PER_MS
+        measured_ms = float(execution_total_ns) / NS_PER_MS
         timing_meta = {
             "source": "trace-meta",
             "traceMetaSource": source,
             "traceMetaTimingMs": measured_ms,
             "executionTotalNs": execution_total_ns,
             "hostKernelPrewarmTotalNs": host_kernel_prewarm_ns(trace_meta),
-            "operationTotalWithHostKernelPrewarmNs": operation_total_ns,
+            "hostKernelPrewarmScope": "outside-selected-execution-timing",
             "executionDispatchCount": execution_dispatch_count,
             "executionRowCount": execution_row_count,
             "executionSuccessCount": execution_success_count,

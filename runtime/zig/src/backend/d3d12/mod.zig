@@ -588,11 +588,19 @@ fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     try rt.prewarm_upload_path(max_upload_bytes, self.upload_buffer_usage_mode);
 }
 
-fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
+fn prewarm_kernel_dispatch(
+    ctx: *anyopaque,
+    kernel: []const u8,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model.KernelBinding,
+    initialize_buffers_on_create: bool,
+) anyerror!void {
     const self = cast(ctx);
     if (kernel.len == 0) return;
     const rt = try ensure_runtime_bootstrapped(self);
+    _ = entry_point;
     _ = bindings;
+    _ = initialize_buffers_on_create;
     const bytecode = rt.load_kernel_cso(self.allocator, kernel) catch return;
     defer self.allocator.free(bytecode);
     rt.set_compute_shader(bytecode) catch return;

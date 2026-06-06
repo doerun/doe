@@ -36,6 +36,7 @@ pub fn printUsage(stdout: anytype) !void {
         \\    optional fields: mode=pipeline_async|capability_introspection|resource_table_immediates|lifecycle_refcount|full, iterations>0
         \\  command can be expressed as "kind", "command", or "command_kind"
         \\  kernel can be expressed as "kernel" or "kernel_name"
+        \\  kernel_dispatch repeatSynchronization can be dependent or independent; default is dependent.
         \\--quirk-mode controls how quirks affect command execution.
         \\  off: no quirk processing; commands pass through unmodified.
         \\  trace: quirks are matched and traced, but commands are not modified for execution (default).

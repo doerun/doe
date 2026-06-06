@@ -3,6 +3,93 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-06 — AMD Vulkan matvec repeat synchronization is explicit
+
+Kernel dispatch replay now carries an explicit repeat-synchronization contract.
+`kernel_dispatch` defaults to dependent repeats, and matvec replay fixtures mark
+their repeated dispatches as independent so the Vulkan backend can preserve the
+same dispatch count without inserting unnecessary inter-dispatch shader-memory
+barriers.
+
+The focused AMD Vulkan fairness audit now keeps host kernel prewarm outside
+selected operation timing and prevents compute/pipeline rows from using
+workload-unit wall as a fallback claim metric when selected operation timing
+loses. The current two-row focused report is comparable; the known-good
+concurrent compute row is claimable on selected operation timing, while the
+naive matvec row remains diagnostic.
+
+A follow-up matvec kernel-shape probe keeps the naive swizzle0 source on
+row-base vector unroll, the best source variant from this probe set. The row is
+still diagnostic under selected operation timing, so this is not a promotion.
+
+Artifacts:
+
+- Focused current-harness compare report:
+  `bench/out/scratch/current-vulkan-fairness/dawn-vs-doe.amd.vulkan.current-fairness.fixed.json`
+- Focused current-harness claim report:
+  `bench/out/scratch/current-vulkan-fairness/dawn-vs-doe.amd.vulkan.current-fairness.fixed.claim.json`
+- Focused row-base vector-unroll compare report:
+  `bench/out/scratch/current-vulkan-fairness/dawn-vs-doe.amd.vulkan.current-fairness.rowbase-unroll4.json`
+- Focused row-base vector-unroll claim report:
+  `bench/out/scratch/current-vulkan-fairness/dawn-vs-doe.amd.vulkan.current-fairness.rowbase-unroll4.claim.json`
+- Focused matvec repeat-shape compare report:
+  `bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.final.json`
+- Focused matvec repeat-shape claim report:
+  `bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.final.claim.json`
+- Focused matvec compare config:
+  `bench/out/scratch/matvec-unroll4/compare.config.amd.vulkan.matvec-unroll4.json`
+- Doe run receipt:
+  `bench/out/scratch/matvec-unroll4/20260606T223256Z/runtime-comparisons.amd.vulkan.matvec-unroll4/run-artifacts/doe/doe-compute_matvec_32768x2048_f32-20260606T223256Z.run.json`
+- Dawn delegate run receipt:
+  `bench/out/scratch/matvec-unroll4/20260606T223327Z/runtime-comparisons.amd.vulkan.matvec-unroll4/run-artifacts/dawn_delegate/dawn_delegate-compute_matvec_32768x2048_f32-20260606T223327Z.run.json`
+
+Validation:
+
+- `python3 -m unittest bench.tests.test_claimability bench.tests.test_kernel_prewarm_timing`
+- `zig build test-wgsl`
+- `zig build -Doptimize=ReleaseFast -Dlean-verified=true`
+- `python3 bench/gates/schema_gate.py`
+- `python3 bench/gates/comparability_obligation_parity_gate.py`
+- `python3 bench/gates/doe_private_strategy_leak_gate.py`
+- `python3 bench/tools/generate_backend_workloads.py --verify`
+- `python3 bench/gates/spirv_val_gate.py --spirv-val /usr/bin/spirv-val --compile --discover-wgsl --require --emit-spirv-bin runtime/zig/zig-out/bin/doe-emit-spirv`
+- `spirv-val bench/kernels/matrix_vector_mul_32768x2048_f32_naive_swizzle0.spv`
+- `bash pipeline/lean/check.sh && bash pipeline/lean/extract.sh`
+- `zig build test -Doptimize=ReleaseFast`
+
+## 2026-06-06 — AMD Vulkan repeat-dispatch refresh leaves naive matvec as blocker
+
+Native Vulkan repeated kernel dispatch now records bounded dispatch batches with
+compute memory barriers between repeats, preserving dispatch-count semantics
+while avoiding per-repeat submit/wait inflation. Compute-write visibility for
+buffer capture moved out of the hot dispatch path into the capture path.
+
+The AMD Vulkan release refresh was rerun from receipt-first artifacts with the
+rebuilt runtime. The refreshed claim artifact is comparable but diagnostic; the
+remaining non-claimable workload is `compute_matvec_32768x2048_f32`. The
+prewarm-provenance claim interpretation used for the refresh was superseded by
+the current focused-harness audit above: host kernel prewarm is diagnostic
+outside selected operation timing, and compute/pipeline claims stay on selected
+operation timing.
+
+Artifacts:
+
+- Full refreshed compare report:
+  `bench/out/amd-vulkan/20260606T192207Z/dawn-vs-doe.amd.vulkan.release.refresh.json`
+- Full refreshed claim report:
+  `bench/out/amd-vulkan/20260606T192207Z/dawn-vs-doe.amd.vulkan.release.refresh.claim.json`
+- Focused prewarm blocker compare report:
+  `bench/out/amd-vulkan/20260606T191535Z/dawn-vs-doe.amd.vulkan.repeat-blockers.json`
+- Focused prewarm blocker claim report:
+  `bench/out/amd-vulkan/20260606T191535Z/dawn-vs-doe.amd.vulkan.repeat-blockers.claim.json`
+- Prior full release claim reinterpreted with the prewarm provenance rule:
+  `bench/out/amd-vulkan/20260606T183804Z/dawn-vs-doe.amd.vulkan.release.post-prewarm-claim.json`
+
+Validation:
+
+- `zig build -Doptimize=ReleaseFast`
+- `env PYTHONPATH=bench:. python3 -m unittest bench.tests.test_claimability bench.tests.test_kernel_prewarm_timing bench.tests.test_report_conformance bench.tests.test_compare_from_artifacts`
+
 ## 2026-06-01 — Package queue prefix receipts classify measurement stability
 
 The package dispatch-prefix profiler now writes an explicit

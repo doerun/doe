@@ -488,11 +488,18 @@ pub const ExecutionContext = struct {
     pub fn prewarmKernelDispatch(
         self: *ExecutionContext,
         kernel: []const u8,
+        entry_point: ?[]const u8,
         bindings: ?[]const model.KernelBinding,
+        initialize_buffers_on_create: bool,
     ) !void {
         if (self.mode != .native) return;
         if (self.backend) |*backend| {
-            try backend.prewarm_kernel_dispatch(kernel, bindings);
+            try backend.prewarm_kernel_dispatch(
+                kernel,
+                entry_point,
+                bindings,
+                initialize_buffers_on_create,
+            );
         }
     }
 

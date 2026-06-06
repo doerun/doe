@@ -107,8 +107,19 @@ pub const BackendRuntime = struct {
         try self.backend.prewarm_upload_path(max_upload_bytes);
     }
 
-    pub fn prewarm_kernel_dispatch(self: *BackendRuntime, kernel: []const u8, bindings: ?[]const model.KernelBinding) !void {
-        try self.backend.prewarm_kernel_dispatch(kernel, bindings);
+    pub fn prewarm_kernel_dispatch(
+        self: *BackendRuntime,
+        kernel: []const u8,
+        entry_point: ?[]const u8,
+        bindings: ?[]const model.KernelBinding,
+        initialize_buffers_on_create: bool,
+    ) !void {
+        try self.backend.prewarm_kernel_dispatch(
+            kernel,
+            entry_point,
+            bindings,
+            initialize_buffers_on_create,
+        );
     }
 
     pub fn capture_buffer(self: *BackendRuntime, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) ![]u8 {

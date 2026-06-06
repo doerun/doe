@@ -868,6 +868,7 @@ test "KernelDispatchCommand defaults" {
     const cmd = model.KernelDispatchCommand{ .kernel = "test.wgsl", .x = 1, .y = 1, .z = 1 };
     try std.testing.expect(cmd.entry_point == null);
     try std.testing.expectEqual(@as(u32, 1), cmd.repeat);
+    try std.testing.expectEqual(model.KernelDispatchRepeatSynchronization.dependent, cmd.repeat_synchronization);
     try std.testing.expectEqual(@as(u32, 0), cmd.warmup_dispatch_count);
     try std.testing.expect(!cmd.initialize_buffers_on_create);
     try std.testing.expect(cmd.bindings == null);

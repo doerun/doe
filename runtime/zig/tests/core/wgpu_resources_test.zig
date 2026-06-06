@@ -407,6 +407,7 @@ test "KernelDispatchCommand: defaults for optional fields" {
         .z = 1,
     };
     try testing.expectEqual(@as(u32, 1), cmd.repeat);
+    try testing.expectEqual(model.KernelDispatchRepeatSynchronization.dependent, cmd.repeat_synchronization);
     try testing.expectEqual(@as(u32, 0), cmd.warmup_dispatch_count);
     try testing.expect(!cmd.initialize_buffers_on_create);
     try testing.expect(cmd.bindings == null);

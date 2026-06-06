@@ -1,6 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const metal_pipeline_cache = @import("backend/metal/metal_pipeline_cache.zig");
+const metal_package_pipeline_cache = @import("backend/metal_package_pipeline_cache.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 
@@ -8,13 +8,13 @@ const DoeDevice = native_types.DoeDevice;
 const alloc = native_helpers.alloc;
 
 var cache_mutex = std.Thread.Mutex{};
-var active_cache: ?*metal_pipeline_cache.MetalPipelineCache = null;
+var active_cache: ?*metal_package_pipeline_cache.MetalPipelineCache = null;
 var active_device: ?*anyopaque = null;
 
-pub fn get(dev: *DoeDevice) ?*metal_pipeline_cache.MetalPipelineCache {
+pub fn get(dev: *DoeDevice) ?*metal_package_pipeline_cache.MetalPipelineCache {
     if (builtin.os.tag != .macos) return null;
     if (dev.backend != .metal) return null;
-    if (metal_pipeline_cache.is_process_pipeline_cache_disabled()) return null;
+    if (metal_package_pipeline_cache.isProcessPipelineCacheDisabled()) return null;
     const mtl_device = dev.mtl_device orelse return null;
 
     cache_mutex.lock();
@@ -25,7 +25,7 @@ pub fn get(dev: *DoeDevice) ?*metal_pipeline_cache.MetalPipelineCache {
         return null;
     }
 
-    const cache = metal_pipeline_cache.MetalPipelineCache.init(alloc, mtl_device, "") catch return null;
+    const cache = metal_package_pipeline_cache.init(alloc, mtl_device, "") catch return null;
     active_cache = cache;
     active_device = mtl_device;
     return cache;

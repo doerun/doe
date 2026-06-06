@@ -107,13 +107,21 @@ fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     try self.inner.prewarmUploadPath(max_upload_bytes);
 }
 
-fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
+fn prewarm_kernel_dispatch(
+    ctx: *anyopaque,
+    kernel: []const u8,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model.KernelBinding,
+    initialize_buffers_on_create: bool,
+) anyerror!void {
     // Dawn's internal pipeline cache handles repeat-compilation efficiently.
     // Prewarming with layout=null creates pipelines incompatible with bind groups,
     // so prewarm is a no-op for the delegate path.
     _ = ctx;
     _ = kernel;
+    _ = entry_point;
     _ = bindings;
+    _ = initialize_buffers_on_create;
 }
 
 fn capture_buffer(ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {

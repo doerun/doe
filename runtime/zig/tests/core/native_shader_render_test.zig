@@ -251,7 +251,8 @@ test "doeNativeShaderModuleRelease with null does not crash" {
 }
 
 test "doeNativeShaderModuleRelease with invalid magic does not crash" {
-    var fake = native.DoeBuffer{}; // wrong magic for DoeShaderModule
+    var fake = native.DoeShaderModule{};
+    fake.magic = native.DoeBuffer.TYPE_MAGIC;
     shader.doeNativeShaderModuleRelease(native.toOpaque(&fake));
 }
 
@@ -277,7 +278,8 @@ test "doeNativeShaderModuleGetBindings with null returns 0" {
 }
 
 test "doeNativeShaderModuleGetBindings with invalid magic returns 0" {
-    var fake = native.DoeBuffer{}; // wrong magic for DoeShaderModule
+    var fake = native.DoeShaderModule{};
+    fake.magic = native.DoeBuffer.TYPE_MAGIC;
     const count = shader.doeNativeShaderModuleGetBindings(native.toOpaque(&fake), null, 0);
     try std.testing.expectEqual(@as(usize, 0), count);
 }
