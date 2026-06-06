@@ -1,7 +1,7 @@
 # doe-gpu
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/doe-gpu/doe/main/assets/doe-logo.svg" alt="Doe logo" width="96" />
+  <img src="https://raw.githubusercontent.com/doerun/doe/main/assets/doe-logo.svg" alt="Doe logo" width="96" />
 </p>
 
 `doe-gpu` is the native, receipt-backed WebGPU runtime for Node.js and Bun.
@@ -37,18 +37,18 @@ Dawn-backed WebGPU on the same host lane: Node.js through `webgpu`, and Bun
 through `bun-webgpu`. Positive percentages mean the Doe-backed lane finished
 faster.
 
-![doe-gpu benchmark claims](https://raw.githubusercontent.com/doe-gpu/doe/main/assets/readme/package-claims.svg)
+![doe-gpu benchmark claims](https://raw.githubusercontent.com/doerun/doe/main/assets/readme/package-claims.svg)
 
 Outputs:
-- [Node package, AMD Vulkan](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json)
-- [Bun package, AMD Vulkan](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json)
-- [Node package, Apple Metal](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json)
-- [Bun package, Apple Metal](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json)
+- [Node package, AMD Vulkan](https://github.com/doerun/doe/blob/main/bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json)
+- [Bun package, AMD Vulkan](https://github.com/doerun/doe/blob/main/bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json)
+- [Node package, Apple Metal](https://github.com/doerun/doe/blob/main/bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json)
+- [Bun package, Apple Metal](https://github.com/doerun/doe/blob/main/bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json)
 
 ## Additional benchmark outputs
 
 ONNX Runtime (ORT) lanes and broader follow-up work live in the repo status. Read
-[`docs/status.md`](https://github.com/doe-gpu/doe/blob/main/docs/status.md)
+[`docs/status.md`](https://github.com/doerun/doe/blob/main/docs/status.md)
 for the current scope and artifacts.
 
 ## Usage
@@ -198,15 +198,15 @@ repo-adjacent environments that already have Doe runtime or compare assets.
 Deeper runtime internals, benchmark workflows, and status live in the repo:
 
 - repo overview:
-  [`README.md`](https://github.com/doe-gpu/doe/blob/main/README.md)
+  [`README.md`](https://github.com/doerun/doe/blob/main/README.md)
 - runtime internals:
-  [`runtime/zig/README.md`](https://github.com/doe-gpu/doe/blob/main/runtime/zig/README.md)
+  [`runtime/zig/README.md`](https://github.com/doerun/doe/blob/main/runtime/zig/README.md)
 - benchmarks and evidence:
-  [`bench/README.md`](https://github.com/doe-gpu/doe/blob/main/bench/README.md)
+  [`bench/README.md`](https://github.com/doerun/doe/blob/main/bench/README.md)
 - current status:
-  [`docs/status.md`](https://github.com/doe-gpu/doe/blob/main/docs/status.md)
+  [`docs/status.md`](https://github.com/doerun/doe/blob/main/docs/status.md)
 - browser integration:
-  [`browser/chromium/README.md`](https://github.com/doe-gpu/doe/blob/main/browser/chromium/README.md)
+  [`browser/chromium/README.md`](https://github.com/doerun/doe/blob/main/browser/chromium/README.md)
 
 ## Legacy package names
 
@@ -218,4 +218,4 @@ These legacy package names are deprecated in favor of `doe-gpu`:
 ## License
 
 Apache-2.0. See
-[`docs/licensing.md`](https://github.com/doe-gpu/doe/blob/main/docs/licensing.md).
+[`docs/licensing.md`](https://github.com/doerun/doe/blob/main/docs/licensing.md).

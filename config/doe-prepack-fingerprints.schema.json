@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://doe-gpu.github.io/doe/schemas/doe-prepack-fingerprints.schema.json",
+  "$id": "https://doerun.github.io/doe/schemas/doe-prepack-fingerprints.schema.json",
   "title": "Doe prepack fingerprints",
   "description": "Pinned sha256 baseline for files declared by bench/tools/pack_cerebras_validation_archive.py INCLUDE_FILES. bench/tools/prepack_hash_drift_guard.py compares this baseline against current on-disk files before an external evidence bundle is packed.",
   "type": "object",

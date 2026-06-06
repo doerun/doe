@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://doe-gpu.github.io/doe/schemas/doe-provenance.schema.json",
+  "$id": "https://doerun.github.io/doe/schemas/doe-provenance.schema.json",
   "title": "Doe receipt provenance",
   "description": "Schema for the PROVENANCE.json files that sit alongside each artifact directory under bench/out/r3-1-*. Each provenance file records: schema version, artifact kind, promotion timestamp, human-readable purpose, a claim (scope + notWhat) that scopes what the receipt does and does not assert, and either `produced` (when the receipt was produced fresh by a runner) or `promoted` (when the receipt was copied/promoted from a dated source dir). Optional `reviewerNotes` carry instructions for external reviewers (e.g. how to obtain bundled-out source artifacts).",
   "type": "object",

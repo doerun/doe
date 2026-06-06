@@ -85,12 +85,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/doe-gpu/doe.git",
+    "url": "git+https://github.com/doerun/doe.git",
     "directory": "packages/doe-gpu"
   },
-  "homepage": "https://github.com/doe-gpu/doe/tree/main/packages/doe-gpu",
+  "homepage": "https://github.com/doerun/doe/tree/main/packages/doe-gpu",
   "bugs": {
-    "url": "https://github.com/doe-gpu/doe/issues"
+    "url": "https://github.com/doerun/doe/issues"
   },
   "publishConfig": {
     "access": "public"

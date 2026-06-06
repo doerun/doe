@@ -1,7 +1,7 @@
 # Doe
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/doe-gpu/doe/main/assets/doe-logo.svg" alt="Doe logo" width="96" />
+  <img src="https://raw.githubusercontent.com/doerun/doe/main/assets/doe-logo.svg" alt="Doe logo" width="96" />
 </p>
 
 Doe is a source-preserving accelerator runtime and compiler system. It keeps
@@ -118,7 +118,7 @@ Requirements:
 - Node.js 18+
 
 ```bash
-git clone https://github.com/doe-gpu/doe.git
+git clone https://github.com/doerun/doe.git
 cd doe
 zig build dropin
 node packages/doe-gpu/scripts/build-addon.js

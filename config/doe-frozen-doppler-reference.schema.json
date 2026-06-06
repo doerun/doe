@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://doe-gpu.github.io/doe/schemas/doe-frozen-doppler-reference.schema.json",
+  "$id": "https://doerun.github.io/doe/schemas/doe-frozen-doppler-reference.schema.json",
   "title": "Doe frozen Doppler reference fixture manifest",
   "description": "Schema for `frozen-reference.manifest.json` files indexing a frozen Doppler reference fixture under `bench/fixtures/r3-1-31b-doppler-frozen/`. The fixture pins one Doppler reference inference run as the comparison target so downstream parity checks score against a stable artifact (different WebGPU adapters produce different greedy sequences for the same prompt; the fixture freezes one branch). The manifest cites: a transcript JSON, per-layer per-probe-point activation tensors as `.npy` files, and the fixture's aggregate digest (`fixtureDigest`) that downstream receipts cite as `referenceFixtureHash` (consumed by `bench/tools/_receipt_hash_guard.py`).",
   "type": "object",

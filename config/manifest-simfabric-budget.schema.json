@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://doe-gpu.github.io/doe/schemas/manifest-simfabric-budget.schema.json",
+  "$id": "https://doerun.github.io/doe/schemas/manifest-simfabric-budget.schema.json",
   "title": "Doe manifest-shape simfabric wall-clock ceiling",
   "description": "Schema for `config/manifest-simfabric-budget.json`. The ceiling file is consumed by `bench/tools/check_simfabric_budget_gate.py` as the manifest-shape full-graph dispatch precondition: the predicted simfabric wall-clock budget (predicted-wallclock receipt at `bench/out/r3-1-31b-manifest-simfabric-predicted-wallclock/budget.json`) must be calibrated AND under the ceiling before dispatch is allowed. Until per-kernel manifest-shape dispatch supplies the throughput calibration constant, `calibrationStatus` is the literal sentinel `<bootstrap-pending-rung-3>` (kept for contract stability) and the gate refuses launch regardless of numeric ceiling.",
   "type": "object",
