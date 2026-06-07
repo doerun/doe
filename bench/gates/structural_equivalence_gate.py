@@ -135,6 +135,34 @@ def check_dispatch_parity(workload: dict[str, Any]) -> list[str]:
     return failures
 
 
+def check_submit_parity(workload: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    left_samples = workload.get("baseline", {}).get("commandSamples", [])
+    right_samples = workload.get("comparison", {}).get("commandSamples", [])
+
+    left_submits: set[int] = set()
+    right_submits: set[int] = set()
+    for sample in left_samples:
+        trace_meta = sample.get("traceMeta", {})
+        if isinstance(trace_meta, dict):
+            left_submits.add(safe_int(trace_meta.get("executionSubmitCount"), default=-1))
+    for sample in right_samples:
+        trace_meta = sample.get("traceMeta", {})
+        if isinstance(trace_meta, dict):
+            right_submits.add(safe_int(trace_meta.get("executionSubmitCount"), default=-1))
+
+    left_submits.discard(-1)
+    right_submits.discard(-1)
+    if not left_submits or not right_submits:
+        return failures
+    if left_submits != right_submits:
+        failures.append(
+            f"submit count mismatch: baseline={sorted(left_submits)} "
+            f"comparison={sorted(right_submits)}"
+        )
+    return failures
+
+
 def check_phase_equivalence(workload: dict[str, Any]) -> list[str]:
     failures: list[str] = []
     phase_fields = {
@@ -315,6 +343,7 @@ def main() -> int:
 
         failures: list[str] = []
         failures.extend(check_dispatch_parity(workload))
+        failures.extend(check_submit_parity(workload))
         failures.extend(check_phase_equivalence(workload))
         failures.extend(check_throughput_plausibility(workload))
         failures.extend(check_path_asymmetry(workload, contract_rows))

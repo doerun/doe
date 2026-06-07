@@ -3,6 +3,70 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-06 — AMD Vulkan repeat submit shape is receipt-visible
+
+Native Vulkan repeated dispatch no longer silently splits one
+`kernel_dispatch` command into 50-dispatch queue submissions. The repeat helper
+now records the whole command repeat in one Vulkan command buffer and one queue
+submit, preserving the selected-operation submit shape used by the Dawn delegate
+path for independent matvec repeats.
+
+Trace metadata now emits `executionSubmitCount` alongside
+`executionDispatchCount`, and strict comparability treats submit-count mismatch
+as a structural execution-shape failure when both sides report it. The
+standalone structural-equivalence gate checks the same field. This prevents a
+future row from passing as apples-to-apples when both sides dispatched the same
+work but split it across different queue-submit shapes.
+
+Follow-up:
+
+- Owner: Doe runtime/bench. Split
+  `bench/native_compare_modules/compare_assessment.py` before adding more
+  obligations; the file is already past the Python tooling sharding threshold.
+  Next split target: move execution-shape obligation collection/comparison into
+  a focused `execution_shape.py` helper under `bench/native_compare_modules/`.
+
+Fresh focused AMD Vulkan matvec evidence is comparable but diagnostic under
+release claim policy; see the claim report for the current tail result.
+
+Artifacts:
+
+- Focused compare report:
+  `bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json`
+- Focused claim report:
+  `bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.claim.json`
+- Comparability-coherence gate result:
+  `bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.comparability-coherence.json`
+- Doe run receipt:
+  `bench/out/scratch/matvec-unroll4/20260607T033232Z/runtime-comparisons.amd.vulkan.matvec-unroll4/run-artifacts/doe/doe-compute_matvec_32768x2048_f32-20260607T033232Z.run.json`
+- Dawn delegate run receipt:
+  `bench/out/scratch/matvec-unroll4/20260607T033258Z/runtime-comparisons.amd.vulkan.matvec-unroll4/run-artifacts/dawn_delegate/dawn_delegate-compute_matvec_32768x2048_f32-20260607T033258Z.run.json`
+
+Validation:
+
+- `python3 -m py_compile bench/native_compare_modules/compare_assessment.py bench/gates/structural_equivalence_gate.py bench/tests/test_compare_assessment.py`
+- `python3 -m unittest bench.tests.test_compare_assessment`
+- `python3 -m unittest bench.tests.test_compare_assessment bench.tests.test_compare_from_artifacts bench.tests.test_dawn_native_plan_executor bench.tests.test_doe_direct_plan_executor bench.tests.test_webgpu_plan_executor`
+- `python3 bench/gates/schema_gate.py`
+- `zig build test-wgsl`
+- `zig build test`
+- `zig build -Doptimize=ReleaseFast`
+- `python3 bench/runners/preflight_bench_host.py --strict-amd-vulkan`
+- `python3 bench/cli.py run-config --config bench/out/scratch/matvec-unroll4/compare.config.amd.vulkan.matvec-unroll4.json --side baseline`
+- `python3 bench/cli.py run-config --config bench/out/scratch/matvec-unroll4/compare.config.amd.vulkan.matvec-unroll4.json --side comparison`
+- `python3 bench/cli.py compare bench/out/scratch/matvec-unroll4/20260607T033232Z/runtime-comparisons.amd.vulkan.matvec-unroll4/run-artifacts/doe/doe-compute_matvec_32768x2048_f32-20260607T033232Z.run.json bench/out/scratch/matvec-unroll4/20260607T033258Z/runtime-comparisons.amd.vulkan.matvec-unroll4/run-artifacts/dawn_delegate/dawn_delegate-compute_matvec_32768x2048_f32-20260607T033258Z.run.json --comparability strict --require-timing-class operation --out bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json`
+- `python3 bench/cli.py claim bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json --config bench/out/scratch/matvec-unroll4/compare.config.amd.vulkan.matvec-unroll4.json --out bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.claim.json` (diagnostic exit)
+- `python3 bench/gates/structural_equivalence_gate.py --report bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json --require-all-pass`
+- `python3 bench/gates/comparability_coherence_gate.py --report bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json --require-pass --out bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.comparability-coherence.json`
+- `python3 bench/gates/claim_gate.py --report bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json --claim-report bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.claim.json --require-comparison-status comparable --require-claim-status diagnostic --require-claimability-mode release --require-min-timed-samples 15 --config bench/out/scratch/matvec-unroll4/compare.config.amd.vulkan.matvec-unroll4.json --expected-workload-contract bench/workloads/workloads.amd.vulkan.json --require-workload-contract-hash --require-workload-id-set-match --require-backend-telemetry --expected-backend-id doe_vulkan`
+- `python3 bench/gates/trace_gate.py --report bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json --semantic-parity-mode auto`
+- `python3 bench/gates/timing_policy_gate.py --backend vulkan --report bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json`
+- `python3 bench/gates/comparable_runtime_invariants_gate.py --report bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json`
+- `python3 bench/gates/backend_selection_gate.py --report bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json`
+- `python3 bench/gates/shader_artifact_gate.py --report bench/out/scratch/matvec-unroll4/dawn-vs-doe.amd.vulkan.matvec-unroll4.20260607T033258Z.json`
+- `python3 bench/gates/spec_diff_gate.py`
+- `python3 bench/gates/comparability_obligation_parity_gate.py`
+
 ## 2026-06-06 — AMD Vulkan matvec repeat synchronization is explicit
 
 Kernel dispatch replay now carries an explicit repeat-synchronization contract.

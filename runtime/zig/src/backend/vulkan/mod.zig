@@ -200,6 +200,12 @@ pub const ZigVulkanBackend = struct {
         return &self.runtime.?;
     }
 
+    fn reset_last_submit_count(self: *ZigVulkanBackend) void {
+        if (self.runtime) |*runtime| {
+            runtime.last_submit_count = null;
+        }
+    }
+
     /// Shader-artifact-manifest integration: expose the most recently compiled
     /// SPIR-V bytes so the manifest emitter can write a sibling .spv file and
     /// record its path in the ir_to_spirv stage record. Declared on the struct
@@ -330,6 +336,14 @@ pub fn pipeline_cache_warmup_telemetry_from_context(ctx: *anyopaque) vk_pipeline
     return vk_pipeline_cache_persistent.process_active_cache_warmup_telemetry();
 }
 
+pub fn last_submit_count_from_context(ctx: *anyopaque) ?u32 {
+    const self = cast(ctx);
+    if (self.runtime) |*runtime| {
+        return runtime.last_submit_count;
+    }
+    return null;
+}
+
 pub fn set_pipeline_cache_disabled(disabled: bool) void {
     vk_pipeline_cache_persistent.set_process_pipeline_cache_disabled(disabled);
 }
@@ -355,11 +369,15 @@ fn deinit(ctx: *anyopaque) void {
 }
 
 fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.NativeExecutionResult {
-    return backend_execute.execute_command(cast(ctx), command);
+    const self = cast(ctx);
+    self.reset_last_submit_count();
+    return backend_execute.execute_command(self, command);
 }
 
 fn execute_buffer_write_bytes_iface(ctx: *anyopaque, handle: u64, offset: u64, buffer_size: u64, data: []const u8) anyerror!webgpu.NativeExecutionResult {
-    return backend_execute.execute_buffer_write_bytes_iface(cast(ctx), handle, offset, buffer_size, data);
+    const self = cast(ctx);
+    self.reset_last_submit_count();
+    return backend_execute.execute_buffer_write_bytes_iface(self, handle, offset, buffer_size, data);
 }
 
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {

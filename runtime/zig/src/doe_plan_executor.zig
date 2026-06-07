@@ -226,6 +226,7 @@ fn makeDryRunExecutionResult(dispatch_count: u32, backend_lane: backend_policy.B
         .encode_ns = 0,
         .submit_wait_ns = 0,
         .dispatch_count = dispatch_count,
+        .submit_count = 0,
         .gpu_timestamp_ns = 0,
         .gpu_timestamp_attempted = false,
         .gpu_timestamp_valid = false,
@@ -333,6 +334,7 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
         .execution_encode_total_ns = 0,
         .execution_submit_wait_total_ns = 0,
         .execution_dispatch_count = 0,
+        .execution_submit_count = 0,
         .host_input_read_total_ns = host_input_read_total_ns,
         .host_input_parse_total_ns = host_input_parse_total_ns,
         .host_workload_prepare_total_ns = host_workload_prepare_total_ns,
@@ -440,6 +442,7 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
         trace_summary.execution_encode_total_ns += execution_result.encode_ns;
         trace_summary.execution_submit_wait_total_ns += execution_result.submit_wait_ns;
         trace_summary.execution_dispatch_count += execution_result.dispatch_count;
+        trace_summary.execution_submit_count += execution_result.submit_count;
         trace_summary.execution_gpu_timestamp_total_ns += execution_result.gpu_timestamp_ns;
         if (execution_result.gpu_timestamp_attempted) trace_summary.execution_gpu_timestamp_attempted_count += 1;
         if (execution_result.gpu_timestamp_valid) trace_summary.execution_gpu_timestamp_valid_count += 1;

@@ -12,6 +12,7 @@ pub const BackendTelemetry = struct {
     adapter_ordinal: ?u32,
     queue_family_index: ?u32,
     present_capable: ?bool,
+    last_submit_count: ?u32 = null,
     // Apple Metal pipeline cache state and warmup telemetry. Populated by
     // backend_runtime_telemetry.refresh from the active Metal backend's
     // MTLBinaryArchive cache. `pipeline_cache_active` is true only when Doe's
@@ -39,6 +40,7 @@ pub fn default_telemetry() BackendTelemetry {
         .adapter_ordinal = null,
         .queue_family_index = null,
         .present_capable = null,
+        .last_submit_count = null,
         .pipeline_cache_active = false,
         .pipeline_cache_warmup_count = 0,
         .pipeline_cache_warmup_ns = 0,

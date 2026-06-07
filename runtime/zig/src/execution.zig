@@ -37,6 +37,7 @@ pub const ExecutionResult = struct {
     encode_ns: u64,
     submit_wait_ns: u64,
     dispatch_count: u32,
+    submit_count: u32,
     gpu_timestamp_ns: u64,
     gpu_timestamp_attempted: bool,
     gpu_timestamp_valid: bool,
@@ -126,6 +127,7 @@ pub const ExecutionContext = struct {
                 .encode_ns = 0,
                 .submit_wait_ns = 0,
                 .dispatch_count = 0,
+                .submit_count = 0,
                 .gpu_timestamp_ns = 0,
                 .gpu_timestamp_attempted = false,
                 .gpu_timestamp_valid = false,
@@ -153,6 +155,7 @@ pub const ExecutionContext = struct {
                 .encode_ns = 0,
                 .submit_wait_ns = 0,
                 .dispatch_count = 0,
+                .submit_count = 0,
                 .gpu_timestamp_ns = 0,
                 .gpu_timestamp_attempted = false,
                 .gpu_timestamp_valid = false,
@@ -190,6 +193,7 @@ pub const ExecutionContext = struct {
                     .encode_ns = 0,
                     .submit_wait_ns = 0,
                     .dispatch_count = 0,
+                    .submit_count = 0,
                     .gpu_timestamp_ns = 0,
                     .gpu_timestamp_attempted = false,
                     .gpu_timestamp_valid = false,
@@ -213,6 +217,7 @@ pub const ExecutionContext = struct {
             else
                 0;
             const command_telemetry = backend.telemetry();
+            const submit_count = command_telemetry.last_submit_count orelse 0;
 
             return .{
                 .backend = backend_id_name(backend_telemetry_snapshot.backend_id),
@@ -223,6 +228,7 @@ pub const ExecutionContext = struct {
                 .encode_ns = status.encode_ns,
                 .submit_wait_ns = status.submit_wait_ns,
                 .dispatch_count = status.dispatch_count,
+                .submit_count = submit_count,
                 .gpu_timestamp_ns = status.gpu_timestamp_ns,
                 .gpu_timestamp_attempted = status.gpu_timestamp_attempted,
                 .gpu_timestamp_valid = status.gpu_timestamp_valid,
@@ -250,6 +256,7 @@ pub const ExecutionContext = struct {
             .encode_ns = 0,
             .submit_wait_ns = 0,
             .dispatch_count = 0,
+            .submit_count = 0,
             .gpu_timestamp_ns = 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
@@ -283,6 +290,7 @@ pub const ExecutionContext = struct {
             .encode_ns = 0,
             .submit_wait_ns = 0,
             .dispatch_count = 0,
+            .submit_count = 0,
             .gpu_timestamp_ns = 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
@@ -311,6 +319,7 @@ pub const ExecutionContext = struct {
                 .encode_ns = 0,
                 .submit_wait_ns = 0,
                 .dispatch_count = 0,
+                .submit_count = 0,
                 .gpu_timestamp_ns = 0,
                 .gpu_timestamp_attempted = false,
                 .gpu_timestamp_valid = false,
@@ -348,6 +357,7 @@ pub const ExecutionContext = struct {
                     .encode_ns = 0,
                     .submit_wait_ns = 0,
                     .dispatch_count = 0,
+                    .submit_count = 0,
                     .gpu_timestamp_ns = 0,
                     .gpu_timestamp_attempted = false,
                     .gpu_timestamp_valid = false,
@@ -371,6 +381,7 @@ pub const ExecutionContext = struct {
             else
                 0;
             const command_telemetry = backend.telemetry();
+            const submit_count = command_telemetry.last_submit_count orelse 0;
 
             return .{
                 .backend = backend_id_name(backend_telemetry_snapshot.backend_id),
@@ -381,6 +392,7 @@ pub const ExecutionContext = struct {
                 .encode_ns = status.encode_ns,
                 .submit_wait_ns = status.submit_wait_ns,
                 .dispatch_count = status.dispatch_count,
+                .submit_count = submit_count,
                 .gpu_timestamp_ns = status.gpu_timestamp_ns,
                 .gpu_timestamp_attempted = status.gpu_timestamp_attempted,
                 .gpu_timestamp_valid = status.gpu_timestamp_valid,
@@ -408,6 +420,7 @@ pub const ExecutionContext = struct {
             .encode_ns = 0,
             .submit_wait_ns = 0,
             .dispatch_count = 0,
+            .submit_count = 0,
             .gpu_timestamp_ns = 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,

@@ -57,6 +57,7 @@
     "executionEncodeNs": { "type": "integer", "minimum": 0 },
     "executionSubmitWaitNs": { "type": "integer", "minimum": 0 },
     "executionDispatchCount": { "type": "integer", "minimum": 0 },
+    "executionSubmitCount": { "type": "integer", "minimum": 0 },
     "executionGpuTimestampNs": { "type": "integer", "minimum": 0 },
     "executionGpuTimestampAttempted": { "type": "boolean" },
     "executionGpuTimestampValid": { "type": "boolean" }

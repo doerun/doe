@@ -24,7 +24,11 @@ class DawnDirectPlanExecutorTests(unittest.TestCase):
     def test_dawn_delegate_backend_supports_buffer_write_bytes(self) -> None:
         source = DAWN_DELEGATE_BACKEND_PATH.read_text(encoding="utf-8")
         self.assertIn(
-            "return try self.inner.executeBufferWriteBytes(handle, offset, buffer_size, data);",
+            "self.inner.executeBufferWriteBytes(handle, offset, buffer_size, data)",
+            source,
+        )
+        self.assertIn(
+            "last_submit_count_from_context",
             source,
         )
 
@@ -43,6 +47,7 @@ class DawnDirectPlanExecutorTests(unittest.TestCase):
             self.assertEqual(meta["timingClass"], "operation")
             self.assertEqual(meta["queueSyncMode"], "per-command")
             self.assertEqual(meta["executionDispatchCount"], 18)
+            self.assertEqual(meta["executionSubmitCount"], 0)
             self.assertEqual(meta["executionSuccessCount"], 35)
             self.assertEqual(len(rows), 35)
             self.assertEqual(rows[0]["command"], "buffer_write")

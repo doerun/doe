@@ -137,6 +137,7 @@ fn makeDryRunResults(allocator: Allocator, plan: dawn_plan_types.Plan, identity:
                 .encode_ns = 0,
                 .submit_wait_ns = 0,
                 .dispatch_count = 0,
+                .submit_count = 0,
                 .execution_backend = identity.execution_backend,
                 .backend_id = identity.backend_id,
                 .backend_lane = identity.backend_lane,
@@ -157,6 +158,7 @@ fn makeDryRunResults(allocator: Allocator, plan: dawn_plan_types.Plan, identity:
                 .encode_ns = 0,
                 .submit_wait_ns = 0,
                 .dispatch_count = 0,
+                .submit_count = 0,
                 .execution_backend = identity.execution_backend,
                 .backend_id = identity.backend_id,
                 .backend_lane = identity.backend_lane,
@@ -177,6 +179,7 @@ fn makeDryRunResults(allocator: Allocator, plan: dawn_plan_types.Plan, identity:
                 .encode_ns = 0,
                 .submit_wait_ns = 0,
                 .dispatch_count = 1,
+                .submit_count = 0,
                 .execution_backend = identity.execution_backend,
                 .backend_id = identity.backend_id,
                 .backend_lane = identity.backend_lane,
@@ -199,6 +202,7 @@ fn summarize(results: []const support.StepResult) support.RunSummary {
         summary.encode_total_ns += result.encode_ns;
         summary.submit_wait_total_ns += result.submit_wait_ns;
         summary.dispatch_count += result.dispatch_count;
+        summary.submit_count += result.submit_count;
         if (std.mem.eql(u8, result.status_code, "dry_run") or std.mem.eql(u8, result.status_code, "ok")) {
             summary.success_count += 1;
         } else if (std.mem.eql(u8, result.status_code, "unsupported")) {

@@ -10,7 +10,6 @@ const vk_upload = @import("vk_upload.zig");
 const vk_timing = @import("vulkan_timing.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
-const MAX_DISPATCHES_PER_SUBMIT: u32 = 50;
 
 pub fn run(
     self: anytype,
@@ -27,34 +26,7 @@ pub fn run(
         return self.run_dispatch(x, y, z, .per_command, queue_wait_mode, gpu_timestamp_mode);
     }
 
-    var remaining = repeat_count;
-    var encode_ns: u64 = 0;
-    var submit_wait_ns: u64 = 0;
-    var gpu_timestamp_ns: u64 = 0;
-    var gpu_timestamp_attempted = false;
-    var gpu_timestamp_valid = true;
-    while (remaining > 0) {
-        const batch_count = @min(remaining, MAX_DISPATCHES_PER_SUBMIT);
-        const metrics = try run_batch(self, x, y, z, batch_count, repeat_synchronization, gpu_timestamp_mode);
-        encode_ns +|= metrics.encode_ns;
-        submit_wait_ns +|= metrics.submit_wait_ns;
-        gpu_timestamp_attempted = gpu_timestamp_attempted or metrics.gpu_timestamp_attempted;
-        if (metrics.gpu_timestamp_attempted and metrics.gpu_timestamp_valid) {
-            gpu_timestamp_ns +|= metrics.gpu_timestamp_ns;
-        }
-        if (metrics.gpu_timestamp_attempted and !metrics.gpu_timestamp_valid) {
-            gpu_timestamp_valid = false;
-        }
-        remaining -= batch_count;
-    }
-
-    return .{
-        .encode_ns = encode_ns,
-        .submit_wait_ns = submit_wait_ns,
-        .gpu_timestamp_ns = if (gpu_timestamp_attempted and gpu_timestamp_valid) gpu_timestamp_ns else 0,
-        .gpu_timestamp_attempted = gpu_timestamp_attempted,
-        .gpu_timestamp_valid = gpu_timestamp_attempted and gpu_timestamp_valid,
-    };
+    return run_batch(self, x, y, z, repeat_count, repeat_synchronization, gpu_timestamp_mode);
 }
 
 fn run_batch(
@@ -181,6 +153,7 @@ fn run_batch(
     return .{
         .encode_ns = encode_ns,
         .submit_wait_ns = submit_wait_ns,
+        .submit_count = 1,
         .gpu_timestamp_ns = gpu_timestamp_ns,
         .gpu_timestamp_attempted = gpu_timestamp_attempted,
         .gpu_timestamp_valid = gpu_timestamp_valid,

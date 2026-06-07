@@ -162,7 +162,7 @@ def compare_assessment(
         }
     )
     def collect_execution_shapes(samples: list[dict[str, Any]]) -> list[dict[str, int]]:
-        shape_set: set[tuple[int, int, int]] = set()
+        shape_set: set[tuple[int, int, int, int]] = set()
         for sample in samples:
             if not isinstance(sample, dict):
                 continue
@@ -170,16 +170,23 @@ def compare_assessment(
             if not isinstance(trace_meta, dict):
                 continue
             dispatch_count = safe_int(trace_meta.get("executionDispatchCount"), default=-1)
+            submit_count = safe_int(trace_meta.get("executionSubmitCount"), default=-1)
             row_count = safe_int(trace_meta.get("executionRowCount"), default=-1)
             success_count = safe_int(trace_meta.get("executionSuccessCount"), default=-1)
-            if dispatch_count < 0 and row_count < 0 and success_count < 0:
+            if (
+                dispatch_count < 0
+                and submit_count < 0
+                and row_count < 0
+                and success_count < 0
+            ):
                 continue
-            shape_set.add((dispatch_count, row_count, success_count))
+            shape_set.add((dispatch_count, submit_count, row_count, success_count))
         return [
             {
                 "executionDispatchCount": shape[0],
-                "executionRowCount": shape[1],
-                "executionSuccessCount": shape[2],
+                "executionSubmitCount": shape[1],
+                "executionRowCount": shape[2],
+                "executionSuccessCount": shape[3],
             }
             for shape in sorted(shape_set)
         ]
@@ -647,7 +654,12 @@ def compare_assessment(
         normalized: list[dict[str, int]] = []
         for shape in shapes:
             normalized_shape = dict(shape)
-            for field in ("executionDispatchCount", "executionRowCount", "executionSuccessCount"):
+            for field in (
+                "executionDispatchCount",
+                "executionSubmitCount",
+                "executionRowCount",
+                "executionSuccessCount",
+            ):
                 value = safe_int(shape.get(field), default=-1)
                 if value < 0:
                     continue
@@ -665,14 +677,20 @@ def compare_assessment(
         left_shapes: list[dict[str, int]],
         right_shapes: list[dict[str, int]],
     ) -> tuple[bool, str]:
-        def to_shape_map(shapes: list[dict[str, int]]) -> dict[tuple[int, int], set[int]]:
-            mapped: dict[tuple[int, int], set[int]] = {}
+        def to_shape_map(
+            shapes: list[dict[str, int]],
+        ) -> dict[tuple[int, int], tuple[set[int], set[int]]]:
+            mapped: dict[tuple[int, int], tuple[set[int], set[int]]] = {}
             for shape in shapes:
                 row_count = safe_int(shape.get("executionRowCount"), default=-1)
                 success_count = safe_int(shape.get("executionSuccessCount"), default=-1)
                 dispatch_count = safe_int(shape.get("executionDispatchCount"), default=-1)
+                submit_count = safe_int(shape.get("executionSubmitCount"), default=-1)
                 key = (row_count, success_count)
-                mapped.setdefault(key, set()).add(dispatch_count)
+                if key not in mapped:
+                    mapped[key] = (set(), set())
+                mapped[key][0].add(dispatch_count)
+                mapped[key][1].add(submit_count)
             return mapped
 
         left_map = to_shape_map(left_shapes)
@@ -681,8 +699,8 @@ def compare_assessment(
             return False, "row/success shape sets differ"
 
         for key in sorted(left_map.keys()):
-            left_dispatches = left_map[key]
-            right_dispatches = right_map[key]
+            left_dispatches, left_submits = left_map[key]
+            right_dispatches, right_submits = right_map[key]
             left_known = {value for value in left_dispatches if value >= 0}
             right_known = {value for value in right_dispatches if value >= 0}
             if not left_known or not right_known:
@@ -700,6 +718,16 @@ def compare_assessment(
                     (
                         f"dispatch counts differ for row/success={key}: "
                         f"{sorted(left_known)} vs {sorted(right_known)}"
+                    ),
+                )
+            left_submit_known = {value for value in left_submits if value >= 0}
+            right_submit_known = {value for value in right_submits if value >= 0}
+            if left_submit_known and right_submit_known and left_submit_known != right_submit_known:
+                return (
+                    False,
+                    (
+                        f"submit counts differ for row/success={key}: "
+                        f"{sorted(left_submit_known)} vs {sorted(right_submit_known)}"
                     ),
                 )
         return True, ""
@@ -733,7 +761,8 @@ def compare_assessment(
         applicable=dispatch_shape_domain and len(left_execution_shapes) > 0 and len(right_execution_shapes) > 0,
         passes=execution_shape_match,
         failure_reason=(
-            "baseline/comparison execution shape mismatch (dispatch/row/success counts): "
+            "baseline/comparison execution shape mismatch "
+            "(dispatch/submit/row/success counts): "
             f"{left_execution_shapes} vs {right_execution_shapes}; "
             f"reason={execution_shape_mismatch_reason}"
         ),

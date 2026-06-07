@@ -48,6 +48,7 @@ class DawnPlanExecutorTests(unittest.TestCase):
             self.assertEqual(meta["executionRowCount"], 35)
             self.assertEqual(meta["executionSuccessCount"], 35)
             self.assertEqual(meta["executionDispatchCount"], 18)
+            self.assertEqual(meta["executionSubmitCount"], 0)
             self.assertEqual(meta["hostPlanArtifactHash"], EXPECTED_PLAN_SHA256)
             self.assertEqual(meta["hostPlanArtifactPath"], str(PLAN_PATH))
             self.assertEqual(len(rows), 35)
@@ -55,6 +56,7 @@ class DawnPlanExecutorTests(unittest.TestCase):
             self.assertEqual(rows[0]["semanticStage"], "webgpu_plan")
             self.assertEqual(rows[-1]["semanticOpId"], "step-000034")
             self.assertEqual(rows[-1]["executionBackend"], "dawn_direct_metal")
+            self.assertEqual(rows[-1]["executionSubmitCount"], 0)
 
     def test_workload_mismatch_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-webgpu-plan-executor-") as tmpdir:

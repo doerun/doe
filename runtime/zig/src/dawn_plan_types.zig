@@ -420,5 +420,5 @@ test "loadPlanFromPath parses a generated Gemma plan" {
     try std.testing.expectEqualStrings("inference_gemma3_270m_prefill_32tok", loaded.plan.workload_id);
     try std.testing.expectEqual(@as(u32, 10), loaded.plan.buffer_load_count);
     try std.testing.expectEqual(@as(usize, 35), loaded.plan.commands.len);
-    try std.testing.expectEqualStrings("47fd52b0ca02a3f3245a80f52143b4230a769b86049f1b1871fe24fde106514b", loaded.plan.plan_sha256);
+    try std.testing.expectEqualStrings("510bf6c94457473704e9829a97bf8b7114985f0884542aa1f5cc908ca640467a", loaded.plan.plan_sha256);
 }

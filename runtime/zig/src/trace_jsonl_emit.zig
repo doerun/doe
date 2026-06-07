@@ -262,13 +262,14 @@ fn writePlanExecutionFields(writer: anytype, exec: execution.ExecutionResult) !v
     try writer.writeAll(",\"executionStatusMessage\":");
     try trace.writeJsonString(writer, exec.status_code);
     try writer.print(
-        ",\"executionDurationNs\":{},\"executionSetupNs\":{},\"executionEncodeNs\":{},\"executionSubmitWaitNs\":{},\"executionDispatchCount\":{},\"executionGpuTimestampNs\":{},\"executionGpuTimestampAttempted\":{},\"executionGpuTimestampValid\":{}",
+        ",\"executionDurationNs\":{},\"executionSetupNs\":{},\"executionEncodeNs\":{},\"executionSubmitWaitNs\":{},\"executionDispatchCount\":{},\"executionSubmitCount\":{},\"executionGpuTimestampNs\":{},\"executionGpuTimestampAttempted\":{},\"executionGpuTimestampValid\":{}",
         .{
             exec.duration_ns,
             exec.setup_ns,
             exec.encode_ns,
             exec.submit_wait_ns,
             exec.dispatch_count,
+            exec.submit_count,
             exec.gpu_timestamp_ns,
             exec.gpu_timestamp_attempted,
             exec.gpu_timestamp_valid,

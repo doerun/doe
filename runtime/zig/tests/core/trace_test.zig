@@ -662,6 +662,7 @@ test "printTraceLine: execution result fields are emitted" {
         .encode_ns = 2000,
         .submit_wait_ns = 2000,
         .dispatch_count = 4,
+        .submit_count = 2,
         .gpu_timestamp_ns = 3500,
         .gpu_timestamp_attempted = true,
         .gpu_timestamp_valid = true,
@@ -688,6 +689,7 @@ test "printTraceLine: execution result fields are emitted" {
     try testing.expect(std.mem.indexOf(u8, output, "\"executionEncodeNs\":2000") != null);
     try testing.expect(std.mem.indexOf(u8, output, "\"executionSubmitWaitNs\":2000") != null);
     try testing.expect(std.mem.indexOf(u8, output, "\"executionDispatchCount\":4") != null);
+    try testing.expect(std.mem.indexOf(u8, output, "\"executionSubmitCount\":2") != null);
     try testing.expect(std.mem.indexOf(u8, output, "\"executionGpuTimestampNs\":3500") != null);
     try testing.expect(std.mem.indexOf(u8, output, "\"executionGpuTimestampAttempted\":true") != null);
     try testing.expect(std.mem.indexOf(u8, output, "\"executionGpuTimestampValid\":true") != null);
@@ -805,6 +807,7 @@ test "TraceRunSummary: optional fields default to null" {
         .execution_encode_total_ns = 0,
         .execution_submit_wait_total_ns = 0,
         .execution_dispatch_count = 0,
+        .execution_submit_count = 0,
         .execution_gpu_timestamp_total_ns = 0,
         .execution_gpu_timestamp_attempted_count = 0,
         .execution_gpu_timestamp_valid_count = 0,
@@ -862,6 +865,7 @@ test "printTraceLine: execution status code is normalized in output" {
         .encode_ns = 0,
         .submit_wait_ns = 0,
         .dispatch_count = 0,
+        .submit_count = 0,
         .gpu_timestamp_ns = 0,
         .gpu_timestamp_attempted = false,
         .gpu_timestamp_valid = false,

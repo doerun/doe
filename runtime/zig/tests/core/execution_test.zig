@@ -290,6 +290,7 @@ test "ExecutionResult default construction has correct zero values" {
         .encode_ns = 0,
         .submit_wait_ns = 0,
         .dispatch_count = 0,
+        .submit_count = 0,
         .gpu_timestamp_ns = 0,
         .gpu_timestamp_attempted = false,
         .gpu_timestamp_valid = false,

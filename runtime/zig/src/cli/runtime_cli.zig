@@ -311,6 +311,7 @@ pub fn runCli() !void {
                 trace_summary.execution_encode_total_ns += executed.encode_ns;
                 trace_summary.execution_submit_wait_total_ns += executed.submit_wait_ns;
                 trace_summary.execution_dispatch_count += @as(u64, executed.dispatch_count);
+                trace_summary.execution_submit_count += @as(u64, executed.submit_count);
                 trace_summary.execution_gpu_timestamp_total_ns += executed.gpu_timestamp_ns;
                 if (executed.gpu_timestamp_attempted) trace_summary.execution_gpu_timestamp_attempted_count += 1;
                 if (executed.gpu_timestamp_valid) trace_summary.execution_gpu_timestamp_valid_count += 1;

@@ -48,6 +48,7 @@ pub const TraceRunSummary = struct {
     execution_encode_total_ns: u64,
     execution_submit_wait_total_ns: u64,
     execution_dispatch_count: u64,
+    execution_submit_count: u64,
     host_input_read_total_ns: u64 = 0,
     host_input_parse_total_ns: u64 = 0,
     host_workload_prepare_total_ns: u64 = 0,
@@ -380,13 +381,14 @@ pub fn printTraceLineWithSemantic(
         try writeJsonString(stdout, exec.status_code);
         try writef(
             stdout,
-            ",\"executionDurationNs\":{},\"executionSetupNs\":{},\"executionEncodeNs\":{},\"executionSubmitWaitNs\":{},\"executionDispatchCount\":{},\"executionGpuTimestampNs\":{},\"executionGpuTimestampAttempted\":{},\"executionGpuTimestampValid\":{}",
+            ",\"executionDurationNs\":{},\"executionSetupNs\":{},\"executionEncodeNs\":{},\"executionSubmitWaitNs\":{},\"executionDispatchCount\":{},\"executionSubmitCount\":{},\"executionGpuTimestampNs\":{},\"executionGpuTimestampAttempted\":{},\"executionGpuTimestampValid\":{}",
             .{
                 exec.duration_ns,
                 exec.setup_ns,
                 exec.encode_ns,
                 exec.submit_wait_ns,
                 exec.dispatch_count,
+                exec.submit_count,
                 exec.gpu_timestamp_ns,
                 exec.gpu_timestamp_attempted,
                 exec.gpu_timestamp_valid,
@@ -582,7 +584,7 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
 
     try writef(writer, "{{\"traceVersion\":{},\"module\":", .{summary.trace_version});
     try writeJsonString(&writer, summary.module_name);
-    try writef(writer, ",\"seqMax\":{},\"rowCount\":{},\"commandCount\":{},\"matchedCount\":{},\"blockingCount\":{},\"requiresLeanCount\":{},\"leanRequiredCount\":{},\"executionRowCount\":{},\"executionSuccessCount\":{},\"executionErrorCount\":{},\"executionSkippedCount\":{},\"executionUnsupportedCount\":{},\"executionTotalNs\":{},\"executionSetupTotalNs\":{},\"executionEncodeTotalNs\":{},\"executionSubmitWaitTotalNs\":{},\"executionDispatchCount\":{},", .{
+    try writef(writer, ",\"seqMax\":{},\"rowCount\":{},\"commandCount\":{},\"matchedCount\":{},\"blockingCount\":{},\"requiresLeanCount\":{},\"leanRequiredCount\":{},\"executionRowCount\":{},\"executionSuccessCount\":{},\"executionErrorCount\":{},\"executionSkippedCount\":{},\"executionUnsupportedCount\":{},\"executionTotalNs\":{},\"executionSetupTotalNs\":{},\"executionEncodeTotalNs\":{},\"executionSubmitWaitTotalNs\":{},\"executionDispatchCount\":{},\"executionSubmitCount\":{},", .{
         summary.seq_max,
         summary.row_count,
         summary.command_count,
@@ -600,6 +602,7 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
         summary.execution_encode_total_ns,
         summary.execution_submit_wait_total_ns,
         summary.execution_dispatch_count,
+        summary.execution_submit_count,
     });
     try writef(writer, "\"hostInputReadTotalNs\":{},\"hostInputParseTotalNs\":{},\"hostWorkloadPrepareTotalNs\":{},\"hostExecutorInitTotalNs\":{},\"hostUploadPrewarmTotalNs\":{},\"hostKernelPrewarmTotalNs\":{},\"hostCommandOrchestrationTotalNs\":{},\"hostArtifactFinalizeTotalNs\":{},\"hostArtifactTraceJsonlSerializeTotalNs\":{},\"hostArtifactTraceJsonlWriteTotalNs\":{},\"hostArtifactOperatorManifestFinalizeTotalNs\":{},\"executionGpuTimestampTotalNs\":{},\"executionGpuTimestampAttemptedCount\":{},\"executionGpuTimestampValidCount\":{},\"semanticTracingEnabled\":{},\"semanticOpRowCount\":{},\"semanticCaptureCount\":{},\"semanticReproCount\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",", .{
         summary.host_input_read_total_ns,

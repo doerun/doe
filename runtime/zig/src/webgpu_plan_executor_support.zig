@@ -106,6 +106,7 @@ pub const StepResult = struct {
     encode_ns: u64,
     submit_wait_ns: u64,
     dispatch_count: u32,
+    submit_count: u32,
     execution_backend: []const u8,
     backend_id: []const u8,
     backend_lane: []const u8,
@@ -119,6 +120,7 @@ pub const RunSummary = struct {
     skipped_count: u64 = 0,
     unsupported_count: u64 = 0,
     dispatch_count: u64 = 0,
+    submit_count: u64 = 0,
     total_ns: u64 = 0,
     setup_total_ns: u64 = 0,
     encode_total_ns: u64 = 0,
@@ -463,6 +465,7 @@ pub fn rowHash(previous_hash: u64, result: StepResult) u64 {
     state = hashBytes(state, result.plan_hash);
     if (result.kernel) |kernel| state = hashBytes(state, kernel) else state = hashByte(state, 0);
     state = hashBytes(state, std.mem.asBytes(&result.dispatch_count));
+    state = hashBytes(state, std.mem.asBytes(&result.submit_count));
     return state;
 }
 

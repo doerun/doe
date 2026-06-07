@@ -181,6 +181,7 @@ fn execute_dispatch_command(
             self.queue_wait_mode,
             dispatch_gpu_timestamp_mode,
         );
+        runtime.last_submit_count = metrics.submit_count;
         return .{
             .status = .ok,
             .status_message = "",
@@ -211,6 +212,7 @@ fn execute_dispatch_command(
             dispatch_gpu_timestamp_mode,
         );
 
+        runtime.last_submit_count = metrics.submit_count;
         encode_ns +|= metrics.encode_ns;
         submit_wait_ns +|= metrics.submit_wait_ns;
 
@@ -261,6 +263,7 @@ fn execute_dispatch_indirect_command(
         if (explicit_submit_boundaries) .deferred else self.queue_sync_mode,
         self.queue_wait_mode,
     );
+    runtime.last_submit_count = metrics.submit_count;
 
     return .{
         .status = .ok,

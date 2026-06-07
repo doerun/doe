@@ -125,6 +125,7 @@
     "executionEncodeTotalNs": { "type": "integer", "minimum": 0 },
     "executionSubmitWaitTotalNs": { "type": "integer", "minimum": 0 },
     "executionDispatchCount": { "type": "integer", "minimum": 0 },
+    "executionSubmitCount": { "type": "integer", "minimum": 0 },
     "hostInputReadTotalNs": { "type": "integer", "minimum": 0 },
     "hostInputParseTotalNs": { "type": "integer", "minimum": 0 },
     "hostWorkloadPrepareTotalNs": { "type": "integer", "minimum": 0 },

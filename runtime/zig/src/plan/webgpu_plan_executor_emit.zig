@@ -25,7 +25,7 @@ pub fn writeTraceMeta(
     const elapsed_ms = @as(f64, @floatFromInt(summary.process_wall_ns)) / 1_000_000.0;
     try writer.writeAll("{\"traceVersion\":1,\"module\":");
     try support.writeJsonString(&writer, support.DEFAULT_MODULE_NAME);
-    try writer.print(",\"seqMax\":{},\"rowCount\":{},\"commandCount\":{},\"matchedCount\":0,\"blockingCount\":0,\"requiresLeanCount\":0,\"leanRequiredCount\":0,\"executionRowCount\":{},\"executionSuccessCount\":{},\"executionErrorCount\":{},\"executionSkippedCount\":{},\"executionUnsupportedCount\":{},\"executionTotalNs\":{},\"executionSetupTotalNs\":{},\"executionEncodeTotalNs\":{},\"executionSubmitWaitTotalNs\":{},\"executionDispatchCount\":{},\"hostInputReadTotalNs\":{},\"hostInputParseTotalNs\":{},\"hostWorkloadPrepareTotalNs\":{},\"hostExecutorInitTotalNs\":{},\"hostUploadPrewarmTotalNs\":{},\"hostKernelPrewarmTotalNs\":{},\"hostCommandOrchestrationTotalNs\":{},\"hostArtifactFinalizeTotalNs\":{},\"executionGpuTimestampTotalNs\":0,\"executionGpuTimestampAttemptedCount\":0,\"executionGpuTimestampValidCount\":0,\"semanticTracingEnabled\":false,\"semanticOpRowCount\":0,\"semanticCaptureCount\":0,\"semanticReproCount\":0,\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",", .{
+    try writer.print(",\"seqMax\":{},\"rowCount\":{},\"commandCount\":{},\"matchedCount\":0,\"blockingCount\":0,\"requiresLeanCount\":0,\"leanRequiredCount\":0,\"executionRowCount\":{},\"executionSuccessCount\":{},\"executionErrorCount\":{},\"executionSkippedCount\":{},\"executionUnsupportedCount\":{},\"executionTotalNs\":{},\"executionSetupTotalNs\":{},\"executionEncodeTotalNs\":{},\"executionSubmitWaitTotalNs\":{},\"executionDispatchCount\":{},\"executionSubmitCount\":{},\"hostInputReadTotalNs\":{},\"hostInputParseTotalNs\":{},\"hostWorkloadPrepareTotalNs\":{},\"hostExecutorInitTotalNs\":{},\"hostUploadPrewarmTotalNs\":{},\"hostKernelPrewarmTotalNs\":{},\"hostCommandOrchestrationTotalNs\":{},\"hostArtifactFinalizeTotalNs\":{},\"executionGpuTimestampTotalNs\":0,\"executionGpuTimestampAttemptedCount\":0,\"executionGpuTimestampValidCount\":0,\"semanticTracingEnabled\":false,\"semanticOpRowCount\":0,\"semanticCaptureCount\":0,\"semanticReproCount\":0,\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",", .{
         summary.seq_max,
         summary.row_count,
         plan.command_count,
@@ -39,6 +39,7 @@ pub fn writeTraceMeta(
         summary.encode_total_ns,
         summary.submit_wait_total_ns,
         summary.dispatch_count,
+        summary.submit_count,
         summary.host_input_read_total_ns,
         summary.host_input_parse_total_ns,
         summary.host_workload_prepare_total_ns,
@@ -120,12 +121,13 @@ pub fn writeTraceJsonl(path: []const u8, results: []const support.StepResult) !v
         try support.writeJsonString(&writer, result.status_message);
         try writer.writeAll(",\"executionBackendLane\":");
         try support.writeJsonString(&writer, result.backend_lane);
-        try writer.print(",\"executionDurationNs\":{},\"executionSetupNs\":{},\"executionEncodeNs\":{},\"executionSubmitWaitNs\":{},\"executionDispatchCount\":{},\"executionGpuTimestampNs\":0,\"executionGpuTimestampAttempted\":false,\"executionGpuTimestampValid\":false}}\n", .{
+        try writer.print(",\"executionDurationNs\":{},\"executionSetupNs\":{},\"executionEncodeNs\":{},\"executionSubmitWaitNs\":{},\"executionDispatchCount\":{},\"executionSubmitCount\":{},\"executionGpuTimestampNs\":0,\"executionGpuTimestampAttempted\":false,\"executionGpuTimestampValid\":false}}\n", .{
             result.duration_ns,
             result.setup_ns,
             result.encode_ns,
             result.submit_wait_ns,
             result.dispatch_count,
+            result.submit_count,
         });
         previous_hash = hash;
     }

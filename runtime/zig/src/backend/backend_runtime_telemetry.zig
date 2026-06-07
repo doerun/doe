@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const backend_iface = @import("backend_iface.zig");
+const dawn_delegate_backend = @import("dawn_delegate_backend.zig");
 const vulkan_backend = if (builtin.os.tag == .linux) @import("vulkan/mod.zig") else struct {};
 const metal_backend = if (builtin.os.tag == .macos) @import("metal/mod.zig") else struct {};
 const d3d12_backend = if (builtin.os.tag == .windows) @import("d3d12/mod.zig") else struct {};
@@ -56,7 +57,11 @@ pub fn refresh(backend: *backend_iface.BackendIface) void {
                 backend.telemetry.pipeline_cache_warmup_count = vulkan_cache_telemetry.count;
                 backend.telemetry.pipeline_cache_warmup_ns = vulkan_cache_telemetry.ns;
                 backend.telemetry.pipeline_cache_active = vulkan_backend.pipeline_cache_active_from_context(backend.context);
+                backend.telemetry.last_submit_count = vulkan_backend.last_submit_count_from_context(backend.context);
             }
+        },
+        .dawn_delegate, .webkit_delegate => {
+            backend.telemetry.last_submit_count = dawn_delegate_backend.last_submit_count_from_context(backend.context);
         },
         .doe_metal => {
             if (comptime builtin.os.tag == .macos) {
@@ -76,6 +81,5 @@ pub fn refresh(backend: *backend_iface.BackendIface) void {
                 backend.telemetry.shader_artifact_manifest_hash = d3d12_backend.manifest_hash_from_context(backend.context);
             }
         },
-        else => {},
     }
 }

@@ -66,6 +66,7 @@ pub fn initTraceSummary(
         .execution_encode_total_ns = 0,
         .execution_submit_wait_total_ns = 0,
         .execution_dispatch_count = 0,
+        .execution_submit_count = 0,
         .host_input_read_total_ns = host_timing.host_input_read_total_ns,
         .host_input_parse_total_ns = host_timing.host_input_parse_total_ns,
         .host_workload_prepare_total_ns = host_timing.host_workload_prepare_total_ns,

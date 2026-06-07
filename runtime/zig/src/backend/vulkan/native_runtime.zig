@@ -124,6 +124,7 @@ pub const NativeVulkanRuntime = struct {
     has_depth_clip_enable_ext: bool = false,
     has_pending_compute_writes: bool = false,
     recorded_submit_replay_active: bool = false,
+    last_submit_count: ?u32 = null,
     replay_recording_active: bool = false,
     replay_command_buffer: c.VkCommandBuffer = null,
     upload_recording_active: bool = false,
@@ -381,6 +382,7 @@ pub const NativeVulkanRuntime = struct {
             return .{
                 .encode_ns = encode_ns,
                 .submit_wait_ns = 0,
+                .submit_count = 0,
                 .gpu_timestamp_ns = 0,
                 .gpu_timestamp_attempted = false,
                 .gpu_timestamp_valid = false,
@@ -456,6 +458,7 @@ pub const NativeVulkanRuntime = struct {
         return .{
             .encode_ns = encode_ns,
             .submit_wait_ns = common_timing.ns_delta(submit_end, submit_start),
+            .submit_count = 1,
             .gpu_timestamp_ns = gpu_timestamp_ns,
             .gpu_timestamp_attempted = gpu_timestamp_attempted,
             .gpu_timestamp_valid = gpu_timestamp_valid,
@@ -526,6 +529,7 @@ pub const NativeVulkanRuntime = struct {
             return .{
                 .encode_ns = encode_ns,
                 .submit_wait_ns = 0,
+                .submit_count = 0,
                 .gpu_timestamp_ns = 0,
                 .gpu_timestamp_attempted = false,
                 .gpu_timestamp_valid = false,
@@ -575,6 +579,7 @@ pub const NativeVulkanRuntime = struct {
         return .{
             .encode_ns = encode_ns,
             .submit_wait_ns = common_timing.ns_delta(submit_end, submit_start),
+            .submit_count = 1,
             .gpu_timestamp_ns = 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,

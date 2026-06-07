@@ -17,6 +17,7 @@ pub const DawnDelegateBackend = struct {
     allocator: std.mem.Allocator,
     inner: webgpu.WebGPUBackend,
     effective_id: backend_ids.BackendId,
+    last_submit_count: ?u32 = null,
 
     pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !*DawnDelegateBackend {
         return init_with_id(allocator, profile, kernel_root, .dawn_delegate);
@@ -29,6 +30,7 @@ pub const DawnDelegateBackend = struct {
             .allocator = allocator,
             .inner = try webgpu.WebGPUBackend.init(allocator, profile, kernel_root),
             .effective_id = id,
+            .last_submit_count = null,
         };
         return ptr;
     }
@@ -56,6 +58,15 @@ pub const DawnDelegateBackend = struct {
     }
 };
 
+fn estimate_selected_submit_count(command: model.Command, result: webgpu.NativeExecutionResult) ?u32 {
+    if (result.status != .ok) return null;
+    return switch (command) {
+        .kernel_dispatch, .dispatch, .dispatch_indirect => if (result.dispatch_count > 0) 1 else 0,
+        .upload, .buffer_write, .copy_buffer_to_texture, .barrier, .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass, .texture_write, .texture_query, .texture_destroy => if (result.submit_wait_ns > 0) 1 else 0,
+        else => null,
+    };
+}
+
 fn cast(ctx: *anyopaque) *DawnDelegateBackend {
     return @as(*DawnDelegateBackend, @ptrCast(@alignCast(ctx)));
 }
@@ -69,12 +80,22 @@ fn deinit(ctx: *anyopaque) void {
 
 fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.NativeExecutionResult {
     const self = cast(ctx);
-    return try self.inner.executeCommand(command);
+    self.last_submit_count = null;
+    const result = try self.inner.executeCommand(command);
+    self.last_submit_count = estimate_selected_submit_count(command, result);
+    return result;
 }
 
 fn execute_buffer_write_bytes(ctx: *anyopaque, handle: u64, offset: u64, buffer_size: u64, data: []const u8) anyerror!webgpu.NativeExecutionResult {
     const self = cast(ctx);
-    return try self.inner.executeBufferWriteBytes(handle, offset, buffer_size, data);
+    self.last_submit_count = null;
+    const result = try self.inner.executeBufferWriteBytes(handle, offset, buffer_size, data);
+    self.last_submit_count = if (result.status == .ok and result.submit_wait_ns > 0) 1 else 0;
+    return result;
+}
+
+pub fn last_submit_count_from_context(ctx: *anyopaque) ?u32 {
+    return cast(ctx).last_submit_count;
 }
 
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
