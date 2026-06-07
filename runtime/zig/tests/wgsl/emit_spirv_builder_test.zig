@@ -66,6 +66,20 @@ fn has_spirv_u32_constant_literal(binary: []const u8, literal: u32) bool {
     return false;
 }
 
+fn count_spirv_opcode(binary: []const u8, opcode: u16) u32 {
+    const word_count = binary.len / 4;
+    var i: usize = 5;
+    var count: u32 = 0;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = @as(u16, @truncate(w));
+        const wc = w >> 16;
+        if (op == opcode) count += 1;
+        i += wc;
+    }
+    return count;
+}
+
 test "spirv header: magic number is 0x07230203" {
     const source =
         \\@compute @workgroup_size(1)
@@ -180,6 +194,38 @@ test "spirv builder: constant deduplication" {
     const c3 = try builder.const_u32(7);
     try testing.expectEqual(c1, c2);
     try testing.expect(c1 != c3);
+}
+
+test "spirv emit: repeated straight-line local reads share one load" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> out: array<u32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\  var x = id.x;
+        \\  out[0] = x + x + x + x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len > 0);
+    try testing.expect(count_spirv_opcode(out[0..len], spirv.Opcode.Load) <= 2);
+}
+
+test "spirv emit: repeated straight-line integer expression shares one result" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> out: array<u32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\  var x = id.x;
+        \\  out[0] = (x + 1u) * (x + 1u);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len > 0);
+    try testing.expect(count_spirv_opcode(out[0..len], spirv.Opcode.IAdd) <= 1);
 }
 
 test "spirv binding: OpDecorate DescriptorSet appears for bound resources" {

@@ -23,6 +23,7 @@ RUNTIME_COMPUTE_FAST_PATH = REPO_ROOT / "runtime" / "zig" / "src" / "doe_compute
 NAPI_QUEUE_PATH = REPO_ROOT / "runtime" / "bridge" / "webgpu-addon" / "doe_napi_queue.c"
 NAPI_BUFFER_PATH = REPO_ROOT / "runtime" / "bridge" / "webgpu-addon" / "doe_napi_buffer.c"
 NAPI_INIT_PATH = REPO_ROOT / "runtime" / "bridge" / "webgpu-addon" / "doe_napi_init.c"
+NAPI_INTERNAL_PATH = REPO_ROOT / "runtime" / "bridge" / "webgpu-addon" / "doe_napi_internal.h"
 NAPI_ND_IMMEDIATES_PATH = REPO_ROOT / "runtime" / "bridge" / "webgpu-addon" / "doe_napi_nd_immediates.c"
 BUN_ENTRY_PATH = REPO_ROOT / "packages" / "doe-gpu" / "src" / "vendor" / "webgpu" / "bun.js"
 BUN_FFI_PATH = REPO_ROOT / "packages" / "doe-gpu" / "src" / "vendor" / "webgpu" / "bun-ffi.js"
@@ -348,6 +349,10 @@ class NodeWebGPUExecutorTests(unittest.TestCase):
         self.assertIn("function snapshotPackageNativeFastPaths(providerModule)", executor_source)
         self.assertIn("packageNativeFastPaths", executor_source)
         self.assertIn("queueWriteBufferBatchDataPtrs", executor_source)
+        self.assertIn("export function nativeQueueSyncInfo(queue)", source)
+        self.assertIn("nativeAddon.queueSyncInfo(native)", source)
+        self.assertIn("function snapshotPackageNativeQueueSyncInfo(providerModule, queue)", executor_source)
+        self.assertIn("packageNativeQueueSyncInfo", executor_source)
 
     def test_bun_package_exports_native_fast_path_identity(self) -> None:
         public_bun_source = PACKAGE_BUN_PATH.read_text(encoding="utf-8")
@@ -360,6 +365,10 @@ class NodeWebGPUExecutorTests(unittest.TestCase):
         self.assertIn("export function nativeFastPathInfo()", bun_ffi_source)
         self.assertIn("nativeFastPaths,", bun_ffi_source)
         self.assertIn("doeBufferMapReadCopyUnmapFlat", bun_ffi_source)
+        self.assertIn("nativeQueueSyncInfo,", public_bun_source)
+        self.assertIn("export const nativeQueueSyncInfo = runtime.nativeQueueSyncInfo ?? full.nativeQueueSyncInfo;", bun_entry_source)
+        self.assertIn("export function nativeQueueSyncInfo(queue)", bun_ffi_source)
+        self.assertIn("doeNativeQueueSyncInfo", bun_ffi_source)
 
     def test_napi_package_exports_combined_readback_copy_path(self) -> None:
         buffer_source = NAPI_BUFFER_PATH.read_text(encoding="utf-8")
@@ -370,6 +379,16 @@ class NodeWebGPUExecutorTests(unittest.TestCase):
         self.assertIn("pfn_doeNativeBufferMapAsync", buffer_source)
         self.assertIn('napi_set_named_property(env, result_obj, "bytes", bytes);', buffer_source)
         self.assertIn('EXPORT_FN("bufferMapReadCopyUnmap",                   doe_buffer_map_read_copy_unmap)', init_source)
+
+    def test_napi_package_exports_queue_sync_info(self) -> None:
+        queue_source = NAPI_QUEUE_PATH.read_text(encoding="utf-8")
+        init_source = NAPI_INIT_PATH.read_text(encoding="utf-8")
+        header_source = NAPI_INTERNAL_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("napi_value doe_queue_sync_info", queue_source)
+        self.assertIn("pfn_doeNativeQueueSyncInfo(queue)", queue_source)
+        self.assertIn('EXPORT_FN("queueSyncInfo",                            doe_queue_sync_info)', init_source)
+        self.assertIn("DECL_PFN(uint32_t, doeNativeQueueSyncInfo", header_source)
 
     def test_napi_readback_map_prefers_doe_native_map_symbol(self) -> None:
         for path in (NAPI_BUFFER_PATH, NAPI_QUEUE_PATH, NAPI_ND_IMMEDIATES_PATH):
@@ -398,6 +417,35 @@ console.log(JSON.stringify(classified));
         classified = json.loads(result.stdout)
         self.assertEqual(classified["unsupportedCode"], "device_unavailable")
         self.assertIn("vulkan runtime init failed", classified["detail"])
+
+    def test_build_shader_source_receipt_hashes_exact_source_text(self) -> None:
+        script = f"""
+import {{ buildShaderSourceReceipt }} from {json.dumps(EXECUTOR_MODULE_URL)};
+const receipt = buildShaderSourceReceipt({{
+  id: 'multiply',
+  entryPoint: 'main',
+  source: {{ kind: 'path', path: 'bench/kernels/multiply.wgsl' }},
+}}, 'abc');
+console.log(JSON.stringify(receipt));
+"""
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads(result.stdout)
+        self.assertEqual(receipt["moduleId"], "multiply")
+        self.assertEqual(receipt["sourceKind"], "path")
+        self.assertEqual(receipt["path"], "bench/kernels/multiply.wgsl")
+        self.assertEqual(receipt["entryPoint"], "main")
+        self.assertEqual(receipt["byteLength"], 3)
+        self.assertEqual(
+            receipt["sha256"],
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        )
 
     def test_build_unsupported_execution_result_preserves_prepared_session_boundary(self) -> None:
         script = f"""
@@ -899,6 +947,8 @@ console.log(JSON.stringify({{
   rowCount: result.meta.executionRowCount,
   successCount: result.meta.executionSuccessCount,
   dispatchCount: result.meta.executionDispatchCount,
+  shaderSourceReceipts: result.meta.shaderSourceReceipts,
+  shaderSourceReceiptsHash: result.meta.shaderSourceReceiptsHash,
   rows: result.rows.length,
 }}));
 """
@@ -914,6 +964,10 @@ console.log(JSON.stringify({{
             self.assertEqual(payload["rowCount"], 12)
             self.assertEqual(payload["successCount"], 12)
             self.assertEqual(payload["dispatchCount"], 3)
+            self.assertEqual(len(payload["shaderSourceReceipts"]), 1)
+            self.assertEqual(payload["shaderSourceReceipts"][0]["moduleId"], "multiply")
+            self.assertRegex(payload["shaderSourceReceipts"][0]["sha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(payload["shaderSourceReceiptsHash"], r"^[0-9a-f]{64}$")
             self.assertEqual(payload["rows"], 12)
 
     def test_build_request_device_descriptor_omits_empty_fields(self) -> None:

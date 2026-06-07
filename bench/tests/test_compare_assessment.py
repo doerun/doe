@@ -41,6 +41,17 @@ def _sample(*, backend: str, command_replay_ns: int) -> dict:
                 "submitAddonFlushTotalNs": 0,
                 "submitQueueWaitTotalNs": 0,
             },
+            "shaderSourceReceiptsHash": "a" * 64,
+            "shaderSourceReceipts": [
+                {
+                    "moduleId": "main",
+                    "sourceKind": "path",
+                    "path": "bench/kernels/main.wgsl",
+                    "entryPoint": "main",
+                    "byteLength": 1,
+                    "sha256": "b" * 64,
+                }
+            ],
             "adapterInfo": {
                 "vendor": "apple",
                 "device": "Apple M3",
@@ -223,6 +234,36 @@ class CompareAssessmentTests(unittest.TestCase):
         self.assertFalse(result["comparable"])
         self.assertIn(
             "baseline_comparison_execution_shape_match",
+            result["blockingFailedObligations"],
+        )
+
+    def test_shader_source_receipt_mismatch_blocks_strict_package_compare(self) -> None:
+        baseline_sample = _sample(backend="doe_node_webgpu", command_replay_ns=0)
+        comparison_sample = _sample(backend="node_webgpu_package", command_replay_ns=0)
+        comparison_sample["traceMeta"]["shaderSourceReceiptsHash"] = "c" * 64
+
+        result = compare_assessment(
+            workload_id="inference_gemma3_270m_prefill_64tok_decode_64tok",
+            workload_comparable=True,
+            workload_domain="compute",
+            workload_api="webgpu",
+            workload_commands_path="bench/plans/generated/compat/inference_commands.json",
+            workload_path_asymmetry=False,
+            workload_path_asymmetry_note="",
+            baseline_command_repeat=1,
+            comparison_command_repeat=1,
+            baseline={"commandSamples": [baseline_sample]},
+            comparison={"commandSamples": [comparison_sample]},
+            required_timing_class="operation",
+            allow_baseline_no_execution=False,
+            resource_probe="none",
+            comparability_mode="strict",
+            resource_sample_target_count=0,
+        )
+
+        self.assertFalse(result["comparable"])
+        self.assertIn(
+            "baseline_comparison_shader_source_receipts_match",
             result["blockingFailedObligations"],
         )
 

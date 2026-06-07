@@ -15,7 +15,7 @@ const VK_NULL_U64 = c.VK_NULL_U64;
 
 /// Maximum fences managed by the pool. Sized for typical pipelined depth
 /// (upload batch + dispatch + render) without over-allocating driver objects.
-pub const FENCE_POOL_CAPACITY: usize = 4;
+pub const FENCE_POOL_CAPACITY: usize = 128;
 
 /// Timeout for per-fence waits (nanoseconds). Matches vk_upload.WAIT_TIMEOUT_NS.
 pub const FENCE_WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);

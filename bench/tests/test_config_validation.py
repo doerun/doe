@@ -297,6 +297,55 @@ class TestRealConfigs(unittest.TestCase):
         with self.assertRaises(jsonschema.ValidationError):
             jsonschema.validate(invalid, schema)
 
+    def test_trace_meta_accepts_shader_source_receipts(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        sch = repo_root / "config" / "trace-meta.schema.json"
+        schema = json.loads(sch.read_text(encoding="utf-8"))
+        valid = {
+            "traceVersion": 1,
+            "module": "doe-gpu/package",
+            "seqMax": 0,
+            "rowCount": 0,
+            "hash": "sha256:" + ("1" * 64),
+            "previousHash": "sha256:" + ("0" * 64),
+            "shaderSourceReceiptsHash": "2" * 64,
+            "shaderSourceReceipts": [
+                {
+                    "moduleId": "multiply",
+                    "sourceKind": "path",
+                    "path": "bench/kernels/multiply.wgsl",
+                    "entryPoint": "main",
+                    "byteLength": 3,
+                    "sha256": "3" * 64,
+                }
+            ],
+        }
+        jsonschema.validate(valid, schema)
+
+    def test_trace_meta_accepts_package_native_queue_sync_info(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        sch = repo_root / "config" / "trace-meta.schema.json"
+        schema = json.loads(sch.read_text(encoding="utf-8"))
+        valid = {
+            "traceVersion": 1,
+            "module": "doe-gpu/package",
+            "seqMax": 0,
+            "rowCount": 0,
+            "hash": "sha256:" + ("1" * 64),
+            "previousHash": "sha256:" + ("0" * 64),
+            "packageNativeQueueSyncInfo": {
+                "backendVulkan": True,
+                "timelineSemaphore": True,
+                "fencePool": True,
+                "deferredSubmissions": False,
+            },
+        }
+        jsonschema.validate(valid, schema)
+        invalid = json.loads(json.dumps(valid))
+        del invalid["packageNativeQueueSyncInfo"]["timelineSemaphore"]
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(invalid, schema)
+
     def test_trace_meta_determinism_accepts_stable_token_summary(self):
         repo_root = Path(__file__).resolve().parents[2]
         sch = repo_root / "config" / "trace-meta.schema.json"

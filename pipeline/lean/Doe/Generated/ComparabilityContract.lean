@@ -1,6 +1,6 @@
 import Doe.Core.Model
 
-def comparabilityContractSha256 : String := "35df458142977e4dbba448c7b60c344ba65af8f7c9f16ee478d8ef504e89c99e"
+def comparabilityContractSha256 : String := "04d87a105ff82ffcb7b5d124a96e583880b78c2587fce8759b71b22bdc48fc59"
 
 inductive ComparabilityObligationId where
   | workloadMarkedComparable
@@ -18,6 +18,7 @@ inductive ComparabilityObligationId where
   | baselineComparisonTimingPhaseMatch
   | baselineComparisonPackageResidentBufferLoadModeMatch
   | baselineComparisonPackageResidentBufferLoadShapeMatch
+  | baselineComparisonShaderSourceReceiptsMatch
   | baselineComparisonExecutionShapeMatch
   | baselineComparisonReadbackCaptureMatch
   | baselineComparisonHardwarePathMatch
@@ -85,6 +86,8 @@ structure ComparabilityFacts where
   baselineComparisonPackageResidentBufferLoadModeMatch : Bool
   packageResidentBufferLoadShapeMatchApplies : Bool
   baselineComparisonPackageResidentBufferLoadShapeMatch : Bool
+  packageShaderSourceReceiptsMatchApplies : Bool
+  baselineComparisonShaderSourceReceiptsMatch : Bool
   executionShapeMatchApplies : Bool
   baselineComparisonExecutionShapeMatch : Bool
   readbackCaptureMatchApplies : Bool
@@ -182,6 +185,10 @@ def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObliga
       blocking := true
       applicable := facts.packageResidentBufferLoadShapeMatchApplies
       passes := facts.baselineComparisonPackageResidentBufferLoadShapeMatch },
+    { id := .baselineComparisonShaderSourceReceiptsMatch
+      blocking := true
+      applicable := facts.packageShaderSourceReceiptsMatchApplies
+      passes := facts.baselineComparisonShaderSourceReceiptsMatch },
     { id := .baselineComparisonExecutionShapeMatch
       blocking := true
       applicable := facts.executionShapeMatchApplies

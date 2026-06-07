@@ -27,13 +27,14 @@ pub const Config = struct {
 };
 
 pub const Stats = struct {
+    const_integer_unary_folds: u32 = 0,
     const_integer_folds: u32 = 0,
     integer_identities: u32 = 0,
     bool_identities: u32 = 0,
     expr_refs_rewritten: u32 = 0,
 
     pub fn total(self: Stats) u32 {
-        return self.const_integer_folds + self.integer_identities + self.bool_identities;
+        return self.const_integer_unary_folds + self.const_integer_folds + self.integer_identities + self.bool_identities;
     }
 };
 
@@ -82,6 +83,11 @@ fn rewriteFunction(
                 }
                 if (config.bool_identities) {
                     if (tryRewriteBoolIdentity(module, function, replacements, expr_id, binary, stats)) continue;
+                }
+            },
+            .unary => |unary| {
+                if (config.integer_identities) {
+                    if (tryFoldConstIntegerUnary(module, function, expr_id, unary, stats)) continue;
                 }
             },
             else => {},
@@ -261,6 +267,37 @@ fn tryFoldConstIntegerBinary(
     function.exprs.items[expr_id].data = .{ .int_lit = folded };
     stats.const_integer_folds += 1;
     return true;
+}
+
+fn tryFoldConstIntegerUnary(
+    module: *const ir.Module,
+    function: *ir.Function,
+    expr_id: ir.ExprId,
+    unary: @FieldType(ir.Expr, "unary"),
+    stats: *Stats,
+) bool {
+    const result_scalar = scalarKind(module, function.exprs.items[expr_id].ty) orelse return false;
+    if (!isIntegerScalar(result_scalar)) return false;
+
+    const operand_raw = ir_const_eval.resolve_constant_int(module, function, unary.operand) orelse return false;
+    const folded = foldIntegerUnary(unary.op, result_scalar, operand_raw) orelse return false;
+    function.exprs.items[expr_id].data = .{ .int_lit = folded };
+    stats.const_integer_unary_folds += 1;
+    return true;
+}
+
+fn foldIntegerUnary(op: ir.UnaryOp, result_scalar: ir.ScalarType, operand_raw: u64) ?u64 {
+    const operand_u32: u32 = @truncate(operand_raw);
+    const operand_i32: i32 = @bitCast(operand_u32);
+    const folded_u32: u32 = switch (op) {
+        .bit_not => ~operand_u32,
+        .neg => switch (result_scalar) {
+            .i32, .abstract_int => @bitCast(-%operand_i32),
+            else => return null,
+        },
+        else => return null,
+    };
+    return folded_u32;
 }
 
 fn foldIntegerBinary(op: ir.BinaryOp, result_scalar: ir.ScalarType, lhs_raw: u64, rhs_raw: u64) ?u64 {
@@ -466,6 +503,18 @@ fn appendTestParam(function: *ir.Function, allocator: std.mem.Allocator, name: [
     return index;
 }
 
+fn appendTestLocal(function: *ir.Function, allocator: std.mem.Allocator, name: []const u8, ty: ir.TypeId, mutable: bool) !u32 {
+    const owned_name = try ir.dup_string(allocator, name);
+    errdefer allocator.free(owned_name);
+    const index: u32 = @intCast(function.locals.items.len);
+    try function.locals.append(allocator, .{
+        .name = owned_name,
+        .ty = ty,
+        .mutable = mutable,
+    });
+    return index;
+}
+
 test "integer identity rewrites return expression to dynamic operand" {
     var module = ir.Module.init(std.testing.allocator);
     defer module.deinit();
@@ -579,6 +628,104 @@ test "integer const binary folds mutate expression to literal" {
     const stats = try apply(module.allocator, &module);
     try std.testing.expectEqual(@as(u32, 1), stats.const_integer_folds);
     try std.testing.expectEqual(@as(u64, 42), module.functions.items[0].exprs.items[mul_id].data.int_lit);
+}
+
+test "integer const binary folds through local let aliases" {
+    var module = ir.Module.init(std.testing.allocator);
+    defer module.deinit();
+
+    const u32_ty = try module.types.intern(.{ .scalar = .u32 });
+    const function = try appendTestFunction(&module, "main", u32_ty);
+    const local_lane_width = try appendTestLocal(function, module.allocator, "lane_width", u32_ty, false);
+
+    const lane_width_value_id = try function.append_expr(module.allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .int_lit = 64 },
+    });
+    const lane_width_decl = try function.append_stmt(module.allocator, .{ .local_decl = .{
+        .local = local_lane_width,
+        .initializer = lane_width_value_id,
+        .is_const = true,
+    } });
+    const lane_width_ref_id = try function.append_expr(module.allocator, .{
+        .ty = u32_ty,
+        .category = .ref,
+        .data = .{ .local_ref = local_lane_width },
+    });
+    const lane_width_load_id = try function.append_expr(module.allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .load = lane_width_ref_id },
+    });
+    const four_id = try function.append_expr(module.allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .int_lit = 4 },
+    });
+    const mul_id = try function.append_expr(module.allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .binary = .{
+            .op = .mul,
+            .lhs = lane_width_load_id,
+            .rhs = four_id,
+        } },
+    });
+    const return_stmt = try function.append_stmt(module.allocator, .{ .return_ = mul_id });
+    function.root_stmt = try function.append_stmt(module.allocator, .{
+        .block = try function.append_stmt_children(module.allocator, &.{ lane_width_decl, return_stmt }),
+    });
+
+    const stats = try apply(module.allocator, &module);
+    try std.testing.expectEqual(@as(u32, 1), stats.const_integer_folds);
+    try std.testing.expectEqual(@as(u64, 256), module.functions.items[0].exprs.items[mul_id].data.int_lit);
+}
+
+test "integer const unary folds through local let aliases" {
+    var module = ir.Module.init(std.testing.allocator);
+    defer module.deinit();
+
+    const u32_ty = try module.types.intern(.{ .scalar = .u32 });
+    const function = try appendTestFunction(&module, "main", u32_ty);
+    const local_mask_bits = try appendTestLocal(function, module.allocator, "mask_bits", u32_ty, false);
+
+    const mask_bits_value_id = try function.append_expr(module.allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .int_lit = 3 },
+    });
+    const mask_bits_decl = try function.append_stmt(module.allocator, .{ .local_decl = .{
+        .local = local_mask_bits,
+        .initializer = mask_bits_value_id,
+        .is_const = true,
+    } });
+    const mask_bits_ref_id = try function.append_expr(module.allocator, .{
+        .ty = u32_ty,
+        .category = .ref,
+        .data = .{ .local_ref = local_mask_bits },
+    });
+    const mask_bits_load_id = try function.append_expr(module.allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .load = mask_bits_ref_id },
+    });
+    const not_id = try function.append_expr(module.allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .unary = .{
+            .op = .bit_not,
+            .operand = mask_bits_load_id,
+        } },
+    });
+    const return_stmt = try function.append_stmt(module.allocator, .{ .return_ = not_id });
+    function.root_stmt = try function.append_stmt(module.allocator, .{
+        .block = try function.append_stmt_children(module.allocator, &.{ mask_bits_decl, return_stmt }),
+    });
+
+    const stats = try apply(module.allocator, &module);
+    try std.testing.expectEqual(@as(u32, 1), stats.const_integer_unary_folds);
+    try std.testing.expectEqual(@as(u64, 0xffff_fffc), module.functions.items[0].exprs.items[not_id].data.int_lit);
 }
 
 test "absorbing integer identities preserve zero operand" {

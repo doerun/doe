@@ -25,6 +25,8 @@
     "baseline_comparison_package_resident_buffer_load_mode_match",
     "package_resident_buffer_load_shape_match_applies",
     "baseline_comparison_package_resident_buffer_load_shape_match",
+    "package_shader_source_receipts_match_applies",
+    "baseline_comparison_shader_source_receipts_match",
     "execution_shape_match_applies",
     "baseline_comparison_execution_shape_match",
     "readback_capture_match_applies",
@@ -149,6 +151,12 @@
       "blocking": true,
       "applicableWhen": { "fact": "package_resident_buffer_load_shape_match_applies" },
       "passesWhen": { "fact": "baseline_comparison_package_resident_buffer_load_shape_match" }
+    },
+    {
+      "id": "baseline_comparison_shader_source_receipts_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "package_shader_source_receipts_match_applies" },
+      "passesWhen": { "fact": "baseline_comparison_shader_source_receipts_match" }
     },
     {
       "id": "baseline_comparison_execution_shape_match",

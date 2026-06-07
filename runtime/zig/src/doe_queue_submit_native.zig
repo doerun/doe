@@ -56,6 +56,10 @@ pub export fn doeNativeQueueFlushBreakdown(
     );
 }
 
+pub export fn doeNativeQueueSyncInfo(q_raw: ?*anyopaque) callconv(.c) u32 {
+    return lifecycle.doeNativeQueueSyncInfo(q_raw);
+}
+
 pub export fn doeNativeQueueWriteBuffer(
     q_raw: ?*anyopaque,
     buf_raw: ?*anyopaque,

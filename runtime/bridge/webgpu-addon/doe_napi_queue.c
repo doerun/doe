@@ -694,6 +694,11 @@ static void set_bool_property(napi_env env, napi_value obj, const char* name, bo
     napi_set_named_property(env, obj, name, js_value);
 }
 
+#define DOE_QUEUE_SYNC_INFO_BACKEND_VULKAN 1u
+#define DOE_QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE 2u
+#define DOE_QUEUE_SYNC_INFO_FENCE_POOL 4u
+#define DOE_QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS 8u
+
 napi_value doe_native_fast_path_info(napi_env env, napi_callback_info info) {
     (void)info;
     CHECK_LIB_LOADED(env);
@@ -714,6 +719,26 @@ napi_value doe_native_fast_path_info(napi_env env, napi_callback_info info) {
     set_bool_property(env, result, "computeDispatchBatchCopyFlush", pfn_doeNativeComputeDispatchBatchCopyFlush != NULL);
     set_bool_property(env, result, "computeDispatchBatchCopyFlushBreakdown", pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown != NULL);
     set_bool_property(env, result, "bufferMapReadCopyUnmap", pfn_doeBufferMapReadCopyUnmapFlat != NULL);
+    return result;
+}
+
+napi_value doe_queue_sync_info(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUQueue queue = unwrap_ptr(env, _args[0]);
+    if (!queue) NAPI_THROW(env, "queueSyncInfo requires queue");
+    if (!pfn_doeNativeQueueSyncInfo) {
+        napi_value null_value;
+        napi_get_null(env, &null_value);
+        return null_value;
+    }
+    const uint32_t bits = pfn_doeNativeQueueSyncInfo(queue);
+    napi_value result;
+    napi_create_object(env, &result);
+    set_bool_property(env, result, "backendVulkan", (bits & DOE_QUEUE_SYNC_INFO_BACKEND_VULKAN) != 0);
+    set_bool_property(env, result, "timelineSemaphore", (bits & DOE_QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE) != 0);
+    set_bool_property(env, result, "fencePool", (bits & DOE_QUEUE_SYNC_INFO_FENCE_POOL) != 0);
+    set_bool_property(env, result, "deferredSubmissions", (bits & DOE_QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS) != 0);
     return result;
 }
 

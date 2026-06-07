@@ -108,6 +108,7 @@ pub const try_schedule_deferred_copy = m0.try_schedule_deferred_copy;
 pub const doeNativeQueueSubmit = m0.doeNativeQueueSubmit;
 pub const doeNativeQueueFlush = m0.doeNativeQueueFlush;
 pub const doeNativeQueueFlushBreakdown = m0.doeNativeQueueFlushBreakdown;
+pub const doeNativeQueueSyncInfo = m0.doeNativeQueueSyncInfo;
 pub const doeNativeQueueWriteBuffer = m0.doeNativeQueueWriteBuffer;
 pub const doeNativeQueueWriteBufferBatch = m0.doeNativeQueueWriteBufferBatch;
 pub const doeNativeQueueWriteBufferBatchDataPtrs = m0.doeNativeQueueWriteBufferBatchDataPtrs;

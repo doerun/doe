@@ -256,6 +256,22 @@ def compare_assessment(
     left_resident_buffer_load_shapes = collect_resident_buffer_load_shapes(left_samples)
     right_resident_buffer_load_shapes = collect_resident_buffer_load_shapes(right_samples)
 
+    def collect_shader_source_receipt_hashes(samples: list[dict[str, Any]]) -> set[str]:
+        hashes: set[str] = set()
+        for sample in samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            value = trace_meta.get("shaderSourceReceiptsHash")
+            if isinstance(value, str) and value.strip():
+                hashes.add(value.strip())
+        return hashes
+
+    left_shader_source_receipt_hashes = collect_shader_source_receipt_hashes(left_samples)
+    right_shader_source_receipt_hashes = collect_shader_source_receipt_hashes(right_samples)
+
     def collect_readback_capture_signatures(samples: list[dict[str, Any]]) -> list[dict[str, Any]]:
         signatures: set[tuple[Any, ...]] = set()
         for sample in samples:
@@ -641,6 +657,29 @@ def compare_assessment(
                 {"count": count, "bytes": byte_count}
                 for count, byte_count in sorted(right_resident_buffer_load_shapes)
             ],
+        },
+    )
+    shader_source_receipts_match_applies = comparability_mode == "strict" and package_execution_applies
+    shader_source_receipts_match = (
+        len(left_shader_source_receipt_hashes) > 0
+        and len(right_shader_source_receipt_hashes) > 0
+        and left_shader_source_receipt_hashes == right_shader_source_receipt_hashes
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_shader_source_receipts_match",
+        blocking=True,
+        applicable=shader_source_receipts_match_applies,
+        passes=shader_source_receipts_match,
+        failure_reason=(
+            "baseline/comparison package shader source receipt mismatch: "
+            f"{sorted(left_shader_source_receipt_hashes)} vs "
+            f"{sorted(right_shader_source_receipt_hashes)}"
+        ),
+        details={
+            "baselineShaderSourceReceiptsHash": sorted(left_shader_source_receipt_hashes),
+            "comparisonShaderSourceReceiptsHash": sorted(right_shader_source_receipt_hashes),
         },
     )
 

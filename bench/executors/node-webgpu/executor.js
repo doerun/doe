@@ -189,6 +189,53 @@ function stableArtifactHash(payload) {
   return createHash('sha256').update(JSON.stringify(payload), 'utf8').digest('hex');
 }
 
+function digestText(text) {
+  return createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
+export function buildShaderSourceReceipt(moduleDef, code) {
+  if (typeof code !== 'string') {
+    throw new Error(`shader module ${moduleDef?.id ?? '<unknown>'} source must be a string`);
+  }
+  const source = moduleDef?.source ?? {};
+  const receipt = {
+    moduleId: moduleDef?.id ?? '',
+    sourceKind: source.kind ?? '',
+    byteLength: Buffer.byteLength(code, 'utf8'),
+    sha256: digestText(code),
+  };
+  if (typeof source.path === 'string') {
+    receipt.path = source.path;
+  }
+  if (typeof moduleDef?.entryPoint === 'string') {
+    receipt.entryPoint = moduleDef.entryPoint;
+  }
+  return receipt;
+}
+
+function shaderSourceReceiptFields(shaderSourceReceipts) {
+  return {
+    shaderSourceReceipts,
+    shaderSourceReceiptsHash: stableArtifactHash(shaderSourceReceipts),
+  };
+}
+
+async function readShaderSource(moduleDef) {
+  if (moduleDef.source.kind === 'inline') {
+    return moduleDef.source.code;
+  }
+  return readFile(resolve(REPO_ROOT, moduleDef.source.path), 'utf8');
+}
+
+async function collectShaderSourceReceipts(normalizedPlan) {
+  const receipts = [];
+  for (const moduleDef of normalizedPlan.modules) {
+    const code = await readShaderSource(moduleDef);
+    receipts.push(buildShaderSourceReceipt(moduleDef, code));
+  }
+  return receipts;
+}
+
 function decodeU32Le(view) {
   if (!(view instanceof Uint8Array) || view.byteLength < 4) {
     return undefined;
@@ -854,6 +901,27 @@ function snapshotPackageNativeFastPaths(providerModule) {
     computeDispatchBatchCopyFlush: Boolean(info.computeDispatchBatchCopyFlush),
     computeDispatchBatchCopyFlushBreakdown: Boolean(info.computeDispatchBatchCopyFlushBreakdown),
     bufferMapReadCopyUnmap: Boolean(info.bufferMapReadCopyUnmap),
+  };
+}
+
+function snapshotPackageNativeQueueSyncInfo(providerModule, queue) {
+  if (typeof providerModule?.nativeQueueSyncInfo !== 'function' || !queue) {
+    return null;
+  }
+  let info = null;
+  try {
+    info = providerModule.nativeQueueSyncInfo(queue);
+  } catch {
+    return null;
+  }
+  if (!info || typeof info !== 'object') {
+    return null;
+  }
+  return {
+    backendVulkan: Boolean(info.backendVulkan),
+    timelineSemaphore: Boolean(info.timelineSemaphore),
+    fencePool: Boolean(info.fencePool),
+    deferredSubmissions: Boolean(info.deferredSubmissions),
   };
 }
 
@@ -1652,6 +1720,7 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
   const pipelineCache = new Map();
   const bindGroupCache = new Map();
   const setupBreakdownNs = zeroPackageSetupBreakdown();
+  const shaderSourceInputs = [];
   debugLog('runtime.setup.start', {
     bufferCount: normalizedPlan.buffers.length,
     moduleCount: normalizedPlan.modules.length,
@@ -1696,11 +1765,10 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
       });
     }
     const moduleStartedAt = performance.now();
-    const code = moduleDef.source.kind === 'inline'
-      ? moduleDef.source.code
-      : await readFile(resolve(REPO_ROOT, moduleDef.source.path), 'utf8');
+    const code = await readShaderSource(moduleDef);
     shaderModules.set(moduleDef.id, device.createShaderModule({ code }));
     setupBreakdownNs.shaderModuleCreateTotalNs += nsDelta(moduleStartedAt);
+    shaderSourceInputs.push({ moduleDef, code });
   }
 
   let dispatchSetupIndex = 0;
@@ -1790,6 +1858,9 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
     setupTotalNs,
     setupBreakdownNs,
   });
+  const shaderSourceReceipts = shaderSourceInputs.map(({ moduleDef, code }) => (
+    buildShaderSourceReceipt(moduleDef, code)
+  ));
 
   return {
     // Keep the provider module and JS GPU root alive until the run fully drains.
@@ -1814,6 +1885,7 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
     hostExecutorInitTotalNs,
     setupTotalNs,
     setupBreakdownNs,
+    shaderSourceReceipts,
   };
 }
 
@@ -2476,6 +2548,10 @@ async function executeSample(
     snapshotPackageFastPathStats(runtime.providerModule),
   );
   const packageNativeFastPaths = snapshotPackageNativeFastPaths(runtime.providerModule);
+  const packageNativeQueueSyncInfo = snapshotPackageNativeQueueSyncInfo(
+    runtime.providerModule,
+    runtime.queue,
+  );
 
   const meta = {
     schemaVersion: 1,
@@ -2523,6 +2599,7 @@ async function executeSample(
     adapterLimits: runtime.adapter.limits ?? null,
     planSummary: planSummary(normalizedPlan),
     executionShape: normalizedPlan.executionShape,
+    ...shaderSourceReceiptFields(runtime.shaderSourceReceipts),
     packagePreparedSession: !includeSetupInSelectedTiming,
     packageSetupIncludedInSelectedTiming: includeSetupInSelectedTiming,
     packageSetupTotalNs: runtime.setupTotalNs,
@@ -2533,6 +2610,7 @@ async function executeSample(
     packageResidentBufferLoadBreakdown: residentBufferLoadBreakdown,
     packageReadbackMode,
     ...(packageNativeFastPaths ? { packageNativeFastPaths } : {}),
+    ...(packageNativeQueueSyncInfo ? { packageNativeQueueSyncInfo } : {}),
     ...(packageFastPathStats ? { packageFastPathStats } : {}),
     ...(readbackCaptures.length > 0 ? { readbackCaptures } : {}),
     ...(determinismResult ? { determinism: determinismResult.determinism } : {}),
@@ -2625,6 +2703,7 @@ export async function executePlanFile({
   }
   if (dryRun) {
     const executionSteps = selectedExecutionSteps(normalizedPlan.steps, residentBufferLoads);
+    const shaderSourceReceipts = await collectShaderSourceReceipts(normalizedPlan);
     const meta = {
       schemaVersion: 1,
       kind: 'trace_meta',
@@ -2664,6 +2743,7 @@ export async function executePlanFile({
       planHash: normalizedPlan.planHash,
       planSummary: planSummary(normalizedPlan),
       executionShape: normalizedPlan.executionShape,
+      ...shaderSourceReceiptFields(shaderSourceReceipts),
       packagePreparedSession: preparedSession,
       packageSetupIncludedInSelectedTiming: !preparedSession,
       packageSetupTotalNs: 0,

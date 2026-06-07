@@ -434,6 +434,33 @@ pub fn bind_descriptor_sets(self: anytype, command_buffer: c.VkCommandBuffer) vo
     );
 }
 
+pub fn reset_bound_compute_state(self: anytype) void {
+    self.bound_compute_pipeline = VK_NULL_U64;
+    self.bound_compute_pipeline_layout = VK_NULL_U64;
+    self.bound_descriptor_bindings_hash = 0;
+    self.has_bound_descriptor_bindings_hash = false;
+}
+
+pub fn bind_compute_pipeline_if_needed(self: anytype, command_buffer: c.VkCommandBuffer) void {
+    if (self.bound_compute_pipeline == self.pipeline) return;
+    c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
+    self.bound_compute_pipeline = self.pipeline;
+}
+
+pub fn bind_descriptor_sets_if_needed(self: anytype, command_buffer: c.VkCommandBuffer) void {
+    if (!self.has_descriptor_pool or self.descriptor_set_count == 0) return;
+    if (self.has_bound_descriptor_bindings_hash and
+        self.bound_compute_pipeline_layout == self.pipeline_layout and
+        self.bound_descriptor_bindings_hash == self.current_descriptor_bindings_hash)
+    {
+        return;
+    }
+    bind_descriptor_sets(self, command_buffer);
+    self.bound_compute_pipeline_layout = self.pipeline_layout;
+    self.bound_descriptor_bindings_hash = self.current_descriptor_bindings_hash;
+    self.has_bound_descriptor_bindings_hash = self.has_current_descriptor_bindings_hash;
+}
+
 fn ensure_pipeline_layout(self: anytype, bindings: ?[]const model_compute_types.KernelBinding) !void {
     const layout_hash = compute_layout_hash(bindings);
     if (self.has_pipeline_layout and layout_hash == self.current_layout_hash) return;

@@ -116,6 +116,7 @@ PFN_doeNativeDeviceCreatePipelineLayoutOne pfn_doeNativeDeviceCreatePipelineLayo
 PFN_doeNativePackagePipelineCacheFlush pfn_doeNativePackagePipelineCacheFlush = NULL;
 PFN_doeNativeQueueFlush pfn_doeNativeQueueFlush = NULL;
 PFN_doeNativeQueueFlushBreakdown pfn_doeNativeQueueFlushBreakdown = NULL;
+PFN_doeNativeQueueSyncInfo pfn_doeNativeQueueSyncInfo = NULL;
 PFN_doeNativeComputeDispatchFlush pfn_doeNativeComputeDispatchFlush = NULL;
 PFN_doeNativeComputeDispatchFlushBreakdown pfn_doeNativeComputeDispatchFlushBreakdown = NULL;
 PFN_doeNativeComputeDispatchBatchFlush pfn_doeNativeComputeDispatchBatchFlush = NULL;
@@ -384,6 +385,7 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativePackagePipelineCacheFlush = (PFN_doeNativePackagePipelineCacheFlush)LIB_SYM(g_lib, "doeNativePackagePipelineCacheFlush");
     pfn_doeNativeQueueFlush = (PFN_doeNativeQueueFlush)LIB_SYM(g_lib, "doeNativeQueueFlush");
     pfn_doeNativeQueueFlushBreakdown = (PFN_doeNativeQueueFlushBreakdown)LIB_SYM(g_lib, "doeNativeQueueFlushBreakdown");
+    pfn_doeNativeQueueSyncInfo = (PFN_doeNativeQueueSyncInfo)LIB_SYM(g_lib, "doeNativeQueueSyncInfo");
     pfn_doeNativeComputeDispatchFlush = (PFN_doeNativeComputeDispatchFlush)LIB_SYM(g_lib, "doeNativeComputeDispatchFlush");
     pfn_doeNativeComputeDispatchFlushBreakdown = (PFN_doeNativeComputeDispatchFlushBreakdown)LIB_SYM(g_lib, "doeNativeComputeDispatchFlushBreakdown");
     pfn_doeNativeComputeDispatchBatchFlush = (PFN_doeNativeComputeDispatchBatchFlush)LIB_SYM(g_lib, "doeNativeComputeDispatchBatchFlush");

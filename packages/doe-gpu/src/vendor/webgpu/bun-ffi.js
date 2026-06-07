@@ -477,6 +477,10 @@ function openLibrary(path) {
             args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr],
             returns: FFIType.void,
         };
+        symbols.doeNativeQueueSyncInfo = {
+            args: [FFIType.ptr],
+            returns: FFIType.u32,
+        };
         symbols.doeNativePackagePipelineCacheFlush = {
             args: [],
             returns: FFIType.void,
@@ -768,6 +772,11 @@ function copyNativeErrorMeta(symbolName) {
 
 const fastPathStats = { dispatchFlush: 0, flushAndMap: 0, commandBufferBuild: 0 };
 
+const QUEUE_SYNC_INFO_BACKEND_VULKAN = 1;
+const QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE = 2;
+const QUEUE_SYNC_INFO_FENCE_POOL = 4;
+const QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS = 8;
+
 function nativeFastPathInfoFromSymbols() {
     if (!DOE_LIB_PATH) {
         return null;
@@ -791,6 +800,31 @@ function nativeFastPathInfoFromSymbols() {
         computeDispatchBatchCopyFlushBreakdown: typeof symbols.doeNativeComputeDispatchBatchCopyFlushBreakdown === "function",
         bufferMapReadCopyUnmap: typeof symbols.doeBufferMapReadCopyUnmapFlat === "function",
     };
+}
+
+function decodeQueueSyncInfoBits(bits) {
+    return {
+        backendVulkan: (bits & QUEUE_SYNC_INFO_BACKEND_VULKAN) !== 0,
+        timelineSemaphore: (bits & QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE) !== 0,
+        fencePool: (bits & QUEUE_SYNC_INFO_FENCE_POOL) !== 0,
+        deferredSubmissions: (bits & QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS) !== 0,
+    };
+}
+
+export function nativeQueueSyncInfo(queue) {
+    if (!DOE_LIB_PATH) {
+        return null;
+    }
+    try {
+        ensureLibrary();
+    } catch (_error) {
+        return null;
+    }
+    const fn = wgpu?.symbols?.doeNativeQueueSyncInfo;
+    if (typeof fn !== "function" || !queue?._native) {
+        return null;
+    }
+    return decodeQueueSyncInfoBits(Number(fn(queue._native)));
 }
 
 function cachedShaderSourceBytes(code) {
@@ -4486,6 +4520,7 @@ export default {
     requestDevice,
     providerInfo,
     nativeFastPathInfo,
+    nativeQueueSyncInfo,
     preflightShaderSource,
     setNativeTimeoutMs,
     createDoeRuntime,

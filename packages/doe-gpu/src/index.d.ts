@@ -72,6 +72,13 @@ export interface NativeFastPathInfo {
   bufferMapReadCopyUnmap: boolean;
 }
 
+export interface NativeQueueSyncInfo {
+  backendVulkan: boolean;
+  timelineSemaphore: boolean;
+  fencePool: boolean;
+  deferredSubmissions: boolean;
+}
+
 export interface ProviderInfo {
   module: string;
   loaded: boolean;
@@ -220,6 +227,7 @@ export function requestAdapter(
 export function requestDevice(options?: RequestDeviceOptions): Promise<GPUDevice>;
 export function providerInfo(): ProviderInfo;
 export function nativeFastPathInfo(): NativeFastPathInfo | null;
+export function nativeQueueSyncInfo(queue: GPUQueue): NativeQueueSyncInfo | null;
 export const fastPathStats: FastPathStats | undefined;
 export function createDoeRuntime(options?: {
   binPath?: string;
@@ -287,6 +295,7 @@ declare const _default: {
   requestDevice: typeof requestDevice;
   providerInfo: typeof providerInfo;
   nativeFastPathInfo: typeof nativeFastPathInfo;
+  nativeQueueSyncInfo: typeof nativeQueueSyncInfo;
   fastPathStats: typeof fastPathStats;
   createDoeRuntime: typeof createDoeRuntime;
   runDawnVsDoeCompare: typeof runDawnVsDoeCompare;

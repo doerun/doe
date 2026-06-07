@@ -530,6 +530,7 @@ DECL_PFN(WGPUPipelineLayout, doeNativeDeviceCreatePipelineLayoutOne, (WGPUDevice
 DECL_PFN(void, doeNativePackagePipelineCacheFlush, (void));
 DECL_PFN(void, doeNativeQueueFlush, (void*));
 DECL_PFN(void, doeNativeQueueFlushBreakdown, (void*, uint64_t*, uint64_t*, uint64_t*));
+DECL_PFN(uint32_t, doeNativeQueueSyncInfo, (void*));
 DECL_PFN(void, doeNativeComputeDispatchFlush, (void*, void*, void**, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint64_t, void*, uint64_t, uint64_t));
 DECL_PFN(void, doeNativeComputeDispatchFlushBreakdown, (void*, void*, void**, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint64_t, void*, uint64_t, uint64_t, uint64_t*));
 DECL_PFN(void, doeNativeComputeDispatchBatchFlush, (void*, size_t, void**, void**, const uint32_t*, const uint32_t*));

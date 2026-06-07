@@ -103,6 +103,11 @@
     "selectionPolicyHash": { "type": "string" },
     "shaderArtifactManifestPath": { "type": "string" },
     "shaderArtifactManifestHash": { "type": "string" },
+    "shaderSourceReceiptsHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "shaderSourceReceipts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/shaderSourceReceipt" }
+    },
     "hostPlanArtifactPath": { "type": "string" },
     "hostPlanArtifactHash": { "type": "string" },
     "queueSyncMode": { "type": "string" },
@@ -351,6 +356,22 @@
         "bufferMapReadCopyUnmap": { "type": "boolean" }
       }
     },
+    "packageNativeQueueSyncInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backendVulkan",
+        "timelineSemaphore",
+        "fencePool",
+        "deferredSubmissions"
+      ],
+      "properties": {
+        "backendVulkan": { "type": "boolean" },
+        "timelineSemaphore": { "type": "boolean" },
+        "fencePool": { "type": "boolean" },
+        "deferredSubmissions": { "type": "boolean" }
+      }
+    },
     "readbackCaptures": {
       "type": "array",
       "items": {
@@ -400,6 +421,24 @@
     }
   },
   "$defs": {
+    "shaderSourceReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "moduleId",
+        "sourceKind",
+        "byteLength",
+        "sha256"
+      ],
+      "properties": {
+        "moduleId": { "type": "string", "minLength": 1 },
+        "sourceKind": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "entryPoint": { "type": "string", "minLength": 1 },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
     "packageWriteBuckets": {
       "type": "object",
       "additionalProperties": {

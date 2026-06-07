@@ -116,6 +116,7 @@ pub const VulkanFeatureCaps = struct {
     dual_source_blending: bool = false,
     subgroups: bool = false,
     subgroups_f16: bool = false,
+    timeline_semaphore: bool = false,
     texture_formats_tier1: bool = false,
     texture_formats_tier2: bool = false,
 };
@@ -178,6 +179,7 @@ pub fn query(physical_device: c.VkPhysicalDevice) VulkanFeatureQuery {
         (subgroup_properties.supportedStages & c.VK_SHADER_STAGE_COMPUTE_BIT) != 0 and
         (subgroup_properties.supportedOperations & VK_SUBGROUP_REQUIRED_OPERATIONS) == VK_SUBGROUP_REQUIRED_OPERATIONS and
         raw_vulkan12_features.subgroupBroadcastDynamicId == c.VK_TRUE;
+    const has_timeline_semaphore = raw_vulkan12_features.timelineSemaphore == c.VK_TRUE;
 
     const caps = VulkanFeatureCaps{
         .shader_f16 = has_shader_f16,
@@ -186,6 +188,7 @@ pub fn query(physical_device: c.VkPhysicalDevice) VulkanFeatureQuery {
         .subgroups = has_subgroups,
         .subgroups_f16 = has_subgroups and has_shader_f16 and
             raw_vulkan12_features.shaderSubgroupExtendedTypes == c.VK_TRUE,
+        .timeline_semaphore = has_timeline_semaphore,
         .texture_formats_tier1 = supports_all_formats(physical_device, &TIER1_STORAGE_FORMATS, supports_storage_image),
         .texture_formats_tier2 = false,
     };
@@ -213,6 +216,9 @@ pub fn query(physical_device: c.VkPhysicalDevice) VulkanFeatureQuery {
     }
     if (resolved_caps.subgroups_f16) {
         query_result.enabled_vulkan12_features.shaderSubgroupExtendedTypes = c.VK_TRUE;
+    }
+    if (resolved_caps.timeline_semaphore) {
+        query_result.enabled_vulkan12_features.timelineSemaphore = c.VK_TRUE;
     }
     return query_result;
 }

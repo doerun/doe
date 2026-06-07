@@ -7,17 +7,19 @@ const emit_spirv_builtins = @import("emit_spirv_builtins.zig");
 const emit_spirv_fn_helpers = @import("emit_spirv_fn_helpers.zig");
 
 const EmitError = emit_spirv_shared.EmitError;
+const AccessChainEntry = emit_spirv_fn_helpers.AccessChainEntry;
+const LoadCacheEntry = emit_spirv_fn_helpers.LoadCacheEntry;
+const ResultInstEntry = emit_spirv_fn_helpers.ResultInstEntry;
 const ScalarKind = emit_spirv_fn_helpers.ScalarKind;
+const appendResultInstEntry = emit_spirv_fn_helpers.appendResultInstEntry;
+const cacheableResultOpcode = emit_spirv_fn_helpers.cacheableResultOpcode;
+const clearResultInstEntries = emit_spirv_fn_helpers.clearResultInstEntries;
+const findResultInstEntry = emit_spirv_fn_helpers.findResultInstEntry;
 const scalar_construct_kind = emit_spirv_fn_helpers.scalar_construct_kind;
 const assign_op_to_binary = emit_spirv_fn_helpers.assign_op_to_binary;
 const param_is_assigned = emit_spirv_fn_helpers.param_is_assigned;
-
-const AccessChainEntry = struct {
-    root_id: u32,
-    ptr_type: u32,
-    result_id: u32,
-    indices: []u32,
-};
+const ref_chain_roots_at_local = emit_spirv_fn_helpers.ref_chain_roots_at_local;
+const removeLoadCacheEntry = emit_spirv_fn_helpers.removeLoadCacheEntry;
 
 pub fn FunctionState(comptime EmitterT: type) type {
     return struct {
@@ -46,6 +48,8 @@ pub fn FunctionState(comptime EmitterT: type) type {
         // both qualify; dynamically-loaded indices get a fresh OpLoad each
         // visit and miss the cache, which is fine.
         access_chain_cache: std.ArrayListUnmanaged(AccessChainEntry) = .{},
+        load_cache: std.ArrayListUnmanaged(LoadCacheEntry) = .{},
+        result_inst_cache: std.ArrayListUnmanaged(ResultInstEntry) = .{},
         break_targets: std.ArrayListUnmanaged(u32) = .{},
         continue_targets: std.ArrayListUnmanaged(u32) = .{},
 
@@ -76,6 +80,9 @@ pub fn FunctionState(comptime EmitterT: type) type {
         pub fn deinit(self: *@This()) void {
             for (self.access_chain_cache.items) |entry| self.emitter.alloc.free(entry.indices);
             self.access_chain_cache.deinit(self.emitter.alloc);
+            self.load_cache.deinit(self.emitter.alloc);
+            clearResultInstEntries(self.emitter.alloc, &self.result_inst_cache);
+            self.result_inst_cache.deinit(self.emitter.alloc);
             self.break_targets.deinit(self.emitter.alloc);
             self.continue_targets.deinit(self.emitter.alloc);
             self.emitter.alloc.free(self.local_value_ids);
@@ -131,6 +138,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
                         const value_id = try self.emit_value_expr(expr_id);
                         if (self.local_ptr_ids[decl.local] != 0) {
                             try self.emitter.emit_store(self.local_ptr_ids[decl.local], value_id);
+                            removeLoadCacheEntry(&self.load_cache, .local, decl.local);
                         } else {
                             self.local_value_ids[decl.local] = value_id;
                         }
@@ -157,6 +165,9 @@ pub fn FunctionState(comptime EmitterT: type) type {
                         );
                     }
                     try self.emitter.emit_store(ptr_id, value_id);
+                    if (ref_chain_roots_at_local(self.function, assign.lhs)) |local_index| {
+                        removeLoadCacheEntry(&self.load_cache, .local, local_index);
+                    }
                     return false;
                 },
                 .return_ => |value| {
@@ -314,8 +325,14 @@ pub fn FunctionState(comptime EmitterT: type) type {
             // a THEN-branch chain inside an ELSE branch would be invalid).
             // Flush at every label boundary so CSE only fires within a
             // straight-line basic block, which is always safe.
+            self.clearStraightLineCaches();
+        }
+
+        fn clearStraightLineCaches(self: *@This()) void {
             for (self.access_chain_cache.items) |entry| self.emitter.alloc.free(entry.indices);
             self.access_chain_cache.clearRetainingCapacity();
+            self.load_cache.clearRetainingCapacity();
+            clearResultInstEntries(self.emitter.alloc, &self.result_inst_cache);
         }
 
         pub fn emit_value_expr(self: *@This(), expr_id: ir.ExprId) EmitError!u32 {
@@ -500,6 +517,21 @@ pub fn FunctionState(comptime EmitterT: type) type {
                         try self.emitter.lower_type(ref_expr.ty),
                         &.{ composite_id, index_id },
                     );
+                }
+            }
+            if (ref_expr.data == .local_ref) {
+                const index = ref_expr.data.local_ref;
+                if (self.local_ptr_ids[index] != 0) {
+                    for (self.load_cache.items) |entry| {
+                        if (entry.root == .local and entry.index == index) return entry.value_id;
+                    }
+                    const value_id = try self.emitter.emit_function_load(try self.emitter.lower_type(ref_expr.ty), self.local_ptr_ids[index]);
+                    try self.load_cache.append(self.emitter.alloc, .{
+                        .root = .local,
+                        .index = index,
+                        .value_id = value_id,
+                    });
+                    return value_id;
                 }
             }
             return try self.emitter.emit_function_load(try self.emitter.lower_type(ref_expr.ty), try self.emit_ref_expr(ref_expr_id));
@@ -713,7 +745,9 @@ pub fn FunctionState(comptime EmitterT: type) type {
                     try args.append(self.emitter.alloc, try self.emit_value_expr(arg_expr_id));
                 }
             }
-            return try self.emitter.emit_function_call(try self.emitter.lower_type(result_ty), fn_id, args.items);
+            const result_id = try self.emitter.emit_function_call(try self.emitter.lower_type(result_ty), fn_id, args.items);
+            self.load_cache.clearRetainingCapacity();
+            return result_id;
         }
 
         fn emit_builtin_call(self: *@This(), call: anytype, result_ty: ir.TypeId) EmitError!u32 {
@@ -885,6 +919,10 @@ pub fn FunctionState(comptime EmitterT: type) type {
         }
 
         pub fn emit_result_inst(self: *@This(), opcode: u16, result_type: u32, operands: []const u32) EmitError!u32 {
+            const cacheable = cacheableResultOpcode(opcode);
+            if (cacheable) {
+                if (findResultInstEntry(self.result_inst_cache.items, opcode, result_type, operands)) |cached| return cached;
+            }
             var full = std.ArrayListUnmanaged(u32){};
             defer full.deinit(self.emitter.alloc);
             const result_id = self.emitter.builder.reserve_id();
@@ -892,6 +930,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
             try full.append(self.emitter.alloc, result_id);
             try full.appendSlice(self.emitter.alloc, operands);
             try self.emitter.builder.append_function_inst(opcode, full.items);
+            if (cacheable) try appendResultInstEntry(self.emitter.alloc, &self.result_inst_cache, opcode, result_type, result_id, operands);
             return result_id;
         }
 

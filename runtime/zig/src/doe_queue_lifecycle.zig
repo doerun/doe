@@ -16,6 +16,11 @@ const toOpaque = native_helpers.toOpaque;
 const DoeQueue = native_types.DoeQueue;
 const metal_bridge = queue_submit_ops.metal_bridge;
 
+const QUEUE_SYNC_INFO_BACKEND_VULKAN: u32 = 1 << 0;
+const QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE: u32 = 1 << 1;
+const QUEUE_SYNC_INFO_FENCE_POOL: u32 = 1 << 2;
+const QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS: u32 = 1 << 3;
+
 pub fn doeNativeQueueFlush(q_raw: ?*anyopaque) void {
     const q = cast(DoeQueue, q_raw) orelse return;
     if (q.dev.backend == .vulkan) {
@@ -51,8 +56,18 @@ pub fn doeNativeQueueFlushBreakdown(
         return;
     };
     if (q.dev.backend == .vulkan) {
-        doeNativeQueueFlush(q_raw);
-        wait_completed_ns_out.* = 0;
+        if (comptime has_vulkan) {
+            if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
+                wait_completed_ns_out.* = rt.flush_queue() catch |err| blk: {
+                    shared.deliverInternalError(q.dev, "doe_queue_submit: vulkan flush breakdown: {s}", .{@errorName(err)});
+                    break :blk 0;
+                };
+            } else {
+                wait_completed_ns_out.* = 0;
+            }
+        } else {
+            wait_completed_ns_out.* = 0;
+        }
         deferred_copy_ns_out.* = 0;
         deferred_resolve_ns_out.* = 0;
         return;
@@ -74,6 +89,20 @@ pub fn doeNativeQueueFlushBreakdown(
     wait_completed_ns_out.* = breakdown.waitCompletedNs;
     deferred_copy_ns_out.* = breakdown.deferredCopyNs;
     deferred_resolve_ns_out.* = breakdown.deferredResolveNs;
+}
+
+pub fn doeNativeQueueSyncInfo(q_raw: ?*anyopaque) u32 {
+    const q = cast(DoeQueue, q_raw) orelse return 0;
+    if (q.dev.backend != .vulkan) return 0;
+    var bits: u32 = QUEUE_SYNC_INFO_BACKEND_VULKAN;
+    if (comptime has_vulkan) {
+        if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
+            if (rt.timeline_semaphore_available()) bits |= QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE;
+            if (rt.has_fence_pool) bits |= QUEUE_SYNC_INFO_FENCE_POOL;
+            if (rt.has_deferred_submissions) bits |= QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS;
+        }
+    }
+    return bits;
 }
 
 pub fn doeNativeQueueRelease(raw: ?*anyopaque) void {

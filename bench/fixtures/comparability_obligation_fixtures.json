@@ -59,6 +59,8 @@
         "baseline_comparison_package_resident_buffer_load_mode_match": true,
         "package_resident_buffer_load_shape_match_applies": false,
         "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "package_shader_source_receipts_match_applies": false,
+        "baseline_comparison_shader_source_receipts_match": true,
         "readback_capture_match_applies": false,
         "baseline_comparison_readback_capture_match": true
       },
@@ -123,6 +125,8 @@
         "baseline_comparison_package_resident_buffer_load_mode_match": true,
         "package_resident_buffer_load_shape_match_applies": false,
         "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "package_shader_source_receipts_match_applies": false,
+        "baseline_comparison_shader_source_receipts_match": true,
         "readback_capture_match_applies": false,
         "baseline_comparison_readback_capture_match": true
       },
@@ -193,6 +197,8 @@
         "baseline_comparison_package_resident_buffer_load_mode_match": true,
         "package_resident_buffer_load_shape_match_applies": false,
         "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "package_shader_source_receipts_match_applies": false,
+        "baseline_comparison_shader_source_receipts_match": true,
         "readback_capture_match_applies": false,
         "baseline_comparison_readback_capture_match": true
       },
@@ -259,6 +265,8 @@
         "baseline_comparison_package_resident_buffer_load_mode_match": true,
         "package_resident_buffer_load_shape_match_applies": false,
         "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "package_shader_source_receipts_match_applies": false,
+        "baseline_comparison_shader_source_receipts_match": true,
         "readback_capture_match_applies": false,
         "baseline_comparison_readback_capture_match": true
       },
@@ -325,6 +333,8 @@
         "baseline_comparison_package_resident_buffer_load_mode_match": true,
         "package_resident_buffer_load_shape_match_applies": false,
         "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "package_shader_source_receipts_match_applies": false,
+        "baseline_comparison_shader_source_receipts_match": true,
         "readback_capture_match_applies": false,
         "baseline_comparison_readback_capture_match": true
       },
@@ -391,6 +401,8 @@
         "baseline_comparison_package_resident_buffer_load_mode_match": true,
         "package_resident_buffer_load_shape_match_applies": false,
         "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "package_shader_source_receipts_match_applies": false,
+        "baseline_comparison_shader_source_receipts_match": true,
         "readback_capture_match_applies": false,
         "baseline_comparison_readback_capture_match": true
       },
@@ -457,6 +469,8 @@
         "baseline_comparison_package_resident_buffer_load_mode_match": true,
         "package_resident_buffer_load_shape_match_applies": false,
         "baseline_comparison_package_resident_buffer_load_shape_match": true,
+        "package_shader_source_receipts_match_applies": false,
+        "baseline_comparison_shader_source_receipts_match": true,
         "readback_capture_match_applies": false,
         "baseline_comparison_readback_capture_match": true
       },

@@ -305,9 +305,6 @@ pub fn ensure_deferred_submission_state(self: anytype) !void {
     if (!self.has_fence_pool) {
         try create_fence_pool(self);
     }
-    if (!self.has_timeline_semaphore) {
-        create_timeline_semaphore(self);
-    }
 }
 
 pub fn ensure_timestamp_query_pool(self: anytype) !void {

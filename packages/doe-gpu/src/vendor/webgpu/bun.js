@@ -28,6 +28,7 @@ export const providerInfo = () => ({
   bunRuntimeProvider: runtimeProvider,
 });
 export const nativeFastPathInfo = runtime.nativeFastPathInfo ?? full.nativeFastPathInfo;
+export const nativeQueueSyncInfo = runtime.nativeQueueSyncInfo ?? full.nativeQueueSyncInfo;
 export const fastPathStats = runtime.fastPathStats;
 export const preflightShaderSource = runtime.preflightShaderSource ?? full.preflightShaderSource;
 export const setNativeTimeoutMs = runtime.setNativeTimeoutMs ?? full.setNativeTimeoutMs;
@@ -52,6 +53,7 @@ export default {
   createBrowserSurfaceClasses,
   createNativeBrowserCanvasBackend,
   nativeFastPathInfo,
+  nativeQueueSyncInfo,
   fastPathStats,
   preflightShaderSource,
   setNativeTimeoutMs,

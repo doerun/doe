@@ -109,6 +109,7 @@ napi_value doe_queue_flush(napi_env env, napi_callback_info info);
 napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info);
 napi_value doe_queue_submit_compute_dispatch_copy(napi_env env, napi_callback_info info);
 napi_value doe_native_fast_path_info(napi_env env, napi_callback_info info);
+napi_value doe_queue_sync_info(napi_env env, napi_callback_info info);
 napi_value doe_compute_dispatch_flush_and_map_sync(napi_env env, napi_callback_info info);
 napi_value doe_queue_release(napi_env env, napi_callback_info info);
 
@@ -270,6 +271,7 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("submitBatched",                            doe_queue_submit_batched),
         EXPORT_FN("submitComputeDispatchCopy",                doe_queue_submit_compute_dispatch_copy),
         EXPORT_FN("nativeFastPathInfo",                       doe_native_fast_path_info),
+        EXPORT_FN("queueSyncInfo",                            doe_queue_sync_info),
         EXPORT_FN("flushAndMapSync",                          doe_compute_dispatch_flush_and_map_sync),
         EXPORT_FN("queueRelease",                             doe_queue_release),
         EXPORT_FN("createTexture",                            doe_create_texture),

@@ -2541,6 +2541,25 @@ export function nativeFastPathInfo() {
   return nativeAddon.nativeFastPathInfo();
 }
 
+export function nativeQueueSyncInfo(queue) {
+  ensureLibrary();
+  const nativeAddon = currentAddon();
+  if (!nativeAddon || typeof nativeAddon.queueSyncInfo !== 'function') {
+    return null;
+  }
+  const native = assertLiveResource(queue, 'nativeQueueSyncInfo', 'GPUQueue');
+  const info = nativeAddon.queueSyncInfo(native);
+  if (!info || typeof info !== 'object') {
+    return null;
+  }
+  return {
+    backendVulkan: Boolean(info.backendVulkan),
+    timelineSemaphore: Boolean(info.timelineSemaphore),
+    fencePool: Boolean(info.fencePool),
+    deferredSubmissions: Boolean(info.deferredSubmissions),
+  };
+}
+
 /**
  * Create a Node or Bun runtime wrapper for Doe CLI execution.
  *
@@ -2605,6 +2624,7 @@ export default {
   requestDevice,
   providerInfo,
   nativeFastPathInfo,
+  nativeQueueSyncInfo,
   fastPathStats,
   createDoeRuntime,
   runDawnVsDoeCompare,

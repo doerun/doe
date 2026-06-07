@@ -329,6 +329,18 @@ pub const VkMemoryBarrier = extern struct {
     dstAccessMask: vk.VkFlags,
 };
 
+pub const VkBufferMemoryBarrier = extern struct {
+    sType: vk.VkStructureType,
+    pNext: ?*const anyopaque,
+    srcAccessMask: vk.VkFlags,
+    dstAccessMask: vk.VkFlags,
+    srcQueueFamilyIndex: u32,
+    dstQueueFamilyIndex: u32,
+    buffer: vk.VkBuffer,
+    offset: vk.VkDeviceSize,
+    size: vk.VkDeviceSize,
+};
+
 pub const VkImageMemoryBarrier = extern struct {
     sType: vk.VkStructureType,
     pNext: ?*const anyopaque,
