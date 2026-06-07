@@ -17,19 +17,19 @@ const OUTPUT_DIR = path.join(REPO_ROOT, 'assets', 'readme');
 
 const SVG_THEME = Object.freeze({
   palette: Object.freeze({
-    bg: '#050607',
-    panel: '#0b0d0f',
-    panelAlt: '#101317',
-    border: '#2a2f35',
-    text: '#f2f2f0',
-    muted: '#9ca3af',
-    grid: '#2a2f35',
-    accent: '#93c5fd',
-    doe: '#93c5fd',
-    incumbent: '#fde68a',
-    mixed: '#fca5a5',
-    positive: '#86efac',
-    bad: '#fca5a5'
+    bg: '#ffffff',
+    panel: '#ffffff',
+    panelAlt: '#f7f7f7',
+    border: '#111111',
+    text: '#111111',
+    muted: '#5a5a5a',
+    grid: '#d8d8d8',
+    accent: '#111111',
+    doe: '#111111',
+    incumbent: '#9bb7d6',
+    mixed: '#d98b8b',
+    positive: '#b8a8d8',
+    bad: '#d98b8b'
   }),
   fonts: Object.freeze({
     ui: 'Inter, Segoe UI, Helvetica Neue, Arial, sans-serif',
@@ -213,7 +213,7 @@ function renderLegend(y) {
 <rect x="250" y="${y}" width="18" height="18" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.incumbent}" />
 <text x="278" y="${y + 13}" font-size="13">comparison timing bars</text>
 <rect x="540" y="${y}" width="18" height="18" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.positive}" />
-<text x="568" y="${y + 13}" font-size="13">green pill = p50 and p95 faster summary</text>`;
+<text x="568" y="${y + 13}" font-size="13">summary pill = p50 and p95 faster summary</text>`;
 }
 
 function renderScaleNote(y) {
