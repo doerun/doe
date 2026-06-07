@@ -390,6 +390,7 @@ fn parseTypeConstructor(self: anytype) @TypeOf(self.*).Error!u32 {
         .kw_sampler,
         .kw_texture_1d,
         .kw_texture_2d,
+        .kw_texture_external,
         .kw_f32,
         .kw_f16,
         .kw_u32,
@@ -597,6 +598,7 @@ pub fn parseTypeExpr(self: anytype) @TypeOf(self.*).Error!u32 {
         .kw_sampler,
         .kw_texture_1d,
         .kw_texture_2d,
+        .kw_texture_external,
         => return parseParameterizedType(self),
 
         // Scalar types.

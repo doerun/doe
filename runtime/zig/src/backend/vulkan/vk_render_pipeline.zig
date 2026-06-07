@@ -213,10 +213,10 @@ pub fn create_graphics_pipeline(
     // subsequent draws in the same process.
     const vertex_spirv_words = cmd.vertex_spirv orelse
         vk_pipeline.load_kernel_spirv_cached(self, DEFAULT_VERTEX_SHADER_NAME) catch
-            return error.ShaderCompileFailed;
+        return error.ShaderCompileFailed;
     const fragment_spirv_words = cmd.fragment_spirv orelse
         vk_pipeline.load_kernel_spirv_cached(self, DEFAULT_FRAGMENT_SHADER_NAME) catch
-            return error.ShaderCompileFailed;
+        return error.ShaderCompileFailed;
     var vertex_entry_buf: [64]u8 = undefined;
     var fragment_entry_buf: [64]u8 = undefined;
     const vertex_entry = resolve_entry_point_name(cmd.vertex_entry_point, "main", &vertex_entry_buf);
@@ -491,7 +491,8 @@ const MAX_RENDER_DESCRIPTOR_BINDINGS: usize = model_render_types.MAX_RENDER_BIND
 const VK_SHADER_STAGE_ALL_GRAPHICS: u32 = c.VK_SHADER_STAGE_VERTEX_BIT | c.VK_SHADER_STAGE_FRAGMENT_BIT;
 
 /// Build descriptor set layout, pool, and set for render pipeline texture/sampler bindings.
-/// Each texture gets a combined-image-sampler binding; each standalone sampler gets a sampler binding.
+/// WGSL lowers sampled images and samplers as separate SPIR-V descriptors, so
+/// descriptor bindings must preserve the original WebGPU binding numbers.
 /// Descriptor writes resolve texture views and samplers from the runtime resource maps.
 fn createRenderDescriptorState(
     self: anytype,
@@ -500,32 +501,43 @@ fn createRenderDescriptorState(
 ) !void {
     const tex_count: u32 = cmd.bind_texture_count;
     const samp_count: u32 = cmd.bind_sampler_count;
-    // Standalone samplers only for those beyond the texture-paired range
-    const standalone_samp_count: u32 = if (samp_count > tex_count) samp_count - tex_count else 0;
-    const total_bindings = tex_count + standalone_samp_count;
+    const total_bindings = tex_count + samp_count;
     if (total_bindings == 0) return;
 
-    // Build layout bindings: combined-image-sampler per texture, sampler-only for excess
+    // Build layout bindings at the WGSL-decorated binding numbers.
     var bindings: [MAX_RENDER_DESCRIPTOR_BINDINGS]c.VkDescriptorSetLayoutBinding = undefined;
-    var binding_index: u32 = 0;
-    while (binding_index < tex_count) : (binding_index += 1) {
-        bindings[binding_index] = .{
-            .binding = binding_index,
-            .descriptorType = c.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    var binding_count: u32 = 0;
+    var tex_binding_index: u32 = 0;
+    while (tex_binding_index < tex_count) : (tex_binding_index += 1) {
+        const fallback_binding = tex_binding_index;
+        const binding = if (cmd.bind_texture_bindings[tex_binding_index] != model_render_types.RENDER_BINDING_UNSET)
+            cmd.bind_texture_bindings[tex_binding_index]
+        else
+            fallback_binding;
+        bindings[binding_count] = .{
+            .binding = binding,
+            .descriptorType = c.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
             .pImmutableSamplers = null,
         };
+        binding_count += 1;
     }
-    var samp_index: u32 = 0;
-    while (samp_index < standalone_samp_count) : (samp_index += 1) {
-        bindings[tex_count + samp_index] = .{
-            .binding = tex_count + samp_index,
+    var samp_binding_index: u32 = 0;
+    while (samp_binding_index < samp_count) : (samp_binding_index += 1) {
+        const fallback_binding = tex_count + samp_binding_index;
+        const binding = if (cmd.bind_sampler_bindings[samp_binding_index] != model_render_types.RENDER_BINDING_UNSET)
+            cmd.bind_sampler_bindings[samp_binding_index]
+        else
+            fallback_binding;
+        bindings[binding_count] = .{
+            .binding = binding,
             .descriptorType = c.VK_DESCRIPTOR_TYPE_SAMPLER,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
             .pImmutableSamplers = null,
         };
+        binding_count += 1;
     }
 
     // Create descriptor set layout
@@ -533,8 +545,8 @@ fn createRenderDescriptorState(
         .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .pNext = null,
         .flags = 0,
-        .bindingCount = total_bindings,
-        .pBindings = bindings[0..total_bindings].ptr,
+        .bindingCount = binding_count,
+        .pBindings = bindings[0..binding_count].ptr,
     };
     try c.check_vk(c.vkCreateDescriptorSetLayout(self.device, &layout_ci, null, &state.descriptor_set_layout));
     errdefer {
@@ -547,15 +559,15 @@ fn createRenderDescriptorState(
     var pool_size_count: u32 = 0;
     if (tex_count > 0) {
         pool_sizes[pool_size_count] = .{
-            .type = c.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .type = c.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
             .descriptorCount = tex_count,
         };
         pool_size_count += 1;
     }
-    if (standalone_samp_count > 0) {
+    if (samp_count > 0) {
         pool_sizes[pool_size_count] = .{
             .type = c.VK_DESCRIPTOR_TYPE_SAMPLER,
-            .descriptorCount = standalone_samp_count,
+            .descriptorCount = samp_count,
         };
         pool_size_count += 1;
     }
@@ -584,7 +596,7 @@ fn createRenderDescriptorState(
     };
     try c.check_vk(c.vkAllocateDescriptorSets(self.device, &alloc_info, @ptrCast(&state.descriptor_set)));
 
-    // Write descriptor updates for texture and sampler bindings
+    // Write descriptor updates for texture and sampler bindings.
     var image_infos: [MAX_RENDER_DESCRIPTOR_BINDINGS]c.VkDescriptorImageInfo = undefined;
     var writes: [MAX_RENDER_DESCRIPTOR_BINDINGS]c.VkWriteDescriptorSet = undefined;
     var write_count: u32 = 0;
@@ -593,13 +605,13 @@ fn createRenderDescriptorState(
     while (ti < tex_count) : (ti += 1) {
         const tex_handle = cmd.bind_texture_handles[ti];
         const texture = self.textures.get(tex_handle);
-        const sampler_handle = if (ti < samp_count) cmd.bind_sampler_handles[ti] else 0;
-        const sampler_vk: u64 = if (sampler_handle != 0)
-            self.samplers.get(sampler_handle) orelse VK_NULL_U64
+        const fallback_binding = ti;
+        const binding = if (cmd.bind_texture_bindings[ti] != model_render_types.RENDER_BINDING_UNSET)
+            cmd.bind_texture_bindings[ti]
         else
-            VK_NULL_U64;
+            fallback_binding;
         image_infos[write_count] = .{
-            .sampler = sampler_vk,
+            .sampler = VK_NULL_U64,
             .imageView = if (texture) |t| t.view else VK_NULL_U64,
             .imageLayout = c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
@@ -607,10 +619,10 @@ fn createRenderDescriptorState(
             .sType = c.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .pNext = null,
             .dstSet = state.descriptor_set,
-            .dstBinding = ti,
+            .dstBinding = binding,
             .dstArrayElement = 0,
             .descriptorCount = 1,
-            .descriptorType = c.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorType = c.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
             .pImageInfo = @ptrCast(&image_infos[write_count]),
             .pBufferInfo = null,
             .pTexelBufferView = null,
@@ -618,14 +630,18 @@ fn createRenderDescriptorState(
         write_count += 1;
     }
 
-    // Standalone sampler bindings (excess samplers beyond texture-paired range)
     var si: u32 = 0;
-    while (si < standalone_samp_count) : (si += 1) {
-        const sampler_handle = cmd.bind_sampler_handles[tex_count + si];
+    while (si < samp_count) : (si += 1) {
+        const sampler_handle = cmd.bind_sampler_handles[si];
         const sampler_vk: u64 = if (sampler_handle != 0)
             self.samplers.get(sampler_handle) orelse VK_NULL_U64
         else
             VK_NULL_U64;
+        const fallback_binding = tex_count + si;
+        const binding = if (cmd.bind_sampler_bindings[si] != model_render_types.RENDER_BINDING_UNSET)
+            cmd.bind_sampler_bindings[si]
+        else
+            fallback_binding;
         image_infos[write_count] = .{
             .sampler = sampler_vk,
             .imageView = VK_NULL_U64,
@@ -635,7 +651,7 @@ fn createRenderDescriptorState(
             .sType = c.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .pNext = null,
             .dstSet = state.descriptor_set,
-            .dstBinding = tex_count + si,
+            .dstBinding = binding,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = c.VK_DESCRIPTOR_TYPE_SAMPLER,

@@ -23,6 +23,8 @@ const DoeTexture = native_types.DoeTexture;
 const DoeTextureView = native_types.DoeTextureView;
 const DoeSampler = native_types.DoeSampler;
 
+const MAX_TEXTURE_DESCRIPTOR_CHAIN_NODES: u32 = 16;
+
 // Metal bridge externs (resolved at link time from metal_bridge.m).
 extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
@@ -255,9 +257,61 @@ fn d3d12_register_sampler(raw: ?*anyopaque) bool {
 // Texture
 // ============================================================
 
+fn texture_usage_with_dawn_internal(d: *const abi_pipeline.WGPUTextureDescriptor) u64 {
+    var usage = d.usage;
+    var visited: u32 = 0;
+    var chain = if (d.nextInChain) |raw|
+        @as(*const abi_pipeline.WGPUChainedStruct, @ptrCast(@alignCast(raw)))
+    else
+        null;
+
+    while (chain) |node| : (visited += 1) {
+        if (visited >= MAX_TEXTURE_DESCRIPTOR_CHAIN_NODES) return usage;
+        switch (node.sType) {
+            abi_pipeline.WGPUSType_DawnTextureInternalUsageDescriptor => {
+                const internal: *const abi_pipeline.WGPUDawnTextureInternalUsageDescriptor = @ptrCast(@alignCast(node));
+                usage |= internal.internalUsage;
+            },
+            else => {},
+        }
+        chain = node.next;
+    }
+    return usage;
+}
+
+test "texture usage parser includes Dawn internal usage" {
+    var internal = abi_pipeline.WGPUDawnTextureInternalUsageDescriptor{
+        .chain = .{
+            .next = null,
+            .sType = abi_pipeline.WGPUSType_DawnTextureInternalUsageDescriptor,
+        },
+        .internalUsage = abi_texture.WGPUTextureUsage_CopySrc | abi_texture.WGPUTextureUsage_CopyDst,
+    };
+    var desc = abi_pipeline.WGPUTextureDescriptor{
+        .nextInChain = @ptrCast(&internal.chain),
+        .label = .{ .data = null, .length = 0 },
+        .usage = abi_texture.WGPUTextureUsage_RenderAttachment,
+        .dimension = abi_texture.WGPUTextureDimension_2D,
+        .size = .{ .width = 64, .height = 64, .depthOrArrayLayers = 1 },
+        .format = abi_texture.WGPUTextureFormat_RGBA8Unorm,
+        .mipLevelCount = 1,
+        .sampleCount = 1,
+        .viewFormatCount = 0,
+        .viewFormats = null,
+    };
+
+    try std.testing.expectEqual(
+        abi_texture.WGPUTextureUsage_RenderAttachment |
+            abi_texture.WGPUTextureUsage_CopySrc |
+            abi_texture.WGPUTextureUsage_CopyDst,
+        texture_usage_with_dawn_internal(&desc),
+    );
+}
+
 pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUTextureDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
+    const usage = texture_usage_with_dawn_internal(d);
     const tex = make(DoeTexture) orelse return null;
     tex.* = .{
         .format = d.format,
@@ -267,7 +321,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const a
         .dimension = d.dimension,
         .mip_level_count = d.mipLevelCount,
         .sample_count = d.sampleCount,
-        .usage = d.usage,
+        .usage = usage,
         .texture_binding_view_dimension = 0,
         .view_format_count = d.viewFormatCount,
     };
@@ -295,7 +349,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const a
                 d.mipLevelCount,
                 d.sampleCount,
                 d.format,
-                @intCast(d.usage),
+                @intCast(usage),
             ),
             abi_texture.WGPUTextureDimension_3D => d3d12_bridge_device_create_texture_3d(
                 dev.mtl_device,
@@ -304,7 +358,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const a
                 d.size.depthOrArrayLayers,
                 d.mipLevelCount,
                 d.format,
-                @intCast(d.usage),
+                @intCast(usage),
             ),
             else => null,
         } orelse {
@@ -322,7 +376,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const a
         return result;
     }
     // Metal path.
-    const mtl = metal_bridge_device_new_texture(dev.mtl_device, d.size.width, d.size.height, d.size.depthOrArrayLayers, d.mipLevelCount, d.sampleCount, d.format, @intCast(d.usage), d.dimension) orelse {
+    const mtl = metal_bridge_device_new_texture(dev.mtl_device, d.size.width, d.size.height, d.size.depthOrArrayLayers, d.mipLevelCount, d.sampleCount, d.format, @intCast(usage), d.dimension) orelse {
         alloc.destroy(tex);
         return null;
     };

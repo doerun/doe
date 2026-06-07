@@ -28,6 +28,9 @@ pub fn emit_builtin(self: anytype, call: anytype, result_ty: ir.TypeId) !?u32 {
     if (std.mem.eql(u8, call.name, "textureSample")) {
         return try texture.emit_texture_sample(self, call, result_ty, false);
     }
+    if (std.mem.eql(u8, call.name, "textureSampleBaseClampToEdge")) {
+        return try texture.emit_texture_sample(self, call, result_ty, false);
+    }
     if (std.mem.eql(u8, call.name, "textureSampleLevel")) {
         return try texture.emit_texture_sample(self, call, result_ty, true);
     }

@@ -27,6 +27,7 @@ pub fn bindingCount(bg: *const DoeBindGroup) usize {
 pub fn populateFlatBindings(
     bind_groups: []const ?*DoeBindGroup,
     bufs: *[MAX_FLAT_BIND]?*anyopaque,
+    buf_offsets: *[MAX_FLAT_BIND]u64,
     buf_sizes: *[MAX_FLAT_BIND]u64,
 ) u32 {
     std.debug.assert(bind_groups.len <= MAX_COMPUTE_BIND_GROUPS);
@@ -40,6 +41,7 @@ pub fn populateFlatBindings(
         for (0..count) |binding_index| {
             const slot = flatBindSlot(group_index, binding_index);
             bufs[slot] = bg.buffers[binding_index];
+            buf_offsets[slot] = bg.offsets[binding_index];
             buf_sizes[slot] = bg.buffer_sizes[binding_index];
         }
         total = @intCast(flatBindSlot(group_index, count - 1) + 1);

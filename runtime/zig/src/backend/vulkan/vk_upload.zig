@@ -5,6 +5,7 @@
 
 const std = @import("std");
 const c = @import("vk_constants.zig");
+const vk_compute_sync = @import("vk_compute_sync.zig");
 const vk_device = @import("vk_device.zig");
 const vk_sync = @import("vk_sync.zig");
 const backend_policy = @import("../backend_policy.zig");
@@ -588,6 +589,33 @@ pub fn streaming_copy_buffer_region(self: anytype, src: c.VkBuffer, src_offset: 
     self.streaming_copy_count += 1;
 }
 
+pub fn record_replay_buffer_copy(
+    self: anytype,
+    src: anytype,
+    src_offset: u64,
+    dst: anytype,
+    dst_offset: u64,
+    size: u64,
+) !void {
+    if (size == 0) return;
+    if (!self.replay_recording_active or self.replay_command_buffer == null) return error.InvalidState;
+
+    vk_compute_sync.make_prior_transfer_writes_visible_for_transfer_read(self, self.replay_command_buffer);
+    vk_compute_sync.make_prior_compute_writes_visible_for_transfer_read(self, self.replay_command_buffer);
+
+    var region = c.VkBufferCopy{
+        .srcOffset = src_offset,
+        .dstOffset = dst_offset,
+        .size = size,
+    };
+    c.vkCmdCopyBuffer(self.replay_command_buffer, src.buffer, dst.buffer, 1, @ptrCast(&region));
+    self.has_pending_transfer_writes = true;
+
+    if (dst.memory_kind == .host_visible) {
+        vk_compute_sync.make_transfer_writes_visible_for_host_read(self.replay_command_buffer);
+    }
+}
+
 /// Record a whole-buffer copy into the streaming command buffer.
 pub fn streaming_copy_buffer_to_buffer(self: anytype, src: c.VkBuffer, dst: c.VkBuffer, size: u64) !void {
     try streaming_copy_buffer_region(self, src, 0, dst, 0, size);
@@ -670,6 +698,7 @@ pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
         try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
         self.has_deferred_submissions = true;
     }
+    self.has_pending_transfer_writes = true;
     self.streaming_copy_count = 0;
 }
 

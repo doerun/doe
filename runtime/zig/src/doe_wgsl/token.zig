@@ -122,6 +122,7 @@ pub const Tag = enum(u8) {
     kw_sampler,
     kw_texture_1d,
     kw_texture_2d,
+    kw_texture_external,
 
     // Address-space / access keywords (contextual).
     kw_uniform,
@@ -211,6 +212,7 @@ const KEYWORDS = [_]KW{
     .{ "switch", .kw_switch },
     .{ "texture_1d", .kw_texture_1d },
     .{ "texture_2d", .kw_texture_2d },
+    .{ "texture_external", .kw_texture_external },
     .{ "true", .kw_true },
     .{ "u32", .kw_u32 },
     .{ "uniform", .kw_uniform },

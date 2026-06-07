@@ -9,6 +9,7 @@ const vk_device = @import("vk_device.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_pipeline_cache = @import("vk_pipeline_cache.zig");
 const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
+const vk_compute_sync = @import("vk_compute_sync.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const model_compute_types = @import("../../model_compute_types.zig");
@@ -127,6 +128,28 @@ pub const release_cached_compute_states = vk_pipeline_cache.release_cached_compu
 pub const release_descriptor_state_cache = vk_pipeline_cache.release_descriptor_state_cache;
 const stash_active_compute_state = vk_pipeline_cache.stash_active_compute_state;
 const stash_active_descriptor_state = vk_pipeline_cache.stash_active_descriptor_state;
+
+fn submitted_work_may_reference_compute_state(self: anytype) bool {
+    return self.recorded_submit_replay_active or
+        self.replay_recording_active or
+        self.has_deferred_submissions;
+}
+
+fn release_or_retire_pipeline_objects(self: anytype) void {
+    if (submitted_work_may_reference_compute_state(self)) {
+        retire_pipeline_objects(self);
+        return;
+    }
+    destroy_pipeline_objects(self);
+}
+
+fn release_or_retire_descriptor_state(self: anytype) void {
+    if (submitted_work_may_reference_compute_state(self)) {
+        retire_descriptor_state(self);
+        return;
+    }
+    destroy_descriptor_state(self);
+}
 
 fn retire_pipeline_objects(self: anytype) void {
     if (!self.has_pipeline and !self.has_shader_module and self.current_entry_point_owned == null) {
@@ -295,6 +318,7 @@ pub fn set_compute_shader_spirv(
         }
     }
     try prepare_descriptor_sets(self, bindings, initialize_buffers_on_create);
+    vk_compute_sync.capture_current_compute_bindings(self, bindings);
 }
 
 pub fn rebuild_compute_shader_spirv(self: anytype, words: []const u32) !void {
@@ -320,7 +344,7 @@ pub fn build_pipeline_for_words(
         return error.InvalidArgument;
     }
     try ensure_pipeline_layout(self, bindings);
-    destroy_pipeline_objects(self);
+    release_or_retire_pipeline_objects(self);
     errdefer destroy_pipeline_objects(self);
 
     const entry_name = entry_point orelse "main";
@@ -414,7 +438,7 @@ fn ensure_pipeline_layout(self: anytype, bindings: ?[]const model_compute_types.
     const layout_hash = compute_layout_hash(bindings);
     if (self.has_pipeline_layout and layout_hash == self.current_layout_hash) return;
 
-    destroy_descriptor_state(self);
+    release_or_retire_descriptor_state(self);
     errdefer destroy_descriptor_state(self);
 
     var set_count: u32 = 0;

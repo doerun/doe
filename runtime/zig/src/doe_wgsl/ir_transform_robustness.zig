@@ -13,6 +13,7 @@ pub const Config = struct {
     elide_proven_bounds: bool = false,
     elide_proven_texture_bounds: bool = false,
     elide_dispatch_validated_bounds: bool = false,
+    elide_dispatch_validated_global_bounds: bool = false,
     elide_uniform_validated_bounds: bool = false,
 };
 
@@ -62,7 +63,7 @@ fn transform_function(
                                 }
                             }
                             if (config.elide_dispatch_validated_bounds) {
-                                if (dispatch_proof_match.try_elide_dispatch_validated_storage_index(module, function, index_data)) |precondition| {
+                                if (dispatch_proof_match.try_elide_dispatch_validated_storage_index(module, function, index_data, false)) |precondition| {
                                     module.dispatch_preconditions.append(
                                         module.allocator,
                                         precondition,
@@ -72,6 +73,12 @@ fn transform_function(
                             }
                             if (config.elide_uniform_validated_bounds) {
                                 if (dispatch_uniform_bounds.try_elide_uniform_validated_storage_index(module, function, function_id, i, index_data)) |precondition| {
+                                    module.dispatch_preconditions.append(module.allocator, precondition) catch return error.OutOfMemory;
+                                    continue;
+                                }
+                            }
+                            if (config.elide_dispatch_validated_global_bounds) {
+                                if (dispatch_proof_match.try_elide_dispatch_validated_storage_index(module, function, index_data, true)) |precondition| {
                                     module.dispatch_preconditions.append(module.allocator, precondition) catch return error.OutOfMemory;
                                     continue;
                                 }
@@ -173,10 +180,6 @@ fn clamp_runtime_sized(
 ) TransformError!void {
     const index_data = function.exprs.items[expr_idx].data.index;
 
-    // Accept any base shape that can produce a runtime-sized array reference:
-    // global_ref (direct storage buffer), member (struct.field), load (pointer
-    // deref), local_ref/param_ref (aliased references), index (nested access),
-    // call (function returning a reference).
     switch (function.exprs.items[index_data.base].data) {
         .global_ref, .member, .load, .local_ref, .param_ref, .index, .call => {},
         else => return,
@@ -186,7 +189,6 @@ fn clamp_runtime_sized(
     const original_index = index_data.index;
     const base_ref = index_data.base;
 
-    // arrayLength(&base)
     const al_args = try function.append_expr_args(allocator, &.{base_ref});
     const array_length_id = try function.append_expr(allocator, .{
         .ty = u32_ty,
@@ -198,14 +200,12 @@ fn clamp_runtime_sized(
         } },
     });
 
-    // int_lit(1)
     const one_id = try function.append_expr(allocator, .{
         .ty = u32_ty,
         .category = .value,
         .data = .{ .int_lit = 1 },
     });
 
-    // arrayLength(&base) - 1
     const sub_id = try function.append_expr(allocator, .{
         .ty = u32_ty,
         .category = .value,
@@ -216,7 +216,6 @@ fn clamp_runtime_sized(
         } },
     });
 
-    // min(index, arrayLength(&base) - 1)
     const min_args = try function.append_expr_args(allocator, &.{ original_index, sub_id });
     const min_id = try function.append_expr(allocator, .{
         .ty = u32_ty,
@@ -228,7 +227,6 @@ fn clamp_runtime_sized(
         } },
     });
 
-    // Replace the original index with the clamped version.
     function.exprs.items[expr_idx].data = .{ .index = .{
         .base = base_ref,
         .index = min_id,

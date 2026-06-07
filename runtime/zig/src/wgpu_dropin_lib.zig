@@ -257,6 +257,8 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     const N = @import("doe_wgpu_native.zig");
     if (symbolViewEq(name, "wgpuGetProcAddress")) return fnPtr(&wgpuGetProcAddress);
     if (symbolViewEq(name, "wgpuCreateInstance")) return fnPtr(&P.wgpuCreateInstance);
+    if (symbolViewEq(name, "wgpuGetInstanceFeatures")) return fnPtr(&dropin_ext_a.exports.wgpuGetInstanceFeatures);
+    if (symbolViewEq(name, "wgpuGetInstanceLimits")) return fnPtr(&dropin_ext_a.exports.wgpuGetInstanceLimits);
     if (symbolViewEq(name, "wgpuInstanceAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuInstanceAddRef);
     if (symbolViewEq(name, "wgpuInstanceRequestAdapter")) return fnPtr(&P.wgpuInstanceRequestAdapter);
     if (symbolViewEq(name, "wgpuInstanceWaitAny")) return fnPtr(&P.wgpuInstanceWaitAny);
@@ -274,7 +276,9 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuBindGroupLayoutSetLabel")) return fnPtr(&dropin_ext_c.wgpuBindGroupLayoutSetLabel);
     if (symbolViewEq(name, "wgpuBindGroupSetLabel")) return fnPtr(&dropin_ext_c.wgpuBindGroupSetLabel);
     if (symbolViewEq(name, "wgpuBufferAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuBufferAddRef);
+    if (symbolViewEq(name, "wgpuBufferDestroy")) return fnPtr(&dropin_ext_a.exports.wgpuBufferDestroy);
     if (symbolViewEq(name, "wgpuBufferGetMappedRange")) return fnPtr(&N.doeNativeBufferGetMappedRange);
+    if (symbolViewEq(name, "wgpuBufferGetMapState")) return fnPtr(&dropin_ext_c.wgpuBufferGetMapState);
     if (symbolViewEq(name, "wgpuBufferSetLabel")) return fnPtr(&dropin_ext_c.wgpuBufferSetLabel);
     if (symbolViewEq(name, "wgpuDeviceAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuDeviceAddRef);
     if (symbolViewEq(name, "wgpuDeviceCreateBuffer")) return fnPtr(&N.doeNativeDeviceCreateBuffer);
@@ -304,6 +308,11 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuCommandEncoderBeginComputePass")) return fnPtr(&N.doeNativeCommandEncoderBeginComputePass);
     if (symbolViewEq(name, "wgpuDeviceCreateRenderPipeline")) return fnPtr(&N.doeNativeDeviceCreateRenderPipeline);
     if (symbolViewEq(name, "wgpuCommandEncoderBeginRenderPass")) return fnPtr(&N.doeNativeCommandEncoderBeginRenderPass);
+    if (symbolViewEq(name, "wgpuCommandEncoderClearBuffer")) return fnPtr(&dropin_ext_a.exports.wgpuCommandEncoderClearBuffer);
+    if (symbolViewEq(name, "wgpuCommandEncoderInsertDebugMarker")) return fnPtr(&dropin_ext_c.wgpuCommandEncoderInsertDebugMarker);
+    if (symbolViewEq(name, "wgpuCommandEncoderPopDebugGroup")) return fnPtr(&dropin_ext_c.wgpuCommandEncoderPopDebugGroup);
+    if (symbolViewEq(name, "wgpuCommandEncoderPushDebugGroup")) return fnPtr(&dropin_ext_c.wgpuCommandEncoderPushDebugGroup);
+    if (symbolViewEq(name, "wgpuCommandEncoderWriteBuffer")) return fnPtr(&dropin_ext_a.exports.wgpuCommandEncoderWriteBuffer);
     if (symbolViewEq(name, "wgpuCommandEncoderWriteTimestamp")) return fnPtr(&P.wgpuCommandEncoderWriteTimestamp);
     if (symbolViewEq(name, "wgpuCommandEncoderCopyBufferToBuffer")) return fnPtr(&N.doeNativeCopyBufferToBuffer);
     if (symbolViewEq(name, "wgpuCommandEncoderCopyBufferToTexture")) return fnPtr(&dropin_ext_b.doeAbiBridgeCopyBufferToTexture);
@@ -318,6 +327,8 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuComputePassEncoderInsertDebugMarker")) return fnPtr(&dropin_ext_c.wgpuComputePassEncoderInsertDebugMarker);
     if (symbolViewEq(name, "wgpuComputePassEncoderPushDebugGroup")) return fnPtr(&dropin_ext_c.wgpuComputePassEncoderPushDebugGroup);
     if (symbolViewEq(name, "wgpuComputePassEncoderPopDebugGroup")) return fnPtr(&dropin_ext_c.wgpuComputePassEncoderPopDebugGroup);
+    if (symbolViewEq(name, "wgpuComputePassEncoderSetImmediates")) return fnPtr(&dropin_ext_a.exports.wgpuComputePassEncoderSetImmediates);
+    if (symbolViewEq(name, "wgpuComputePassEncoderWriteTimestamp")) return fnPtr(&dropin_ext_a.exports.wgpuComputePassEncoderWriteTimestamp);
     if (symbolViewEq(name, "wgpuRenderPassEncoderSetPipeline")) return fnPtr(&N.doeNativeRenderPassSetPipeline);
     if (symbolViewEq(name, "wgpuRenderPassEncoderSetVertexBuffer")) return fnPtr(&N.doeNativeRenderPassSetVertexBuffer);
     if (symbolViewEq(name, "wgpuRenderPassEncoderSetIndexBuffer")) return fnPtr(&N.doeNativeRenderPassSetIndexBuffer);
@@ -397,6 +408,7 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuDeviceCreateSampler")) return fnPtr(&N.doeNativeDeviceCreateSampler);
     if (symbolViewEq(name, "wgpuSamplerRelease")) return fnPtr(&P.wgpuSamplerRelease);
     if (symbolViewEq(name, "wgpuSupportedFeaturesFreeMembers")) return fnPtr(&dropin_ext_b.wgpuSupportedFeaturesFreeMembers);
+    if (symbolViewEq(name, "wgpuSupportedInstanceFeaturesFreeMembers")) return fnPtr(&dropin_ext_b.wgpuSupportedInstanceFeaturesFreeMembers);
     if (symbolViewEq(name, "wgpuDeviceCreateExternalTexture")) return fnPtr(&dropin_ext_a.exports.wgpuDeviceCreateExternalTexture);
     if (symbolViewEq(name, "wgpuExternalTextureAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuExternalTextureAddRef);
     if (symbolViewEq(name, "wgpuExternalTextureDestroy")) return fnPtr(&dropin_ext_c.wgpuExternalTextureDestroy);
@@ -416,6 +428,7 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuSharedFenceExportInfo")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedFenceExportInfo);
     if (symbolViewEq(name, "wgpuSharedFenceAddRef")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedFenceAddRef);
     if (symbolViewEq(name, "wgpuSharedFenceRelease")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedFenceRelease);
+    if (symbolViewEq(name, "wgpuSharedFenceSetLabel")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedFenceSetLabel);
     if (symbolViewEq(name, "wgpuSharedTextureMemoryBeginAccess")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryBeginAccess);
     if (symbolViewEq(name, "wgpuSharedTextureMemoryCreateTexture")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryCreateTexture);
     if (symbolViewEq(name, "wgpuSharedTextureMemoryEndAccess")) return fnPtr(&dropin_browser_shared_memory.wgpuSharedTextureMemoryEndAccess);
@@ -439,11 +452,21 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuRenderBundleEncoderPushDebugGroup")) return fnPtr(&dropin_ext_a.exports.wgpuRenderBundleEncoderPushDebugGroup);
     if (symbolViewEq(name, "wgpuRenderBundleEncoderRelease")) return fnPtr(&dropin_ext_a.exports.wgpuRenderBundleEncoderRelease);
     if (symbolViewEq(name, "wgpuRenderBundleEncoderSetBindGroup")) return fnPtr(&dropin_ext_a.exports.wgpuRenderBundleEncoderSetBindGroup);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderSetImmediates")) return fnPtr(&dropin_ext_b.wgpuRenderBundleEncoderSetImmediates);
     if (symbolViewEq(name, "wgpuRenderBundleEncoderSetIndexBuffer")) return fnPtr(&dropin_ext_b.wgpuRenderBundleEncoderSetIndexBuffer);
     if (symbolViewEq(name, "wgpuRenderBundleEncoderSetPipeline")) return fnPtr(&dropin_ext_b.wgpuRenderBundleEncoderSetPipeline);
     if (symbolViewEq(name, "wgpuRenderBundleEncoderSetVertexBuffer")) return fnPtr(&dropin_ext_b.wgpuRenderBundleEncoderSetVertexBuffer);
     if (symbolViewEq(name, "wgpuRenderBundleRelease")) return fnPtr(&dropin_ext_b.wgpuRenderBundleRelease);
     if (symbolViewEq(name, "wgpuRenderPassEncoderExecuteBundles")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderExecuteBundles);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderInsertDebugMarker")) return fnPtr(&dropin_ext_c.wgpuRenderPassEncoderInsertDebugMarker);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderPopDebugGroup")) return fnPtr(&dropin_ext_c.wgpuRenderPassEncoderPopDebugGroup);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderPushDebugGroup")) return fnPtr(&dropin_ext_c.wgpuRenderPassEncoderPushDebugGroup);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderSetBlendConstant")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderSetBlendConstant);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderSetImmediates")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderSetImmediates);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderSetScissorRect")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderSetScissorRect);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderSetStencilReference")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderSetStencilReference);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderSetViewport")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderSetViewport);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderWriteTimestamp")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderWriteTimestamp);
     // Async pipeline creation
     if (symbolViewEq(name, "wgpuDeviceCreateComputePipelineAsync")) return fnPtr(&dropin_ext_a.exports.wgpuDeviceCreateComputePipelineAsync);
     if (symbolViewEq(name, "wgpuDeviceCreateRenderPipelineAsync")) return fnPtr(&dropin_ext_a.exports.wgpuDeviceCreateRenderPipelineAsync);

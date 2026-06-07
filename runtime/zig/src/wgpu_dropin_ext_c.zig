@@ -4,6 +4,7 @@ const abi_copy = @import("core/abi/wgpu_copy_descriptor_types.zig");
 const p2life = @import("wgpu_p2_lifecycle_procs.zig");
 const surface = @import("full/surface/wgpu_surface_procs.zig");
 const native = @import("doe_wgpu_native.zig");
+const future_ids = @import("doe_future_ids.zig");
 
 extern fn doeNativeBufferGetMapState(raw: ?*anyopaque) callconv(.c) u32;
 
@@ -106,10 +107,7 @@ pub export fn wgpuComputePipelineSetLabel(a0: abi_core.WGPUComputePipeline, a1: 
 }
 
 pub export fn wgpuDeviceGetLostFuture(a0: abi_core.WGPUDevice) callconv(.c) abi_core.WGPUFuture {
-    _ = a0;
-    // Return a sentinel future ID; device-lost is stored but not
-    // yet auto-fired, so no real future tracking is needed.
-    return .{ .id = 6 };
+    return .{ .id = future_ids.device_lost_future_id(a0) };
 }
 
 pub export fn wgpuDeviceSetDeviceLostCallback(

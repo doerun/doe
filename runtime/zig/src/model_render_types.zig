@@ -28,6 +28,7 @@ pub const RenderIndexFormat = enum {
 pub const MAX_VERTEX_BUFFERS: usize = 8;
 pub const MAX_VERTEX_ATTRIBUTES: usize = 16;
 pub const MAX_RENDER_BIND_ENTRIES: usize = 16;
+pub const RENDER_BINDING_UNSET: u32 = 0xFFFF_FFFF;
 
 pub const WGPUVertexStepMode_Vertex: u32 = 0x00000001;
 pub const WGPUVertexStepMode_Instance: u32 = 0x00000002;
@@ -154,8 +155,10 @@ pub const RenderDrawCommand = struct {
     fragment_entry_point: ?[]const u8 = null,
     bind_texture_count: u32 = 0,
     bind_texture_handles: [MAX_RENDER_BIND_ENTRIES]u64 = [_]u64{0} ** MAX_RENDER_BIND_ENTRIES,
+    bind_texture_bindings: [MAX_RENDER_BIND_ENTRIES]u32 = [_]u32{RENDER_BINDING_UNSET} ** MAX_RENDER_BIND_ENTRIES,
     bind_sampler_count: u32 = 0,
     bind_sampler_handles: [MAX_RENDER_BIND_ENTRIES]u64 = [_]u64{0} ** MAX_RENDER_BIND_ENTRIES,
+    bind_sampler_bindings: [MAX_RENDER_BIND_ENTRIES]u32 = [_]u32{RENDER_BINDING_UNSET} ** MAX_RENDER_BIND_ENTRIES,
 };
 
 pub const DrawIndirectCommand = RenderDrawCommand;

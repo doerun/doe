@@ -32,7 +32,7 @@ pub export fn doeNativeDeviceCreateRenderBundleEncoder(
     dev_raw: ?*anyopaque,
     desc: ?*const RenderBundleEncoderDescriptor,
 ) callconv(.c) ?*anyopaque {
-    _ = cast(DoeDevice, dev_raw) orelse return null;
+    const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
 
     const color_fmt: abi_texture.WGPUTextureFormat = if (d.colorFormatCount > 0)
@@ -48,6 +48,7 @@ pub export fn doeNativeDeviceCreateRenderBundleEncoder(
         d.depthReadOnly != 0,
         d.stencilReadOnly != 0,
     ) orelse return null;
+    enc.backend = dev.backend;
     return @ptrCast(enc);
 }
 
@@ -69,7 +70,8 @@ pub export fn doeNativeRenderBundleEncoderSetPipeline(
 ) callconv(.c) void {
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const pip = cast(DoeRenderPipeline, pip_raw) orelse return;
-    bundle.bundle_encoder_push(enc, .{ .set_pipeline = .{ .pipeline_handle = pip.mtl_pso } });
+    const pipeline_handle = if (enc.backend == .vulkan) toOpaque(pip) else pip.mtl_pso;
+    bundle.bundle_encoder_push(enc, .{ .set_pipeline = .{ .pipeline_handle = pipeline_handle } });
 }
 
 pub export fn doeNativeRenderBundleEncoderSetBindGroup(
@@ -97,6 +99,7 @@ pub export fn doeNativeRenderBundleEncoderSetBindGroup(
     }
     bundle.bundle_encoder_push(enc, .{ .set_bind_group = .{
         .group = group_index,
+        .bg_handle = if (enc.backend == .vulkan) toOpaque(bg) else null,
         .bg = bg_entry,
     } });
 }
@@ -108,14 +111,15 @@ pub export fn doeNativeRenderBundleEncoderSetVertexBuffer(
     offset: u64,
     size: u64,
 ) callconv(.c) void {
-    _ = size;
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const buf = cast(DoeBuffer, buf_raw) orelse return;
     if (buf.error_object) return;
+    const buffer_handle = if (enc.backend == .vulkan) toOpaque(buf) else buf.mtl;
     bundle.bundle_encoder_push(enc, .{ .set_vertex_buffer = .{
         .slot = slot,
-        .buffer_handle = buf.mtl,
+        .buffer_handle = buffer_handle,
         .offset = offset,
+        .size = size,
     } });
 }
 
@@ -129,8 +133,9 @@ pub export fn doeNativeRenderBundleEncoderSetIndexBuffer(
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const buf = cast(DoeBuffer, buf_raw) orelse return;
     if (buf.error_object) return;
+    const buffer_handle = if (enc.backend == .vulkan) toOpaque(buf) else buf.mtl;
     bundle.bundle_encoder_push(enc, .{ .set_index_buffer = .{
-        .buffer_handle = buf.mtl,
+        .buffer_handle = buffer_handle,
         .format = format,
         .offset = offset,
         .size = size,
@@ -179,8 +184,9 @@ pub export fn doeNativeRenderBundleEncoderDrawIndirect(
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const ibuf = cast(DoeBuffer, indirect_buf_raw) orelse return;
     if (ibuf.error_object) return;
+    const buffer_handle = if (enc.backend == .vulkan) toOpaque(ibuf) else ibuf.mtl;
     bundle.bundle_encoder_push(enc, .{ .draw_indirect = .{
-        .indirect_buffer = ibuf.mtl,
+        .indirect_buffer = buffer_handle,
         .indirect_offset = indirect_offset,
     } });
 }
@@ -193,8 +199,9 @@ pub export fn doeNativeRenderBundleEncoderDrawIndexedIndirect(
     const enc = bundle.cast_bundle_encoder(enc_raw) orelse return;
     const ibuf = cast(DoeBuffer, indirect_buf_raw) orelse return;
     if (ibuf.error_object) return;
+    const buffer_handle = if (enc.backend == .vulkan) toOpaque(ibuf) else ibuf.mtl;
     bundle.bundle_encoder_push(enc, .{ .draw_indexed_indirect = .{
-        .indirect_buffer = ibuf.mtl,
+        .indirect_buffer = buffer_handle,
         .indirect_offset = indirect_offset,
     } });
 }
@@ -269,34 +276,100 @@ const MAX_VERTEX_BUFFERS = native_shared.MAX_VERTEX_BUFFERS;
 // each draw emits a fully populated RecordedCmd.render_pass.
 const BundleReplayState = struct {
     pso: ?*anyopaque,
+    pipeline: ?*DoeRenderPipeline,
+    bind_groups: [native_shared.MAX_RENDER_BIND_GROUPS]?*DoeBindGroup,
     bind_buffers: [MAX_FLAT_BIND]?*anyopaque,
     bind_buffer_offsets: [MAX_FLAT_BIND]u64,
+    vertex_buffer_objects: [MAX_VERTEX_BUFFERS]?*DoeBuffer,
     vertex_buffers: [MAX_VERTEX_BUFFERS]?*anyopaque,
     vertex_buffer_offsets: [MAX_VERTEX_BUFFERS]u64,
+    vertex_buffer_sizes: [MAX_VERTEX_BUFFERS]u64,
+    index_buffer_object: ?*DoeBuffer,
     index_buffer: ?*anyopaque,
     index_offset: u64,
+    index_size: u64,
     index_format: u32,
 
     fn init(pass: *const DoeRenderPass) BundleReplayState {
         return .{
             .pso = if (pass.pipeline) |p| p.mtl_pso else null,
+            .pipeline = pass.pipeline,
+            .bind_groups = pass.bind_groups,
             .bind_buffers = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
             .bind_buffer_offsets = [_]u64{0} ** MAX_FLAT_BIND,
+            .vertex_buffer_objects = pass.vertex_buffers,
             .vertex_buffers = [_]?*anyopaque{null} ** MAX_VERTEX_BUFFERS,
             .vertex_buffer_offsets = [_]u64{0} ** MAX_VERTEX_BUFFERS,
+            .vertex_buffer_sizes = pass.vertex_buffer_sizes,
+            .index_buffer_object = pass.index_buffer,
             .index_buffer = null,
             .index_offset = 0,
+            .index_size = 0,
             .index_format = 0x2, // default uint32
         };
     }
 };
+
+const SavedVulkanBundlePassState = struct {
+    pipeline: ?*DoeRenderPipeline,
+    bind_groups: [native_shared.MAX_RENDER_BIND_GROUPS]?*DoeBindGroup,
+    vertex_buffers: [MAX_VERTEX_BUFFERS]?*DoeBuffer,
+    vertex_buffer_offsets: [MAX_VERTEX_BUFFERS]u64,
+    vertex_buffer_sizes: [MAX_VERTEX_BUFFERS]u64,
+    index_buffer: ?*DoeBuffer,
+    index_offset: u64,
+    index_format: u32,
+    index_buffer_size: u64,
+
+    fn capture(pass: *const DoeRenderPass) SavedVulkanBundlePassState {
+        return .{
+            .pipeline = pass.pipeline,
+            .bind_groups = pass.bind_groups,
+            .vertex_buffers = pass.vertex_buffers,
+            .vertex_buffer_offsets = pass.vertex_buffer_offsets,
+            .vertex_buffer_sizes = pass.vertex_buffer_sizes,
+            .index_buffer = pass.index_buffer,
+            .index_offset = pass.index_offset,
+            .index_format = pass.index_format,
+            .index_buffer_size = pass.index_buffer_size,
+        };
+    }
+
+    fn restore(saved: SavedVulkanBundlePassState, pass: *DoeRenderPass) void {
+        pass.pipeline = saved.pipeline;
+        pass.bind_groups = saved.bind_groups;
+        pass.vertex_buffers = saved.vertex_buffers;
+        pass.vertex_buffer_offsets = saved.vertex_buffer_offsets;
+        pass.vertex_buffer_sizes = saved.vertex_buffer_sizes;
+        pass.index_buffer = saved.index_buffer;
+        pass.index_offset = saved.index_offset;
+        pass.index_format = saved.index_format;
+        pass.index_buffer_size = saved.index_buffer_size;
+    }
+};
+
+fn apply_vulkan_bundle_state(pass: *DoeRenderPass, state: *const BundleReplayState) bool {
+    const pipeline = state.pipeline orelse return false;
+    pass.pipeline = pipeline;
+    pass.depth_compare = pipeline.depth_compare;
+    pass.depth_write_enabled = pipeline.depth_write_enabled;
+    pass.bind_groups = state.bind_groups;
+    pass.vertex_buffers = state.vertex_buffer_objects;
+    pass.vertex_buffer_offsets = state.vertex_buffer_offsets;
+    pass.vertex_buffer_sizes = state.vertex_buffer_sizes;
+    pass.index_buffer = state.index_buffer_object;
+    pass.index_offset = state.index_offset;
+    pass.index_format = state.index_format;
+    pass.index_buffer_size = state.index_size;
+    return true;
+}
 
 // Build a render_pass RecordedCmd with the accumulated bundle state.
 fn bundleRenderPassCmd(
     state: *const BundleReplayState,
     pass: *const DoeRenderPass,
 ) native_cmds.RecordedCmd {
-    const pipeline = pass.pipeline;
+    const pipeline = state.pipeline orelse pass.pipeline;
     return .{ .render_pass = .{
         .pso = state.pso,
         .root_signature = if (pipeline) |p| p.backend_root_signature else null,
@@ -348,6 +421,7 @@ pub export fn doeNativeRenderPassExecuteBundles(
     bundles: [*]const ?*anyopaque,
 ) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
+    const is_vulkan = pass.enc.dev.backend == .vulkan;
 
     // The pass format is not exposed through DoeRenderPass here, so we only
     // validate the bundle sample count and treat format compatibility as
@@ -363,6 +437,10 @@ pub export fn doeNativeRenderPassExecuteBundles(
             });
             continue;
         }
+        const saved_vulkan_state: ?SavedVulkanBundlePassState = if (is_vulkan)
+            SavedVulkanBundlePassState.capture(pass)
+        else
+            null;
 
         // Each bundle starts with a fresh replay state seeded from the pass.
         var state = BundleReplayState.init(pass);
@@ -371,8 +449,12 @@ pub export fn doeNativeRenderPassExecuteBundles(
             switch (cmd) {
                 .set_pipeline => |p| {
                     state.pso = p.pipeline_handle;
+                    state.pipeline = if (is_vulkan) cast(DoeRenderPipeline, p.pipeline_handle) else state.pipeline;
                 },
                 .set_bind_group => |bg_cmd| {
+                    if (is_vulkan and bg_cmd.group < native_shared.MAX_RENDER_BIND_GROUPS) {
+                        state.bind_groups[@intCast(bg_cmd.group)] = cast(DoeBindGroup, bg_cmd.bg_handle);
+                    }
                     const base = @as(usize, bg_cmd.group) * MAX_BIND;
                     const count = @min(@as(usize, bg_cmd.bg.count), bundle.MAX_BINDINGS_PER_GROUP);
                     for (0..count) |i| {
@@ -384,16 +466,27 @@ pub export fn doeNativeRenderPassExecuteBundles(
                 },
                 .set_vertex_buffer => |vb| {
                     const slot = @as(usize, @min(vb.slot, MAX_VERTEX_BUFFERS - 1));
+                    state.vertex_buffer_objects[slot] = if (is_vulkan) cast(DoeBuffer, vb.buffer_handle) else null;
                     state.vertex_buffers[slot] = vb.buffer_handle;
                     state.vertex_buffer_offsets[slot] = vb.offset;
+                    state.vertex_buffer_sizes[slot] = vb.size;
                 },
                 .set_index_buffer => |ib| {
+                    state.index_buffer_object = if (is_vulkan) cast(DoeBuffer, ib.buffer_handle) else null;
                     state.index_buffer = ib.buffer_handle;
                     state.index_offset = ib.offset;
+                    state.index_size = ib.size;
                     state.index_format = ib.format;
                 },
                 .draw => |d| {
                     if (pass.recorded_draw_count >= pass.max_draw_count) continue;
+                    if (is_vulkan) {
+                        if (!apply_vulkan_bundle_state(pass, &state)) continue;
+                        pass.recorded_draw_count += 1;
+                        const vk_render = @import("doe_vulkan_render_native.zig");
+                        vk_render.vulkan_render_pass_draw(pass, d.vertex_count, d.instance_count, d.first_vertex, d.first_instance);
+                        continue;
+                    }
                     pass.recorded_draw_count += 1;
                     var rc = bundleRenderPassCmd(&state, pass);
                     rc.render_pass.vertex_count = d.vertex_count;
@@ -408,6 +501,13 @@ pub export fn doeNativeRenderPassExecuteBundles(
                         continue;
                     }
                     if (pass.recorded_draw_count >= pass.max_draw_count) continue;
+                    if (is_vulkan) {
+                        if (state.index_buffer_object == null or !apply_vulkan_bundle_state(pass, &state)) continue;
+                        pass.recorded_draw_count += 1;
+                        const vk_render = @import("doe_vulkan_render_native.zig");
+                        vk_render.vulkan_render_pass_draw_indexed(pass, d.index_count, d.instance_count, d.first_index, d.base_vertex, d.first_instance);
+                        continue;
+                    }
                     pass.recorded_draw_count += 1;
                     var rc = bundleRenderPassCmd(&state, pass);
                     rc.render_pass.indexed = true;
@@ -425,6 +525,13 @@ pub export fn doeNativeRenderPassExecuteBundles(
                 },
                 .draw_indirect => |d| {
                     if (pass.recorded_draw_count >= pass.max_draw_count) continue;
+                    if (is_vulkan) {
+                        if (d.indirect_buffer == null or !apply_vulkan_bundle_state(pass, &state)) continue;
+                        pass.recorded_draw_count += 1;
+                        const vk_render = @import("doe_vulkan_render_native.zig");
+                        vk_render.vulkan_render_pass_draw_indirect(pass, d.indirect_buffer, d.indirect_offset);
+                        continue;
+                    }
                     pass.recorded_draw_count += 1;
                     var rc = bundleRenderPassCmd(&state, pass);
                     rc.render_pass.indirect = true;
@@ -438,6 +545,13 @@ pub export fn doeNativeRenderPassExecuteBundles(
                         continue;
                     }
                     if (pass.recorded_draw_count >= pass.max_draw_count) continue;
+                    if (is_vulkan) {
+                        if (state.index_buffer_object == null or d.indirect_buffer == null or !apply_vulkan_bundle_state(pass, &state)) continue;
+                        pass.recorded_draw_count += 1;
+                        const vk_render = @import("doe_vulkan_render_native.zig");
+                        vk_render.vulkan_render_pass_draw_indexed_indirect(pass, d.indirect_buffer, d.indirect_offset);
+                        continue;
+                    }
                     pass.recorded_draw_count += 1;
                     var rc = bundleRenderPassCmd(&state, pass);
                     rc.render_pass.indexed = true;
@@ -451,6 +565,9 @@ pub export fn doeNativeRenderPassExecuteBundles(
                         std.debug.panic("doe: executeBundles OOM", .{});
                 },
             }
+        }
+        if (saved_vulkan_state) |saved| {
+            saved.restore(pass);
         }
     }
 }

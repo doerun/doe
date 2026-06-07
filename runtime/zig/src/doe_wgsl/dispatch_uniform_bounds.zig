@@ -60,6 +60,18 @@ pub fn try_elide_uniform_validated_storage_index(
         };
     }
 
+    if (match_uniform_product_guarded_access(module, function, expr_id, index_data.index)) |shape| {
+        return .{
+            .kind = .uniform_extent,
+            .gid_axis = 0,
+            .storage_binding = storage_binding,
+            .element_stride_bytes = element_stride_bytes,
+            .uniform_binding = shape.major.binding,
+            .uniform_u32_offsets = .{ shape.major.byte_offset, shape.stride.byte_offset },
+            .uniform_u32_count = 2,
+        };
+    }
+
     return null;
 }
 
@@ -204,6 +216,177 @@ const MatrixIndexState = struct {
     cols: ?UniformField = null,
     offset: u64 = 0,
 };
+
+const AffineExpr = struct {
+    base: ir.ExprId,
+    offset: u64 = 0,
+};
+
+fn match_uniform_product_guarded_access(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    index_id: ir.ExprId,
+) ?struct { major: UniformField, stride: UniformField } {
+    const product = match_uniform_product_index(module, function, index_id) orelse return null;
+    const guard = find_guard_for_expr(module, function, function.root_stmt, expr_id) orelse return null;
+    const extent = match_product_guard(module, function, guard, product.major, product.minor, product.stride) orelse return null;
+    return .{ .major = extent.major, .stride = extent.stride };
+}
+
+fn match_uniform_product_index(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+) ?struct { major: AffineExpr, minor: AffineExpr, stride: UniformField } {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .add) return null;
+
+    if (match_major_stride_term(module, function, binary.lhs)) |major| {
+        const minor = match_affine_expr(function, binary.rhs) orelse return null;
+        return .{ .major = major.expr, .minor = minor, .stride = major.stride };
+    }
+    if (match_major_stride_term(module, function, binary.rhs)) |major| {
+        const minor = match_affine_expr(function, binary.lhs) orelse return null;
+        return .{ .major = major.expr, .minor = minor, .stride = major.stride };
+    }
+    if (match_u32_literal_value(function, binary.lhs)) |offset| {
+        var nested = match_uniform_product_index(module, function, binary.rhs) orelse return null;
+        nested.minor.offset = std.math.add(u64, nested.minor.offset, offset) catch return null;
+        return nested;
+    }
+    if (match_u32_literal_value(function, binary.rhs)) |offset| {
+        var nested = match_uniform_product_index(module, function, binary.lhs) orelse return null;
+        nested.minor.offset = std.math.add(u64, nested.minor.offset, offset) catch return null;
+        return nested;
+    }
+    return null;
+}
+
+fn match_major_stride_term(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+) ?struct { expr: AffineExpr, stride: UniformField } {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .mul) return null;
+    if (match_uniform_field(module, function, binary.lhs)) |stride| {
+        const major = match_affine_expr(function, binary.rhs) orelse return null;
+        return .{ .expr = major, .stride = stride };
+    }
+    if (match_uniform_field(module, function, binary.rhs)) |stride| {
+        const major = match_affine_expr(function, binary.lhs) orelse return null;
+        return .{ .expr = major, .stride = stride };
+    }
+    return null;
+}
+
+fn match_affine_expr(function: *const ir.Function, expr_id: ir.ExprId) ?AffineExpr {
+    const canonical = resolve_value_alias(function, expr_id);
+    const expr = function.exprs.items[canonical];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return .{ .base = canonical },
+    };
+    if (binary.op != .add) return .{ .base = canonical };
+    if (match_u32_literal_value(function, binary.lhs)) |offset| {
+        return .{ .base = resolve_value_alias(function, binary.rhs), .offset = offset };
+    }
+    if (match_u32_literal_value(function, binary.rhs)) |offset| {
+        return .{ .base = resolve_value_alias(function, binary.lhs), .offset = offset };
+    }
+    return .{ .base = canonical };
+}
+
+fn find_guard_for_expr(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    stmt_id: ir.StmtId,
+    expr_id: ir.ExprId,
+) ?ir.ExprId {
+    if (stmt_id >= function.stmts.items.len) return null;
+    const stmt = function.stmts.items[stmt_id];
+    switch (stmt) {
+        .block => |range| {
+            for (function.stmt_children.items[range.start .. range.start + range.len]) |child_id| {
+                if (find_guard_for_expr(module, function, child_id, expr_id)) |guard| return guard;
+            }
+            return null;
+        },
+        .if_ => |if_stmt| {
+            if (stmt_contains_expr(function, if_stmt.then_block, expr_id)) return if_stmt.cond;
+            if (if_stmt.else_block) |else_block| {
+                if (stmt_contains_expr(function, else_block, expr_id)) return null;
+            }
+            return null;
+        },
+        .loop_ => |loop_stmt| return find_guard_for_expr(module, function, loop_stmt.body, expr_id),
+        .switch_ => |switch_stmt| {
+            for (function.switch_cases.items[switch_stmt.cases.start .. switch_stmt.cases.start + switch_stmt.cases.len]) |case_node| {
+                if (find_guard_for_expr(module, function, case_node.body, expr_id)) |guard| return guard;
+            }
+            return null;
+        },
+        else => return null,
+    }
+}
+
+fn match_product_guard(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    guard_id: ir.ExprId,
+    major: AffineExpr,
+    minor: AffineExpr,
+    stride: UniformField,
+) ?struct { major: UniformField, stride: UniformField } {
+    var state = ProductGuardState{ .major_expr = major, .minor_expr = minor, .stride = stride };
+    collect_product_guard_terms(module, function, guard_id, &state);
+    const major_field = state.major orelse return null;
+    if (!state.minor_matches_stride) return null;
+    if (major_field.binding.group != stride.binding.group or major_field.binding.binding != stride.binding.binding) return null;
+    return .{ .major = major_field, .stride = stride };
+}
+
+const ProductGuardState = struct {
+    major_expr: AffineExpr,
+    minor_expr: AffineExpr,
+    stride: UniformField,
+    major: ?UniformField = null,
+    minor_matches_stride: bool = false,
+};
+
+fn collect_product_guard_terms(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    state: *ProductGuardState,
+) void {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return,
+    };
+    if (binary.op == .logical_and) {
+        collect_product_guard_terms(module, function, binary.lhs, state);
+        collect_product_guard_terms(module, function, binary.rhs, state);
+        return;
+    }
+    if (binary.op != .less) return;
+    const lhs = match_affine_expr(function, binary.lhs) orelse return;
+    const rhs = match_uniform_field(module, function, binary.rhs) orelse return;
+    if (same_affine_expr(lhs, state.major_expr)) state.major = rhs;
+    if (same_affine_expr(lhs, state.minor_expr) and same_uniform_field(rhs, state.stride)) {
+        state.minor_matches_stride = true;
+    }
+}
 
 fn collect_matrix_index_terms(
     module: *const ir.Module,
@@ -624,6 +807,18 @@ fn same_uniform_field(a: UniformField, b: UniformField) bool {
 
 fn same_value_expr(function: *const ir.Function, a: ir.ExprId, b: ir.ExprId) bool {
     return resolve_value_alias(function, a) == resolve_value_alias(function, b);
+}
+
+fn same_affine_expr(a: AffineExpr, b: AffineExpr) bool {
+    return a.base == b.base and a.offset == b.offset;
+}
+
+fn match_u32_literal_value(function: *const ir.Function, expr_id: ir.ExprId) ?u64 {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    return switch (expr.data) {
+        .int_lit => |value| value,
+        else => null,
+    };
 }
 
 fn is_local_ref(function: *const ir.Function, expr_id: ir.ExprId, local_idx: u32) bool {

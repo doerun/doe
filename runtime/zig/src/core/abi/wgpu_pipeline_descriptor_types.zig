@@ -4,6 +4,18 @@ const core = @import("wgpu_core_base_types.zig");
 const copy = @import("wgpu_copy_descriptor_types.zig");
 const texture = @import("wgpu_texture_base_types.zig");
 
+pub const WGPUChainedStruct = extern struct {
+    next: ?*const WGPUChainedStruct,
+    sType: core.WGPUSType,
+};
+
+pub const WGPUSType_DawnTextureInternalUsageDescriptor: core.WGPUSType = 0x00050004;
+
+pub const WGPUDawnTextureInternalUsageDescriptor = extern struct {
+    chain: WGPUChainedStruct,
+    internalUsage: texture.WGPUTextureUsage,
+};
+
 pub const WGPUTextureViewDescriptor = extern struct {
     nextInChain: ?*anyopaque,
     label: core.WGPUStringView,

@@ -9,6 +9,7 @@ pub fn vulkan_create_texture(dev: *shared.DoeDevice, tex: *shared.DoeTexture, de
         return false;
     };
 
+    const usage: model_gpu_types.WGPUFlags = @intCast(if (tex.usage != 0) tex.usage else desc.usage);
     const handle: u64 = @intFromPtr(tex);
     const tex_resource = shared.vk_resources.create_texture_resource_full(
         rt,
@@ -21,7 +22,7 @@ pub fn vulkan_create_texture(dev: *shared.DoeDevice, tex: *shared.DoeTexture, de
         model_gpu_types.WGPUTextureViewDimension_Undefined,
         model_gpu_types.WGPUTextureAspect_Undefined,
         desc.format,
-        @intCast(desc.usage),
+        usage,
     ) catch |err| {
         shared.deliverInternalError(dev, "doe_vulkan_render_native: create_texture_resource_full failed: {s}", .{@errorName(err)});
         return false;
@@ -92,6 +93,9 @@ pub fn vulkan_create_texture_view(tex: *shared.DoeTexture, tv: *shared.DoeTextur
         .image = texture.image,
         .memory = shared.c.VK_NULL_U64,
         .view = vk_view,
+        .owns_image = false,
+        .owns_memory = false,
+        .owns_view = true,
         .width = texture.width,
         .height = texture.height,
         .depth_or_array_layers = resolved_array_layer_count,

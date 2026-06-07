@@ -2,10 +2,38 @@ const std = @import("std");
 const model = @import("../../src/model.zig");
 const full_surface_api = @import("../../src/full/surface_api.zig");
 const core_surface = @import("../../src/core/surface.zig");
+const builtin = @import("builtin");
+const instance_device = @import("../../src/doe_instance_device_native.zig");
+const native_helpers = @import("../../src/doe_native_object_helpers.zig");
+const native_types = @import("../../src/doe_native_object_types.zig");
+const surface_native = @import("../../src/doe_surface_native.zig");
+const surface_procs = @import("../../src/full/surface/wgpu_surface_procs.zig");
 
 test "full surface ID and version" {
     try std.testing.expectEqualStrings("doe-full", full_surface_api.SURFACE_ID);
     try std.testing.expectEqual(@as(u32, 1), full_surface_api.SURFACE_VERSION);
+}
+
+test "native surface C ABI creates unconfigured surface before device binding" {
+    if (comptime builtin.os.tag != .linux) return error.SkipZigTest;
+
+    const inst_raw = instance_device.doeNativeCreateInstance(null) orelse return error.TestExpectedEqual;
+    const inst = native_helpers.cast(native_types.DoeInstance, inst_raw) orelse return error.TestExpectedEqual;
+    try std.testing.expectEqual(@as(u32, 1), inst.ref_count);
+
+    var desc = surface_procs.SurfaceDescriptor{
+        .nextInChain = null,
+        .label = .{ .data = null, .length = 0 },
+    };
+    const surf_raw = surface_native.doeAbiBridgeInstanceCreateSurface(inst_raw, &desc) orelse return error.TestExpectedEqual;
+    const surf = native_helpers.cast(surface_native.DoeSurface, surf_raw) orelse return error.TestExpectedEqual;
+
+    try std.testing.expectEqual(@as(u32, 2), inst.ref_count);
+    try std.testing.expect(surf.vk_runtime_ref == null);
+
+    surface_native.doeNativeSurfaceRelease(surf_raw);
+    try std.testing.expectEqual(@as(u32, 1), inst.ref_count);
+    instance_device.doeNativeInstanceRelease(inst_raw);
 }
 
 test "full surface accepts all commands" {

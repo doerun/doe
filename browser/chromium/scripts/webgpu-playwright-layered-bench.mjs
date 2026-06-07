@@ -894,6 +894,9 @@ function baseLaunchArgs(port) {
   if (Number.isInteger(port)) {
     args.push(`--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:${port}`);
   }
+  if (process.platform === "linux") {
+    args.push("--use-angle=vulkan");
+  }
   return args;
 }
 

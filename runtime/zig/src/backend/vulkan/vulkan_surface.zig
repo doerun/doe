@@ -37,6 +37,7 @@ const VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR: i32 = 1000001000;
 const VK_STRUCTURE_TYPE_PRESENT_INFO_KHR: i32 = 1000001001;
 const VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR: i32 = 1000006000;
 const VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR: i32 = 1000005000;
+const VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR: i32 = 1000004000;
 const VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO: i32 = 9;
 // VkFormat for swapchain
 const VK_FORMAT_B8G8R8A8_SRGB: u32 = 50;
@@ -141,6 +142,13 @@ const VkXcbSurfaceCreateInfoKHR = extern struct {
     connection: ?*anyopaque,
     window: u32,
 };
+const VkXlibSurfaceCreateInfoKHR = extern struct {
+    sType: VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: VkFlags,
+    dpy: ?*anyopaque,
+    window: u64,
+};
 // Vulkan KHR extension function externs (loaded from libvulkan at link time)
 extern fn vkDestroySurfaceKHR(instance: VkInstance, surface: VkSurfaceKHR, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
 extern fn vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice: VkPhysicalDevice, queueFamilyIndex: u32, surface: VkSurfaceKHR, pSupported: *VkBool32) callconv(.c) VkResult;
@@ -160,10 +168,12 @@ const is_linux = builtin.os.tag == .linux;
 
 extern fn vkCreateWaylandSurfaceKHR(instance: VkInstance, pCreateInfo: *const VkWaylandSurfaceCreateInfoKHR, pAllocator: ?*const VkAllocationCallbacks, pSurface: *VkSurfaceKHR) callconv(.c) VkResult;
 extern fn vkCreateXcbSurfaceKHR(instance: VkInstance, pCreateInfo: *const VkXcbSurfaceCreateInfoKHR, pAllocator: ?*const VkAllocationCallbacks, pSurface: *VkSurfaceKHR) callconv(.c) VkResult;
+extern fn vkCreateXlibSurfaceKHR(instance: VkInstance, pCreateInfo: *const VkXlibSurfaceCreateInfoKHR, pAllocator: ?*const VkAllocationCallbacks, pSurface: *VkSurfaceKHR) callconv(.c) VkResult;
 pub const SurfacePlatform = enum {
     headless,
     wayland,
     xcb,
+    xlib,
 };
 pub const SurfaceCapabilities = struct {
     min_image_count: u32 = 0,
@@ -218,6 +228,7 @@ pub const VulkanSurface = struct {
 pub const INSTANCE_SURFACE_EXTENSION: [*:0]const u8 = "VK_KHR_surface";
 pub const INSTANCE_WAYLAND_EXTENSION: [*:0]const u8 = "VK_KHR_wayland_surface";
 pub const INSTANCE_XCB_EXTENSION: [*:0]const u8 = "VK_KHR_xcb_surface";
+pub const INSTANCE_XLIB_EXTENSION: [*:0]const u8 = "VK_KHR_xlib_surface";
 pub const DEVICE_SWAPCHAIN_EXTENSION: [*:0]const u8 = "VK_KHR_swapchain";
 pub const WGPU_CANVAS_TONE_MAPPING_MODE_STANDARD: u32 = 0x00000001;
 pub const WGPU_CANVAS_TONE_MAPPING_MODE_EXTENDED: u32 = 0x00000002;
@@ -230,6 +241,7 @@ pub fn required_instance_extensions() []const [*:0]const u8 {
         INSTANCE_SURFACE_EXTENSION,
         INSTANCE_WAYLAND_EXTENSION,
         INSTANCE_XCB_EXTENSION,
+        INSTANCE_XLIB_EXTENSION,
     };
 }
 /// Returns device extensions needed for swapchain support.
@@ -278,6 +290,28 @@ pub fn create_xcb_surface(
         .window = xcb_window,
     };
     try check_vk(vkCreateXcbSurfaceKHR(instance, &create_info, null, &surface));
+    if (surface == VK_NULL_U64) return error.InvalidState;
+    return surface;
+}
+
+/// Create a VkSurfaceKHR from an Xlib display+window pair.
+pub fn create_xlib_surface(
+    instance: VkInstance,
+    xlib_display: ?*anyopaque,
+    xlib_window: u64,
+) common_errors.BackendNativeError!VkSurfaceKHR {
+    if (!is_linux) return error.UnsupportedFeature;
+    if (xlib_display == null) return error.InvalidArgument;
+
+    var surface: VkSurfaceKHR = VK_NULL_U64;
+    const create_info = VkXlibSurfaceCreateInfoKHR{
+        .sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
+        .pNext = null,
+        .flags = 0,
+        .dpy = xlib_display,
+        .window = xlib_window,
+    };
+    try check_vk(vkCreateXlibSurfaceKHR(instance, &create_info, null, &surface));
     if (surface == VK_NULL_U64) return error.InvalidState;
     return surface;
 }
@@ -727,8 +761,8 @@ pub fn present_image(
     const present_info = VkPresentInfoKHR{
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .pNext = null,
-        .waitSemaphoreCount = if (surface_state.render_finished_semaphore != VK_NULL_U64) 1 else 0,
-        .pWaitSemaphores = if (surface_state.render_finished_semaphore != VK_NULL_U64) @ptrCast(&surface_state.render_finished_semaphore) else null,
+        .waitSemaphoreCount = 0,
+        .pWaitSemaphores = null,
         .swapchainCount = 1,
         .pSwapchains = @ptrCast(&surface_state.swapchain),
         .pImageIndices = @ptrCast(&surface_state.current_image_index),

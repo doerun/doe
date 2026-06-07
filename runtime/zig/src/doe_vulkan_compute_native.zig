@@ -82,7 +82,7 @@ pub fn vulkan_create_shader_module(
     var spirv_buf = alloc.alloc(u8, doe_wgsl.MAX_SPIRV_OUTPUT) catch return error.OutOfMemory;
     defer alloc.free(spirv_buf);
 
-    var translation = runtime_compile.translateToSpirvForComputeRuntime(alloc, wgsl, spirv_buf) catch {
+    var translation = runtime_compile.translateToSpirvForVulkanComputeRuntime(alloc, wgsl, spirv_buf) catch {
         const head_len: usize = @min(wgsl.len, 120);
         std.log.err(
             "doe_vulkan_compute: WGSL→SPIR-V translation failed: {s} | wgsl[0..{d}]: {s}",
@@ -143,6 +143,7 @@ pub fn vulkan_release_compute_pipeline(pip: *DoeComputePipeline) void {
 fn collect_recorded_bindings(
     pip: *const DoeComputePipeline,
     bufs: []const ?*anyopaque,
+    buf_offsets: []const u64,
     buf_sizes: []const u64,
     out_bindings: []model_compute_types.KernelBinding,
 ) usize {
@@ -161,7 +162,7 @@ fn collect_recorded_bindings(
             .binding = binding_u32,
             .resource_kind = .buffer,
             .resource_handle = buf.vk_id,
-            .buffer_offset = 0,
+            .buffer_offset = buf_offsets[slot],
             .buffer_size = buf_sizes[slot],
             .buffer_type = shader_buffer_binding_type(shader_module, group_u32, binding_u32),
         };
@@ -186,6 +187,7 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
     const binding_count = collect_recorded_bindings(
         pip,
         dispatch.bufs[0..dispatch.buf_count],
+        dispatch.buf_offsets[0..dispatch.buf_count],
         dispatch.buf_sizes[0..dispatch.buf_count],
         &binding_storage,
     );

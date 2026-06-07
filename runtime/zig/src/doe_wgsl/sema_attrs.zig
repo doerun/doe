@@ -137,7 +137,7 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
             else => error.UnsupportedBuiltin,
         };
     }
-    if (std.mem.eql(u8, name, "textureSample") or std.mem.eql(u8, name, "textureSampleLevel") or std.mem.eql(u8, name, "textureSampleGrad") or std.mem.eql(u8, name, "textureSampleOffset") or std.mem.eql(u8, name, "textureSampleLevelOffset")) {
+    if (std.mem.eql(u8, name, "textureSample") or std.mem.eql(u8, name, "textureSampleBaseClampToEdge") or std.mem.eql(u8, name, "textureSampleLevel") or std.mem.eql(u8, name, "textureSampleGrad") or std.mem.eql(u8, name, "textureSampleOffset") or std.mem.eql(u8, name, "textureSampleLevelOffset")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         return switch (self.module.types.get(arg_types[0])) {
             .texture_1d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),

@@ -1,6 +1,7 @@
 // doe_bind_group_native.zig — Bind group, bind group layout, and pipeline layout
 // C ABI exports for the Doe native Metal/Vulkan backend. Sharded from doe_wgpu_native.zig.
 
+const std = @import("std");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
@@ -60,35 +61,55 @@ fn external_texture_entry_chain(raw: ?*anyopaque) ?*const abi_pipeline.WGPUExter
     return @ptrCast(@alignCast(ptr));
 }
 
+fn buffer_binding_type_active(value: u32) bool {
+    return value != abi_binding.WGPUBufferBindingType_BindingNotUsed and
+        value != abi_binding.WGPUBufferBindingType_Undefined;
+}
+
+fn texture_sample_type_active(value: u32) bool {
+    return value != abi_binding.WGPUTextureSampleType_BindingNotUsed and
+        value != abi_binding.WGPUTextureSampleType_Undefined;
+}
+
+fn storage_texture_access_active(value: u32) bool {
+    return value != abi_binding.WGPUStorageTextureAccess_BindingNotUsed and
+        value != abi_binding.WGPUStorageTextureAccess_Undefined;
+}
+
+fn sampler_binding_type_active(value: u32) bool {
+    return value != abi_binding.WGPUSamplerBindingType_BindingNotUsed and
+        value != abi_binding.WGPUSamplerBindingType_Undefined;
+}
+
 fn classify_layout_entry(entry: abi_pipeline.WGPUBindGroupLayoutEntry) DoeBindGroupLayoutEntry {
     var out = DoeBindGroupLayoutEntry{
         .binding = entry.binding,
         .resource_kind = RESOURCE_KIND_NONE,
         .binding_array_size = entry.bindingArraySize,
     };
-    if (external_texture_layout_chain(entry.nextInChain) != null) {
-        out.resource_kind = RESOURCE_KIND_EXTERNAL_TEXTURE;
+    if (buffer_binding_type_active(entry.buffer.type)) {
+        out.resource_kind = RESOURCE_KIND_BUFFER;
         return out;
     }
-    if (entry.storageTexture.access != 0 or entry.storageTexture.format != 0 or entry.storageTexture.viewDimension != 0) {
-        out.resource_kind = RESOURCE_KIND_STORAGE_TEXTURE;
-        out.texture_sample_type = entry.storageTexture.access;
-        out.texture_view_dimension = entry.storageTexture.viewDimension;
-        return out;
-    }
-    if (entry.texture.sampleType != 0 or entry.texture.viewDimension != 0 or entry.texture.multisampled != 0) {
+    if (texture_sample_type_active(entry.texture.sampleType)) {
         out.resource_kind = RESOURCE_KIND_TEXTURE;
         out.texture_sample_type = entry.texture.sampleType;
         out.texture_view_dimension = entry.texture.viewDimension;
         out.texture_multisampled = entry.texture.multisampled != 0;
         return out;
     }
-    if (entry.sampler.type != 0) {
+    if (storage_texture_access_active(entry.storageTexture.access)) {
+        out.resource_kind = RESOURCE_KIND_STORAGE_TEXTURE;
+        out.texture_sample_type = entry.storageTexture.access;
+        out.texture_view_dimension = entry.storageTexture.viewDimension;
+        return out;
+    }
+    if (sampler_binding_type_active(entry.sampler.type)) {
         out.resource_kind = RESOURCE_KIND_SAMPLER;
         return out;
     }
-    if (entry.buffer.type != 0 or entry.buffer.minBindingSize != 0 or entry.buffer.hasDynamicOffset != 0) {
-        out.resource_kind = RESOURCE_KIND_BUFFER;
+    if (external_texture_layout_chain(entry.nextInChain) != null) {
+        out.resource_kind = RESOURCE_KIND_EXTERNAL_TEXTURE;
     }
     return out;
 }
@@ -198,6 +219,14 @@ fn find_layout_entry(layout: *DoeBindGroupLayout, binding: u32) ?DoeBindGroupLay
 fn retain_buffer(bg: *DoeBindGroup, binding: usize, buffer: *DoeBuffer) void {
     native_helpers.object_add_ref(DoeBuffer, toOpaque(buffer));
     bg.retained_buffers[binding] = buffer;
+}
+
+fn resolve_buffer_binding_size(buffer: *const DoeBuffer, offset: u64, requested_size: u64) ?u64 {
+    if (offset > buffer.size) return null;
+    if (requested_size == abi_core.WGPU_WHOLE_SIZE) return buffer.size - offset;
+    const end = std.math.add(u64, offset, requested_size) catch return null;
+    if (end > buffer.size) return null;
+    return requested_size;
 }
 
 fn retain_texture_view(bg: *DoeBindGroup, binding: usize, view: *DoeTextureView) void {
@@ -352,8 +381,12 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                 } else {
                     bg.buffers[e.binding] = doe_buf.mtl;
                 }
+                const binding_size = resolve_buffer_binding_size(doe_buf, e.offset, e.size) orelse {
+                    alloc.destroy(bg);
+                    return null;
+                };
                 bg.offsets[e.binding] = e.offset;
-                bg.buffer_sizes[e.binding] = doe_buf.size;
+                bg.buffer_sizes[e.binding] = binding_size;
                 retain_buffer(bg, e.binding, doe_buf);
             } else if (cast(DoeTextureView, e.textureView)) |view| {
                 if (view.tex.error_object) {
@@ -364,7 +397,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                 bg.texture_views[e.binding] = toOpaque(view);
                 retain_texture_view(bg, e.binding, view);
             } else if (cast(DoeSampler, e.sampler)) |sampler| {
-                bg.samplers[e.binding] = sampler.mtl;
+                bg.samplers[e.binding] = if (is_vulkan) toOpaque(sampler) else sampler.mtl;
                 retain_sampler(bg, e.binding, sampler);
             } else if (resolve_external_texture(e)) |external_texture| {
                 const ext_mod = @import("doe_external_texture_native.zig");
@@ -505,4 +538,85 @@ pub export fn doeNativePipelineLayoutRelease(raw: ?*anyopaque) callconv(.c) void
         }
         alloc.destroy(l);
     }
+}
+
+fn layout_entry_for_kind_test() abi_pipeline.WGPUBindGroupLayoutEntry {
+    return .{
+        .nextInChain = null,
+        .binding = 0,
+        .visibility = 0,
+        .bindingArraySize = 0,
+        .buffer = .{
+            .nextInChain = null,
+            .type = abi_binding.WGPUBufferBindingType_BindingNotUsed,
+            .hasDynamicOffset = 0,
+            .minBindingSize = 0,
+        },
+        .sampler = .{
+            .nextInChain = null,
+            .type = abi_binding.WGPUSamplerBindingType_BindingNotUsed,
+        },
+        .texture = .{
+            .nextInChain = null,
+            .sampleType = abi_binding.WGPUTextureSampleType_BindingNotUsed,
+            .viewDimension = abi_texture.WGPUTextureViewDimension_Undefined,
+            .multisampled = 0,
+        },
+        .storageTexture = .{
+            .nextInChain = null,
+            .access = abi_binding.WGPUStorageTextureAccess_BindingNotUsed,
+            .format = abi_texture.WGPUTextureFormat_Undefined,
+            .viewDimension = abi_texture.WGPUTextureViewDimension_Undefined,
+        },
+    };
+}
+
+test "bind group layout classification follows active binding sentinel" {
+    var buffer_entry = layout_entry_for_kind_test();
+    buffer_entry.buffer.type = abi_binding.WGPUBufferBindingType_Storage;
+    buffer_entry.texture.viewDimension = abi_texture.WGPUTextureViewDimension_2D;
+    buffer_entry.storageTexture.format = abi_texture.WGPUTextureFormat_RGBA8Unorm;
+    try std.testing.expectEqual(RESOURCE_KIND_BUFFER, classify_layout_entry(buffer_entry).resource_kind);
+
+    var texture_entry = layout_entry_for_kind_test();
+    texture_entry.texture.sampleType = abi_binding.WGPUTextureSampleType_Float;
+    texture_entry.storageTexture.format = abi_texture.WGPUTextureFormat_RGBA8Unorm;
+    texture_entry.storageTexture.viewDimension = abi_texture.WGPUTextureViewDimension_2D;
+    const classified_texture = classify_layout_entry(texture_entry);
+    try std.testing.expectEqual(RESOURCE_KIND_TEXTURE, classified_texture.resource_kind);
+    try std.testing.expectEqual(abi_binding.WGPUTextureSampleType_Float, classified_texture.texture_sample_type);
+
+    var storage_entry = layout_entry_for_kind_test();
+    storage_entry.storageTexture.access = abi_binding.WGPUStorageTextureAccess_WriteOnly;
+    storage_entry.storageTexture.format = abi_texture.WGPUTextureFormat_RGBA8Unorm;
+    storage_entry.storageTexture.viewDimension = abi_texture.WGPUTextureViewDimension_2D;
+    try std.testing.expectEqual(RESOURCE_KIND_STORAGE_TEXTURE, classify_layout_entry(storage_entry).resource_kind);
+}
+
+test "inactive nested binding defaults do not classify a resource kind" {
+    var view_only_entry = layout_entry_for_kind_test();
+    view_only_entry.texture.viewDimension = abi_texture.WGPUTextureViewDimension_2D;
+    try std.testing.expectEqual(RESOURCE_KIND_NONE, classify_layout_entry(view_only_entry).resource_kind);
+
+    var storage_shape_only_entry = layout_entry_for_kind_test();
+    storage_shape_only_entry.storageTexture.format = abi_texture.WGPUTextureFormat_RGBA8Unorm;
+    storage_shape_only_entry.storageTexture.viewDimension = abi_texture.WGPUTextureViewDimension_2D;
+    try std.testing.expectEqual(RESOURCE_KIND_NONE, classify_layout_entry(storage_shape_only_entry).resource_kind);
+}
+
+test "external texture layout ignores Dawn undefined nested defaults" {
+    var external_layout = abi_pipeline.WGPUExternalTextureBindingLayout{
+        .chain = .{
+            .next = null,
+            .sType = abi_core.WGPUSType_ExternalTextureBindingLayout,
+        },
+    };
+    var entry = layout_entry_for_kind_test();
+    entry.nextInChain = @ptrCast(&external_layout.chain);
+    entry.buffer.type = abi_binding.WGPUBufferBindingType_Undefined;
+    entry.sampler.type = abi_binding.WGPUSamplerBindingType_Undefined;
+    entry.texture.sampleType = abi_binding.WGPUTextureSampleType_Undefined;
+    entry.storageTexture.access = abi_binding.WGPUStorageTextureAccess_Undefined;
+
+    try std.testing.expectEqual(RESOURCE_KIND_EXTERNAL_TEXTURE, classify_layout_entry(entry).resource_kind);
 }

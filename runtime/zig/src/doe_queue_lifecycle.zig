@@ -121,6 +121,7 @@ pub fn doeNativeQueueAddRef(raw: ?*anyopaque) void {
 }
 
 const MAX_GLOBAL_WORK_DONE: usize = 128;
+const WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS: u32 = 0x00000002;
 
 const WorkDoneEntry = struct {
     cb: ?*const fn (abi_callback.WGPUQueueWorkDoneStatus, abi_core.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
@@ -130,6 +131,26 @@ const WorkDoneEntry = struct {
 
 var global_work_done_buf: [MAX_GLOBAL_WORK_DONE]WorkDoneEntry = undefined;
 var global_work_done_count: usize = 0;
+var global_work_done_future_id: u64 = 4;
+
+fn next_work_done_future() abi_core.WGPUFuture {
+    const id = global_work_done_future_id;
+    global_work_done_future_id +%= 1;
+    if (global_work_done_future_id == 0) global_work_done_future_id = 4;
+    return .{ .id = id };
+}
+
+fn enqueue_global_work_done(info: abi_callback.WGPUQueueWorkDoneCallbackInfo) bool {
+    if (info.callback == null) return true;
+    if (global_work_done_count >= MAX_GLOBAL_WORK_DONE) return false;
+    global_work_done_buf[global_work_done_count] = .{
+        .cb = info.callback,
+        .userdata1 = info.userdata1,
+        .userdata2 = info.userdata2,
+    };
+    global_work_done_count += 1;
+    return true;
+}
 
 pub fn drain_global_work_done() void {
     const n = global_work_done_count;
@@ -142,11 +163,15 @@ pub fn drain_global_work_done() void {
 }
 
 pub fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: abi_callback.WGPUQueueWorkDoneCallbackInfo) abi_core.WGPUFuture {
+    const future = next_work_done_future();
     if (cast(DoeQueue, q_raw)) |q| {
         shared.flush_pending_work_dropin_sync(q);
+    }
+    if (info.mode == WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS and enqueue_global_work_done(info)) {
+        return future;
     }
     if (info.callback) |cb| {
         cb(.success, .{ .data = null, .length = 0 }, info.userdata1, info.userdata2);
     }
-    return .{ .id = 4 };
+    return future;
 }

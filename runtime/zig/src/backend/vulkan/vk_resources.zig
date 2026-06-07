@@ -46,6 +46,9 @@ pub const TextureResource = struct {
     image: VkImage,
     memory: VkDeviceMemory,
     view: VkImageView,
+    owns_image: bool = true,
+    owns_memory: bool = true,
+    owns_view: bool = true,
     width: u32,
     height: u32,
     depth_or_array_layers: u32,
@@ -704,6 +707,41 @@ pub fn create_texture_resource_full(
     };
 }
 
+pub fn borrowed_texture_resource(
+    image: VkImage,
+    width: u32,
+    height: u32,
+    depth_or_array_layers: u32,
+    mip_levels: u32,
+    sample_count: u32,
+    dimension: u32,
+    view_dimension: u32,
+    aspect: u32,
+    format: model_gpu_types.WGPUTextureFormat,
+    usage: model_gpu_types.WGPUFlags,
+    layout: u32,
+) TextureResource {
+    return .{
+        .image = image,
+        .memory = VK_NULL_U64,
+        .view = VK_NULL_U64,
+        .owns_image = false,
+        .owns_memory = false,
+        .owns_view = false,
+        .width = width,
+        .height = height,
+        .depth_or_array_layers = if (depth_or_array_layers > 0) depth_or_array_layers else 1,
+        .mip_levels = if (mip_levels > 0) mip_levels else 1,
+        .sample_count = if (sample_count > 0) sample_count else 1,
+        .dimension = if (dimension != 0) dimension else model_gpu_types.WGPUTextureDimension_2D,
+        .view_dimension = if (view_dimension != 0) view_dimension else model_gpu_types.WGPUTextureViewDimension_2D,
+        .aspect = if (aspect != 0) aspect else model_gpu_types.WGPUTextureAspect_All,
+        .format = format,
+        .usage = effective_texture_usage(usage),
+        .layout = layout,
+    };
+}
+
 pub fn create_texture_view(
     self: anytype,
     texture: TextureResource,
@@ -758,9 +796,9 @@ pub fn release_texture_resource(self: anytype, texture: TextureResource) void {
 }
 
 pub fn release_texture_resource_with_device(device: c.VkDevice, texture: TextureResource) void {
-    if (texture.view != VK_NULL_U64) c.vkDestroyImageView(device, texture.view, null);
-    if (texture.image != VK_NULL_U64) c.vkDestroyImage(device, texture.image, null);
-    if (texture.memory != VK_NULL_U64) c.vkFreeMemory(device, texture.memory, null);
+    if (texture.owns_view and texture.view != VK_NULL_U64) c.vkDestroyImageView(device, texture.view, null);
+    if (texture.owns_image and texture.image != VK_NULL_U64) c.vkDestroyImage(device, texture.image, null);
+    if (texture.owns_memory and texture.memory != VK_NULL_U64) c.vkFreeMemory(device, texture.memory, null);
 }
 
 pub fn release_texture_view_with_device(device: c.VkDevice, view: VkImageView) void {
@@ -875,6 +913,14 @@ pub fn texture_transition_source(layout: u32) TextureTransitionSource {
         c.VK_IMAGE_LAYOUT_GENERAL => .{
             .src_access_mask = c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
             .src_stage = c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        },
+        c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL => .{
+            .src_access_mask = c.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | c.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .src_stage = c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        },
+        c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL => .{
+            .src_access_mask = c.VK_ACCESS_SHADER_READ_BIT,
+            .src_stage = c.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
         },
         else => .{
             .src_access_mask = 0,

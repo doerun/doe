@@ -3,6 +3,46 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-07 — Doe Chromium Vulkan canvas path reaches submit
+
+The local Fawn Chromium build now loads the Doe WebGPU runtime on the Linux
+Vulkan path far enough to create a browser WebGPU canvas texture and complete a
+clear render pass without losing the device. The immediate crash was Chromium
+treating the Doe WebGPU-backed device as a native Dawn Vulkan device for shared
+image mailbox access; the decoder now records Doe devices as WebGPU-backed for
+mailbox metadata and routes that browser canvas shared-image path through
+Chromium's existing Skia fallback instead of calling native Dawn
+`WrapVulkanImage()`.
+
+This is diagnostic browser progress, not browser claim evidence. The regular
+Doe-mode browser smoke no longer records the surface/canvas crash, but compute
+readback and external image paths still lose the external instance or fail
+their browser API checks. The next browser work is to keep the WebGPU backend
+instance alive through general buffer mapping/readback and then replace the
+Skia copy fallback with a native Doe-compatible shared-image path before any
+browser performance claim is allowed.
+
+Artifacts:
+
+- Doe browser smoke:
+  `browser/chromium/artifacts/20260607T163908Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+
+Validation:
+
+- `zig build dropin`
+- `zig build dropin-full`
+- `ninja -C browser/chromium/src/out/fawn_release headless_shell`
+- focused local-origin CDP canvas probe against
+  `browser/chromium/src/out/fawn_release/headless_shell`
+- `python3 browser/chromium/scripts/check-browser-smoke-report.py --smoke-report browser/chromium/artifacts/20260607T163908Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json --require-modes doe --no-require-strict`
+  still fails because the full browser smoke remains diagnostic.
+- `python3 runtime/zig/tools/check_core_import_fence.py`
+- `zig build test-core` and `zig build test-full` still fail on existing
+  expected-error test logging after their unit-test bodies pass/skip; no import
+  fence violation remains.
+- `git diff --check`
+- `git -C browser/chromium/src diff --check`
+
 ## 2026-06-07 — AMD Vulkan package matrix and Node write-batch policy
 
 The promoted AMD Vulkan package lanes for Gemma64 and Gemma1B now have

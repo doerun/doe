@@ -4,6 +4,7 @@ const webgpu = @import("../runtime_types.zig");
 
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
+const vk_compute_sync = @import("vk_compute_sync.zig");
 const vk_metrics = @import("vk_metrics.zig");
 const vk_pipeline = @import("vk_pipeline.zig");
 const vk_upload = @import("vk_upload.zig");
@@ -70,6 +71,8 @@ fn run_batch(
         c.vkCmdResetQueryPool(command_buffer, self.timestamp_query_pool, 0, 2);
         c.vkCmdWriteTimestamp(command_buffer, c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, self.timestamp_query_pool, 0);
     }
+    vk_compute_sync.make_prior_transfer_writes_visible(self, command_buffer);
+    vk_compute_sync.make_prior_compute_writes_visible_for_current_bindings(self, command_buffer);
     c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
     vk_pipeline.bind_descriptor_sets(self, command_buffer);
     const needs_inter_dispatch_barrier = repeat_synchronization == .dependent;
@@ -149,7 +152,7 @@ fn run_batch(
         return error.TimingPolicyMismatch;
     }
 
-    self.has_pending_compute_writes = true;
+    vk_compute_sync.remember_current_compute_writes(self);
     return .{
         .encode_ns = encode_ns,
         .submit_wait_ns = submit_wait_ns,

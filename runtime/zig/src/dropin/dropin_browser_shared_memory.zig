@@ -355,6 +355,11 @@ pub fn wgpuSharedFenceRelease(shared_fence: WGPUSharedFence) callconv(.c) void {
     _ = shared_fence;
 }
 
+pub fn wgpuSharedFenceSetLabel(shared_fence: WGPUSharedFence, label: abi_core.WGPUStringView) callconv(.c) void {
+    _ = shared_fence;
+    _ = label;
+}
+
 pub fn wgpuSharedTextureMemoryBeginAccess(
     shared_texture_memory: WGPUSharedTextureMemory,
     texture: abi_core.WGPUTexture,

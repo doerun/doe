@@ -108,9 +108,10 @@ fn synthesize_layout_entry(binding: native_shared.BindingInfo) DoeBindGroupLayou
 fn populateRecordedDispatchBindings(
     bind_groups: []const ?*DoeBindGroup,
     bufs: *[MAX_FLAT_BIND]?*anyopaque,
+    buf_offsets: *[MAX_FLAT_BIND]u64,
     buf_sizes: *[MAX_FLAT_BIND]u64,
 ) u32 {
-    return compute_bind_groups.populateFlatBindings(bind_groups, bufs, buf_sizes);
+    return compute_bind_groups.populateFlatBindings(bind_groups, bufs, buf_offsets, buf_sizes);
 }
 
 // ============================================================
@@ -136,6 +137,7 @@ fn appendRecordedDispatch(pass: *DoeComputePass, pip: *DoeComputePipeline, x: u3
         .pso = pip.mtl_pso,
         .needs_sizes_buf = pip.needs_sizes_buf,
         .bufs = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
+        .buf_offsets = [_]u64{0} ** MAX_FLAT_BIND,
         .buf_sizes = [_]u64{0} ** MAX_FLAT_BIND,
         .buf_count = 0,
         .x = x,
@@ -148,6 +150,7 @@ fn appendRecordedDispatch(pass: *DoeComputePass, pip: *DoeComputePipeline, x: u3
     cmd.dispatch.buf_count = populateRecordedDispatchBindings(
         pass.bind_groups[0..],
         &cmd.dispatch.bufs,
+        &cmd.dispatch.buf_offsets,
         &cmd.dispatch.buf_sizes,
     );
     pass.enc.cmds.append(alloc, cmd) catch
@@ -269,6 +272,7 @@ pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_ra
         .pso = pip.mtl_pso,
         .needs_sizes_buf = pip.needs_sizes_buf,
         .bufs = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
+        .buf_offsets = [_]u64{0} ** MAX_FLAT_BIND,
         .buf_sizes = [_]u64{0} ** MAX_FLAT_BIND,
         .buf_count = 0,
         .indirect_buf = toOpaque(indirect_buf),
@@ -280,6 +284,7 @@ pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_ra
     cmd.dispatch_indirect.buf_count = populateRecordedDispatchBindings(
         pass.bind_groups[0..],
         &cmd.dispatch_indirect.bufs,
+        &cmd.dispatch_indirect.buf_offsets,
         &cmd.dispatch_indirect.buf_sizes,
     );
     pass.enc.cmds.append(alloc, cmd) catch

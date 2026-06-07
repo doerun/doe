@@ -700,6 +700,7 @@ const Analyzer = struct {
         if (std.mem.eql(u8, name, "sampler_comparison")) return self.module.sampler_comparison_type;
         if (std.mem.eql(u8, name, "texture_1d")) return try self.module.types.intern(.{ .texture_1d = self.module.f32_type });
         if (std.mem.eql(u8, name, "texture_2d")) return try self.module.types.intern(.{ .texture_2d = self.module.f32_type });
+        if (std.mem.eql(u8, name, "texture_external")) return try self.module.types.intern(.{ .texture_2d = self.module.f32_type });
         if (std.mem.eql(u8, name, "texture_3d")) return try self.module.types.intern(.{ .texture_3d = self.module.f32_type });
         if (std.mem.eql(u8, name, "texture_depth_2d")) return try self.module.types.intern(.{ .texture_depth_2d = {} });
         if (std.mem.eql(u8, name, "texture_depth_cube")) return try self.module.types.intern(.{ .texture_depth_cube = {} });

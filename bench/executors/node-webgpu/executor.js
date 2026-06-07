@@ -793,7 +793,7 @@ function prepareQueueWriteBufferBatch(method, entries, compactCache, cacheKey) {
 }
 
 function queueWriteBufferBatch(queue, method, entries, preparedCompact = null) {
-  if (method === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
+    if (method === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
     const compact = preparedCompact ?? buildCompactQueueWriteBatch(entries);
     return queue.writeBufferBatch(compact.buffers, compact.offsets, compact.sizes, compact.data);
   }

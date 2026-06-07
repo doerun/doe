@@ -11,12 +11,13 @@ const TranslationInfo = wgsl_runtime_compile.TranslationInfo;
 const Sha256 = std.crypto.hash.sha2.Sha256;
 
 const CACHE_MAGIC: u32 = 0xD0E5_CACE;
-const CACHE_VERSION: u32 = 5;
+const CACHE_VERSION: u32 = 6;
 const FLAG_NEEDS_SIZES_BUF: u32 = 1 << 0;
 const FLAG_BOUNDS_ELISION: u32 = 1 << 1;
 const FLAG_TEXTURE_BOUNDS_ELISION: u32 = 1 << 2;
 const FLAG_DISPATCH_VALIDATED_BOUNDS_ELISION: u32 = 1 << 3;
 const FLAG_UNIFORM_VALIDATED_BOUNDS_ELISION: u32 = 1 << 4;
+const FLAG_DISPATCH_VALIDATED_GLOBAL_BOUNDS_ELISION: u32 = 1 << 5;
 const DEFAULT_CACHE_DIR_SUFFIX = "doe/shader_translation_cache";
 const TRANSLATION_CONTRACT_DOMAIN = "doe.shader_translation_cache.contract.v1";
 const TRANSLATION_KEY_DOMAIN = "doe.shader_translation_cache.key.v1";
@@ -190,7 +191,7 @@ fn translationContractDigest(payload_kind: PayloadKind) [32]u8 {
     hashString(&hasher, "domain", TRANSLATION_CONTRACT_DOMAIN);
     hashU32(&hasher, CACHE_VERSION);
     hashU32(&hasher, @intFromEnum(payload_kind));
-    hashU32(&hasher, compilerModeFlags());
+    hashU32(&hasher, compilerModeFlags(payload_kind));
     hashString(&hasher, "wgsl_compiler_source_sha256", build_options.wgsl_compiler_source_sha256);
     hashString(&hasher, "shader_translation_cache_source_sha256", build_options.shader_translation_cache_source_sha256);
     hashString(&hasher, "pipeline_cache_source_sha256", build_options.pipeline_cache_source_sha256);
@@ -225,19 +226,23 @@ fn hashU32(hasher: *Sha256, value: u32) void {
     hasher.update(&bytes);
 }
 
-fn currentFlags(info: ?*const TranslationInfo) u32 {
-    var flags = compilerModeFlags();
+fn currentFlags(info: ?*const TranslationInfo, payload_kind: PayloadKind) u32 {
+    var flags = compilerModeFlags(payload_kind);
     if (info != null and info.?.needs_sizes_buf) flags |= FLAG_NEEDS_SIZES_BUF;
     return flags;
 }
 
-fn compilerModeFlags() u32 {
-    const config = wgsl_runtime_compile.compute_runtime_robustness_config();
+fn compilerModeFlags(payload_kind: PayloadKind) u32 {
+    const config = switch (payload_kind) {
+        .msl => wgsl_runtime_compile.compute_runtime_robustness_config(),
+        .spirv => wgsl_runtime_compile.vulkan_compute_runtime_robustness_config(),
+    };
     var flags: u32 = 0;
     if (config.elide_proven_bounds) flags |= FLAG_BOUNDS_ELISION;
     if (config.elide_proven_texture_bounds) flags |= FLAG_TEXTURE_BOUNDS_ELISION;
     if (config.elide_dispatch_validated_bounds) flags |= FLAG_DISPATCH_VALIDATED_BOUNDS_ELISION;
     if (config.elide_uniform_validated_bounds) flags |= FLAG_UNIFORM_VALIDATED_BOUNDS_ELISION;
+    if (config.elide_dispatch_validated_global_bounds) flags |= FLAG_DISPATCH_VALIDATED_GLOBAL_BOUNDS_ELISION;
     return flags;
 }
 
@@ -259,7 +264,7 @@ fn encodePayload(
     const header = Header{
         .magic = CACHE_MAGIC,
         .version = CACHE_VERSION,
-        .flags = currentFlags(info),
+        .flags = currentFlags(info, payload_kind),
         .payload_kind = @intFromEnum(payload_kind),
         .workgroup_x = info.workgroup_size[0],
         .workgroup_y = info.workgroup_size[1],
@@ -288,7 +293,7 @@ fn decodePayload(
     const header = readHeader(payload, &offset) orelse return null;
     if (header.magic != CACHE_MAGIC or header.version != CACHE_VERSION) return null;
     if (header.payload_kind != @intFromEnum(expected_kind)) return null;
-    if (header.flags & ~FLAG_NEEDS_SIZES_BUF != compilerModeFlags()) return null;
+    if (header.flags & ~FLAG_NEEDS_SIZES_BUF != compilerModeFlags(expected_kind)) return null;
     const expected_contract_digest = translationContractDigest(expected_kind);
     if (!std.mem.eql(u8, header.contract_digest[0..], expected_contract_digest[0..])) return null;
 

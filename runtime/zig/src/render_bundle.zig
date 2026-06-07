@@ -19,6 +19,7 @@
 
 const std = @import("std");
 const abi_texture = @import("core/abi/wgpu_texture_base_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
 
 // ============================================================
 // Constants
@@ -70,12 +71,14 @@ pub const BundleCmd = union(BundleCmdTag) {
     },
     set_bind_group: struct {
         group: u32,
+        bg_handle: ?*anyopaque = null,
         bg: BundleBindGroup,
     },
     set_vertex_buffer: struct {
         slot: u32,
         buffer_handle: ?*anyopaque,
         offset: u64,
+        size: u64,
     },
     set_index_buffer: struct {
         buffer_handle: ?*anyopaque,
@@ -114,6 +117,7 @@ pub const DoeBundleEncoder = struct {
     pub const TYPE_MAGIC = MAGIC_BUNDLE_ENCODER;
     magic: u32 = TYPE_MAGIC,
     allocator: std.mem.Allocator,
+    backend: native_shared.BackendKind = .metal,
     // Compatibility signature — validated against render pass at executeBundles time.
     color_format: abi_texture.WGPUTextureFormat,
     depth_stencil_format: abi_texture.WGPUTextureFormat,
@@ -132,6 +136,7 @@ pub const DoeRenderBundle = struct {
     pub const TYPE_MAGIC = MAGIC_BUNDLE;
     magic: u32 = TYPE_MAGIC,
     allocator: std.mem.Allocator,
+    backend: native_shared.BackendKind = .metal,
     color_format: abi_texture.WGPUTextureFormat,
     depth_stencil_format: abi_texture.WGPUTextureFormat,
     sample_count: u32,
@@ -553,6 +558,7 @@ pub fn bundle_encoder_finish(enc: *DoeBundleEncoder) ?*DoeRenderBundle {
     const cmds_slice = enc.cmds.toOwnedSlice(a) catch return null;
     bundle.* = .{
         .allocator = a,
+        .backend = enc.backend,
         .color_format = enc.color_format,
         .depth_stencil_format = enc.depth_stencil_format,
         .sample_count = enc.sample_count,

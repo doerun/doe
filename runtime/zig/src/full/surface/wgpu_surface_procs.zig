@@ -4,6 +4,11 @@ const abi_texture = @import("../../core/abi/wgpu_texture_base_types.zig");
 
 pub const Surface = ?*anyopaque;
 pub const SurfaceSourceMetalLayerSType: u32 = 0x00000004;
+pub const SurfaceSourceWindowsHWNDSType: u32 = 0x00000005;
+pub const SurfaceSourceXlibWindowSType: u32 = 0x00000006;
+pub const SurfaceSourceWaylandSurfaceSType: u32 = 0x00000007;
+pub const SurfaceSourceAndroidNativeWindowSType: u32 = 0x00000008;
+pub const SurfaceSourceXCBWindowSType: u32 = 0x00000009;
 
 pub const ChainedStruct = extern struct {
     next: ?*const ChainedStruct,
@@ -18,6 +23,24 @@ pub const SurfaceDescriptor = extern struct {
 pub const SurfaceSourceMetalLayer = extern struct {
     chain: ChainedStruct,
     layer: ?*anyopaque,
+};
+
+pub const SurfaceSourceWaylandSurface = extern struct {
+    chain: ChainedStruct,
+    display: ?*anyopaque,
+    surface: ?*anyopaque,
+};
+
+pub const SurfaceSourceXCBWindow = extern struct {
+    chain: ChainedStruct,
+    connection: ?*anyopaque,
+    window: u32,
+};
+
+pub const SurfaceSourceXlibWindow = extern struct {
+    chain: ChainedStruct,
+    display: ?*anyopaque,
+    window: u64,
 };
 
 pub const SurfaceCapabilities = extern struct {

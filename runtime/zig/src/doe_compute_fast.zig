@@ -2,6 +2,7 @@ const std = @import("std");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const native_cmds = @import("doe_native_command_types.zig");
+const vulkan_fast = @import("doe_compute_fast_vulkan.zig");
 const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const queue_submit = @import("doe_queue_submit_native.zig");
@@ -102,8 +103,9 @@ fn prepareDirectDispatch(
         return null;
     };
 
+    var buf_offsets: [MAX_FLAT_BIND]u64 = [_]u64{0} ** MAX_FLAT_BIND;
     var buf_sizes: [MAX_FLAT_BIND]u64 = [_]u64{0} ** MAX_FLAT_BIND;
-    var buf_total = compute_bind_groups.populateFlatBindings(bind_groups[0..], bufs, &buf_sizes);
+    var buf_total = compute_bind_groups.populateFlatBindings(bind_groups[0..], bufs, &buf_offsets, &buf_sizes);
 
     if (pipe.needs_sizes_buf) {
         sizes_mtl_out.* = metal_bridge_device_new_buffer_shared(q.dev.mtl_device, SIZES_BUF_BYTES);
@@ -317,6 +319,7 @@ fn appendRecordedDispatch(
         .pso = pipe.mtl_pso,
         .needs_sizes_buf = pipe.needs_sizes_buf,
         .bufs = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
+        .buf_offsets = [_]u64{0} ** MAX_FLAT_BIND,
         .buf_sizes = [_]u64{0} ** MAX_FLAT_BIND,
         .buf_count = 0,
         .x = dx,
@@ -329,6 +332,7 @@ fn appendRecordedDispatch(
     cmd.dispatch.buf_count = compute_bind_groups.populateFlatBindings(
         bind_groups[0..],
         &cmd.dispatch.bufs,
+        &cmd.dispatch.buf_offsets,
         &cmd.dispatch.buf_sizes,
     );
     cmds.append(alloc, cmd) catch std.debug.panic("doe_compute_fast: OOM recording dispatch command", .{});
@@ -511,8 +515,9 @@ fn computeDispatchFlushDirect(
     };
 
     var bufs: [MAX_FLAT_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_FLAT_BIND;
+    var buf_offsets: [MAX_FLAT_BIND]u64 = [_]u64{0} ** MAX_FLAT_BIND;
     var buf_sizes: [MAX_FLAT_BIND]u64 = [_]u64{0} ** MAX_FLAT_BIND;
-    var buf_total = compute_bind_groups.populateFlatBindings(bind_groups[0..], &bufs, &buf_sizes);
+    var buf_total = compute_bind_groups.populateFlatBindings(bind_groups[0..], &bufs, &buf_offsets, &buf_sizes);
 
     var sizes_mtl: ?*anyopaque = null;
     defer if (sizes_mtl) |smtl| metal_bridge_release(smtl);
@@ -686,9 +691,9 @@ fn computeDispatchBatchCopyFlushDirect(
     const q = native_helpers.cast(native_types.DoeQueue, q_raw) orelse return;
     if (q.dev.backend == .vulkan) {
         if (dispatch_count == 0) return;
-        const replay_started_ns = monotonicNowNs();
-        const cb_raw = doeNativeCreateComputeDispatchBatchCopyCommandBuffer(
-            toOpaque(q.dev),
+        const queue_submit_started_ns = monotonicNowNs();
+        vulkan_fast.dispatchBatchCopyFlush(
+            q,
             dispatch_count,
             pipe_ptrs,
             bg_ptrs,
@@ -699,18 +704,7 @@ fn computeDispatchBatchCopyFlushDirect(
             copy_dst,
             copy_dst_off,
             copy_size,
-        ) orelse return;
-        const cb = native_helpers.cast(DoeCommandBuffer, cb_raw) orelse return;
-        defer destroyPendingCommandBuffer(cb);
-        addDirectDispatchFlushField(
-            breakdown,
-            DIRECT_DISPATCH_FLUSH_COMMAND_REPLAY_INDEX,
-            monotonicNowNs() - replay_started_ns,
         );
-
-        var cmd_bufs = [_]?*anyopaque{cb_raw};
-        const queue_submit_started_ns = monotonicNowNs();
-        queue_submit.doeNativeQueueSubmit(toOpaque(q), cmd_bufs.len, &cmd_bufs);
         addDirectDispatchFlushField(
             breakdown,
             DIRECT_DISPATCH_FLUSH_QUEUE_SUBMIT_INDEX,

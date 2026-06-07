@@ -25,6 +25,12 @@ const VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT: u32 = 0x00000200;
 const VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT: u32 = 0x00000400;
 const WGPU_INDEX_FORMAT_UINT16: u32 = 0x00000001;
 const WGPU_INDEX_FORMAT_UINT32: u32 = 0x00000002;
+const VK_PIPELINE_STAGE_GRAPHICS_SHADER_BITS: u32 = c.VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | c.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+const SurfaceSubmitSync = struct {
+    wait_semaphore: c.VkSemaphore = VK_NULL_U64,
+    signal_semaphore: c.VkSemaphore = VK_NULL_U64,
+};
 
 pub const RenderState = struct {
     render_pass: c.VkRenderPass = VK_NULL_U64,
@@ -95,7 +101,14 @@ pub fn execute_render_draw(
     try ensure_render_target(self, &render_state, cmd, target_width, target_height, cmd.target_format, cmd.depth_stencil_format);
     const has_depth_stencil = cmd.depth_stencil_format != model_gpu_types.WGPUTextureFormat_Undefined;
     const depth_stencil_vk_format = if (has_depth_stencil) try vk_resources.texture_format_to_vk(cmd.depth_stencil_format) else 0;
-    try create_render_pass(self, &render_state, vk_format, has_depth_stencil, depth_stencil_vk_format);
+    try create_render_pass(
+        self,
+        &render_state,
+        vk_format,
+        has_depth_stencil,
+        depth_stencil_vk_format,
+        c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    );
     try create_framebuffer(self, &render_state, target_width, target_height);
     try create_graphics_pipeline(self, &render_state, vk_format, cmd);
     const encode_end = common_timing.now_ns();
@@ -109,6 +122,71 @@ pub fn execute_render_draw(
         .gpu_timestamp_ns = 0,
         .gpu_timestamp_attempted = false,
         .gpu_timestamp_valid = false,
+    };
+}
+
+pub fn execute_render_clear(
+    self: anytype,
+    cmd: model_render_types.RenderDrawCommand,
+) !DispatchMetrics {
+    const target_width = if (cmd.target_width > 0) cmd.target_width else model_render_types.DEFAULT_RENDER_TARGET_WIDTH;
+    const target_height = if (cmd.target_height > 0) cmd.target_height else model_render_types.DEFAULT_RENDER_TARGET_HEIGHT;
+    const vk_format = try vk_resources.texture_format_to_vk(cmd.target_format);
+
+    if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+        _ = try vk_upload.flush_queue(self);
+    }
+    try vk_device.ensure_submission_state(self);
+
+    var render_state = RenderState{};
+    defer release_render_state(self.device, &render_state);
+
+    const encode_start = common_timing.now_ns();
+    try ensure_render_target(
+        self,
+        &render_state,
+        cmd,
+        target_width,
+        target_height,
+        cmd.target_format,
+        model_gpu_types.WGPUTextureFormat_Undefined,
+    );
+    const surface_sync = surface_sync_for_target(self, cmd.target_handle);
+    const color_final_layout = if (surface_sync.signal_semaphore != VK_NULL_U64)
+        c.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    else
+        c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    try create_render_pass(
+        self,
+        &render_state,
+        vk_format,
+        false,
+        0,
+        color_final_layout,
+    );
+    try create_framebuffer(self, &render_state, target_width, target_height);
+    const encode_end = common_timing.now_ns();
+
+    const submit_start = common_timing.now_ns();
+    try record_and_submit_clear(self, &render_state, cmd, target_width, target_height, surface_sync);
+    const submit_end = common_timing.now_ns();
+    if (render_state.render_target_handle != 0) {
+        if (self.textures.getPtr(render_state.render_target_handle)) |texture| {
+            texture.layout = color_final_layout;
+        }
+        if (render_state.render_target_view_handle != 0) {
+            if (self.textures.getPtr(render_state.render_target_view_handle)) |view| {
+                view.layout = color_final_layout;
+            }
+        }
+    }
+    return .{
+        .encode_ns = common_timing.ns_delta(encode_end, encode_start),
+        .submit_wait_ns = common_timing.ns_delta(submit_end, submit_start),
+        .gpu_timestamp_ns = 0,
+        .gpu_timestamp_attempted = false,
+        .gpu_timestamp_valid = false,
+        .submit_count = 1,
     };
 }
 
@@ -305,6 +383,7 @@ fn create_render_pass(
     vk_format: u32,
     has_depth_stencil: bool,
     depth_stencil_vk_format: u32,
+    color_final_layout: u32,
 ) !void {
     const color_initial_layout = if (state.render_target) |target| target.layout else c.VK_IMAGE_LAYOUT_UNDEFINED;
     const depth_initial_layout = if (state.depth_stencil_target) |target| target.layout else c.VK_IMAGE_LAYOUT_UNDEFINED;
@@ -318,7 +397,7 @@ fn create_render_pass(
             .stencilLoadOp = c.VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .stencilStoreOp = c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
             .initialLayout = color_initial_layout,
-            .finalLayout = c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .finalLayout = color_final_layout,
         },
         .{
             .flags = 0,
@@ -430,6 +509,55 @@ fn resolve_vk_buffer_handle(self: anytype, handle: ?*anyopaque) ?c.VkBuffer {
     return cb.buffer;
 }
 
+fn surface_sync_for_target(self: anytype, target_handle: u64) SurfaceSubmitSync {
+    if (target_handle == 0) return .{};
+    const texture = self.textures.get(target_handle) orelse return .{};
+    var it = self.surfaces.valueIterator();
+    while (it.next()) |surface| {
+        if (!surface.configured or !surface.acquired) continue;
+        if (surface.current_image_index >= surface.swapchain_image_count) continue;
+        const image_index: usize = @intCast(surface.current_image_index);
+        if (surface.swapchain_images[image_index] != texture.image) continue;
+        if (surface.image_available_semaphore == VK_NULL_U64 or
+            surface.render_finished_semaphore == VK_NULL_U64)
+        {
+            return .{};
+        }
+        return .{
+            .wait_semaphore = surface.image_available_semaphore,
+            .signal_semaphore = surface.render_finished_semaphore,
+        };
+    }
+    return .{};
+}
+
+fn mark_texture_image_layout(self: anytype, image: c.VkImage, layout: u32) void {
+    var iterator = self.textures.valueIterator();
+    while (iterator.next()) |texture| {
+        if (texture.image == image) texture.layout = layout;
+    }
+}
+
+fn transition_bound_sampled_textures(self: anytype, cmd: model_render_types.RenderDrawCommand) void {
+    var ti: u32 = 0;
+    while (ti < cmd.bind_texture_count and ti < model_render_types.MAX_RENDER_BIND_ENTRIES) : (ti += 1) {
+        const texture = self.textures.get(cmd.bind_texture_handles[ti]) orelse continue;
+        if (texture.layout == c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) continue;
+        const source = vk_resources.texture_transition_source(texture.layout);
+        vk_resources.transition_texture_layout(
+            self.primary_command_buffer,
+            texture,
+            texture.layout,
+            c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            source.src_access_mask,
+            c.VK_ACCESS_SHADER_READ_BIT,
+            source.src_stage,
+            VK_PIPELINE_STAGE_GRAPHICS_SHADER_BITS,
+        );
+        mark_texture_image_layout(self, texture.image, c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+}
+
 fn record_and_submit_draws(
     self: anytype,
     state: *RenderState,
@@ -439,6 +567,7 @@ fn record_and_submit_draws(
     target_height: u32,
 ) !void {
     try begin_primary_recording(self);
+    transition_bound_sampled_textures(self, cmd);
 
     var clear_values = [_]c.VkClearValue{
         .{
@@ -628,6 +757,61 @@ fn begin_primary_recording(self: anytype) !void {
     try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
 }
 
+fn record_and_submit_clear(
+    self: anytype,
+    state: *RenderState,
+    cmd: model_render_types.RenderDrawCommand,
+    target_width: u32,
+    target_height: u32,
+    surface_sync: SurfaceSubmitSync,
+) !void {
+    try begin_primary_recording(self);
+
+    var clear_value = c.VkClearValue{
+        .color = .{ .float32 = cmd.clear_color },
+    };
+    var render_pass_begin = c.VkRenderPassBeginInfo{
+        .sType = c.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .pNext = null,
+        .renderPass = state.render_pass,
+        .framebuffer = state.framebuffer,
+        .renderArea = .{
+            .offset = .{ .x = 0, .y = 0 },
+            .extent = .{ .width = target_width, .height = target_height },
+        },
+        .clearValueCount = 1,
+        .pClearValues = @ptrCast(&clear_value),
+    };
+    c.vkCmdBeginRenderPass(self.primary_command_buffer, &render_pass_begin, c.VK_SUBPASS_CONTENTS_INLINE);
+    c.vkCmdEndRenderPass(self.primary_command_buffer);
+    try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
+    try submit_clear_and_wait(self, surface_sync);
+}
+
+fn submit_clear_and_wait(self: anytype, surface_sync: SurfaceSubmitSync) !void {
+    if (surface_sync.wait_semaphore == VK_NULL_U64 and surface_sync.signal_semaphore == VK_NULL_U64) {
+        return submit_and_wait(self);
+    }
+
+    var wait_stage = c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    var wait_semaphore = surface_sync.wait_semaphore;
+    var signal_semaphore = surface_sync.signal_semaphore;
+    var submit_info = c.VkSubmitInfo{
+        .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = null,
+        .waitSemaphoreCount = if (wait_semaphore != VK_NULL_U64) 1 else 0,
+        .pWaitSemaphores = if (wait_semaphore != VK_NULL_U64) @ptrCast(&wait_semaphore) else null,
+        .pWaitDstStageMask = if (wait_semaphore != VK_NULL_U64) @ptrCast(&wait_stage) else null,
+        .commandBufferCount = 1,
+        .pCommandBuffers = @ptrCast(&self.primary_command_buffer),
+        .signalSemaphoreCount = if (signal_semaphore != VK_NULL_U64) 1 else 0,
+        .pSignalSemaphores = if (signal_semaphore != VK_NULL_U64) @ptrCast(&signal_semaphore) else null,
+    };
+    try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+    try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+    try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+}
+
 fn submit_and_wait(self: anytype) !void {
     var submit_info = c.VkSubmitInfo{
         .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -751,7 +935,14 @@ pub fn execute_render_bundles(
         .target_format = @intCast(color_format),
     };
     try ensure_render_target(self, &state, bundle_cmd, width, height, @intCast(color_format), model_gpu_types.WGPUTextureFormat_Undefined);
-    try create_render_pass(self, &state, vk_format, false, 0);
+    try create_render_pass(
+        self,
+        &state,
+        vk_format,
+        false,
+        0,
+        c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    );
     try create_framebuffer(self, &state, width, height);
     const encode_end = common_timing.now_ns();
     const draw_start = common_timing.now_ns();

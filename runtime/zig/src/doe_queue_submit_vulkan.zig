@@ -51,22 +51,36 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                     vulkan_compute.vulkan_submit_recorded_dispatch_indirect(rt, dispatch_indirect_cmd);
                     executed_any_dispatch = true;
                 },
-                // Replay the copy in encoder-recorded order. Executing
-                // immediately at record-time was wrong because it ran
-                // before any pending dispatches in the same encoder;
-                // the copy would then read pre-dispatch (uninitialized
-                // or stale) bytes. Now the encoder stores the DoeBuffer
-                // pointer (see doe_encoder_native.zig) and we do the
-                // memcpy here, after all preceding dispatches have been
-                // flushed via rt.flush_queue() below.
+                // Replay the copy in encoder-recorded order. When it follows
+                // recorded dispatches, keep it in the same Vulkan command
+                // buffer with an explicit compute->transfer barrier so
+                // queue.submit does not synchronously drain before readback.
                 .copy_buf => |copy_cmd| {
                     const src_buf = cast(native_types.DoeBuffer, copy_cmd.src) orelse continue;
                     const dst_buf = cast(native_types.DoeBuffer, copy_cmd.dst) orelse continue;
                     if (src_buf.vk_id == 0 or dst_buf.vk_id == 0) continue;
                     const scb = rt.compute_buffers.get(src_buf.vk_id) orelse continue;
                     const dcb = rt.compute_buffers.get(dst_buf.vk_id) orelse continue;
-                    // Flush any pending dispatch writes before the
-                    // copy so we see the freshly-written bytes.
+                    const copy_end_src = std.math.add(u64, copy_cmd.src_off, copy_cmd.size) catch continue;
+                    const copy_end_dst = std.math.add(u64, copy_cmd.dst_off, copy_cmd.size) catch continue;
+                    if (copy_end_src > scb.size or copy_end_dst > dcb.size) continue;
+                    if (rt.replay_recording_active and scb.mapped == null and dcb.mapped == null) {
+                        vk_upload.record_replay_buffer_copy(
+                            rt,
+                            scb,
+                            copy_cmd.src_off,
+                            dcb,
+                            copy_cmd.dst_off,
+                            copy_cmd.size,
+                        ) catch |err| {
+                            shared.deliverInternalError(
+                                q.dev,
+                                "doe_queue_submit: vulkan record copy_buf: {s}",
+                                .{@errorName(err)},
+                            );
+                        };
+                        continue;
+                    }
                     if (executed_any_dispatch) {
                         _ = rt.flush_queue() catch |err| {
                             shared.deliverInternalError(
@@ -77,9 +91,6 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                         };
                         executed_any_dispatch = false;
                     }
-                    const copy_end_src = std.math.add(u64, copy_cmd.src_off, copy_cmd.size) catch continue;
-                    const copy_end_dst = std.math.add(u64, copy_cmd.dst_off, copy_cmd.size) catch continue;
-                    if (copy_end_src > scb.size or copy_end_dst > dcb.size) continue;
                     if (scb.mapped != null and dcb.mapped != null) {
                         const n: usize = @intCast(copy_cmd.size);
                         const so: usize = @intCast(copy_cmd.src_off);
@@ -121,5 +132,14 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                 .resolve_query_set => {},
             }
         }
+    }
+    if (executed_any_dispatch) {
+        rt.submit_recorded_replay() catch |err| {
+            shared.deliverInternalError(
+                q.dev,
+                "doe_queue_submit: vulkan submit recorded replay: {s}",
+                .{@errorName(err)},
+            );
+        };
     }
 }

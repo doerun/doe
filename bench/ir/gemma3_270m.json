@@ -923,7 +923,6 @@
       "planPath": "bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json",
       "commandsPath": "bench/plans/generated/compat/inference_gemma3_270m_decode_1tok_commands.json",
       "timingScope": "operation",
-      "matmulGemvVariant": "row2_helper_exact",
       "commands": [
         {
           "kind": "buffer_write",

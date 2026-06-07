@@ -4,6 +4,11 @@ const native_shared = @import("doe_native_shared_types.zig");
 const query_native = @import("doe_query_native.zig");
 const shared = @import("doe_vulkan_render_shared.zig");
 
+fn vulkan_texture_view_key(view: *shared.DoeTextureView) u64 {
+    if (view.handle) |handle| return @intFromPtr(handle);
+    return view.tex.vk_id;
+}
+
 fn populate_draw_cmd_from_pass(cmd: *model_render_types.RenderDrawCommand, pass: *shared.DoeRenderPass) void {
     if (pass.pipeline) |pip| {
         cmd.vertex_spirv = pip.vertex_spirv_data;
@@ -56,17 +61,22 @@ fn populate_draw_cmd_from_pass(cmd: *model_render_types.RenderDrawCommand, pass:
     var samp_count: u32 = 0;
     for (pass.bind_groups) |maybe_bg| {
         const bg = maybe_bg orelse continue;
-        for (bg.texture_views) |maybe_tv| {
+        for (bg.texture_views, 0..) |maybe_tv, binding| {
             if (maybe_tv == null) continue;
+            const view = native_helpers.cast(shared.DoeTextureView, maybe_tv.?) orelse continue;
+            const texture_key = vulkan_texture_view_key(view);
+            if (texture_key == 0) continue;
             if (tex_count < model_render_types.MAX_RENDER_BIND_ENTRIES) {
-                cmd.bind_texture_handles[tex_count] = @intFromPtr(maybe_tv.?);
+                cmd.bind_texture_handles[tex_count] = texture_key;
+                cmd.bind_texture_bindings[tex_count] = @intCast(binding);
                 tex_count += 1;
             }
         }
-        for (bg.samplers) |maybe_s| {
+        for (bg.samplers, 0..) |maybe_s, binding| {
             if (maybe_s == null) continue;
             if (samp_count < model_render_types.MAX_RENDER_BIND_ENTRIES) {
                 cmd.bind_sampler_handles[samp_count] = @intFromPtr(maybe_s.?);
+                cmd.bind_sampler_bindings[samp_count] = @intCast(binding);
                 samp_count += 1;
             }
         }
@@ -231,5 +241,17 @@ pub fn vulkan_render_pass_draw_indexed_indirect(pass: *shared.DoeRenderPass, ind
 }
 
 pub fn vulkan_render_pass_end(pass: *shared.DoeRenderPass) void {
-    _ = pass;
+    if (comptime !shared.has_vulkan) return;
+    if (pass.recorded_draw_count != 0) return;
+    const rt = shared.get_runtime(pass.enc.dev) orelse {
+        shared.deliverInternalError(pass.enc.dev, "doe_vulkan_render_native: render pass clear: no Vulkan runtime", .{});
+        return;
+    };
+
+    var cmd = base_vulkan_render_cmd(pass);
+    populate_draw_cmd_from_pass(&cmd, pass);
+
+    _ = rt.run_render_clear(cmd) catch |err| {
+        shared.deliverInternalError(pass.enc.dev, "doe_vulkan_render_native: run_render_clear failed: {s}", .{@errorName(err)});
+    };
 }

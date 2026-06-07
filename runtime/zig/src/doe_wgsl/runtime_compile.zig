@@ -55,6 +55,15 @@ pub fn compute_runtime_robustness_config() mod.ir_transform_robustness.Config {
     };
 }
 
+pub fn vulkan_compute_runtime_robustness_config() mod.ir_transform_robustness.Config {
+    return .{
+        .elide_proven_bounds = lean_proof.bounds_elimination_available,
+        .elide_dispatch_validated_bounds = true,
+        .elide_dispatch_validated_global_bounds = true,
+        .elide_uniform_validated_bounds = true,
+    };
+}
+
 pub fn translateToMslForComputeRuntime(
     allocator: std.mem.Allocator,
     wgsl: []const u8,
@@ -112,6 +121,30 @@ pub fn translateToSpirvForComputeRuntime(
     out: []u8,
 ) mod.TranslateError!TranslationResult {
     var module_ir = try mod.analyzeToIrWithConfig(allocator, wgsl, compute_runtime_robustness_config());
+    defer module_ir.deinit();
+
+    const len = mod.emit_spirv.emit(&module_ir, out) catch |err| {
+        const kind: mod.TranslateError = switch (err) {
+            error.OutputTooLarge => mod.TranslateError.OutputTooLarge,
+            error.UnsupportedConstruct => mod.TranslateError.UnsupportedConstruct,
+            error.InvalidIr => mod.TranslateError.InvalidIr,
+            error.OutOfMemory => mod.TranslateError.OutOfMemory,
+        };
+        mod.setLastErrorDetailPublic(.spirv_emit, kind, @errorName(err));
+        return kind;
+    };
+    return .{
+        .len = len,
+        .info = try build_translation_info(allocator, &module_ir),
+    };
+}
+
+pub fn translateToSpirvForVulkanComputeRuntime(
+    allocator: std.mem.Allocator,
+    wgsl: []const u8,
+    out: []u8,
+) mod.TranslateError!TranslationResult {
+    var module_ir = try mod.analyzeToIrWithConfig(allocator, wgsl, vulkan_compute_runtime_robustness_config());
     defer module_ir.deinit();
 
     const len = mod.emit_spirv.emit(&module_ir, out) catch |err| {
@@ -405,6 +438,72 @@ test "compute runtime elides workgroup id storage clamp with dispatch preconditi
     const msl = out[0..result.len];
     try std.testing.expect(std.mem.indexOf(u8, msl, "_doe_sizes") == null);
     try std.testing.expect(std.mem.indexOf(u8, msl, "min(") == null);
+}
+
+test "vulkan compute runtime elides global id storage clamp with dispatch precondition" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read> input_values: array<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> output_values: array<f32>;
+        \\@compute @workgroup_size(256)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    output_values[id.x] = input_values[id.x] * 2.0;
+        \\}
+    ;
+    var out: [mod.MAX_SPIRV_OUTPUT]u8 = undefined;
+    var result = try translateToSpirvForVulkanComputeRuntime(
+        std.testing.allocator,
+        source,
+        &out,
+    );
+    defer result.info.deinit(std.testing.allocator);
+
+    var gid_preconditions: usize = 0;
+    for (result.info.dispatch_preconditions) |precondition| {
+        if (precondition.kind != .gid_component) continue;
+        try std.testing.expectEqual(@as(u8, 0), precondition.gid_axis);
+        gid_preconditions += 1;
+    }
+    try std.testing.expectEqual(@as(usize, 2), gid_preconditions);
+}
+
+test "vulkan compute runtime elides uniform product guarded storage clamp" {
+    const source =
+        \\struct Dims {
+        \\    M: u32,
+        \\    K: u32,
+        \\    N: u32,
+        \\    _pad: u32,
+        \\}
+        \\@group(0) @binding(2) var<storage, read_write> c: array<f32>;
+        \\@group(0) @binding(3) var<uniform> dims: Dims;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(workgroup_id) wid: vec3u) {
+        \\    let row = wid.y * 16u;
+        \\    let col = wid.x * 16u;
+        \\    if (row + 1u < dims.M && col + 1u < dims.N) {
+        \\        c[((row + 1u) * dims.N + col) + 1u] = 1.0;
+        \\    }
+        \\}
+    ;
+    var out: [mod.MAX_SPIRV_OUTPUT]u8 = undefined;
+    var result = try translateToSpirvForVulkanComputeRuntime(
+        std.testing.allocator,
+        source,
+        &out,
+    );
+    defer result.info.deinit(std.testing.allocator);
+
+    var saw_c_extent = false;
+    for (result.info.dispatch_preconditions) |precondition| {
+        if (precondition.kind != .uniform_extent) continue;
+        if (precondition.storage_binding.binding != 2) continue;
+        try std.testing.expectEqual(@as(u32, 3), precondition.uniform_binding.binding);
+        try std.testing.expectEqual(@as(u32, 0), precondition.uniform_u32_offsets[0]);
+        try std.testing.expectEqual(@as(u32, 8), precondition.uniform_u32_offsets[1]);
+        try std.testing.expectEqual(@as(u8, 2), precondition.uniform_u32_count);
+        saw_c_extent = true;
+    }
+    try std.testing.expect(saw_c_extent);
 }
 
 test "compute runtime elides uniform guarded GEMV storage clamps" {

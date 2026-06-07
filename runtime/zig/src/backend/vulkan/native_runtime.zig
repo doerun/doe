@@ -24,6 +24,7 @@ const vk_upload = @import("vk_upload.zig");
 const vk_pipeline = @import("vk_pipeline.zig");
 const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 const vk_resources = @import("vk_resources.zig");
+const vk_compute_sync = @import("vk_compute_sync.zig");
 const vk_render = @import("vk_render.zig");
 const vk_dispatch_repeat = @import("vk_dispatch_repeat.zig");
 const vk_metrics = @import("vk_metrics.zig");
@@ -123,7 +124,12 @@ pub const NativeVulkanRuntime = struct {
     has_deferred_submissions: bool = false,
     has_depth_clip_enable_ext: bool = false,
     has_pending_compute_writes: bool = false,
+    has_pending_transfer_writes: bool = false,
     recorded_submit_replay_active: bool = false,
+    pending_compute_write_buffers: std.AutoHashMapUnmanaged(u64, void) = .{},
+    current_compute_bindings: [vk_compute_sync.MAX_TRACKED_COMPUTE_BINDINGS]vk_compute_sync.ComputeBindingAccess = [_]vk_compute_sync.ComputeBindingAccess{.{}} ** vk_compute_sync.MAX_TRACKED_COMPUTE_BINDINGS,
+    current_compute_binding_count: u32 = 0,
+    current_compute_binding_tracking_complete: bool = true,
     last_submit_count: ?u32 = null,
     replay_recording_active: bool = false,
     replay_command_buffer: c.VkCommandBuffer = null,
@@ -153,6 +159,7 @@ pub const NativeVulkanRuntime = struct {
         vk_pipeline.release_retired_states(self);
         vk_upload.release_pending_uploads(self);
         self.pending_uploads.deinit(self.allocator);
+        self.pending_compute_write_buffers.deinit(self.allocator);
         self.retired_pipeline_states.deinit(self.allocator);
         self.retired_descriptor_states.deinit(self.allocator);
         self.deferred_command_buffers.deinit(self.allocator);
@@ -367,6 +374,8 @@ pub const NativeVulkanRuntime = struct {
             c.vkCmdResetQueryPool(command_buffer, self.timestamp_query_pool, 0, 2);
             c.vkCmdWriteTimestamp(command_buffer, c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, self.timestamp_query_pool, 0);
         }
+        vk_compute_sync.make_prior_transfer_writes_visible(self, command_buffer);
+        vk_compute_sync.make_prior_compute_writes_visible_for_current_bindings(self, command_buffer);
         c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
         vk_pipeline.bind_descriptor_sets(self, command_buffer);
         c.vkCmdDispatch(command_buffer, x, y, z);
@@ -380,7 +389,7 @@ pub const NativeVulkanRuntime = struct {
         const encode_end = common_timing.now_ns();
         const encode_ns = common_timing.ns_delta(encode_end, encode_start);
         if (replay_deferred) {
-            self.has_pending_compute_writes = true;
+            vk_compute_sync.remember_current_compute_writes(self);
             return .{
                 .encode_ns = encode_ns,
                 .submit_wait_ns = 0,
@@ -456,7 +465,7 @@ pub const NativeVulkanRuntime = struct {
             if (queue_sync_mode != .per_command and gpu_timestamp_mode == .require) return error.TimingPolicyMismatch;
             if (queue_sync_mode == .per_command and gpu_timestamp_mode == .require) return error.TimingPolicyMismatch;
         }
-        self.has_pending_compute_writes = true;
+        vk_compute_sync.remember_current_compute_writes(self);
         return .{
             .encode_ns = encode_ns,
             .submit_wait_ns = common_timing.ns_delta(submit_end, submit_start),
@@ -519,6 +528,8 @@ pub const NativeVulkanRuntime = struct {
             };
             try c.check_vk(c.vkBeginCommandBuffer(command_buffer, &begin_info));
         }
+        vk_compute_sync.make_prior_transfer_writes_visible(self, command_buffer);
+        vk_compute_sync.make_prior_compute_writes_visible_for_current_bindings(self, command_buffer);
         c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
         vk_pipeline.bind_descriptor_sets(self, command_buffer);
         c.vkCmdDispatchIndirect(command_buffer, indirect_args.buffer, 0);
@@ -529,7 +540,7 @@ pub const NativeVulkanRuntime = struct {
         const encode_end = common_timing.now_ns();
         const encode_ns = common_timing.ns_delta(encode_end, encode_start);
         if (replay_deferred) {
-            self.has_pending_compute_writes = true;
+            vk_compute_sync.remember_current_compute_writes(self);
             return .{
                 .encode_ns = encode_ns,
                 .submit_wait_ns = 0,
@@ -579,7 +590,7 @@ pub const NativeVulkanRuntime = struct {
         }
         const submit_end = common_timing.now_ns();
 
-        self.has_pending_compute_writes = true;
+        vk_compute_sync.remember_current_compute_writes(self);
         return .{
             .encode_ns = encode_ns,
             .submit_wait_ns = common_timing.ns_delta(submit_end, submit_start),
@@ -594,6 +605,10 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn run_render_draw(self: *NativeVulkanRuntime, cmd: model_render_types.RenderDrawCommand) !DispatchMetrics {
         return vk_render.execute_render_draw(self, cmd);
+    }
+
+    pub fn run_render_clear(self: *NativeVulkanRuntime, cmd: model_render_types.RenderDrawCommand) !DispatchMetrics {
+        return vk_render.execute_render_clear(self, cmd);
     }
 
     pub fn run_execute_bundles(
@@ -684,7 +699,7 @@ pub const NativeVulkanRuntime = struct {
         try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
         try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
         try vk_upload.wait_for_fence_fast(self, self.fence);
-        self.has_pending_compute_writes = false;
+        vk_compute_sync.clear_pending_compute_writes(self);
     }
 
     // --- Streaming copy API ---
