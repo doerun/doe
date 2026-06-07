@@ -495,6 +495,7 @@ class BrowserOrtWebGpuCompareLaneTests(_BreadthLaneBase):
         comparison_executor_id="browser_ort_webgpu_doe",
         expected_ids=(
             "browser_ort_webgpu_compare_sentiment",
+            "browser_ort_webgpu_compare_sentiment_medium",
             "browser_ort_webgpu_compare_sentiment_longform",
         ),
         claimability_mode="off",

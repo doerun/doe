@@ -126,6 +126,59 @@ def _nonnegative_int(value: Any) -> int | None:
     return None
 
 
+def _nonnegative_float(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)) and value >= 0:
+        return float(value)
+    return None
+
+
+def _number_list(value: Any) -> list[float]:
+    if not isinstance(value, list):
+        return []
+    samples: list[float] = []
+    for entry in value:
+        parsed = _nonnegative_float(entry)
+        if parsed is not None:
+            samples.append(parsed)
+    return samples
+
+
+def _percentile(samples: list[float], fraction: float) -> float:
+    ordered = sorted(samples)
+    if not ordered:
+        return 0.0
+    index = min(len(ordered) - 1, max(0, int((len(ordered) - 1) * fraction)))
+    return ordered[index]
+
+
+def _stats(samples: list[float]) -> dict[str, float | int]:
+    if not samples:
+        return {
+            "count": 0,
+            "min": 0.0,
+            "max": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "mean": 0.0,
+            "stdev": 0.0,
+        }
+    mean = sum(samples) / len(samples)
+    variance = sum((sample - mean) ** 2 for sample in samples) / len(samples)
+    return {
+        "count": len(samples),
+        "min": min(samples),
+        "max": max(samples),
+        "median": _percentile(samples, 0.5),
+        "p95": _percentile(samples, 0.95),
+        "p99": _percentile(samples, 0.99),
+        "mean": mean,
+        "stdev": variance**0.5,
+    }
+
+
 def _trace_meta(
     *,
     workload_id: str,
@@ -136,11 +189,18 @@ def _trace_meta(
 ) -> dict[str, Any]:
     timed_mean_ms = mode_report.get("timedMeanMs")
     timing_ms = timed_mean_ms if isinstance(timed_mean_ms, (int, float)) else mode_report.get("elapsedMs")
+    samples_ms = _number_list(mode_report.get("timedIterationsMs"))
+    if not samples_ms:
+        fallback_timing_ms = _nonnegative_float(timing_ms)
+        if fallback_timing_ms is not None:
+            samples_ms = [fallback_timing_ms]
     trace_meta = {
         "traceMetaVersion": 1,
         "runtimeHost": "browser",
         "benchmarkLane": BENCHMARK_LANE,
         "workloadId": workload_id,
+        "workload": workload_id,
+        "canonicalWorkloadId": workload_id,
         "scenarioId": scenario["scenarioId"],
         "executionBackend": f"browser_ort_webgpu_{mode}",
         "executionLabel": f"Chromium Playwright ORT WebGPU {mode}",
@@ -153,6 +213,8 @@ def _trace_meta(
         "executionRowCount": 1,
         "executionSuccessCount": 1 if mode_report.get("success") else 0,
         "executionErrorCount": 0 if mode_report.get("success") else 1,
+        "executionSkippedCount": 0,
+        "executionUnsupportedCount": 0,
         "browserTask": scenario["task"],
         "browserTaskConfig": report.get("taskConfig"),
         "timingClass": mode_report.get("timingClass", report.get("timingClass", "process-wall")),
@@ -166,10 +228,19 @@ def _trace_meta(
         "suiteWallMs": mode_report.get("elapsedMs"),
         "resultSummary": mode_report.get("outputSummary"),
         "browserLaunchArgs": mode_report.get("launchArgs"),
+        "samplesMs": samples_ms,
+        "stats": _stats(samples_ms),
     }
     dispatch_count = _nonnegative_int(mode_report.get("webgpuDispatchCount"))
     if dispatch_count is not None:
         trace_meta["executionDispatchCount"] = dispatch_count
+    elif mode_report.get("success") is not True:
+        trace_meta["executionDispatchCount"] = 0
+    submit_count = _nonnegative_int(mode_report.get("webgpuQueueSubmitCount"))
+    if submit_count is not None:
+        trace_meta["executionSubmitCount"] = submit_count
+    elif mode_report.get("success") is not True:
+        trace_meta["executionSubmitCount"] = 0
     for source_key, trace_key in (
         ("webgpuDispatchWorkgroups", "browserWebgpuDispatchWorkgroups"),
         ("webgpuDispatchWorkgroupsIndirect", "browserWebgpuDispatchWorkgroupsIndirect"),
@@ -242,6 +313,10 @@ def main(argv: list[str] | None = None) -> int:
             "executionRowCount": 0,
             "executionSuccessCount": 0,
             "executionErrorCount": 1,
+            "executionSkippedCount": 0,
+            "executionUnsupportedCount": 0,
+            "executionDispatchCount": 0,
+            "executionSubmitCount": 0,
             "browserTask": scenario["task"],
             "terminalFailureCaptured": True,
             "failureMessage": error_message,
