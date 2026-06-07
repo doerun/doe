@@ -17,36 +17,35 @@ const OUTPUT_DIR = path.join(REPO_ROOT, 'assets', 'readme');
 
 const SVG_THEME = Object.freeze({
   palette: Object.freeze({
-    text: '#ffffff',
-    muted: '#cbd5e1',
-    grid: '#1f2937',
-    accent: '#7c3aed',
-    doe: '#9d4edd',
-    incumbent: '#dc2626',
-    mixed: '#f59e0b',
-    positive: '#22c55e',
-    panelTop: '#081121',
-    panelBottom: '#0c1630',
-    trackTop: '#0c1528',
-    trackBottom: '#111b31',
-    architecture: Object.freeze({
-      loadBorder: '#ef4444',
-      inferBorder: '#2563eb',
-      edge: '#7c3aed'
-    })
+    bg: '#050607',
+    panel: '#0b0d0f',
+    panelAlt: '#101317',
+    border: '#2a2f35',
+    text: '#f2f2f0',
+    muted: '#9ca3af',
+    grid: '#2a2f35',
+    accent: '#93c5fd',
+    doe: '#93c5fd',
+    incumbent: '#fde68a',
+    mixed: '#fca5a5',
+    positive: '#86efac',
+    bad: '#fca5a5'
   }),
   fonts: Object.freeze({
-    ui: 'Segoe UI, Helvetica Neue, Arial, sans-serif',
+    ui: 'Inter, Segoe UI, Helvetica Neue, Arial, sans-serif',
     mono: 'SFMono-Regular, Menlo, Consolas, Liberation Mono, monospace'
   }),
-  textStroke: Object.freeze({
-    color: '#000000',
-    width: '2px',
-    lineJoin: 'round'
+  stroke: Object.freeze({
+    thin: 1.25,
+    normal: 1.75
+  }),
+  radius: Object.freeze({
+    panel: 4,
+    badge: 3
   })
 });
 
-const FONT_UI = '\'Segoe UI\', \'Helvetica Neue\', Arial, sans-serif';
+const FONT_UI = 'Inter, \'Segoe UI\', \'Helvetica Neue\', Arial, sans-serif';
 const FONT_MONO = 'SFMono-Regular, Menlo, Consolas, \'Liberation Mono\', monospace';
 const CANVAS_PADDING = 14;
 const CHART_WIDTH = 1340;
@@ -113,59 +112,25 @@ function formatCount(value) {
   return `n=${numeric.toLocaleString('en-US')}`;
 }
 
-function makeSvgTextStyle(selector = 'text') {
+function makeSvgTextStyle() {
+  const palette = SVG_THEME.palette;
   return `<defs><style>
-  ${selector} { paint-order: stroke fill; stroke: ${SVG_THEME.textStroke.color}; stroke-width: ${SVG_THEME.textStroke.width}; stroke-linejoin: ${SVG_THEME.textStroke.lineJoin}; }
+  text { fill: ${palette.text}; font-family: ${FONT_UI}; letter-spacing: 0; }
+  .ev-title { font-size: 30px; font-weight: 700; }
+  .ev-subtitle { font-size: 14px; fill: ${palette.muted}; font-weight: 500; }
+  .ev-node-title { font-size: 20px; font-weight: 700; }
+  .ev-label { font-size: 12px; fill: ${palette.muted}; font-weight: 600; }
+  .ev-mono { font-family: ${FONT_MONO}; }
 </style></defs>`;
 }
 
 function renderCanvas(width, height) {
-  return `<rect x="0" y="0" width="${width}" height="${height}" fill="#020617" />
-  <rect x="${CANVAS_PADDING}" y="${CANVAS_PADDING}" width="${width - (CANVAS_PADDING * 2)}" height="${height - (CANVAS_PADDING * 2)}" fill="#020817" fill-opacity="0.50" stroke="none" />`;
+  return `<rect x="0" y="0" width="${width}" height="${height}" fill="${SVG_THEME.palette.bg}" />
+  <rect x="${CANVAS_PADDING}" y="${CANVAS_PADDING}" width="${width - (CANVAS_PADDING * 2)}" height="${height - (CANVAS_PADDING * 2)}" rx="${SVG_THEME.radius.panel}" fill="${SVG_THEME.palette.panel}" stroke="${SVG_THEME.palette.border}" stroke-width="${SVG_THEME.stroke.thin}" />`;
 }
 
 function renderDefs() {
-  return `<defs>
-  <linearGradient id="readme-canvas-glow" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" stop-color="#7c3aed18" />
-    <stop offset="45%" stop-color="#ef444410" />
-    <stop offset="100%" stop-color="#2563eb12" />
-  </linearGradient>
-  <linearGradient id="readme-panel-fill" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" stop-color="${SVG_THEME.palette.panelTop}" />
-    <stop offset="55%" stop-color="#0b1325" />
-    <stop offset="100%" stop-color="${SVG_THEME.palette.panelBottom}" />
-  </linearGradient>
-  <linearGradient id="readme-panel-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%" stop-color="${SVG_THEME.palette.architecture.loadBorder}" />
-    <stop offset="48%" stop-color="${SVG_THEME.palette.architecture.edge}" />
-    <stop offset="100%" stop-color="${SVG_THEME.palette.architecture.inferBorder}" />
-  </linearGradient>
-  <linearGradient id="readme-track-fill" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%" stop-color="${SVG_THEME.palette.trackTop}" />
-    <stop offset="100%" stop-color="${SVG_THEME.palette.trackBottom}" />
-  </linearGradient>
-  <linearGradient id="readme-track-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%" stop-color="#ffffff1d" />
-    <stop offset="100%" stop-color="#ffffff08" />
-  </linearGradient>
-  <linearGradient id="readme-doe-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%" stop-color="#c77dff" />
-    <stop offset="100%" stop-color="${SVG_THEME.palette.doe}" />
-  </linearGradient>
-  <linearGradient id="readme-incumbent-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%" stop-color="#f87171" />
-    <stop offset="100%" stop-color="${SVG_THEME.palette.incumbent}" />
-  </linearGradient>
-  <linearGradient id="readme-chip-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%" stop-color="#7c3aed22" />
-    <stop offset="100%" stop-color="#2563eb22" />
-  </linearGradient>
-  <linearGradient id="readme-pill-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" stop-color="#0f172a" />
-    <stop offset="100%" stop-color="#172554" />
-  </linearGradient>
-  </defs>`;
+  return '';
 }
 
 function svgWrap(width, height, title, desc, body) {
@@ -236,24 +201,23 @@ function getRowScaleState(row) {
 }
 
 function renderHeader(title, subtitle, width) {
-  return `<rect x="${CANVAS_PADDING}" y="${CANVAS_PADDING}" width="${width - (CANVAS_PADDING * 2)}" height="${HEADER_HEIGHT - 12}" fill="url(#readme-canvas-glow)" stroke="none" />
-<text x="36" y="70" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="30" font-weight="bold" stroke="none">${escapeXml(title)}</text>
-<text x="36" y="102" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="13" stroke="none">${escapeXml(subtitle)}</text>
-<rect x="${HEADER_PILL_X}" y="34" width="${HEADER_PILL_WIDTH}" height="38" rx="19" fill="url(#readme-pill-grad)" stroke="${SVG_THEME.palette.incumbent}" stroke-width="1.1" />
-<text x="${HEADER_PILL_X + (HEADER_PILL_WIDTH / 2)}" y="58" text-anchor="middle" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="12" font-weight="bold" stroke="none">BARS ARE IN MS, LOWER IS BETTER</text>`;
+  return `<text x="36" y="70" class="ev-title">${escapeXml(title)}</text>
+<text x="36" y="102" class="ev-subtitle">${escapeXml(subtitle)}</text>
+<rect x="${HEADER_PILL_X}" y="34" width="${HEADER_PILL_WIDTH}" height="38" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.panelAlt}" stroke="${SVG_THEME.palette.accent}" stroke-width="${SVG_THEME.stroke.thin}" />
+<text x="${HEADER_PILL_X + (HEADER_PILL_WIDTH / 2)}" y="58" text-anchor="middle" class="ev-label ev-mono" style="fill:${SVG_THEME.palette.accent}">BARS IN MS; LOWER IS BETTER</text>`;
 }
 
 function renderLegend(y) {
-  return `<rect x="36" y="${y}" width="18" height="18" rx="6" fill="url(#readme-doe-grad)" />
-<text x="64" y="${y + 13}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="13" stroke="none">Doe timing bars</text>
-<rect x="250" y="${y}" width="18" height="18" rx="6" fill="url(#readme-incumbent-grad)" />
-<text x="278" y="${y + 13}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="13" stroke="none">comparison timing bars</text>
-<rect x="540" y="${y}" width="18" height="18" rx="6" fill="${SVG_THEME.palette.positive}" />
-<text x="568" y="${y + 13}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="13" stroke="none">green pill = p50 and p95 faster summary</text>`;
+  return `<rect x="36" y="${y}" width="18" height="18" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.doe}" />
+<text x="64" y="${y + 13}" font-size="13">Doe timing bars</text>
+<rect x="250" y="${y}" width="18" height="18" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.incumbent}" />
+<text x="278" y="${y + 13}" font-size="13">comparison timing bars</text>
+<rect x="540" y="${y}" width="18" height="18" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.positive}" />
+<text x="568" y="${y + 13}" font-size="13">green pill = p50 and p95 faster summary</text>`;
 }
 
 function renderScaleNote(y) {
-  return `<text x="${TRACK_X}" y="${y}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="11" font-weight="bold" letter-spacing="0.7" stroke="none">EACH LANE SCALES ITS OWN BARS; EXACT MS AND SAMPLE COUNTS ARE PRINTED ON THE ROW.</text>`;
+  return `<text x="${TRACK_X}" y="${y}" class="ev-label">Each lane scales its own bars; exact ms and sample counts are printed on the row.</text>`;
 }
 
 function getMetricValue(metrics, seriesKey, field) {
@@ -267,17 +231,17 @@ function renderMetricBlock(row, group, rowY, scaleState) {
     {
       key: 'baseline',
       label: row.baselineLabel,
-      fill: 'url(#readme-doe-grad)'
+      fill: SVG_THEME.palette.doe
     },
     {
       key: 'comparison',
       label: row.comparisonLabel,
-      fill: 'url(#readme-incumbent-grad)'
+      fill: SVG_THEME.palette.incumbent
     }
   ];
   const labelY = trackY - 8;
   const markup = [
-    `<text x="${TRACK_X}" y="${labelY}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="11" font-weight="bold" letter-spacing="0.7" stroke="none">${escapeXml(group.label.toUpperCase())}</text>`
+    `<text x="${TRACK_X}" y="${labelY}" class="ev-label ev-mono">${escapeXml(group.label)}</text>`
   ];
 
   for (const [seriesIndex, seriesEntry] of series.entries()) {
@@ -285,11 +249,11 @@ function renderMetricBlock(row, group, rowY, scaleState) {
     const value = Number(getMetricValue(row.metrics, seriesEntry.key, group.field));
     const width = Math.max(0, (METRIC_BAR_WIDTH * value) / maxValue);
     const valueLabel = group.scale === 'time' ? formatMs(value) : formatCount(value);
-    markup.push(`<circle cx="${TRACK_X + 8}" cy="${y + 6}" r="4" fill="${seriesEntry.fill === 'url(#readme-doe-grad)' ? SVG_THEME.palette.doe : SVG_THEME.palette.incumbent}" stroke="none" />
-<text x="${TRACK_X + 20}" y="${y + 10}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="11" font-weight="bold" stroke="none">${escapeXml(seriesEntry.label)}</text>
-<rect x="${METRIC_BAR_X}" y="${y}" width="${METRIC_BAR_WIDTH}" height="${BAR_HEIGHT}" rx="6" fill="url(#readme-track-fill)" stroke="url(#readme-track-stroke)" stroke-width="1" />
-<rect x="${METRIC_BAR_X + 1}" y="${y + 1}" width="${Math.max(0, width - 2)}" height="${BAR_HEIGHT - 2}" rx="5" fill="${seriesEntry.fill}" />
-<text x="${METRIC_VALUE_X}" y="${y + 10}" fill="${SVG_THEME.palette.text}" font-family="${FONT_MONO}" font-size="11" stroke="none">${escapeXml(valueLabel)}</text>`);
+    markup.push(`<circle cx="${TRACK_X + 8}" cy="${y + 6}" r="4" fill="${seriesEntry.fill}" />
+<text x="${TRACK_X + 20}" y="${y + 10}" font-size="11" font-weight="700">${escapeXml(seriesEntry.label)}</text>
+<rect x="${METRIC_BAR_X}" y="${y}" width="${METRIC_BAR_WIDTH}" height="${BAR_HEIGHT}" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.panel}" stroke="${SVG_THEME.palette.border}" stroke-width="${SVG_THEME.stroke.thin}" />
+<rect x="${METRIC_BAR_X + 1}" y="${y + 1}" width="${Math.max(0, width - 2)}" height="${BAR_HEIGHT - 2}" rx="${SVG_THEME.radius.badge}" fill="${seriesEntry.fill}" />
+<text x="${METRIC_VALUE_X}" y="${y + 10}" class="ev-mono" font-size="11">${escapeXml(valueLabel)}</text>`);
   }
 
   return markup.join('\n');
@@ -301,34 +265,34 @@ function renderMeasuredRow(row, rowIndex) {
   const scaleState = getRowScaleState(row);
   const baselineSamples = formatCount(row.metrics.baselineCount);
   const comparisonSamples = formatCount(row.metrics.comparisonCount);
-  return `<rect x="${PANEL_X}" y="${y}" width="${PANEL_WIDTH}" height="${panelHeight}" rx="24" fill="url(#readme-panel-fill)" stroke="url(#readme-panel-stroke)" stroke-width="1.4" />
-<text x="${LABEL_X}" y="${y + 38}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="22" font-weight="bold" stroke="none">${escapeXml(row.label)}</text>
-<rect x="${LABEL_X}" y="${y + 52}" width="176" height="30" rx="15" fill="url(#readme-chip-grad)" stroke="${SVG_THEME.palette.accent}" stroke-width="1.2" />
-<text x="${LABEL_X + 16}" y="${y + 72}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="13" font-weight="bold" stroke="none">${escapeXml(row.platform)}</text>
+  return `<rect x="${PANEL_X}" y="${y}" width="${PANEL_WIDTH}" height="${panelHeight}" rx="${SVG_THEME.radius.panel}" fill="${SVG_THEME.palette.panelAlt}" stroke="${SVG_THEME.palette.border}" stroke-width="${SVG_THEME.stroke.thin}" />
+<text x="${LABEL_X}" y="${y + 38}" class="ev-node-title">${escapeXml(row.label)}</text>
+<rect x="${LABEL_X}" y="${y + 52}" width="176" height="30" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.accent}" fill-opacity="0.14" stroke="${SVG_THEME.palette.accent}" stroke-width="${SVG_THEME.stroke.thin}" />
+<text x="${LABEL_X + 16}" y="${y + 72}" class="ev-label" style="fill:${SVG_THEME.palette.accent}">${escapeXml(row.platform)}</text>
 ${METRIC_GROUPS.map((group) => renderMetricBlock(row, group, y, scaleState)).join('\n')}
-<text x="${TRACK_X}" y="${y + 152}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="12" font-weight="bold" stroke="none">${escapeXml(`${row.baselineLabel} ${baselineSamples}`)}</text>
-<text x="${TRACK_X + 148}" y="${y + 152}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="12" font-weight="bold" stroke="none">${escapeXml(`${row.comparisonLabel} ${comparisonSamples}`)}</text>
-<rect x="${VALUE_PILL_X}" y="${y + 22}" width="${VALUE_PILL_WIDTH}" height="40" rx="20" fill="${SVG_THEME.palette.positive}" />
-<text x="${VALUE_PILL_X + (VALUE_PILL_WIDTH / 2)}" y="${y + 48}" text-anchor="middle" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="18" font-weight="bold" stroke="none">${escapeXml(formatDelta(row.metrics.deltaP50Percent))}</text>
-<rect x="${VALUE_PILL_X}" y="${y + 72}" width="${VALUE_PILL_WIDTH}" height="34" rx="17" fill="url(#readme-pill-grad)" stroke="#ffffff1f" stroke-width="1" />
-<text x="${VALUE_PILL_X + (VALUE_PILL_WIDTH / 2)}" y="${y + 93}" text-anchor="middle" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="12" font-weight="bold" stroke="none">${escapeXml(`p95 ${formatDelta(row.metrics.deltaP95Percent)}`)}</text>
-<rect x="${VALUE_PILL_X}" y="${y + 116}" width="${VALUE_PILL_WIDTH}" height="28" rx="14" fill="#0f172a" stroke="#ffffff12" stroke-width="1" />
-<text x="${VALUE_PILL_X + (VALUE_PILL_WIDTH / 2)}" y="${y + 134}" text-anchor="middle" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="11" font-weight="bold" stroke="none">artifact-backed compare</text>`;
+<text x="${TRACK_X}" y="${y + 152}" class="ev-label">${escapeXml(`${row.baselineLabel} ${baselineSamples}`)}</text>
+<text x="${TRACK_X + 148}" y="${y + 152}" class="ev-label">${escapeXml(`${row.comparisonLabel} ${comparisonSamples}`)}</text>
+<rect x="${VALUE_PILL_X}" y="${y + 22}" width="${VALUE_PILL_WIDTH}" height="40" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.positive}" fill-opacity="0.14" stroke="${SVG_THEME.palette.positive}" stroke-width="${SVG_THEME.stroke.thin}" />
+<text x="${VALUE_PILL_X + (VALUE_PILL_WIDTH / 2)}" y="${y + 48}" text-anchor="middle" font-size="18" font-weight="700" style="fill:${SVG_THEME.palette.positive}">${escapeXml(formatDelta(row.metrics.deltaP50Percent))}</text>
+<rect x="${VALUE_PILL_X}" y="${y + 72}" width="${VALUE_PILL_WIDTH}" height="34" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.panel}" stroke="${SVG_THEME.palette.border}" stroke-width="${SVG_THEME.stroke.thin}" />
+<text x="${VALUE_PILL_X + (VALUE_PILL_WIDTH / 2)}" y="${y + 93}" text-anchor="middle" class="ev-label">${escapeXml(`p95 ${formatDelta(row.metrics.deltaP95Percent)}`)}</text>
+<rect x="${VALUE_PILL_X}" y="${y + 116}" width="${VALUE_PILL_WIDTH}" height="28" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.panel}" stroke="${SVG_THEME.palette.border}" stroke-width="${SVG_THEME.stroke.thin}" />
+<text x="${VALUE_PILL_X + (VALUE_PILL_WIDTH / 2)}" y="${y + 134}" text-anchor="middle" class="ev-label ev-mono">artifact-backed</text>`;
 }
 
 function renderMixedRow(row, rowIndex) {
   const y = HEADER_HEIGHT + 30 + (rowIndex * (ROW_HEIGHT + ROW_GAP));
   const panelHeight = ROW_HEIGHT;
-  return `<rect x="${PANEL_X}" y="${y}" width="${PANEL_WIDTH}" height="${panelHeight}" rx="24" fill="url(#readme-panel-fill)" stroke="url(#readme-panel-stroke)" stroke-width="1.4" />
-<text x="${LABEL_X}" y="${y + 38}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="22" font-weight="bold" stroke="none">${escapeXml(row.label)}</text>
-<rect x="${LABEL_X}" y="${y + 52}" width="176" height="30" rx="15" fill="url(#readme-chip-grad)" stroke="${SVG_THEME.palette.accent}" stroke-width="1.2" />
-<text x="${LABEL_X + 16}" y="${y + 72}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="13" font-weight="bold" stroke="none">${escapeXml(row.platform)}</text>
-<rect x="${TRACK_X}" y="${y + 28}" width="${TRACK_WIDTH}" height="118" rx="18" fill="url(#readme-track-fill)" stroke="url(#readme-track-stroke)" stroke-width="1.1" />
-<text x="${TRACK_X + 24}" y="${y + 60}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="18" font-weight="bold" stroke="none">Mixed evidence</text>
-<text x="${TRACK_X + 24}" y="${y + 86}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="13" stroke="none">Current browser ORT results are not summarized as a single faster or slower timing claim.</text>
-<text x="${TRACK_X + 24}" y="${y + 112}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="13" stroke="none">The chart keeps this lane explicit instead of forcing a misleading bar summary.</text>
-<rect x="${VALUE_PILL_X}" y="${y + 54}" width="${VALUE_PILL_WIDTH}" height="54" rx="27" fill="${SVG_THEME.palette.mixed}" />
-<text x="${VALUE_PILL_X + (VALUE_PILL_WIDTH / 2)}" y="${y + 87}" text-anchor="middle" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="18" font-weight="bold" stroke="none">MIXED</text>`;
+  return `<rect x="${PANEL_X}" y="${y}" width="${PANEL_WIDTH}" height="${panelHeight}" rx="${SVG_THEME.radius.panel}" fill="${SVG_THEME.palette.panelAlt}" stroke="${SVG_THEME.palette.border}" stroke-width="${SVG_THEME.stroke.thin}" />
+<text x="${LABEL_X}" y="${y + 38}" class="ev-node-title">${escapeXml(row.label)}</text>
+<rect x="${LABEL_X}" y="${y + 52}" width="176" height="30" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.accent}" fill-opacity="0.14" stroke="${SVG_THEME.palette.accent}" stroke-width="${SVG_THEME.stroke.thin}" />
+<text x="${LABEL_X + 16}" y="${y + 72}" class="ev-label" style="fill:${SVG_THEME.palette.accent}">${escapeXml(row.platform)}</text>
+<rect x="${TRACK_X}" y="${y + 28}" width="${TRACK_WIDTH}" height="118" rx="${SVG_THEME.radius.panel}" fill="${SVG_THEME.palette.panel}" stroke="${SVG_THEME.palette.border}" stroke-width="${SVG_THEME.stroke.thin}" />
+<text x="${TRACK_X + 24}" y="${y + 60}" font-size="18" font-weight="700">Mixed evidence</text>
+<text x="${TRACK_X + 24}" y="${y + 86}" class="ev-subtitle">Current browser ORT results are not summarized as a single faster or slower timing claim.</text>
+<text x="${TRACK_X + 24}" y="${y + 112}" class="ev-subtitle">The chart keeps this lane explicit instead of forcing a misleading bar summary.</text>
+<rect x="${VALUE_PILL_X}" y="${y + 54}" width="${VALUE_PILL_WIDTH}" height="54" rx="${SVG_THEME.radius.badge}" fill="${SVG_THEME.palette.mixed}" fill-opacity="0.14" stroke="${SVG_THEME.palette.mixed}" stroke-width="${SVG_THEME.stroke.thin}" />
+<text x="${VALUE_PILL_X + (VALUE_PILL_WIDTH / 2)}" y="${y + 87}" text-anchor="middle" font-size="18" font-weight="700" style="fill:${SVG_THEME.palette.mixed}">MIXED</text>`;
 }
 
 function renderChart(chartConfig) {
@@ -347,8 +311,7 @@ function renderChart(chartConfig) {
     height,
     chartConfig.title,
     chartConfig.caption ?? chartConfig.subtitle,
-    `${renderDefs()}
-${renderHeader(chartConfig.title, chartConfig.subtitle, CHART_WIDTH)}
+    `${renderDefs()}${renderHeader(chartConfig.title, chartConfig.subtitle, CHART_WIDTH)}
 ${renderScaleNote(148)}
 ${rowMarkup}
 ${renderLegend(legendY)}`
