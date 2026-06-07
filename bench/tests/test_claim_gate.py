@@ -1,0 +1,136 @@
+"""Tests for release claim-gate checks."""
+
+from __future__ import annotations
+
+import unittest
+
+from bench.gates import claim_gate
+
+
+def _doe_package_meta() -> dict:
+    return {
+        "executionBackend": "doe_node_webgpu",
+        "packagePreparedSession": True,
+        "packageSetupIncludedInSelectedTiming": False,
+        "packageReadbackMode": "native-map-read-copy-unmap",
+        "packageFastPathStats": {
+            "commandBufferBuild": 0,
+            "dispatchFlush": 1,
+            "flushAndMap": 1,
+        },
+        "packageNativeFastPaths": {
+            "computeDispatchFlush": True,
+            "bufferMapReadCopyUnmap": True,
+        },
+        "packageStepBreakdownNs": {
+            "dispatchEncodeApiTotalNs": 10,
+            "submitQueueSubmitTotalNs": 20,
+        },
+        "packageWriteBreakdown": {
+            "batchCallCount": 0,
+            "batchMethod": "none",
+            "batchedWriteCount": 0,
+            "byDataKind": {
+                "u32": {
+                    "bytes": 4,
+                    "count": 1,
+                },
+            },
+            "bySemanticPhase": {
+                "dynamic_write": {
+                    "bytes": 4,
+                    "count": 1,
+                },
+            },
+            "dynamicWriteBytes": 4,
+            "dynamicWriteCount": 1,
+            "staticBufferLoadBytes": 0,
+            "staticBufferLoadCount": 0,
+            "totalCount": 1,
+            "totalBytes": 4,
+            "unbatchedWriteCount": 1,
+        },
+    }
+
+
+def _side(meta: dict, *, name: str = "doe_gpu_node_package_prepared") -> dict:
+    return {
+        "name": name,
+        "commandSamples": [
+            {
+                "returnCode": 0,
+                "traceMeta": meta,
+            }
+        ],
+    }
+
+
+class ClaimGateTests(unittest.TestCase):
+    def test_doe_package_telemetry_accepts_complete_trace_meta(self) -> None:
+        self.assertEqual(
+            claim_gate.doe_package_telemetry_failures(
+                workload_id="gemma64",
+                side_name="baseline",
+                side_payload=_side(_doe_package_meta()),
+            ),
+            [],
+        )
+
+    def test_doe_package_telemetry_rejects_missing_fast_path_maps(self) -> None:
+        meta = _doe_package_meta()
+        del meta["packageFastPathStats"]
+        del meta["packageNativeFastPaths"]
+
+        failures = claim_gate.doe_package_telemetry_failures(
+            workload_id="gemma64",
+            side_name="baseline",
+            side_payload=_side(meta),
+        )
+
+        self.assertIn(
+            "gemma64: baseline sample 0 missing packageFastPathStats "
+            "non-negative numeric map",
+            failures,
+        )
+        self.assertIn(
+            "gemma64: baseline sample 0 missing packageNativeFastPaths boolean map",
+            failures,
+        )
+
+    def test_non_doe_package_side_does_not_require_package_telemetry(self) -> None:
+        self.assertEqual(
+            claim_gate.doe_package_telemetry_failures(
+                workload_id="gemma64",
+                side_name="comparison",
+                side_payload=_side(
+                    {"executionBackend": "node_webgpu_package"},
+                    name="node_webgpu_package_prepared",
+                ),
+            ),
+            [],
+        )
+
+    def test_doe_package_telemetry_rejects_inconsistent_write_breakdown(self) -> None:
+        meta = _doe_package_meta()
+        meta["packageWriteBreakdown"]["batchedWriteCount"] = 1
+
+        failures = claim_gate.doe_package_telemetry_failures(
+            workload_id="gemma64",
+            side_name="baseline",
+            side_payload=_side(meta),
+        )
+
+        self.assertIn(
+            "gemma64: baseline sample 0 packageWriteBreakdown "
+            "batched+unbatched count must equal totalCount",
+            failures,
+        )
+        self.assertIn(
+            "gemma64: baseline sample 0 packageWriteBreakdown "
+            "batchMethod=none requires zero batchedWriteCount and batchCallCount",
+            failures,
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -782,6 +782,8 @@ function nativeFastPathInfoFromSymbols() {
         appleFastPathCompiled: process.platform === "darwin",
         queueFlush: typeof symbols.doeNativeQueueFlush === "function",
         queueFlushBreakdown: typeof symbols.doeNativeQueueFlushBreakdown === "function",
+        queueWriteBufferBatch: typeof symbols.doeNativeQueueWriteBufferBatch === "function",
+        queueWriteBufferBatchDataPtrs: typeof symbols.doeNativeQueueWriteBufferBatchDataPtrs === "function",
         computeDispatchFlush: typeof symbols.doeNativeComputeDispatchFlush === "function",
         computeDispatchFlushBreakdown: typeof symbols.doeNativeComputeDispatchFlushBreakdown === "function",
         computeDispatchBatchFlush: typeof symbols.doeNativeComputeDispatchBatchFlush === "function",

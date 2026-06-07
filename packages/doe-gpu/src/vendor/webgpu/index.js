@@ -108,6 +108,7 @@ const TEXTURE_SWIZZLE_COMPONENT_MAP = Object.freeze({
 const NS_PER_MS = 1_000_000;
 const WHOLE_SIZE_SENTINEL = -1;
 const fastPathStats = { dispatchFlush: 0, flushAndMap: 0, commandBufferBuild: 0 };
+const NODE_QUEUE_WRITE_BATCH_MAX_BYTES = UINT32_MAX;
 
 let addon;
 let doeLibraryPath;
@@ -1915,6 +1916,55 @@ const fullSurfaceBackend = {
   },
   queueWriteBuffer(_queue, queueNative, bufferNative, bufferOffset, view) {
     addon.queueWriteBuffer(queueNative, bufferNative, bufferOffset, view);
+  },
+  queueWriteBufferBatch(_queue, queueNative, entries) {
+    if (!entries.length) {
+      return;
+    }
+    const hasDataPtrBatch = typeof addon.queueWriteBufferBatchDataPtrs === 'function';
+    const hasCompactBatch = typeof addon.queueWriteBufferBatch === 'function';
+    if (!hasDataPtrBatch && !hasCompactBatch) {
+      for (const entry of entries) {
+        addon.queueWriteBuffer(queueNative, entry.bufferNative, entry.bufferOffset, entry.view);
+      }
+      return;
+    }
+    let byteLength = 0;
+    for (const entry of entries) {
+      if (entry.view.byteLength > UINT32_MAX) {
+        failValidation('GPUQueue.__doeWriteBufferBatch', 'entry data is too large for the native batch ABI');
+      }
+      byteLength += entry.view.byteLength;
+    }
+    if (!hasDataPtrBatch && byteLength > NODE_QUEUE_WRITE_BATCH_MAX_BYTES) {
+      failValidation('GPUQueue.__doeWriteBufferBatch', 'compact batch data exceeds the package batch limit');
+    }
+    const buffers = new Array(entries.length);
+    const offsets = new BigUint64Array(entries.length);
+    const sizes = new Uint32Array(entries.length);
+    const dataViews = hasDataPtrBatch ? new Array(entries.length) : null;
+    if (hasDataPtrBatch) {
+      for (let index = 0; index < entries.length; index += 1) {
+        const entry = entries[index];
+        buffers[index] = entry.bufferNative;
+        offsets[index] = BigInt(entry.bufferOffset);
+        sizes[index] = entry.view.byteLength;
+        dataViews[index] = entry.view;
+      }
+      addon.queueWriteBufferBatchDataPtrs(queueNative, buffers, offsets, sizes, dataViews);
+      return;
+    }
+    const data = new Uint8Array(byteLength);
+    let dataOffset = 0;
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      buffers[index] = entry.bufferNative;
+      offsets[index] = BigInt(entry.bufferOffset);
+      sizes[index] = entry.view.byteLength;
+      data.set(entry.view, dataOffset);
+      dataOffset += entry.view.byteLength;
+    }
+    addon.queueWriteBufferBatch(queueNative, buffers, offsets, sizes, data);
   },
   queueWriteTexture(_queue, queueNative, destination, data, dataLayout, size) {
     addon.queueWriteTexture(

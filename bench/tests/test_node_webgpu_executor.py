@@ -342,10 +342,12 @@ class NodeWebGPUExecutorTests(unittest.TestCase):
         self.assertIn("fastPathStats.flushAndMap += 1;", source)
         self.assertIn("fastPathStats.dispatchFlush += 1;", source)
         self.assertIn("function addonSubmitBreakdownIndicatesDispatchFlush(addonBreakdown)", source)
+        self.assertIn("queueWriteBufferBatchDataPtrs", source)
         self.assertIn("export { fastPathStats };", source)
         self.assertIn("fastPathStats,", source)
         self.assertIn("function snapshotPackageNativeFastPaths(providerModule)", executor_source)
         self.assertIn("packageNativeFastPaths", executor_source)
+        self.assertIn("queueWriteBufferBatchDataPtrs", executor_source)
 
     def test_bun_package_exports_native_fast_path_identity(self) -> None:
         public_bun_source = PACKAGE_BUN_PATH.read_text(encoding="utf-8")

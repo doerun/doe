@@ -7,6 +7,7 @@
 #include "doe_napi_internal.h"
 
 #define BATCH_STACK_DISPATCHES 64
+#define QUEUE_WRITE_BATCH_STACK_MAX 64u
 
 static uint32_t read_bind_group_value(napi_env env, napi_value value, void** bind_groups, uint32_t max_count) {
     if (!value || max_count == 0) {
@@ -705,6 +706,8 @@ napi_value doe_native_fast_path_info(napi_env env, napi_callback_info info) {
 #endif
     set_bool_property(env, result, "queueFlush", pfn_doeNativeQueueFlush != NULL);
     set_bool_property(env, result, "queueFlushBreakdown", pfn_doeNativeQueueFlushBreakdown != NULL);
+    set_bool_property(env, result, "queueWriteBufferBatch", pfn_doeNativeQueueWriteBufferBatch != NULL);
+    set_bool_property(env, result, "queueWriteBufferBatchDataPtrs", pfn_doeNativeQueueWriteBufferBatchDataPtrs != NULL);
     set_bool_property(env, result, "computeDispatchFlush", pfn_doeNativeComputeDispatchFlush != NULL);
     set_bool_property(env, result, "computeDispatchFlushBreakdown", pfn_doeNativeComputeDispatchFlushBreakdown != NULL);
     set_bool_property(env, result, "computeDispatchBatchFlush", pfn_doeNativeComputeDispatchBatchFlush != NULL);
@@ -801,6 +804,294 @@ napi_value doe_queue_write_buffer(napi_env env, napi_callback_info info) {
         pfn_doeNativeQueueWriteBuffer(queue, buf, (uint64_t)offset, data, byte_length);
     } else {
         pfn_wgpuQueueWriteBuffer(queue, buf, (uint64_t)offset, data, byte_length);
+    }
+    return NULL;
+}
+
+/* queueWriteBufferBatch(queue, buffers, offsets, sizes, data) */
+napi_value doe_queue_write_buffer_batch(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 5);
+    CHECK_LIB_LOADED(env);
+    WGPUQueue queue = unwrap_ptr(env, _args[0]);
+    if (!queue) NAPI_THROW(env, "queueWriteBufferBatch requires queue");
+
+    bool is_array = false;
+    napi_is_array(env, _args[1], &is_array);
+    if (!is_array) NAPI_THROW(env, "queueWriteBufferBatch buffers must be an array");
+    uint32_t entry_count = 0;
+    napi_get_array_length(env, _args[1], &entry_count);
+    if (entry_count == 0) {
+        return NULL;
+    }
+
+    void* offset_bytes = NULL;
+    size_t offset_byte_length = 0;
+    void* size_bytes = NULL;
+    size_t size_byte_length = 0;
+    void* data_bytes = NULL;
+    size_t data_byte_length = 0;
+    extract_buffer_data(env, _args[2], &offset_bytes, &offset_byte_length);
+    extract_buffer_data(env, _args[3], &size_bytes, &size_byte_length);
+    extract_buffer_data(env, _args[4], &data_bytes, &data_byte_length);
+    if (!offset_bytes || offset_byte_length < ((size_t)entry_count * sizeof(uint64_t))) {
+        NAPI_THROW(env, "queueWriteBufferBatch offsets must be a BigUint64Array");
+    }
+    if (!size_bytes || size_byte_length < ((size_t)entry_count * sizeof(uint32_t))) {
+        NAPI_THROW(env, "queueWriteBufferBatch sizes must be a Uint32Array");
+    }
+    if (!data_bytes && data_byte_length > 0) {
+        NAPI_THROW(env, "queueWriteBufferBatch data must be buffer-backed");
+    }
+
+    size_t declared_data_byte_length = 0;
+    for (uint32_t i = 0; i < entry_count; i++) {
+        uint32_t byte_length = 0;
+        memcpy(&byte_length, ((uint8_t*)size_bytes) + ((size_t)i * sizeof(uint32_t)), sizeof(uint32_t));
+        if (declared_data_byte_length > SIZE_MAX - (size_t)byte_length) {
+            NAPI_THROW(env, "queueWriteBufferBatch data length overflows size_t");
+        }
+        declared_data_byte_length += (size_t)byte_length;
+    }
+    if (declared_data_byte_length != data_byte_length) {
+        NAPI_THROW(env, "queueWriteBufferBatch data length must equal declared sizes");
+    }
+
+    WGPUBuffer stack_buffers[QUEUE_WRITE_BATCH_STACK_MAX];
+    uint64_t stack_offsets[QUEUE_WRITE_BATCH_STACK_MAX];
+    uint32_t stack_sizes[QUEUE_WRITE_BATCH_STACK_MAX];
+    WGPUBuffer* batch_buffers = stack_buffers;
+    uint64_t* batch_offsets = stack_offsets;
+    uint32_t* batch_sizes = stack_sizes;
+    const bool heap_batch = entry_count > QUEUE_WRITE_BATCH_STACK_MAX;
+    if (heap_batch) {
+        batch_buffers = (WGPUBuffer*)malloc((size_t)entry_count * sizeof(*batch_buffers));
+        batch_offsets = (uint64_t*)malloc((size_t)entry_count * sizeof(*batch_offsets));
+        batch_sizes = (uint32_t*)malloc((size_t)entry_count * sizeof(*batch_sizes));
+        if (!batch_buffers || !batch_offsets || !batch_sizes) {
+            free(batch_buffers);
+            free(batch_offsets);
+            free(batch_sizes);
+            NAPI_THROW(env, "queueWriteBufferBatch out of memory");
+        }
+    }
+
+    for (uint32_t i = 0; i < entry_count; i++) {
+        napi_value buffer_value;
+        napi_get_element(env, _args[1], i, &buffer_value);
+        WGPUBuffer buffer = unwrap_ptr(env, buffer_value);
+        if (!buffer) {
+            if (heap_batch) {
+                free(batch_buffers);
+                free(batch_offsets);
+                free(batch_sizes);
+            }
+            napi_throw_error(env, "DOE_ERROR", "queueWriteBufferBatch entry requires buffer");
+            return NULL;
+        }
+
+        uint64_t offset = 0;
+        uint32_t byte_length = 0;
+        memcpy(&offset, ((uint8_t*)offset_bytes) + ((size_t)i * sizeof(uint64_t)), sizeof(uint64_t));
+        memcpy(&byte_length, ((uint8_t*)size_bytes) + ((size_t)i * sizeof(uint32_t)), sizeof(uint32_t));
+        batch_buffers[i] = buffer;
+        batch_offsets[i] = offset;
+        batch_sizes[i] = byte_length;
+    }
+
+    const uint8_t empty_batch_data = 0;
+    const uint8_t* batch_data = data_bytes ? (const uint8_t*)data_bytes : &empty_batch_data;
+    if (pfn_doeNativeQueueWriteBufferBatch) {
+        pfn_doeNativeQueueWriteBufferBatch(
+            queue,
+            (size_t)entry_count,
+            batch_buffers,
+            batch_offsets,
+            batch_sizes,
+            batch_data
+        );
+    } else {
+        size_t data_offset = 0;
+        for (uint32_t i = 0; i < entry_count; i++) {
+            const size_t byte_length = (size_t)batch_sizes[i];
+            if (pfn_doeNativeQueueWriteBuffer) {
+                pfn_doeNativeQueueWriteBuffer(
+                    queue,
+                    batch_buffers[i],
+                    batch_offsets[i],
+                    batch_data + data_offset,
+                    byte_length
+                );
+            } else {
+                pfn_wgpuQueueWriteBuffer(
+                    queue,
+                    batch_buffers[i],
+                    batch_offsets[i],
+                    batch_data + data_offset,
+                    byte_length
+                );
+            }
+            data_offset += byte_length;
+        }
+    }
+    if (heap_batch) {
+        free(batch_buffers);
+        free(batch_offsets);
+        free(batch_sizes);
+    }
+    return NULL;
+}
+
+/* queueWriteBufferBatchDataPtrs(queue, buffers, offsets, sizes, data) */
+napi_value doe_queue_write_buffer_batch_data_ptrs(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 5);
+    CHECK_LIB_LOADED(env);
+    WGPUQueue queue = unwrap_ptr(env, _args[0]);
+    if (!queue) NAPI_THROW(env, "queueWriteBufferBatchDataPtrs requires queue");
+
+    bool buffers_is_array = false;
+    napi_is_array(env, _args[1], &buffers_is_array);
+    if (!buffers_is_array) NAPI_THROW(env, "queueWriteBufferBatchDataPtrs buffers must be an array");
+
+    bool data_is_array = false;
+    napi_is_array(env, _args[4], &data_is_array);
+    if (!data_is_array) NAPI_THROW(env, "queueWriteBufferBatchDataPtrs data must be an array");
+
+    uint32_t entry_count = 0;
+    napi_get_array_length(env, _args[1], &entry_count);
+    uint32_t data_count = 0;
+    napi_get_array_length(env, _args[4], &data_count);
+    if (data_count != entry_count) {
+        NAPI_THROW(env, "queueWriteBufferBatchDataPtrs data length must match buffers length");
+    }
+    if (entry_count == 0) {
+        return NULL;
+    }
+
+    void* offset_bytes = NULL;
+    size_t offset_byte_length = 0;
+    void* size_bytes = NULL;
+    size_t size_byte_length = 0;
+    extract_buffer_data(env, _args[2], &offset_bytes, &offset_byte_length);
+    extract_buffer_data(env, _args[3], &size_bytes, &size_byte_length);
+    if (!offset_bytes || offset_byte_length < ((size_t)entry_count * sizeof(uint64_t))) {
+        NAPI_THROW(env, "queueWriteBufferBatchDataPtrs offsets must be a BigUint64Array");
+    }
+    if (!size_bytes || size_byte_length < ((size_t)entry_count * sizeof(uint32_t))) {
+        NAPI_THROW(env, "queueWriteBufferBatchDataPtrs sizes must be a Uint32Array");
+    }
+
+    WGPUBuffer stack_buffers[QUEUE_WRITE_BATCH_STACK_MAX];
+    uint64_t stack_offsets[QUEUE_WRITE_BATCH_STACK_MAX];
+    uint32_t stack_sizes[QUEUE_WRITE_BATCH_STACK_MAX];
+    const void* stack_data_ptrs[QUEUE_WRITE_BATCH_STACK_MAX];
+    WGPUBuffer* batch_buffers = stack_buffers;
+    uint64_t* batch_offsets = stack_offsets;
+    uint32_t* batch_sizes = stack_sizes;
+    const void** batch_data_ptrs = stack_data_ptrs;
+    const bool heap_batch = entry_count > QUEUE_WRITE_BATCH_STACK_MAX;
+    if (heap_batch) {
+        batch_buffers = (WGPUBuffer*)malloc((size_t)entry_count * sizeof(*batch_buffers));
+        batch_offsets = (uint64_t*)malloc((size_t)entry_count * sizeof(*batch_offsets));
+        batch_sizes = (uint32_t*)malloc((size_t)entry_count * sizeof(*batch_sizes));
+        batch_data_ptrs = (const void**)malloc((size_t)entry_count * sizeof(*batch_data_ptrs));
+        if (!batch_buffers || !batch_offsets || !batch_sizes || !batch_data_ptrs) {
+            free(batch_buffers);
+            free(batch_offsets);
+            free(batch_sizes);
+            free((void*)batch_data_ptrs);
+            NAPI_THROW(env, "queueWriteBufferBatchDataPtrs out of memory");
+        }
+    }
+
+    const uint8_t empty_batch_data = 0;
+    for (uint32_t i = 0; i < entry_count; i++) {
+        napi_value buffer_value;
+        napi_get_element(env, _args[1], i, &buffer_value);
+        WGPUBuffer buffer = unwrap_ptr(env, buffer_value);
+        if (!buffer) {
+            if (heap_batch) {
+                free(batch_buffers);
+                free(batch_offsets);
+                free(batch_sizes);
+                free((void*)batch_data_ptrs);
+            }
+            napi_throw_error(env, "DOE_ERROR", "queueWriteBufferBatchDataPtrs entry requires buffer");
+            return NULL;
+        }
+
+        napi_value data_value;
+        napi_get_element(env, _args[4], i, &data_value);
+        void* data_ptr = NULL;
+        size_t data_byte_length = 0;
+        extract_buffer_data(env, data_value, &data_ptr, &data_byte_length);
+
+        uint64_t offset = 0;
+        uint32_t byte_length = 0;
+        memcpy(&offset, ((uint8_t*)offset_bytes) + ((size_t)i * sizeof(uint64_t)), sizeof(uint64_t));
+        memcpy(&byte_length, ((uint8_t*)size_bytes) + ((size_t)i * sizeof(uint32_t)), sizeof(uint32_t));
+        if ((size_t)byte_length != data_byte_length) {
+            if (heap_batch) {
+                free(batch_buffers);
+                free(batch_offsets);
+                free(batch_sizes);
+                free((void*)batch_data_ptrs);
+            }
+            napi_throw_error(env, "DOE_ERROR", "queueWriteBufferBatchDataPtrs data length must equal declared size");
+            return NULL;
+        }
+        if (!data_ptr && byte_length > 0) {
+            if (heap_batch) {
+                free(batch_buffers);
+                free(batch_offsets);
+                free(batch_sizes);
+                free((void*)batch_data_ptrs);
+            }
+            napi_throw_error(env, "DOE_ERROR", "queueWriteBufferBatchDataPtrs data must be buffer-backed");
+            return NULL;
+        }
+
+        batch_buffers[i] = buffer;
+        batch_offsets[i] = offset;
+        batch_sizes[i] = byte_length;
+        batch_data_ptrs[i] = data_ptr ? data_ptr : &empty_batch_data;
+    }
+
+    if (pfn_doeNativeQueueWriteBufferBatchDataPtrs) {
+        pfn_doeNativeQueueWriteBufferBatchDataPtrs(
+            queue,
+            (size_t)entry_count,
+            batch_buffers,
+            batch_offsets,
+            batch_sizes,
+            batch_data_ptrs
+        );
+    } else {
+        for (uint32_t i = 0; i < entry_count; i++) {
+            const size_t byte_length = (size_t)batch_sizes[i];
+            if (pfn_doeNativeQueueWriteBuffer) {
+                pfn_doeNativeQueueWriteBuffer(
+                    queue,
+                    batch_buffers[i],
+                    batch_offsets[i],
+                    batch_data_ptrs[i],
+                    byte_length
+                );
+            } else {
+                pfn_wgpuQueueWriteBuffer(
+                    queue,
+                    batch_buffers[i],
+                    batch_offsets[i],
+                    batch_data_ptrs[i],
+                    byte_length
+                );
+            }
+        }
+    }
+    if (heap_batch) {
+        free(batch_buffers);
+        free(batch_offsets);
+        free(batch_sizes);
+        free((void*)batch_data_ptrs);
     }
     return NULL;
 }

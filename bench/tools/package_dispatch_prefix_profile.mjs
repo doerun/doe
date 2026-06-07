@@ -261,6 +261,8 @@ function packageNativeFastPathsFromMeta(meta) {
     appleFastPathCompiled: Boolean(info.appleFastPathCompiled),
     queueFlush: Boolean(info.queueFlush),
     queueFlushBreakdown: Boolean(info.queueFlushBreakdown),
+    queueWriteBufferBatch: Boolean(info.queueWriteBufferBatch),
+    queueWriteBufferBatchDataPtrs: Boolean(info.queueWriteBufferBatchDataPtrs),
     computeDispatchFlush: Boolean(info.computeDispatchFlush),
     computeDispatchFlushBreakdown: Boolean(info.computeDispatchFlushBreakdown),
     computeDispatchBatchFlush: Boolean(info.computeDispatchBatchFlush),

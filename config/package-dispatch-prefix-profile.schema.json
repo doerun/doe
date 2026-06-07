@@ -263,6 +263,8 @@
         "appleFastPathCompiled": { "type": "boolean" },
         "queueFlush": { "type": "boolean" },
         "queueFlushBreakdown": { "type": "boolean" },
+        "queueWriteBufferBatch": { "type": "boolean" },
+        "queueWriteBufferBatchDataPtrs": { "type": "boolean" },
         "computeDispatchFlush": { "type": "boolean" },
         "computeDispatchFlushBreakdown": { "type": "boolean" },
         "computeDispatchBatchFlush": { "type": "boolean" },

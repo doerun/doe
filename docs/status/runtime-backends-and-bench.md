@@ -3,6 +3,92 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-07 — AMD Vulkan package matrix and Node write-batch policy
+
+The promoted AMD Vulkan package lanes for Gemma64 and Gemma1B now have
+strict-comparable, locally claimable Node and Bun receipts for warm and cold
+package modes. The claim surface remains narrow: selected operation timing,
+strict comparability, structural-equivalence gates, timing-policy gates, and
+claim-gate telemetry checks must pass before a row is treated as claimable.
+
+The claim gate now requires Doe package claim rows to expose package fast-path
+telemetry in successful trace metadata. A claimable package row must make the
+native package path, readback mode, write breakdown, selected setup-timing
+scope, and native fast-path availability visible in the receipt. This prevents
+package comparisons from being promoted when the accelerated path or timing
+scope is hidden.
+
+The Node Doe package surface exposes standard addon `queueWriteBufferBatch` and
+`queueWriteBufferBatchDataPtrs` exports and wires the package queue backend to
+the existing native compact and per-entry pointer batch ABIs. The schema
+migration is additive and backward-compatible. New artifacts emit explicit
+booleans for `packageNativeFastPaths.queueWriteBufferBatch` and
+`packageNativeFastPaths.queueWriteBufferBatchDataPtrs`.
+
+The AMD Vulkan Gemma64 warm probe showed that batching the current small
+dynamic-write groups is not a selected-timing improvement. The package
+execution policy therefore keeps Node batching available but requires larger
+consecutive write groups before the executor uses it. The final Gemma64 warm
+Node receipt reports the native batch capability while keeping the current
+workload on direct writes.
+
+Artifacts:
+
+- Gemma64 warm Node compare:
+  `bench/out/amd-vulkan/20260607T141441Z/gemma64.node-package.warm.ir.compare.json`
+- Gemma64 warm Node claim:
+  `bench/out/amd-vulkan/20260607T141441Z/gemma64.node-package.warm.ir.claim.json`
+- Gemma64 warm Node coherence:
+  `bench/out/amd-vulkan/20260607T141441Z/gemma64.node-package.warm.ir.comparability-coherence.json`
+- Gemma64 warm Bun compare:
+  `bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.compare.json`
+- Gemma64 warm Bun claim:
+  `bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.claim.json`
+- Gemma64 cold Node compare:
+  `bench/out/amd-vulkan/20260607T135646Z/gemma64.node-package.ir.compare.json`
+- Gemma64 cold Node claim:
+  `bench/out/amd-vulkan/20260607T135646Z/gemma64.node-package.ir.claim.json`
+- Gemma64 cold Bun compare:
+  `bench/out/amd-vulkan/20260607T135813Z/gemma64.bun-package.ir.compare.json`
+- Gemma64 cold Bun claim:
+  `bench/out/amd-vulkan/20260607T135813Z/gemma64.bun-package.ir.claim.json`
+- Gemma1B warm Node compare:
+  `bench/out/amd-vulkan/20260607T135013Z/gemma1b.node-package.warm.ir.compare.json`
+- Gemma1B warm Node claim:
+  `bench/out/amd-vulkan/20260607T135013Z/gemma1b.node-package.warm.ir.claim.json`
+- Gemma1B warm Bun compare:
+  `bench/out/amd-vulkan/20260607T135129Z/gemma1b.bun-package.warm.ir.compare.json`
+- Gemma1B warm Bun claim:
+  `bench/out/amd-vulkan/20260607T135129Z/gemma1b.bun-package.warm.ir.claim.json`
+- Gemma1B cold Node compare:
+  `bench/out/amd-vulkan/20260607T135358Z/gemma1b.node-package.ir.compare.json`
+- Gemma1B cold Node claim:
+  `bench/out/amd-vulkan/20260607T135358Z/gemma1b.node-package.ir.claim.json`
+- Gemma1B cold Bun compare:
+  `bench/out/amd-vulkan/20260607T135517Z/gemma1b.bun-package.ir.compare.json`
+- Gemma1B cold Bun claim:
+  `bench/out/amd-vulkan/20260607T135517Z/gemma1b.bun-package.ir.claim.json`
+- Node write-batch policy probe:
+  `bench/out/amd-vulkan/20260607T141302Z/gemma64.node-package.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260607T141302Z.run.json`
+
+Validation:
+
+- `git diff --check`
+- `python3 -m json.tool config/package-execution-policy.json >/dev/null`
+- `node --check packages/doe-gpu/src/vendor/webgpu/index.js`
+- `node --check bench/executors/node-webgpu/executor.js`
+- `node --check bench/tools/package_dispatch_prefix_profile.mjs`
+- `bun --check packages/doe-gpu/src/vendor/webgpu/bun-ffi.js`
+- `python3 -m json.tool config/trace-meta.schema.json >/dev/null`
+- `python3 -m json.tool config/package-dispatch-prefix-profile.schema.json >/dev/null`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_bun_webgpu_executor bench.tests.test_package_dispatch_prefix_profile bench.tests.test_claim_gate -q`
+- `npm --prefix packages/doe-gpu run build:addon`
+- `node -e "const addon=require('./packages/doe-gpu/build/Release/doe_napi.node'); for (const name of ['queueWriteBufferBatch','queueWriteBufferBatchDataPtrs']) { if (typeof addon[name] !== 'function') { throw new Error(name + ' export missing'); } }"`
+- `python3 bench/gates/claim_gate.py --report bench/out/amd-vulkan/20260607T141441Z/gemma64.node-package.warm.ir.compare.json --claim-report bench/out/amd-vulkan/20260607T141441Z/gemma64.node-package.warm.ir.claim.json --require-comparison-status comparable --require-claim-status claimable --require-claimability-mode local --require-min-timed-samples 15 --config bench/native-compare/compare.config.amd.vulkan.gemma64.node-package.warm.ir.json`
+- `python3 bench/gates/comparability_coherence_gate.py --report bench/out/amd-vulkan/20260607T141441Z/gemma64.node-package.warm.ir.compare.json --benchmark-policy config/benchmark-methodology-thresholds.json --require-pass --out bench/out/amd-vulkan/20260607T141441Z/gemma64.node-package.warm.ir.comparability-coherence.json`
+- `python3 bench/gates/structural_equivalence_gate.py --report bench/out/amd-vulkan/20260607T141441Z/gemma64.node-package.warm.ir.compare.json --require-all-pass`
+- `python3 bench/gates/timing_policy_gate.py --backend vulkan --report bench/out/amd-vulkan/20260607T141441Z/gemma64.node-package.warm.ir.compare.json`
+
 ## 2026-06-07 — AMD Vulkan package Node and Bun claimable
 
 The AMD Vulkan package prepared lane now executes the Doe Vulkan path through

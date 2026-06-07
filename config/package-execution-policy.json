@@ -2,6 +2,15 @@
   "schemaVersion": 1,
   "writeBatching": [
     {
+      "id": "node-doe-pointer-batch-min-count",
+      "runtimeHost": "node",
+      "provider": "doe",
+      "method": "queue.__doeWriteBufferBatch",
+      "minConsecutiveWrites": 16,
+      "evidence": "bench/out/amd-vulkan/20260607T141302Z/gemma64.node-package.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260607T141302Z.run.json",
+      "detail": "Node N-API pointer batching is available, but the current AMD Vulkan Gemma warm receipt shows small dynamic-write groups should remain direct writes. Retain batching only for larger consecutive groups until a workload-specific receipt justifies lowering this threshold."
+    },
+    {
       "id": "bun-ffi-pointer-batch-min-count",
       "runtimeHost": "bun",
       "provider": "doe-ffi",

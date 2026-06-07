@@ -62,6 +62,8 @@ export interface NativeFastPathInfo {
   appleFastPathCompiled: boolean;
   queueFlush: boolean;
   queueFlushBreakdown: boolean;
+  queueWriteBufferBatch: boolean;
+  queueWriteBufferBatchDataPtrs: boolean;
   computeDispatchFlush: boolean;
   computeDispatchFlushBreakdown: boolean;
   computeDispatchBatchFlush: boolean;

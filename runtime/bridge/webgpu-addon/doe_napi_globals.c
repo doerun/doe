@@ -69,6 +69,7 @@ PFN_wgpuQueueSubmit pfn_wgpuQueueSubmit = NULL;
 PFN_wgpuQueueWriteBuffer pfn_wgpuQueueWriteBuffer = NULL;
 PFN_doeNativeQueueWriteBuffer pfn_doeNativeQueueWriteBuffer = NULL;
 PFN_doeNativeQueueWriteBufferBatch pfn_doeNativeQueueWriteBufferBatch = NULL;
+PFN_doeNativeQueueWriteBufferBatchDataPtrs pfn_doeNativeQueueWriteBufferBatchDataPtrs = NULL;
 PFN_wgpuQueueOnSubmittedWorkDone pfn_wgpuQueueOnSubmittedWorkDone = NULL;
 PFN_wgpuQueueRelease pfn_wgpuQueueRelease = NULL;
 PFN_wgpuBufferRelease pfn_wgpuBufferRelease = NULL;
@@ -326,6 +327,7 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuQueueWriteBuffer);
     pfn_doeNativeQueueWriteBuffer = (PFN_doeNativeQueueWriteBuffer)LIB_SYM(g_lib, "doeNativeQueueWriteBuffer");
     pfn_doeNativeQueueWriteBufferBatch = (PFN_doeNativeQueueWriteBufferBatch)LIB_SYM(g_lib, "doeNativeQueueWriteBufferBatch");
+    pfn_doeNativeQueueWriteBufferBatchDataPtrs = (PFN_doeNativeQueueWriteBufferBatchDataPtrs)LIB_SYM(g_lib, "doeNativeQueueWriteBufferBatchDataPtrs");
     LOAD_SYM(wgpuQueueOnSubmittedWorkDone);
     LOAD_SYM(wgpuQueueRelease);
     LOAD_SYM(wgpuBufferRelease);

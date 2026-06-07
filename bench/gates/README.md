@@ -14,6 +14,9 @@ Gate classes:
 - **Correctness** (`check_correctness.py`, `claim_*.py`,
   `claim_discipline_gate.py`) — block release when claim language
   drifts from artifact reality.
+  `claim_gate.py` also requires claimable Doe package rows to carry
+  receipt-visible package telemetry, including native fast-path flags,
+  write breakdowns, readback mode, and selected setup-timing scope.
 - **Compiler evidence** (`tint_compiler_evidence_gate.py`) — block
   Doe-vs-Tint compiler claims unless reports carry schema-valid corpus,
   toolchain, hash, validation, timing-phase, and comparability evidence.
