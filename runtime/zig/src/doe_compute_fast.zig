@@ -684,6 +684,40 @@ fn computeDispatchBatchCopyFlushDirect(
 ) void {
     resetDirectDispatchFlushBreakdown(breakdown);
     const q = native_helpers.cast(native_types.DoeQueue, q_raw) orelse return;
+    if (q.dev.backend == .vulkan) {
+        if (dispatch_count == 0) return;
+        const replay_started_ns = monotonicNowNs();
+        const cb_raw = doeNativeCreateComputeDispatchBatchCopyCommandBuffer(
+            toOpaque(q.dev),
+            dispatch_count,
+            pipe_ptrs,
+            bg_ptrs,
+            bg_counts,
+            dispatch_dims,
+            copy_src,
+            copy_src_off,
+            copy_dst,
+            copy_dst_off,
+            copy_size,
+        ) orelse return;
+        const cb = native_helpers.cast(DoeCommandBuffer, cb_raw) orelse return;
+        defer destroyPendingCommandBuffer(cb);
+        addDirectDispatchFlushField(
+            breakdown,
+            DIRECT_DISPATCH_FLUSH_COMMAND_REPLAY_INDEX,
+            monotonicNowNs() - replay_started_ns,
+        );
+
+        var cmd_bufs = [_]?*anyopaque{cb_raw};
+        const queue_submit_started_ns = monotonicNowNs();
+        queue_submit.doeNativeQueueSubmit(toOpaque(q), cmd_bufs.len, &cmd_bufs);
+        addDirectDispatchFlushField(
+            breakdown,
+            DIRECT_DISPATCH_FLUSH_QUEUE_SUBMIT_INDEX,
+            monotonicNowNs() - queue_submit_started_ns,
+        );
+        return;
+    }
     if (q.dev.backend != .metal) return;
     if (dispatch_count == 0) return;
 

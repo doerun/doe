@@ -352,6 +352,7 @@ console.log(JSON.stringify({{ adapter: plan.adapter, dispatch: plan.steps[0], re
 import {{ successfulRunUnexpectedStderr }} from {json.dumps(RUNNER_CORE_MODULE_URL)};
 console.log(JSON.stringify({{
   debug: successfulRunUnexpectedStderr('{{"kind":"package_webgpu_debug","phase":"start"}}\\n'),
+  dawnLimits: successfulRunUnexpectedStderr('Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\\n'),
   validation: successfulRunUnexpectedStderr('extension \\'subgroups\\' is not allowed in the current environment\\n'),
 }}));
 """
@@ -365,6 +366,7 @@ console.log(JSON.stringify({{
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = json.loads(result.stdout)
         self.assertEqual(payload["debug"], [])
+        self.assertEqual(payload["dawnLimits"], [])
         self.assertEqual(
             payload["validation"],
             ["extension 'subgroups' is not allowed in the current environment"],

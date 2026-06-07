@@ -328,7 +328,9 @@ pub const NativeVulkanRuntime = struct {
     ) !DispatchMetrics {
         if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
         if (!self.has_pipeline) return error.Unsupported;
-        if (self.streaming_copy_active) try self.flush_streaming_copy(true);
+        if (self.streaming_copy_active) {
+            try self.flush_streaming_copy(queue_sync_mode == .per_command);
+        }
         try vk_device.ensure_submission_state(self);
         if (gpu_timestamp_mode != .off and queue_sync_mode == .per_command) {
             try vk_device.ensure_timestamp_query_pool(self);
@@ -488,7 +490,9 @@ pub const NativeVulkanRuntime = struct {
     ) !DispatchMetrics {
         if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
         if (!self.has_pipeline) return error.Unsupported;
-        if (self.streaming_copy_active) try self.flush_streaming_copy(true);
+        if (self.streaming_copy_active) {
+            try self.flush_streaming_copy(queue_sync_mode == .per_command);
+        }
         try vk_device.ensure_submission_state(self);
 
         const indirect_args = try ensure_dispatch_indirect_args_buffer(self);
@@ -698,6 +702,10 @@ pub const NativeVulkanRuntime = struct {
         if (wait) {
             self.buffer_write_staging_offset = 0;
         }
+    }
+
+    pub fn submit_recorded_replay(self: *NativeVulkanRuntime) !void {
+        return vk_upload.submit_recorded_replay(self);
     }
 
     /// Query whether the timeline semaphore extension is available.

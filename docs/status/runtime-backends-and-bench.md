@@ -3,6 +3,76 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-07 — AMD Vulkan package Node and Bun claimable
+
+The AMD Vulkan package prepared lane now executes the Doe Vulkan path through
+the native package bridge for the Gemma warm workload without the earlier
+missing-bind-group/runtime-state failure. The Node package comparison is
+strict-comparable and locally claimable against the Dawn-backed Node WebGPU
+package. Bun now exposes the same native batch/flush symbols to the Linux
+Vulkan FFI table, so the Bun package comparison is also strict-comparable and
+locally claimable.
+
+The browser lane was advanced to the documented AMD Vulkan browser superset
+front door. No promoted AMD Vulkan browser claim profile exists yet; the
+available browser surface is diagnostic. A stock-Chrome `auto` selector run
+completed and selected Doe without fallback. The remaining browser blockers are
+render-bundle and surface/canvas runtime failures recorded in the browser
+diagnostic artifact, and this host has no local Fawn Chromium build under the
+expected release output path.
+
+Artifacts:
+
+- Node compare report:
+  `bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.compare.json`
+- Node claim report:
+  `bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.claim.json`
+- Node comparability-coherence gate result:
+  `bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.comparability-coherence.json`
+- Node Doe run receipt:
+  `bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260607T122747Z.run.json`
+- Node Dawn package run receipt:
+  `bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared/node_webgpu_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260607T122747Z.run.json`
+- Bun compare report:
+  `bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.compare.json`
+- Bun claim report:
+  `bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.claim.json`
+- Bun comparability-coherence gate result:
+  `bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.comparability-coherence.json`
+- Bun Doe run receipt:
+  `bench/out/amd-vulkan/20260607T124149Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260607T124149Z.run.json`
+- Bun WebGPU package run receipt:
+  `bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/bun_webgpu_package_prepared/bun_webgpu_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260607T124200Z.run.json`
+- Browser diagnostic report:
+  `browser/chromium/artifacts/20260607T124449Z/dawn-vs-doe.browser-layered.superset.diagnostic.json`
+- Browser diagnostic summary:
+  `browser/chromium/artifacts/20260607T124449Z/dawn-vs-doe.browser-layered.superset.summary.json`
+- Browser diagnostic check:
+  `browser/chromium/artifacts/20260607T124449Z/dawn-vs-doe.browser-layered.superset.check.json`
+
+Validation:
+
+- `zig build dropin -Doptimize=ReleaseFast`
+- `npm --prefix packages/doe-gpu run build:addon`
+- `bun --check packages/doe-gpu/src/vendor/webgpu/bun-ffi.js`
+- `node --check bench/executors/package-webgpu/runner-core.js`
+- `python3 -m unittest bench.tests.test_package_dispatch_prefix_profile -q`
+- `python3 bench/cli.py compare bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260607T122747Z.run.json bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared/node_webgpu_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260607T122747Z.run.json --comparability strict --require-timing-class operation --out bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.compare.json`
+- `python3 bench/cli.py claim bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.compare.json --config bench/native-compare/compare.config.amd.vulkan.gemma64.node-package.warm.ir.json --mode local --min-timed-samples 15 --out bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.claim.json`
+- `python3 bench/gates/claim_gate.py --report bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.compare.json --claim-report bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.claim.json --require-comparison-status comparable --require-claim-status claimable --require-claimability-mode local --require-min-timed-samples 15 --config bench/native-compare/compare.config.amd.vulkan.gemma64.node-package.warm.ir.json`
+- `python3 bench/gates/comparability_coherence_gate.py --report bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.compare.json --benchmark-policy config/benchmark-methodology-thresholds.json --require-pass --out bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.comparability-coherence.json`
+- `python3 bench/gates/structural_equivalence_gate.py --report bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.compare.json --require-all-pass`
+- `python3 bench/gates/timing_policy_gate.py --backend vulkan --report bench/out/amd-vulkan/20260607T122747Z/gemma64.node-package.warm.ir.compare.json`
+- `python3 bench/cli.py compare bench/out/amd-vulkan/20260607T124149Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260607T124149Z.run.json bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/bun_webgpu_package_prepared/bun_webgpu_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260607T124200Z.run.json --comparability strict --require-timing-class operation --benchmark-policy config/benchmark-methodology-thresholds.json --out bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.compare.json`
+- `python3 bench/cli.py claim bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.compare.json --config bench/native-compare/compare.config.amd.vulkan.gemma64.bun-package.warm.ir.json --mode local --min-timed-samples 15 --benchmark-policy config/benchmark-methodology-thresholds.json --out bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.claim.json`
+- `python3 bench/gates/claim_gate.py --report bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.compare.json --claim-report bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.claim.json --require-comparison-status comparable --require-claim-status claimable --require-claimability-mode local --require-min-timed-samples 15 --config bench/native-compare/compare.config.amd.vulkan.gemma64.bun-package.warm.ir.json`
+- `python3 bench/gates/comparability_coherence_gate.py --report bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.compare.json --benchmark-policy config/benchmark-methodology-thresholds.json --require-pass --out bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.comparability-coherence.json`
+- `python3 bench/gates/structural_equivalence_gate.py --report bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.compare.json --require-all-pass`
+- `python3 bench/gates/timing_policy_gate.py --backend vulkan --report bench/out/amd-vulkan/20260607T124200Z/gemma64.bun-package.warm.ir.compare.json`
+- `python3 browser/chromium/scripts/generate-browser-projection-manifest.py --workloads bench/workloads/specialized/workloads.amd.vulkan.superset.json`
+- `npm --prefix browser/chromium ci`
+- `python3 browser/chromium/scripts/run-browser-benchmark-superset.py --mode auto --chrome /usr/bin/google-chrome-stable`
+
 ## 2026-06-06 — AMD Vulkan repeat submit shape is receipt-visible
 
 Native Vulkan repeated dispatch no longer silently splits one

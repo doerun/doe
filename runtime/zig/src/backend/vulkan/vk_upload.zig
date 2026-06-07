@@ -118,6 +118,10 @@ pub fn flush_queue(self: anytype) !u64 {
     return common_timing.ns_delta(end_ns, start_ns);
 }
 
+pub fn submit_recorded_replay(self: anytype) !void {
+    try finalize_recorded_submit_replay(self);
+}
+
 fn finalize_recorded_submit_replay(self: anytype) !void {
     if (!self.replay_recording_active) return;
     try c.check_vk(c.vkEndCommandBuffer(self.replay_command_buffer));

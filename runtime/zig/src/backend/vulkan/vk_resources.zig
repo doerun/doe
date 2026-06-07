@@ -25,6 +25,7 @@ const VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT: u32 = 0x00000020;
 pub const DEFAULT_RUNTIME_TEXTURE_USAGE: model_gpu_types.WGPUFlags = model_gpu_types.WGPUTextureUsage_TextureBinding | model_gpu_types.WGPUTextureUsage_StorageBinding | model_gpu_types.WGPUTextureUsage_CopyDst;
 pub const REQUIRED_TEXTURE_UPLOAD_USAGE: model_gpu_types.WGPUFlags = model_gpu_types.WGPUTextureUsage_CopyDst;
 const DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES: u64 = 16 * 1024;
+const BUFFER_WRITE_STAGING_MIN_CAPACITY: u64 = 64 * 1024;
 
 pub const ComputeBufferMemoryKind = enum { host_visible, device_local };
 
@@ -318,16 +319,28 @@ pub fn stage_compute_buffer_write(
     const end = std.math.add(u64, offset, data_bytes.len) catch return error.InvalidArgument;
     if (end > compute_buffer.size) return error.InvalidArgument;
 
-    if (compute_buffer.memory_kind == .host_visible) {
+    if (self.replay_recording_active) {
+        try self.submit_recorded_replay();
+    }
+
+    const has_unsubmitted_upload =
+        self.hot_pending_upload != null or
+        self.pending_uploads.items.len > 0;
+    if (has_unsubmitted_upload) {
+        _ = try vk_upload.flush_queue(self);
+    }
+
+    const queue_has_pending_work =
+        self.has_deferred_submissions or
+        self.streaming_copy_active;
+
+    if (compute_buffer.memory_kind == .host_visible and !queue_has_pending_work) {
         const mapped = compute_buffer.mapped orelse return error.InvalidState;
         const dst: [*]u8 = @ptrCast(mapped);
         @memcpy(dst[@intCast(offset)..][0..data_bytes.len], data_bytes);
         return;
     }
 
-    if (self.has_deferred_submissions or self.hot_pending_upload != null or self.pending_uploads.items.len > 0) {
-        _ = try vk_upload.flush_queue(self);
-    }
     const staging_offset = self.buffer_write_staging_offset;
     const staging = try ensure_buffer_write_staging_buffer(self, staging_offset + data_bytes.len);
     const mapped = staging.mapped orelse return error.InvalidState;
@@ -345,7 +358,8 @@ fn ensure_buffer_write_staging_buffer(self: anytype, required_bytes: u64) !Compu
         self.buffer_write_staging_buffer = null;
         self.buffer_write_staging_capacity = 0;
     }
-    const capacity = std.math.ceilPowerOfTwo(u64, required_bytes) catch required_bytes;
+    const rounded_capacity = std.math.ceilPowerOfTwo(u64, required_bytes) catch required_bytes;
+    const capacity = @max(rounded_capacity, BUFFER_WRITE_STAGING_MIN_CAPACITY);
     const staging = try create_host_visible_buffer(self, capacity, c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     self.buffer_write_staging_buffer = staging;
     self.buffer_write_staging_capacity = capacity;

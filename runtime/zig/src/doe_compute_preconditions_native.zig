@@ -8,6 +8,28 @@ const ir = @import("doe_wgsl/ir.zig");
 pub const ValidationError = dispatch_preconditions.ValidationError;
 const bridge = queue_submit_ops.metal_bridge;
 
+fn failStoragePrecondition(reason: []const u8, group: u32, binding: u32) ValidationError {
+    std.log.err(
+        "doe_compute_preconditions: storage dispatch precondition failed: {s} group={} binding={}",
+        .{ reason, group, binding },
+    );
+    return error.DispatchPreconditionFailed;
+}
+
+fn failStorageExtentPrecondition(
+    group: u32,
+    binding: u32,
+    required_bytes: u64,
+    bound_bytes: u64,
+    kind: ir.DispatchPreconditionKind,
+) ValidationError {
+    std.log.err(
+        "doe_compute_preconditions: storage dispatch precondition failed: requiredBytes={} boundBytes={} kind={s} group={} binding={}",
+        .{ required_bytes, bound_bytes, @tagName(kind), group, binding },
+    );
+    return error.DispatchPreconditionFailed;
+}
+
 pub fn validate_bind_groups(
     preconditions: []const ir.DispatchPrecondition,
     texture_preconditions: []const ir.TextureDispatchPrecondition,
@@ -18,15 +40,23 @@ pub fn validate_bind_groups(
     for (preconditions) |precondition| {
         const group = precondition.storage_binding.group;
         const binding = precondition.storage_binding.binding;
-        if (group >= bind_groups.len) return error.DispatchPreconditionFailed;
-        const bind_group = bind_groups[group] orelse return error.DispatchPreconditionFailed;
-        if (binding >= bind_group.buffers.len) return error.DispatchPreconditionFailed;
-        if (bind_group.buffers[binding] == null) return error.DispatchPreconditionFailed;
+        if (group >= bind_groups.len) return failStoragePrecondition("group index out of range", group, binding);
+        const bind_group = bind_groups[group] orelse return failStoragePrecondition("bind group missing", group, binding);
+        if (binding >= bind_group.buffers.len) return failStoragePrecondition("binding index out of range", group, binding);
+        if (bind_group.buffers[binding] == null) return failStoragePrecondition("buffer missing", group, binding);
         const required = if (precondition.kind == .uniform_extent)
             try required_uniform_extent_bytes(precondition, bind_groups)
         else
             try dispatch_preconditions.required_buffer_bytes(precondition, dispatch_workgroups, workgroup_size);
-        if (required > bind_group.buffer_sizes[binding]) return error.DispatchPreconditionFailed;
+        if (required > bind_group.buffer_sizes[binding]) {
+            return failStorageExtentPrecondition(
+                group,
+                binding,
+                required,
+                bind_group.buffer_sizes[binding],
+                precondition.kind,
+            );
+        }
     }
     for (texture_preconditions) |precondition| {
         const group = precondition.texture_binding.group;
@@ -64,7 +94,7 @@ fn required_uniform_extent_bytes(
     const bind_group = bind_groups[group] orelse return error.DispatchPreconditionFailed;
     if (binding >= bind_group.retained_buffers.len) return error.DispatchPreconditionFailed;
     const buffer = bind_group.retained_buffers[binding] orelse return error.DispatchPreconditionFailed;
-    const contents = bridge.metal_bridge_buffer_contents(buffer.mtl) orelse return error.DispatchPreconditionFailed;
+    const contents = bufferContents(buffer) orelse return error.DispatchPreconditionFailed;
     var values = [_]u32{ 0, 0 };
     for (0..precondition.uniform_u32_count) |index| {
         const byte_offset = try std.math.add(u64, bind_group.offsets[binding], precondition.uniform_u32_offsets[index]);
@@ -74,6 +104,12 @@ fn required_uniform_extent_bytes(
         values[index] = ptr.*;
     }
     return dispatch_preconditions.required_uniform_extent_buffer_bytes(precondition, values);
+}
+
+fn bufferContents(buffer: *const native_types.DoeBuffer) ?[*]u8 {
+    if (buffer.vk_mapped_ptr) |mapped_ptr| return mapped_ptr;
+    if (buffer.d3d12_mapped_ptr) |mapped_ptr| return @ptrCast(mapped_ptr);
+    return bridge.metal_bridge_buffer_contents(buffer.mtl);
 }
 
 fn required_texture_axis_extent(

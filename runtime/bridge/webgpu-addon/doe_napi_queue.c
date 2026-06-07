@@ -928,7 +928,6 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
     }
 #endif
 
-#if defined(__APPLE__)
     if (pfn_doeNativeComputeDispatchBatchCopyFlush && cmd_count >= 2) {
         int dispatch_then_copy = 1;
         for (uint32_t i = 0; i + 1 < cmd_count; i++) {
@@ -1107,7 +1106,6 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
             return make_submit_breakdown(env, command_replay_ns, queue_submit_ns, 0);
         }
     }
-#endif
 
     int flush_after_submit = 0;
     if (cmd_count == 2) {

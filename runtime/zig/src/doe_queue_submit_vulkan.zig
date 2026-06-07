@@ -12,8 +12,8 @@
 // Mirrors `submit_d3d12_commands` (`doe_queue_submit_d3d12.zig`) and
 // `submit_metal_commands` (`doe_queue_submit_metal.zig`) in structure:
 // iterate cmd_bufs, iterate each cb.cmds.items, dispatch each entry to
-// the appropriate Vulkan replay helper, then flush the queue so
-// subsequent `mapAsync` observes the written bytes.
+// the appropriate Vulkan replay helper. Recorded replay is finalized at
+// queue-ordering boundaries; explicit queue flush/readback paths still drain.
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -34,6 +34,9 @@ const has_vulkan = (builtin.os.tag == .linux);
 pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*anyopaque) void {
     if (comptime !has_vulkan) return;
     const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return;
+    const previous_replay_state = rt.recorded_submit_replay_active;
+    rt.recorded_submit_replay_active = true;
+    defer rt.recorded_submit_replay_active = previous_replay_state;
 
     var executed_any_dispatch = false;
     for (cmd_bufs[0..count]) |raw| {
@@ -118,15 +121,5 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                 .resolve_query_set => {},
             }
         }
-    }
-
-    if (executed_any_dispatch) {
-        _ = rt.flush_queue() catch |err| {
-            shared.deliverInternalError(
-                q.dev,
-                "doe_queue_submit: vulkan flush after dispatch replay: {s}",
-                .{@errorName(err)},
-            );
-        };
     }
 }

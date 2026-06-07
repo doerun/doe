@@ -425,7 +425,6 @@ function openLibrary(path) {
         // Queue write texture
         wgpuQueueWriteTexture: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.u64, FFIType.ptr, FFIType.ptr], returns: FFIType.void },
     };
-    if (process.platform === "darwin") {
         symbols.doeNativeComputePipelineGetBindGroupLayout = {
             args: [FFIType.ptr, FFIType.u32],
             returns: FFIType.ptr,
@@ -610,7 +609,6 @@ function openLibrary(path) {
             ],
             returns: FFIType.void,
         };
-    }
     return dlopen(path, symbols);
 }
 
@@ -3235,7 +3233,11 @@ const bunEncoderBackend = {
         assertBunNoActivePass(encoder, path);
     },
     commandEncoderBeginComputePass(encoder, _descriptor, classes) {
-        if ((_descriptor === undefined || _descriptor === null) && encoder._native == null) {
+        const descriptorIsEmpty =
+            _descriptor === undefined
+            || _descriptor === null
+            || (typeof _descriptor === "object" && Object.keys(_descriptor).length === 0);
+        if (descriptorIsEmpty && encoder._native == null) {
             const pass = new classes.DoeGPUComputePassEncoder(null, encoder);
             encoder._activePass = pass;
             return pass;
@@ -3616,7 +3618,7 @@ const fullSurfaceBackend = {
                 : null;
             const dispatchBatchCopyFlush = dispatchBatchCopyFlushBreakdown
                 ?? wgpu.symbols.doeNativeComputeDispatchBatchCopyFlush;
-            if (process.platform === "darwin" && dispatchBatchCopyFlush && allCommands.length >= 2) {
+            if (dispatchBatchCopyFlush && allCommands.length >= 2) {
                 let dispatchThenCopy = allCommands[allCommands.length - 1]?.t === 1;
                 for (let i = 0; dispatchThenCopy && i + 1 < allCommands.length; i += 1) {
                     const cmd = allCommands[i];
@@ -3690,7 +3692,7 @@ const fullSurfaceBackend = {
             }
             const dispatchBatchFlush = wgpu.symbols.doeNativeComputeDispatchBatchFlush
                 ?? dispatchBatchCopyFlushBreakdown;
-            if (process.platform === "darwin" && dispatchBatchFlush && allCommands.length > 0) {
+            if (dispatchBatchFlush && allCommands.length > 0) {
                 let allDispatch = true;
                 for (const cmd of allCommands) {
                     if (cmd?.t !== 0 || (cmd.immediates?.length ?? 0) !== 0) {

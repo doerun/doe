@@ -368,6 +368,13 @@ static void handle_Release_hint(napi_env env, void* data, void* hint) {
 }
 
 void* unwrap_ptr(napi_env env, napi_value val) {
+    if (!val) return NULL;
+    napi_valuetype value_type;
+    if (napi_typeof(env, val, &value_type) != napi_ok) return NULL;
+    if (value_type == napi_object) {
+        return native_direct_unwrap_external_prop(env, val, DOE_DIRECT_NATIVE);
+    }
+    if (value_type != napi_external) return NULL;
     void* ptr = NULL;
     napi_get_value_external(env, val, &ptr);
     return ptr;

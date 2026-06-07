@@ -111,6 +111,9 @@ export function successfulRunUnexpectedStderr(stderr) {
       if (!line) {
         return false;
       }
+      if (isKnownSuccessfulRunStderr(line)) {
+        return false;
+      }
       try {
         const payload = JSON.parse(line);
         return payload?.kind !== 'package_webgpu_debug';
@@ -118,6 +121,10 @@ export function successfulRunUnexpectedStderr(stderr) {
         return true;
       }
     });
+}
+
+function isKnownSuccessfulRunStderr(line) {
+  return /^Warning: maxDynamic(?:Uniform|Storage)BuffersPerPipelineLayout artificially reduced from \d+ to \d+ to fit dynamic offset allocation limit\.$/u.test(line);
 }
 
 function childArgv(args, cliPath, overrides = {}) {
