@@ -18,6 +18,15 @@ const MAX_COMPUTE_BIND_GROUPS = native_shared.MAX_COMPUTE_BIND_GROUPS;
 const MAX_FLAT_BIND = native_shared.MAX_FLAT_BIND;
 const toOpaque = native_helpers.toOpaque;
 
+pub const DispatchBatchCopyFlushTimings = struct {
+    command_replay_ns: u64 = 0,
+    queue_submit_ns: u64 = 0,
+};
+
+fn monotonicNowNs() u64 {
+    return @intCast(std.time.nanoTimestamp());
+}
+
 fn recordedDispatch(
     pipe: *DoeComputePipeline,
     bg_ptrs: [*]const ?*anyopaque,
@@ -137,13 +146,15 @@ pub fn dispatchBatchCopyFlush(
     copy_dst: ?*anyopaque,
     copy_dst_off: u64,
     copy_size: u64,
-) void {
-    if (dispatch_count == 0) return;
-    const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return;
+) DispatchBatchCopyFlushTimings {
+    var timings = DispatchBatchCopyFlushTimings{};
+    if (dispatch_count == 0) return timings;
+    const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return timings;
     const previous_replay_state = rt.recorded_submit_replay_active;
     rt.recorded_submit_replay_active = true;
     defer rt.recorded_submit_replay_active = previous_replay_state;
 
+    const replay_started_ns = monotonicNowNs();
     var executed_any_dispatch = false;
     for (0..dispatch_count) |index| {
         const pipe = native_helpers.cast(DoeComputePipeline, pipe_ptrs[index]) orelse continue;
@@ -172,9 +183,13 @@ pub fn dispatchBatchCopyFlush(
         copy_size,
         &executed_any_dispatch,
     );
+    timings.command_replay_ns = monotonicNowNs() - replay_started_ns;
     if (executed_any_dispatch) {
+        const submit_started_ns = monotonicNowNs();
         rt.submit_recorded_replay() catch |err| {
             std.log.err("doe_compute_fast_vulkan: submit recorded replay failed: {s}", .{@errorName(err)});
         };
+        timings.queue_submit_ns = monotonicNowNs() - submit_started_ns;
     }
+    return timings;
 }

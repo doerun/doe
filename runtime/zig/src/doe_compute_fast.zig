@@ -691,8 +691,7 @@ fn computeDispatchBatchCopyFlushDirect(
     const q = native_helpers.cast(native_types.DoeQueue, q_raw) orelse return;
     if (q.dev.backend == .vulkan) {
         if (dispatch_count == 0) return;
-        const queue_submit_started_ns = monotonicNowNs();
-        vulkan_fast.dispatchBatchCopyFlush(
+        const timings = vulkan_fast.dispatchBatchCopyFlush(
             q,
             dispatch_count,
             pipe_ptrs,
@@ -707,8 +706,13 @@ fn computeDispatchBatchCopyFlushDirect(
         );
         addDirectDispatchFlushField(
             breakdown,
+            DIRECT_DISPATCH_FLUSH_COMMAND_REPLAY_INDEX,
+            timings.command_replay_ns,
+        );
+        addDirectDispatchFlushField(
+            breakdown,
             DIRECT_DISPATCH_FLUSH_QUEUE_SUBMIT_INDEX,
-            monotonicNowNs() - queue_submit_started_ns,
+            timings.queue_submit_ns,
         );
         return;
     }
