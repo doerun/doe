@@ -3,6 +3,54 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan readback and Node packed-submit package path
+
+The Vulkan drop-in readback helper now uses an already-mapped Vulkan
+`MAP_READ` buffer directly when the buffer is host-visible and the requested
+range is valid, while preserving the required queue flush before readback. The
+copy is still reported in the existing readback breakdown fields; the path
+does not turn map/unmap elision into a completed-submission signal.
+
+The Node package shim now packs lazy compute submit command lists into typed
+arrays and native handle arrays for a new N-API `submitPackedDispatchBatch`
+entry point. The fast path only accepts all-dispatch or dispatch-then-final-copy
+command streams with no descriptors or immediates, and falls back to the
+existing object-walking batch submit when the shape or native symbol is not
+available. Package telemetry records the native packed-submit capability
+separately from completion semantics.
+
+Current AMD Vulkan Node and Bun Gemma64 warm package receipts are still
+strict-comparable diagnostics, not claimable wins. The retained evidence points
+at native queue-submit and driver-side submit latency as the next optimization
+target. A scoped Vulkan barrier experiment was measured and reverted because it
+did not improve the package lanes consistently.
+
+Artifacts:
+
+- Node packed-submit/readback compare:
+  `bench/out/amd-vulkan/20260608T072855Z/gemma64.node-package.warm.ir.packed-submit-readback.same-window.compare.json`
+- Node packed-submit/readback claim:
+  `bench/out/amd-vulkan/20260608T072855Z/gemma64.node-package.warm.ir.packed-submit-readback.same-window.claim.json`
+- Bun mapped-readback compare:
+  `bench/out/amd-vulkan/20260608T071748Z/gemma64.bun-package.warm.ir.vulkan-direct-readback.same-window.compare.json`
+- Bun mapped-readback claim:
+  `bench/out/amd-vulkan/20260608T071748Z/gemma64.bun-package.warm.ir.vulkan-direct-readback.same-window.claim.json`
+- Reverted scoped-barrier experiment compare:
+  `bench/out/amd-vulkan/20260608T073754Z/gemma64.bun-package.warm.ir.scoped-barrier-readback.same-window.compare.json`
+
+Validation:
+
+- `python3 bench/gates/schema_gate.py`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_bun_webgpu_executor`
+- `node --check packages/doe-gpu/src/vendor/webgpu/index.js`
+- `npm run build:addon` from `packages/doe-gpu`
+- `npm run test:smoke` from `packages/doe-gpu`
+- `zig build dropin -Doptimize=ReleaseFast --summary all` from
+  `runtime/zig`
+- Structural-equivalence, timing-policy, comparability-coherence, comparable
+  runtime-invariant, and claim checks for the retained package artifacts listed
+  above.
+
 ## 2026-06-08 — Vulkan package telemetry and fence-pool drain tightening
 
 The AMD Vulkan package path now reports Node native dispatch-submit usage

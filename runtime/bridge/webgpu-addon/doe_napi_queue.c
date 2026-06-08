@@ -755,6 +755,7 @@ napi_value doe_native_fast_path_info(napi_env env, napi_callback_info info) {
     set_bool_property(env, result, "computeDispatchBatchFlush", pfn_doeNativeComputeDispatchBatchFlush != NULL);
     set_bool_property(env, result, "computeDispatchBatchCopyFlush", pfn_doeNativeComputeDispatchBatchCopyFlush != NULL);
     set_bool_property(env, result, "computeDispatchBatchCopyFlushBreakdown", pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown != NULL);
+    set_bool_property(env, result, "submitPackedDispatchBatch", pfn_doeNativeComputeDispatchBatchFlush != NULL || pfn_doeNativeComputeDispatchBatchCopyFlush != NULL);
     set_bool_property(env, result, "bufferMapReadCopyUnmap", pfn_doeBufferMapReadCopyUnmapFlat != NULL);
     return result;
 }
@@ -1218,6 +1219,189 @@ napi_value doe_queue_flush(napi_env env, napi_callback_info info) {
     if (result.status != WGPU_QUEUE_WORK_DONE_STATUS_SUCCESS)
         return throw_status_error(env, "DOE_QUEUE_FLUSH_ERROR", "queueFlush: queue work did not complete", result.status, result.message);
     return NULL;
+}
+
+/* submitPackedDispatchBatch(queue, dispatchCount, pipelines, bindGroups,
+ *                           bindGroupCounts, dispatchDims,
+ *                           copyBuffersOrNull, copyOffsetsAndSizeOrNull) */
+napi_value doe_queue_submit_packed_dispatch_batch(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 8);
+    CHECK_LIB_LOADED(env);
+    WGPUQueue queue = unwrap_ptr(env, _args[0]);
+    if (!queue) NAPI_THROW(env, "submitPackedDispatchBatch requires queue");
+
+    uint32_t dispatch_count_u32 = 0;
+    napi_get_value_uint32(env, _args[1], &dispatch_count_u32);
+    if (dispatch_count_u32 == 0) return NULL;
+    const size_t dispatch_count = (size_t)dispatch_count_u32;
+    const size_t bind_group_slots = dispatch_count * BATCH_MAX_BIND_GROUPS;
+    const size_t dispatch_dims_count = dispatch_count * 3;
+
+    bool pipelines_is_array = false;
+    napi_is_array(env, _args[2], &pipelines_is_array);
+    if (!pipelines_is_array) NAPI_THROW(env, "submitPackedDispatchBatch pipelines must be an array");
+    uint32_t pipeline_count = 0;
+    napi_get_array_length(env, _args[2], &pipeline_count);
+    if (pipeline_count < dispatch_count_u32) {
+        NAPI_THROW(env, "submitPackedDispatchBatch pipelines length is smaller than dispatchCount");
+    }
+
+    bool bind_groups_is_array = false;
+    napi_is_array(env, _args[3], &bind_groups_is_array);
+    if (!bind_groups_is_array) NAPI_THROW(env, "submitPackedDispatchBatch bindGroups must be an array");
+    uint32_t bind_group_count = 0;
+    napi_get_array_length(env, _args[3], &bind_group_count);
+    if (bind_group_count < bind_group_slots) {
+        NAPI_THROW(env, "submitPackedDispatchBatch bindGroups length is smaller than dispatchCount * maxBindGroups");
+    }
+
+    void* bg_count_bytes = NULL;
+    size_t bg_count_byte_length = 0;
+    void* dispatch_dims_bytes = NULL;
+    size_t dispatch_dims_byte_length = 0;
+    extract_buffer_data(env, _args[4], &bg_count_bytes, &bg_count_byte_length);
+    extract_buffer_data(env, _args[5], &dispatch_dims_bytes, &dispatch_dims_byte_length);
+    if (!bg_count_bytes || bg_count_byte_length < (dispatch_count * sizeof(uint32_t))) {
+        NAPI_THROW(env, "submitPackedDispatchBatch bindGroupCounts must be a Uint32Array");
+    }
+    if (!dispatch_dims_bytes || dispatch_dims_byte_length < (dispatch_dims_count * sizeof(uint32_t))) {
+        NAPI_THROW(env, "submitPackedDispatchBatch dispatchDims must be a Uint32Array");
+    }
+
+    napi_valuetype copy_value_type = napi_undefined;
+    napi_typeof(env, _args[6], &copy_value_type);
+    const int has_copy = copy_value_type != napi_null && copy_value_type != napi_undefined;
+    void* copy_src = NULL;
+    void* copy_dst = NULL;
+    uint64_t copy_src_off = 0;
+    uint64_t copy_dst_off = 0;
+    uint64_t copy_size = 0;
+    if (has_copy) {
+        if (!pfn_doeNativeComputeDispatchBatchCopyFlush) return NULL;
+        bool copy_buffers_is_array = false;
+        napi_is_array(env, _args[6], &copy_buffers_is_array);
+        if (!copy_buffers_is_array) NAPI_THROW(env, "submitPackedDispatchBatch copyBuffers must be an array or null");
+        uint32_t copy_buffer_count = 0;
+        napi_get_array_length(env, _args[6], &copy_buffer_count);
+        if (copy_buffer_count < 2) NAPI_THROW(env, "submitPackedDispatchBatch copyBuffers requires src and dst");
+
+        napi_value copy_src_value;
+        napi_value copy_dst_value;
+        napi_get_element(env, _args[6], 0, &copy_src_value);
+        napi_get_element(env, _args[6], 1, &copy_dst_value);
+        copy_src = unwrap_ptr(env, copy_src_value);
+        copy_dst = unwrap_ptr(env, copy_dst_value);
+        if (!copy_src || !copy_dst) NAPI_THROW(env, "submitPackedDispatchBatch copyBuffers entries must be buffers");
+
+        void* copy_offset_bytes = NULL;
+        size_t copy_offset_byte_length = 0;
+        extract_buffer_data(env, _args[7], &copy_offset_bytes, &copy_offset_byte_length);
+        if (!copy_offset_bytes || copy_offset_byte_length < (3 * sizeof(uint64_t))) {
+            NAPI_THROW(env, "submitPackedDispatchBatch copyOffsetsAndSize must be a BigUint64Array");
+        }
+        memcpy(&copy_src_off, ((uint8_t*)copy_offset_bytes), sizeof(uint64_t));
+        memcpy(&copy_dst_off, ((uint8_t*)copy_offset_bytes) + sizeof(uint64_t), sizeof(uint64_t));
+        memcpy(&copy_size, ((uint8_t*)copy_offset_bytes) + (2 * sizeof(uint64_t)), sizeof(uint64_t));
+    } else if (!pfn_doeNativeComputeDispatchBatchFlush && !(submit_breakdown_enabled() && pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown)) {
+        return NULL;
+    }
+
+    const int use_stack_batch = dispatch_count <= BATCH_STACK_DISPATCHES;
+    void* stack_pipelines[BATCH_STACK_DISPATCHES];
+    void* stack_bind_groups[BATCH_STACK_DISPATCHES * BATCH_MAX_BIND_GROUPS];
+    void** pipelines = use_stack_batch ? stack_pipelines : (void**)calloc(dispatch_count, sizeof(void*));
+    void** bind_groups = use_stack_batch ? stack_bind_groups : (void**)calloc(bind_group_slots, sizeof(void*));
+    if (!pipelines || !bind_groups) {
+        if (!use_stack_batch) {
+            free(pipelines);
+            free(bind_groups);
+        }
+        NAPI_THROW(env, "submitPackedDispatchBatch out of memory");
+    }
+    if (use_stack_batch) {
+        memset(pipelines, 0, dispatch_count * sizeof(void*));
+        memset(bind_groups, 0, bind_group_slots * sizeof(void*));
+    }
+
+    const uint64_t command_replay_started_ns = monotonic_now_ns();
+    uint32_t* bg_counts = (uint32_t*)bg_count_bytes;
+    uint32_t* dispatch_dims = (uint32_t*)dispatch_dims_bytes;
+    for (uint32_t i = 0; i < dispatch_count_u32; i++) {
+        napi_value pipeline_value;
+        napi_get_element(env, _args[2], i, &pipeline_value);
+        pipelines[i] = unwrap_ptr(env, pipeline_value);
+        if (!pipelines[i]) {
+            if (!use_stack_batch) {
+                free(pipelines);
+                free(bind_groups);
+            }
+            napi_throw_error(env, "DOE_ERROR", "submitPackedDispatchBatch pipeline entry requires a native pipeline");
+            return NULL;
+        }
+        if (bg_counts[i] > BATCH_MAX_BIND_GROUPS) {
+            if (!use_stack_batch) {
+                free(pipelines);
+                free(bind_groups);
+            }
+            napi_throw_error(env, "DOE_ERROR", "submitPackedDispatchBatch bind group count exceeds packed ABI limit");
+            return NULL;
+        }
+        for (uint32_t j = 0; j < bg_counts[i]; j++) {
+            napi_value bind_group_value;
+            napi_get_element(env, _args[3], (i * BATCH_MAX_BIND_GROUPS) + j, &bind_group_value);
+            bind_groups[(i * BATCH_MAX_BIND_GROUPS) + j] = unwrap_ptr(env, bind_group_value);
+        }
+    }
+    const uint64_t command_replay_ns = monotonic_now_ns() - command_replay_started_ns;
+
+    const int wants_submit_breakdown = submit_breakdown_enabled();
+    const uint64_t queue_submit_started_ns = monotonic_now_ns();
+    uint64_t breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT] = {0};
+    if (has_copy) {
+        if (wants_submit_breakdown && pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown) {
+            pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown(queue, dispatch_count, pipelines, bind_groups, bg_counts, dispatch_dims,
+                copy_src, copy_src_off, copy_dst, copy_dst_off, copy_size, breakdown);
+        } else {
+            pfn_doeNativeComputeDispatchBatchCopyFlush(queue, dispatch_count, pipelines, bind_groups, bg_counts, dispatch_dims,
+                copy_src, copy_src_off, copy_dst, copy_dst_off, copy_size);
+        }
+    } else if (wants_submit_breakdown && pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown) {
+        pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown(queue, dispatch_count, pipelines, bind_groups, bg_counts, dispatch_dims,
+            NULL, 0, NULL, 0, 0, breakdown);
+    } else {
+        pfn_doeNativeComputeDispatchBatchFlush(queue, dispatch_count, pipelines, bind_groups, bg_counts, dispatch_dims);
+    }
+    const uint64_t queue_submit_ns = monotonic_now_ns() - queue_submit_started_ns;
+
+    if (!use_stack_batch) {
+        free(pipelines);
+        free(bind_groups);
+    }
+
+    if (wants_submit_breakdown && pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown) {
+        return mark_submit_breakdown_native_dispatch(
+            env,
+            make_submit_breakdown_full(
+                env,
+                command_replay_ns + breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY],
+                breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT],
+                0,
+                has_copy ? 0 : breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_WAIT_COMPLETED],
+                has_copy ? 0 : breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_COPY],
+                has_copy ? 0 : breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_RESOLVE],
+                breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
+                breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
+                breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
+                breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
+                breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
+                breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY]
+            )
+        );
+    }
+    return mark_submit_breakdown_native_dispatch(
+        env,
+        make_submit_breakdown(env, command_replay_ns, queue_submit_ns, 0)
+    );
 }
 
 /* submitBatched(device, queue, commandsArray)

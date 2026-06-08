@@ -906,6 +906,7 @@ function snapshotPackageNativeFastPaths(providerModule) {
     computeDispatchBatchFlush: Boolean(info.computeDispatchBatchFlush),
     computeDispatchBatchCopyFlush: Boolean(info.computeDispatchBatchCopyFlush),
     computeDispatchBatchCopyFlushBreakdown: Boolean(info.computeDispatchBatchCopyFlushBreakdown),
+    submitPackedDispatchBatch: Boolean(info.submitPackedDispatchBatch),
     bufferMapReadCopyUnmap: Boolean(info.bufferMapReadCopyUnmap),
   };
 }

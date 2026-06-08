@@ -46,6 +46,31 @@ fn buffer_map_sync_callback(
     result.done = true;
 }
 
+fn copyVulkanMappedReadback(
+    buffer: abi_base.WGPUBuffer,
+    mode: abi_base.WGPUMapMode,
+    offset: usize,
+    size: usize,
+    dst_raw: *anyopaque,
+    breakdown: []u64,
+) bool {
+    if (mode != abi_base.WGPUMapMode_Read) return false;
+    const buf = native_helpers.cast(native_types.DoeBuffer, buffer) orelse return false;
+    if (buf.error_object or buf.backend != .vulkan) return false;
+    if ((buf.usage & abi_base.WGPUBufferUsage_MapRead) == 0) return false;
+    const offset_u64: u64 = @intCast(offset);
+    if (offset_u64 > buf.size) return false;
+    const size_u64: u64 = @intCast(size);
+    if (size_u64 > buf.size - offset_u64) return false;
+
+    const base = buf.vk_mapped_ptr orelse return false;
+    const copy_started_ns = std.time.nanoTimestamp();
+    const dst: [*]u8 = @ptrCast(dst_raw);
+    @memcpy(dst[0..size], (base + offset)[0..size]);
+    breakdown[BREAKDOWN_COPY_INDEX] = @intCast(std.time.nanoTimestamp() - copy_started_ns);
+    return true;
+}
+
 pub export fn wgpuCreateInstance(a0: ?*anyopaque) callconv(.c) abi_base.WGPUInstance {
     return native.doeNativeCreateInstance(a0);
 }
@@ -486,6 +511,10 @@ pub export fn doeBufferMapReadCopyUnmapFlat(
             breakdown[BREAKDOWN_DEFERRED_COPY_INDEX] = deferred_copy_ns;
             breakdown[BREAKDOWN_DEFERRED_RESOLVE_INDEX] = deferred_resolve_ns;
         }
+    }
+
+    if (copyVulkanMappedReadback(buffer, mode, offset, size, dst_raw, breakdown[0..MAP_READ_COPY_UNMAP_BREAKDOWN_FIELD_COUNT])) {
+        return abi_base.WGPUStatus_Success;
     }
 
     var result = BufferMapSyncResult{};

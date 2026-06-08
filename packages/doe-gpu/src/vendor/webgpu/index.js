@@ -107,6 +107,8 @@ const TEXTURE_SWIZZLE_COMPONENT_MAP = Object.freeze({
 });
 const NS_PER_MS = 1_000_000;
 const WHOLE_SIZE_SENTINEL = -1;
+const NODE_MAX_COMPUTE_BIND_GROUPS = 4;
+const PACKED_SUBMIT_COPY_OFFSET_COUNT = 3;
 const fastPathStats = { dispatchFlush: 0, flushAndMap: 0, commandBufferBuild: 0 };
 const NODE_QUEUE_WRITE_BATCH_MAX_BYTES = UINT32_MAX;
 
@@ -696,6 +698,114 @@ function applyNodeLazyDispatchBindGroups(passNative, cmd) {
       addon.computePassSetBindGroup(passNative, index, bindGroups[index]);
     }
   }
+}
+
+function nodeLazyDispatchBindGroupCount(command) {
+  if (command.b) {
+    return 1;
+  }
+  if (!Array.isArray(command.bg)) {
+    return 0;
+  }
+  if (command.bg.length > NODE_MAX_COMPUTE_BIND_GROUPS) {
+    return -1;
+  }
+  return command.bg.length;
+}
+
+function nodeLazyDispatchBindGroupAt(command, index) {
+  if (command.b) {
+    return index === 0 ? command.b : null;
+  }
+  return command.bg?.[index] ?? null;
+}
+
+function packNodeLazySubmitCommands(commands) {
+  if (typeof addon.submitPackedDispatchBatch !== 'function' || !Array.isArray(commands) || commands.length === 0) {
+    return null;
+  }
+  const last = commands[commands.length - 1];
+  const hasCopy = last?.t === 1;
+  const dispatchCount = hasCopy ? commands.length - 1 : commands.length;
+  if (dispatchCount <= 0) {
+    return null;
+  }
+  const pipelines = new Array(dispatchCount);
+  const bindGroups = new Array(dispatchCount * NODE_MAX_COMPUTE_BIND_GROUPS).fill(null);
+  const bindGroupCounts = new Uint32Array(dispatchCount);
+  const dispatchDims = new Uint32Array(dispatchCount * 3);
+
+  for (let index = 0; index < dispatchCount; index += 1) {
+    const command = commands[index];
+    if (command?.t !== 0 || command.d !== undefined || (command.immediates?.length ?? 0) !== 0) {
+      return null;
+    }
+    const pipeline = command.p;
+    if (!pipeline) {
+      return null;
+    }
+    const bindGroupCount = nodeLazyDispatchBindGroupCount(command);
+    if (bindGroupCount < 0) {
+      return null;
+    }
+    pipelines[index] = pipeline;
+    bindGroupCounts[index] = bindGroupCount;
+    const bindGroupBase = index * NODE_MAX_COMPUTE_BIND_GROUPS;
+    for (let groupIndex = 0; groupIndex < bindGroupCount; groupIndex += 1) {
+      bindGroups[bindGroupBase + groupIndex] = nodeLazyDispatchBindGroupAt(command, groupIndex);
+    }
+    dispatchDims[index * 3] = command.x >>> 0;
+    dispatchDims[index * 3 + 1] = command.y >>> 0;
+    dispatchDims[index * 3 + 2] = command.z >>> 0;
+  }
+
+  if (!hasCopy) {
+    return {
+      dispatchCount,
+      pipelines,
+      bindGroups,
+      bindGroupCounts,
+      dispatchDims,
+      copyBuffers: null,
+      copyOffsetsAndSize: null,
+    };
+  }
+  if (!last.s || !last.d) {
+    return null;
+  }
+  const copyOffsetsAndSize = new BigUint64Array(PACKED_SUBMIT_COPY_OFFSET_COUNT);
+  copyOffsetsAndSize[0] = BigInt(last.so ?? 0);
+  copyOffsetsAndSize[1] = BigInt(last.do ?? 0);
+  copyOffsetsAndSize[2] = BigInt(last.sz ?? 0);
+  return {
+    dispatchCount,
+    pipelines,
+    bindGroups,
+    bindGroupCounts,
+    dispatchDims,
+    copyBuffers: [last.s, last.d],
+    copyOffsetsAndSize,
+  };
+}
+
+function submitNodeLazyPackedOrBatched(queueNative, deviceNative, commands) {
+  const packed = packNodeLazySubmitCommands(commands);
+  if (packed) {
+    const addonBreakdown = addon.submitPackedDispatchBatch(
+      queueNative,
+      packed.dispatchCount,
+      packed.pipelines,
+      packed.bindGroups,
+      packed.bindGroupCounts,
+      packed.dispatchDims,
+      packed.copyBuffers,
+      packed.copyOffsetsAndSize,
+    );
+    if (addonBreakdown) {
+      return addonBreakdown;
+    }
+  }
+  return addon.submitBatched(deviceNative, queueNative, commands);
 }
 
 function canFinishNodeLazyDispatchCopyCommandsAsNativeBuffer(commands) {
@@ -1848,7 +1958,7 @@ const fullSurfaceBackend = {
         return;
       }
       const addonStartedAt = performance.now();
-      const addonBreakdown = addon.submitBatched(deviceNative, queueNative, cmds);
+      const addonBreakdown = submitNodeLazyPackedOrBatched(queueNative, deviceNative, cmds);
       accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
       accumulateAddonSubmitBreakdown(queue, addonBreakdown);
       if (addonSubmitBreakdownIndicatesNativeDispatchSubmit(addonBreakdown)) {
@@ -1883,7 +1993,7 @@ const fullSurfaceBackend = {
         return;
       }
       const addonStartedAt = performance.now();
-      const addonBreakdown = addon.submitBatched(deviceNative, queueNative, allCommands);
+      const addonBreakdown = submitNodeLazyPackedOrBatched(queueNative, deviceNative, allCommands);
       accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
       accumulateAddonSubmitBreakdown(queue, addonBreakdown);
       if (addonSubmitBreakdownIndicatesNativeDispatchSubmit(addonBreakdown)) {
