@@ -3,6 +3,49 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — AMD Vulkan resident package configs are explicit and diagnostic
+
+AMD Vulkan now has explicit resident-buffer-load warm package configs for the
+Gemma 3 270M decode package shape on Bun, Node WebGPU wrapper, and Node
+native-direct. These configs mirror the existing resident contract: both sides
+use prepared-session executors with `_prepared_resident_buffer_loads`, preload
+static file-backed buffer loads before selected timing, and let strict compare
+enforce resident mode and resident preload shape matching.
+
+The new rows are strict-comparable but remain diagnostic. The local claim
+sidecars keep them out of claimable status because selected operation timing
+tails are not positive across the required percentiles. The diagnostic split
+continues to point at Doe Vulkan replay preparation / submit work as the next
+runtime target, not a harness-side timing-scope change. Two code probes were
+not kept: a Node flat-batch N-API submit ABI increased Node package prep cost,
+and replacing descriptor-update scratch `ArrayListUnmanaged` allocations with
+bounded stack arrays did not improve Vulkan replay preparation.
+
+Configs:
+
+- `bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.decode.resident.warm.ir.json`
+- `bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json`
+- `bench/native-compare/compare.config.amd.vulkan.gemma270m.node.direct.decode.resident.warm.ir.json`
+
+Artifacts:
+
+- Bun resident compare:
+  `bench/out/amd-vulkan/20260608T162858Z/gemma270m.bun-package.decode.resident.warm.ir.compare.json`
+- Bun resident claim:
+  `bench/out/amd-vulkan/20260608T162858Z/gemma270m.bun-package.decode.resident.warm.ir.claim.json`
+- Node resident compare:
+  `bench/out/amd-vulkan/20260608T162947Z/gemma270m.node-package.decode.resident.warm.ir.compare.json`
+- Node resident claim:
+  `bench/out/amd-vulkan/20260608T162947Z/gemma270m.node-package.decode.resident.warm.ir.claim.json`
+- Node native-direct resident compare:
+  `bench/out/amd-vulkan/20260608T163309Z/gemma270m.node.direct.decode.resident.warm.ir.compare.json`
+- Node native-direct resident claim:
+  `bench/out/amd-vulkan/20260608T163309Z/gemma270m.node.direct.decode.resident.warm.ir.claim.json`
+- Node resident submit-breakdown probe:
+  `bench/out/amd-vulkan/20260608T163040Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T163040Z.run.json`
+- Rejected descriptor-scratch probe:
+  `bench/out/amd-vulkan/20260608T163544Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T163544Z.run.json`
+
 ## 2026-06-08 — Vulkan replay copy-prefix fusion remains diagnostic
 
 Vulkan package replay now finalizes pending streaming `queue.writeBuffer`
