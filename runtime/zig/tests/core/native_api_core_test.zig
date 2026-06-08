@@ -356,6 +356,11 @@ test "DoeBindGroup: default fields are initialized" {
     for (bg.offsets) |o| {
         try std.testing.expectEqual(@as(u64, 0), o);
     }
+    try std.testing.expectEqual(@as(u64, 0), bg.vk_buffer_binding_mask);
+    try std.testing.expectEqual(false, bg.vk_buffer_binding_cache_complete);
+    for (bg.vk_buffer_handles) |handle| {
+        try std.testing.expectEqual(@as(u64, 0), handle);
+    }
 }
 
 // ============================================================

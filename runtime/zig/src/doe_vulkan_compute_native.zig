@@ -331,10 +331,16 @@ fn append_bind_group_binding_at_slot(
     if (group_index >= bind_groups.len) return;
     const bg = bind_groups[group_index] orelse return;
     if (binding_index >= bg.count) return;
-    const raw_ptr = bg.buffers[binding_index] orelse return;
-    const buf = cast(DoeBuffer, raw_ptr) orelse return;
-    if (buf.error_object) return;
-    if (buf.vk_id == 0) return;
+    const binding_bit = @as(u64, 1) << @intCast(binding_index);
+    const resource_handle = if ((bg.vk_buffer_binding_mask & binding_bit) != 0)
+        bg.vk_buffer_handles[binding_index]
+    else blk: {
+        const raw_ptr = bg.buffers[binding_index] orelse return;
+        const buf = cast(DoeBuffer, raw_ptr) orelse return;
+        if (buf.error_object) return;
+        break :blk buf.vk_id;
+    };
+    if (resource_handle == 0) return;
     if (count.* >= out_bindings.len) return;
     const group_u32: u32 = @intCast(group_index);
     const binding_u32: u32 = @intCast(binding_index);
@@ -342,7 +348,7 @@ fn append_bind_group_binding_at_slot(
         .group = group_u32,
         .binding = binding_u32,
         .resource_kind = .buffer,
-        .resource_handle = buf.vk_id,
+        .resource_handle = resource_handle,
         .buffer_offset = bg.offsets[binding_index],
         .buffer_size = bg.buffer_sizes[binding_index],
         .buffer_type = if (pip.vk_flat_buffer_binding_types_ready)
@@ -383,6 +389,23 @@ fn collect_bind_group_bindings(
     }
     for (bind_groups, 0..) |maybe_bg, group_index| {
         const bg = maybe_bg orelse continue;
+        if (bg.vk_buffer_binding_cache_complete and bg.vk_buffer_binding_mask != 0) {
+            var mask = bg.vk_buffer_binding_mask;
+            while (mask != 0 and count < out_bindings.len) {
+                const binding_index: usize = @intCast(@ctz(mask));
+                mask &= mask - 1;
+                append_bind_group_binding_at_slot(
+                    pip,
+                    bind_groups,
+                    (group_index * MAX_BIND) + binding_index,
+                    out_bindings,
+                    &count,
+                    &flat_mask,
+                    &descriptor_hasher,
+                );
+            }
+            continue;
+        }
         const binding_count: usize = @min(@as(usize, @intCast(bg.count)), MAX_BIND);
         for (0..binding_count) |binding_index| {
             append_bind_group_binding_at_slot(
@@ -397,6 +420,79 @@ fn collect_bind_group_bindings(
         }
     }
     return .{ .count = count, .flat_mask = flat_mask, .descriptor_hash = descriptor_hasher.final() };
+}
+
+test "collect_bind_group_bindings cached handles match fallback slots" {
+    var pip = DoeComputePipeline{ .vk_flat_buffer_binding_types_ready = true };
+    pip.vk_flat_buffer_binding_types[1] = model_binding_types.WGPUBufferBindingType_Uniform;
+    pip.vk_flat_buffer_binding_types[MAX_BIND + 2] = model_binding_types.WGPUBufferBindingType_Storage;
+
+    var buffer_a = DoeBuffer{ .vk_id = 11, .size = 128 };
+    var buffer_b = DoeBuffer{ .vk_id = 22, .size = 256 };
+
+    var fallback_group0 = DoeBindGroup{ .count = 2 };
+    fallback_group0.buffers[1] = native_helpers.toOpaque(&buffer_a);
+    fallback_group0.offsets[1] = 4;
+    fallback_group0.buffer_sizes[1] = 64;
+    var fallback_group1 = DoeBindGroup{ .count = 3 };
+    fallback_group1.buffers[2] = native_helpers.toOpaque(&buffer_b);
+    fallback_group1.offsets[2] = 8;
+    fallback_group1.buffer_sizes[2] = 128;
+
+    var cached_group0 = fallback_group0;
+    cached_group0.vk_buffer_handles[1] = buffer_a.vk_id;
+    cached_group0.vk_buffer_binding_mask = @as(u64, 1) << 1;
+    cached_group0.vk_buffer_binding_cache_complete = true;
+    var cached_group1 = fallback_group1;
+    cached_group1.vk_buffer_handles[2] = buffer_b.vk_id;
+    cached_group1.vk_buffer_binding_mask = @as(u64, 1) << 2;
+    cached_group1.vk_buffer_binding_cache_complete = true;
+
+    var fallback_groups = [_]?*DoeBindGroup{ &fallback_group0, &fallback_group1 };
+    var cached_groups = [_]?*DoeBindGroup{ &cached_group0, &cached_group1 };
+    var fallback_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
+    var cached_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
+
+    const fallback_result = collect_bind_group_bindings(&pip, fallback_groups[0..], &fallback_storage);
+    const cached_result = collect_bind_group_bindings(&pip, cached_groups[0..], &cached_storage);
+
+    try std.testing.expectEqual(fallback_result.count, cached_result.count);
+    try std.testing.expectEqual(fallback_result.flat_mask, cached_result.flat_mask);
+    try std.testing.expectEqual(fallback_result.descriptor_hash, cached_result.descriptor_hash);
+    try std.testing.expectEqualSlices(
+        model_compute_types.KernelBinding,
+        fallback_storage[0..fallback_result.count],
+        cached_storage[0..cached_result.count],
+    );
+    try std.testing.expectEqual((@as(u64, 1) << 1) | (@as(u64, 1) << (MAX_BIND + 2)), cached_result.flat_mask);
+}
+
+test "collect_bind_group_bindings partial cache scans uncached buffers" {
+    var pip = DoeComputePipeline{ .vk_flat_buffer_binding_types_ready = true };
+    pip.vk_flat_buffer_binding_types[1] = model_binding_types.WGPUBufferBindingType_Uniform;
+    pip.vk_flat_buffer_binding_types[2] = model_binding_types.WGPUBufferBindingType_Storage;
+
+    var buffer_a = DoeBuffer{ .vk_id = 31, .size = 128 };
+    var buffer_b = DoeBuffer{ .vk_id = 32, .size = 256 };
+
+    var group = DoeBindGroup{ .count = 3 };
+    group.buffers[1] = native_helpers.toOpaque(&buffer_a);
+    group.offsets[1] = 4;
+    group.buffer_sizes[1] = 64;
+    group.vk_buffer_handles[1] = buffer_a.vk_id;
+    group.vk_buffer_binding_mask = @as(u64, 1) << 1;
+    group.buffers[2] = native_helpers.toOpaque(&buffer_b);
+    group.offsets[2] = 8;
+    group.buffer_sizes[2] = 128;
+
+    var groups = [_]?*DoeBindGroup{&group};
+    var storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
+    const result = collect_bind_group_bindings(&pip, groups[0..], &storage);
+
+    try std.testing.expectEqual(@as(usize, 2), result.count);
+    try std.testing.expectEqual((@as(u64, 1) << 1) | (@as(u64, 1) << 2), result.flat_mask);
+    try std.testing.expectEqual(@as(u64, 31), storage[0].resource_handle);
+    try std.testing.expectEqual(@as(u64, 32), storage[1].resource_handle);
 }
 
 fn use_static_pipeline_hash(
@@ -429,7 +525,7 @@ fn prepare_pipeline_bindings(
     pip: *const DoeComputePipeline,
     spirv: []const u32,
     binding_result: BindingCollection,
-    binding_storage: []model_compute_types.KernelBinding,
+    binding_storage: []const model_compute_types.KernelBinding,
 ) bool {
     const bindings_slice = binding_storage[0..binding_result.count];
     const bindings: ?[]const model_compute_types.KernelBinding = if (binding_result.count > 0)

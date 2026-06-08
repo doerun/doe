@@ -198,6 +198,9 @@ pub const DoeBindGroup = struct {
     retained_external_textures: [shared.MAX_BIND]abi_core.WGPUExternalTexture = [_]abi_core.WGPUExternalTexture{null} ** shared.MAX_BIND,
     offsets: [shared.MAX_BIND]u64 = [_]u64{0} ** shared.MAX_BIND,
     buffer_sizes: [shared.MAX_BIND]u64 = [_]u64{0} ** shared.MAX_BIND,
+    vk_buffer_handles: [shared.MAX_BIND]u64 = [_]u64{0} ** shared.MAX_BIND,
+    vk_buffer_binding_mask: u64 = 0,
+    vk_buffer_binding_cache_complete: bool = false,
     count: u32 = 0,
 };
 

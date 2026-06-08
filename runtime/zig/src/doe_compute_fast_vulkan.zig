@@ -31,6 +31,22 @@ fn monotonicNowNs() u64 {
 
 const BindGroupArray = [MAX_COMPUTE_BIND_GROUPS]?*DoeBindGroup;
 
+fn samePreparedDispatch(
+    previous_pipe: ?*DoeComputePipeline,
+    previous_bind_groups: *const BindGroupArray,
+    previous_bg_count: u32,
+    pipe: *DoeComputePipeline,
+    bind_groups: *const BindGroupArray,
+    bg_count: u32,
+) bool {
+    if (previous_pipe != pipe) return false;
+    if (previous_bg_count != bg_count) return false;
+    for (0..@intCast(bg_count)) |i| {
+        if (previous_bind_groups[i] != bind_groups[i]) return false;
+    }
+    return true;
+}
+
 fn validatedBindGroups(
     pipe: *DoeComputePipeline,
     bg_ptrs: [*]const ?*anyopaque,
@@ -141,6 +157,9 @@ pub fn dispatchBatchCopyFlush(
 
     const replay_started_ns = monotonicNowNs();
     var executed_any_dispatch = false;
+    var prepared_pipe: ?*DoeComputePipeline = null;
+    var prepared_bind_groups: BindGroupArray = [_]?*DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
+    var prepared_bg_count: u32 = 0;
     for (0..dispatch_count) |index| {
         const pipe = native_helpers.cast(DoeComputePipeline, pipe_ptrs[index]) orelse continue;
         const bg_offset = index * MAX_COMPUTE_BIND_GROUPS;
@@ -154,9 +173,16 @@ pub fn dispatchBatchCopyFlush(
             dispatch_dims[dim_offset + 2],
         ) orelse continue;
         const prepare_started_ns = monotonicNowNs();
-        if (!vulkan_compute.vulkan_prepare_dispatch_bind_groups(rt, pipe, bind_groups[0..])) {
-            timings.command_replay_prepare_ns += monotonicNowNs() - prepare_started_ns;
-            continue;
+        const bg_count = @min(bg_counts[index], MAX_COMPUTE_BIND_GROUPS);
+        if (!samePreparedDispatch(prepared_pipe, &prepared_bind_groups, prepared_bg_count, pipe, &bind_groups, bg_count)) {
+            prepared_pipe = null;
+            if (!vulkan_compute.vulkan_prepare_dispatch_bind_groups(rt, pipe, bind_groups[0..])) {
+                timings.command_replay_prepare_ns += monotonicNowNs() - prepare_started_ns;
+                continue;
+            }
+            prepared_pipe = pipe;
+            prepared_bind_groups = bind_groups;
+            prepared_bg_count = bg_count;
         }
         timings.command_replay_prepare_ns += monotonicNowNs() - prepare_started_ns;
         const record_started_ns = monotonicNowNs();
@@ -195,4 +221,23 @@ pub fn dispatchBatchCopyFlush(
         timings.queue_submit_driver_submit_ns = submit_timings.driver_submit_ns;
     }
     return timings;
+}
+
+test "samePreparedDispatch requires same pipeline, count, and bind groups" {
+    var pipe_a = DoeComputePipeline{};
+    var pipe_b = DoeComputePipeline{};
+    var group_a = DoeBindGroup{};
+    var group_b = DoeBindGroup{};
+    var left: BindGroupArray = [_]?*DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
+    var right = left;
+    left[0] = &group_a;
+    left[1] = &group_b;
+    right[0] = &group_a;
+    right[1] = &group_b;
+
+    try std.testing.expect(samePreparedDispatch(&pipe_a, &left, 2, &pipe_a, &right, 2));
+    try std.testing.expect(!samePreparedDispatch(&pipe_a, &left, 2, &pipe_b, &right, 2));
+    try std.testing.expect(!samePreparedDispatch(&pipe_a, &left, 2, &pipe_a, &right, 1));
+    right[1] = &group_a;
+    try std.testing.expect(!samePreparedDispatch(&pipe_a, &left, 2, &pipe_a, &right, 2));
 }

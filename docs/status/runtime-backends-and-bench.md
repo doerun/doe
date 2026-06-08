@@ -3,6 +3,44 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan package replay caches are strict but still diagnostic
+
+Vulkan package replay now caches immutable Vulkan buffer ids on bind groups and
+reuses consecutive prepared dispatch state when the pipeline and bind-group
+objects are unchanged. The replay path still records every dispatch, preserves
+descriptor hashing from resource handles, offsets, and sizes, and keeps
+compute-write tracking/barrier capture on every recorded dispatch.
+
+The final AMD Vulkan Gemma64 warm package rows on both Bun and Node remain
+strict-comparable but diagnostic. The local claim sidecars keep both rows out
+of claimable status because selected operation timing tails are not positive.
+The latest breakdown still points at Vulkan submit/replay work as the next
+optimization front rather than a harness fairness issue.
+
+Artifacts:
+
+- Bun compare:
+  `bench/out/amd-vulkan/20260608T150640Z/gemma64.bun-package.warm.ir.bindgroup-prepared-reuse.same-window.compare.json`
+- Bun claim:
+  `bench/out/amd-vulkan/20260608T150640Z/gemma64.bun-package.warm.ir.bindgroup-prepared-reuse.same-window.claim.json`
+- Bun Doe receipt:
+  `bench/out/amd-vulkan/20260608T150640Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T150640Z.run.json`
+- Node compare:
+  `bench/out/amd-vulkan/20260608T150727Z/gemma64.node-package.warm.ir.bindgroup-prepared-reuse.same-window.compare.json`
+- Node claim:
+  `bench/out/amd-vulkan/20260608T150727Z/gemma64.node-package.warm.ir.bindgroup-prepared-reuse.same-window.claim.json`
+- Node Doe receipt:
+  `bench/out/amd-vulkan/20260608T150727Z/gemma64.node-package.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T150727Z.run.json`
+- Submit breakdown probe:
+  `bench/out/amd-vulkan/20260608T145918Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T145918Z.run.json`
+
+Validation:
+
+- `zig build test` from `runtime/zig`
+- `zig build dropin-full -Doptimize=ReleaseFast` from `runtime/zig`
+- `npm --prefix packages/doe-gpu run build:addon`
+- `git diff --check`
+
 ## 2026-06-08 — Vulkan package sync policy and replay prep stay diagnostic
 
 Vulkan deferred-submit synchronization is now a manifest-backed policy. The

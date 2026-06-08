@@ -221,6 +221,12 @@ fn retain_buffer(bg: *DoeBindGroup, binding: usize, buffer: *DoeBuffer) void {
     bg.retained_buffers[binding] = buffer;
 }
 
+fn remember_vulkan_buffer_binding(bg: *DoeBindGroup, binding: usize, buffer: *const DoeBuffer) void {
+    if (buffer.vk_id == 0) return;
+    bg.vk_buffer_handles[binding] = buffer.vk_id;
+    bg.vk_buffer_binding_mask |= @as(u64, 1) << @intCast(binding);
+}
+
 fn resolve_buffer_binding_size(buffer: *const DoeBuffer, offset: u64, requested_size: u64) ?u64 {
     if (offset > buffer.size) return null;
     if (requested_size == abi_core.WGPU_WHOLE_SIZE) return buffer.size - offset;
@@ -378,6 +384,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                 if (is_vulkan) {
                     // Store the DoeBuffer handle — dispatch reads vk_id from it.
                     bg.buffers[e.binding] = toOpaque(doe_buf);
+                    remember_vulkan_buffer_binding(bg, @intCast(e.binding), doe_buf);
                 } else {
                     bg.buffers[e.binding] = doe_buf.mtl;
                 }
@@ -420,6 +427,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
             if (e.binding + 1 > bg.count) bg.count = e.binding + 1;
         }
     }
+    if (is_vulkan) bg.vk_buffer_binding_cache_complete = true;
     const bg_result = toOpaque(bg);
     label_store.set(bg_result, d.label.data, d.label.length);
     return bg_result;
@@ -463,11 +471,13 @@ pub export fn doeNativeDeviceCreateBufferBindGroupFlat4(
             return null;
         }
         bg.buffers[binding] = if (is_vulkan) toOpaque(doe_buf) else doe_buf.mtl;
+        if (is_vulkan) remember_vulkan_buffer_binding(bg, @intCast(binding), doe_buf);
         bg.offsets[binding] = offsets[i];
         bg.buffer_sizes[binding] = doe_buf.size;
         retain_buffer(bg, binding, doe_buf);
         if (binding + 1 > bg.count) bg.count = binding + 1;
     }
+    if (is_vulkan) bg.vk_buffer_binding_cache_complete = true;
     return toOpaque(bg);
 }
 
