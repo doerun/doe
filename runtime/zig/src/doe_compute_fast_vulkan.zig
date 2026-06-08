@@ -26,6 +26,16 @@ pub const DispatchBatchCopyFlushTimings = struct {
     queue_submit_driver_submit_ns: u64 = 0,
 };
 
+pub fn populateRecordedDispatchBindingState(pipe: *DoeComputePipeline, dispatch: anytype) void {
+    if (pipe.spirv_data == null) return;
+    dispatch.vulkan_binding_state = vulkan_compute.vulkan_collect_recorded_binding_state(
+        pipe,
+        dispatch.bufs[0..dispatch.buf_count],
+        dispatch.buf_offsets[0..dispatch.buf_count],
+        dispatch.buf_sizes[0..dispatch.buf_count],
+    );
+}
+
 fn monotonicNowNs() u64 {
     return @intCast(std.time.nanoTimestamp());
 }

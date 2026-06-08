@@ -1,4 +1,5 @@
 const shared = @import("doe_native_shared_types.zig");
+const model_compute_types = @import("model_compute_types.zig");
 
 pub const DeferredCopy = struct {
     src: [*]const u8,
@@ -19,6 +20,14 @@ pub const DeferredResolve = struct {
 };
 
 pub const MAX_DEFERRED_RESOLVES: u32 = 8;
+
+pub const RecordedVulkanBindingState = struct {
+    valid: bool = false,
+    count: usize = 0,
+    flat_mask: u64 = 0,
+    descriptor_hash: u64 = 0,
+    bindings: [shared.MAX_FLAT_BIND]model_compute_types.KernelBinding = undefined,
+};
 
 pub const CmdTag = enum {
     dispatch,
@@ -42,6 +51,7 @@ pub const RecordedCmd = union(CmdTag) {
         buf_offsets: [shared.MAX_FLAT_BIND]u64,
         buf_sizes: [shared.MAX_FLAT_BIND]u64,
         buf_count: u32,
+        vulkan_binding_state: RecordedVulkanBindingState = .{},
         x: u32,
         y: u32,
         z: u32,
@@ -57,6 +67,7 @@ pub const RecordedCmd = union(CmdTag) {
         buf_offsets: [shared.MAX_FLAT_BIND]u64,
         buf_sizes: [shared.MAX_FLAT_BIND]u64,
         buf_count: u32,
+        vulkan_binding_state: RecordedVulkanBindingState = .{},
         indirect_buf: ?*anyopaque,
         offset: u64,
         wg_x: u32 = 0,

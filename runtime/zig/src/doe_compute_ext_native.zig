@@ -8,6 +8,7 @@ const native_cmds = @import("doe_native_command_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
+const vulkan_compute = @import("doe_vulkan_compute_native.zig");
 const shader_native = @import("doe_shader_native.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const resource_ops = @import("backend/dropin_resource_ops.zig");
@@ -153,6 +154,14 @@ fn appendRecordedDispatch(pass: *DoeComputePass, pip: *DoeComputePipeline, x: u3
         &cmd.dispatch.buf_offsets,
         &cmd.dispatch.buf_sizes,
     );
+    if (pip.spirv_data != null) {
+        cmd.dispatch.vulkan_binding_state = vulkan_compute.vulkan_collect_recorded_binding_state(
+            pip,
+            cmd.dispatch.bufs[0..cmd.dispatch.buf_count],
+            cmd.dispatch.buf_offsets[0..cmd.dispatch.buf_count],
+            cmd.dispatch.buf_sizes[0..cmd.dispatch.buf_count],
+        );
+    }
     pass.enc.cmds.append(alloc, cmd) catch
         std.debug.panic("doe_compute_ext_native: OOM recording dispatch command", .{});
 }
@@ -287,6 +296,14 @@ pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_ra
         &cmd.dispatch_indirect.buf_offsets,
         &cmd.dispatch_indirect.buf_sizes,
     );
+    if (pip.spirv_data != null) {
+        cmd.dispatch_indirect.vulkan_binding_state = vulkan_compute.vulkan_collect_recorded_binding_state(
+            pip,
+            cmd.dispatch_indirect.bufs[0..cmd.dispatch_indirect.buf_count],
+            cmd.dispatch_indirect.buf_offsets[0..cmd.dispatch_indirect.buf_count],
+            cmd.dispatch_indirect.buf_sizes[0..cmd.dispatch_indirect.buf_count],
+        );
+    }
     pass.enc.cmds.append(alloc, cmd) catch
         std.debug.panic("doe_compute_ext_native: OOM recording indirect dispatch command", .{});
 }

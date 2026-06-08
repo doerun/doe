@@ -3,6 +3,32 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Bun FFI Vulkan lazy dispatch routes through Vulkan replay
+
+Vulkan recorded command payloads now carry a captured binding-state snapshot at
+record time. Queue-submit replay can consume that snapshot directly while still
+falling back to the prior flat-buffer collector when older command payloads do
+not provide one. Descriptor hashes remain derived from the actual buffer
+handles, offsets, sizes, and binding access metadata, so synchronization tracking
+continues to see the resources that the recorded dispatch used.
+
+Bun FFI also no longer sends Linux/Vulkan lazy compute dispatch flushes through
+the Metal-only direct path. The direct flush entry point delegates Vulkan work to
+the existing Vulkan batch replay path, preserving the fast-path shape while
+executing real Vulkan dispatch and copy work. This is a correctness and replay
+plumbing change, not a promoted Dawn-vs-Doe performance claim.
+
+Validation:
+
+- `zig fmt runtime/zig/src/doe_native_command_types.zig runtime/zig/src/doe_vulkan_compute_native.zig runtime/zig/src/doe_compute_ext_native.zig runtime/zig/src/doe_compute_fast.zig runtime/zig/src/doe_compute_fast_vulkan.zig`
+- `zig build test` from `runtime/zig`
+- `zig build dropin-full` from `runtime/zig`
+- `zig build dropin` from `runtime/zig`
+- `npm --prefix packages/doe-gpu run build:addon`
+- `git diff --check`
+- Node native zero-dispatch repro with the rebuilt `runtime/zig/zig-out/lib/libwebgpu_doe.so`
+- Bun FFI lazy command-buffer smoke with the rebuilt `runtime/zig/zig-out/lib/libwebgpu_doe.so`
+
 ## 2026-06-08 — Vulkan replay copy barrier narrowed, package rows still diagnostic
 
 Vulkan recorded-submit replay now carries source and destination buffer handles

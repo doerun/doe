@@ -11,6 +11,7 @@ const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const shader_translation_cache = @import("doe_shader_translation_cache.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
+const native_cmds = @import("doe_native_command_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const bind_group_native = @import("doe_bind_group_native.zig");
 const model_compute_types = @import("model_compute_types.zig");
@@ -475,6 +476,21 @@ fn collect_recorded_bindings(
     return .{ .count = count, .flat_mask = flat_mask, .descriptor_hash = descriptor_hasher.final() };
 }
 
+pub fn vulkan_collect_recorded_binding_state(
+    pip: *const DoeComputePipeline,
+    bufs: []const ?*anyopaque,
+    buf_offsets: []const u64,
+    buf_sizes: []const u64,
+) native_cmds.RecordedVulkanBindingState {
+    var state = native_cmds.RecordedVulkanBindingState{};
+    const binding_result = collect_recorded_bindings(pip, bufs, buf_offsets, buf_sizes, &state.bindings);
+    state.valid = true;
+    state.count = binding_result.count;
+    state.flat_mask = binding_result.flat_mask;
+    state.descriptor_hash = binding_result.descriptor_hash;
+    return state;
+}
+
 fn append_bind_group_binding_at_slot(
     pip: *const DoeComputePipeline,
     bind_groups: []const ?*DoeBindGroup,
@@ -796,6 +812,15 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
         return false;
     };
     const spirv = pipeline_spirv_or_log(pip) orelse return false;
+    if (dispatch.vulkan_binding_state.valid) {
+        const state = dispatch.vulkan_binding_state;
+        const binding_result = BindingCollection{
+            .count = state.count,
+            .flat_mask = state.flat_mask,
+            .descriptor_hash = state.descriptor_hash,
+        };
+        return prepare_pipeline_bindings(rt, pip, spirv, binding_result, state.bindings[0..state.count]);
+    }
     var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
     const binding_result = collect_recorded_bindings(
         pip,

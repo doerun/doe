@@ -341,6 +341,7 @@ fn appendRecordedDispatch(
         &cmd.dispatch.buf_offsets,
         &cmd.dispatch.buf_sizes,
     );
+    vulkan_fast.populateRecordedDispatchBindingState(pipe, &cmd.dispatch);
     cmds.append(alloc, cmd) catch std.debug.panic("doe_compute_fast: OOM recording dispatch command", .{});
     return true;
 }
@@ -495,6 +496,14 @@ fn computeDispatchFlushDirect(
     resetDirectDispatchFlushBreakdown(breakdown);
     const q = native_helpers.cast(native_types.DoeQueue, q_raw) orelse return;
     const pipe = native_helpers.cast(native_types.DoeComputePipeline, pipe_raw) orelse return;
+    if (q.dev.backend == .vulkan) {
+        var pipe_ptrs = [_]?*anyopaque{toOpaque(pipe)};
+        var bg_counts = [_]u32{@min(bg_count, MAX_COMPUTE_BIND_GROUPS)};
+        var dispatch_dims = [_]u32{ dx, dy, dz };
+        computeDispatchBatchCopyFlushDirect(q_raw, 1, &pipe_ptrs, bg_ptrs, &bg_counts, &dispatch_dims, copy_src, copy_src_off, copy_dst, copy_dst_off, copy_size, breakdown);
+        return;
+    }
+    if (q.dev.backend != .metal) return;
     const before_submit_flush_started_ns = monotonicNowNs();
     const before_submit_flush = queue_submit.flush_before_submit_if_needed_timed(q);
     addDirectDispatchFlushField(
