@@ -3,6 +3,43 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan package replay preparation cache
+
+The Vulkan package fast path now reuses prepared pipeline and descriptor state
+for consecutive compute dispatches when the pipeline handle, bind-group handle
+sequence, bind-group count, and dispatch dimensions are identical. Every
+dispatch is still recorded and submitted; the cache only skips duplicate host
+preparation for the same command shape inside a packed submit batch.
+
+Node and Bun Gemma64 warm package receipts remain strict-comparable
+diagnostics, not claimable wins. A submit-breakdown diagnostic was used to
+verify that the remaining Node loss is concentrated in replay preparation and
+driver submit work; submit-breakdown telemetry stays out of the claim-path
+command templates.
+
+Artifacts:
+
+- Node replay-cache compare:
+  `bench/out/amd-vulkan/20260608T074703Z/gemma64.node-package.warm.ir.prepare-cache.same-window.compare.json`
+- Node replay-cache claim:
+  `bench/out/amd-vulkan/20260608T074703Z/gemma64.node-package.warm.ir.prepare-cache.same-window.claim.json`
+- Bun replay-cache compare:
+  `bench/out/amd-vulkan/20260608T074812Z/gemma64.bun-package.warm.ir.prepare-cache.same-window.compare.json`
+- Bun replay-cache claim:
+  `bench/out/amd-vulkan/20260608T074812Z/gemma64.bun-package.warm.ir.prepare-cache.same-window.claim.json`
+- Node submit-breakdown diagnostic receipt:
+  `bench/out/amd-vulkan/20260608T074338Z/gemma64.node-package.warm.ir.submit-breakdown-diagnostic.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T074338Z.run.json`
+- Node replay-cache submit-breakdown diagnostic receipt:
+  `bench/out/amd-vulkan/20260608T074616Z/gemma64.node-package.warm.ir.prepare-cache-diagnostic.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T074616Z.run.json`
+
+Validation:
+
+- `zig build dropin -Doptimize=ReleaseFast --summary all` from
+  `runtime/zig`
+- Structural-equivalence, timing-policy, comparability-coherence, comparable
+  runtime-invariant, and claim checks for the Node and Bun replay-cache
+  artifacts listed above.
+
 ## 2026-06-08 — Vulkan readback and Node packed-submit package path
 
 The Vulkan drop-in readback helper now uses an already-mapped Vulkan

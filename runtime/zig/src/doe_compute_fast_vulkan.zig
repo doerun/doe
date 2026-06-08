@@ -18,6 +18,60 @@ const MAX_COMPUTE_BIND_GROUPS = native_shared.MAX_COMPUTE_BIND_GROUPS;
 const MAX_FLAT_BIND = native_shared.MAX_FLAT_BIND;
 const toOpaque = native_helpers.toOpaque;
 
+const DispatchReplayCache = struct {
+    valid: bool = false,
+    pipeline: ?*anyopaque = null,
+    bg_count: u32 = 0,
+    bg_ptrs: [MAX_COMPUTE_BIND_GROUPS]?*anyopaque = [_]?*anyopaque{null} ** MAX_COMPUTE_BIND_GROUPS,
+    x: u32 = 0,
+    y: u32 = 0,
+    z: u32 = 0,
+    cmd: RecordedCmd = undefined,
+
+    fn matches(
+        self: *const DispatchReplayCache,
+        pipeline: ?*anyopaque,
+        bg_slice: [*]const ?*anyopaque,
+        bg_count: u32,
+        x: u32,
+        y: u32,
+        z: u32,
+    ) bool {
+        if (!self.valid or self.pipeline != pipeline or self.bg_count != bg_count) return false;
+        if (self.x != x or self.y != y or self.z != z) return false;
+        for (0..@as(usize, @intCast(bg_count))) |index| {
+            if (self.bg_ptrs[index] != bg_slice[index]) return false;
+        }
+        return true;
+    }
+
+    fn remember(
+        self: *DispatchReplayCache,
+        pipeline: ?*anyopaque,
+        bg_slice: [*]const ?*anyopaque,
+        bg_count: u32,
+        x: u32,
+        y: u32,
+        z: u32,
+        cmd: RecordedCmd,
+    ) void {
+        self.valid = true;
+        self.pipeline = pipeline;
+        self.bg_count = bg_count;
+        self.x = x;
+        self.y = y;
+        self.z = z;
+        self.cmd = cmd;
+        for (0..MAX_COMPUTE_BIND_GROUPS) |index| {
+            self.bg_ptrs[index] = if (index < bg_count) bg_slice[index] else null;
+        }
+    }
+
+    fn invalidate(self: *DispatchReplayCache) void {
+        self.valid = false;
+    }
+};
+
 pub const DispatchBatchCopyFlushTimings = struct {
     command_replay_ns: u64 = 0,
     command_replay_prepare_ns: u64 = 0,
@@ -165,24 +219,49 @@ pub fn dispatchBatchCopyFlush(
 
     const replay_started_ns = monotonicNowNs();
     var executed_any_dispatch = false;
+    var replay_cache = DispatchReplayCache{};
     for (0..dispatch_count) |index| {
-        const pipe = native_helpers.cast(DoeComputePipeline, pipe_ptrs[index]) orelse continue;
+        const pipe_raw = pipe_ptrs[index];
+        const pipe = native_helpers.cast(DoeComputePipeline, pipe_raw) orelse {
+            replay_cache.invalidate();
+            continue;
+        };
         const bg_offset = index * MAX_COMPUTE_BIND_GROUPS;
         const dim_offset = index * 3;
+        const bg_count = bg_counts[index];
+        const x = dispatch_dims[dim_offset];
+        const y = dispatch_dims[dim_offset + 1];
+        const z = dispatch_dims[dim_offset + 2];
+        if (bg_count <= MAX_COMPUTE_BIND_GROUPS and replay_cache.matches(pipe_raw, bg_ptrs + bg_offset, bg_count, x, y, z)) {
+            const record_started_ns = monotonicNowNs();
+            vulkan_compute.vulkan_run_prepared_dispatch(rt, replay_cache.cmd.dispatch);
+            timings.command_replay_record_ns += monotonicNowNs() - record_started_ns;
+            executed_any_dispatch = true;
+            continue;
+        }
         const cmd = recordedDispatch(
             pipe,
             bg_ptrs + bg_offset,
-            bg_counts[index],
-            dispatch_dims[dim_offset],
-            dispatch_dims[dim_offset + 1],
-            dispatch_dims[dim_offset + 2],
-        ) orelse continue;
+            bg_count,
+            x,
+            y,
+            z,
+        ) orelse {
+            replay_cache.invalidate();
+            continue;
+        };
         const prepare_started_ns = monotonicNowNs();
         if (!vulkan_compute.vulkan_prepare_recorded_dispatch(rt, cmd.dispatch)) {
             timings.command_replay_prepare_ns += monotonicNowNs() - prepare_started_ns;
+            replay_cache.invalidate();
             continue;
         }
         timings.command_replay_prepare_ns += monotonicNowNs() - prepare_started_ns;
+        if (bg_count <= MAX_COMPUTE_BIND_GROUPS) {
+            replay_cache.remember(pipe_raw, bg_ptrs + bg_offset, bg_count, x, y, z, cmd);
+        } else {
+            replay_cache.invalidate();
+        }
         const record_started_ns = monotonicNowNs();
         vulkan_compute.vulkan_run_prepared_dispatch(rt, cmd.dispatch);
         timings.command_replay_record_ns += monotonicNowNs() - record_started_ns;
