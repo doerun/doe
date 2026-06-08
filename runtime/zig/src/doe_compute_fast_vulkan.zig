@@ -101,10 +101,7 @@ fn validatedBindGroups(
     dy: u32,
     dz: u32,
 ) ?BindGroupArray {
-    var bind_groups: BindGroupArray = [_]?*DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
-    for (0..@min(bg_count, MAX_COMPUTE_BIND_GROUPS)) |i| {
-        bind_groups[i] = native_helpers.cast(DoeBindGroup, bg_ptrs[i]);
-    }
+    const bind_groups = collectBindGroups(bg_ptrs, bg_count);
     compute_preconditions.validate_bind_groups(
         pipe.dispatch_preconditions,
         pipe.texture_dispatch_preconditions,
@@ -115,6 +112,14 @@ fn validatedBindGroups(
         std.log.err("doe_compute_fast_vulkan: dispatch precondition failed for proof-elided shader", .{});
         return null;
     };
+    return bind_groups;
+}
+
+fn collectBindGroups(bg_ptrs: [*]const ?*anyopaque, bg_count: u32) BindGroupArray {
+    var bind_groups: BindGroupArray = [_]?*DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
+    for (0..@min(bg_count, MAX_COMPUTE_BIND_GROUPS)) |i| {
+        bind_groups[i] = native_helpers.cast(DoeBindGroup, bg_ptrs[i]);
+    }
     return bind_groups;
 }
 
@@ -179,6 +184,65 @@ fn recordOrExecuteCopy(
         std.log.err("doe_compute_fast_vulkan: copy_buf failed: {s}", .{@errorName(err)});
     };
     _ = q;
+}
+
+pub fn prewarmPreparedDispatchBindings(
+    q: *DoeQueue,
+    dispatch_count: usize,
+    pipe_ptrs: [*]?*anyopaque,
+    bg_ptrs: [*]?*anyopaque,
+    bg_counts: [*]const u32,
+) u32 {
+    if (dispatch_count == 0) return 0;
+    const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return 0;
+    var prepared_cache: [BATCH_PREPARED_CACHE_CAPACITY]PreparedDispatchCacheEntry = undefined;
+    var prepared_cache_count: usize = 0;
+    var prepared_count: u32 = 0;
+    for (0..dispatch_count) |index| {
+        const pipe = native_helpers.cast(DoeComputePipeline, pipe_ptrs[index]) orelse continue;
+        const bg_count = @min(bg_counts[index], MAX_COMPUTE_BIND_GROUPS);
+        const bind_groups = collectBindGroups(bg_ptrs + (index * MAX_COMPUTE_BIND_GROUPS), bg_count);
+        const cache_index = findPreparedDispatchCache(
+            prepared_cache[0..prepared_cache_count],
+            pipe,
+            &bind_groups,
+            bg_count,
+        );
+        var state = if (cache_index) |cached_index|
+            prepared_cache[cached_index].state
+        else
+            vulkan_compute.vulkan_collect_dispatch_binding_state(pipe, bind_groups[0..]);
+        var cache_slot = cache_index;
+        if (cache_slot == null) {
+            if (findPreparedBindingStateCache(
+                prepared_cache[0..prepared_cache_count],
+                pipe,
+                &state,
+            )) |cached_index| {
+                state = prepared_cache[cached_index].state;
+                cache_slot = cached_index;
+            }
+        }
+        if (!vulkan_compute.vulkan_prepare_dispatch_binding_state(rt, pipe, &state)) continue;
+        if (cache_slot == null and prepared_cache_count < BATCH_PREPARED_CACHE_CAPACITY) {
+            prepared_cache[prepared_cache_count] = .{
+                .pipe = pipe,
+                .bind_groups = bind_groups,
+                .bg_count = bg_count,
+                .state = state,
+            };
+            prepared_cache_count += 1;
+        } else if (cache_slot) |slot| {
+            prepared_cache[slot] = .{
+                .pipe = pipe,
+                .bind_groups = bind_groups,
+                .bg_count = bg_count,
+                .state = state,
+            };
+        }
+        prepared_count += 1;
+    }
+    return prepared_count;
 }
 
 pub fn dispatchBatchCopyFlush(

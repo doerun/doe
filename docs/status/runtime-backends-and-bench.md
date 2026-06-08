@@ -3,6 +3,47 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan package dispatch prewarm is setup-only telemetry
+
+Vulkan package prepared sessions now expose a setup-only prepared-dispatch
+prewarm hook through the drop-in library, Node N-API bridge, Bun FFI bridge,
+and `doe-gpu` package surface. The hook prepares Vulkan pipeline/layout and
+descriptor state for the prepared dispatch list before selected execution
+timing starts. It does not record command buffers, submit GPU work, wait for
+completion, perform copies, skip dispatches, or fold the setup cost into
+selected operation timing. Package receipts record the hook through native
+fast-path telemetry and setup prewarm breakdown fields.
+
+The current AMD Vulkan Node and Bun package rows remain diagnostic. Strict
+claim sidecars still require selected-operation timing to win at the required
+tails before a row can become claimable. A per-bind-group dispatch-state cache
+probe was rejected after a clean diagnostic run because it did not materially
+change the selected replay-preparation target and added runtime object state.
+
+Artifacts:
+
+- Retained Node setup-prewarm diagnostic:
+  `bench/out/amd-vulkan/20260608T172719Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T172719Z.run.json`
+- Rejected bind-group dispatch-state cache probe:
+  `bench/out/amd-vulkan/20260608T173707Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T173707Z.run.json`
+- Current Node resident claim boundary:
+  `bench/out/amd-vulkan/20260608T162947Z/gemma270m.node-package.decode.resident.warm.ir.claim.json`
+- Current Bun resident claim boundary:
+  `bench/out/amd-vulkan/20260608T162858Z/gemma270m.bun-package.decode.resident.warm.ir.claim.json`
+
+Validation:
+
+- `zig build test` from `runtime/zig`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_bun_webgpu_executor`
+- `python3 -m json.tool config/package-dispatch-prefix-profile.schema.json`
+- `node --check bench/executors/node-webgpu/executor.js`
+- `node --check packages/doe-gpu/src/vendor/webgpu/index.js`
+- `node --check packages/doe-gpu/src/vendor/webgpu/bun-ffi.js`
+- `node --check packages/doe-gpu/src/vendor/webgpu/bun.js`
+- `node --check packages/doe-gpu/src/bun.js`
+- `zig build dropin-full -Doptimize=ReleaseFast` from `runtime/zig`
+- `npm --prefix packages/doe-gpu run build:addon`
+
 ## 2026-06-08 — AMD Vulkan resident package configs are explicit and diagnostic
 
 AMD Vulkan now has explicit resident-buffer-load warm package configs for the

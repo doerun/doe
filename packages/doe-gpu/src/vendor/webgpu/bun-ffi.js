@@ -647,6 +647,16 @@ function openLibrary(path) {
             ],
             returns: FFIType.void,
         };
+        symbols.doeNativeComputePrewarmDispatchBindings = {
+            args: [
+                FFIType.ptr,  // queue
+                FFIType.u64,  // dispatchCount
+                FFIType.ptr,  // pipelines
+                FFIType.ptr,  // bindGroups
+                FFIType.ptr,  // bindGroupCounts
+            ],
+            returns: FFIType.u32,
+        };
     return dlopen(path, symbols);
 }
 
@@ -845,6 +855,7 @@ function nativeFastPathInfoFromSymbols() {
         computeDispatchBatchFlush: typeof symbols.doeNativeComputeDispatchBatchFlush === "function",
         computeDispatchBatchCopyFlush: typeof symbols.doeNativeComputeDispatchBatchCopyFlush === "function",
         computeDispatchBatchCopyFlushBreakdown: typeof symbols.doeNativeComputeDispatchBatchCopyFlushBreakdown === "function",
+        computePrewarmDispatchBindings: typeof symbols.doeNativeComputePrewarmDispatchBindings === "function",
         bufferMapReadCopyUnmap: typeof symbols.doeBufferMapReadCopyUnmapFlat === "function",
     };
 }
@@ -4590,6 +4601,41 @@ export function nativeFastPathInfo() {
     return nativeFastPathInfoFromSymbols();
 }
 
+export function prewarmPreparedDispatches(queue, dispatchCommands) {
+    ensureLibrary();
+    const commands = Array.isArray(dispatchCommands) ? dispatchCommands : [];
+    const prewarm = wgpu?.symbols?.doeNativeComputePrewarmDispatchBindings;
+    if (typeof prewarm !== "function") {
+        return { available: false, requestedCount: commands.length, preparedCount: 0 };
+    }
+    const queueNative = assertLiveResource(queue, "prewarmPreparedDispatches", "GPUQueue");
+    if (commands.length === 0) {
+        return { available: true, requestedCount: 0, preparedCount: 0 };
+    }
+    const scratch = ensureDispatchBatchScratch(queue, commands.length);
+    const { pipelines, bindGroups, bindGroupCounts } = scratch;
+    for (let i = 0; i < commands.length; i += 1) {
+        const cmd = commands[i];
+        pipelines[i] = cmd?.t === 0 ? hotU64(cmd.p) : 0n;
+        const bgCount = cmd?.t === 0 ? bunCommandBindGroupCount(cmd) : 0;
+        bindGroupCounts[i] = bgCount;
+        for (let j = 0; j < bgCount; j += 1) {
+            bindGroups[(i * MAX_COMPUTE_BIND_GROUPS) + j] = hotU64(bunCommandBindGroupAt(cmd, j));
+        }
+    }
+    return {
+        available: true,
+        requestedCount: commands.length,
+        preparedCount: Number(prewarm(
+            queueNative,
+            hotU64(commands.length),
+            pipelines,
+            bindGroups,
+            bindGroupCounts,
+        )) || 0,
+    };
+}
+
 export { createDoeRuntime, runDawnVsDoeCompare };
 export { preflightShaderSource };
 export { fastPathStats };
@@ -4624,6 +4670,7 @@ export default {
     requestDevice,
     providerInfo,
     nativeFastPathInfo,
+    prewarmPreparedDispatches,
     nativeQueueSyncInfo,
     preflightShaderSource,
     setNativeTimeoutMs,

@@ -695,6 +695,7 @@ function zeroPackageSetupBreakdown() {
     pipelineLayoutCreateTotalNs: 0,
     pipelineCreateTotalNs: 0,
     bindGroupCreateTotalNs: 0,
+    dispatchPrewarmTotalNs: 0,
   };
 }
 
@@ -906,6 +907,7 @@ function snapshotPackageNativeFastPaths(providerModule) {
     computeDispatchBatchFlush: Boolean(info.computeDispatchBatchFlush),
     computeDispatchBatchCopyFlush: Boolean(info.computeDispatchBatchCopyFlush),
     computeDispatchBatchCopyFlushBreakdown: Boolean(info.computeDispatchBatchCopyFlushBreakdown),
+    computePrewarmDispatchBindings: Boolean(info.computePrewarmDispatchBindings),
     bufferMapReadCopyUnmap: Boolean(info.bufferMapReadCopyUnmap),
   };
 }
@@ -1073,6 +1075,49 @@ function resolvePlanMetadata({ normalizedPlan = null, workloadId = '', planPath 
     };
   }
   return fallbackPlanSummary({ workloadId, planPath });
+}
+
+function buildPreparedDispatchPrewarmCommands(dispatchStates) {
+  const commands = [];
+  for (const state of dispatchStates) {
+    if (!state?.pipeline) {
+      continue;
+    }
+    const command = { t: 0, p: state.pipeline };
+    if (state.bindGroup) {
+      command.b = state.bindGroup;
+    }
+    commands.push(command);
+  }
+  return commands;
+}
+
+function prewarmPreparedDispatches(runtime, debugLog) {
+  if (typeof runtime?.providerModule?.prewarmPreparedDispatches !== 'function') {
+    return 0;
+  }
+  const commands = buildPreparedDispatchPrewarmCommands(runtime.dispatchStates);
+  if (commands.length === 0) {
+    return 0;
+  }
+  const startedAt = performance.now();
+  let result = null;
+  try {
+    result = runtime.providerModule.prewarmPreparedDispatches(runtime.queue, commands);
+  } catch (error) {
+    debugLog('runtime.setup.dispatchPrewarm.failed', {
+      detail: String(error?.message ?? error),
+    });
+    return 0;
+  }
+  const elapsedNs = nsDelta(startedAt);
+  debugLog('runtime.setup.dispatchPrewarm.done', {
+    requestedCount: commands.length,
+    preparedCount: Number(result?.preparedCount ?? 0) || 0,
+    available: Boolean(result?.available),
+    elapsedNs,
+  });
+  return elapsedNs;
 }
 
 function makeUnsupportedNodeWebGpuError({
@@ -1635,7 +1680,11 @@ export function buildDispatchBindingCacheKey(step) {
   ]);
 }
 
-async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHost }) {
+async function createRuntime(normalizedPlan, webgpu, spec, {
+  debugLog,
+  runtimeHost,
+  prewarmDispatchBindings = false,
+}) {
   const { create, globals } = webgpu;
   debugLog('runtime.create.start', {
     provider: spec.provider,
@@ -1881,6 +1930,14 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
     dispatchStates.push({ step, pipeline, bindGroup });
     dispatchSetupIndex += 1;
   }
+  const dispatchPrewarmTotalNs = prewarmDispatchBindings
+    ? prewarmPreparedDispatches({
+      providerModule: webgpu,
+      queue,
+      dispatchStates,
+    }, debugLog)
+    : 0;
+  setupBreakdownNs.dispatchPrewarmTotalNs += dispatchPrewarmTotalNs;
   const setupTotalNs = nsFromMs(performance.now() - setupStartedAt);
   debugLog('runtime.setup.done', {
     setupTotalNs,
@@ -1911,6 +1968,7 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
     buffers,
     dispatchStates,
     hostExecutorInitTotalNs,
+    hostKernelPrewarmTotalNs: dispatchPrewarmTotalNs,
     setupTotalNs,
     setupBreakdownNs,
     shaderSourceReceipts,
@@ -2611,7 +2669,7 @@ async function executeSample(
     hostWorkloadPrepareTotalNs: 0,
     hostExecutorInitTotalNs: runtime.hostExecutorInitTotalNs,
     hostUploadPrewarmTotalNs,
-    hostKernelPrewarmTotalNs: 0,
+    hostKernelPrewarmTotalNs: runtime.hostKernelPrewarmTotalNs ?? 0,
     hostCommandOrchestrationTotalNs,
     hostArtifactFinalizeTotalNs: 0,
     timingMs,
@@ -2883,7 +2941,11 @@ export async function executePlanFile({
   let runtime = null;
   try {
     const timedEnvelopeStartedAt = performance.now();
-    runtime = await createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHost });
+    runtime = await createRuntime(normalizedPlan, webgpu, spec, {
+      debugLog,
+      runtimeHost,
+      prewarmDispatchBindings: preparedSession,
+    });
     runtime.hostExecutorInitTotalNs += providerModuleResolveTotalNs;
     const executionStartedAt = preparedSession ? performance.now() : timedEnvelopeStartedAt;
     const result = await executeSample(normalizedPlan, runtime, {

@@ -129,6 +129,7 @@ PFN_doeNativeComputeDispatchFlushBreakdown pfn_doeNativeComputeDispatchFlushBrea
 PFN_doeNativeComputeDispatchBatchFlush pfn_doeNativeComputeDispatchBatchFlush = NULL;
 PFN_doeNativeComputeDispatchBatchCopyFlush pfn_doeNativeComputeDispatchBatchCopyFlush = NULL;
 PFN_doeNativeComputeDispatchBatchCopyFlushBreakdown pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown = NULL;
+PFN_doeNativeComputePrewarmDispatchBindings pfn_doeNativeComputePrewarmDispatchBindings = NULL;
 PFN_doeNativeDeviceCreateQuerySet pfn_doeNativeDeviceCreateQuerySet = NULL;
 PFN_doeNativeCommandEncoderWriteTimestamp pfn_doeNativeCommandEncoderWriteTimestamp = NULL;
 PFN_doeNativeCommandEncoderResolveQuerySet pfn_doeNativeCommandEncoderResolveQuerySet = NULL;
@@ -405,6 +406,7 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativeComputeDispatchBatchFlush = (PFN_doeNativeComputeDispatchBatchFlush)LIB_SYM(g_lib, "doeNativeComputeDispatchBatchFlush");
     pfn_doeNativeComputeDispatchBatchCopyFlush = (PFN_doeNativeComputeDispatchBatchCopyFlush)LIB_SYM(g_lib, "doeNativeComputeDispatchBatchCopyFlush");
     pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown = (PFN_doeNativeComputeDispatchBatchCopyFlushBreakdown)LIB_SYM(g_lib, "doeNativeComputeDispatchBatchCopyFlushBreakdown");
+    pfn_doeNativeComputePrewarmDispatchBindings = (PFN_doeNativeComputePrewarmDispatchBindings)LIB_SYM(g_lib, "doeNativeComputePrewarmDispatchBindings");
     pfn_doeNativeDeviceCreateQuerySet = (PFN_doeNativeDeviceCreateQuerySet)LIB_SYM(g_lib, "doeNativeDeviceCreateQuerySet");
     pfn_doeNativeCommandEncoderWriteTimestamp = (PFN_doeNativeCommandEncoderWriteTimestamp)LIB_SYM(g_lib, "doeNativeCommandEncoderWriteTimestamp");
     pfn_doeNativeCommandEncoderResolveQuerySet = (PFN_doeNativeCommandEncoderResolveQuerySet)LIB_SYM(g_lib, "doeNativeCommandEncoderResolveQuerySet");

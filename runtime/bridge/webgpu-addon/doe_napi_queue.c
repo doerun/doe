@@ -810,6 +810,7 @@ napi_value doe_native_fast_path_info(napi_env env, napi_callback_info info) {
     set_bool_property(env, result, "computeDispatchBatchFlush", pfn_doeNativeComputeDispatchBatchFlush != NULL);
     set_bool_property(env, result, "computeDispatchBatchCopyFlush", pfn_doeNativeComputeDispatchBatchCopyFlush != NULL);
     set_bool_property(env, result, "computeDispatchBatchCopyFlushBreakdown", pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown != NULL);
+    set_bool_property(env, result, "computePrewarmDispatchBindings", pfn_doeNativeComputePrewarmDispatchBindings != NULL);
     set_bool_property(env, result, "bufferMapReadCopyUnmap", pfn_doeBufferMapReadCopyUnmapFlat != NULL);
     return result;
 }
@@ -1294,6 +1295,83 @@ napi_value doe_queue_flush(napi_env env, napi_callback_info info) {
     if (result.status != WGPU_QUEUE_WORK_DONE_STATUS_SUCCESS)
         return throw_status_error(env, "DOE_QUEUE_FLUSH_ERROR", "queueFlush: queue work did not complete", result.status, result.message);
     return NULL;
+}
+
+/* prewarmPreparedDispatches(queue, dispatchCommands)
+ * Setup-only Vulkan path: prepare pipeline/layout/descriptor state without
+ * recording or submitting GPU commands. */
+napi_value doe_prewarm_prepared_dispatches(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    CHECK_LIB_LOADED(env);
+    WGPUQueue queue = unwrap_ptr(env, _args[0]);
+    napi_value commands = _args[1];
+    if (!queue) NAPI_THROW(env, "prewarmPreparedDispatches requires queue");
+    if (!pfn_doeNativeComputePrewarmDispatchBindings) {
+        napi_value zero;
+        napi_create_uint32(env, 0, &zero);
+        return zero;
+    }
+    bool is_array = false;
+    napi_is_array(env, commands, &is_array);
+    if (!is_array) NAPI_THROW(env, "prewarmPreparedDispatches requires a dispatch command array");
+    uint32_t cmd_count = 0;
+    napi_get_array_length(env, commands, &cmd_count);
+    if (cmd_count == 0) {
+        napi_value zero;
+        napi_create_uint32(env, 0, &zero);
+        return zero;
+    }
+
+    const size_t bind_group_slots = (size_t)cmd_count * BATCH_MAX_BIND_GROUPS;
+    const int use_stack_batch = cmd_count <= BATCH_STACK_DISPATCHES;
+    void* stack_pipelines[BATCH_STACK_DISPATCHES];
+    void* stack_bind_groups[BATCH_STACK_DISPATCHES * BATCH_MAX_BIND_GROUPS];
+    uint32_t stack_bg_counts[BATCH_STACK_DISPATCHES];
+    void** pipelines = use_stack_batch ? stack_pipelines : (void**)calloc(cmd_count, sizeof(void*));
+    void** bind_groups = use_stack_batch ? stack_bind_groups : (void**)calloc(bind_group_slots, sizeof(void*));
+    uint32_t* bg_counts = use_stack_batch ? stack_bg_counts : (uint32_t*)calloc(cmd_count, sizeof(uint32_t));
+    if (!pipelines || !bind_groups || !bg_counts) {
+        if (!use_stack_batch) {
+            free(pipelines);
+            free(bind_groups);
+            free(bg_counts);
+        }
+        NAPI_THROW(env, "prewarmPreparedDispatches: out of memory while packing dispatch bindings");
+    }
+    if (use_stack_batch) {
+        memset(pipelines, 0, cmd_count * sizeof(void*));
+        memset(bind_groups, 0, bind_group_slots * sizeof(void*));
+        memset(bg_counts, 0, cmd_count * sizeof(uint32_t));
+    }
+
+    for (uint32_t i = 0; i < cmd_count; i++) {
+        napi_value cmd;
+        napi_get_element(env, commands, i, &cmd);
+        if (get_command_type(env, cmd) != 0) continue;
+        pipelines[i] = get_command_ptr(env, cmd, "p", 1);
+        void* bg_ptrs[BATCH_MAX_BIND_GROUPS] = {NULL};
+        const uint32_t bg_count = read_command_bind_groups(env, cmd, bg_ptrs, BATCH_MAX_BIND_GROUPS);
+        bg_counts[i] = bg_count;
+        for (uint32_t j = 0; j < bg_count; j++) {
+            bind_groups[((size_t)i * BATCH_MAX_BIND_GROUPS) + j] = bg_ptrs[j];
+        }
+    }
+
+    const uint32_t prepared = pfn_doeNativeComputePrewarmDispatchBindings(
+        queue,
+        cmd_count,
+        pipelines,
+        bind_groups,
+        bg_counts
+    );
+    if (!use_stack_batch) {
+        free(pipelines);
+        free(bind_groups);
+        free(bg_counts);
+    }
+    napi_value result;
+    napi_create_uint32(env, prepared, &result);
+    return result;
 }
 
 /* submitBatched(device, queue, commandsArray)

@@ -69,7 +69,21 @@ export interface NativeFastPathInfo {
   computeDispatchBatchFlush: boolean;
   computeDispatchBatchCopyFlush: boolean;
   computeDispatchBatchCopyFlushBreakdown: boolean;
+  computePrewarmDispatchBindings: boolean;
   bufferMapReadCopyUnmap: boolean;
+}
+
+export interface PreparedDispatchPrewarmCommand {
+  t?: number;
+  p?: unknown;
+  b?: unknown;
+  bg?: unknown[];
+}
+
+export interface PreparedDispatchPrewarmResult {
+  available: boolean;
+  requestedCount: number;
+  preparedCount: number;
 }
 
 export interface NativeQueueSyncInfo {
@@ -234,6 +248,10 @@ export function requestAdapter(
 export function requestDevice(options?: RequestDeviceOptions): Promise<GPUDevice>;
 export function providerInfo(): ProviderInfo;
 export function nativeFastPathInfo(): NativeFastPathInfo | null;
+export function prewarmPreparedDispatches(
+  queue: GPUQueue,
+  dispatchCommands: PreparedDispatchPrewarmCommand[]
+): PreparedDispatchPrewarmResult;
 export function nativeQueueSyncInfo(queue: GPUQueue): NativeQueueSyncInfo | null;
 export const fastPathStats: FastPathStats | undefined;
 export function createDoeRuntime(options?: {
@@ -302,6 +320,7 @@ declare const _default: {
   requestDevice: typeof requestDevice;
   providerInfo: typeof providerInfo;
   nativeFastPathInfo: typeof nativeFastPathInfo;
+  prewarmPreparedDispatches: typeof prewarmPreparedDispatches;
   nativeQueueSyncInfo: typeof nativeQueueSyncInfo;
   fastPathStats: typeof fastPathStats;
   createDoeRuntime: typeof createDoeRuntime;

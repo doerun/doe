@@ -549,6 +549,7 @@ DECL_PFN(void, doeNativeComputeDispatchFlushBreakdown, (void*, void*, void**, ui
 DECL_PFN(void, doeNativeComputeDispatchBatchFlush, (void*, size_t, void**, void**, const uint32_t*, const uint32_t*));
 DECL_PFN(void, doeNativeComputeDispatchBatchCopyFlush, (void*, size_t, void**, void**, const uint32_t*, const uint32_t*, void*, uint64_t, void*, uint64_t, uint64_t));
 DECL_PFN(void, doeNativeComputeDispatchBatchCopyFlushBreakdown, (void*, size_t, void**, void**, const uint32_t*, const uint32_t*, void*, uint64_t, void*, uint64_t, uint64_t, uint64_t*));
+DECL_PFN(uint32_t, doeNativeComputePrewarmDispatchBindings, (void*, size_t, void**, void**, const uint32_t*));
 DECL_PFN(WGPUQuerySet, doeNativeDeviceCreateQuerySet, (WGPUDevice, uint32_t, uint32_t));
 DECL_PFN(void, doeNativeCommandEncoderWriteTimestamp, (WGPUCommandEncoder, WGPUQuerySet, uint32_t));
 DECL_PFN(void, doeNativeCommandEncoderResolveQuerySet, (WGPUCommandEncoder, WGPUQuerySet, uint32_t, uint32_t, WGPUBuffer, uint64_t));

@@ -2553,6 +2553,22 @@ export function nativeFastPathInfo() {
   return nativeAddon.nativeFastPathInfo();
 }
 
+export function prewarmPreparedDispatches(queue, dispatchCommands) {
+  ensureLibrary();
+  const nativeAddon = currentAddon();
+  if (!nativeAddon || typeof nativeAddon.prewarmPreparedDispatches !== 'function') {
+    return { available: false, requestedCount: 0, preparedCount: 0 };
+  }
+  const commands = Array.isArray(dispatchCommands) ? dispatchCommands : [];
+  const native = assertLiveResource(queue, 'prewarmPreparedDispatches', 'GPUQueue');
+  const preparedCount = nativeAddon.prewarmPreparedDispatches(native, commands);
+  return {
+    available: true,
+    requestedCount: commands.length,
+    preparedCount: Number(preparedCount) || 0,
+  };
+}
+
 export function nativeQueueSyncInfo(queue) {
   ensureLibrary();
   const nativeAddon = currentAddon();
@@ -2643,6 +2659,7 @@ export default {
   requestDevice,
   providerInfo,
   nativeFastPathInfo,
+  prewarmPreparedDispatches,
   nativeQueueSyncInfo,
   fastPathStats,
   createDoeRuntime,

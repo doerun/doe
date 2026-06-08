@@ -13,6 +13,7 @@ const dropin_diagnostics = @import("dropin/dropin_diagnostics.zig");
 const dropin_abi_procs = @import("dropin/dropin_abi_procs.zig");
 const dropin_browser_shared_memory = @import("dropin/dropin_browser_shared_memory.zig");
 const dropin_build_info = @import("dropin/dropin_build_info.zig");
+const compute_fast = @import("doe_compute_fast.zig");
 
 const build_options = @import("build_options");
 pub const BuildTier = @TypeOf(build_options.build_tier);
@@ -71,6 +72,22 @@ pub export fn doeWgpuDropinLastErrorCode() callconv(.c) u32 {
 
 pub export fn doeWgpuDropinClearLastError() callconv(.c) void {
     setLastError(.ok);
+}
+
+pub export fn doeNativeComputePrewarmDispatchBindings(
+    q_raw: ?*anyopaque,
+    dispatch_count: usize,
+    pipe_ptrs: [*]?*anyopaque,
+    bg_ptrs: [*]?*anyopaque,
+    bg_counts: [*]const u32,
+) callconv(.c) u32 {
+    return compute_fast.prewarmDispatchBindingsForQueue(
+        q_raw,
+        dispatch_count,
+        pipe_ptrs,
+        bg_ptrs,
+        bg_counts,
+    );
 }
 
 fn ensureNativeLibraryLocked() bool {

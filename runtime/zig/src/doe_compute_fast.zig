@@ -940,6 +940,24 @@ pub export fn doeNativeComputeDispatchBatchCopyFlush(
     );
 }
 
+pub fn prewarmDispatchBindingsForQueue(
+    q_raw: ?*anyopaque,
+    dispatch_count: usize,
+    pipe_ptrs: [*]?*anyopaque,
+    bg_ptrs: [*]?*anyopaque,
+    bg_counts: [*]const u32,
+) callconv(.c) u32 {
+    const q = native_helpers.cast(native_types.DoeQueue, q_raw) orelse return 0;
+    if (q.dev.backend != .vulkan) return 0;
+    return vulkan_fast.prewarmPreparedDispatchBindings(
+        q,
+        dispatch_count,
+        pipe_ptrs,
+        bg_ptrs,
+        bg_counts,
+    );
+}
+
 pub export fn doeNativeComputeDispatchBatchCopyFlushBreakdown(
     q_raw: ?*anyopaque,
     dispatch_count: usize,

@@ -294,6 +294,7 @@
         "computeDispatchBatchFlush": { "type": "boolean" },
         "computeDispatchBatchCopyFlush": { "type": "boolean" },
         "computeDispatchBatchCopyFlushBreakdown": { "type": "boolean" },
+        "computePrewarmDispatchBindings": { "type": "boolean" },
         "bufferMapReadCopyUnmap": { "type": "boolean" }
       }
     },
