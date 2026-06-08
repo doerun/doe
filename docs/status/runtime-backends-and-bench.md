@@ -17,9 +17,12 @@ Fresh AMD Vulkan Gemma270m package resident warm receipts split by runtime
 host. The Bun row is strict-comparable and the local claim sidecar is
 claimable on selected operation timing with structural work, timing phase,
 resident-buffer load, shader source receipt, and readback-capture obligations
-passing. The Node row remains strict-comparable but diagnostic because selected
-operation timing tails are not positive; workload-unit wall remains diagnostic
-only and is not used to promote the row.
+passing. The Node row is diagnostic under the stricter submit-scope audit: Doe
+reports native addon command-replay work inside submit timing while the Dawn
+package side reports zero for that submit sub-scope, so strict comparability
+now blocks before any speed claim. The same Node row also has negative selected
+operation p50/p95 tails. Workload-unit wall remains diagnostic only and is not
+used to promote the row.
 
 Artifacts:
 
@@ -27,10 +30,10 @@ Artifacts:
   `bench/out/amd-vulkan/20260608T204904Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T204904Z.run.json`
 - Node Dawn receipt:
   `bench/out/amd-vulkan/20260608T205217Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared_resident/node_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T205217Z.run.json`
-- Node strict compare:
-  `bench/out/amd-vulkan/20260608T205217Z/gemma270m.node-package.decode.resident.warm.ir.clean-process-warm.compare.json`
+- Node strict submit-scope audit compare:
+  `bench/out/amd-vulkan/20260608T205217Z/gemma270m.node-package.decode.resident.warm.ir.strict-scope-audit.compare.json`
 - Node local claim:
-  `bench/out/amd-vulkan/20260608T205217Z/gemma270m.node-package.decode.resident.warm.ir.clean-process-warm.claim.json`
+  `bench/out/amd-vulkan/20260608T205217Z/gemma270m.node-package.decode.resident.warm.ir.strict-scope-audit.claim.json`
 - Bun Doe receipt:
   `bench/out/amd-vulkan/20260608T205428Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared_resident/doe_gpu_bun_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T205428Z.run.json`
 - Bun Dawn receipt:
@@ -44,11 +47,13 @@ Validation:
 
 - `python3 -m unittest bench.tests.test_runner_plan_support`
 - `python3 -m unittest bench.tests.test_node_webgpu_executor`
+- `python3 -m unittest bench.tests.test_compare_assessment`
 - `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json --side baseline --warmup 16 --iterations 16`
 - `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json --side comparison --warmup 16 --iterations 16`
-- strict operation-timing compare over the fresh Node receipts listed above
-- local claim-policy diagnostic sidecar over the fresh Node strict compare
-  listed above
+- strict operation-timing submit-scope audit compare over the fresh Node
+  receipts listed above
+- local claim-policy diagnostic sidecar over the fresh Node strict
+  submit-scope audit compare listed above
 - `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.decode.resident.warm.ir.json --side baseline --warmup 16 --iterations 16`
 - `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.decode.resident.warm.ir.json --side comparison --warmup 16 --iterations 16`
 - strict operation-timing compare over the fresh Bun receipts listed above

@@ -76,7 +76,7 @@ def _wall_coverage_sample(
 
 
 class CompareAssessmentTests(unittest.TestCase):
-    def test_submit_scope_mismatch_is_advisory_for_package_totals(self) -> None:
+    def test_submit_scope_mismatch_blocks_strict_package_totals(self) -> None:
         result = compare_assessment(
             workload_id="package_upload_readback",
             workload_comparable=True,
@@ -106,12 +106,12 @@ class CompareAssessmentTests(unittest.TestCase):
             resource_sample_target_count=0,
         )
 
-        self.assertTrue(result["comparable"])
-        self.assertNotIn(
+        self.assertFalse(result["comparable"])
+        self.assertIn(
             "baseline_comparison_submit_scope_match",
             result["blockingFailedObligations"],
         )
-        self.assertIn(
+        self.assertNotIn(
             "baseline_comparison_submit_scope_match",
             result["advisoryFailedObligations"],
         )

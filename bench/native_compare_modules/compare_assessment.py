@@ -551,7 +551,7 @@ def compare_assessment(
         obligations,
         reasons,
         obligation_id="baseline_comparison_submit_scope_match",
-        blocking=False,
+        blocking=True,
         applicable=(
             comparability_mode == "strict"
             and is_dawn_vs_doe
