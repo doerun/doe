@@ -46,6 +46,13 @@ const BindingCollection = struct {
     descriptor_hash: u64,
 };
 
+pub const VulkanDispatchBindingState = struct {
+    count: usize = 0,
+    flat_mask: u64 = 0,
+    descriptor_hash: u64 = 0,
+    bindings: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined,
+};
+
 fn shader_buffer_binding_type(
     shader_module: ?*DoeShaderModule,
     group: u32,
@@ -599,6 +606,33 @@ pub fn vulkan_prepare_dispatch_bind_groups(
     var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
     const binding_result = collect_bind_group_bindings(pip, bind_groups, &binding_storage);
     return prepare_pipeline_bindings(rt, pip, spirv, binding_result, &binding_storage);
+}
+
+pub fn vulkan_collect_dispatch_binding_state(
+    pip: *const DoeComputePipeline,
+    bind_groups: []const ?*DoeBindGroup,
+) VulkanDispatchBindingState {
+    var state = VulkanDispatchBindingState{};
+    const binding_result = collect_bind_group_bindings(pip, bind_groups, &state.bindings);
+    state.count = binding_result.count;
+    state.flat_mask = binding_result.flat_mask;
+    state.descriptor_hash = binding_result.descriptor_hash;
+    return state;
+}
+
+pub fn vulkan_prepare_dispatch_binding_state(
+    rt: *NativeVulkanRuntime,
+    pip: *const DoeComputePipeline,
+    state: *const VulkanDispatchBindingState,
+) bool {
+    if (comptime !has_vulkan) return false;
+    const spirv = pipeline_spirv_or_log(pip) orelse return false;
+    const binding_result = BindingCollection{
+        .count = state.count,
+        .flat_mask = state.flat_mask,
+        .descriptor_hash = state.descriptor_hash,
+    };
+    return prepare_pipeline_bindings(rt, pip, spirv, binding_result, state.bindings[0..state.count]);
 }
 
 /// Replay a recorded compute dispatch through NativeVulkanRuntime at queue-submit time.

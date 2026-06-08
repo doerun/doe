@@ -61,20 +61,32 @@ pub const FencePool = struct {
         return fence;
     }
 
-    /// Wait for all in-flight fences and reset them. Used to drain all
+    /// Wait for all in-flight fences and mark them reusable. Used to drain all
     /// deferred/pipelined submissions without vkQueueWaitIdle.
     pub fn drain(self: *FencePool, device: c.VkDevice) common_errors.BackendNativeError!void {
+        var handles: [FENCE_POOL_CAPACITY]c.VkFence = undefined;
+        var handle_count: u32 = 0;
+
         var i: u32 = 0;
         while (i < self.count) : (i += 1) {
             if (!self.in_flight[i]) continue;
-            try c.check_vk(c.vkWaitForFences(
-                device,
-                1,
-                @ptrCast(&self.fences[i]),
-                c.VK_TRUE,
-                FENCE_WAIT_TIMEOUT_NS,
-            ));
-            self.in_flight[i] = false;
+            if (self.fences[i] == VK_NULL_U64) return error.InvalidState;
+            handles[handle_count] = self.fences[i];
+            handle_count += 1;
+        }
+
+        if (handle_count == 0) return;
+        try c.check_vk(c.vkWaitForFences(
+            device,
+            handle_count,
+            @ptrCast(&handles),
+            c.VK_TRUE,
+            FENCE_WAIT_TIMEOUT_NS,
+        ));
+
+        i = 0;
+        while (i < self.count) : (i += 1) {
+            if (self.in_flight[i]) self.in_flight[i] = false;
         }
     }
 

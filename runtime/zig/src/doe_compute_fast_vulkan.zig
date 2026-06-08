@@ -13,6 +13,7 @@ const DoeBindGroup = native_types.DoeBindGroup;
 const DoeComputePipeline = native_types.DoeComputePipeline;
 const DoeQueue = native_types.DoeQueue;
 const MAX_COMPUTE_BIND_GROUPS = native_shared.MAX_COMPUTE_BIND_GROUPS;
+const BATCH_PREPARED_CACHE_CAPACITY: usize = 64;
 
 pub const DispatchBatchCopyFlushTimings = struct {
     command_replay_ns: u64 = 0,
@@ -31,6 +32,13 @@ fn monotonicNowNs() u64 {
 
 const BindGroupArray = [MAX_COMPUTE_BIND_GROUPS]?*DoeBindGroup;
 
+const PreparedDispatchCacheEntry = struct {
+    pipe: *DoeComputePipeline,
+    bind_groups: BindGroupArray,
+    bg_count: u32,
+    state: vulkan_compute.VulkanDispatchBindingState,
+};
+
 fn samePreparedDispatch(
     previous_pipe: ?*DoeComputePipeline,
     previous_bind_groups: *const BindGroupArray,
@@ -45,6 +53,44 @@ fn samePreparedDispatch(
         if (previous_bind_groups[i] != bind_groups[i]) return false;
     }
     return true;
+}
+
+fn findPreparedDispatchCache(
+    cache: []const PreparedDispatchCacheEntry,
+    pipe: *DoeComputePipeline,
+    bind_groups: *const BindGroupArray,
+    bg_count: u32,
+) ?usize {
+    for (cache, 0..) |*entry, index| {
+        if (samePreparedDispatch(entry.pipe, &entry.bind_groups, entry.bg_count, pipe, bind_groups, bg_count)) {
+            return index;
+        }
+    }
+    return null;
+}
+
+fn sameBindingState(
+    left: *const vulkan_compute.VulkanDispatchBindingState,
+    right: *const vulkan_compute.VulkanDispatchBindingState,
+) bool {
+    if (left.count != right.count) return false;
+    if (left.flat_mask != right.flat_mask) return false;
+    if (left.descriptor_hash != right.descriptor_hash) return false;
+    for (0..left.count) |index| {
+        if (!std.meta.eql(left.bindings[index], right.bindings[index])) return false;
+    }
+    return true;
+}
+
+fn findPreparedBindingStateCache(
+    cache: []const PreparedDispatchCacheEntry,
+    pipe: *DoeComputePipeline,
+    state: *const vulkan_compute.VulkanDispatchBindingState,
+) ?usize {
+    for (cache, 0..) |*entry, index| {
+        if (entry.pipe == pipe and sameBindingState(&entry.state, state)) return index;
+    }
+    return null;
 }
 
 fn validatedBindGroups(
@@ -160,6 +206,8 @@ pub fn dispatchBatchCopyFlush(
     var prepared_pipe: ?*DoeComputePipeline = null;
     var prepared_bind_groups: BindGroupArray = [_]?*DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
     var prepared_bg_count: u32 = 0;
+    var prepared_cache: [BATCH_PREPARED_CACHE_CAPACITY]PreparedDispatchCacheEntry = undefined;
+    var prepared_cache_count: usize = 0;
     for (0..dispatch_count) |index| {
         const pipe = native_helpers.cast(DoeComputePipeline, pipe_ptrs[index]) orelse continue;
         const bg_offset = index * MAX_COMPUTE_BIND_GROUPS;
@@ -176,7 +224,46 @@ pub fn dispatchBatchCopyFlush(
         const bg_count = @min(bg_counts[index], MAX_COMPUTE_BIND_GROUPS);
         if (!samePreparedDispatch(prepared_pipe, &prepared_bind_groups, prepared_bg_count, pipe, &bind_groups, bg_count)) {
             prepared_pipe = null;
-            if (!vulkan_compute.vulkan_prepare_dispatch_bind_groups(rt, pipe, bind_groups[0..])) {
+            const cache_index = findPreparedDispatchCache(
+                prepared_cache[0..prepared_cache_count],
+                pipe,
+                &bind_groups,
+                bg_count,
+            );
+            var state = if (cache_index) |cached_index|
+                prepared_cache[cached_index].state
+            else
+                vulkan_compute.vulkan_collect_dispatch_binding_state(pipe, bind_groups[0..]);
+            var cache_slot = cache_index;
+            if (cache_slot == null) {
+                if (findPreparedBindingStateCache(
+                    prepared_cache[0..prepared_cache_count],
+                    pipe,
+                    &state,
+                )) |cached_index| {
+                    state = prepared_cache[cached_index].state;
+                    cache_slot = cached_index;
+                }
+            }
+            const prepared = vulkan_compute.vulkan_prepare_dispatch_binding_state(rt, pipe, &state);
+            if (prepared and cache_slot == null and prepared_cache_count < BATCH_PREPARED_CACHE_CAPACITY) {
+                prepared_cache[prepared_cache_count] = .{
+                    .pipe = pipe,
+                    .bind_groups = bind_groups,
+                    .bg_count = bg_count,
+                    .state = state,
+                };
+                prepared_cache_count += 1;
+            } else if (prepared and cache_slot != null) {
+                const slot = cache_slot.?;
+                prepared_cache[slot] = .{
+                    .pipe = pipe,
+                    .bind_groups = bind_groups,
+                    .bg_count = bg_count,
+                    .state = state,
+                };
+            }
+            if (!prepared) {
                 timings.command_replay_prepare_ns += monotonicNowNs() - prepare_started_ns;
                 continue;
             }
@@ -240,4 +327,61 @@ test "samePreparedDispatch requires same pipeline, count, and bind groups" {
     try std.testing.expect(!samePreparedDispatch(&pipe_a, &left, 2, &pipe_a, &right, 1));
     right[1] = &group_a;
     try std.testing.expect(!samePreparedDispatch(&pipe_a, &left, 2, &pipe_a, &right, 2));
+}
+
+test "findPreparedDispatchCache matches repeated non-consecutive state" {
+    var pipe_a = DoeComputePipeline{};
+    var pipe_b = DoeComputePipeline{};
+    var group_a = DoeBindGroup{};
+    var group_b = DoeBindGroup{};
+    var groups_a: BindGroupArray = [_]?*DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
+    var groups_b = groups_a;
+    groups_a[0] = &group_a;
+    groups_b[0] = &group_b;
+    const cache = [_]PreparedDispatchCacheEntry{
+        .{
+            .pipe = &pipe_a,
+            .bind_groups = groups_a,
+            .bg_count = 1,
+            .state = .{},
+        },
+        .{
+            .pipe = &pipe_b,
+            .bind_groups = groups_b,
+            .bg_count = 1,
+            .state = .{},
+        },
+    };
+
+    try std.testing.expectEqual(@as(?usize, 0), findPreparedDispatchCache(cache[0..], &pipe_a, &groups_a, 1));
+    try std.testing.expectEqual(@as(?usize, 1), findPreparedDispatchCache(cache[0..], &pipe_b, &groups_b, 1));
+    try std.testing.expectEqual(@as(?usize, null), findPreparedDispatchCache(cache[0..], &pipe_a, &groups_b, 1));
+}
+
+test "findPreparedBindingStateCache compares binding contents" {
+    var pipe = DoeComputePipeline{};
+    var cache = [_]PreparedDispatchCacheEntry{.{
+        .pipe = &pipe,
+        .bind_groups = [_]?*DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS,
+        .bg_count = 0,
+        .state = .{
+            .count = 1,
+            .flat_mask = 1,
+            .descriptor_hash = 99,
+            .bindings = undefined,
+        },
+    }};
+    cache[0].state.bindings[0] = .{
+        .group = 0,
+        .binding = 0,
+        .resource_kind = .buffer,
+        .resource_handle = 7,
+        .buffer_size = 16,
+    };
+    var matching = cache[0].state;
+    var different = matching;
+    different.bindings[0].resource_handle = 8;
+
+    try std.testing.expectEqual(@as(?usize, 0), findPreparedBindingStateCache(cache[0..], &pipe, &matching));
+    try std.testing.expectEqual(@as(?usize, null), findPreparedBindingStateCache(cache[0..], &pipe, &different));
 }

@@ -3,6 +3,47 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan package binding-state cache remains diagnostic
+
+Vulkan package replay now caches collected binding metadata for repeated
+prepared dispatch states within one package submit batch. Cache hits still flow
+through the normal Vulkan prepare and dispatch path, so descriptor lifetime,
+binding-capture, compute-write tracking, and transfer/compute visibility
+barriers stay on the existing runtime path. The package Node/Bun submit
+wrappers also keep small queue-submit scratch/telemetry cleanup, and the Vulkan
+fence-pool fallback drain now waits in-flight fences with a batched wait call.
+
+The AMD Vulkan Gemma64 warm package rows on Bun and Node remain
+strict-comparable but diagnostic. The local claim sidecars keep both rows out
+of claimable status because selected operation timing tails are not positive
+across the required percentiles. The useful next target is still reducing
+Vulkan package submit count or native driver-submit exposure without changing
+the WebGPU command order, dispatch shape, readback semantics, or timing scope.
+
+Artifacts:
+
+- Bun compare:
+  `bench/out/amd-vulkan/20260608T154119Z/gemma64.bun-package.warm.ir.binding-state-cache.same-window.compare.json`
+- Bun claim:
+  `bench/out/amd-vulkan/20260608T154119Z/gemma64.bun-package.warm.ir.binding-state-cache.same-window.claim.json`
+- Bun Doe receipt:
+  `bench/out/amd-vulkan/20260608T154119Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T154119Z.run.json`
+- Node compare:
+  `bench/out/amd-vulkan/20260608T154221Z/gemma64.node-package.warm.ir.binding-state-cache.same-window.compare.json`
+- Node claim:
+  `bench/out/amd-vulkan/20260608T154221Z/gemma64.node-package.warm.ir.binding-state-cache.same-window.claim.json`
+- Node Doe receipt:
+  `bench/out/amd-vulkan/20260608T154221Z/gemma64.node-package.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T154221Z.run.json`
+
+Validation:
+
+- `zig build test` from `runtime/zig`
+- `zig build dropin-full -Doptimize=ReleaseFast` from `runtime/zig`
+- `node --check packages/doe-gpu/src/vendor/webgpu/index.js`
+- `bun --check packages/doe-gpu/src/vendor/webgpu/bun-ffi.js`
+- `npm --prefix packages/doe-gpu run build:addon`
+- `git diff --check`
+
 ## 2026-06-08 — Vulkan package replay caches are strict but still diagnostic
 
 Vulkan package replay now caches immutable Vulkan buffer ids on bind groups and

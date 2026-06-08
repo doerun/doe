@@ -1847,11 +1847,11 @@ const fullSurfaceBackend = {
       const addonBreakdown = addon.submitBatched(deviceNative, queueNative, cmds);
       accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
       accumulateAddonSubmitBreakdown(queue, addonBreakdown);
-      if (addonSubmitBreakdownIndicatesCompletedSubmission(addonBreakdown)) {
+      const addonCompletedSubmission = addonSubmitBreakdownIndicatesCompletedSubmission(addonBreakdown);
+      if (addonCompletedSubmission) {
         fastPathStats.dispatchFlush += 1;
       }
       const bookkeepingStartedAt = performance.now();
-      const addonCompletedSubmission = addonSubmitBreakdownIndicatesCompletedSubmission(addonBreakdown);
       if (addonCompletedSubmission) {
         queue.markSubmittedWorkDone();
       }
@@ -1882,11 +1882,11 @@ const fullSurfaceBackend = {
       const addonBreakdown = addon.submitBatched(deviceNative, queueNative, allCommands);
       accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
       accumulateAddonSubmitBreakdown(queue, addonBreakdown);
-      if (addonSubmitBreakdownIndicatesCompletedSubmission(addonBreakdown)) {
+      const addonCompletedSubmission = addonSubmitBreakdownIndicatesCompletedSubmission(addonBreakdown);
+      if (addonCompletedSubmission) {
         fastPathStats.dispatchFlush += 1;
       }
       const bookkeepingStartedAt = performance.now();
-      const addonCompletedSubmission = addonSubmitBreakdownIndicatesCompletedSubmission(addonBreakdown);
       if (addonCompletedSubmission) {
         queue.markSubmittedWorkDone();
       }

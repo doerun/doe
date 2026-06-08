@@ -3887,6 +3887,7 @@ const fullSurfaceBackend = {
                         accumulateQueueSubmitBreakdown(queue, "submitAddonCallTotalNs", addonStartedAt);
                     }
                     const bookkeepingStartedAt = performance.now();
+                    fastPathStats.dispatchFlush += 1;
                     for (const commandBuffer of buffers) {
                         commandBuffer._submitted = true;
                         commandBuffer.destroy?.();
@@ -3922,7 +3923,8 @@ const fullSurfaceBackend = {
                 }
             }
             const cmdBuf = wgpu.symbols.wgpuCommandEncoderFinish(encoder, null);
-            const ptrs = new BigUint64Array([hotU64(cmdBuf)]);
+            const ptrs = ensureSubmitPtrScratch(queue, 1);
+            ptrs[0] = hotU64(cmdBuf);
             wgpu.symbols.wgpuQueueSubmit(queueNative, hotU64(1), ptrs);
             wgpu.symbols.wgpuCommandBufferRelease(cmdBuf);
             wgpu.symbols.wgpuCommandEncoderRelease(encoder);
