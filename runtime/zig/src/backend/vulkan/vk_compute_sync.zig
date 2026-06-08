@@ -83,6 +83,56 @@ pub fn make_prior_compute_writes_visible_for_transfer_read(self: anytype, comman
     clear_pending_compute_writes(self);
 }
 
+pub fn make_prior_compute_writes_visible_for_buffer_copy(
+    self: anytype,
+    command_buffer: c.VkCommandBuffer,
+    src_handle: u64,
+    src_buffer: c.VkBuffer,
+    dst_handle: u64,
+    dst_buffer: c.VkBuffer,
+) void {
+    if (!self.has_pending_compute_writes) return;
+    if (!self.current_compute_binding_tracking_complete or self.pending_compute_write_buffers.count() == 0) {
+        make_prior_compute_writes_visible_for_transfer_read(self, command_buffer);
+        return;
+    }
+
+    var barriers = [_]c.VkBufferMemoryBarrier{
+        buffer_memory_barrier(src_buffer, c.VK_ACCESS_TRANSFER_READ_BIT),
+        buffer_memory_barrier(dst_buffer, c.VK_ACCESS_TRANSFER_WRITE_BIT),
+    };
+    var barrier_count: u32 = 0;
+    if (src_handle != 0 and self.pending_compute_write_buffers.contains(src_handle)) {
+        barrier_count = 1;
+    }
+    if (dst_handle != 0 and self.pending_compute_write_buffers.contains(dst_handle)) {
+        if (barrier_count == 1 and src_handle == dst_handle) {
+            barriers[0].dstAccessMask |= c.VK_ACCESS_TRANSFER_WRITE_BIT;
+        } else {
+            barriers[barrier_count] = buffer_memory_barrier(dst_buffer, c.VK_ACCESS_TRANSFER_WRITE_BIT);
+            barrier_count += 1;
+        }
+    }
+    if (barrier_count == 0) return;
+
+    c.vkCmdPipelineBarrier(
+        command_buffer,
+        c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0,
+        0,
+        null,
+        barrier_count,
+        @ptrCast(&barriers),
+        0,
+        null,
+    );
+
+    if (src_handle != 0) _ = self.pending_compute_write_buffers.remove(src_handle);
+    if (dst_handle != 0 and dst_handle != src_handle) _ = self.pending_compute_write_buffers.remove(dst_handle);
+    self.has_pending_compute_writes = self.pending_compute_write_buffers.count() != 0;
+}
+
 pub fn make_transfer_writes_visible_for_host_read(command_buffer: c.VkCommandBuffer) void {
     const barrier = c.VkMemoryBarrier{
         .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
@@ -196,6 +246,20 @@ fn emit_compute_write_visibility_barrier(self: anytype, command_buffer: c.VkComm
         null,
     );
     clear_pending_compute_writes(self);
+}
+
+fn buffer_memory_barrier(buffer: c.VkBuffer, dst_access_mask: u32) c.VkBufferMemoryBarrier {
+    return .{
+        .sType = c.VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+        .pNext = null,
+        .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT,
+        .dstAccessMask = dst_access_mask,
+        .srcQueueFamilyIndex = c.VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = c.VK_QUEUE_FAMILY_IGNORED,
+        .buffer = buffer,
+        .offset = 0,
+        .size = c.VK_WHOLE_SIZE,
+    };
 }
 
 fn access_for_buffer_binding(binding: model_compute_types.KernelBinding) ComputeBindingAccess {

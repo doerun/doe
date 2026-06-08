@@ -3,6 +3,62 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan replay copy barrier narrowed, package rows still diagnostic
+
+Vulkan recorded-submit replay now carries source and destination buffer handles
+into replayed buffer-copy recording. The compute-write visibility barrier for a
+copy is narrowed to the buffers that actually participate in the copy when the
+runtime has complete pending-write tracking; incomplete tracking still falls
+back to the prior global compute-to-transfer barrier. Transfer-write visibility
+remains on the prior global path after a scoped transfer-write experiment was
+rejected by receipt tails.
+
+Fresh AMD Vulkan Node and Bun package resident warm receipts remain strict
+comparable but diagnostic. The local claim sidecars keep both rows out of
+claimable status because selected operation timing is still not positive at the
+required tails. Workload-unit wall is recorded in the compare artifacts for
+diagnosis only and is not used to promote either row. The next focused runtime
+target is native batch replay/submit cost inside selected submit-wait, followed
+by the recorded command-buffer replay metadata path used by non-package
+`queue.submit`.
+
+Artifacts:
+
+- Node Doe receipt:
+  `bench/out/amd-vulkan/20260608T200524Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T200524Z.run.json`
+- Node Dawn receipt:
+  `bench/out/amd-vulkan/20260608T200443Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared_resident/node_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T200443Z.run.json`
+- Node strict compare:
+  `bench/out/amd-vulkan/20260608T200524Z/gemma270m.node-package.decode.resident.warm.ir.scoped-copy-barrier.compare.json`
+- Node local claim:
+  `bench/out/amd-vulkan/20260608T200524Z/gemma270m.node-package.decode.resident.warm.ir.scoped-copy-barrier.claim.json`
+- Bun Doe receipt:
+  `bench/out/amd-vulkan/20260608T200657Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared_resident/doe_gpu_bun_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T200657Z.run.json`
+- Bun Dawn receipt:
+  `bench/out/amd-vulkan/20260608T200706Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/bun_webgpu_package_prepared_resident/bun_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T200706Z.run.json`
+- Bun strict compare:
+  `bench/out/amd-vulkan/20260608T200657Z/gemma270m.bun-package.decode.resident.warm.ir.scoped-copy-barrier.compare.json`
+- Bun local claim:
+  `bench/out/amd-vulkan/20260608T200657Z/gemma270m.bun-package.decode.resident.warm.ir.scoped-copy-barrier.claim.json`
+
+Validation:
+
+- `zig fmt runtime/zig/src/backend/vulkan/native_runtime.zig runtime/zig/src/backend/vulkan/vk_compute_sync.zig runtime/zig/src/backend/vulkan/vk_upload.zig runtime/zig/src/doe_compute_fast_vulkan.zig runtime/zig/src/doe_queue_submit_vulkan.zig`
+- `git diff --check`
+- `zig build test` from `runtime/zig`
+- `zig build dropin-full` from `runtime/zig`
+- `npm --prefix packages/doe-gpu run build:addon`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json --side baseline`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json --side comparison`
+- strict operation-timing compare over the fresh Node receipts listed above
+- local claim-policy diagnostic sidecar over the fresh Node strict compare listed
+  above
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.decode.resident.warm.ir.json --side baseline`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.decode.resident.warm.ir.json --side comparison`
+- strict operation-timing compare over the fresh Bun receipts listed above
+- local claim-policy diagnostic sidecar over the fresh Bun strict compare listed
+  above
+
 ## 2026-06-08 — Vulkan package pipeline cache is explicit evidence
 
 The AMD Vulkan Node and Bun package resident warm configs now run Doe through

@@ -70,8 +70,10 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                     if (rt.replay_recording_active and (scb.mapped == null or src_has_pending_compute_write)) {
                         vk_upload.record_replay_buffer_copy(
                             rt,
+                            src_buf.vk_id,
                             scb,
                             copy_cmd.src_off,
+                            dst_buf.vk_id,
                             dcb,
                             copy_cmd.dst_off,
                             copy_cmd.size,

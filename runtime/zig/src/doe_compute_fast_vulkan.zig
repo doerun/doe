@@ -148,8 +148,10 @@ fn recordOrExecuteCopy(
     if (rt.replay_recording_active and (scb.mapped == null or src_has_pending_compute_write)) {
         vk_upload.record_replay_buffer_copy(
             rt,
+            src_buf.vk_id,
             scb,
             copy_src_off,
+            dst_buf.vk_id,
             dcb,
             copy_dst_off,
             copy_size,

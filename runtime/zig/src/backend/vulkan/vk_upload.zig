@@ -666,8 +666,10 @@ pub fn streaming_copy_buffer_region(self: anytype, src: c.VkBuffer, src_offset: 
 
 pub fn record_replay_buffer_copy(
     self: anytype,
+    src_handle: u64,
     src: anytype,
     src_offset: u64,
+    dst_handle: u64,
     dst: anytype,
     dst_offset: u64,
     size: u64,
@@ -676,7 +678,14 @@ pub fn record_replay_buffer_copy(
     if (!self.replay_recording_active or self.replay_command_buffer == null) return error.InvalidState;
 
     vk_compute_sync.make_prior_transfer_writes_visible_for_transfer_read(self, self.replay_command_buffer);
-    vk_compute_sync.make_prior_compute_writes_visible_for_transfer_read(self, self.replay_command_buffer);
+    vk_compute_sync.make_prior_compute_writes_visible_for_buffer_copy(
+        self,
+        self.replay_command_buffer,
+        src_handle,
+        src.buffer,
+        dst_handle,
+        dst.buffer,
+    );
 
     var region = c.VkBufferCopy{
         .srcOffset = src_offset,
