@@ -4601,6 +4601,16 @@ export function nativeFastPathInfo() {
     return nativeFastPathInfoFromSymbols();
 }
 
+function commandNativePointer(value, path, label) {
+    if (value === null || value === undefined || value === 0 || value === 0n) {
+        return 0n;
+    }
+    if (typeof value === "object" || typeof value === "function") {
+        return hotU64(assertLiveResource(value, path, label));
+    }
+    return hotU64(value);
+}
+
 export function prewarmPreparedDispatches(queue, dispatchCommands) {
     ensureLibrary();
     const commands = Array.isArray(dispatchCommands) ? dispatchCommands : [];
@@ -4616,11 +4626,17 @@ export function prewarmPreparedDispatches(queue, dispatchCommands) {
     const { pipelines, bindGroups, bindGroupCounts } = scratch;
     for (let i = 0; i < commands.length; i += 1) {
         const cmd = commands[i];
-        pipelines[i] = cmd?.t === 0 ? hotU64(cmd.p) : 0n;
+        pipelines[i] = cmd?.t === 0
+            ? commandNativePointer(cmd.p, "prewarmPreparedDispatches.pipeline", "GPUComputePipeline")
+            : 0n;
         const bgCount = cmd?.t === 0 ? bunCommandBindGroupCount(cmd) : 0;
         bindGroupCounts[i] = bgCount;
         for (let j = 0; j < bgCount; j += 1) {
-            bindGroups[(i * MAX_COMPUTE_BIND_GROUPS) + j] = hotU64(bunCommandBindGroupAt(cmd, j));
+            bindGroups[(i * MAX_COMPUTE_BIND_GROUPS) + j] = commandNativePointer(
+                bunCommandBindGroupAt(cmd, j),
+                "prewarmPreparedDispatches.bindGroup",
+                "GPUBindGroup",
+            );
         }
     }
     return {

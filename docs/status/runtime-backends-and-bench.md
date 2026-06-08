@@ -3,6 +3,40 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Bun package dispatch prewarm now unwraps public objects
+
+The Bun FFI package prewarm path now accepts the same public
+`GPUComputePipeline` and `GPUBindGroup` objects that the shared package
+executor passes to Node. It unwraps those objects to native handles before
+packing the Vulkan prewarm call. This fixes a Bun-only setup prewarm failure
+that previously left dispatch prewarm recorded as unavailable work with zero
+setup cost.
+
+Fresh Bun package receipts after this change remain strict-comparable but
+diagnostic. The local claim sidecar keeps the row out of claimable status
+because selected operation timing tails are still not positive. The setup
+prewarm cost is recorded outside selected timing through the existing package
+setup telemetry.
+
+Artifacts:
+
+- Bun Doe receipt:
+  `bench/out/amd-vulkan/20260608T182127Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared_resident/doe_gpu_bun_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T182127Z.run.json`
+- Bun Dawn receipt:
+  `bench/out/amd-vulkan/20260608T182225Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/bun_webgpu_package_prepared_resident/bun_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T182225Z.run.json`
+- Bun strict compare:
+  `bench/out/amd-vulkan/20260608T182225Z/gemma270m.bun-package.decode.resident.warm.ir.bun-prewarm-fix.compare.json`
+- Bun local claim:
+  `bench/out/amd-vulkan/20260608T182225Z/gemma270m.bun-package.decode.resident.warm.ir.bun-prewarm-fix.claim.json`
+
+Validation:
+
+- `node --check packages/doe-gpu/src/vendor/webgpu/bun-ffi.js`
+- direct Bun prepared-session debug run confirmed dispatch prewarm succeeds
+- Bun package baseline/comparison runs listed above
+- strict operation-timing compare over the fresh Bun receipts listed above
+- local claim-policy pass over the fresh strict compare listed above
+
 ## 2026-06-08 — Vulkan prepared binding-state cache remains diagnostic
 
 Vulkan package dispatch replay now keeps a small compute-pipeline-local cache
