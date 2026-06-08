@@ -3,6 +3,43 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan fence-pool drain bookkeeping
+
+The Vulkan deferred-submission fence pool now tracks in-flight submissions with
+an active generation and count instead of scanning and clearing the whole pool
+on every drain. Same-queue ordering is unchanged: drain still waits the latest
+submitted fence when available, and falls back to waiting all active fences when
+the latest fence cannot be used. This keeps WebGPU submit boundaries, dispatch
+count, command order, and readback mode unchanged.
+
+Fresh Node and Bun host-copy package compares remain strict-comparable but
+diagnostic. Structural-equivalence, timing-policy, comparability-coherence, and
+comparable-runtime-invariant gates pass for both receipts; the claim sidecars
+still reject them because Doe does not beat Dawn on the selected operation
+timing tails. Native Vulkan submit/wait remains the blocking performance target
+for claimable package wins.
+
+Artifacts:
+
+- Node fence-pool strict compare:
+  `bench/out/amd-vulkan/20260608T104949Z/gemma64.node-package.warm.ir.fence-generation-host-copy-readback.same-window.compare.json`
+- Node fence-pool claim:
+  `bench/out/amd-vulkan/20260608T104949Z/gemma64.node-package.warm.ir.fence-generation-host-copy-readback.same-window.claim.json`
+- Bun fence-pool strict compare:
+  `bench/out/amd-vulkan/20260608T105046Z/gemma64.bun-package.warm.ir.fence-generation-host-copy-readback.same-window.compare.json`
+- Bun fence-pool claim:
+  `bench/out/amd-vulkan/20260608T105046Z/gemma64.bun-package.warm.ir.fence-generation-host-copy-readback.same-window.claim.json`
+- Doe-only submit-breakdown diagnostic:
+  `bench/out/amd-vulkan/20260608T104902Z/gemma64.node-package.warm.ir.fence-generation-submit-breakdown.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T104902Z.run.json`
+
+Validation:
+
+- `zig build dropin -Doptimize=ReleaseFast --summary all` from `runtime/zig`
+- `zig build test-wgsl --summary all` from `runtime/zig`
+- Structural-equivalence, timing-policy, comparability-coherence, comparable
+  runtime-invariant, and claim checks for the Node and Bun fence-pool artifacts
+  listed above.
+
 ## 2026-06-08 — Package readback scope gate
 
 Strict package comparison now records the actual readback path used by every

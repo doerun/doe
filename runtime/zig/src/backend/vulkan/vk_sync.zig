@@ -22,10 +22,12 @@ pub const FENCE_WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
 
 pub const FencePool = struct {
     fences: [FENCE_POOL_CAPACITY]c.VkFence = [_]c.VkFence{VK_NULL_U64} ** FENCE_POOL_CAPACITY,
-    in_flight: [FENCE_POOL_CAPACITY]bool = [_]bool{false} ** FENCE_POOL_CAPACITY,
+    generations: [FENCE_POOL_CAPACITY]u64 = [_]u64{0} ** FENCE_POOL_CAPACITY,
     count: u32 = 0,
     next_index: u32 = 0,
     last_submitted_index: ?u32 = null,
+    active_count: u32 = 0,
+    active_generation: u64 = 1,
 
     /// Initialize the ring. Individual VkFence handles are created on first use.
     pub fn init(device: c.VkDevice) common_errors.BackendNativeError!FencePool {
@@ -51,13 +53,15 @@ pub const FencePool = struct {
         const fence = self.fences[idx];
 
         // If this slot was in-flight from a previous submission, wait + reset
-        if (self.in_flight[idx]) {
+        if (self.is_active_index(idx)) {
             try c.check_vk(c.vkWaitForFences(device, 1, @ptrCast(&fence), c.VK_TRUE, FENCE_WAIT_TIMEOUT_NS));
-            self.in_flight[idx] = false;
+            self.generations[idx] = 0;
+            self.active_count -|= 1;
         }
 
         try c.check_vk(c.vkResetFences(device, 1, @ptrCast(&fence)));
-        self.in_flight[idx] = true;
+        self.generations[idx] = self.active_generation;
+        self.active_count +|= 1;
         self.last_submitted_index = idx;
         self.next_index = (idx + 1) % self.count;
         return fence;
@@ -67,53 +71,25 @@ pub const FencePool = struct {
     /// submitted fence reaching signaled implies older in-flight submissions
     /// have also completed.
     pub fn drain(self: *FencePool, device: c.VkDevice) common_errors.BackendNativeError!void {
-        var pending: [FENCE_POOL_CAPACITY]c.VkFence = [_]c.VkFence{VK_NULL_U64} ** FENCE_POOL_CAPACITY;
-        var pending_count: u32 = 0;
-        var i: u32 = 0;
-        while (i < self.count) : (i += 1) {
-            if (!self.in_flight[i]) continue;
-            pending[pending_count] = self.fences[i];
-            pending_count += 1;
-        }
-        if (pending_count == 0) return;
+        if (self.active_count == 0) return;
 
         if (self.last_submitted_index) |idx| {
             const latest_fence = self.fences[idx];
-            if (self.in_flight[idx] and latest_fence != VK_NULL_U64) {
+            if (self.is_active_index(idx) and latest_fence != VK_NULL_U64) {
                 try c.check_vk(c.vkWaitForFences(device, 1, @ptrCast(&latest_fence), c.VK_TRUE, FENCE_WAIT_TIMEOUT_NS));
             } else {
-                try c.check_vk(c.vkWaitForFences(
-                    device,
-                    pending_count,
-                    pending[0..pending_count].ptr,
-                    c.VK_TRUE,
-                    FENCE_WAIT_TIMEOUT_NS,
-                ));
+                try self.wait_all_active(device);
             }
         } else {
-            try c.check_vk(c.vkWaitForFences(
-                device,
-                pending_count,
-                pending[0..pending_count].ptr,
-                c.VK_TRUE,
-                FENCE_WAIT_TIMEOUT_NS,
-            ));
+            try self.wait_all_active(device);
         }
 
-        i = 0;
-        while (i < self.count) : (i += 1) {
-            if (!self.in_flight[i]) continue;
-            self.in_flight[i] = false;
-        }
-        self.last_submitted_index = null;
+        self.mark_all_complete();
     }
 
     /// True when at least one fence is in-flight (deferred work outstanding).
     pub fn has_in_flight(self: *const FencePool) bool {
-        for (self.in_flight[0..self.count]) |f| {
-            if (f) return true;
-        }
-        return false;
+        return self.active_count > 0;
     }
 
     /// Destroy all pool fences. Call before device destruction.
@@ -122,17 +98,53 @@ pub const FencePool = struct {
         while (i < self.count) : (i += 1) {
             if (self.fences[i] != VK_NULL_U64) {
                 // Best-effort wait before destroy to avoid validation errors
-                if (self.in_flight[i]) {
+                if (self.is_active_index(i)) {
                     _ = c.vkWaitForFences(device, 1, @ptrCast(&self.fences[i]), c.VK_TRUE, FENCE_WAIT_TIMEOUT_NS);
-                    self.in_flight[i] = false;
                 }
                 c.vkDestroyFence(device, self.fences[i], null);
                 self.fences[i] = VK_NULL_U64;
+                self.generations[i] = 0;
             }
         }
         self.count = 0;
         self.next_index = 0;
         self.last_submitted_index = null;
+        self.active_count = 0;
+        self.active_generation = 1;
+    }
+
+    fn is_active_index(self: *const FencePool, idx: u32) bool {
+        return idx < self.count and self.generations[idx] == self.active_generation;
+    }
+
+    fn wait_all_active(self: *FencePool, device: c.VkDevice) common_errors.BackendNativeError!void {
+        var pending: [FENCE_POOL_CAPACITY]c.VkFence = [_]c.VkFence{VK_NULL_U64} ** FENCE_POOL_CAPACITY;
+        var pending_count: u32 = 0;
+        var i: u32 = 0;
+        while (i < self.count) : (i += 1) {
+            if (!self.is_active_index(i) or self.fences[i] == VK_NULL_U64) continue;
+            pending[pending_count] = self.fences[i];
+            pending_count += 1;
+        }
+        if (pending_count == 0) return;
+        try c.check_vk(c.vkWaitForFences(
+            device,
+            pending_count,
+            pending[0..pending_count].ptr,
+            c.VK_TRUE,
+            FENCE_WAIT_TIMEOUT_NS,
+        ));
+    }
+
+    fn mark_all_complete(self: *FencePool) void {
+        self.active_count = 0;
+        self.last_submitted_index = null;
+        if (self.active_generation == std.math.maxInt(u64)) {
+            self.generations = [_]u64{0} ** FENCE_POOL_CAPACITY;
+            self.active_generation = 1;
+            return;
+        }
+        self.active_generation += 1;
     }
 };
 
