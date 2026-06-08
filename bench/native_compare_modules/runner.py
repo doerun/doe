@@ -7,6 +7,7 @@ import resource as py_resource
 import tempfile
 import shlex
 import shutil
+import re
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,7 @@ from native_compare_modules.timing_selection import (
 
 MAX_RSS_MARKER = "__DOE_MAXRSS_KB__:"
 TRACE_META_PROCESS_WALL_SOURCE = "trace-meta-process-wall"
+TRACE_META_RUN_SAMPLE_RE = re.compile(r"\.run\d{3}\.meta\.json$")
 
 _parse_compilation_ndjson = compilation_runner_mod._parse_compilation_ndjson
 _tint_compile_samples = compilation_runner_mod._tint_compile_samples
@@ -360,6 +362,19 @@ def materialize_repeated_commands(
     return str(generated)
 
 
+def pipeline_cache_dir_for_trace_meta(trace_meta: Path) -> Path:
+    name = trace_meta.name
+    if name.endswith(".preflight.meta.json"):
+        base = name[: -len(".preflight.meta.json")]
+    else:
+        base = TRACE_META_RUN_SAMPLE_RE.sub("", name)
+        if base == name and name.endswith(".meta.json"):
+            base = name[: -len(".meta.json")]
+    if not base:
+        base = trace_meta.stem
+    return trace_meta.parent / f"{base}.pipeline-cache"
+
+
 def materialize_repeated_plan(
     plan_path: str,
     *,
@@ -440,6 +455,7 @@ def command_for(
         "dawn_filter": shlex.quote(workload.dawn_filter),
         "trace_jsonl": shlex.quote(str(trace_jsonl)),
         "trace_meta": shlex.quote(str(trace_meta)),
+        "pipeline_cache_dir": shlex.quote(str(pipeline_cache_dir_for_trace_meta(trace_meta))),
         "queue_sync_mode": shlex.quote(queue_sync_mode),
         "upload_buffer_usage": shlex.quote(upload_buffer_usage),
         "upload_submit_every": shlex.quote(str(upload_submit_every)),

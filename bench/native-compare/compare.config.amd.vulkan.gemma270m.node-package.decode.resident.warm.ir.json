@@ -2,7 +2,7 @@
   "workloads": "bench/workloads/workloads.package.inference.prepared.json",
   "baseline": {
     "name": "doe_gpu_node_package_prepared_resident",
-    "executorId": "doe_node_webgpu_prepared_resident_buffer_loads"
+    "executorId": "doe_node_webgpu_prepared_resident_buffer_loads_vulkan_cache"
   },
   "comparison": {
     "name": "node_webgpu_package_prepared_resident",

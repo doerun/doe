@@ -722,6 +722,10 @@ static int submit_breakdown_enabled(void) {
 #define DOE_QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE 2u
 #define DOE_QUEUE_SYNC_INFO_FENCE_POOL 4u
 #define DOE_QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS 8u
+#define DOE_QUEUE_PIPELINE_CACHE_INFO_BACKEND_VULKAN 1u
+#define DOE_QUEUE_PIPELINE_CACHE_INFO_ACTIVE 2u
+#define DOE_QUEUE_PIPELINE_CACHE_INFO_DISABLED 4u
+#define DOE_QUEUE_PIPELINE_CACHE_INFO_SUPPORTED 8u
 #define DOE_QUEUE_FAMILY_UNAVAILABLE 0xffffffffu
 #define DOE_QUEUE_FAMILY_POLICY_PREFER_GRAPHICS_COMPUTE 0u
 #define DOE_QUEUE_FAMILY_POLICY_PREFER_COMPUTE_ONLY 1u
@@ -734,6 +738,18 @@ static int submit_breakdown_enabled(void) {
 static void set_bool_property(napi_env env, napi_value obj, const char* name, bool value) {
     napi_value js_value;
     napi_get_boolean(env, value, &js_value);
+    napi_set_named_property(env, obj, name, js_value);
+}
+
+static void set_string_property(napi_env env, napi_value obj, const char* name, const char* value) {
+    napi_value js_value;
+    napi_create_string_utf8(env, value, NAPI_AUTO_LENGTH, &js_value);
+    napi_set_named_property(env, obj, name, js_value);
+}
+
+static void set_u64_property(napi_env env, napi_value obj, const char* name, uint64_t value) {
+    napi_value js_value;
+    napi_create_double(env, (double)value, &js_value);
     napi_set_named_property(env, obj, name, js_value);
 }
 
@@ -854,6 +870,63 @@ napi_value doe_queue_sync_info(napi_env env, napi_callback_info info) {
         set_optional_bool_code_property(env, result, "queueFamilySupportsGraphics", pfn_doeNativeQueueFamilySupportsGraphics(queue));
     }
     return result;
+}
+
+napi_value doe_queue_pipeline_cache_info(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUQueue queue = unwrap_ptr(env, _args[0]);
+    if (!queue) NAPI_THROW(env, "queuePipelineCacheInfo requires queue");
+    if (!pfn_doeNativeQueuePipelineCacheInfo) {
+        napi_value null_value;
+        napi_get_null(env, &null_value);
+        return null_value;
+    }
+    const uint32_t bits = pfn_doeNativeQueuePipelineCacheInfo(queue);
+    if ((bits & DOE_QUEUE_PIPELINE_CACHE_INFO_BACKEND_VULKAN) == 0) {
+        napi_value null_value;
+        napi_get_null(env, &null_value);
+        return null_value;
+    }
+    const bool active = (bits & DOE_QUEUE_PIPELINE_CACHE_INFO_ACTIVE) != 0;
+    const bool disabled = (bits & DOE_QUEUE_PIPELINE_CACHE_INFO_DISABLED) != 0;
+    const bool supported = (bits & DOE_QUEUE_PIPELINE_CACHE_INFO_SUPPORTED) != 0;
+    const char* reason = !supported
+        ? "platform-unsupported"
+        : disabled
+            ? "cli-flag"
+            : active
+                ? "default"
+                : "non-doe-backend";
+    napi_value result;
+    napi_create_object(env, &result);
+    set_string_property(env, result, "backend", "vulkan");
+    set_string_property(env, result, "state", active ? "enabled" : "disabled");
+    set_string_property(env, result, "reason", reason);
+    set_u64_property(
+        env,
+        result,
+        "warmupCount",
+        pfn_doeNativeQueuePipelineCacheWarmupCount ? pfn_doeNativeQueuePipelineCacheWarmupCount(queue) : 0
+    );
+    set_u64_property(
+        env,
+        result,
+        "warmupNs",
+        pfn_doeNativeQueuePipelineCacheWarmupNs ? pfn_doeNativeQueuePipelineCacheWarmupNs(queue) : 0
+    );
+    return result;
+}
+
+napi_value doe_queue_pipeline_cache_flush(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    CHECK_LIB_LOADED(env);
+    WGPUQueue queue = unwrap_ptr(env, _args[0]);
+    if (!queue) NAPI_THROW(env, "queuePipelineCacheFlush requires queue");
+    if (pfn_doeNativeQueuePipelineCacheFlush) {
+        pfn_doeNativeQueuePipelineCacheFlush(queue);
+    }
+    return NULL;
 }
 
 napi_value doe_queue_submit(napi_env env, napi_callback_info info) {

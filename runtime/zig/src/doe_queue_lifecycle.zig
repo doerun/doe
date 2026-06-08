@@ -1,6 +1,7 @@
 const builtin = @import("builtin");
 const abi_core = @import("core/abi/wgpu_core_base_types.zig");
 const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
+const pipeline_cache_ops = @import("backend/dropin_pipeline_cache.zig");
 const queue_submit_ops = @import("backend/dropin_queue_submit.zig");
 const native_types = @import("doe_native_object_types.zig");
 const shared_types = @import("doe_native_shared_types.zig");
@@ -21,6 +22,10 @@ const QUEUE_SYNC_INFO_BACKEND_VULKAN: u32 = 1 << 0;
 const QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE: u32 = 1 << 1;
 const QUEUE_SYNC_INFO_FENCE_POOL: u32 = 1 << 2;
 const QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS: u32 = 1 << 3;
+const QUEUE_PIPELINE_CACHE_INFO_BACKEND_VULKAN: u32 = 1 << 0;
+const QUEUE_PIPELINE_CACHE_INFO_ACTIVE: u32 = 1 << 1;
+const QUEUE_PIPELINE_CACHE_INFO_DISABLED: u32 = 1 << 2;
+const QUEUE_PIPELINE_CACHE_INFO_SUPPORTED: u32 = 1 << 3;
 const QUEUE_FAMILY_UNAVAILABLE: u32 = 0xffff_ffff;
 const QUEUE_FAMILY_POLICY_PREFER_GRAPHICS_COMPUTE: u32 = 0;
 const QUEUE_FAMILY_POLICY_PREFER_COMPUTE_ONLY: u32 = 1;
@@ -112,6 +117,51 @@ pub fn doeNativeQueueSyncInfo(q_raw: ?*anyopaque) u32 {
         }
     }
     return bits;
+}
+
+pub fn doeNativeQueuePipelineCacheInfo(q_raw: ?*anyopaque) u32 {
+    const q = cast(DoeQueue, q_raw) orelse return 0;
+    if (q.dev.backend != .vulkan) return 0;
+    var bits: u32 = QUEUE_PIPELINE_CACHE_INFO_BACKEND_VULKAN | QUEUE_PIPELINE_CACHE_INFO_SUPPORTED;
+    if (comptime has_vulkan) {
+        if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
+            if (pipeline_cache_ops.vulkanPipelineCacheActive(rt)) bits |= QUEUE_PIPELINE_CACHE_INFO_ACTIVE;
+            if (pipeline_cache_ops.vulkanPipelineCacheDisabled(rt)) bits |= QUEUE_PIPELINE_CACHE_INFO_DISABLED;
+        }
+    }
+    return bits;
+}
+
+pub fn doeNativeQueuePipelineCacheWarmupCount(q_raw: ?*anyopaque) u64 {
+    const q = cast(DoeQueue, q_raw) orelse return 0;
+    if (q.dev.backend != .vulkan) return 0;
+    if (comptime has_vulkan) {
+        if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
+            return pipeline_cache_ops.vulkanPipelineCacheWarmupTelemetry(rt).count;
+        }
+    }
+    return 0;
+}
+
+pub fn doeNativeQueuePipelineCacheWarmupNs(q_raw: ?*anyopaque) u64 {
+    const q = cast(DoeQueue, q_raw) orelse return 0;
+    if (q.dev.backend != .vulkan) return 0;
+    if (comptime has_vulkan) {
+        if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
+            return pipeline_cache_ops.vulkanPipelineCacheWarmupTelemetry(rt).ns;
+        }
+    }
+    return 0;
+}
+
+pub fn doeNativeQueuePipelineCacheFlush(q_raw: ?*anyopaque) void {
+    const q = cast(DoeQueue, q_raw) orelse return;
+    if (q.dev.backend != .vulkan) return;
+    if (comptime has_vulkan) {
+        if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
+            pipeline_cache_ops.flushVulkanPipelineCache(rt);
+        }
+    }
 }
 
 fn queueVulkanRuntime(q_raw: ?*anyopaque) ?*shared_types.NativeVulkanRuntime {

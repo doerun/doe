@@ -100,6 +100,14 @@ export interface NativeQueueSyncInfo {
   queueFamilySupportsGraphics?: boolean;
 }
 
+export interface NativePipelineCacheInfo {
+  backend: 'vulkan';
+  state: 'enabled' | 'disabled';
+  reason: 'default' | 'cli-flag' | 'non-doe-backend' | 'platform-unsupported';
+  warmupCount: number;
+  warmupNs: number;
+}
+
 export interface ProviderInfo {
   module: string;
   loaded: boolean;
@@ -253,6 +261,8 @@ export function prewarmPreparedDispatches(
   dispatchCommands: PreparedDispatchPrewarmCommand[]
 ): PreparedDispatchPrewarmResult;
 export function nativeQueueSyncInfo(queue: GPUQueue): NativeQueueSyncInfo | null;
+export function nativePipelineCacheInfo(queue: GPUQueue): NativePipelineCacheInfo | null;
+export function packagePipelineCacheFlush(queue?: GPUQueue | null): boolean;
 export const fastPathStats: FastPathStats | undefined;
 export function createDoeRuntime(options?: {
   binPath?: string;
@@ -322,6 +332,8 @@ declare const _default: {
   nativeFastPathInfo: typeof nativeFastPathInfo;
   prewarmPreparedDispatches: typeof prewarmPreparedDispatches;
   nativeQueueSyncInfo: typeof nativeQueueSyncInfo;
+  nativePipelineCacheInfo: typeof nativePipelineCacheInfo;
+  packagePipelineCacheFlush: typeof packagePipelineCacheFlush;
   fastPathStats: typeof fastPathStats;
   createDoeRuntime: typeof createDoeRuntime;
   runDawnVsDoeCompare: typeof runDawnVsDoeCompare;

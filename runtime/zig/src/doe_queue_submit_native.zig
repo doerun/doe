@@ -60,6 +60,22 @@ pub export fn doeNativeQueueSyncInfo(q_raw: ?*anyopaque) callconv(.c) u32 {
     return lifecycle.doeNativeQueueSyncInfo(q_raw);
 }
 
+pub fn doeNativeQueuePipelineCacheInfo(q_raw: ?*anyopaque) u32 {
+    return lifecycle.doeNativeQueuePipelineCacheInfo(q_raw);
+}
+
+pub fn doeNativeQueuePipelineCacheWarmupCount(q_raw: ?*anyopaque) u64 {
+    return lifecycle.doeNativeQueuePipelineCacheWarmupCount(q_raw);
+}
+
+pub fn doeNativeQueuePipelineCacheWarmupNs(q_raw: ?*anyopaque) u64 {
+    return lifecycle.doeNativeQueuePipelineCacheWarmupNs(q_raw);
+}
+
+pub fn doeNativeQueuePipelineCacheFlush(q_raw: ?*anyopaque) void {
+    lifecycle.doeNativeQueuePipelineCacheFlush(q_raw);
+}
+
 pub fn doeNativeQueueFamilyPolicyCode(q_raw: ?*anyopaque) u32 {
     return lifecycle.doeNativeQueueFamilyPolicyCode(q_raw);
 }

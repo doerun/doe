@@ -270,6 +270,42 @@
               "pattern": "^[0-9a-f]{64}$"
             }
           }
+        },
+        "pipelineCache": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "reason",
+            "warmupCount",
+            "warmupNs"
+          ],
+          "properties": {
+            "backend": {
+              "type": "string",
+              "enum": ["metal", "vulkan", "d3d12"]
+            },
+            "state": {
+              "type": "string",
+              "enum": ["enabled", "disabled", "unknown"]
+            },
+            "reason": {
+              "type": "string",
+              "enum": ["default", "cli-flag", "non-doe-backend", "platform-unsupported", "unknown"]
+            },
+            "warmupCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "warmupNs": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "flushNs": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         }
       }
     },

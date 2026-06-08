@@ -213,6 +213,16 @@ class NoCacheExecutorTemplateTests(unittest.TestCase):
                 msg=f"{executor_id} unexpectedly carries --no-pipeline-cache",
             )
 
+    def test_vulkan_package_cache_executors_set_explicit_cache_dir(self) -> None:
+        for executor_id in (
+            "doe_node_webgpu_prepared_resident_buffer_loads_vulkan_cache",
+            "doe_bun_package_prepared_resident_buffer_loads_vulkan_cache",
+        ):
+            template = resolve_executor_command_template(executor_id)
+            self.assertIn("DOE_PIPELINE_CACHE_DIR={pipeline_cache_dir}", template)
+            self.assertIn("--resident-buffer-loads", template)
+            self.assertEqual(resolve_executor_boundary(executor_id), "plan")
+
 
 if __name__ == "__main__":
     unittest.main()

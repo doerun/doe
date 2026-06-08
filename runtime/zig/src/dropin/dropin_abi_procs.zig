@@ -98,6 +98,22 @@ pub export fn doeNativeQueueFamilySupportsGraphics(q_raw: ?*anyopaque) callconv(
     return native.doeNativeQueueFamilySupportsGraphics(q_raw);
 }
 
+pub export fn doeNativeQueuePipelineCacheInfo(q_raw: ?*anyopaque) callconv(.c) u32 {
+    return native.doeNativeQueuePipelineCacheInfo(q_raw);
+}
+
+pub export fn doeNativeQueuePipelineCacheWarmupCount(q_raw: ?*anyopaque) callconv(.c) u64 {
+    return native.doeNativeQueuePipelineCacheWarmupCount(q_raw);
+}
+
+pub export fn doeNativeQueuePipelineCacheWarmupNs(q_raw: ?*anyopaque) callconv(.c) u64 {
+    return native.doeNativeQueuePipelineCacheWarmupNs(q_raw);
+}
+
+pub export fn doeNativeQueuePipelineCacheFlush(q_raw: ?*anyopaque) callconv(.c) void {
+    native.doeNativeQueuePipelineCacheFlush(q_raw);
+}
+
 // FFI-friendly wrappers: flattened args for runtimes that cannot pass structs by value (Bun FFI, Node ffi-napi).
 // These assemble the CallbackInfo struct from scalar args and delegate to the standard C ABI functions.
 

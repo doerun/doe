@@ -487,6 +487,22 @@ function openLibrary(path) {
             args: [FFIType.ptr],
             returns: FFIType.u32,
         };
+        symbols.doeNativeQueuePipelineCacheInfo = {
+            args: [FFIType.ptr],
+            returns: FFIType.u32,
+        };
+        symbols.doeNativeQueuePipelineCacheWarmupCount = {
+            args: [FFIType.ptr],
+            returns: FFIType.u64,
+        };
+        symbols.doeNativeQueuePipelineCacheWarmupNs = {
+            args: [FFIType.ptr],
+            returns: FFIType.u64,
+        };
+        symbols.doeNativeQueuePipelineCacheFlush = {
+            args: [FFIType.ptr],
+            returns: FFIType.void,
+        };
         symbols.doeNativeQueueFamilyPolicyCode = {
             args: [FFIType.ptr],
             returns: FFIType.u32,
@@ -820,6 +836,10 @@ const QUEUE_SYNC_INFO_BACKEND_VULKAN = 1;
 const QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE = 2;
 const QUEUE_SYNC_INFO_FENCE_POOL = 4;
 const QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS = 8;
+const QUEUE_PIPELINE_CACHE_INFO_BACKEND_VULKAN = 1;
+const QUEUE_PIPELINE_CACHE_INFO_ACTIVE = 2;
+const QUEUE_PIPELINE_CACHE_INFO_DISABLED = 4;
+const QUEUE_PIPELINE_CACHE_INFO_SUPPORTED = 8;
 const QUEUE_FAMILY_POLICY_NAMES = Object.freeze([
     "prefer_graphics_compute",
     "prefer_compute_only",
@@ -869,6 +889,26 @@ function decodeQueueSyncInfoBits(bits) {
     };
 }
 
+function decodePipelineCacheInfoBits(bits) {
+    if ((bits & QUEUE_PIPELINE_CACHE_INFO_BACKEND_VULKAN) === 0) {
+        return null;
+    }
+    const active = (bits & QUEUE_PIPELINE_CACHE_INFO_ACTIVE) !== 0;
+    const disabled = (bits & QUEUE_PIPELINE_CACHE_INFO_DISABLED) !== 0;
+    const supported = (bits & QUEUE_PIPELINE_CACHE_INFO_SUPPORTED) !== 0;
+    return {
+        backend: "vulkan",
+        state: active ? "enabled" : "disabled",
+        reason: !supported
+            ? "platform-unsupported"
+            : disabled
+                ? "cli-flag"
+                : active
+                    ? "default"
+                    : "non-doe-backend",
+    };
+}
+
 function maybeCallQueueU32(symbolName, queueNative) {
     const fn = wgpu?.symbols?.[symbolName];
     if (typeof fn !== "function") return null;
@@ -914,6 +954,50 @@ export function nativeQueueSyncInfo(queue) {
         return null;
     }
     return attachQueueFamilyInfo(decodeQueueSyncInfoBits(Number(fn(queue._native))), queue._native);
+}
+
+export function nativePipelineCacheInfo(queue) {
+    if (!DOE_LIB_PATH) {
+        return null;
+    }
+    try {
+        ensureLibrary();
+    } catch (_error) {
+        return null;
+    }
+    const fn = wgpu?.symbols?.doeNativeQueuePipelineCacheInfo;
+    if (typeof fn !== "function" || !queue?._native) {
+        return null;
+    }
+    const info = decodePipelineCacheInfoBits(Number(fn(queue._native)));
+    if (!info) {
+        return null;
+    }
+    const warmupCountFn = wgpu?.symbols?.doeNativeQueuePipelineCacheWarmupCount;
+    const warmupNsFn = wgpu?.symbols?.doeNativeQueuePipelineCacheWarmupNs;
+    return {
+        ...info,
+        warmupCount: typeof warmupCountFn === "function" ? Math.max(0, Number(warmupCountFn(queue._native)) || 0) : 0,
+        warmupNs: typeof warmupNsFn === "function" ? Math.max(0, Number(warmupNsFn(queue._native)) || 0) : 0,
+    };
+}
+
+export function packagePipelineCacheFlush(queue = null) {
+    if (!DOE_LIB_PATH) {
+        return false;
+    }
+    try {
+        ensureLibrary();
+    } catch (_error) {
+        return false;
+    }
+    if (queue?._native && typeof wgpu?.symbols?.doeNativeQueuePipelineCacheFlush === "function") {
+        wgpu.symbols.doeNativeQueuePipelineCacheFlush(queue._native);
+    }
+    if (typeof wgpu?.symbols?.doeNativePackagePipelineCacheFlush === "function") {
+        wgpu.symbols.doeNativePackagePipelineCacheFlush();
+    }
+    return true;
 }
 
 function cachedShaderSourceBytes(code) {
@@ -4688,6 +4772,8 @@ export default {
     nativeFastPathInfo,
     prewarmPreparedDispatches,
     nativeQueueSyncInfo,
+    nativePipelineCacheInfo,
+    packagePipelineCacheFlush,
     preflightShaderSource,
     setNativeTimeoutMs,
     createDoeRuntime,

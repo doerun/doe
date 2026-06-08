@@ -955,6 +955,51 @@ function snapshotPackageNativeQueueSyncInfo(providerModule, queue) {
   return result;
 }
 
+function snapshotPackagePipelineCacheInfo(providerModule, queue, flushNs = 0) {
+  if (typeof providerModule?.nativePipelineCacheInfo !== 'function' || !queue) {
+    return null;
+  }
+  let info = null;
+  try {
+    info = providerModule.nativePipelineCacheInfo(queue);
+  } catch {
+    return null;
+  }
+  if (!info || typeof info !== 'object') {
+    return null;
+  }
+  const backend = typeof info.backend === 'string' ? info.backend : '';
+  const state = typeof info.state === 'string' ? info.state : '';
+  const reason = typeof info.reason === 'string' ? info.reason : '';
+  if (!backend || !state || !reason) {
+    return null;
+  }
+  return {
+    backend,
+    state,
+    reason,
+    warmupCount: Math.max(0, Number(info.warmupCount ?? 0) || 0),
+    warmupNs: Math.max(0, Number(info.warmupNs ?? 0) || 0),
+    flushNs: Math.max(0, Number(flushNs) || 0),
+  };
+}
+
+function flushPackagePipelineCache(providerModule, queue, debugLog) {
+  if (typeof providerModule?.packagePipelineCacheFlush !== 'function' || !queue) {
+    return 0;
+  }
+  const startedAt = performance.now();
+  try {
+    providerModule.packagePipelineCacheFlush(queue);
+  } catch (error) {
+    debugLog('runtime.pipelineCacheFlush.failed', {
+      detail: String(error?.message ?? error),
+    });
+    return 0;
+  }
+  return nsDelta(startedAt);
+}
+
 function diffPackageFastPathStats(start, end) {
   if (!start || !end) {
     return null;
@@ -2644,6 +2689,16 @@ async function executeSample(
     runtime.providerModule,
     runtime.queue,
   );
+  const packagePipelineCacheFlushNs = flushPackagePipelineCache(
+    runtime.providerModule,
+    runtime.queue,
+    debugLog,
+  );
+  const pipelineCache = snapshotPackagePipelineCacheInfo(
+    runtime.providerModule,
+    runtime.queue,
+    packagePipelineCacheFlushNs,
+  );
 
   const meta = {
     schemaVersion: 1,
@@ -2703,6 +2758,7 @@ async function executeSample(
     packageReadbackMode,
     ...(packageNativeFastPaths ? { packageNativeFastPaths } : {}),
     ...(packageNativeQueueSyncInfo ? { packageNativeQueueSyncInfo } : {}),
+    ...(pipelineCache ? { pipelineCache } : {}),
     ...(packageFastPathStats ? { packageFastPathStats } : {}),
     ...(readbackCaptures.length > 0 ? { readbackCaptures } : {}),
     ...(determinismResult ? { determinism: determinismResult.determinism } : {}),

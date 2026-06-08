@@ -3,6 +3,59 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan package pipeline cache is explicit evidence
+
+The AMD Vulkan Node and Bun package resident warm configs now run Doe through
+an explicit package pipeline-cache executor. The executor injects
+`DOE_PIPELINE_CACHE_DIR` with an artifact-adjacent cache directory, the Vulkan
+runtime honors that directory for its persistent pipeline cache, and package
+receipts record cache backend/state/reason/warmup/flush telemetry through the
+native queue. The flush happens after selected execution timing, so cache
+persistence is visible without moving cache I/O into the measured operation
+window.
+
+Fresh Node and Bun package receipts after this change are strict-comparable but
+still diagnostic. Structural work, timing class, timing phase, resident-buffer
+load shape, shader source receipts, and readback captures pass the blocking
+comparability obligations. The local claim sidecars keep both rows out of
+claimable status because selected operation timing is not positive at the
+required tails. Workload-unit wall remains diagnostic only and is not used to
+promote either row. The next focused optimization target is the native Vulkan
+package queue-submit path inside selected submit/wait, not claim-policy
+relaxation.
+
+Artifacts:
+
+- Node Doe receipt:
+  `bench/out/amd-vulkan/20260608T185448Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T185448Z.run.json`
+- Node Dawn receipt:
+  `bench/out/amd-vulkan/20260608T185459Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared_resident/node_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T185459Z.run.json`
+- Node strict compare:
+  `bench/out/amd-vulkan/20260608T185459Z/gemma270m.node-package.decode.resident.warm.ir.vulkan-cache.compare.json`
+- Node local claim:
+  `bench/out/amd-vulkan/20260608T185459Z/gemma270m.node-package.decode.resident.warm.ir.vulkan-cache.claim.json`
+- Bun Doe receipt:
+  `bench/out/amd-vulkan/20260608T185747Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared_resident/doe_gpu_bun_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T185747Z.run.json`
+- Bun Dawn receipt:
+  `bench/out/amd-vulkan/20260608T185755Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/bun_webgpu_package_prepared_resident/bun_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T185755Z.run.json`
+- Bun strict compare:
+  `bench/out/amd-vulkan/20260608T185755Z/gemma270m.bun-package.decode.resident.warm.ir.vulkan-cache.compare.json`
+- Bun local claim:
+  `bench/out/amd-vulkan/20260608T185755Z/gemma270m.bun-package.decode.resident.warm.ir.vulkan-cache.claim.json`
+
+Validation:
+
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json --side baseline`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json --side comparison`
+- strict operation-timing compare over the fresh Node receipts listed above
+- local claim-policy diagnostic sidecar over the fresh Node strict compare listed
+  above
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.decode.resident.warm.ir.json --side baseline`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.decode.resident.warm.ir.json --side comparison`
+- strict operation-timing compare over the fresh Bun receipts listed above
+- local claim-policy diagnostic sidecar over the fresh Bun strict compare listed
+  above
+
 ## 2026-06-08 — Node package dispatch prewarm now unwraps public objects
 
 The Node package prewarm path now accepts the public `GPUComputePipeline` and

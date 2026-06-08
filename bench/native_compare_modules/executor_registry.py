@@ -101,9 +101,12 @@ _DOE_BUN_PACKAGE_FFI_PREPARED_TEMPLATE = (
     "--command-repeat {command_repeat}"
 )
 
-
 def _resident_buffer_load_template(command_template: str) -> str:
     return f"{command_template} --resident-buffer-loads"
+
+
+def _vulkan_pipeline_cache_template(command_template: str) -> str:
+    return f"env DOE_PIPELINE_CACHE_DIR={{pipeline_cache_dir}} {command_template}"
 
 
 _REGISTRY: dict[str, ExecutorSpec] = {
@@ -302,6 +305,13 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary="plan",
     ),
+    "doe_node_webgpu_prepared_resident_buffer_loads_vulkan_cache": ExecutorSpec(
+        executor_id="doe_node_webgpu_prepared_resident_buffer_loads_vulkan_cache",
+        command_template=_vulkan_pipeline_cache_template(
+            _resident_buffer_load_template(_DOE_NODE_WEBGPU_PREPARED_TEMPLATE)
+        ),
+        execution_boundary="plan",
+    ),
     "doe_node_native_direct_prepared": ExecutorSpec(
         executor_id="doe_node_native_direct_prepared",
         command_template=_DOE_NODE_NATIVE_DIRECT_PREPARED_TEMPLATE,
@@ -367,6 +377,13 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         executor_id="doe_bun_package_prepared_resident_buffer_loads",
         command_template=_resident_buffer_load_template(
             _DOE_BUN_PACKAGE_PREPARED_TEMPLATE
+        ),
+        execution_boundary="plan",
+    ),
+    "doe_bun_package_prepared_resident_buffer_loads_vulkan_cache": ExecutorSpec(
+        executor_id="doe_bun_package_prepared_resident_buffer_loads_vulkan_cache",
+        command_template=_vulkan_pipeline_cache_template(
+            _resident_buffer_load_template(_DOE_BUN_PACKAGE_PREPARED_TEMPLATE)
         ),
         execution_boundary="plan",
     ),

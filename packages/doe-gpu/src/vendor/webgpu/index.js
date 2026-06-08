@@ -2631,6 +2631,50 @@ export function nativeQueueSyncInfo(queue) {
   };
 }
 
+function normalizePipelineCacheInfo(info) {
+  if (!info || typeof info !== 'object') {
+    return null;
+  }
+  const backend = typeof info.backend === 'string' ? info.backend : '';
+  const state = typeof info.state === 'string' ? info.state : '';
+  const reason = typeof info.reason === 'string' ? info.reason : '';
+  if (!backend || !state || !reason) {
+    return null;
+  }
+  return {
+    backend,
+    state,
+    reason,
+    warmupCount: Math.max(0, Number(info.warmupCount ?? 0) || 0),
+    warmupNs: Math.max(0, Number(info.warmupNs ?? 0) || 0),
+  };
+}
+
+export function nativePipelineCacheInfo(queue) {
+  ensureLibrary();
+  const nativeAddon = currentAddon();
+  if (!nativeAddon || typeof nativeAddon.queuePipelineCacheInfo !== 'function') {
+    return null;
+  }
+  const native = assertLiveResource(queue, 'nativePipelineCacheInfo', 'GPUQueue');
+  return normalizePipelineCacheInfo(nativeAddon.queuePipelineCacheInfo(native));
+}
+
+export function packagePipelineCacheFlush(queue = null) {
+  ensureLibrary();
+  const nativeAddon = currentAddon();
+  if (!nativeAddon || typeof nativeAddon.packagePipelineCacheFlush !== 'function') {
+    return false;
+  }
+  if (queue == null) {
+    nativeAddon.packagePipelineCacheFlush();
+    return true;
+  }
+  const native = assertLiveResource(queue, 'packagePipelineCacheFlush', 'GPUQueue');
+  nativeAddon.packagePipelineCacheFlush(native);
+  return true;
+}
+
 /**
  * Create a Node or Bun runtime wrapper for Doe CLI execution.
  *
@@ -2697,6 +2741,8 @@ export default {
   nativeFastPathInfo,
   prewarmPreparedDispatches,
   nativeQueueSyncInfo,
+  nativePipelineCacheInfo,
+  packagePipelineCacheFlush,
   fastPathStats,
   createDoeRuntime,
   runDawnVsDoeCompare,

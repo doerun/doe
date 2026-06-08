@@ -241,7 +241,8 @@
         "bindGroupLayoutCreateTotalNs": { "type": "integer", "minimum": 0 },
         "pipelineLayoutCreateTotalNs": { "type": "integer", "minimum": 0 },
         "pipelineCreateTotalNs": { "type": "integer", "minimum": 0 },
-        "bindGroupCreateTotalNs": { "type": "integer", "minimum": 0 }
+        "bindGroupCreateTotalNs": { "type": "integer", "minimum": 0 },
+        "dispatchPrewarmTotalNs": { "type": "integer", "minimum": 0 }
       }
     },
     "packageStepBreakdownNs": {
@@ -374,6 +375,7 @@
         "computeDispatchBatchFlush": { "type": "boolean" },
         "computeDispatchBatchCopyFlush": { "type": "boolean" },
         "computeDispatchBatchCopyFlushBreakdown": { "type": "boolean" },
+        "computePrewarmDispatchBindings": { "type": "boolean" },
         "bufferMapReadCopyUnmap": { "type": "boolean" }
       }
     },
@@ -407,6 +409,33 @@
         "queueFamilyQueueCount": { "type": "integer", "minimum": 0 },
         "queueFamilyTimestampValidBits": { "type": "integer", "minimum": 0 },
         "queueFamilySupportsGraphics": { "type": "boolean" }
+      }
+    },
+    "pipelineCache": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "reason",
+        "warmupCount",
+        "warmupNs"
+      ],
+      "properties": {
+        "backend": {
+          "type": "string",
+          "enum": ["metal", "vulkan", "d3d12"]
+        },
+        "state": {
+          "type": "string",
+          "enum": ["enabled", "disabled", "unknown"]
+        },
+        "reason": {
+          "type": "string",
+          "enum": ["default", "cli-flag", "non-doe-backend", "platform-unsupported", "unknown"]
+        },
+        "warmupCount": { "type": "integer", "minimum": 0 },
+        "warmupNs": { "type": "integer", "minimum": 0 },
+        "flushNs": { "type": "integer", "minimum": 0 }
       }
     },
     "readbackCaptures": {

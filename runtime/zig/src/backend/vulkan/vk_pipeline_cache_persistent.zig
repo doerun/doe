@@ -18,6 +18,7 @@ const c = @import("vk_constants.zig");
 const CACHE_BLOB_BASENAME = "doe-vulkan-pipeline-cache.blob";
 const CACHE_BLOB_MAX_BYTES: usize = 64 * 1024 * 1024;
 const CACHE_BLOB_MIN_BYTES: usize = 32;
+const ENV_CACHE_DIR = "DOE_PIPELINE_CACHE_DIR";
 
 pub const VulkanPipelineCacheState = enum { disabled, enabled, enabled_reloaded };
 
@@ -93,6 +94,13 @@ fn cache_path_slice() ?[]const u8 {
     return process_cache_path_buf[0..process_cache_path_len];
 }
 
+fn configure_cache_dir_from_env_if_needed() void {
+    if (process_cache_path_len != 0) return;
+    const value = std.process.getEnvVarOwned(std.heap.page_allocator, ENV_CACHE_DIR) catch return;
+    defer std.heap.page_allocator.free(value);
+    set_process_pipeline_cache_dir(value);
+}
+
 /// Create the process-level VkPipelineCache after vkCreateDevice. When a
 /// cache directory has been configured (set_process_pipeline_cache_dir) and
 /// the blob file exists, its contents seed the cache; the Vulkan driver
@@ -111,6 +119,7 @@ pub fn create_process_pipeline_cache(device: c.VkDevice) !void {
     if (device == null) return error.InvalidArgument;
 
     const start_ns = std.time.nanoTimestamp();
+    configure_cache_dir_from_env_if_needed();
 
     var blob_bytes: ?[]u8 = null;
     defer if (blob_bytes) |b| std.heap.page_allocator.free(b);
@@ -180,15 +189,22 @@ pub fn destroy_process_pipeline_cache(device: c.VkDevice) void {
         return;
     }
 
-    if (cache_path_slice()) |path| {
-        try_write_cache_blob(device, process_cache_handle, path) catch {};
-    }
+    flush_process_pipeline_cache(device);
 
     c.vkDestroyPipelineCache(device, process_cache_handle, null);
     process_cache_handle = c.VK_NULL_U64;
     process_cache_device = null;
     process_cache_state = .disabled;
     process_warmup = .{};
+}
+
+pub fn flush_process_pipeline_cache(device: c.VkDevice) void {
+    if (process_cache_handle == c.VK_NULL_U64) return;
+    if (device == null) return;
+    if (process_cache_device != device) return;
+    if (cache_path_slice()) |path| {
+        try_write_cache_blob(device, process_cache_handle, path) catch {};
+    }
 }
 
 fn try_write_cache_blob(

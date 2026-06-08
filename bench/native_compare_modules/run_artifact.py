@@ -338,12 +338,12 @@ def _runtime_identity(
     if native_delegate is not None:
         payload["nativeDelegate"] = native_delegate
     payload.update(_package_identity(provider_name))
-    # Apple Metal pipeline cache state + warmup telemetry. The Zig runtime
+    # Native pipeline cache state + warmup telemetry. The Zig runtime
     # emits a nested `pipelineCache` object in trace_meta containing state
     # (enabled|disabled), reason (default|cli-flag|non-doe-backend|platform-
     # unsupported), warmupCount, and warmupNs. Surfacing it inside
-    # runtimeIdentity lets the comparability gate verify which side ran with
-    # Doe's MTLBinaryArchive active and quantify any cache-derived savings.
+    # runtimeIdentity lets the comparability gate verify which native cache
+    # mode each side ran with and quantify any cache-derived savings.
     # Backwards-compat: if the new nested object is absent, fall back to the
     # legacy top-level pipelineCacheWarmupCount/Ns fields (older artifacts).
     pipeline_cache = _pipeline_cache_telemetry(trace_meta)
@@ -353,7 +353,7 @@ def _runtime_identity(
 
 
 def _pipeline_cache_telemetry(trace_meta: dict[str, Any]) -> dict[str, Any] | None:
-    """Read Apple Metal pipeline cache state + warmup telemetry from trace_meta.
+    """Read native pipeline cache state + warmup telemetry from trace_meta.
 
     Prefers the nested `pipelineCache` object emitted by the Zig runtime today
     (state, reason, warmupCount, warmupNs). Falls back to legacy top-level
@@ -364,12 +364,18 @@ def _pipeline_cache_telemetry(trace_meta: dict[str, Any]) -> dict[str, Any] | No
     """
     nested = trace_meta.get("pipelineCache")
     if isinstance(nested, dict):
-        return {
+        payload = {
             "state": str(nested.get("state", "unknown")).strip() or "unknown",
             "reason": str(nested.get("reason", "unknown")).strip() or "unknown",
             "warmupCount": int(nested.get("warmupCount") or 0),
             "warmupNs": int(nested.get("warmupNs") or 0),
         }
+        backend = str(nested.get("backend", "")).strip()
+        if backend:
+            payload["backend"] = backend
+        if nested.get("flushNs") is not None:
+            payload["flushNs"] = int(nested.get("flushNs") or 0)
+        return payload
     legacy_count = trace_meta.get("pipelineCacheWarmupCount")
     legacy_ns = trace_meta.get("pipelineCacheWarmupNs")
     if legacy_count is None and legacy_ns is None:

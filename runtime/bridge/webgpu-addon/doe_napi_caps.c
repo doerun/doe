@@ -725,8 +725,18 @@ napi_value doe_set_timeout_ms(napi_env env, napi_callback_info info) {
 }
 
 napi_value doe_package_pipeline_cache_flush(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 0);
+    size_t argc = 1;
+    napi_value args[1];
+    if (napi_get_cb_info(env, info, &argc, args, NULL, NULL) != napi_ok) {
+        NAPI_THROW(env, "napi_get_cb_info failed");
+    }
     CHECK_LIB_LOADED(env);
+    if (argc >= 1 && pfn_doeNativeQueuePipelineCacheFlush) {
+        WGPUQueue queue = unwrap_ptr(env, args[0]);
+        if (queue) {
+            pfn_doeNativeQueuePipelineCacheFlush(queue);
+        }
+    }
     if (pfn_doeNativePackagePipelineCacheFlush) {
         pfn_doeNativePackagePipelineCacheFlush();
     }

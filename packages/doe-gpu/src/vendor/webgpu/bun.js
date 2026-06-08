@@ -30,6 +30,8 @@ export const providerInfo = () => ({
 export const nativeFastPathInfo = runtime.nativeFastPathInfo ?? full.nativeFastPathInfo;
 export const prewarmPreparedDispatches = runtime.prewarmPreparedDispatches ?? full.prewarmPreparedDispatches;
 export const nativeQueueSyncInfo = runtime.nativeQueueSyncInfo ?? full.nativeQueueSyncInfo;
+export const nativePipelineCacheInfo = runtime.nativePipelineCacheInfo ?? full.nativePipelineCacheInfo;
+export const packagePipelineCacheFlush = runtime.packagePipelineCacheFlush ?? full.packagePipelineCacheFlush;
 export const fastPathStats = runtime.fastPathStats;
 export const preflightShaderSource = runtime.preflightShaderSource ?? full.preflightShaderSource;
 export const setNativeTimeoutMs = runtime.setNativeTimeoutMs ?? full.setNativeTimeoutMs;
@@ -56,6 +58,8 @@ export default {
   nativeFastPathInfo,
   prewarmPreparedDispatches,
   nativeQueueSyncInfo,
+  nativePipelineCacheInfo,
+  packagePipelineCacheFlush,
   fastPathStats,
   preflightShaderSource,
   setNativeTimeoutMs,
