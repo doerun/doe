@@ -710,7 +710,13 @@ function zeroPackageStepBreakdown() {
     submitCommandPrepTotalNs: 0,
     submitAddonCallTotalNs: 0,
     submitAddonCommandReplayTotalNs: 0,
+    submitAddonCommandReplayPrepareTotalNs: 0,
+    submitAddonCommandReplayRecordTotalNs: 0,
+    submitAddonCommandReplayCopyTotalNs: 0,
     submitAddonQueueSubmitTotalNs: 0,
+    submitAddonCommandBufferEndTotalNs: 0,
+    submitAddonSyncPrepareTotalNs: 0,
+    submitAddonDriverSubmitTotalNs: 0,
     submitAddonFlushTotalNs: 0,
     submitPostSubmitBookkeepingTotalNs: 0,
     submitQueueFlushTotalNs: 0,
@@ -2508,7 +2514,13 @@ async function executeSample(
     stepBreakdownNs.submitCommandPrepTotalNs = runtime.queue._submitBreakdownNs.submitCommandPrepTotalNs ?? 0;
     stepBreakdownNs.submitAddonCallTotalNs = runtime.queue._submitBreakdownNs.submitAddonCallTotalNs ?? 0;
     stepBreakdownNs.submitAddonCommandReplayTotalNs = runtime.queue._submitBreakdownNs.submitAddonCommandReplayTotalNs ?? 0;
+    stepBreakdownNs.submitAddonCommandReplayPrepareTotalNs = runtime.queue._submitBreakdownNs.submitAddonCommandReplayPrepareTotalNs ?? 0;
+    stepBreakdownNs.submitAddonCommandReplayRecordTotalNs = runtime.queue._submitBreakdownNs.submitAddonCommandReplayRecordTotalNs ?? 0;
+    stepBreakdownNs.submitAddonCommandReplayCopyTotalNs = runtime.queue._submitBreakdownNs.submitAddonCommandReplayCopyTotalNs ?? 0;
     stepBreakdownNs.submitAddonQueueSubmitTotalNs = runtime.queue._submitBreakdownNs.submitAddonQueueSubmitTotalNs ?? 0;
+    stepBreakdownNs.submitAddonCommandBufferEndTotalNs = runtime.queue._submitBreakdownNs.submitAddonCommandBufferEndTotalNs ?? 0;
+    stepBreakdownNs.submitAddonSyncPrepareTotalNs = runtime.queue._submitBreakdownNs.submitAddonSyncPrepareTotalNs ?? 0;
+    stepBreakdownNs.submitAddonDriverSubmitTotalNs = runtime.queue._submitBreakdownNs.submitAddonDriverSubmitTotalNs ?? 0;
     stepBreakdownNs.submitAddonFlushTotalNs = runtime.queue._submitBreakdownNs.submitAddonFlushTotalNs ?? 0;
     stepBreakdownNs.submitPostSubmitBookkeepingTotalNs = runtime.queue._submitBreakdownNs.submitPostSubmitBookkeepingTotalNs ?? 0;
     stepBreakdownNs.submitQueueFlushTotalNs = runtime.queue._submitBreakdownNs.submitQueueFlushTotalNs ?? 0;

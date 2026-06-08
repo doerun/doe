@@ -9,6 +9,7 @@ const std = @import("std");
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const shader_translation_cache = @import("doe_shader_translation_cache.zig");
+const vk_pipeline = @import("backend/vulkan/vk_pipeline.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
@@ -28,6 +29,7 @@ const DoeComputePipeline = native_types.DoeComputePipeline;
 const DoeBuffer = native_types.DoeBuffer;
 // Maximum KernelBinding slots: groups × bindings per group.
 const MAX_KERNEL_BINDINGS: usize = MAX_COMPUTE_BIND_GROUPS * MAX_BIND;
+const MAX_FLAT_BIND: usize = native_shared.MAX_FLAT_BIND;
 
 const BINDING_KIND_BUFFER: u32 = @intFromEnum(doe_wgsl.BindingKind.buffer);
 const ADDRESS_SPACE_STORAGE: u32 = @intFromEnum(doe_wgsl.ir.AddressSpace.storage);
@@ -57,6 +59,15 @@ fn shader_buffer_binding_type(
         return model_binding_types.WGPUBufferBindingType_Storage;
     }
     return model_binding_types.WGPUBufferBindingType_Storage;
+}
+
+fn populate_pipeline_buffer_binding_types(pip: *DoeComputePipeline, shader_module: ?*DoeShaderModule) void {
+    for (0..MAX_FLAT_BIND) |slot| {
+        const group_u32: u32 = @intCast(slot / MAX_BIND);
+        const binding_u32: u32 = @intCast(slot % MAX_BIND);
+        pip.vk_flat_buffer_binding_types[slot] = shader_buffer_binding_type(shader_module, group_u32, binding_u32);
+    }
+    pip.vk_flat_buffer_binding_types_ready = true;
 }
 
 // ============================================================
@@ -116,10 +127,13 @@ pub fn vulkan_create_shader_module(
 /// Returns error on OOM.
 pub fn vulkan_copy_pipeline_spirv(
     pip: *DoeComputePipeline,
-    shader: *const DoeShaderModule,
+    shader: *DoeShaderModule,
 ) error{OutOfMemory}!void {
     const src = shader.spirv_data orelse return;
     pip.spirv_data = alloc.dupe(u32, src) catch return error.OutOfMemory;
+    pip.vk_spirv_hash = vk_pipeline.compute_spirv_words_hash(src);
+    pip.vk_spirv_hash_ready = true;
+    populate_pipeline_buffer_binding_types(pip, shader);
 }
 
 /// Free pip.spirv_data if heap-allocated. The runtime manages VkPipeline lifecycle.
@@ -128,6 +142,9 @@ pub fn vulkan_release_compute_pipeline(pip: *DoeComputePipeline) void {
         alloc.free(s);
         pip.spirv_data = null;
     }
+    pip.vk_spirv_hash = 0;
+    pip.vk_spirv_hash_ready = false;
+    pip.vk_flat_buffer_binding_types_ready = false;
     if (pip.vk_entry_point_owned) |ep| {
         alloc.free(ep);
         pip.vk_entry_point_owned = null;
@@ -164,7 +181,10 @@ fn collect_recorded_bindings(
             .resource_handle = buf.vk_id,
             .buffer_offset = buf_offsets[slot],
             .buffer_size = buf_sizes[slot],
-            .buffer_type = shader_buffer_binding_type(shader_module, group_u32, binding_u32),
+            .buffer_type = if (pip.vk_flat_buffer_binding_types_ready)
+                pip.vk_flat_buffer_binding_types[slot]
+            else
+                shader_buffer_binding_type(shader_module, group_u32, binding_u32),
         };
         count += 1;
     }
@@ -202,6 +222,13 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
     // kernels whose entry is "main" and wrong for kernels with
     // custom entries like "main_vec4" or "main_multicol".
     const entry_slice: ?[]const u8 = if (pip.vk_entry_point_owned) |ep| ep[0..] else null;
+    if (pip.vk_spirv_hash_ready) {
+        rt.set_compute_shader_spirv_prehashed(spirv, pip.vk_spirv_hash, entry_slice, bindings, false) catch |err| {
+            std.log.err("doe_vulkan_compute: set_compute_shader_spirv failed: {s}", .{@errorName(err)});
+            return false;
+        };
+        return true;
+    }
     rt.set_compute_shader_spirv(spirv, entry_slice, bindings, false) catch |err| {
         std.log.err("doe_vulkan_compute: set_compute_shader_spirv failed: {s}", .{@errorName(err)});
         return false;

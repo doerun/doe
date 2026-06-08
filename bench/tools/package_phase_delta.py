@@ -127,7 +127,13 @@ DERIVED_BREAKDOWN_SPECS: tuple[tuple[str, tuple[tuple[str, str], ...]], ...] = (
         "stepDoeSubmitNativeBreakdownNs",
         (
             ("step", "submitAddonCommandReplayTotalNs"),
+            ("step", "submitAddonCommandReplayPrepareTotalNs"),
+            ("step", "submitAddonCommandReplayRecordTotalNs"),
+            ("step", "submitAddonCommandReplayCopyTotalNs"),
             ("step", "submitAddonQueueSubmitTotalNs"),
+            ("step", "submitAddonCommandBufferEndTotalNs"),
+            ("step", "submitAddonSyncPrepareTotalNs"),
+            ("step", "submitAddonDriverSubmitTotalNs"),
             ("step", "submitAddonFlushTotalNs"),
             ("step", "submitQueueFlushTotalNs"),
             ("step", "submitQueueFlushWaitCompletedTotalNs"),

@@ -144,6 +144,10 @@ pub const DoeComputePipeline = struct {
     dispatch_preconditions: []const wgsl_compiler.ir.DispatchPrecondition = &.{},
     texture_dispatch_preconditions: []const wgsl_compiler.ir.TextureDispatchPrecondition = &.{},
     spirv_data: ?[]const u32 = null,
+    vk_spirv_hash: u64 = 0,
+    vk_spirv_hash_ready: bool = false,
+    vk_flat_buffer_binding_types: [shared.MAX_FLAT_BIND]u32 = [_]u32{0} ** shared.MAX_FLAT_BIND,
+    vk_flat_buffer_binding_types_ready: bool = false,
     /// Entry point name captured from the createComputePipeline
     /// descriptor. Owned (heap-allocated, null-terminated) so it
     /// survives the descriptor struct's lifetime. Consumed at submit

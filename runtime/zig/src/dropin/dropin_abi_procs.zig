@@ -451,12 +451,27 @@ pub export fn doeBufferMapReadCopyUnmapFlat(
 
     if (should_flush != 0) {
         if (native_helpers.cast(native_types.DoeQueue, queue)) |q| {
-            const dst: [*]u8 = @ptrCast(dst_raw);
-            const flush = queue_flush_breakdown.flushPendingWorkTimedDirectReadback(q, buffer, offset, size, dst);
-            breakdown[BREAKDOWN_WAIT_COMPLETED_INDEX] = flush.breakdown.waitCompletedNs;
-            breakdown[BREAKDOWN_DEFERRED_COPY_INDEX] = flush.breakdown.deferredCopyNs;
-            breakdown[BREAKDOWN_DEFERRED_RESOLVE_INDEX] = flush.breakdown.deferredResolveNs;
-            if (flush.copied_direct) return abi_base.WGPUStatus_Success;
+            if (q.dev.backend == .metal) {
+                const dst: [*]u8 = @ptrCast(dst_raw);
+                const flush = queue_flush_breakdown.flushPendingWorkTimedDirectReadback(q, buffer, offset, size, dst);
+                breakdown[BREAKDOWN_WAIT_COMPLETED_INDEX] = flush.breakdown.waitCompletedNs;
+                breakdown[BREAKDOWN_DEFERRED_COPY_INDEX] = flush.breakdown.deferredCopyNs;
+                breakdown[BREAKDOWN_DEFERRED_RESOLVE_INDEX] = flush.breakdown.deferredResolveNs;
+                if (flush.copied_direct) return abi_base.WGPUStatus_Success;
+            } else {
+                var wait_completed_ns: u64 = 0;
+                var deferred_copy_ns: u64 = 0;
+                var deferred_resolve_ns: u64 = 0;
+                native.doeNativeQueueFlushBreakdown(
+                    queue,
+                    &wait_completed_ns,
+                    &deferred_copy_ns,
+                    &deferred_resolve_ns,
+                );
+                breakdown[BREAKDOWN_WAIT_COMPLETED_INDEX] = wait_completed_ns;
+                breakdown[BREAKDOWN_DEFERRED_COPY_INDEX] = deferred_copy_ns;
+                breakdown[BREAKDOWN_DEFERRED_RESOLVE_INDEX] = deferred_resolve_ns;
+            }
         } else {
             var wait_completed_ns: u64 = 0;
             var deferred_copy_ns: u64 = 0;

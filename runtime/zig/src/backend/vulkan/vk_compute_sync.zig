@@ -142,49 +142,13 @@ pub fn make_prior_compute_writes_visible_for_current_bindings(
         return;
     }
 
-    var barriers: [MAX_TRACKED_COMPUTE_BINDINGS]c.VkBufferMemoryBarrier = undefined;
-    var barrier_resource_handles: [MAX_TRACKED_COMPUTE_BINDINGS]u64 = undefined;
-    var barrier_count: usize = 0;
     for (current_compute_bindings(self)) |binding| {
         if (!binding.reads and !binding.writes) continue;
-        if (!self.pending_compute_write_buffers.contains(binding.resource_handle)) continue;
-        const compute_buffer = self.compute_buffers.get(binding.resource_handle) orelse {
+        if (self.pending_compute_write_buffers.contains(binding.resource_handle)) {
             emit_compute_write_visibility_barrier(self, command_buffer);
             return;
-        };
-        barriers[barrier_count] = .{
-            .sType = c.VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            .pNext = null,
-            .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
-            .srcQueueFamilyIndex = c.VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = c.VK_QUEUE_FAMILY_IGNORED,
-            .buffer = compute_buffer.buffer,
-            .offset = 0,
-            .size = compute_buffer.size,
-        };
-        barrier_resource_handles[barrier_count] = binding.resource_handle;
-        barrier_count += 1;
+        }
     }
-    if (barrier_count == 0) return;
-
-    c.vkCmdPipelineBarrier(
-        command_buffer,
-        c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        0,
-        0,
-        null,
-        @intCast(barrier_count),
-        @ptrCast(barriers[0..barrier_count].ptr),
-        0,
-        null,
-    );
-
-    for (barrier_resource_handles[0..barrier_count]) |resource_handle| {
-        _ = self.pending_compute_write_buffers.remove(resource_handle);
-    }
-    self.has_pending_compute_writes = self.pending_compute_write_buffers.count() > 0;
 }
 
 pub fn remember_current_compute_writes(self: anytype) void {

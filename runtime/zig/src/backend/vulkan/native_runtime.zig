@@ -261,6 +261,28 @@ pub const NativeVulkanRuntime = struct {
         return vk_pipeline.set_compute_shader_spirv(self, words, entry_point, bindings, initialize_buffers_on_create);
     }
 
+    pub fn set_compute_shader_spirv_prehashed(
+        self: *NativeVulkanRuntime,
+        words: []const u32,
+        spirv_hash: u64,
+        entry_point: ?[]const u8,
+        bindings: ?[]const model_compute_types.KernelBinding,
+        initialize_buffers_on_create: bool,
+    ) !void {
+        return vk_pipeline.set_compute_shader_spirv_prehashed(self, words, spirv_hash, entry_point, bindings, initialize_buffers_on_create);
+    }
+
+    pub fn set_compute_shader_spirv_with_hash(
+        self: *NativeVulkanRuntime,
+        words: []const u32,
+        pipeline_hash: u64,
+        entry_point: ?[]const u8,
+        bindings: ?[]const model_compute_types.KernelBinding,
+        initialize_buffers_on_create: bool,
+    ) !void {
+        return vk_pipeline.set_compute_shader_spirv_with_hash(self, words, pipeline_hash, entry_point, bindings, initialize_buffers_on_create);
+    }
+
     pub fn rebuild_compute_shader_spirv(self: *NativeVulkanRuntime, words: []const u32) !void {
         return vk_pipeline.rebuild_compute_shader_spirv(self, words);
     }
@@ -381,8 +403,8 @@ pub const NativeVulkanRuntime = struct {
         }
         vk_compute_sync.make_prior_transfer_writes_visible(self, command_buffer);
         vk_compute_sync.make_prior_compute_writes_visible_for_current_bindings(self, command_buffer);
-        vk_pipeline.bind_compute_pipeline_if_needed(self, command_buffer);
-        vk_pipeline.bind_descriptor_sets_if_needed(self, command_buffer);
+        c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
+        vk_pipeline.bind_descriptor_sets(self, command_buffer);
         c.vkCmdDispatch(command_buffer, x, y, z);
         if (want_timestamps) {
             c.vkCmdWriteTimestamp(command_buffer, c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, self.timestamp_query_pool, 1);
@@ -536,8 +558,8 @@ pub const NativeVulkanRuntime = struct {
         }
         vk_compute_sync.make_prior_transfer_writes_visible(self, command_buffer);
         vk_compute_sync.make_prior_compute_writes_visible_for_current_bindings(self, command_buffer);
-        vk_pipeline.bind_compute_pipeline_if_needed(self, command_buffer);
-        vk_pipeline.bind_descriptor_sets_if_needed(self, command_buffer);
+        c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
+        vk_pipeline.bind_descriptor_sets(self, command_buffer);
         c.vkCmdDispatchIndirect(command_buffer, indirect_args.buffer, 0);
         if (!replay_deferred) {
             try c.check_vk(c.vkEndCommandBuffer(command_buffer));
@@ -727,6 +749,10 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn submit_recorded_replay(self: *NativeVulkanRuntime) !void {
         return vk_upload.submit_recorded_replay(self);
+    }
+
+    pub fn submit_recorded_replay_timed(self: *NativeVulkanRuntime) !vk_upload.RecordedReplaySubmitTimings {
+        return vk_upload.submit_recorded_replay_timed(self);
     }
 
     /// Query whether the timeline semaphore extension is available.

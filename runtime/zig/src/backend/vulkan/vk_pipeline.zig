@@ -304,6 +304,30 @@ pub fn set_compute_shader_spirv(
 ) !void {
     if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
     const pipeline_hash = compute_pipeline_hash(words, entry_point, bindings);
+    try set_compute_shader_spirv_with_hash(self, words, pipeline_hash, entry_point, bindings, initialize_buffers_on_create);
+}
+
+pub fn set_compute_shader_spirv_prehashed(
+    self: anytype,
+    words: []const u32,
+    spirv_hash: u64,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model_compute_types.KernelBinding,
+    initialize_buffers_on_create: bool,
+) !void {
+    if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
+    const pipeline_hash = compute_pipeline_hash_from_spirv_hash(spirv_hash, entry_point, bindings);
+    try set_compute_shader_spirv_with_hash(self, words, pipeline_hash, entry_point, bindings, initialize_buffers_on_create);
+}
+
+pub fn set_compute_shader_spirv_with_hash(
+    self: anytype,
+    words: []const u32,
+    pipeline_hash: u64,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model_compute_types.KernelBinding,
+    initialize_buffers_on_create: bool,
+) !void {
     if (!self.has_pipeline or pipeline_hash != self.current_pipeline_hash) {
         const previous_pipeline_hash = self.current_pipeline_hash;
         const had_active_state = has_active_compute_state(self);
@@ -837,9 +861,28 @@ pub fn compute_pipeline_hash(
     entry_point: ?[]const u8,
     bindings: ?[]const model_compute_types.KernelBinding,
 ) u64 {
+    return compute_pipeline_hash_from_spirv_hash(compute_spirv_words_hash(words), entry_point, bindings);
+}
+
+pub fn compute_spirv_words_hash(words: []const u32) u64 {
+    return std.hash.Wyhash.hash(0, std.mem.sliceAsBytes(words));
+}
+
+pub fn compute_pipeline_hash_from_spirv_hash(
+    spirv_hash: u64,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model_compute_types.KernelBinding,
+) u64 {
+    return compute_pipeline_hash_from_layout_hash(spirv_hash, entry_point, compute_layout_hash(bindings));
+}
+
+pub fn compute_pipeline_hash_from_layout_hash(
+    spirv_hash: u64,
+    entry_point: ?[]const u8,
+    layout_hash: u64,
+) u64 {
     var hasher = std.hash.Wyhash.init(0);
-    const layout_hash = compute_layout_hash(bindings);
-    hasher.update(std.mem.sliceAsBytes(words));
+    hasher.update(std.mem.asBytes(&spirv_hash));
     hasher.update(entry_point orelse "main");
     hasher.update(std.mem.asBytes(&layout_hash));
     return hasher.final();

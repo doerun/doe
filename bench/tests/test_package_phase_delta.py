@@ -173,7 +173,13 @@ class TestPackagePhaseDelta(unittest.TestCase):
                 "submitPostSubmitBookkeepingTotalNs": 18_000_000,
                 "submitQueueWaitBookkeepingTotalNs": 19_000_000,
                 "submitAddonCommandReplayTotalNs": 20_000_000,
+                "submitAddonCommandReplayPrepareTotalNs": 38_000_000,
+                "submitAddonCommandReplayRecordTotalNs": 39_000_000,
+                "submitAddonCommandReplayCopyTotalNs": 40_000_000,
                 "submitAddonQueueSubmitTotalNs": 21_000_000,
+                "submitAddonCommandBufferEndTotalNs": 35_000_000,
+                "submitAddonSyncPrepareTotalNs": 36_000_000,
+                "submitAddonDriverSubmitTotalNs": 37_000_000,
                 "submitAddonFlushTotalNs": 22_000_000,
                 "submitQueueFlushTotalNs": 23_000_000,
                 "submitQueueFlushWaitCompletedTotalNs": 24_000_000,
@@ -197,7 +203,7 @@ class TestPackagePhaseDelta(unittest.TestCase):
         self.assertEqual(values["stepSelectedTotalNs"], 92.0)
         self.assertEqual(values["stepSubmitApiEnvelopeNs"], 39.0)
         self.assertEqual(values["stepDoeSubmitWrapperNs"], 70.0)
-        self.assertEqual(values["stepDoeSubmitNativeBreakdownNs"], 161.0)
+        self.assertEqual(values["stepDoeSubmitNativeBreakdownNs"], 386.0)
         self.assertEqual(values["stepReadbackTotalNs"], 15.0)
         self.assertEqual(values["stepReadbackApiEnvelopeNs"], 177.0)
         self.assertEqual(values["stepReadbackHarnessNs"], 67.0)

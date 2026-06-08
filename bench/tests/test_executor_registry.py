@@ -57,6 +57,7 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("run-node-webgpu-plan.js", template)
         self.assertIn("--plan {plan}", template)
         self.assertIn("--provider node-webgpu", template)
+        self.assertNotIn("DOE_WEBGPU_SUBMIT_BREAKDOWN=1", template)
         self.assertEqual(resolve_executor_boundary("node_webgpu_package"), "plan")
 
     def test_resolves_doe_node_webgpu_executor(self) -> None:
@@ -64,6 +65,7 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("run-node-webgpu-plan.js", template)
         self.assertIn("--plan {plan}", template)
         self.assertIn("--provider doe", template)
+        self.assertNotIn("DOE_WEBGPU_SUBMIT_BREAKDOWN=1", template)
         self.assertEqual(resolve_executor_boundary("doe_node_webgpu"), "plan")
 
     def test_resolves_prepared_node_webgpu_executors(self) -> None:
@@ -73,6 +75,8 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("--provider doe", doe_template)
         self.assertIn("--prepared-session", dawn_template)
         self.assertIn("--prepared-session", doe_template)
+        self.assertNotIn("DOE_WEBGPU_SUBMIT_BREAKDOWN=1", dawn_template)
+        self.assertNotIn("DOE_WEBGPU_SUBMIT_BREAKDOWN=1", doe_template)
         self.assertEqual(resolve_executor_boundary("node_webgpu_package_prepared"), "plan")
         self.assertEqual(resolve_executor_boundary("doe_node_webgpu_prepared"), "plan")
 
@@ -101,6 +105,9 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("--provider bun-webgpu", bun_template)
         self.assertIn("--provider doe", doe_template)
         self.assertIn("--provider doe-ffi", doe_ffi_template)
+        self.assertNotIn("DOE_WEBGPU_SUBMIT_BREAKDOWN=1", bun_template)
+        self.assertNotIn("DOE_WEBGPU_SUBMIT_BREAKDOWN=1", doe_template)
+        self.assertNotIn("DOE_WEBGPU_SUBMIT_BREAKDOWN=1", doe_ffi_template)
         self.assertEqual(resolve_executor_boundary("bun_webgpu_package"), "plan")
         self.assertEqual(resolve_executor_boundary("doe_bun_package"), "plan")
         self.assertEqual(resolve_executor_boundary("doe_bun_package_ffi"), "plan")
@@ -115,6 +122,9 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("--prepared-session", bun_template)
         self.assertIn("--prepared-session", doe_template)
         self.assertIn("--prepared-session", doe_ffi_template)
+        self.assertNotIn("DOE_WEBGPU_SUBMIT_BREAKDOWN=1", bun_template)
+        self.assertNotIn("DOE_WEBGPU_SUBMIT_BREAKDOWN=1", doe_template)
+        self.assertNotIn("DOE_WEBGPU_SUBMIT_BREAKDOWN=1", doe_ffi_template)
         self.assertEqual(resolve_executor_boundary("bun_webgpu_package_prepared"), "plan")
         self.assertEqual(resolve_executor_boundary("doe_bun_package_prepared"), "plan")
         self.assertEqual(resolve_executor_boundary("doe_bun_package_ffi_prepared"), "plan")

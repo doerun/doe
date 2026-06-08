@@ -26,13 +26,19 @@ const MAX_COMPUTE_BIND_GROUPS = compute_bind_groups.MAX_COMPUTE_BIND_GROUPS;
 const MAX_FLAT_BIND = compute_bind_groups.MAX_FLAT_BIND;
 const MSL_SIZES_SLOT: u32 = emit_msl.MSL_SIZES_SLOT;
 const SIZES_BUF_BYTES: usize = (MSL_SIZES_SLOT + 1) * @sizeOf(u32);
-const DIRECT_DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT: usize = 6;
+const DIRECT_DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT: usize = 12;
 const DIRECT_DISPATCH_FLUSH_COMMAND_REPLAY_INDEX: usize = 0;
 const DIRECT_DISPATCH_FLUSH_QUEUE_SUBMIT_INDEX: usize = 1;
 const DIRECT_DISPATCH_FLUSH_FLUSH_INDEX: usize = 2;
 const DIRECT_DISPATCH_FLUSH_WAIT_COMPLETED_INDEX: usize = 3;
 const DIRECT_DISPATCH_FLUSH_DEFERRED_COPY_INDEX: usize = 4;
 const DIRECT_DISPATCH_FLUSH_DEFERRED_RESOLVE_INDEX: usize = 5;
+const DIRECT_DISPATCH_FLUSH_COMMAND_BUFFER_END_INDEX: usize = 6;
+const DIRECT_DISPATCH_FLUSH_SYNC_PREPARE_INDEX: usize = 7;
+const DIRECT_DISPATCH_FLUSH_DRIVER_SUBMIT_INDEX: usize = 8;
+const DIRECT_DISPATCH_FLUSH_COMMAND_REPLAY_PREPARE_INDEX: usize = 9;
+const DIRECT_DISPATCH_FLUSH_COMMAND_REPLAY_RECORD_INDEX: usize = 10;
+const DIRECT_DISPATCH_FLUSH_COMMAND_REPLAY_COPY_INDEX: usize = 11;
 const MAX_DIRECT_BATCH_DISPATCHES: usize = 64;
 const RecordedCmd = native_cmds.RecordedCmd;
 const DoeCommandBuffer = native_types.DoeCommandBuffer;
@@ -713,6 +719,36 @@ fn computeDispatchBatchCopyFlushDirect(
             breakdown,
             DIRECT_DISPATCH_FLUSH_QUEUE_SUBMIT_INDEX,
             timings.queue_submit_ns,
+        );
+        addDirectDispatchFlushField(
+            breakdown,
+            DIRECT_DISPATCH_FLUSH_COMMAND_REPLAY_PREPARE_INDEX,
+            timings.command_replay_prepare_ns,
+        );
+        addDirectDispatchFlushField(
+            breakdown,
+            DIRECT_DISPATCH_FLUSH_COMMAND_REPLAY_RECORD_INDEX,
+            timings.command_replay_record_ns,
+        );
+        addDirectDispatchFlushField(
+            breakdown,
+            DIRECT_DISPATCH_FLUSH_COMMAND_REPLAY_COPY_INDEX,
+            timings.command_replay_copy_ns,
+        );
+        addDirectDispatchFlushField(
+            breakdown,
+            DIRECT_DISPATCH_FLUSH_COMMAND_BUFFER_END_INDEX,
+            timings.queue_submit_command_buffer_end_ns,
+        );
+        addDirectDispatchFlushField(
+            breakdown,
+            DIRECT_DISPATCH_FLUSH_SYNC_PREPARE_INDEX,
+            timings.queue_submit_sync_prepare_ns,
+        );
+        addDirectDispatchFlushField(
+            breakdown,
+            DIRECT_DISPATCH_FLUSH_DRIVER_SUBMIT_INDEX,
+            timings.queue_submit_driver_submit_ns,
         );
         return;
     }

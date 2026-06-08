@@ -158,7 +158,7 @@ pub fn create_command_pool_and_primary_buffer(self: anytype) !void {
     var pool_info = c.VkCommandPoolCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = null,
-        .flags = c.VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .flags = c.VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | c.VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
         .queueFamilyIndex = self.queue_family_index,
     };
     try c.check_vk(c.vkCreateCommandPool(self.device, &pool_info, null, &self.command_pool));

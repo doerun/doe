@@ -26,24 +26,10 @@ pub const FencePool = struct {
     count: u32 = 0,
     next_index: u32 = 0,
 
-    /// Create all pool fences up front. Call once after device creation.
+    /// Initialize the ring. Individual VkFence handles are created on first use.
     pub fn init(device: c.VkDevice) common_errors.BackendNativeError!FencePool {
+        _ = device;
         var pool = FencePool{};
-        var fence_info = c.VkFenceCreateInfo{
-            .sType = c.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-            .pNext = null,
-            .flags = 0,
-        };
-        var i: u32 = 0;
-        errdefer {
-            var j: u32 = 0;
-            while (j < i) : (j += 1) {
-                c.vkDestroyFence(device, pool.fences[j], null);
-            }
-        }
-        while (i < FENCE_POOL_CAPACITY) : (i += 1) {
-            try c.check_vk(c.vkCreateFence(device, &fence_info, null, &pool.fences[i]));
-        }
         pool.count = FENCE_POOL_CAPACITY;
         return pool;
     }
@@ -53,6 +39,14 @@ pub const FencePool = struct {
     /// so it can be reused. Returns the fence handle to pass to vkQueueSubmit.
     pub fn acquire(self: *FencePool, device: c.VkDevice) common_errors.BackendNativeError!c.VkFence {
         const idx = self.next_index;
+        if (self.fences[idx] == VK_NULL_U64) {
+            var fence_info = c.VkFenceCreateInfo{
+                .sType = c.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+            };
+            try c.check_vk(c.vkCreateFence(device, &fence_info, null, &self.fences[idx]));
+        }
         const fence = self.fences[idx];
 
         // If this slot was in-flight from a previous submission, wait + reset

@@ -609,7 +609,13 @@ static napi_value make_submit_breakdown_full(
     uint64_t flush_ns,
     uint64_t wait_completed_ns,
     uint64_t deferred_copy_ns,
-    uint64_t deferred_resolve_ns
+    uint64_t deferred_resolve_ns,
+    uint64_t command_buffer_end_ns,
+    uint64_t sync_prepare_ns,
+    uint64_t driver_submit_ns,
+    uint64_t command_replay_prepare_ns,
+    uint64_t command_replay_record_ns,
+    uint64_t command_replay_copy_ns
 );
 
 static napi_value make_submit_breakdown(
@@ -618,7 +624,7 @@ static napi_value make_submit_breakdown(
     uint64_t queue_submit_ns,
     uint64_t flush_ns
 ) {
-    return make_submit_breakdown_full(env, command_replay_ns, queue_submit_ns, flush_ns, 0, 0, 0);
+    return make_submit_breakdown_full(env, command_replay_ns, queue_submit_ns, flush_ns, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 static napi_value make_submit_breakdown_full(
@@ -628,7 +634,13 @@ static napi_value make_submit_breakdown_full(
     uint64_t flush_ns,
     uint64_t wait_completed_ns,
     uint64_t deferred_copy_ns,
-    uint64_t deferred_resolve_ns
+    uint64_t deferred_resolve_ns,
+    uint64_t command_buffer_end_ns,
+    uint64_t sync_prepare_ns,
+    uint64_t driver_submit_ns,
+    uint64_t command_replay_prepare_ns,
+    uint64_t command_replay_record_ns,
+    uint64_t command_replay_copy_ns
 ) {
     napi_value result;
     napi_value replay_value;
@@ -637,6 +649,12 @@ static napi_value make_submit_breakdown_full(
     napi_value wait_value;
     napi_value copy_value;
     napi_value resolve_value;
+    napi_value command_buffer_end_value;
+    napi_value sync_prepare_value;
+    napi_value driver_submit_value;
+    napi_value command_replay_prepare_value;
+    napi_value command_replay_record_value;
+    napi_value command_replay_copy_value;
     napi_create_object(env, &result);
     napi_create_double(env, (double)command_replay_ns, &replay_value);
     napi_create_double(env, (double)queue_submit_ns, &submit_value);
@@ -644,12 +662,24 @@ static napi_value make_submit_breakdown_full(
     napi_create_double(env, (double)wait_completed_ns, &wait_value);
     napi_create_double(env, (double)deferred_copy_ns, &copy_value);
     napi_create_double(env, (double)deferred_resolve_ns, &resolve_value);
+    napi_create_double(env, (double)command_buffer_end_ns, &command_buffer_end_value);
+    napi_create_double(env, (double)sync_prepare_ns, &sync_prepare_value);
+    napi_create_double(env, (double)driver_submit_ns, &driver_submit_value);
+    napi_create_double(env, (double)command_replay_prepare_ns, &command_replay_prepare_value);
+    napi_create_double(env, (double)command_replay_record_ns, &command_replay_record_value);
+    napi_create_double(env, (double)command_replay_copy_ns, &command_replay_copy_value);
     napi_set_named_property(env, result, "commandReplayNs", replay_value);
     napi_set_named_property(env, result, "queueSubmitNs", submit_value);
     napi_set_named_property(env, result, "flushNs", flush_value);
     napi_set_named_property(env, result, "waitCompletedNs", wait_value);
     napi_set_named_property(env, result, "deferredCopyNs", copy_value);
     napi_set_named_property(env, result, "deferredResolveNs", resolve_value);
+    napi_set_named_property(env, result, "commandBufferEndNs", command_buffer_end_value);
+    napi_set_named_property(env, result, "syncPrepareNs", sync_prepare_value);
+    napi_set_named_property(env, result, "driverSubmitNs", driver_submit_value);
+    napi_set_named_property(env, result, "commandReplayPrepareNs", command_replay_prepare_value);
+    napi_set_named_property(env, result, "commandReplayRecordNs", command_replay_record_value);
+    napi_set_named_property(env, result, "commandReplayCopyNs", command_replay_copy_value);
     return result;
 }
 
@@ -1232,7 +1262,13 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
                     0,
                     0,
                     0,
-                    0
+                    0,
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY]
                 );
             }
             const uint64_t queue_submit_started_ns = monotonic_now_ns();
@@ -1332,7 +1368,13 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
                     0,
                     0,
                     0,
-                    0
+                    0,
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY]
                 );
             }
             return make_submit_breakdown(env, command_replay_ns, queue_submit_ns, 0);
@@ -1416,7 +1458,13 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
                     0,
                     breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_WAIT_COMPLETED],
                     breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_COPY],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_RESOLVE]
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_RESOLVE],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
+                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY]
                 );
             }
             return make_submit_breakdown(env, command_replay_ns, queue_submit_ns, 0);
@@ -1501,7 +1549,7 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
     }
     pfn_wgpuCommandBufferRelease(cmd_buf);
     pfn_wgpuCommandEncoderRelease(encoder);
-    return make_submit_breakdown_full(env, command_replay_ns, queue_submit_ns, flush_ns, wait_completed_ns, deferred_copy_ns, deferred_resolve_ns);
+    return make_submit_breakdown_full(env, command_replay_ns, queue_submit_ns, flush_ns, wait_completed_ns, deferred_copy_ns, deferred_resolve_ns, 0, 0, 0, 0, 0, 0);
 }
 
 /* submitComputeDispatchCopy(device, queue, pipeline, bindGroups, x, y, z,

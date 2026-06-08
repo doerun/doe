@@ -91,13 +91,19 @@ const READBACK_BREAKDOWN_DEFERRED_RESOLVE = 2;
 const READBACK_BREAKDOWN_MAP = 3;
 const READBACK_BREAKDOWN_COPY = 4;
 const READBACK_BREAKDOWN_UNMAP = 5;
-const DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT = 6;
+const DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT = 12;
 const DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY = 0;
 const DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT = 1;
 const DISPATCH_FLUSH_BREAKDOWN_FLUSH = 2;
 const DISPATCH_FLUSH_BREAKDOWN_WAIT_COMPLETED = 3;
 const DISPATCH_FLUSH_BREAKDOWN_DEFERRED_COPY = 4;
 const DISPATCH_FLUSH_BREAKDOWN_DEFERRED_RESOLVE = 5;
+const DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END = 6;
+const DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE = 7;
+const DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT = 8;
+const DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE = 9;
+const DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD = 10;
+const DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY = 11;
 const STYPE_SHADER_SOURCE_WGSL = 0x00000002;
 const PROCESS_EVENTS_TIMEOUT_NS = 5_000_000_000;
 const NS_PER_MS = 1_000_000;
@@ -848,7 +854,13 @@ function zeroQueueSubmitBreakdown() {
         submitCommandPrepTotalNs: 0,
         submitAddonCallTotalNs: 0,
         submitAddonCommandReplayTotalNs: 0,
+        submitAddonCommandReplayPrepareTotalNs: 0,
+        submitAddonCommandReplayRecordTotalNs: 0,
+        submitAddonCommandReplayCopyTotalNs: 0,
         submitAddonQueueSubmitTotalNs: 0,
+        submitAddonCommandBufferEndTotalNs: 0,
+        submitAddonSyncPrepareTotalNs: 0,
+        submitAddonDriverSubmitTotalNs: 0,
         submitAddonFlushTotalNs: 0,
         submitPostSubmitBookkeepingTotalNs: 0,
         submitQueueFlushTotalNs: 0,
@@ -876,8 +888,26 @@ function accumulateDispatchFlushBreakdown(queue, breakdown) {
     queue._submitBreakdownNs.submitAddonCommandReplayTotalNs += Number(
         breakdown[DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY],
     );
+    queue._submitBreakdownNs.submitAddonCommandReplayPrepareTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
+    );
+    queue._submitBreakdownNs.submitAddonCommandReplayRecordTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
+    );
+    queue._submitBreakdownNs.submitAddonCommandReplayCopyTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY],
+    );
     queue._submitBreakdownNs.submitAddonQueueSubmitTotalNs += Number(
         breakdown[DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT],
+    );
+    queue._submitBreakdownNs.submitAddonCommandBufferEndTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
+    );
+    queue._submitBreakdownNs.submitAddonSyncPrepareTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
+    );
+    queue._submitBreakdownNs.submitAddonDriverSubmitTotalNs += Number(
+        breakdown[DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
     );
     queue._submitBreakdownNs.submitAddonFlushTotalNs += Number(
         breakdown[DISPATCH_FLUSH_BREAKDOWN_FLUSH],

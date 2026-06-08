@@ -46,6 +46,16 @@ pub const VkPoolEntry = struct {
     mapped: ?*anyopaque = null,
 };
 
+pub const RecordedReplaySubmitTimings = struct {
+    command_buffer_end_ns: u64 = 0,
+    sync_prepare_ns: u64 = 0,
+    driver_submit_ns: u64 = 0,
+
+    pub fn total(self: RecordedReplaySubmitTimings) u64 {
+        return self.command_buffer_end_ns +| self.sync_prepare_ns +| self.driver_submit_ns;
+    }
+};
+
 pub const UploadPathKind = enum {
     fast_mapped,
     direct_mapped,
@@ -69,7 +79,7 @@ pub fn flush_queue(self: anytype) !u64 {
     if (!self.has_device) return 0;
     const start_ns = common_timing.now_ns();
     if (self.replay_recording_active) {
-        try finalize_recorded_submit_replay(self);
+        _ = try finalize_recorded_submit_replay(self);
     }
     const has_pending = self.hot_pending_upload != null or self.pending_uploads.items.len > 0;
     if (has_pending) {
@@ -120,12 +130,20 @@ pub fn flush_queue(self: anytype) !u64 {
 }
 
 pub fn submit_recorded_replay(self: anytype) !void {
-    try finalize_recorded_submit_replay(self);
+    _ = try finalize_recorded_submit_replay(self);
 }
 
-fn finalize_recorded_submit_replay(self: anytype) !void {
-    if (!self.replay_recording_active) return;
+pub fn submit_recorded_replay_timed(self: anytype) !RecordedReplaySubmitTimings {
+    return finalize_recorded_submit_replay(self);
+}
+
+fn finalize_recorded_submit_replay(self: anytype) !RecordedReplaySubmitTimings {
+    var timings = RecordedReplaySubmitTimings{};
+    if (!self.replay_recording_active) return timings;
+
+    const end_started_ns = common_timing.now_ns();
     try c.check_vk(c.vkEndCommandBuffer(self.replay_command_buffer));
+    timings.command_buffer_end_ns = common_timing.ns_delta(common_timing.now_ns(), end_started_ns);
 
     var submit_info = c.VkSubmitInfo{
         .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -139,6 +157,7 @@ fn finalize_recorded_submit_replay(self: anytype) !void {
         .pSignalSemaphores = null,
     };
 
+    const sync_prepare_started_ns = common_timing.now_ns();
     try vk_device.ensure_deferred_submission_state(self);
     if (self.has_timeline_semaphore) {
         var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
@@ -146,17 +165,24 @@ fn finalize_recorded_submit_replay(self: anytype) !void {
         submit_info.pNext = @ptrCast(&tsi.timeline_info);
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+        timings.sync_prepare_ns = common_timing.ns_delta(common_timing.now_ns(), sync_prepare_started_ns);
+        const submit_started_ns = common_timing.now_ns();
         try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+        timings.driver_submit_ns = common_timing.ns_delta(common_timing.now_ns(), submit_started_ns);
     } else {
         const deferred_fence = if (self.has_fence_pool)
             try self.fence_pool_state.acquire(self.device)
         else
             VK_NULL_U64;
+        timings.sync_prepare_ns = common_timing.ns_delta(common_timing.now_ns(), sync_prepare_started_ns);
+        const submit_started_ns = common_timing.now_ns();
         try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
+        timings.driver_submit_ns = common_timing.ns_delta(common_timing.now_ns(), submit_started_ns);
     }
     self.replay_recording_active = false;
     self.replay_command_buffer = null;
     self.has_deferred_submissions = true;
+    return timings;
 }
 
 pub fn record_upload_copy(self: anytype, bytes: u64, dst_usage: u32) !PendingUpload {

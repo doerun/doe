@@ -839,7 +839,13 @@ function zeroQueueSubmitBreakdown() {
     submitCommandPrepTotalNs: 0,
     submitAddonCallTotalNs: 0,
     submitAddonCommandReplayTotalNs: 0,
+    submitAddonCommandReplayPrepareTotalNs: 0,
+    submitAddonCommandReplayRecordTotalNs: 0,
+    submitAddonCommandReplayCopyTotalNs: 0,
     submitAddonQueueSubmitTotalNs: 0,
+    submitAddonCommandBufferEndTotalNs: 0,
+    submitAddonSyncPrepareTotalNs: 0,
+    submitAddonDriverSubmitTotalNs: 0,
     submitAddonFlushTotalNs: 0,
     submitPostSubmitBookkeepingTotalNs: 0,
     submitQueueFlushTotalNs: 0,
@@ -859,7 +865,13 @@ function accumulateAddonSubmitBreakdown(queue, addonBreakdown) {
     return;
   }
   queue._submitBreakdownNs.submitAddonCommandReplayTotalNs += Number(addonBreakdown.commandReplayNs ?? 0);
+  queue._submitBreakdownNs.submitAddonCommandReplayPrepareTotalNs += Number(addonBreakdown.commandReplayPrepareNs ?? 0);
+  queue._submitBreakdownNs.submitAddonCommandReplayRecordTotalNs += Number(addonBreakdown.commandReplayRecordNs ?? 0);
+  queue._submitBreakdownNs.submitAddonCommandReplayCopyTotalNs += Number(addonBreakdown.commandReplayCopyNs ?? 0);
   queue._submitBreakdownNs.submitAddonQueueSubmitTotalNs += Number(addonBreakdown.queueSubmitNs ?? 0);
+  queue._submitBreakdownNs.submitAddonCommandBufferEndTotalNs += Number(addonBreakdown.commandBufferEndNs ?? 0);
+  queue._submitBreakdownNs.submitAddonSyncPrepareTotalNs += Number(addonBreakdown.syncPrepareNs ?? 0);
+  queue._submitBreakdownNs.submitAddonDriverSubmitTotalNs += Number(addonBreakdown.driverSubmitNs ?? 0);
   queue._submitBreakdownNs.submitAddonFlushTotalNs += Number(addonBreakdown.flushNs ?? 0);
   queue._submitBreakdownNs.submitQueueFlushWaitCompletedTotalNs += Number(addonBreakdown.waitCompletedNs ?? 0);
   queue._submitBreakdownNs.submitQueueFlushDeferredCopyTotalNs += Number(addonBreakdown.deferredCopyNs ?? 0);
