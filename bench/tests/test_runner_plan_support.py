@@ -245,6 +245,87 @@ class RunnerPlanSupportTests(unittest.TestCase):
             )
             self.assertTrue(trace_meta_records_terminal_execution_outcome(trace_meta_path))
 
+    @patch("bench.native_compare_modules.runner.run_once")
+    def test_run_workload_executes_warmup_before_full_timed_iterations(
+        self,
+        mock_run_once,
+    ) -> None:
+        calls = []
+
+        def fake_run_once(_command, **kwargs):
+            calls.append(kwargs["trace_meta_path"])
+            sample_index = len(calls)
+            kwargs["trace_meta_path"].write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "kind": "trace_meta",
+                        "executionErrorCount": 0,
+                        "executionSkippedCount": 0,
+                        "executionUnsupportedCount": 0,
+                        "executionTotalNs": sample_index * 1_000_000,
+                        "executionSetupTotalNs": 0,
+                        "executionEncodeTotalNs": sample_index * 1_000_000,
+                        "executionSubmitWaitTotalNs": 0,
+                        "executionDispatchCount": 1,
+                        "executionRowCount": 1,
+                        "executionSuccessCount": 1,
+                        "timingMs": float(sample_index),
+                        "timingSource": "doe-execution-total-ns",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            return float(sample_index), 0.0, 0, {"processWallMs": float(sample_index)}
+
+        mock_run_once.side_effect = fake_run_once
+        workload = SimpleNamespace(
+            id="alpha",
+            domain="compute",
+            commands_path="",
+            plan_path="",
+            quirks_path="",
+            vendor="",
+            api="",
+            family="",
+            driver="",
+            dawn_filter="",
+            extra_args=[],
+            comparable=True,
+            strict_normalization_unit="",
+        )
+
+        with tempfile.TemporaryDirectory(prefix="doe-runner-warmup-") as tmpdir:
+            result = run_workload(
+                name="sample",
+                template=(
+                    "node bench/executors/sample.js --trace-meta {trace_meta} "
+                    "--trace-jsonl {trace_jsonl} --workload {workload}"
+                ),
+                workload=workload,
+                iterations=3,
+                warmup=2,
+                out_dir=Path(tmpdir),
+                gpu_memory_probe="none",
+                resource_sample_ms=100,
+                resource_sample_target_count=0,
+                timing_divisor=1.0,
+                command_repeat=1,
+                ignore_first_ops=0,
+                upload_buffer_usage="copy-dst-copy-src",
+                upload_submit_every=1,
+                inject_upload_runtime_flags=False,
+                required_timing_class="operation",
+                comparability_mode="strict",
+                benchmark_policy=SimpleNamespace(),
+                emit_shell=False,
+            )
+
+        self.assertEqual(mock_run_once.call_count, 5)
+        self.assertEqual([sample["runIndex"] for sample in result["commandSamples"]], [2, 3, 4])
+        self.assertEqual(result["timingsMs"], [3.0, 4.0, 5.0])
+        self.assertEqual(result["stats"]["count"], 3)
+
     @patch(
         "bench.native_compare_modules.runner._parse_compilation_ndjson",
         return_value={"p50_ns": 2_000_000, "p95_ns": 2_500_000, "p99_ns": 3_000_000, "bytesOut": 128},

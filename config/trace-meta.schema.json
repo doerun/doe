@@ -226,6 +226,8 @@
     "packagePreparedSession": { "type": "boolean" },
     "packageSetupIncludedInSelectedTiming": { "type": "boolean" },
     "packageResidentBufferLoads": { "type": "boolean" },
+    "packageExecutionWarmupCount": { "type": "integer", "minimum": 0 },
+    "packageExecutionWarmupTotalNs": { "type": "integer", "minimum": 0 },
     "packageReadbackMode": {
       "type": "string",
       "enum": ["native-map-read-copy-unmap", "mapAsync"]

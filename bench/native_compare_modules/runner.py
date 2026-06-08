@@ -780,7 +780,8 @@ def run_workload(
             command_repeat=command_repeat,
         )
 
-    for run_idx in range(max(iterations, 0)):
+    total_runs = max(iterations, 0) + max(warmup, 0)
+    for run_idx in range(total_runs):
         trace_jsonl = out_dir / f"{name}.run{run_idx:03d}.ndjson"
         trace_meta = out_dir / f"{name}.run{run_idx:03d}.meta.json"
 

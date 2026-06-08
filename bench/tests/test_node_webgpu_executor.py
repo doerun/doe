@@ -1978,7 +1978,44 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
             self.assertTrue(meta["packagePreparedSession"])
             self.assertFalse(meta["packageSetupIncludedInSelectedTiming"])
+            self.assertEqual(meta["packageExecutionWarmupCount"], 0)
+            self.assertEqual(meta["packageExecutionWarmupTotalNs"], 0)
             self.assertEqual(meta["workloadUnitWallSource"], "trace-meta-process-wall")
+
+    def test_execution_warmup_requires_prepared_session(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="doe-node-webgpu-executor-") as tmpdir:
+            tmp = Path(tmpdir)
+            plan_path = tmp / "plan.json"
+            meta_path = tmp / "trace-meta.json"
+            trace_path = tmp / "trace.jsonl"
+            write_plan(plan_path)
+            script = f"""
+import {{ executePlanFile }} from {json.dumps(EXECUTOR_MODULE_URL)};
+try {{
+  await executePlanFile({{
+    planPath: {json.dumps(str(plan_path))},
+    workloadId: 'simple_compute_roundtrip',
+    provider: 'node-webgpu',
+    runtimeHost: 'node',
+    traceMetaPath: {json.dumps(str(meta_path))},
+    traceJsonlPath: {json.dumps(str(trace_path))},
+    dryRun: true,
+    executionWarmup: 1,
+  }});
+  console.log('unexpected-success');
+}} catch (error) {{
+  console.log(String(error?.message ?? error));
+}}
+"""
+            result = subprocess.run(
+                ["node", "--input-type=module", "-e", script],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("--execution-warmup requires --prepared-session", result.stdout)
 
     def test_invalid_plan_is_rejected_before_execution(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-node-webgpu-executor-") as tmpdir:

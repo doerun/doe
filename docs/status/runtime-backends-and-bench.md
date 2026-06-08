@@ -3,6 +3,57 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Package warmup accounting is corrected; Bun Vulkan is claimable
+
+The native compare runner now treats `iterations` as the number of timed
+samples and executes `warmup` as real pre-sample runs that are discarded before
+statistics are computed. The package WebGPU executor also exposes an explicit
+prepared-session execution warmup knob and records
+`packageExecutionWarmupCount` / `packageExecutionWarmupTotalNs` in trace-meta.
+Those fields are telemetry for methodology experiments, not a claim-policy
+escape hatch.
+
+Fresh AMD Vulkan Gemma270m package resident warm receipts split by runtime
+host. The Bun row is strict-comparable and the local claim sidecar is
+claimable on selected operation timing with structural work, timing phase,
+resident-buffer load, shader source receipt, and readback-capture obligations
+passing. The Node row remains strict-comparable but diagnostic because selected
+operation timing tails are not positive; workload-unit wall remains diagnostic
+only and is not used to promote the row.
+
+Artifacts:
+
+- Node Doe receipt:
+  `bench/out/amd-vulkan/20260608T204904Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T204904Z.run.json`
+- Node Dawn receipt:
+  `bench/out/amd-vulkan/20260608T205217Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared_resident/node_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T205217Z.run.json`
+- Node strict compare:
+  `bench/out/amd-vulkan/20260608T205217Z/gemma270m.node-package.decode.resident.warm.ir.clean-process-warm.compare.json`
+- Node local claim:
+  `bench/out/amd-vulkan/20260608T205217Z/gemma270m.node-package.decode.resident.warm.ir.clean-process-warm.claim.json`
+- Bun Doe receipt:
+  `bench/out/amd-vulkan/20260608T205428Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared_resident/doe_gpu_bun_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T205428Z.run.json`
+- Bun Dawn receipt:
+  `bench/out/amd-vulkan/20260608T205740Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/bun_webgpu_package_prepared_resident/bun_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T205740Z.run.json`
+- Bun strict compare:
+  `bench/out/amd-vulkan/20260608T205740Z/gemma270m.bun-package.decode.resident.warm.ir.clean-process-warm.compare.json`
+- Bun local claim:
+  `bench/out/amd-vulkan/20260608T205740Z/gemma270m.bun-package.decode.resident.warm.ir.clean-process-warm.claim.json`
+
+Validation:
+
+- `python3 -m unittest bench.tests.test_runner_plan_support`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json --side baseline --warmup 16 --iterations 16`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json --side comparison --warmup 16 --iterations 16`
+- strict operation-timing compare over the fresh Node receipts listed above
+- local claim-policy diagnostic sidecar over the fresh Node strict compare
+  listed above
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.decode.resident.warm.ir.json --side baseline --warmup 16 --iterations 16`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.decode.resident.warm.ir.json --side comparison --warmup 16 --iterations 16`
+- strict operation-timing compare over the fresh Bun receipts listed above
+- local claim-policy pass over the fresh Bun strict compare listed above
+
 ## 2026-06-08 — Bun FFI Vulkan lazy dispatch routes through Vulkan replay
 
 Vulkan recorded command payloads now carry a captured binding-state snapshot at

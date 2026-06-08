@@ -1549,7 +1549,7 @@ python3 bench/cli.py compare \
 Reliability guardrails for performance claims:
 
 - strict comparability is necessary but not sufficient; claimable "faster" runs also need reliability checks.
-- use at least 7 timed samples per side for local claims (`iterations - warmup >= 7`); target 15+ for release/CI claims.
+- use the claim gate's timed-sample floor per side; `iterations` is the timed sample count, and `warmup` is executed and discarded before those samples.
 - speed claims must be positive in tails, not only median:
   require positive `deltaPercent` at least for `p50` and `p95` (and `p99` for release/CI claims).
 - if percentile signs are mixed or tails are negative, classify as diagnostic even when comparability is green.

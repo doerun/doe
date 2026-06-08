@@ -451,6 +451,14 @@ function normalizePositiveInt(value, fieldName) {
   return parsed;
 }
 
+function normalizeNonNegativeInt(value, fieldName) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(`expected a non-negative integer for ${fieldName}, got: ${value}`);
+  }
+  return parsed;
+}
+
 function createDebugLogger(enabled) {
   return (phase, fields = {}) => {
     if (!enabled) {
@@ -2792,10 +2800,15 @@ export async function executePlanFile({
   stepLimit = 0,
   commandRepeat = 1,
   residentBufferLoads = false,
+  executionWarmup = 0,
 }) {
   const normalizedCommandRepeat = normalizePositiveInt(commandRepeat, 'commandRepeat');
+  const normalizedExecutionWarmup = normalizeNonNegativeInt(executionWarmup, 'executionWarmup');
   if (residentBufferLoads && !preparedSession) {
     throw new Error('--resident-buffer-loads requires --prepared-session');
+  }
+  if (normalizedExecutionWarmup > 0 && !preparedSession) {
+    throw new Error('--execution-warmup requires --prepared-session');
   }
   const debugEnabled = (
     debugBoundaries
@@ -2894,6 +2907,8 @@ export async function executePlanFile({
       ...shaderSourceReceiptFields(shaderSourceReceipts),
       packagePreparedSession: preparedSession,
       packageSetupIncludedInSelectedTiming: !preparedSession,
+      packageExecutionWarmupCount: 0,
+      packageExecutionWarmupTotalNs: 0,
       packageSetupTotalNs: 0,
       packageSetupBreakdownNs: zeroPackageSetupBreakdown(),
       packageStepBreakdownNs: zeroPackageStepBreakdown(),
@@ -3003,6 +3018,31 @@ export async function executePlanFile({
       prewarmDispatchBindings: preparedSession,
     });
     runtime.hostExecutorInitTotalNs += providerModuleResolveTotalNs;
+    let packageExecutionWarmupTotalNs = 0;
+    for (
+      let warmupIndex = 0;
+      warmupIndex < normalizedExecutionWarmup;
+      warmupIndex += 1
+    ) {
+      const warmupStartedAt = performance.now();
+      await executeSample(normalizedPlan, runtime, {
+        includeSetupInSelectedTiming: false,
+        debugLog,
+        queueWaitScope,
+        queueWaitSubmitCadence,
+        commandRepeat: normalizedCommandRepeat,
+        residentBufferLoads,
+        packageExecutionPolicy,
+        runtimeHost,
+      });
+      const warmupNs = nsDelta(warmupStartedAt);
+      packageExecutionWarmupTotalNs += warmupNs;
+      debugLog('execution.warmup.done', {
+        warmupIndex,
+        executionWarmupCount: normalizedExecutionWarmup,
+        warmupNs,
+      });
+    }
     const executionStartedAt = preparedSession ? performance.now() : timedEnvelopeStartedAt;
     const result = await executeSample(normalizedPlan, runtime, {
       includeSetupInSelectedTiming: !preparedSession,
@@ -3014,6 +3054,8 @@ export async function executePlanFile({
       packageExecutionPolicy,
       runtimeHost,
     });
+    result.meta.packageExecutionWarmupCount = normalizedExecutionWarmup;
+    result.meta.packageExecutionWarmupTotalNs = packageExecutionWarmupTotalNs;
     const processWallMs = (performance.now() - executionStartedAt);
     const artifactFinalizeStartedAt = performance.now();
     if (traceJsonlPath) {
