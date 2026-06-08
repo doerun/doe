@@ -10,6 +10,7 @@ const vk_formats = @import("vk_formats.zig");
 const vk_pipeline_cache = @import("vk_pipeline_cache.zig");
 const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 const vk_compute_sync = @import("vk_compute_sync.zig");
+const vk_descriptor_sets = @import("vk_descriptor_sets.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const model_compute_types = @import("../../model_compute_types.zig");
@@ -553,189 +554,13 @@ fn prepare_descriptor_sets(
     bindings: ?[]const model_compute_types.KernelBinding,
     initialize_buffers_on_create: bool,
 ) !void {
-    if (self.descriptor_set_count == 0) return;
-    const bs = bindings orelse return error.InvalidArgument;
-    const descriptor_bindings_hash = compute_descriptor_bindings_hash(bs);
-    if (self.has_descriptor_pool and self.has_current_descriptor_bindings_hash and descriptor_bindings_hash == self.current_descriptor_bindings_hash) {
-        return;
-    }
-    if (self.has_descriptor_pool and self.has_current_descriptor_bindings_hash) {
-        try stash_active_descriptor_state(self);
-        if (activate_cached_descriptor_state(self, descriptor_bindings_hash)) {
-            return;
-        }
-    }
-    if (!self.recorded_submit_replay_active and (self.has_deferred_submissions or self.pending_uploads.items.len > 0)) {
-        _ = try vk_upload.flush_queue(self);
-    }
-    try ensure_descriptor_pool(self, bindings);
-    var buffer_infos = std.ArrayListUnmanaged(c.VkDescriptorBufferInfo){};
-    defer buffer_infos.deinit(self.allocator);
-    var image_infos = std.ArrayListUnmanaged(c.VkDescriptorImageInfo){};
-    defer image_infos.deinit(self.allocator);
-    var retired_promoted_buffers = std.ArrayListUnmanaged(vk_resources.ComputeBuffer){};
-    defer {
-        for (retired_promoted_buffers.items) |buffer| {
-            vk_resources.release_compute_buffer(self, buffer);
-        }
-        retired_promoted_buffers.deinit(self.allocator);
-    }
-    var pending_writes = std.ArrayListUnmanaged(PendingDescriptorWrite){};
-    defer pending_writes.deinit(self.allocator);
-    var writes = std.ArrayListUnmanaged(c.VkWriteDescriptorSet){};
-    defer writes.deinit(self.allocator);
-
-    for (bs) |binding| {
-        const descriptor_type = try descriptor_type_for_binding(binding);
-        switch (binding.resource_kind) {
-            .buffer => {
-                const promotion = try vk_resources.ensure_compute_buffer_for_binding(
-                    self,
-                    binding,
-                    initialize_buffers_on_create,
-                );
-                if (promotion.retired_source) |retired_source| {
-                    try retired_promoted_buffers.append(self.allocator, retired_source);
-                }
-                const compute_buffer = promotion.buffer;
-                try buffer_infos.append(self.allocator, .{
-                    .buffer = compute_buffer.buffer,
-                    .offset = binding.buffer_offset,
-                    .range = try descriptor_range(binding, compute_buffer.size),
-                });
-                try pending_writes.append(self.allocator, .{
-                    .set_index = binding.group,
-                    .binding = binding.binding,
-                    .descriptor_type = descriptor_type,
-                    .kind = .buffer,
-                    .info_index = buffer_infos.items.len - 1,
-                });
-            },
-            .texture, .storage_texture => {
-                const texture = self.textures.getPtr(binding.resource_handle) orelse return error.InvalidState;
-                try validate_texture_binding(binding, texture.*);
-                try vk_resources.ensure_texture_shader_layout(self, texture);
-                try image_infos.append(self.allocator, .{
-                    .sampler = 0,
-                    .imageView = texture.view,
-                    .imageLayout = texture.layout,
-                });
-                try pending_writes.append(self.allocator, .{
-                    .set_index = binding.group,
-                    .binding = binding.binding,
-                    .descriptor_type = descriptor_type,
-                    .kind = .image,
-                    .info_index = image_infos.items.len - 1,
-                });
-            },
-            .sampler => {
-                const vk_sampler = self.samplers.get(binding.resource_handle) orelse return error.InvalidState;
-                try image_infos.append(self.allocator, .{
-                    .sampler = vk_sampler,
-                    .imageView = VK_NULL_U64,
-                    .imageLayout = 0,
-                });
-                try pending_writes.append(self.allocator, .{
-                    .set_index = binding.group,
-                    .binding = binding.binding,
-                    .descriptor_type = descriptor_type,
-                    .kind = .image,
-                    .info_index = image_infos.items.len - 1,
-                });
-            },
-        }
-    }
-
-    for (pending_writes.items) |pending| {
-        try writes.append(self.allocator, .{
-            .sType = c.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .pNext = null,
-            .dstSet = self.descriptor_sets[@intCast(pending.set_index)],
-            .dstBinding = pending.binding,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = pending.descriptor_type,
-            .pImageInfo = if (pending.kind == .image) @ptrCast(&image_infos.items[pending.info_index]) else null,
-            .pBufferInfo = if (pending.kind == .buffer) @ptrCast(&buffer_infos.items[pending.info_index]) else null,
-            .pTexelBufferView = null,
-        });
-    }
-
-    if (writes.items.len > 0) {
-        c.vkUpdateDescriptorSets(self.device, @intCast(writes.items.len), writes.items.ptr, 0, null);
-    }
-    self.current_descriptor_bindings_hash = descriptor_bindings_hash;
-    self.has_current_descriptor_bindings_hash = true;
-}
-
-fn ensure_descriptor_pool(self: anytype, bindings: ?[]const model_compute_types.KernelBinding) !void {
-    if (self.has_descriptor_pool) return;
-    if (self.descriptor_set_count == 0) return;
-
-    var uniform_count: u32 = 0;
-    var storage_count: u32 = 0;
-    var sampled_image_count: u32 = 0;
-    var storage_image_count: u32 = 0;
-    var sampler_count: u32 = 0;
-    if (bindings) |bs| {
-        for (bs) |binding| {
-            switch (try descriptor_type_for_binding(binding)) {
-                c.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER => uniform_count += 1,
-                c.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER => storage_count += 1,
-                c.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE => sampled_image_count += 1,
-                c.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE => storage_image_count += 1,
-                c.VK_DESCRIPTOR_TYPE_SAMPLER => sampler_count += 1,
-                else => return error.UnsupportedFeature,
-            }
-        }
-    }
-
-    var pool_sizes: [5]c.VkDescriptorPoolSize = undefined;
-    var pool_size_count: usize = 0;
-    if (uniform_count > 0) {
-        pool_sizes[pool_size_count] = .{ .type = c.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = uniform_count };
-        pool_size_count += 1;
-    }
-    if (storage_count > 0) {
-        pool_sizes[pool_size_count] = .{ .type = c.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = storage_count };
-        pool_size_count += 1;
-    }
-    if (sampled_image_count > 0) {
-        pool_sizes[pool_size_count] = .{ .type = c.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, .descriptorCount = sampled_image_count };
-        pool_size_count += 1;
-    }
-    if (storage_image_count > 0) {
-        pool_sizes[pool_size_count] = .{ .type = c.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .descriptorCount = storage_image_count };
-        pool_size_count += 1;
-    }
-    if (sampler_count > 0) {
-        pool_sizes[pool_size_count] = .{ .type = c.VK_DESCRIPTOR_TYPE_SAMPLER, .descriptorCount = sampler_count };
-        pool_size_count += 1;
-    }
-
-    var pool_info = c.VkDescriptorPoolCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .maxSets = self.descriptor_set_count,
-        .poolSizeCount = @intCast(pool_size_count),
-        .pPoolSizes = if (pool_size_count > 0) pool_sizes[0..pool_size_count].ptr else null,
-    };
-    try c.check_vk(c.vkCreateDescriptorPool(self.device, &pool_info, null, &self.descriptor_pool));
-    errdefer {
-        c.vkDestroyDescriptorPool(self.device, self.descriptor_pool, null);
-        self.descriptor_pool = VK_NULL_U64;
-    }
-
-    var alloc_info = c.VkDescriptorSetAllocateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        .pNext = null,
-        .descriptorPool = self.descriptor_pool,
-        .descriptorSetCount = self.descriptor_set_count,
-        .pSetLayouts = self.descriptor_set_layouts[0..@intCast(self.descriptor_set_count)].ptr,
-    };
-    try c.check_vk(c.vkAllocateDescriptorSets(self.device, &alloc_info, self.descriptor_sets[0..@intCast(self.descriptor_set_count)].ptr));
-    self.has_descriptor_pool = true;
+    try vk_descriptor_sets.prepare_descriptor_sets(
+        self,
+        bindings,
+        initialize_buffers_on_create,
+        stash_active_descriptor_state,
+        activate_cached_descriptor_state,
+    );
 }
 
 // --- Pure helpers ---

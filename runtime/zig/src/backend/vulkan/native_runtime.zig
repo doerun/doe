@@ -403,8 +403,8 @@ pub const NativeVulkanRuntime = struct {
         }
         vk_compute_sync.make_prior_transfer_writes_visible(self, command_buffer);
         vk_compute_sync.make_prior_compute_writes_visible_for_current_bindings(self, command_buffer);
-        c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
-        vk_pipeline.bind_descriptor_sets(self, command_buffer);
+        vk_pipeline.bind_compute_pipeline_if_needed(self, command_buffer);
+        vk_pipeline.bind_descriptor_sets_if_needed(self, command_buffer);
         c.vkCmdDispatch(command_buffer, x, y, z);
         if (want_timestamps) {
             c.vkCmdWriteTimestamp(command_buffer, c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, self.timestamp_query_pool, 1);
@@ -558,8 +558,8 @@ pub const NativeVulkanRuntime = struct {
         }
         vk_compute_sync.make_prior_transfer_writes_visible(self, command_buffer);
         vk_compute_sync.make_prior_compute_writes_visible_for_current_bindings(self, command_buffer);
-        c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
-        vk_pipeline.bind_descriptor_sets(self, command_buffer);
+        vk_pipeline.bind_compute_pipeline_if_needed(self, command_buffer);
+        vk_pipeline.bind_descriptor_sets_if_needed(self, command_buffer);
         c.vkCmdDispatchIndirect(command_buffer, indirect_args.buffer, 0);
         if (!replay_deferred) {
             try c.check_vk(c.vkEndCommandBuffer(command_buffer));

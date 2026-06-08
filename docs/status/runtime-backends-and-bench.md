@@ -3,6 +3,51 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan retained submit fast paths
+
+The Vulkan package path now keeps redundant compute pipeline and descriptor-set
+binds out of command replay when the same objects are already bound in the
+recorded command buffer. Descriptor-set preparation was split into a dedicated
+Vulkan shard with a stack-backed buffer-descriptor update path for the common
+buffer-only package dispatch shape. The Node package shim also reuses packed
+submit scratch arrays and typed arrays across lazy packed-submit calls.
+
+The Vulkan fence-pool drain now waits on the latest in-flight fence for a
+single queue, then clears the in-flight pool state; same-queue ordering makes
+that completion cover older deferred submissions without changing WebGPU submit
+count or command shape.
+
+Node and Bun Gemma64 warm package receipts are still strict-comparable
+diagnostics, not claimable wins. The retained evidence continues to show Doe
+ahead in setup and encode, with the remaining claim blocker in submit/wait
+tails.
+
+Artifacts:
+
+- Node retained fast-path compare:
+  `bench/out/amd-vulkan/20260608T083725Z/gemma64.node-package.warm.ir.latest-fence-drain.same-window.compare.json`
+- Node retained fast-path claim:
+  `bench/out/amd-vulkan/20260608T083725Z/gemma64.node-package.warm.ir.latest-fence-drain.same-window.claim.json`
+- Bun retained fast-path compare:
+  `bench/out/amd-vulkan/20260608T083816Z/gemma64.bun-package.warm.ir.latest-fence-drain.same-window.compare.json`
+- Bun retained fast-path claim:
+  `bench/out/amd-vulkan/20260608T083816Z/gemma64.bun-package.warm.ir.latest-fence-drain.same-window.claim.json`
+- Node latest-fence submit-breakdown diagnostic receipt:
+  `bench/out/amd-vulkan/20260608T083642Z/gemma64.node-package.warm.ir.latest-fence-drain-diagnostic.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T083643Z.run.json`
+- Reverted descriptor-arena diagnostic receipt:
+  `bench/out/amd-vulkan/20260608T082944Z/gemma64.node-package.warm.ir.descriptor-arena-diagnostic.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T082944Z.run.json`
+
+Validation:
+
+- `python3 bench/gates/schema_gate.py`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_bun_webgpu_executor`
+- `node --check packages/doe-gpu/src/vendor/webgpu/index.js`
+- `zig build dropin -Doptimize=ReleaseFast --summary all` from
+  `runtime/zig`
+- Structural-equivalence, timing-policy, comparability-coherence, comparable
+  runtime-invariant, and claim checks for the Node and Bun retained fast-path
+  artifacts listed above.
+
 ## 2026-06-08 — Vulkan package replay preparation cache
 
 The Vulkan package fast path now reuses prepared pipeline and descriptor state

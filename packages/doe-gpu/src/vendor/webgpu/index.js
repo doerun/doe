@@ -108,9 +108,12 @@ const TEXTURE_SWIZZLE_COMPONENT_MAP = Object.freeze({
 const NS_PER_MS = 1_000_000;
 const WHOLE_SIZE_SENTINEL = -1;
 const NODE_MAX_COMPUTE_BIND_GROUPS = 4;
+const NODE_DISPATCH_DIMENSION_COUNT = 3;
+const PACKED_SUBMIT_COPY_BUFFER_COUNT = 2;
 const PACKED_SUBMIT_COPY_OFFSET_COUNT = 3;
 const fastPathStats = { dispatchFlush: 0, flushAndMap: 0, commandBufferBuild: 0 };
 const NODE_QUEUE_WRITE_BATCH_MAX_BYTES = UINT32_MAX;
+const NODE_PACKED_SUBMIT_SCRATCH = {};
 
 let addon;
 let doeLibraryPath;
@@ -720,6 +723,41 @@ function nodeLazyDispatchBindGroupAt(command, index) {
   return command.bg?.[index] ?? null;
 }
 
+function ensureNodePackedSubmitScratch(dispatchCount, hasCopy) {
+  const bindGroupCapacity = dispatchCount * NODE_MAX_COMPUTE_BIND_GROUPS;
+  const dispatchDimCapacity = dispatchCount * NODE_DISPATCH_DIMENSION_COUNT;
+  const scratch = NODE_PACKED_SUBMIT_SCRATCH;
+  if (!Array.isArray(scratch.pipelines) || scratch.pipelines.length < dispatchCount) {
+    scratch.pipelines = new Array(dispatchCount);
+  }
+  if (!Array.isArray(scratch.bindGroups) || scratch.bindGroups.length < bindGroupCapacity) {
+    scratch.bindGroups = new Array(bindGroupCapacity);
+  }
+  if (
+    !(scratch.bindGroupCounts instanceof Uint32Array)
+    || scratch.bindGroupCounts.length < dispatchCount
+  ) {
+    scratch.bindGroupCounts = new Uint32Array(dispatchCount);
+  }
+  if (
+    !(scratch.dispatchDims instanceof Uint32Array)
+    || scratch.dispatchDims.length < dispatchDimCapacity
+  ) {
+    scratch.dispatchDims = new Uint32Array(dispatchDimCapacity);
+  }
+  if (hasCopy) {
+    if (!Array.isArray(scratch.copyBuffers)) {
+      scratch.copyBuffers = new Array(PACKED_SUBMIT_COPY_BUFFER_COUNT);
+    }
+    if (!(scratch.copyOffsetsAndSize instanceof BigUint64Array)) {
+      scratch.copyOffsetsAndSize = new BigUint64Array(PACKED_SUBMIT_COPY_OFFSET_COUNT);
+    }
+  }
+  scratch.pipelines.length = dispatchCount;
+  scratch.bindGroups.length = bindGroupCapacity;
+  return scratch;
+}
+
 function packNodeLazySubmitCommands(commands) {
   if (typeof addon.submitPackedDispatchBatch !== 'function' || !Array.isArray(commands) || commands.length === 0) {
     return null;
@@ -730,10 +768,11 @@ function packNodeLazySubmitCommands(commands) {
   if (dispatchCount <= 0) {
     return null;
   }
-  const pipelines = new Array(dispatchCount);
-  const bindGroups = new Array(dispatchCount * NODE_MAX_COMPUTE_BIND_GROUPS).fill(null);
-  const bindGroupCounts = new Uint32Array(dispatchCount);
-  const dispatchDims = new Uint32Array(dispatchCount * 3);
+  const scratch = ensureNodePackedSubmitScratch(dispatchCount, hasCopy);
+  const pipelines = scratch.pipelines;
+  const bindGroups = scratch.bindGroups;
+  const bindGroupCounts = scratch.bindGroupCounts;
+  const dispatchDims = scratch.dispatchDims;
 
   for (let index = 0; index < dispatchCount; index += 1) {
     const command = commands[index];
@@ -751,21 +790,32 @@ function packNodeLazySubmitCommands(commands) {
     pipelines[index] = pipeline;
     bindGroupCounts[index] = bindGroupCount;
     const bindGroupBase = index * NODE_MAX_COMPUTE_BIND_GROUPS;
-    for (let groupIndex = 0; groupIndex < bindGroupCount; groupIndex += 1) {
-      bindGroups[bindGroupBase + groupIndex] = nodeLazyDispatchBindGroupAt(command, groupIndex);
+    for (let groupIndex = 0; groupIndex < NODE_MAX_COMPUTE_BIND_GROUPS; groupIndex += 1) {
+      bindGroups[bindGroupBase + groupIndex] = groupIndex < bindGroupCount
+        ? nodeLazyDispatchBindGroupAt(command, groupIndex)
+        : null;
     }
-    dispatchDims[index * 3] = command.x >>> 0;
-    dispatchDims[index * 3 + 1] = command.y >>> 0;
-    dispatchDims[index * 3 + 2] = command.z >>> 0;
+    const dispatchDimBase = index * NODE_DISPATCH_DIMENSION_COUNT;
+    dispatchDims[dispatchDimBase] = command.x >>> 0;
+    dispatchDims[dispatchDimBase + 1] = command.y >>> 0;
+    dispatchDims[dispatchDimBase + 2] = command.z >>> 0;
   }
+
+  const packedBindGroupCounts = bindGroupCounts.length === dispatchCount
+    ? bindGroupCounts
+    : bindGroupCounts.subarray(0, dispatchCount);
+  const dispatchDimCapacity = dispatchCount * NODE_DISPATCH_DIMENSION_COUNT;
+  const packedDispatchDims = dispatchDims.length === dispatchDimCapacity
+    ? dispatchDims
+    : dispatchDims.subarray(0, dispatchDimCapacity);
 
   if (!hasCopy) {
     return {
       dispatchCount,
       pipelines,
       bindGroups,
-      bindGroupCounts,
-      dispatchDims,
+      bindGroupCounts: packedBindGroupCounts,
+      dispatchDims: packedDispatchDims,
       copyBuffers: null,
       copyOffsetsAndSize: null,
     };
@@ -773,7 +823,11 @@ function packNodeLazySubmitCommands(commands) {
   if (!last.s || !last.d) {
     return null;
   }
-  const copyOffsetsAndSize = new BigUint64Array(PACKED_SUBMIT_COPY_OFFSET_COUNT);
+  const copyBuffers = scratch.copyBuffers;
+  copyBuffers.length = PACKED_SUBMIT_COPY_BUFFER_COUNT;
+  copyBuffers[0] = last.s;
+  copyBuffers[1] = last.d;
+  const copyOffsetsAndSize = scratch.copyOffsetsAndSize;
   copyOffsetsAndSize[0] = BigInt(last.so ?? 0);
   copyOffsetsAndSize[1] = BigInt(last.do ?? 0);
   copyOffsetsAndSize[2] = BigInt(last.sz ?? 0);
@@ -781,9 +835,9 @@ function packNodeLazySubmitCommands(commands) {
     dispatchCount,
     pipelines,
     bindGroups,
-    bindGroupCounts,
-    dispatchDims,
-    copyBuffers: [last.s, last.d],
+    bindGroupCounts: packedBindGroupCounts,
+    dispatchDims: packedDispatchDims,
+    copyBuffers,
     copyOffsetsAndSize,
   };
 }

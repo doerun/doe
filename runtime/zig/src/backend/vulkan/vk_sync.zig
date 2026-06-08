@@ -4,7 +4,7 @@
 // Replaces single-fence + vkQueueWaitIdle with per-submission fence tracking:
 //   - FencePool manages a fixed-size ring of VkFence handles
 //   - Deferred submissions signal a pool fence instead of VK_NULL_HANDLE
-//   - drain waits on all in-flight fences in one wait-all call (no vkQueueWaitIdle)
+//   - drain waits on the latest in-flight fence (same-queue ordering) without vkQueueWaitIdle
 //   - Timeline semaphore detection exposes VK_KHR_timeline_semaphore when available
 
 const std = @import("std");
@@ -25,6 +25,7 @@ pub const FencePool = struct {
     in_flight: [FENCE_POOL_CAPACITY]bool = [_]bool{false} ** FENCE_POOL_CAPACITY,
     count: u32 = 0,
     next_index: u32 = 0,
+    last_submitted_index: ?u32 = null,
 
     /// Initialize the ring. Individual VkFence handles are created on first use.
     pub fn init(device: c.VkDevice) common_errors.BackendNativeError!FencePool {
@@ -57,12 +58,14 @@ pub const FencePool = struct {
 
         try c.check_vk(c.vkResetFences(device, 1, @ptrCast(&fence)));
         self.in_flight[idx] = true;
+        self.last_submitted_index = idx;
         self.next_index = (idx + 1) % self.count;
         return fence;
     }
 
-    /// Wait for all in-flight fences and reset them. Used to drain all
-    /// deferred/pipelined submissions without vkQueueWaitIdle.
+    /// Wait for all in-flight work. Submissions use one queue, so the latest
+    /// submitted fence reaching signaled implies older in-flight submissions
+    /// have also completed.
     pub fn drain(self: *FencePool, device: c.VkDevice) common_errors.BackendNativeError!void {
         var pending: [FENCE_POOL_CAPACITY]c.VkFence = [_]c.VkFence{VK_NULL_U64} ** FENCE_POOL_CAPACITY;
         var pending_count: u32 = 0;
@@ -74,19 +77,35 @@ pub const FencePool = struct {
         }
         if (pending_count == 0) return;
 
-        try c.check_vk(c.vkWaitForFences(
-            device,
-            pending_count,
-            pending[0..pending_count].ptr,
-            c.VK_TRUE,
-            FENCE_WAIT_TIMEOUT_NS,
-        ));
+        if (self.last_submitted_index) |idx| {
+            const latest_fence = self.fences[idx];
+            if (self.in_flight[idx] and latest_fence != VK_NULL_U64) {
+                try c.check_vk(c.vkWaitForFences(device, 1, @ptrCast(&latest_fence), c.VK_TRUE, FENCE_WAIT_TIMEOUT_NS));
+            } else {
+                try c.check_vk(c.vkWaitForFences(
+                    device,
+                    pending_count,
+                    pending[0..pending_count].ptr,
+                    c.VK_TRUE,
+                    FENCE_WAIT_TIMEOUT_NS,
+                ));
+            }
+        } else {
+            try c.check_vk(c.vkWaitForFences(
+                device,
+                pending_count,
+                pending[0..pending_count].ptr,
+                c.VK_TRUE,
+                FENCE_WAIT_TIMEOUT_NS,
+            ));
+        }
 
         i = 0;
         while (i < self.count) : (i += 1) {
             if (!self.in_flight[i]) continue;
             self.in_flight[i] = false;
         }
+        self.last_submitted_index = null;
     }
 
     /// True when at least one fence is in-flight (deferred work outstanding).
@@ -113,6 +132,7 @@ pub const FencePool = struct {
         }
         self.count = 0;
         self.next_index = 0;
+        self.last_submitted_index = null;
     }
 };
 
