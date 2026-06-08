@@ -3,6 +3,53 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan replay copy-prefix fusion remains diagnostic
+
+Vulkan package replay now finalizes pending streaming `queue.writeBuffer`
+copies as an ordered replay-prefix command buffer when a deferred recorded
+submit is active. The prefix and replay command buffers submit together in one
+Vulkan submit, preserving WebGPU command order, dispatch shape, readback
+semantics, and the existing transfer-to-compute visibility barrier. Streaming
+copy command buffers are now pooled by in-flight slot so Doe does not reset a
+queued copy command buffer before the queue drain proves it safe, and staging
+buffer growth drains queued copy work before replacing staging memory.
+
+The AMD Vulkan Gemma64 warm package rows on Bun and Node remain
+strict-comparable but diagnostic. The local claim sidecars keep both rows out
+of claimable status because selected operation timing tails are not positive
+across the required percentiles. Two follow-up probes were not kept: lowering
+the package dynamic-write batching threshold used the batch ABI but made the
+Doe-only diagnostic receipt worse, and a guarded `vkCmdUpdateBuffer` path for
+small dynamic writes also made the Doe-only diagnostic receipt worse.
+
+Artifacts:
+
+- Bun compare:
+  `bench/out/amd-vulkan/20260608T155831Z/gemma64.bun-package.warm.ir.streaming-copy-prefix.same-window.compare.json`
+- Bun claim:
+  `bench/out/amd-vulkan/20260608T155831Z/gemma64.bun-package.warm.ir.streaming-copy-prefix.same-window.claim.json`
+- Bun Doe receipt:
+  `bench/out/amd-vulkan/20260608T155831Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T155831Z.run.json`
+- Node compare:
+  `bench/out/amd-vulkan/20260608T155928Z/gemma64.node-package.warm.ir.streaming-copy-prefix.same-window.compare.json`
+- Node claim:
+  `bench/out/amd-vulkan/20260608T155928Z/gemma64.node-package.warm.ir.streaming-copy-prefix.same-window.claim.json`
+- Node Doe receipt:
+  `bench/out/amd-vulkan/20260608T155928Z/gemma64.node-package.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T155928Z.run.json`
+- Submit breakdown probe:
+  `bench/out/amd-vulkan/20260608T155801Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T155801Z.run.json`
+- Rejected write-batching probe:
+  `bench/out/amd-vulkan/20260608T160205Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T160205Z.run.json`
+- Rejected update-buffer probe:
+  `bench/out/amd-vulkan/20260608T160521Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T160521Z.run.json`
+
+Validation:
+
+- `zig build test` from `runtime/zig`
+- `zig build dropin-full -Doptimize=ReleaseFast` from `runtime/zig`
+- `npm --prefix packages/doe-gpu run build:addon`
+- `git diff --check`
+
 ## 2026-06-08 — Vulkan package binding-state cache remains diagnostic
 
 Vulkan package replay now caches collected binding metadata for repeated

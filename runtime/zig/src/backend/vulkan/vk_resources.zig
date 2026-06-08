@@ -335,7 +335,9 @@ pub fn stage_compute_buffer_write(
 
     const queue_has_pending_work =
         self.has_deferred_submissions or
-        self.streaming_copy_active;
+        self.streaming_copy_active or
+        self.streaming_copy_pending_count != 0 or
+        self.replay_prefix_copy_pending;
 
     if (compute_buffer.memory_kind == .host_visible and !queue_has_pending_work) {
         const mapped = compute_buffer.mapped orelse return error.InvalidState;
@@ -357,6 +359,9 @@ fn ensure_buffer_write_staging_buffer(self: anytype, required_bytes: u64) !Compu
     if (self.buffer_write_staging_buffer) |buffer| {
         if (self.buffer_write_staging_capacity >= required_bytes) return buffer;
         if (self.streaming_copy_active) try self.flush_streaming_copy(true);
+        if (self.streaming_copy_pending_count != 0 or self.replay_prefix_copy_pending or self.has_deferred_submissions) {
+            _ = try vk_upload.flush_queue(self);
+        }
         destroy_host_visible_buffer(self, buffer);
         self.buffer_write_staging_buffer = null;
         self.buffer_write_staging_capacity = 0;

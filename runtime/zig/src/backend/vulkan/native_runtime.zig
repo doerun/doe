@@ -1,6 +1,5 @@
 // NativeVulkanRuntime: top-level struct and public API for the Doe Vulkan backend.
 //
-// Sub-modules handle cohesive feature groups:
 //   vk_constants  — Vulkan API types, constants, extern functions, error mapping
 //   vk_device     — instance/adapter/device/queue bootstrap
 //   vk_upload     — upload staging, pool management, flush lifecycle
@@ -69,6 +68,8 @@ pub const NativeVulkanRuntime = struct {
     timeline_semaphore: vk_sync.TimelineSemaphore = .{},
     timeline_semaphore_probe_done: bool = false,
     streaming_copy_buffer: c.VkCommandBuffer = null,
+    streaming_copy_buffers: std.ArrayListUnmanaged(c.VkCommandBuffer) = .{},
+    streaming_copy_pending_count: usize = 0,
     streaming_copy_active: bool = false,
     streaming_copy_count: u32 = 0,
 
@@ -124,7 +125,6 @@ pub const NativeVulkanRuntime = struct {
     has_fence: bool = false,
     has_fence_pool: bool = false,
     has_timeline_semaphore: bool = false,
-    has_streaming_copy_buffer: bool = false,
     has_shader_module: bool = false,
     has_pipeline_layout: bool = false,
     has_pipeline: bool = false,
@@ -143,6 +143,8 @@ pub const NativeVulkanRuntime = struct {
     last_submit_count: ?u32 = null,
     replay_recording_active: bool = false,
     replay_command_buffer: c.VkCommandBuffer = null,
+    replay_prefix_copy_buffer: c.VkCommandBuffer = null,
+    replay_prefix_copy_pending: bool = false,
     upload_recording_active: bool = false,
     deferred_command_buffers: std.ArrayListUnmanaged(c.VkCommandBuffer) = .{},
     deferred_command_buffer_index: usize = 0,
@@ -186,6 +188,7 @@ pub const NativeVulkanRuntime = struct {
         self.pending_compute_write_buffers.deinit(self.allocator);
         self.retired_pipeline_states.deinit(self.allocator);
         self.retired_descriptor_states.deinit(self.allocator);
+        self.streaming_copy_buffers.deinit(self.allocator);
         self.deferred_command_buffers.deinit(self.allocator);
         surface_ops.release_all_surfaces(self);
         vk_upload.release_pool_entry(self.device, self.hot_src_pool_entry);
@@ -384,9 +387,8 @@ pub const NativeVulkanRuntime = struct {
     ) !DispatchMetrics {
         if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
         if (!self.has_pipeline) return error.Unsupported;
-        if (self.streaming_copy_active) {
-            try self.flush_streaming_copy(queue_sync_mode == .per_command);
-        }
+        const replay_deferred = queue_sync_mode == .deferred and self.recorded_submit_replay_active;
+        try vk_upload.flush_streaming_copy_before_dispatch(self, replay_deferred, queue_sync_mode);
         try vk_device.ensure_submission_state(self);
         if (gpu_timestamp_mode != .off and queue_sync_mode == .per_command) {
             try vk_device.ensure_timestamp_query_pool(self);
@@ -399,7 +401,6 @@ pub const NativeVulkanRuntime = struct {
 
         const encode_start = common_timing.now_ns();
         var command_buffer: c.VkCommandBuffer = null;
-        const replay_deferred = queue_sync_mode == .deferred and self.recorded_submit_replay_active;
 
         if (queue_sync_mode == .per_command) {
             if (self.has_deferred_submissions) _ = try self.flush_queue();
@@ -549,9 +550,8 @@ pub const NativeVulkanRuntime = struct {
     ) !DispatchMetrics {
         if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
         if (!self.has_pipeline) return error.Unsupported;
-        if (self.streaming_copy_active) {
-            try self.flush_streaming_copy(queue_sync_mode == .per_command);
-        }
+        const replay_deferred = queue_sync_mode == .deferred and self.recorded_submit_replay_active;
+        try vk_upload.flush_streaming_copy_before_dispatch(self, replay_deferred, queue_sync_mode);
         try vk_device.ensure_submission_state(self);
 
         const indirect_args = try ensure_dispatch_indirect_args_buffer(self);
@@ -559,7 +559,6 @@ pub const NativeVulkanRuntime = struct {
         try write_dispatch_indirect_args(indirect_args, x, y, z);
 
         var command_buffer: c.VkCommandBuffer = null;
-        const replay_deferred = queue_sync_mode == .deferred and self.recorded_submit_replay_active;
         if (queue_sync_mode == .per_command) {
             if (self.has_deferred_submissions) _ = try self.flush_queue();
             self.deferred_command_buffer_index = 0;
@@ -682,6 +681,7 @@ pub const NativeVulkanRuntime = struct {
         const waited_ns = try vk_upload.flush_queue(self);
         const cleanup_start = common_timing.now_ns();
         vk_pipeline.release_retired_states(self);
+        vk_upload.mark_streaming_copy_submissions_drained(self);
         if (!self.streaming_copy_active and self.deferred_command_buffer_index > 0) {
             // Deferred command buffers are implicitly reset by vkBeginCommandBuffer.
             self.deferred_command_buffer_index = 0;

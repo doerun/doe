@@ -125,8 +125,16 @@ pub fn flush_queue(self: anytype) !u64 {
     // with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) instead of
     // an explicit vkResetCommandBuffer, saving one driver call per flush.
     release_pending_uploads(self);
+    mark_streaming_copy_submissions_drained(self);
     const end_ns = common_timing.now_ns();
     return common_timing.ns_delta(end_ns, start_ns);
+}
+
+pub fn mark_streaming_copy_submissions_drained(self: anytype) void {
+    if (!self.streaming_copy_active and !self.has_deferred_submissions) {
+        self.streaming_copy_pending_count = 0;
+        self.buffer_write_staging_offset = 0;
+    }
 }
 
 pub fn submit_recorded_replay(self: anytype) !void {
@@ -145,14 +153,26 @@ fn finalize_recorded_submit_replay(self: anytype) !RecordedReplaySubmitTimings {
     try c.check_vk(c.vkEndCommandBuffer(self.replay_command_buffer));
     timings.command_buffer_end_ns = common_timing.ns_delta(common_timing.now_ns(), end_started_ns);
 
+    var command_buffers = [_]c.VkCommandBuffer{
+        self.replay_command_buffer,
+        null,
+    };
+    var command_buffer_count: u32 = 1;
+    if (self.replay_prefix_copy_pending) {
+        if (self.replay_prefix_copy_buffer == null) return error.InvalidState;
+        command_buffers[0] = self.replay_prefix_copy_buffer;
+        command_buffers[1] = self.replay_command_buffer;
+        command_buffer_count = 2;
+    }
+
     var submit_info = c.VkSubmitInfo{
         .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .pNext = null,
         .waitSemaphoreCount = 0,
         .pWaitSemaphores = null,
         .pWaitDstStageMask = null,
-        .commandBufferCount = 1,
-        .pCommandBuffers = @ptrCast(&self.replay_command_buffer),
+        .commandBufferCount = command_buffer_count,
+        .pCommandBuffers = @ptrCast(&command_buffers),
         .signalSemaphoreCount = 0,
         .pSignalSemaphores = null,
     };
@@ -179,6 +199,8 @@ fn finalize_recorded_submit_replay(self: anytype) !RecordedReplaySubmitTimings {
         try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
         timings.driver_submit_ns = common_timing.ns_delta(common_timing.now_ns(), submit_started_ns);
     }
+    self.replay_prefix_copy_buffer = null;
+    self.replay_prefix_copy_pending = false;
     self.replay_recording_active = false;
     self.replay_command_buffer = null;
     self.has_deferred_submissions = true;
@@ -579,19 +601,7 @@ pub fn release_pool_entry(device: c.VkDevice, entry: ?VkPoolEntry) void {
 /// batched into a single submission.
 pub fn begin_streaming_copy(self: anytype) !void {
     if (self.streaming_copy_active) return;
-    if (!self.has_streaming_copy_buffer) {
-        var alloc_info = c.VkCommandBufferAllocateInfo{
-            .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .pNext = null,
-            .commandPool = self.command_pool,
-            .level = c.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .commandBufferCount = 1,
-        };
-        try c.check_vk(c.vkAllocateCommandBuffers(self.device, &alloc_info, @ptrCast(&self.streaming_copy_buffer)));
-        self.has_streaming_copy_buffer = true;
-    } else {
-        try c.check_vk(c.vkResetCommandBuffer(self.streaming_copy_buffer, 0));
-    }
+    try acquire_streaming_copy_buffer(self);
     var begin_info = c.VkCommandBufferBeginInfo{
         .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .pNext = null,
@@ -600,6 +610,45 @@ pub fn begin_streaming_copy(self: anytype) !void {
     };
     try c.check_vk(c.vkBeginCommandBuffer(self.streaming_copy_buffer, &begin_info));
     self.streaming_copy_active = true;
+    self.streaming_copy_count = 0;
+}
+
+pub fn flush_streaming_copy_before_dispatch(self: anytype, replay_deferred: bool, queue_sync_mode: webgpu.QueueSyncMode) !void {
+    if (!self.streaming_copy_active) return;
+    if (replay_deferred) {
+        try finalize_streaming_copy_for_replay_prefix(self);
+    } else {
+        try flush_streaming_copy(self, queue_sync_mode == .per_command);
+    }
+}
+
+fn acquire_streaming_copy_buffer(self: anytype) !void {
+    if (self.streaming_copy_buffer == null) {
+        const reusable_index = self.streaming_copy_pending_count;
+        if (reusable_index < self.streaming_copy_buffers.items.len) {
+            self.streaming_copy_buffer = self.streaming_copy_buffers.items[reusable_index];
+        } else {
+            var command_buffer: c.VkCommandBuffer = null;
+            var alloc_info = c.VkCommandBufferAllocateInfo{
+                .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                .pNext = null,
+                .commandPool = self.command_pool,
+                .level = c.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                .commandBufferCount = 1,
+            };
+            try c.check_vk(c.vkAllocateCommandBuffers(self.device, &alloc_info, @ptrCast(&command_buffer)));
+            errdefer c.vkFreeCommandBuffers(self.device, self.command_pool, 1, @ptrCast(&command_buffer));
+            try self.streaming_copy_buffers.append(self.allocator, command_buffer);
+            self.streaming_copy_buffer = command_buffer;
+        }
+    }
+    try c.check_vk(c.vkResetCommandBuffer(self.streaming_copy_buffer, 0));
+}
+
+fn detach_pending_streaming_copy_buffer(self: anytype) void {
+    if (self.streaming_copy_buffer == null) return;
+    self.streaming_copy_pending_count += 1;
+    self.streaming_copy_buffer = null;
     self.streaming_copy_count = 0;
 }
 
@@ -683,7 +732,10 @@ pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
     try c.check_vk(c.vkEndCommandBuffer(self.streaming_copy_buffer));
     self.streaming_copy_active = false;
 
-    if (self.streaming_copy_count == 0) return;
+    if (self.streaming_copy_count == 0) {
+        self.streaming_copy_count = 0;
+        return;
+    }
 
     var submit_info = c.VkSubmitInfo{
         .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -725,7 +777,30 @@ pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
         self.has_deferred_submissions = true;
     }
     self.has_pending_transfer_writes = true;
-    self.streaming_copy_count = 0;
+    if (wait) {
+        self.streaming_copy_count = 0;
+        self.buffer_write_staging_offset = 0;
+    } else {
+        detach_pending_streaming_copy_buffer(self);
+    }
+}
+
+pub fn finalize_streaming_copy_for_replay_prefix(self: anytype) !void {
+    if (!self.streaming_copy_active) return;
+    try c.check_vk(c.vkEndCommandBuffer(self.streaming_copy_buffer));
+    self.streaming_copy_active = false;
+
+    if (self.streaming_copy_count == 0) {
+        self.streaming_copy_count = 0;
+        return;
+    }
+    if (self.replay_prefix_copy_pending) return error.InvalidState;
+    if (self.streaming_copy_buffer == null) return error.InvalidState;
+
+    self.replay_prefix_copy_buffer = self.streaming_copy_buffer;
+    self.replay_prefix_copy_pending = true;
+    self.has_pending_transfer_writes = true;
+    detach_pending_streaming_copy_buffer(self);
 }
 
 pub fn vk_release_pool(pool: *VkPool, allocator: std.mem.Allocator, device: c.VkDevice) void {
