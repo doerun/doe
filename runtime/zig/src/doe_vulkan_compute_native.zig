@@ -12,6 +12,7 @@ const shader_translation_cache = @import("doe_shader_translation_cache.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
+const bind_group_native = @import("doe_bind_group_native.zig");
 const model_compute_types = @import("model_compute_types.zig");
 const model_binding_types = @import("model_binding_value_types.zig");
 const shader_native = @import("doe_shader_native.zig");
@@ -20,8 +21,10 @@ const pipeline_hash = @import("doe_vulkan_pipeline_hash.zig");
 
 const alloc = native_helpers.alloc;
 const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
 const MAX_COMPUTE_BIND_GROUPS = native_shared.MAX_COMPUTE_BIND_GROUPS;
 const MAX_BIND = native_shared.MAX_BIND;
+const PREPARED_BINDING_CACHE_CAPACITY = native_shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY;
 
 const NativeVulkanRuntime = native_shared.NativeVulkanRuntime;
 const DoeShaderModule = native_types.DoeShaderModule;
@@ -52,6 +55,153 @@ pub const VulkanDispatchBindingState = struct {
     descriptor_hash: u64 = 0,
     bindings: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined,
 };
+
+fn bindGroupIdentityKey(bind_groups: []const ?*DoeBindGroup) u64 {
+    var hasher = std.hash.Wyhash.init(0);
+    const group_count: u32 = @intCast(@min(bind_groups.len, MAX_COMPUTE_BIND_GROUPS));
+    hasher.update(std.mem.asBytes(&group_count));
+    for (0..MAX_COMPUTE_BIND_GROUPS) |index| {
+        const ptr_value: usize = if (index < group_count)
+            if (bind_groups[index]) |bg| @intFromPtr(bg) else 0
+        else
+            0;
+        hasher.update(std.mem.asBytes(&ptr_value));
+    }
+    const key = hasher.final();
+    return if (key == 0) 1 else key;
+}
+
+fn bindGroupIdentityMatches(
+    cached: *const [MAX_COMPUTE_BIND_GROUPS]?*DoeBindGroup,
+    bind_groups: []const ?*DoeBindGroup,
+) bool {
+    const group_count = @min(bind_groups.len, MAX_COMPUTE_BIND_GROUPS);
+    for (0..MAX_COMPUTE_BIND_GROUPS) |index| {
+        const current = if (index < group_count) bind_groups[index] else null;
+        if (cached[index] != current) return false;
+    }
+    return true;
+}
+
+fn clearPreparedBindingCacheSlot(pip: *DoeComputePipeline, slot: usize) void {
+    if (pip.vk_prepared_binding_cache_keys[slot] == 0) return;
+    for (&pip.vk_prepared_binding_cache_bind_groups[slot]) |*maybe_bg| {
+        if (maybe_bg.*) |bg| bind_group_native.doeNativeBindGroupRelease(toOpaque(bg));
+        maybe_bg.* = null;
+    }
+    pip.vk_prepared_binding_cache_keys[slot] = 0;
+    pip.vk_prepared_binding_cache_counts[slot] = 0;
+    pip.vk_prepared_binding_cache_flat_masks[slot] = 0;
+    pip.vk_prepared_binding_cache_descriptor_hashes[slot] = 0;
+}
+
+fn clearPipelinePreparedBindingCache(pip: *DoeComputePipeline) void {
+    for (0..PREPARED_BINDING_CACHE_CAPACITY) |slot| {
+        clearPreparedBindingCacheSlot(pip, slot);
+    }
+    pip.vk_prepared_binding_cache_next = 0;
+}
+
+fn findPreparedBindingCacheSlot(
+    pip: *const DoeComputePipeline,
+    key: u64,
+    bind_groups: []const ?*DoeBindGroup,
+) ?usize {
+    for (pip.vk_prepared_binding_cache_keys, 0..) |entry_key, slot| {
+        if (entry_key != key) continue;
+        if (bindGroupIdentityMatches(&pip.vk_prepared_binding_cache_bind_groups[slot], bind_groups)) return slot;
+    }
+    return null;
+}
+
+fn loadPreparedBindingCache(
+    pip: *const DoeComputePipeline,
+    bind_groups: []const ?*DoeBindGroup,
+) ?VulkanDispatchBindingState {
+    const key = bindGroupIdentityKey(bind_groups);
+    const slot = findPreparedBindingCacheSlot(pip, key, bind_groups) orelse return null;
+    var state = VulkanDispatchBindingState{
+        .count = pip.vk_prepared_binding_cache_counts[slot],
+        .flat_mask = pip.vk_prepared_binding_cache_flat_masks[slot],
+        .descriptor_hash = pip.vk_prepared_binding_cache_descriptor_hashes[slot],
+    };
+    const count: usize = @intCast(pip.vk_prepared_binding_cache_counts[slot]);
+    @memcpy(state.bindings[0..count], pip.vk_prepared_binding_cache_bindings[slot][0..count]);
+    return state;
+}
+
+fn nextPreparedBindingCacheSlot(pip: *DoeComputePipeline) usize {
+    for (pip.vk_prepared_binding_cache_keys, 0..) |key, slot| {
+        if (key == 0) return slot;
+    }
+    const slot: usize = @intCast(pip.vk_prepared_binding_cache_next % PREPARED_BINDING_CACHE_CAPACITY);
+    const capacity_u32: u32 = @intCast(PREPARED_BINDING_CACHE_CAPACITY);
+    pip.vk_prepared_binding_cache_next = (pip.vk_prepared_binding_cache_next + 1) % capacity_u32;
+    return slot;
+}
+
+fn storePreparedBindingCache(
+    pip: *DoeComputePipeline,
+    bind_groups: []const ?*DoeBindGroup,
+    state: *const VulkanDispatchBindingState,
+) void {
+    if (state.count > MAX_KERNEL_BINDINGS) return;
+    const key = bindGroupIdentityKey(bind_groups);
+    const slot = findPreparedBindingCacheSlot(pip, key, bind_groups) orelse nextPreparedBindingCacheSlot(pip);
+    clearPreparedBindingCacheSlot(pip, slot);
+
+    const group_count = @min(bind_groups.len, MAX_COMPUTE_BIND_GROUPS);
+    for (0..MAX_COMPUTE_BIND_GROUPS) |index| {
+        const bg = if (index < group_count) bind_groups[index] else null;
+        pip.vk_prepared_binding_cache_bind_groups[slot][index] = bg;
+        if (bg) |ptr| native_helpers.object_add_ref(DoeBindGroup, toOpaque(ptr));
+    }
+    pip.vk_prepared_binding_cache_keys[slot] = key;
+    pip.vk_prepared_binding_cache_counts[slot] = @intCast(state.count);
+    pip.vk_prepared_binding_cache_flat_masks[slot] = state.flat_mask;
+    pip.vk_prepared_binding_cache_descriptor_hashes[slot] = state.descriptor_hash;
+    @memcpy(pip.vk_prepared_binding_cache_bindings[slot][0..state.count], state.bindings[0..state.count]);
+}
+
+test "prepared binding cache retains identity and reloads state" {
+    const TEST_DESCRIPTOR_HASH: u64 = 101;
+    const TEST_RESOURCE_HANDLE: u64 = 77;
+    const TEST_BUFFER_SIZE: u64 = 256;
+
+    const bg = native_helpers.make(DoeBindGroup) orelse return error.SkipZigTest;
+    bg.* = .{};
+    var pip = DoeComputePipeline{};
+    defer {
+        clearPipelinePreparedBindingCache(&pip);
+        bind_group_native.doeNativeBindGroupRelease(toOpaque(bg));
+    }
+
+    var bind_groups = [_]?*DoeBindGroup{ bg, null, null, null };
+    var state = VulkanDispatchBindingState{
+        .count = 1,
+        .flat_mask = 1,
+        .descriptor_hash = TEST_DESCRIPTOR_HASH,
+    };
+    state.bindings[0] = .{
+        .group = 0,
+        .binding = 0,
+        .resource_kind = .buffer,
+        .resource_handle = TEST_RESOURCE_HANDLE,
+        .buffer_size = TEST_BUFFER_SIZE,
+    };
+
+    storePreparedBindingCache(&pip, bind_groups[0..], &state);
+    try std.testing.expectEqual(@as(u32, 2), bg.ref_count);
+
+    const cached = loadPreparedBindingCache(&pip, bind_groups[0..]) orelse return error.TestExpectedEqual;
+    try std.testing.expectEqual(state.count, cached.count);
+    try std.testing.expectEqual(state.flat_mask, cached.flat_mask);
+    try std.testing.expectEqual(state.descriptor_hash, cached.descriptor_hash);
+    try std.testing.expectEqual(state.bindings[0], cached.bindings[0]);
+
+    clearPipelinePreparedBindingCache(&pip);
+    try std.testing.expectEqual(@as(u32, 1), bg.ref_count);
+}
 
 fn shader_buffer_binding_type(
     shader_module: ?*DoeShaderModule,
@@ -87,6 +237,7 @@ fn populate_pipeline_buffer_binding_types(pip: *DoeComputePipeline, shader_modul
 }
 
 fn reset_pipeline_static_hashes(pip: *DoeComputePipeline) void {
+    clearPipelinePreparedBindingCache(pip);
     pip.vk_static_layout_hash = 0;
     pip.vk_static_pipeline_hash = 0;
     pip.vk_static_buffer_binding_mask = 0;
@@ -609,14 +760,16 @@ pub fn vulkan_prepare_dispatch_bind_groups(
 }
 
 pub fn vulkan_collect_dispatch_binding_state(
-    pip: *const DoeComputePipeline,
+    pip: *DoeComputePipeline,
     bind_groups: []const ?*DoeBindGroup,
 ) VulkanDispatchBindingState {
+    if (loadPreparedBindingCache(pip, bind_groups)) |cached| return cached;
     var state = VulkanDispatchBindingState{};
     const binding_result = collect_bind_group_bindings(pip, bind_groups, &state.bindings);
     state.count = binding_result.count;
     state.flat_mask = binding_result.flat_mask;
     state.descriptor_hash = binding_result.descriptor_hash;
+    storePreparedBindingCache(pip, bind_groups, &state);
     return state;
 }
 

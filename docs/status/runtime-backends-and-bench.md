@@ -3,6 +3,46 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan prepared binding-state cache remains diagnostic
+
+Vulkan package dispatch replay now keeps a small compute-pipeline-local cache
+of prepared binding states keyed by retained bind-group identities. The cache
+does not skip dispatches, copy/readback work, submit/wait work, or compute
+write tracking. Descriptor hashes remain derived from the actual resource
+handles, offsets, sizes, and binding metadata captured from the bind groups.
+
+Fresh Node and Bun package receipts after this change remain strict-comparable
+but diagnostic. The local claim sidecars keep both rows out of claimable
+status because selected operation timing tails are still not positive.
+
+Artifacts:
+
+- Node Doe receipt:
+  `bench/out/amd-vulkan/20260608T181347Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T181347Z.run.json`
+- Node Dawn receipt:
+  `bench/out/amd-vulkan/20260608T181413Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared_resident/node_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T181413Z.run.json`
+- Node strict compare:
+  `bench/out/amd-vulkan/20260608T181413Z/gemma270m.node-package.decode.resident.warm.ir.pipeline-binding-cache.compare.json`
+- Node local claim:
+  `bench/out/amd-vulkan/20260608T181413Z/gemma270m.node-package.decode.resident.warm.ir.pipeline-binding-cache.claim.json`
+- Bun Doe receipt:
+  `bench/out/amd-vulkan/20260608T181449Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared_resident/doe_gpu_bun_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T181449Z.run.json`
+- Bun Dawn receipt:
+  `bench/out/amd-vulkan/20260608T181458Z/gemma270m.bun-package.decode.resident.warm.ir.workspace/run-artifacts/bun_webgpu_package_prepared_resident/bun_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T181458Z.run.json`
+- Bun strict compare:
+  `bench/out/amd-vulkan/20260608T181458Z/gemma270m.bun-package.decode.resident.warm.ir.pipeline-binding-cache.compare.json`
+- Bun local claim:
+  `bench/out/amd-vulkan/20260608T181458Z/gemma270m.bun-package.decode.resident.warm.ir.pipeline-binding-cache.claim.json`
+
+Validation:
+
+- `zig build test` from `runtime/zig`
+- `zig build dropin -Doptimize=ReleaseFast` from `runtime/zig`
+- `zig build dropin-full -Doptimize=ReleaseFast` from `runtime/zig`
+- Node and Bun package baseline/comparison runs listed above
+- strict operation-timing compares over the fresh package receipts listed above
+- local claim-policy passes over the fresh strict compares listed above
+
 ## 2026-06-08 — Vulkan hot compute-state cache remains diagnostic
 
 Vulkan pipeline-state switching now checks a fixed hot cache for inactive

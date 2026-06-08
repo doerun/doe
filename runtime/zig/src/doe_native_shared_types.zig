@@ -19,6 +19,7 @@ pub const MAX_BIND: usize = 16;
 pub const MAX_RENDER_BIND_GROUPS: usize = 4;
 pub const MAX_COMPUTE_BIND_GROUPS: usize = 4;
 pub const MAX_FLAT_BIND: usize = MAX_BIND * MAX_COMPUTE_BIND_GROUPS;
+pub const VULKAN_PREPARED_BINDING_CACHE_CAPACITY: usize = 32;
 pub const MAX_VERTEX_BUFFERS: usize = 8;
 pub const MAX_VERTEX_ATTRIBUTES: usize = 16;
 pub const VERTEX_BUFFER_SLOT_BASE: u32 = 8;

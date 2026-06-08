@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const model_compute_types = @import("model_compute_types.zig");
 const model_render_types = @import("model_render_types.zig");
 const abi_core = @import("core/abi/wgpu_core_base_types.zig");
 const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
@@ -153,6 +154,14 @@ pub const DoeComputePipeline = struct {
     vk_static_pipeline_hash_ready: bool = false,
     vk_flat_buffer_binding_types: [shared.MAX_FLAT_BIND]u32 = [_]u32{0} ** shared.MAX_FLAT_BIND,
     vk_flat_buffer_binding_types_ready: bool = false,
+    vk_prepared_binding_cache_next: u32 = 0,
+    vk_prepared_binding_cache_keys: [shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY]u64 = [_]u64{0} ** shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY,
+    vk_prepared_binding_cache_counts: [shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY]u32 = [_]u32{0} ** shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY,
+    vk_prepared_binding_cache_flat_masks: [shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY]u64 = [_]u64{0} ** shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY,
+    vk_prepared_binding_cache_descriptor_hashes: [shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY]u64 = [_]u64{0} ** shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY,
+    vk_prepared_binding_cache_bind_groups: [shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY][shared.MAX_COMPUTE_BIND_GROUPS]?*DoeBindGroup =
+        [_][shared.MAX_COMPUTE_BIND_GROUPS]?*DoeBindGroup{[_]?*DoeBindGroup{null} ** shared.MAX_COMPUTE_BIND_GROUPS} ** shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY,
+    vk_prepared_binding_cache_bindings: [shared.VULKAN_PREPARED_BINDING_CACHE_CAPACITY][shared.MAX_FLAT_BIND]model_compute_types.KernelBinding = undefined,
     /// Entry point name captured from the createComputePipeline
     /// descriptor. Owned (heap-allocated, null-terminated) so it
     /// survives the descriptor struct's lifetime. Consumed at submit
