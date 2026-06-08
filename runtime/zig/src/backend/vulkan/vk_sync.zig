@@ -4,7 +4,7 @@
 // Replaces single-fence + vkQueueWaitIdle with per-submission fence tracking:
 //   - FencePool manages a fixed-size ring of VkFence handles
 //   - Deferred submissions signal a pool fence instead of VK_NULL_HANDLE
-//   - drain waits on all in-flight fences (no vkQueueWaitIdle)
+//   - drain waits on all in-flight fences in one wait-all call (no vkQueueWaitIdle)
 //   - Timeline semaphore detection exposes VK_KHR_timeline_semaphore when available
 
 const std = @import("std");
@@ -64,16 +64,27 @@ pub const FencePool = struct {
     /// Wait for all in-flight fences and reset them. Used to drain all
     /// deferred/pipelined submissions without vkQueueWaitIdle.
     pub fn drain(self: *FencePool, device: c.VkDevice) common_errors.BackendNativeError!void {
+        var pending: [FENCE_POOL_CAPACITY]c.VkFence = [_]c.VkFence{VK_NULL_U64} ** FENCE_POOL_CAPACITY;
+        var pending_count: u32 = 0;
         var i: u32 = 0;
         while (i < self.count) : (i += 1) {
             if (!self.in_flight[i]) continue;
-            try c.check_vk(c.vkWaitForFences(
-                device,
-                1,
-                @ptrCast(&self.fences[i]),
-                c.VK_TRUE,
-                FENCE_WAIT_TIMEOUT_NS,
-            ));
+            pending[pending_count] = self.fences[i];
+            pending_count += 1;
+        }
+        if (pending_count == 0) return;
+
+        try c.check_vk(c.vkWaitForFences(
+            device,
+            pending_count,
+            pending[0..pending_count].ptr,
+            c.VK_TRUE,
+            FENCE_WAIT_TIMEOUT_NS,
+        ));
+
+        i = 0;
+        while (i < self.count) : (i += 1) {
+            if (!self.in_flight[i]) continue;
             self.in_flight[i] = false;
         }
     }

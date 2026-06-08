@@ -3,6 +3,55 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan package telemetry and fence-pool drain tightening
+
+The AMD Vulkan package path now reports Node native dispatch-submit usage
+separately from completed-submission detection. The Node addon tags native
+dispatch submit breakdowns with `nativeDispatchSubmit`, and the package shim
+uses that tag only for fast-path telemetry. Completion still depends on the
+existing wait/flush fields, so readback flush behavior is unchanged.
+
+Bun's pointer-based queue-write batch path now avoids allocating a compact
+payload scratch buffer when the native data-pointer ABI is available. The Node
+package executor also resolves the package write-batch method and policy once
+per sample instead of inside each write step.
+
+The Vulkan fence pool drain path now waits for all in-flight deferred fences in
+one wait-all call before clearing in-flight state. Timeline-semaphore activation
+and unfenced deferred-submit experiments were measured and reverted because the
+artifacts did not support a cross-lane promotion over the retained fence-pool
+path.
+
+Artifacts:
+
+- Node native-dispatch telemetry compare:
+  `bench/out/amd-vulkan/20260608T064437Z/gemma64.node-package.warm.ir.native-dispatch-telemetry.compare.json`
+- Node native-dispatch telemetry claim:
+  `bench/out/amd-vulkan/20260608T064437Z/gemma64.node-package.warm.ir.native-dispatch-telemetry.claim.json`
+- Node timeline experiment compare:
+  `bench/out/amd-vulkan/20260608T065058Z/gemma64.node-package.warm.ir.timeline-sync.compare.json`
+- Node timeline experiment claim:
+  `bench/out/amd-vulkan/20260608T065058Z/gemma64.node-package.warm.ir.timeline-sync.claim.json`
+- Bun timeline experiment compare:
+  `bench/out/amd-vulkan/20260608T065227Z/gemma64.bun-package.warm.ir.timeline-sync.compare.json`
+- Bun timeline experiment claim:
+  `bench/out/amd-vulkan/20260608T065227Z/gemma64.bun-package.warm.ir.timeline-sync.claim.json`
+- Bun unfenced-deferred experiment receipt:
+  `bench/out/amd-vulkan/20260608T065649Z/gemma64.bun-package.warm.ir.unfenced-deferred.doe.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T065649Z.run.json`
+
+Validation:
+
+- `node --check packages/doe-gpu/src/vendor/webgpu/index.js`
+- `node --check bench/executors/node-webgpu/executor.js`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_bun_webgpu_executor`
+- `npm run build:addon` from `packages/doe-gpu`
+- `npm run test:smoke` from `packages/doe-gpu`
+- `zig build dropin -Doptimize=ReleaseFast --summary all` from
+  `runtime/zig`
+- Structural-equivalence, timing-policy, comparability-coherence, comparable
+  runtime-invariant, and claim-gate checks for the Node telemetry and
+  diagnostic experiment artifacts listed above.
+
 ## 2026-06-08 — Package submit scope normalizes provider subphases
 
 Strict package Dawn-vs-Doe comparison now evaluates submit-scope completeness

@@ -627,6 +627,13 @@ static napi_value make_submit_breakdown(
     return make_submit_breakdown_full(env, command_replay_ns, queue_submit_ns, flush_ns, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
+static napi_value mark_submit_breakdown_native_dispatch(napi_env env, napi_value result) {
+    napi_value native_dispatch_value;
+    napi_get_boolean(env, true, &native_dispatch_value);
+    napi_set_named_property(env, result, "nativeDispatchSubmit", native_dispatch_value);
+    return result;
+}
+
 static napi_value make_submit_breakdown_full(
     napi_env env,
     uint64_t command_replay_ns,
@@ -1255,27 +1262,33 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
                 uint64_t breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_FIELD_COUNT] = {0};
                 pfn_doeNativeComputeDispatchFlushBreakdown(queue, pipeline, (void**)bg_ptrs, bg_count,
                     dx, dy, dz, copy_src, copy_src_off, copy_dst, copy_dst_off, copy_size, breakdown);
-                return make_submit_breakdown_full(
+                return mark_submit_breakdown_native_dispatch(
                     env,
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT],
-                    0,
-                    0,
-                    0,
-                    0,
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY]
+                    make_submit_breakdown_full(
+                        env,
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT],
+                        0,
+                        0,
+                        0,
+                        0,
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY]
+                    )
                 );
             }
             const uint64_t queue_submit_started_ns = monotonic_now_ns();
             pfn_doeNativeComputeDispatchFlush(queue, pipeline, (void**)bg_ptrs, bg_count,
                 dx, dy, dz, copy_src, copy_src_off, copy_dst, copy_dst_off, copy_size);
             const uint64_t queue_submit_ns = monotonic_now_ns() - queue_submit_started_ns;
-            return make_submit_breakdown(env, 0, queue_submit_ns, 0);
+            return mark_submit_breakdown_native_dispatch(
+                env,
+                make_submit_breakdown(env, 0, queue_submit_ns, 0)
+            );
         }
     }
 #endif
@@ -1361,23 +1374,29 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
                 free(dispatch_dims);
             }
             if (wants_submit_breakdown && pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown) {
-                return make_submit_breakdown_full(
+                return mark_submit_breakdown_native_dispatch(
                     env,
-                    command_replay_ns + breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT],
-                    0,
-                    0,
-                    0,
-                    0,
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY]
+                    make_submit_breakdown_full(
+                        env,
+                        command_replay_ns + breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT],
+                        0,
+                        0,
+                        0,
+                        0,
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY]
+                    )
                 );
             }
-            return make_submit_breakdown(env, command_replay_ns, queue_submit_ns, 0);
+            return mark_submit_breakdown_native_dispatch(
+                env,
+                make_submit_breakdown(env, command_replay_ns, queue_submit_ns, 0)
+            );
         }
     }
 
@@ -1451,23 +1470,29 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
                 free(dispatch_dims);
             }
             if (wants_submit_breakdown && pfn_doeNativeComputeDispatchBatchCopyFlushBreakdown) {
-                return make_submit_breakdown_full(
+                return mark_submit_breakdown_native_dispatch(
                     env,
-                    command_replay_ns + breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT],
-                    0,
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_WAIT_COMPLETED],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_COPY],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_RESOLVE],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
-                    breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY]
+                    make_submit_breakdown_full(
+                        env,
+                        command_replay_ns + breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_QUEUE_SUBMIT],
+                        0,
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_WAIT_COMPLETED],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_COPY],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DEFERRED_RESOLVE],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_BUFFER_END],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_SYNC_PREPARE],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_DRIVER_SUBMIT],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_PREPARE],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_RECORD],
+                        breakdown[DOE_DISPATCH_FLUSH_BREAKDOWN_COMMAND_REPLAY_COPY]
+                    )
                 );
             }
-            return make_submit_breakdown(env, command_replay_ns, queue_submit_ns, 0);
+            return mark_submit_breakdown_native_dispatch(
+                env,
+                make_submit_breakdown(env, command_replay_ns, queue_submit_ns, 0)
+            );
         }
     }
 

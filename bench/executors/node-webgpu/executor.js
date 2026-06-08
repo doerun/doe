@@ -846,7 +846,7 @@ function prepareQueueWriteBufferBatch(method, entries, compactCache, cacheKey) {
 }
 
 function queueWriteBufferBatch(queue, method, entries, preparedCompact = null) {
-    if (method === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
+  if (method === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
     const compact = preparedCompact ?? buildCompactQueueWriteBatch(entries);
     return queue.writeBufferBatch(compact.buffers, compact.offsets, compact.sizes, compact.data);
   }
@@ -1968,6 +1968,15 @@ async function executeSample(
     workloadId: normalizedPlan.workloadId,
     packagePreparedSession: !includeSetupInSelectedTiming,
   });
+  const writeBatchMethod = packageWriteBatchMethod(runtime.queue);
+  const writeBatchMinConsecutiveWrites = packageWriteBatchMinConsecutiveWrites(
+    packageExecutionPolicy,
+    {
+      runtimeHost,
+      provider: policyProvider,
+      method: writeBatchMethod,
+    },
+  );
   let executionSetupTotalNs = 0;
   let executionEncodeTotalNs = 0;
   let executionSubmitWaitTotalNs = 0;
@@ -2180,9 +2189,8 @@ async function executeSample(
         continue;
       }
       if (step.kind === 'writeBuffer') {
-        const batchMethod = packageWriteBatchMethod(runtime.queue);
         const batchedSteps = [];
-        if (batchMethod !== PACKAGE_WRITE_BATCH_METHOD_NONE && isDynamicWriteBufferStep(step)) {
+        if (writeBatchMethod !== PACKAGE_WRITE_BATCH_METHOD_NONE && isDynamicWriteBufferStep(step)) {
           for (
             let batchIndex = index;
             batchIndex < normalizedPlan.steps.length;
@@ -2196,13 +2204,7 @@ async function executeSample(
           }
         }
 
-        const minConsecutiveWrites = packageWriteBatchMinConsecutiveWrites(packageExecutionPolicy, {
-          runtimeHost,
-          provider: runtime.policyProvider ?? runtime.providerSpec.provider,
-          method: batchMethod,
-        });
-
-        if (batchedSteps.length >= minConsecutiveWrites) {
+        if (batchedSteps.length >= writeBatchMinConsecutiveWrites) {
           await flushEncoder({ waitForCompletion: false });
           const batchEntries = [];
           const batchRows = [];
@@ -2234,10 +2236,10 @@ async function executeSample(
             recordPackageWriteBreakdown(writeBreakdown, batched.step, materialized.byteLength);
           }
           let preparedCompact = null;
-          if (batchMethod === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
+          if (writeBatchMethod === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
             const compactStartedAt = performance.now();
             preparedCompact = prepareQueueWriteBufferBatch(
-              batchMethod,
+              writeBatchMethod,
               batchEntries,
               compactWriteBatchCache,
               compactWriteBatchCacheKey(batchedSteps),
@@ -2245,9 +2247,9 @@ async function executeSample(
             materializeTotalNs += nsDelta(compactStartedAt);
           }
           const writeStartedAt = performance.now();
-          queueWriteBufferBatch(runtime.queue, batchMethod, batchEntries, preparedCompact);
+          queueWriteBufferBatch(runtime.queue, writeBatchMethod, batchEntries, preparedCompact);
           const queueWriteNs = nsDelta(writeStartedAt);
-          recordPackageBatchedWrites(writeBreakdown, batchedSteps.length, batchMethod);
+          recordPackageBatchedWrites(writeBreakdown, batchedSteps.length, writeBatchMethod);
           queueCompletionKnown = false;
           stepBreakdownNs.writeMaterializeTotalNs += materializeTotalNs;
           stepBreakdownNs.writeQueueWriteTotalNs += queueWriteNs;

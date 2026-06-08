@@ -338,6 +338,8 @@ class BunWebGPUExecutorTests(unittest.TestCase):
         self.assertIn("queueWriteBufferBatch(queue, native, entries) {", source)
         self.assertIn("const writeBatchDataPtrs = wgpu.symbols.doeNativeQueueWriteBufferBatchDataPtrs;", source)
         self.assertIn("const writeBatch = wgpu.symbols.doeNativeQueueWriteBufferBatch;", source)
+        self.assertIn('typeof writeBatchDataPtrs !== "function"', source)
+        self.assertIn("const scratch = ensureQueueWriteBatchScratch(queue, entries.length, 0);", source)
         self.assertIn("scratch.dataPtrs[index] = hotU64(dataPtr);", source)
         self.assertIn("writeBatchDataPtrs(", source)
         self.assertIn("scratch.buffers[index] = hotU64(entry.bufferNative);", source)

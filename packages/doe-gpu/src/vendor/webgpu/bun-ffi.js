@@ -1096,7 +1096,10 @@ function ensureQueueWriteBatchScratch(queue, count, byteLength) {
     if (!(scratch.dataPtrs instanceof BigUint64Array) || scratch.dataPtrs.length < count) {
         scratch.dataPtrs = new BigUint64Array(count);
     }
-    if (!(scratch.data instanceof Uint8Array) || scratch.data.length < byteLength) {
+    if (
+        byteLength > 0
+        && (!(scratch.data instanceof Uint8Array) || scratch.data.length < byteLength)
+    ) {
         scratch.data = new Uint8Array(byteLength);
     }
     return scratch;
@@ -3915,12 +3918,15 @@ const fullSurfaceBackend = {
                 failValidation("GPUQueue.__doeWriteBufferBatch", "entry data is too large for the native compact batch ABI");
             }
             byteLength += entry.view.byteLength;
-            if (byteLength > MAX_QUEUE_WRITE_BATCH_BYTES) {
+            if (
+                typeof writeBatchDataPtrs !== "function"
+                && byteLength > MAX_QUEUE_WRITE_BATCH_BYTES
+            ) {
                 failValidation("GPUQueue.__doeWriteBufferBatch", "compact batch data exceeds the package batch limit");
             }
         }
-        const scratch = ensureQueueWriteBatchScratch(queue, entries.length, byteLength);
         if (typeof writeBatchDataPtrs === "function") {
+            const scratch = ensureQueueWriteBatchScratch(queue, entries.length, 0);
             for (let index = 0; index < entries.length; index += 1) {
                 const entry = entries[index];
                 const dataPtr = bunPtr(entry.view);
@@ -3942,6 +3948,7 @@ const fullSurfaceBackend = {
             );
             return;
         }
+        const scratch = ensureQueueWriteBatchScratch(queue, entries.length, byteLength);
         let dataOffset = 0;
         for (let index = 0; index < entries.length; index += 1) {
             const entry = entries[index];

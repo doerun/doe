@@ -892,6 +892,10 @@ function addonSubmitBreakdownIndicatesDispatchFlush(addonBreakdown) {
   );
 }
 
+function addonSubmitBreakdownIndicatesNativeDispatchSubmit(addonBreakdown) {
+  return Boolean(addonBreakdown?.nativeDispatchSubmit);
+}
+
 function addonSubmitBreakdownIndicatesCompletedSubmission(addonBreakdown) {
   return (
     addonSubmitBreakdownIndicatesDispatchFlush(addonBreakdown)
@@ -1847,7 +1851,7 @@ const fullSurfaceBackend = {
       const addonBreakdown = addon.submitBatched(deviceNative, queueNative, cmds);
       accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
       accumulateAddonSubmitBreakdown(queue, addonBreakdown);
-      if (addonSubmitBreakdownIndicatesCompletedSubmission(addonBreakdown)) {
+      if (addonSubmitBreakdownIndicatesNativeDispatchSubmit(addonBreakdown)) {
         fastPathStats.dispatchFlush += 1;
       }
       const bookkeepingStartedAt = performance.now();
@@ -1882,7 +1886,7 @@ const fullSurfaceBackend = {
       const addonBreakdown = addon.submitBatched(deviceNative, queueNative, allCommands);
       accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
       accumulateAddonSubmitBreakdown(queue, addonBreakdown);
-      if (addonSubmitBreakdownIndicatesCompletedSubmission(addonBreakdown)) {
+      if (addonSubmitBreakdownIndicatesNativeDispatchSubmit(addonBreakdown)) {
         fastPathStats.dispatchFlush += 1;
       }
       const bookkeepingStartedAt = performance.now();
