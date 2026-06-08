@@ -28,7 +28,6 @@ function parseCliArgs(defaultProvider) {
       'debug-boundaries': { type: 'boolean', default: false },
       'step-limit': { type: 'string', default: '' },
       'command-repeat': { type: 'string', default: '' },
-      'execution-warmup': { type: 'string', default: '' },
     },
   }).values;
 }
@@ -63,18 +62,6 @@ function parseStepLimit(stepLimit) {
   const parsed = Number(normalized);
   if (!Number.isInteger(parsed) || parsed <= 0) {
     throw new Error(`expected a positive integer for --step-limit, got: ${stepLimit}`);
-  }
-  return parsed;
-}
-
-function parseExecutionWarmup(executionWarmup) {
-  const normalized = typeof executionWarmup === 'string' ? executionWarmup.trim() : '';
-  if (!normalized) {
-    return 0;
-  }
-  const parsed = Number(normalized);
-  if (!Number.isInteger(parsed) || parsed < 0) {
-    throw new Error(`expected a non-negative integer for --execution-warmup, got: ${executionWarmup}`);
   }
   return parsed;
 }
@@ -153,7 +140,6 @@ function childArgv(args, cliPath, overrides = {}) {
     debugBoundaries: overrides.debugBoundaries ?? Boolean(args['debug-boundaries']),
     stepLimit: overrides.stepLimit ?? args['step-limit'],
     commandRepeat: overrides.commandRepeat ?? args['command-repeat'],
-    executionWarmup: overrides.executionWarmup ?? args['execution-warmup'],
   };
   const argv = [
     cliPath,
@@ -180,9 +166,6 @@ function childArgv(args, cliPath, overrides = {}) {
   }
   if (resolved.commandRepeat) {
     argv.push('--command-repeat', String(resolved.commandRepeat));
-  }
-  if (resolved.executionWarmup) {
-    argv.push('--execution-warmup', String(resolved.executionWarmup));
   }
   return argv;
 }
@@ -282,7 +265,6 @@ async function runWorker(args, { runtimeHost }) {
     debugBoundaries: Boolean(args['debug-boundaries']),
     stepLimit: args['step-limit'] ? Number(args['step-limit']) : 0,
     commandRepeat: parseCommandRepeat(args['command-repeat']),
-    executionWarmup: parseExecutionWarmup(args['execution-warmup']),
   });
 }
 

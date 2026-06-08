@@ -7,11 +7,8 @@ This is a live topical status shard. Follow the shared shard policy in
 
 The native compare runner now treats `iterations` as the number of timed
 samples and executes `warmup` as real pre-sample runs that are discarded before
-statistics are computed. The package WebGPU executor also exposes an explicit
-prepared-session execution warmup knob and records
-`packageExecutionWarmupCount` / `packageExecutionWarmupTotalNs` in trace-meta.
-Those fields are telemetry for methodology experiments, not a claim-policy
-escape hatch.
+statistics are computed. Package WebGPU timing still uses the compare runner's
+sample-level warmup; there is no separate package execution warmup contract.
 
 Fresh AMD Vulkan Gemma270m package resident warm receipts split by runtime
 host. The Bun row is strict-comparable and the local claim sidecar is
