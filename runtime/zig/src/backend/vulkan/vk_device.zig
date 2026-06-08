@@ -328,6 +328,14 @@ pub fn ensure_submission_state(self: anytype) !void {
 }
 
 pub fn ensure_deferred_submission_state(self: anytype) !void {
+    if (self.deferred_submission_sync_policy == .require_fence_pool) {
+        self.timeline_semaphore_probe_done = true;
+        self.has_timeline_semaphore = false;
+        if (!self.has_fence_pool) {
+            try create_fence_pool(self);
+        }
+        return;
+    }
     if (!self.timeline_semaphore_probe_done) {
         create_timeline_semaphore(self);
     }

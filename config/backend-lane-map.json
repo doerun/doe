@@ -8,15 +8,17 @@
     "d3d12_doe_directional": "doe_d3d12",
     "d3d12_doe_release": "doe_d3d12",
     "metal_dawn_release": "dawn_delegate",
-    "metal_webkit_comparable": "webkit_delegate",
-    "metal_webkit_release": "webkit_delegate",
     "metal_doe_app": "doe_metal",
     "metal_doe_comparable": "doe_metal",
     "metal_doe_directional": "doe_metal",
     "metal_doe_release": "doe_metal",
+    "metal_webkit_comparable": "webkit_delegate",
+    "metal_webkit_release": "webkit_delegate",
     "vulkan_dawn_release": "dawn_delegate",
     "vulkan_doe_app": "doe_vulkan",
     "vulkan_doe_comparable": "doe_vulkan",
+    "vulkan_doe_compute_only_diagnostic": "doe_vulkan",
+    "vulkan_doe_compute_only_fence_diagnostic": "doe_vulkan",
     "vulkan_doe_release": "doe_vulkan"
   },
   "backendToLanes": {
@@ -38,6 +40,8 @@
     "doe_vulkan": [
       "vulkan_doe_app",
       "vulkan_doe_comparable",
+      "vulkan_doe_compute_only_diagnostic",
+      "vulkan_doe_compute_only_fence_diagnostic",
       "vulkan_doe_release"
     ],
     "doe_d3d12": [

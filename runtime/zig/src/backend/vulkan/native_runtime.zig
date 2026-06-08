@@ -6,7 +6,6 @@
 //   vk_upload     — upload staging, pool management, flush lifecycle
 //   vk_pipeline   — compute pipeline, shader, descriptor set management
 //   vk_resources  — buffer/texture resource lifecycle and format helpers
-//   vk_render     — render pass, graphics pipeline, and draw call execution
 
 const std = @import("std");
 const model_compute_types = @import("../../model_compute_types.zig");
@@ -54,6 +53,7 @@ pub const NativeVulkanRuntime = struct {
     queue_family_index: u32 = 0,
     queue_family_index_value_cache: ?u32 = null,
     queue_family_policy: webgpu.QueueFamilyPolicy = .prefer_graphics_compute,
+    deferred_submission_sync_policy: webgpu.DeferredSubmissionSyncPolicy = .prefer_timeline_semaphore,
     queue_family_kind_value_cache: ?webgpu.QueueFamilyKind = null,
     queue_family_queue_count_value_cache: ?u32 = null,
     queue_family_timestamp_valid_bits_value_cache: ?u32 = null,
@@ -154,18 +154,20 @@ pub const NativeVulkanRuntime = struct {
     pending_spirv_bytes_owned: ?[]u8 = null,
 
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeVulkanRuntime {
-        return init_with_queue_family_policy(allocator, kernel_root, .prefer_graphics_compute);
+        return init_with_backend_policy(allocator, kernel_root, .prefer_graphics_compute, .prefer_timeline_semaphore);
     }
 
-    pub fn init_with_queue_family_policy(
+    pub fn init_with_backend_policy(
         allocator: std.mem.Allocator,
         kernel_root: ?[]const u8,
         queue_family_policy: webgpu.QueueFamilyPolicy,
+        deferred_submission_sync_policy: webgpu.DeferredSubmissionSyncPolicy,
     ) !NativeVulkanRuntime {
         var self = NativeVulkanRuntime{
             .allocator = allocator,
             .kernel_root = kernel_root,
             .queue_family_policy = queue_family_policy,
+            .deferred_submission_sync_policy = deferred_submission_sync_policy,
         };
         errdefer self.deinit();
         try vk_device.bootstrap(&self);
@@ -291,15 +293,17 @@ pub const NativeVulkanRuntime = struct {
         return vk_pipeline.set_compute_shader_spirv_prehashed(self, words, spirv_hash, entry_point, bindings, initialize_buffers_on_create);
     }
 
-    pub fn set_compute_shader_spirv_with_hash(
+    pub fn set_compute_shader_spirv_with_hashes(
         self: *NativeVulkanRuntime,
         words: []const u32,
         pipeline_hash: u64,
+        layout_hash: u64,
+        descriptor_bindings_hash: ?u64,
         entry_point: ?[]const u8,
         bindings: ?[]const model_compute_types.KernelBinding,
         initialize_buffers_on_create: bool,
     ) !void {
-        return vk_pipeline.set_compute_shader_spirv_with_hash(self, words, pipeline_hash, entry_point, bindings, initialize_buffers_on_create);
+        return vk_pipeline.set_compute_shader_spirv_with_hashes(self, words, pipeline_hash, layout_hash, descriptor_bindings_hash, entry_point, bindings, initialize_buffers_on_create);
     }
 
     pub fn rebuild_compute_shader_spirv(self: *NativeVulkanRuntime, words: []const u32) !void {
@@ -422,8 +426,8 @@ pub const NativeVulkanRuntime = struct {
         }
         vk_compute_sync.make_prior_transfer_writes_visible(self, command_buffer);
         vk_compute_sync.make_prior_compute_writes_visible_for_current_bindings(self, command_buffer);
-        c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
-        vk_pipeline.bind_descriptor_sets(self, command_buffer);
+        vk_pipeline.bind_compute_pipeline_if_needed(self, command_buffer);
+        vk_pipeline.bind_descriptor_sets_if_needed(self, command_buffer);
         c.vkCmdDispatch(command_buffer, x, y, z);
         if (want_timestamps) {
             c.vkCmdWriteTimestamp(command_buffer, c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, self.timestamp_query_pool, 1);
@@ -577,8 +581,8 @@ pub const NativeVulkanRuntime = struct {
         }
         vk_compute_sync.make_prior_transfer_writes_visible(self, command_buffer);
         vk_compute_sync.make_prior_compute_writes_visible_for_current_bindings(self, command_buffer);
-        c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
-        vk_pipeline.bind_descriptor_sets(self, command_buffer);
+        vk_pipeline.bind_compute_pipeline_if_needed(self, command_buffer);
+        vk_pipeline.bind_descriptor_sets_if_needed(self, command_buffer);
         c.vkCmdDispatchIndirect(command_buffer, indirect_args.buffer, 0);
         if (!replay_deferred) {
             try c.check_vk(c.vkEndCommandBuffer(command_buffer));

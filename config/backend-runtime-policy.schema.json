@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "defaultLane", "lanes"],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 3 },
+    "schemaVersion": { "type": "integer", "const": 4 },
     "defaultLane": { "type": "string", "minLength": 1 },
     "selectionPolicyHashSeed": { "type": "string" },
     "cutoverPolicyPath": { "type": "string", "minLength": 1 },
@@ -14,7 +14,7 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["defaultBackend", "allowFallback", "strictNoFallback", "queueFamilyPolicy"],
+        "required": ["defaultBackend", "allowFallback", "strictNoFallback", "queueFamilyPolicy", "deferredSubmissionSyncPolicy"],
         "properties": {
           "defaultBackend": { "type": "string", "enum": ["dawn_delegate", "webkit_delegate", "doe_metal", "doe_vulkan", "doe_d3d12"] },
           "allowFallback": { "type": "boolean", "const": false },
@@ -26,6 +26,10 @@
           "queueFamilyPolicy": {
             "type": "string",
             "enum": ["prefer_graphics_compute", "prefer_compute_only", "require_compute_only"]
+          },
+          "deferredSubmissionSyncPolicy": {
+            "type": "string",
+            "enum": ["prefer_timeline_semaphore", "require_fence_pool"]
           },
           "notes": { "type": "string" }
         }

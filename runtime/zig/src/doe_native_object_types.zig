@@ -146,6 +146,11 @@ pub const DoeComputePipeline = struct {
     spirv_data: ?[]const u32 = null,
     vk_spirv_hash: u64 = 0,
     vk_spirv_hash_ready: bool = false,
+    vk_static_layout_hash: u64 = 0,
+    vk_static_pipeline_hash: u64 = 0,
+    vk_static_buffer_binding_mask: u64 = 0,
+    vk_static_buffer_binding_count: u32 = 0,
+    vk_static_pipeline_hash_ready: bool = false,
     vk_flat_buffer_binding_types: [shared.MAX_FLAT_BIND]u32 = [_]u32{0} ** shared.MAX_FLAT_BIND,
     vk_flat_buffer_binding_types_ready: bool = false,
     /// Entry point name captured from the createComputePipeline

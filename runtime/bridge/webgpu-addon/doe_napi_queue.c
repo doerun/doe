@@ -718,16 +718,78 @@ static int submit_breakdown_enabled(void) {
     return 1;
 }
 
+#define DOE_QUEUE_SYNC_INFO_BACKEND_VULKAN 1u
+#define DOE_QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE 2u
+#define DOE_QUEUE_SYNC_INFO_FENCE_POOL 4u
+#define DOE_QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS 8u
+#define DOE_QUEUE_FAMILY_UNAVAILABLE 0xffffffffu
+#define DOE_QUEUE_FAMILY_POLICY_PREFER_GRAPHICS_COMPUTE 0u
+#define DOE_QUEUE_FAMILY_POLICY_PREFER_COMPUTE_ONLY 1u
+#define DOE_QUEUE_FAMILY_POLICY_REQUIRE_COMPUTE_ONLY 2u
+#define DOE_QUEUE_FAMILY_KIND_GRAPHICS_COMPUTE 0u
+#define DOE_QUEUE_FAMILY_KIND_COMPUTE_ONLY 1u
+#define DOE_DEFERRED_SYNC_POLICY_PREFER_TIMELINE_SEMAPHORE 0u
+#define DOE_DEFERRED_SYNC_POLICY_REQUIRE_FENCE_POOL 1u
+
 static void set_bool_property(napi_env env, napi_value obj, const char* name, bool value) {
     napi_value js_value;
     napi_get_boolean(env, value, &js_value);
     napi_set_named_property(env, obj, name, js_value);
 }
 
-#define DOE_QUEUE_SYNC_INFO_BACKEND_VULKAN 1u
-#define DOE_QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE 2u
-#define DOE_QUEUE_SYNC_INFO_FENCE_POOL 4u
-#define DOE_QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS 8u
+static void set_optional_u32_property(napi_env env, napi_value obj, const char* name, uint32_t value) {
+    if (value == DOE_QUEUE_FAMILY_UNAVAILABLE) return;
+    napi_value js_value;
+    napi_create_uint32(env, value, &js_value);
+    napi_set_named_property(env, obj, name, js_value);
+}
+
+static void set_optional_bool_code_property(napi_env env, napi_value obj, const char* name, uint32_t value) {
+    if (value == DOE_QUEUE_FAMILY_UNAVAILABLE) return;
+    set_bool_property(env, obj, name, value != 0);
+}
+
+static const char* queue_family_policy_name(uint32_t value) {
+    switch (value) {
+        case DOE_QUEUE_FAMILY_POLICY_PREFER_GRAPHICS_COMPUTE:
+            return "prefer_graphics_compute";
+        case DOE_QUEUE_FAMILY_POLICY_PREFER_COMPUTE_ONLY:
+            return "prefer_compute_only";
+        case DOE_QUEUE_FAMILY_POLICY_REQUIRE_COMPUTE_ONLY:
+            return "require_compute_only";
+        default:
+            return NULL;
+    }
+}
+
+static const char* queue_family_kind_name(uint32_t value) {
+    switch (value) {
+        case DOE_QUEUE_FAMILY_KIND_GRAPHICS_COMPUTE:
+            return "graphics_compute";
+        case DOE_QUEUE_FAMILY_KIND_COMPUTE_ONLY:
+            return "compute_only";
+        default:
+            return NULL;
+    }
+}
+
+static const char* deferred_sync_policy_name(uint32_t value) {
+    switch (value) {
+        case DOE_DEFERRED_SYNC_POLICY_PREFER_TIMELINE_SEMAPHORE:
+            return "prefer_timeline_semaphore";
+        case DOE_DEFERRED_SYNC_POLICY_REQUIRE_FENCE_POOL:
+            return "require_fence_pool";
+        default:
+            return NULL;
+    }
+}
+
+static void set_optional_string_property(napi_env env, napi_value obj, const char* name, const char* value) {
+    if (!value) return;
+    napi_value js_value;
+    napi_create_string_utf8(env, value, NAPI_AUTO_LENGTH, &js_value);
+    napi_set_named_property(env, obj, name, js_value);
+}
 
 napi_value doe_native_fast_path_info(napi_env env, napi_callback_info info) {
     (void)info;
@@ -769,6 +831,27 @@ napi_value doe_queue_sync_info(napi_env env, napi_callback_info info) {
     set_bool_property(env, result, "timelineSemaphore", (bits & DOE_QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE) != 0);
     set_bool_property(env, result, "fencePool", (bits & DOE_QUEUE_SYNC_INFO_FENCE_POOL) != 0);
     set_bool_property(env, result, "deferredSubmissions", (bits & DOE_QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS) != 0);
+    if (pfn_doeNativeQueueFamilyPolicyCode) {
+        set_optional_string_property(env, result, "queueFamilyPolicy", queue_family_policy_name(pfn_doeNativeQueueFamilyPolicyCode(queue)));
+    }
+    if (pfn_doeNativeQueueDeferredSubmissionSyncPolicyCode) {
+        set_optional_string_property(env, result, "deferredSubmissionSyncPolicy", deferred_sync_policy_name(pfn_doeNativeQueueDeferredSubmissionSyncPolicyCode(queue)));
+    }
+    if (pfn_doeNativeQueueFamilyKindCode) {
+        set_optional_string_property(env, result, "queueFamilyKind", queue_family_kind_name(pfn_doeNativeQueueFamilyKindCode(queue)));
+    }
+    if (pfn_doeNativeQueueFamilyIndex) {
+        set_optional_u32_property(env, result, "queueFamilyIndex", pfn_doeNativeQueueFamilyIndex(queue));
+    }
+    if (pfn_doeNativeQueueFamilyQueueCount) {
+        set_optional_u32_property(env, result, "queueFamilyQueueCount", pfn_doeNativeQueueFamilyQueueCount(queue));
+    }
+    if (pfn_doeNativeQueueFamilyTimestampValidBits) {
+        set_optional_u32_property(env, result, "queueFamilyTimestampValidBits", pfn_doeNativeQueueFamilyTimestampValidBits(queue));
+    }
+    if (pfn_doeNativeQueueFamilySupportsGraphics) {
+        set_optional_bool_code_property(env, result, "queueFamilySupportsGraphics", pfn_doeNativeQueueFamilySupportsGraphics(queue));
+    }
     return result;
 }
 

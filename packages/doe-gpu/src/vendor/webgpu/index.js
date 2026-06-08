@@ -2569,6 +2569,13 @@ export function nativeQueueSyncInfo(queue) {
     timelineSemaphore: Boolean(info.timelineSemaphore),
     fencePool: Boolean(info.fencePool),
     deferredSubmissions: Boolean(info.deferredSubmissions),
+    ...(typeof info.queueFamilyPolicy === 'string' ? { queueFamilyPolicy: info.queueFamilyPolicy } : {}),
+    ...(typeof info.deferredSubmissionSyncPolicy === 'string' ? { deferredSubmissionSyncPolicy: info.deferredSubmissionSyncPolicy } : {}),
+    ...(typeof info.queueFamilyKind === 'string' ? { queueFamilyKind: info.queueFamilyKind } : {}),
+    ...(Number.isInteger(info.queueFamilyIndex) ? { queueFamilyIndex: info.queueFamilyIndex } : {}),
+    ...(Number.isInteger(info.queueFamilyQueueCount) ? { queueFamilyQueueCount: info.queueFamilyQueueCount } : {}),
+    ...(Number.isInteger(info.queueFamilyTimestampValidBits) ? { queueFamilyTimestampValidBits: info.queueFamilyTimestampValidBits } : {}),
+    ...(typeof info.queueFamilySupportsGraphics === 'boolean' ? { queueFamilySupportsGraphics: info.queueFamilySupportsGraphics } : {}),
   };
 }
 

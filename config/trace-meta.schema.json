@@ -103,6 +103,10 @@
       "type": "string",
       "enum": ["prefer_graphics_compute", "prefer_compute_only", "require_compute_only"]
     },
+    "deferredSubmissionSyncPolicy": {
+      "type": "string",
+      "enum": ["prefer_timeline_semaphore", "require_fence_pool"]
+    },
     "queueFamilyKind": {
       "type": "string",
       "enum": ["graphics_compute", "compute_only"]
@@ -386,7 +390,23 @@
         "backendVulkan": { "type": "boolean" },
         "timelineSemaphore": { "type": "boolean" },
         "fencePool": { "type": "boolean" },
-        "deferredSubmissions": { "type": "boolean" }
+        "deferredSubmissions": { "type": "boolean" },
+        "queueFamilyPolicy": {
+          "type": "string",
+          "enum": ["prefer_graphics_compute", "prefer_compute_only", "require_compute_only"]
+        },
+        "deferredSubmissionSyncPolicy": {
+          "type": "string",
+          "enum": ["prefer_timeline_semaphore", "require_fence_pool"]
+        },
+        "queueFamilyKind": {
+          "type": "string",
+          "enum": ["graphics_compute", "compute_only"]
+        },
+        "queueFamilyIndex": { "type": "integer", "minimum": 0 },
+        "queueFamilyQueueCount": { "type": "integer", "minimum": 0 },
+        "queueFamilyTimestampValidBits": { "type": "integer", "minimum": 0 },
+        "queueFamilySupportsGraphics": { "type": "boolean" }
       }
     },
     "readbackCaptures": {

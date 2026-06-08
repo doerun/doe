@@ -60,6 +60,34 @@ pub export fn doeNativeQueueSyncInfo(q_raw: ?*anyopaque) callconv(.c) u32 {
     return lifecycle.doeNativeQueueSyncInfo(q_raw);
 }
 
+pub fn doeNativeQueueFamilyPolicyCode(q_raw: ?*anyopaque) u32 {
+    return lifecycle.doeNativeQueueFamilyPolicyCode(q_raw);
+}
+
+pub fn doeNativeQueueDeferredSubmissionSyncPolicyCode(q_raw: ?*anyopaque) u32 {
+    return lifecycle.doeNativeQueueDeferredSubmissionSyncPolicyCode(q_raw);
+}
+
+pub fn doeNativeQueueFamilyKindCode(q_raw: ?*anyopaque) u32 {
+    return lifecycle.doeNativeQueueFamilyKindCode(q_raw);
+}
+
+pub fn doeNativeQueueFamilyIndex(q_raw: ?*anyopaque) u32 {
+    return lifecycle.doeNativeQueueFamilyIndex(q_raw);
+}
+
+pub fn doeNativeQueueFamilyQueueCount(q_raw: ?*anyopaque) u32 {
+    return lifecycle.doeNativeQueueFamilyQueueCount(q_raw);
+}
+
+pub fn doeNativeQueueFamilyTimestampValidBits(q_raw: ?*anyopaque) u32 {
+    return lifecycle.doeNativeQueueFamilyTimestampValidBits(q_raw);
+}
+
+pub fn doeNativeQueueFamilySupportsGraphics(q_raw: ?*anyopaque) u32 {
+    return lifecycle.doeNativeQueueFamilySupportsGraphics(q_raw);
+}
+
 pub export fn doeNativeQueueWriteBuffer(
     q_raw: ?*anyopaque,
     buf_raw: ?*anyopaque,

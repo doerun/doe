@@ -487,6 +487,34 @@ function openLibrary(path) {
             args: [FFIType.ptr],
             returns: FFIType.u32,
         };
+        symbols.doeNativeQueueFamilyPolicyCode = {
+            args: [FFIType.ptr],
+            returns: FFIType.u32,
+        };
+        symbols.doeNativeQueueDeferredSubmissionSyncPolicyCode = {
+            args: [FFIType.ptr],
+            returns: FFIType.u32,
+        };
+        symbols.doeNativeQueueFamilyKindCode = {
+            args: [FFIType.ptr],
+            returns: FFIType.u32,
+        };
+        symbols.doeNativeQueueFamilyIndex = {
+            args: [FFIType.ptr],
+            returns: FFIType.u32,
+        };
+        symbols.doeNativeQueueFamilyQueueCount = {
+            args: [FFIType.ptr],
+            returns: FFIType.u32,
+        };
+        symbols.doeNativeQueueFamilyTimestampValidBits = {
+            args: [FFIType.ptr],
+            returns: FFIType.u32,
+        };
+        symbols.doeNativeQueueFamilySupportsGraphics = {
+            args: [FFIType.ptr],
+            returns: FFIType.u32,
+        };
         symbols.doeNativePackagePipelineCacheFlush = {
             args: [],
             returns: FFIType.void,
@@ -782,6 +810,19 @@ const QUEUE_SYNC_INFO_BACKEND_VULKAN = 1;
 const QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE = 2;
 const QUEUE_SYNC_INFO_FENCE_POOL = 4;
 const QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS = 8;
+const QUEUE_FAMILY_POLICY_NAMES = Object.freeze([
+    "prefer_graphics_compute",
+    "prefer_compute_only",
+    "require_compute_only",
+]);
+const QUEUE_FAMILY_KIND_NAMES = Object.freeze([
+    "graphics_compute",
+    "compute_only",
+]);
+const DEFERRED_SUBMISSION_SYNC_POLICY_NAMES = Object.freeze([
+    "prefer_timeline_semaphore",
+    "require_fence_pool",
+]);
 
 function nativeFastPathInfoFromSymbols() {
     if (!DOE_LIB_PATH) {
@@ -817,6 +858,37 @@ function decodeQueueSyncInfoBits(bits) {
     };
 }
 
+function maybeCallQueueU32(symbolName, queueNative) {
+    const fn = wgpu?.symbols?.[symbolName];
+    if (typeof fn !== "function") return null;
+    const value = Number(fn(queueNative));
+    return value === UINT32_MAX ? null : value;
+}
+
+function attachQueueFamilyInfo(info, queueNative) {
+    const policyCode = maybeCallQueueU32("doeNativeQueueFamilyPolicyCode", queueNative);
+    if (policyCode != null && QUEUE_FAMILY_POLICY_NAMES[policyCode]) {
+        info.queueFamilyPolicy = QUEUE_FAMILY_POLICY_NAMES[policyCode];
+    }
+    const syncPolicyCode = maybeCallQueueU32("doeNativeQueueDeferredSubmissionSyncPolicyCode", queueNative);
+    if (syncPolicyCode != null && DEFERRED_SUBMISSION_SYNC_POLICY_NAMES[syncPolicyCode]) {
+        info.deferredSubmissionSyncPolicy = DEFERRED_SUBMISSION_SYNC_POLICY_NAMES[syncPolicyCode];
+    }
+    const kindCode = maybeCallQueueU32("doeNativeQueueFamilyKindCode", queueNative);
+    if (kindCode != null && QUEUE_FAMILY_KIND_NAMES[kindCode]) {
+        info.queueFamilyKind = QUEUE_FAMILY_KIND_NAMES[kindCode];
+    }
+    const queueFamilyIndex = maybeCallQueueU32("doeNativeQueueFamilyIndex", queueNative);
+    if (queueFamilyIndex != null) info.queueFamilyIndex = queueFamilyIndex;
+    const queueFamilyQueueCount = maybeCallQueueU32("doeNativeQueueFamilyQueueCount", queueNative);
+    if (queueFamilyQueueCount != null) info.queueFamilyQueueCount = queueFamilyQueueCount;
+    const queueFamilyTimestampValidBits = maybeCallQueueU32("doeNativeQueueFamilyTimestampValidBits", queueNative);
+    if (queueFamilyTimestampValidBits != null) info.queueFamilyTimestampValidBits = queueFamilyTimestampValidBits;
+    const queueFamilySupportsGraphics = maybeCallQueueU32("doeNativeQueueFamilySupportsGraphics", queueNative);
+    if (queueFamilySupportsGraphics != null) info.queueFamilySupportsGraphics = queueFamilySupportsGraphics !== 0;
+    return info;
+}
+
 export function nativeQueueSyncInfo(queue) {
     if (!DOE_LIB_PATH) {
         return null;
@@ -830,7 +902,7 @@ export function nativeQueueSyncInfo(queue) {
     if (typeof fn !== "function" || !queue?._native) {
         return null;
     }
-    return decodeQueueSyncInfoBits(Number(fn(queue._native)));
+    return attachQueueFamilyInfo(decodeQueueSyncInfoBits(Number(fn(queue._native))), queue._native);
 }
 
 function cachedShaderSourceBytes(code) {

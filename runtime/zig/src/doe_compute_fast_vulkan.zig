@@ -1,22 +1,18 @@
 const std = @import("std");
-const native_cmds = @import("doe_native_command_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_types = @import("doe_native_object_types.zig");
-const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const vulkan_compute = @import("doe_vulkan_compute_native.zig");
 const queue_submit_ops = @import("backend/dropin_queue_submit.zig");
 
 const vk_upload = queue_submit_ops.vulkan_upload;
-const RecordedCmd = native_cmds.RecordedCmd;
 const DoeBuffer = native_types.DoeBuffer;
+const DoeBindGroup = native_types.DoeBindGroup;
 const DoeComputePipeline = native_types.DoeComputePipeline;
 const DoeQueue = native_types.DoeQueue;
 const MAX_COMPUTE_BIND_GROUPS = native_shared.MAX_COMPUTE_BIND_GROUPS;
-const MAX_FLAT_BIND = native_shared.MAX_FLAT_BIND;
-const toOpaque = native_helpers.toOpaque;
 
 pub const DispatchBatchCopyFlushTimings = struct {
     command_replay_ns: u64 = 0,
@@ -33,17 +29,19 @@ fn monotonicNowNs() u64 {
     return @intCast(std.time.nanoTimestamp());
 }
 
-fn recordedDispatch(
+const BindGroupArray = [MAX_COMPUTE_BIND_GROUPS]?*DoeBindGroup;
+
+fn validatedBindGroups(
     pipe: *DoeComputePipeline,
     bg_ptrs: [*]const ?*anyopaque,
     bg_count: u32,
     dx: u32,
     dy: u32,
     dz: u32,
-) ?RecordedCmd {
-    var bind_groups: [MAX_COMPUTE_BIND_GROUPS]?*native_types.DoeBindGroup = [_]?*native_types.DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
+) ?BindGroupArray {
+    var bind_groups: BindGroupArray = [_]?*DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
     for (0..@min(bg_count, MAX_COMPUTE_BIND_GROUPS)) |i| {
-        bind_groups[i] = native_helpers.cast(native_types.DoeBindGroup, bg_ptrs[i]);
+        bind_groups[i] = native_helpers.cast(DoeBindGroup, bg_ptrs[i]);
     }
     compute_preconditions.validate_bind_groups(
         pipe.dispatch_preconditions,
@@ -55,29 +53,7 @@ fn recordedDispatch(
         std.log.err("doe_compute_fast_vulkan: dispatch precondition failed for proof-elided shader", .{});
         return null;
     };
-
-    var cmd = RecordedCmd{ .dispatch = .{
-        .compute_pipeline = toOpaque(pipe),
-        .pso = pipe.mtl_pso,
-        .needs_sizes_buf = pipe.needs_sizes_buf,
-        .bufs = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
-        .buf_offsets = [_]u64{0} ** MAX_FLAT_BIND,
-        .buf_sizes = [_]u64{0} ** MAX_FLAT_BIND,
-        .buf_count = 0,
-        .x = dx,
-        .y = dy,
-        .z = dz,
-        .wg_x = pipe.wg_x,
-        .wg_y = pipe.wg_y,
-        .wg_z = pipe.wg_z,
-    } };
-    cmd.dispatch.buf_count = compute_bind_groups.populateFlatBindings(
-        bind_groups[0..],
-        &cmd.dispatch.bufs,
-        &cmd.dispatch.buf_offsets,
-        &cmd.dispatch.buf_sizes,
-    );
-    return cmd;
+    return bind_groups;
 }
 
 fn recordOrExecuteCopy(
@@ -169,7 +145,7 @@ pub fn dispatchBatchCopyFlush(
         const pipe = native_helpers.cast(DoeComputePipeline, pipe_ptrs[index]) orelse continue;
         const bg_offset = index * MAX_COMPUTE_BIND_GROUPS;
         const dim_offset = index * 3;
-        const cmd = recordedDispatch(
+        const bind_groups = validatedBindGroups(
             pipe,
             bg_ptrs + bg_offset,
             bg_counts[index],
@@ -178,13 +154,17 @@ pub fn dispatchBatchCopyFlush(
             dispatch_dims[dim_offset + 2],
         ) orelse continue;
         const prepare_started_ns = monotonicNowNs();
-        if (!vulkan_compute.vulkan_prepare_recorded_dispatch(rt, cmd.dispatch)) {
+        if (!vulkan_compute.vulkan_prepare_dispatch_bind_groups(rt, pipe, bind_groups[0..])) {
             timings.command_replay_prepare_ns += monotonicNowNs() - prepare_started_ns;
             continue;
         }
         timings.command_replay_prepare_ns += monotonicNowNs() - prepare_started_ns;
         const record_started_ns = monotonicNowNs();
-        vulkan_compute.vulkan_run_prepared_dispatch(rt, cmd.dispatch);
+        vulkan_compute.vulkan_run_prepared_dispatch(rt, .{
+            .x = dispatch_dims[dim_offset],
+            .y = dispatch_dims[dim_offset + 1],
+            .z = dispatch_dims[dim_offset + 2],
+        });
         timings.command_replay_record_ns += monotonicNowNs() - record_started_ns;
         executed_any_dispatch = true;
     }

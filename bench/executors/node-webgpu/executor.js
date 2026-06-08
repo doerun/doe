@@ -923,12 +923,34 @@ function snapshotPackageNativeQueueSyncInfo(providerModule, queue) {
   if (!info || typeof info !== 'object') {
     return null;
   }
-  return {
+  const result = {
     backendVulkan: Boolean(info.backendVulkan),
     timelineSemaphore: Boolean(info.timelineSemaphore),
     fencePool: Boolean(info.fencePool),
     deferredSubmissions: Boolean(info.deferredSubmissions),
   };
+  if (typeof info.queueFamilyPolicy === 'string') {
+    result.queueFamilyPolicy = info.queueFamilyPolicy;
+  }
+  if (typeof info.deferredSubmissionSyncPolicy === 'string') {
+    result.deferredSubmissionSyncPolicy = info.deferredSubmissionSyncPolicy;
+  }
+  if (typeof info.queueFamilyKind === 'string') {
+    result.queueFamilyKind = info.queueFamilyKind;
+  }
+  if (Number.isInteger(info.queueFamilyIndex)) {
+    result.queueFamilyIndex = info.queueFamilyIndex;
+  }
+  if (Number.isInteger(info.queueFamilyQueueCount)) {
+    result.queueFamilyQueueCount = info.queueFamilyQueueCount;
+  }
+  if (Number.isInteger(info.queueFamilyTimestampValidBits)) {
+    result.queueFamilyTimestampValidBits = info.queueFamilyTimestampValidBits;
+  }
+  if (typeof info.queueFamilySupportsGraphics === 'boolean') {
+    result.queueFamilySupportsGraphics = info.queueFamilySupportsGraphics;
+  }
+  return result;
 }
 
 function diffPackageFastPathStats(start, end) {

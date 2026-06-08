@@ -338,6 +338,13 @@ class TestRealConfigs(unittest.TestCase):
                 "timelineSemaphore": True,
                 "fencePool": True,
                 "deferredSubmissions": False,
+                "queueFamilyPolicy": "prefer_graphics_compute",
+                "deferredSubmissionSyncPolicy": "prefer_timeline_semaphore",
+                "queueFamilyKind": "graphics_compute",
+                "queueFamilyIndex": 0,
+                "queueFamilyQueueCount": 1,
+                "queueFamilyTimestampValidBits": 64,
+                "queueFamilySupportsGraphics": True,
             },
         }
         jsonschema.validate(valid, schema)
@@ -345,6 +352,14 @@ class TestRealConfigs(unittest.TestCase):
         del invalid["packageNativeQueueSyncInfo"]["timelineSemaphore"]
         with self.assertRaises(jsonschema.ValidationError):
             jsonschema.validate(invalid, schema)
+        invalid_policy = json.loads(json.dumps(valid))
+        invalid_policy["packageNativeQueueSyncInfo"]["queueFamilyPolicy"] = "silent_fallback"
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(invalid_policy, schema)
+        invalid_sync_policy = json.loads(json.dumps(valid))
+        invalid_sync_policy["packageNativeQueueSyncInfo"]["deferredSubmissionSyncPolicy"] = "hidden_switch"
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(invalid_sync_policy, schema)
 
     def test_trace_meta_determinism_accepts_stable_token_summary(self):
         repo_root = Path(__file__).resolve().parents[2]

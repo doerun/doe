@@ -70,6 +70,34 @@ pub export fn wgpuAdapterCreateDevice(a0: abi_base.WGPUAdapter, a1: ?*const abi_
     return native.doeNativeAdapterCreateDevice(a0, a1);
 }
 
+pub export fn doeNativeQueueFamilyPolicyCode(q_raw: ?*anyopaque) callconv(.c) u32 {
+    return native.doeNativeQueueFamilyPolicyCode(q_raw);
+}
+
+pub export fn doeNativeQueueDeferredSubmissionSyncPolicyCode(q_raw: ?*anyopaque) callconv(.c) u32 {
+    return native.doeNativeQueueDeferredSubmissionSyncPolicyCode(q_raw);
+}
+
+pub export fn doeNativeQueueFamilyKindCode(q_raw: ?*anyopaque) callconv(.c) u32 {
+    return native.doeNativeQueueFamilyKindCode(q_raw);
+}
+
+pub export fn doeNativeQueueFamilyIndex(q_raw: ?*anyopaque) callconv(.c) u32 {
+    return native.doeNativeQueueFamilyIndex(q_raw);
+}
+
+pub export fn doeNativeQueueFamilyQueueCount(q_raw: ?*anyopaque) callconv(.c) u32 {
+    return native.doeNativeQueueFamilyQueueCount(q_raw);
+}
+
+pub export fn doeNativeQueueFamilyTimestampValidBits(q_raw: ?*anyopaque) callconv(.c) u32 {
+    return native.doeNativeQueueFamilyTimestampValidBits(q_raw);
+}
+
+pub export fn doeNativeQueueFamilySupportsGraphics(q_raw: ?*anyopaque) callconv(.c) u32 {
+    return native.doeNativeQueueFamilySupportsGraphics(q_raw);
+}
+
 // FFI-friendly wrappers: flattened args for runtimes that cannot pass structs by value (Bun FFI, Node ffi-napi).
 // These assemble the CallbackInfo struct from scalar args and delegate to the standard C ABI functions.
 

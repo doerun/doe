@@ -44,6 +44,18 @@ pub const QueueFamilyKind = enum {
     }
 };
 
+pub const DeferredSubmissionSyncPolicy = enum {
+    prefer_timeline_semaphore,
+    require_fence_pool,
+
+    pub fn name(self: DeferredSubmissionSyncPolicy) []const u8 {
+        return switch (self) {
+            .prefer_timeline_semaphore => "prefer_timeline_semaphore",
+            .require_fence_pool => "require_fence_pool",
+        };
+    }
+};
+
 pub const GpuTimestampMode = enum {
     auto,
     off,

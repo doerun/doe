@@ -77,6 +77,13 @@ export interface NativeQueueSyncInfo {
   timelineSemaphore: boolean;
   fencePool: boolean;
   deferredSubmissions: boolean;
+  queueFamilyPolicy?: 'prefer_graphics_compute' | 'prefer_compute_only' | 'require_compute_only';
+  deferredSubmissionSyncPolicy?: 'prefer_timeline_semaphore' | 'require_fence_pool';
+  queueFamilyKind?: 'graphics_compute' | 'compute_only';
+  queueFamilyIndex?: number;
+  queueFamilyQueueCount?: number;
+  queueFamilyTimestampValidBits?: number;
+  queueFamilySupportsGraphics?: boolean;
 }
 
 export interface ProviderInfo {

@@ -3,6 +3,7 @@ const abi_core = @import("core/abi/wgpu_core_base_types.zig");
 const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
 const queue_submit_ops = @import("backend/dropin_queue_submit.zig");
 const native_types = @import("doe_native_object_types.zig");
+const shared_types = @import("doe_native_shared_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
 const native_exports = @import("doe_native_exports.zig");
@@ -20,6 +21,14 @@ const QUEUE_SYNC_INFO_BACKEND_VULKAN: u32 = 1 << 0;
 const QUEUE_SYNC_INFO_TIMELINE_SEMAPHORE: u32 = 1 << 1;
 const QUEUE_SYNC_INFO_FENCE_POOL: u32 = 1 << 2;
 const QUEUE_SYNC_INFO_DEFERRED_SUBMISSIONS: u32 = 1 << 3;
+const QUEUE_FAMILY_UNAVAILABLE: u32 = 0xffff_ffff;
+const QUEUE_FAMILY_POLICY_PREFER_GRAPHICS_COMPUTE: u32 = 0;
+const QUEUE_FAMILY_POLICY_PREFER_COMPUTE_ONLY: u32 = 1;
+const QUEUE_FAMILY_POLICY_REQUIRE_COMPUTE_ONLY: u32 = 2;
+const QUEUE_FAMILY_KIND_GRAPHICS_COMPUTE: u32 = 0;
+const QUEUE_FAMILY_KIND_COMPUTE_ONLY: u32 = 1;
+const DEFERRED_SYNC_POLICY_PREFER_TIMELINE_SEMAPHORE: u32 = 0;
+const DEFERRED_SYNC_POLICY_REQUIRE_FENCE_POOL: u32 = 1;
 
 pub fn doeNativeQueueFlush(q_raw: ?*anyopaque) void {
     const q = cast(DoeQueue, q_raw) orelse return;
@@ -103,6 +112,69 @@ pub fn doeNativeQueueSyncInfo(q_raw: ?*anyopaque) u32 {
         }
     }
     return bits;
+}
+
+fn queueVulkanRuntime(q_raw: ?*anyopaque) ?*shared_types.NativeVulkanRuntime {
+    const q = cast(DoeQueue, q_raw) orelse return null;
+    if (q.dev.backend != .vulkan) return null;
+    if (comptime has_vulkan) {
+        return native_rt_helpers.device_vk_runtime(q.dev);
+    }
+    return null;
+}
+
+pub fn doeNativeQueueFamilyPolicyCode(q_raw: ?*anyopaque) u32 {
+    if (comptime !has_vulkan) return QUEUE_FAMILY_UNAVAILABLE;
+    const rt = queueVulkanRuntime(q_raw) orelse return QUEUE_FAMILY_UNAVAILABLE;
+    return switch (rt.queue_family_policy) {
+        .prefer_graphics_compute => QUEUE_FAMILY_POLICY_PREFER_GRAPHICS_COMPUTE,
+        .prefer_compute_only => QUEUE_FAMILY_POLICY_PREFER_COMPUTE_ONLY,
+        .require_compute_only => QUEUE_FAMILY_POLICY_REQUIRE_COMPUTE_ONLY,
+    };
+}
+
+pub fn doeNativeQueueDeferredSubmissionSyncPolicyCode(q_raw: ?*anyopaque) u32 {
+    if (comptime !has_vulkan) return QUEUE_FAMILY_UNAVAILABLE;
+    const rt = queueVulkanRuntime(q_raw) orelse return QUEUE_FAMILY_UNAVAILABLE;
+    return switch (rt.deferred_submission_sync_policy) {
+        .prefer_timeline_semaphore => DEFERRED_SYNC_POLICY_PREFER_TIMELINE_SEMAPHORE,
+        .require_fence_pool => DEFERRED_SYNC_POLICY_REQUIRE_FENCE_POOL,
+    };
+}
+
+pub fn doeNativeQueueFamilyKindCode(q_raw: ?*anyopaque) u32 {
+    if (comptime !has_vulkan) return QUEUE_FAMILY_UNAVAILABLE;
+    const rt = queueVulkanRuntime(q_raw) orelse return QUEUE_FAMILY_UNAVAILABLE;
+    const kind = rt.queue_family_kind_value_cache orelse return QUEUE_FAMILY_UNAVAILABLE;
+    return switch (kind) {
+        .graphics_compute => QUEUE_FAMILY_KIND_GRAPHICS_COMPUTE,
+        .compute_only => QUEUE_FAMILY_KIND_COMPUTE_ONLY,
+    };
+}
+
+pub fn doeNativeQueueFamilyIndex(q_raw: ?*anyopaque) u32 {
+    if (comptime !has_vulkan) return QUEUE_FAMILY_UNAVAILABLE;
+    const rt = queueVulkanRuntime(q_raw) orelse return QUEUE_FAMILY_UNAVAILABLE;
+    return rt.queue_family_index_value_cache orelse QUEUE_FAMILY_UNAVAILABLE;
+}
+
+pub fn doeNativeQueueFamilyQueueCount(q_raw: ?*anyopaque) u32 {
+    if (comptime !has_vulkan) return QUEUE_FAMILY_UNAVAILABLE;
+    const rt = queueVulkanRuntime(q_raw) orelse return QUEUE_FAMILY_UNAVAILABLE;
+    return rt.queue_family_queue_count_value_cache orelse QUEUE_FAMILY_UNAVAILABLE;
+}
+
+pub fn doeNativeQueueFamilyTimestampValidBits(q_raw: ?*anyopaque) u32 {
+    if (comptime !has_vulkan) return QUEUE_FAMILY_UNAVAILABLE;
+    const rt = queueVulkanRuntime(q_raw) orelse return QUEUE_FAMILY_UNAVAILABLE;
+    return rt.queue_family_timestamp_valid_bits_value_cache orelse QUEUE_FAMILY_UNAVAILABLE;
+}
+
+pub fn doeNativeQueueFamilySupportsGraphics(q_raw: ?*anyopaque) u32 {
+    if (comptime !has_vulkan) return QUEUE_FAMILY_UNAVAILABLE;
+    const rt = queueVulkanRuntime(q_raw) orelse return QUEUE_FAMILY_UNAVAILABLE;
+    const supports_graphics = rt.queue_family_supports_graphics_value_cache orelse return QUEUE_FAMILY_UNAVAILABLE;
+    return if (supports_graphics) 1 else 0;
 }
 
 pub fn doeNativeQueueRelease(raw: ?*anyopaque) void {

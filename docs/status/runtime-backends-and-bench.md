@@ -3,6 +3,60 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan package sync policy and replay prep stay diagnostic
+
+Vulkan deferred-submit synchronization is now a manifest-backed policy. The
+backend runtime policy schema requires `deferredSubmissionSyncPolicy`, the
+policy hash seed moved with that contract, and the diagnostic
+`vulkan_doe_compute_only_fence_diagnostic` lane requires both a compute-only
+queue family and fence-pool deferred submission tracking. Package trace
+metadata now reports the selected deferred-sync policy beside the existing
+queue-family telemetry, so fence-vs-timeline diagnostics are receipt-visible.
+
+The Vulkan package replay path now carries precomputed static pipeline/layout
+hashes, prepares package batch dispatches directly from validated bind groups
+where the fast path has already surfaced them, and records compute pipeline and
+descriptor binds through the existing Vulkan bind-state cache helpers. These
+changes preserve descriptor hashing and compute-write binding capture; they do
+not skip commands, resource changes, copies, readback, submit, or wait work.
+
+Current AMD Vulkan Gemma64 warm package rows on Node and Bun remain
+diagnostic, not claimable. The final Node and Bun same-window reports are
+strict-comparable with matching execution shape and no path asymmetry, but the
+local claim sidecars keep the rows diagnostic because selected operation
+timing tails are not positive. The submit breakdown still points at native
+Vulkan replay preparation/recording plus driver submit as the next optimization
+front.
+
+Artifacts:
+
+- Node compare:
+  `bench/out/amd-vulkan/20260608T143945Z/gemma64.node-package.warm.ir.compute-only-fence.same-window.compare.json`
+- Node claim:
+  `bench/out/amd-vulkan/20260608T143945Z/gemma64.node-package.warm.ir.compute-only-fence.same-window.claim.json`
+- Node Doe receipt:
+  `bench/out/amd-vulkan/20260608T143945Z/gemma64.node-package.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T143945Z.run.json`
+- Bun compare:
+  `bench/out/amd-vulkan/20260608T144045Z/gemma64.bun-package.warm.ir.compute-only-fence.same-window.compare.json`
+- Bun claim:
+  `bench/out/amd-vulkan/20260608T144045Z/gemma64.bun-package.warm.ir.compute-only-fence.same-window.claim.json`
+- Bun Doe receipt:
+  `bench/out/amd-vulkan/20260608T144045Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T144045Z.run.json`
+- Submit breakdown probe:
+  `bench/out/amd-vulkan/20260608T143833Z/gemma64.bun-package.warm.ir.workspace/run-artifacts/doe_gpu_bun_package_prepared/doe_gpu_bun_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T143833Z.run.json`
+
+Validation:
+
+- `python3 bench/gates/schema_gate.py`
+- `node --check packages/doe-gpu/src/vendor/webgpu/index.js`
+- `node --check bench/executors/node-webgpu/executor.js`
+- `bun --check packages/doe-gpu/src/vendor/webgpu/bun-ffi.js`
+- `python3 -m unittest bench.tests.test_config_validation bench.tests.test_node_webgpu_executor -q`
+- `zig build test` from `runtime/zig`
+- `zig build dropin-full -Doptimize=ReleaseFast` from `runtime/zig`
+- `npm --prefix packages/doe-gpu run build:addon`
+- `git diff --check`
+
 ## 2026-06-08 — Vulkan queue-family policy is manifest-backed telemetry
 
 Doe Vulkan queue-family selection now has an explicit runtime-policy contract.

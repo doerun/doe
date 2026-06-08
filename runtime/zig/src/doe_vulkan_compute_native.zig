@@ -16,6 +16,7 @@ const model_compute_types = @import("model_compute_types.zig");
 const model_binding_types = @import("model_binding_value_types.zig");
 const shader_native = @import("doe_shader_native.zig");
 const webgpu = @import("backend/runtime_types.zig");
+const pipeline_hash = @import("doe_vulkan_pipeline_hash.zig");
 
 const alloc = native_helpers.alloc;
 const cast = native_helpers.cast;
@@ -26,6 +27,7 @@ const NativeVulkanRuntime = native_shared.NativeVulkanRuntime;
 const DoeShaderModule = native_types.DoeShaderModule;
 const DoeComputePipeline = native_types.DoeComputePipeline;
 const DoeBuffer = native_types.DoeBuffer;
+const DoeBindGroup = native_types.DoeBindGroup;
 // Maximum KernelBinding slots: groups × bindings per group.
 const MAX_KERNEL_BINDINGS: usize = MAX_COMPUTE_BIND_GROUPS * MAX_BIND;
 const MAX_FLAT_BIND: usize = native_shared.MAX_FLAT_BIND;
@@ -35,6 +37,14 @@ const ADDRESS_SPACE_STORAGE: u32 = @intFromEnum(doe_wgsl.ir.AddressSpace.storage
 const ADDRESS_SPACE_UNIFORM: u32 = @intFromEnum(doe_wgsl.ir.AddressSpace.uniform);
 const ACCESS_READ: u32 = @intFromEnum(doe_wgsl.ir.AccessMode.read);
 const ACCESS_READ_WRITE: u32 = @intFromEnum(doe_wgsl.ir.AccessMode.read_write);
+const BIND_GROUP_LAYOUT_RESOURCE_KIND_BUFFER: u32 = 1;
+const SPIRV_MAGIC: u32 = 0x07230203;
+
+const BindingCollection = struct {
+    count: usize,
+    flat_mask: u64,
+    descriptor_hash: u64,
+};
 
 fn shader_buffer_binding_type(
     shader_module: ?*DoeShaderModule,
@@ -67,6 +77,71 @@ fn populate_pipeline_buffer_binding_types(pip: *DoeComputePipeline, shader_modul
         pip.vk_flat_buffer_binding_types[slot] = shader_buffer_binding_type(shader_module, group_u32, binding_u32);
     }
     pip.vk_flat_buffer_binding_types_ready = true;
+}
+
+fn reset_pipeline_static_hashes(pip: *DoeComputePipeline) void {
+    pip.vk_static_layout_hash = 0;
+    pip.vk_static_pipeline_hash = 0;
+    pip.vk_static_buffer_binding_mask = 0;
+    pip.vk_static_buffer_binding_count = 0;
+    pip.vk_static_pipeline_hash_ready = false;
+}
+
+fn pipeline_entry_point(pip: *const DoeComputePipeline) ?[]const u8 {
+    return if (pip.vk_entry_point_owned) |ep| ep[0..] else null;
+}
+
+fn precompute_pipeline_static_hashes(pip: *DoeComputePipeline) void {
+    reset_pipeline_static_hashes(pip);
+    if (!pip.vk_spirv_hash_ready or !pip.vk_flat_buffer_binding_types_ready) return;
+    const layout = pip.layout orelse return;
+
+    var binding_mask: u64 = 0;
+    var binding_count: u32 = 0;
+    for (layout.bind_group_layouts[0..layout.bind_group_layout_count], 0..) |maybe_bgl, group_index| {
+        const bgl = maybe_bgl orelse return;
+        const entries = bgl.entries orelse {
+            if (bgl.entry_count == 0) continue;
+            return;
+        };
+        for (entries[0..bgl.entry_count]) |entry| {
+            if (entry.resource_kind != BIND_GROUP_LAYOUT_RESOURCE_KIND_BUFFER) return;
+            if (entry.binding >= MAX_BIND) return;
+            const slot = (group_index * MAX_BIND) + entry.binding;
+            const slot_bit = @as(u64, 1) << @intCast(slot);
+            if ((binding_mask & slot_bit) == 0) {
+                binding_mask |= slot_bit;
+                binding_count += 1;
+            }
+        }
+    }
+
+    var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
+    var count: usize = 0;
+    for (0..MAX_FLAT_BIND) |slot| {
+        const slot_bit = @as(u64, 1) << @intCast(slot);
+        if ((binding_mask & slot_bit) == 0) continue;
+        binding_storage[count] = .{
+            .group = @intCast(slot / MAX_BIND),
+            .binding = @intCast(slot % MAX_BIND),
+            .resource_kind = .buffer,
+            .resource_handle = 0,
+            .buffer_type = pip.vk_flat_buffer_binding_types[slot],
+        };
+        count += 1;
+    }
+
+    const bindings = binding_storage[0..count];
+    const layout_hash = pipeline_hash.compute_layout_hash(bindings);
+    pip.vk_static_layout_hash = layout_hash;
+    pip.vk_static_pipeline_hash = pipeline_hash.compute_pipeline_hash_from_layout_hash(
+        pip.vk_spirv_hash,
+        pipeline_entry_point(pip),
+        layout_hash,
+    );
+    pip.vk_static_buffer_binding_mask = binding_mask;
+    pip.vk_static_buffer_binding_count = binding_count;
+    pip.vk_static_pipeline_hash_ready = true;
 }
 
 // ============================================================
@@ -133,6 +208,7 @@ pub fn vulkan_copy_pipeline_spirv(
     pip.vk_spirv_hash = std.hash.Wyhash.hash(0, std.mem.sliceAsBytes(src));
     pip.vk_spirv_hash_ready = true;
     populate_pipeline_buffer_binding_types(pip, shader);
+    precompute_pipeline_static_hashes(pip);
 }
 
 /// Free pip.spirv_data if heap-allocated. The runtime manages VkPipeline lifecycle.
@@ -143,6 +219,7 @@ pub fn vulkan_release_compute_pipeline(pip: *DoeComputePipeline) void {
     }
     pip.vk_spirv_hash = 0;
     pip.vk_spirv_hash_ready = false;
+    reset_pipeline_static_hashes(pip);
     pip.vk_flat_buffer_binding_types_ready = false;
     if (pip.vk_entry_point_owned) |ep| {
         alloc.free(ep);
@@ -154,6 +231,44 @@ pub fn vulkan_release_compute_pipeline(pip: *DoeComputePipeline) void {
 // Compute dispatch — queue submit replay through NativeVulkanRuntime
 // ============================================================
 
+fn append_recorded_binding_at_slot(
+    pip: *const DoeComputePipeline,
+    bufs: []const ?*anyopaque,
+    buf_offsets: []const u64,
+    buf_sizes: []const u64,
+    slot: usize,
+    out_bindings: []model_compute_types.KernelBinding,
+    count: *usize,
+    flat_mask: *u64,
+    descriptor_hasher: *pipeline_hash.DescriptorBindingsHasher,
+) void {
+    if (slot >= bufs.len) return;
+    const raw_ptr = bufs[slot] orelse return;
+    const buf = cast(DoeBuffer, raw_ptr) orelse return;
+    if (buf.error_object) return;
+    if (buf.vk_id == 0) return;
+    if (count.* >= out_bindings.len) return;
+    const shader_module = pip.shader_module;
+    const group_u32: u32 = @intCast(slot / MAX_BIND);
+    const binding_u32: u32 = @intCast(slot % MAX_BIND);
+    const binding = model_compute_types.KernelBinding{
+        .group = group_u32,
+        .binding = binding_u32,
+        .resource_kind = .buffer,
+        .resource_handle = buf.vk_id,
+        .buffer_offset = buf_offsets[slot],
+        .buffer_size = buf_sizes[slot],
+        .buffer_type = if (pip.vk_flat_buffer_binding_types_ready)
+            pip.vk_flat_buffer_binding_types[slot]
+        else
+            shader_buffer_binding_type(shader_module, group_u32, binding_u32),
+    };
+    out_bindings[count.*] = binding;
+    descriptor_hasher.update(binding);
+    flat_mask.* |= @as(u64, 1) << @intCast(slot);
+    count.* += 1;
+}
+
 /// Build a KernelBinding slice from recorded flat buffer bindings for the given pipeline.
 /// Returns the number of bindings populated in out_bindings.
 fn collect_recorded_bindings(
@@ -162,56 +277,163 @@ fn collect_recorded_bindings(
     buf_offsets: []const u64,
     buf_sizes: []const u64,
     out_bindings: []model_compute_types.KernelBinding,
-) usize {
+) BindingCollection {
     var count: usize = 0;
-    const shader_module = pip.shader_module;
-    for (bufs, 0..) |maybe_raw, slot| {
-        const raw_ptr = maybe_raw orelse continue;
-        const buf = cast(DoeBuffer, raw_ptr) orelse continue;
-        if (buf.error_object) continue;
-        if (buf.vk_id == 0) continue;
-        if (count >= out_bindings.len) break;
-        const group_u32: u32 = @intCast(slot / MAX_BIND);
-        const binding_u32: u32 = @intCast(slot % MAX_BIND);
-        out_bindings[count] = .{
-            .group = group_u32,
-            .binding = binding_u32,
-            .resource_kind = .buffer,
-            .resource_handle = buf.vk_id,
-            .buffer_offset = buf_offsets[slot],
-            .buffer_size = buf_sizes[slot],
-            .buffer_type = if (pip.vk_flat_buffer_binding_types_ready)
-                pip.vk_flat_buffer_binding_types[slot]
-            else
-                shader_buffer_binding_type(shader_module, group_u32, binding_u32),
-        };
-        count += 1;
+    var flat_mask: u64 = 0;
+    var descriptor_hasher = pipeline_hash.DescriptorBindingsHasher{};
+    if (pip.vk_static_pipeline_hash_ready and pip.vk_static_buffer_binding_mask != 0) {
+        var mask = pip.vk_static_buffer_binding_mask;
+        while (mask != 0 and count < out_bindings.len) {
+            const slot: usize = @intCast(@ctz(mask));
+            mask &= mask - 1;
+            append_recorded_binding_at_slot(
+                pip,
+                bufs,
+                buf_offsets,
+                buf_sizes,
+                slot,
+                out_bindings,
+                &count,
+                &flat_mask,
+                &descriptor_hasher,
+            );
+        }
+        return .{ .count = count, .flat_mask = flat_mask, .descriptor_hash = descriptor_hasher.final() };
     }
-    return count;
+    for (bufs, 0..) |maybe_raw, slot| {
+        if (maybe_raw == null) continue;
+        append_recorded_binding_at_slot(
+            pip,
+            bufs,
+            buf_offsets,
+            buf_sizes,
+            slot,
+            out_bindings,
+            &count,
+            &flat_mask,
+            &descriptor_hasher,
+        );
+    }
+    return .{ .count = count, .flat_mask = flat_mask, .descriptor_hash = descriptor_hasher.final() };
 }
 
-/// Replay a recorded compute dispatch through NativeVulkanRuntime at queue-submit time.
-pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anytype) bool {
-    if (comptime !has_vulkan) return false;
-    const pip = cast(DoeComputePipeline, dispatch.compute_pipeline) orelse {
-        std.log.err("doe_vulkan_compute: recorded dispatch missing compute pipeline", .{});
-        return false;
+fn append_bind_group_binding_at_slot(
+    pip: *const DoeComputePipeline,
+    bind_groups: []const ?*DoeBindGroup,
+    slot: usize,
+    out_bindings: []model_compute_types.KernelBinding,
+    count: *usize,
+    flat_mask: *u64,
+    descriptor_hasher: *pipeline_hash.DescriptorBindingsHasher,
+) void {
+    const group_index = slot / MAX_BIND;
+    const binding_index = slot % MAX_BIND;
+    if (group_index >= bind_groups.len) return;
+    const bg = bind_groups[group_index] orelse return;
+    if (binding_index >= bg.count) return;
+    const raw_ptr = bg.buffers[binding_index] orelse return;
+    const buf = cast(DoeBuffer, raw_ptr) orelse return;
+    if (buf.error_object) return;
+    if (buf.vk_id == 0) return;
+    if (count.* >= out_bindings.len) return;
+    const group_u32: u32 = @intCast(group_index);
+    const binding_u32: u32 = @intCast(binding_index);
+    const binding = model_compute_types.KernelBinding{
+        .group = group_u32,
+        .binding = binding_u32,
+        .resource_kind = .buffer,
+        .resource_handle = buf.vk_id,
+        .buffer_offset = bg.offsets[binding_index],
+        .buffer_size = bg.buffer_sizes[binding_index],
+        .buffer_type = if (pip.vk_flat_buffer_binding_types_ready)
+            pip.vk_flat_buffer_binding_types[slot]
+        else
+            shader_buffer_binding_type(pip.shader_module, group_u32, binding_u32),
     };
-    const spirv = pip.spirv_data orelse {
-        std.log.err("doe_vulkan_compute: recorded dispatch missing SPIR-V data", .{});
-        return false;
-    };
+    out_bindings[count.*] = binding;
+    descriptor_hasher.update(binding);
+    flat_mask.* |= @as(u64, 1) << @intCast(slot);
+    count.* += 1;
+}
 
-    var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
-    const binding_count = collect_recorded_bindings(
-        pip,
-        dispatch.bufs[0..dispatch.buf_count],
-        dispatch.buf_offsets[0..dispatch.buf_count],
-        dispatch.buf_sizes[0..dispatch.buf_count],
-        &binding_storage,
+fn collect_bind_group_bindings(
+    pip: *const DoeComputePipeline,
+    bind_groups: []const ?*DoeBindGroup,
+    out_bindings: []model_compute_types.KernelBinding,
+) BindingCollection {
+    var count: usize = 0;
+    var flat_mask: u64 = 0;
+    var descriptor_hasher = pipeline_hash.DescriptorBindingsHasher{};
+    if (pip.vk_static_pipeline_hash_ready and pip.vk_static_buffer_binding_mask != 0) {
+        var mask = pip.vk_static_buffer_binding_mask;
+        while (mask != 0 and count < out_bindings.len) {
+            const slot: usize = @intCast(@ctz(mask));
+            mask &= mask - 1;
+            append_bind_group_binding_at_slot(
+                pip,
+                bind_groups,
+                slot,
+                out_bindings,
+                &count,
+                &flat_mask,
+                &descriptor_hasher,
+            );
+        }
+        return .{ .count = count, .flat_mask = flat_mask, .descriptor_hash = descriptor_hasher.final() };
+    }
+    for (bind_groups, 0..) |maybe_bg, group_index| {
+        const bg = maybe_bg orelse continue;
+        const binding_count: usize = @min(@as(usize, @intCast(bg.count)), MAX_BIND);
+        for (0..binding_count) |binding_index| {
+            append_bind_group_binding_at_slot(
+                pip,
+                bind_groups,
+                (group_index * MAX_BIND) + binding_index,
+                out_bindings,
+                &count,
+                &flat_mask,
+                &descriptor_hasher,
+            );
+        }
+    }
+    return .{ .count = count, .flat_mask = flat_mask, .descriptor_hash = descriptor_hasher.final() };
+}
+
+fn use_static_pipeline_hash(
+    rt: *NativeVulkanRuntime,
+    pip: *const DoeComputePipeline,
+    spirv: []const u32,
+    entry_slice: ?[]const u8,
+    bindings: []const model_compute_types.KernelBinding,
+    flat_mask: u64,
+    descriptor_hash: u64,
+) !bool {
+    if (!pip.vk_static_pipeline_hash_ready) return false;
+    if (pip.vk_static_buffer_binding_count != bindings.len) return false;
+    if (pip.vk_static_buffer_binding_mask != flat_mask) return false;
+    if (spirv.len == 0 or spirv[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
+    try rt.set_compute_shader_spirv_with_hashes(
+        spirv,
+        pip.vk_static_pipeline_hash,
+        pip.vk_static_layout_hash,
+        descriptor_hash,
+        entry_slice,
+        bindings,
+        false,
     );
-    const bindings: ?[]const model_compute_types.KernelBinding = if (binding_count > 0)
-        binding_storage[0..binding_count]
+    return true;
+}
+
+fn prepare_pipeline_bindings(
+    rt: *NativeVulkanRuntime,
+    pip: *const DoeComputePipeline,
+    spirv: []const u32,
+    binding_result: BindingCollection,
+    binding_storage: []model_compute_types.KernelBinding,
+) bool {
+    const bindings_slice = binding_storage[0..binding_result.count];
+    const bindings: ?[]const model_compute_types.KernelBinding = if (binding_result.count > 0)
+        bindings_slice
     else
         null;
 
@@ -220,8 +442,37 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
     // point → runtime defaults to "main", which is correct for
     // kernels whose entry is "main" and wrong for kernels with
     // custom entries like "main_vec4" or "main_multicol".
-    const entry_slice: ?[]const u8 = if (pip.vk_entry_point_owned) |ep| ep[0..] else null;
+    const entry_slice = pipeline_entry_point(pip);
+    if (binding_result.count > 0) {
+        if (use_static_pipeline_hash(rt, pip, spirv, entry_slice, bindings_slice, binding_result.flat_mask, binding_result.descriptor_hash) catch |err| {
+            std.log.err("doe_vulkan_compute: set_compute_shader_spirv failed: {s}", .{@errorName(err)});
+            return false;
+        }) {
+            return true;
+        }
+    }
     if (pip.vk_spirv_hash_ready) {
+        if (binding_result.count > 0) {
+            const layout_hash = pipeline_hash.compute_layout_hash(bindings_slice);
+            const dynamic_pipeline_hash = pipeline_hash.compute_pipeline_hash_from_layout_hash(
+                pip.vk_spirv_hash,
+                entry_slice,
+                layout_hash,
+            );
+            rt.set_compute_shader_spirv_with_hashes(
+                spirv,
+                dynamic_pipeline_hash,
+                layout_hash,
+                binding_result.descriptor_hash,
+                entry_slice,
+                bindings_slice,
+                false,
+            ) catch |err| {
+                std.log.err("doe_vulkan_compute: set_compute_shader_spirv failed: {s}", .{@errorName(err)});
+                return false;
+            };
+            return true;
+        }
         rt.set_compute_shader_spirv_prehashed(spirv, pip.vk_spirv_hash, entry_slice, bindings, false) catch |err| {
             std.log.err("doe_vulkan_compute: set_compute_shader_spirv failed: {s}", .{@errorName(err)});
             return false;
@@ -233,6 +484,44 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
         return false;
     };
     return true;
+}
+
+fn pipeline_spirv_or_log(pip: *const DoeComputePipeline) ?[]const u32 {
+    return pip.spirv_data orelse {
+        std.log.err("doe_vulkan_compute: recorded dispatch missing SPIR-V data", .{});
+        return null;
+    };
+}
+
+pub fn vulkan_prepare_dispatch_bind_groups(
+    rt: *NativeVulkanRuntime,
+    pip: *const DoeComputePipeline,
+    bind_groups: []const ?*DoeBindGroup,
+) bool {
+    if (comptime !has_vulkan) return false;
+    const spirv = pipeline_spirv_or_log(pip) orelse return false;
+    var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
+    const binding_result = collect_bind_group_bindings(pip, bind_groups, &binding_storage);
+    return prepare_pipeline_bindings(rt, pip, spirv, binding_result, &binding_storage);
+}
+
+/// Replay a recorded compute dispatch through NativeVulkanRuntime at queue-submit time.
+pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anytype) bool {
+    if (comptime !has_vulkan) return false;
+    const pip = cast(DoeComputePipeline, dispatch.compute_pipeline) orelse {
+        std.log.err("doe_vulkan_compute: recorded dispatch missing compute pipeline", .{});
+        return false;
+    };
+    const spirv = pipeline_spirv_or_log(pip) orelse return false;
+    var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
+    const binding_result = collect_recorded_bindings(
+        pip,
+        dispatch.bufs[0..dispatch.buf_count],
+        dispatch.buf_offsets[0..dispatch.buf_count],
+        dispatch.buf_sizes[0..dispatch.buf_count],
+        &binding_storage,
+    );
+    return prepare_pipeline_bindings(rt, pip, spirv, binding_result, &binding_storage);
 }
 
 pub fn vulkan_run_prepared_dispatch(rt: *NativeVulkanRuntime, dispatch: anytype) void {

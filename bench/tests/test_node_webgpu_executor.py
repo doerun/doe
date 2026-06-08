@@ -351,8 +351,14 @@ class NodeWebGPUExecutorTests(unittest.TestCase):
         self.assertIn("queueWriteBufferBatchDataPtrs", executor_source)
         self.assertIn("export function nativeQueueSyncInfo(queue)", source)
         self.assertIn("nativeAddon.queueSyncInfo(native)", source)
+        self.assertIn("queueFamilyPolicy: info.queueFamilyPolicy", source)
+        self.assertIn("deferredSubmissionSyncPolicy: info.deferredSubmissionSyncPolicy", source)
+        self.assertIn("queueFamilySupportsGraphics: info.queueFamilySupportsGraphics", source)
         self.assertIn("function snapshotPackageNativeQueueSyncInfo(providerModule, queue)", executor_source)
         self.assertIn("packageNativeQueueSyncInfo", executor_source)
+        self.assertIn("result.queueFamilyPolicy = info.queueFamilyPolicy;", executor_source)
+        self.assertIn("result.deferredSubmissionSyncPolicy = info.deferredSubmissionSyncPolicy;", executor_source)
+        self.assertIn("result.queueFamilySupportsGraphics = info.queueFamilySupportsGraphics;", executor_source)
 
     def test_bun_package_exports_native_fast_path_identity(self) -> None:
         public_bun_source = PACKAGE_BUN_PATH.read_text(encoding="utf-8")
@@ -369,6 +375,10 @@ class NodeWebGPUExecutorTests(unittest.TestCase):
         self.assertIn("export const nativeQueueSyncInfo = runtime.nativeQueueSyncInfo ?? full.nativeQueueSyncInfo;", bun_entry_source)
         self.assertIn("export function nativeQueueSyncInfo(queue)", bun_ffi_source)
         self.assertIn("doeNativeQueueSyncInfo", bun_ffi_source)
+        self.assertIn("doeNativeQueueFamilyPolicyCode", bun_ffi_source)
+        self.assertIn("doeNativeQueueDeferredSubmissionSyncPolicyCode", bun_ffi_source)
+        self.assertIn("function attachQueueFamilyInfo(info, queueNative)", bun_ffi_source)
+        self.assertIn("info.queueFamilySupportsGraphics = queueFamilySupportsGraphics !== 0;", bun_ffi_source)
 
     def test_napi_package_exports_combined_readback_copy_path(self) -> None:
         buffer_source = NAPI_BUFFER_PATH.read_text(encoding="utf-8")
@@ -387,8 +397,13 @@ class NodeWebGPUExecutorTests(unittest.TestCase):
 
         self.assertIn("napi_value doe_queue_sync_info", queue_source)
         self.assertIn("pfn_doeNativeQueueSyncInfo(queue)", queue_source)
+        self.assertIn("pfn_doeNativeQueueFamilyPolicyCode(queue)", queue_source)
+        self.assertIn("pfn_doeNativeQueueDeferredSubmissionSyncPolicyCode(queue)", queue_source)
+        self.assertIn("queueFamilySupportsGraphics", queue_source)
         self.assertIn('EXPORT_FN("queueSyncInfo",                            doe_queue_sync_info)', init_source)
         self.assertIn("DECL_PFN(uint32_t, doeNativeQueueSyncInfo", header_source)
+        self.assertIn("DECL_PFN(uint32_t, doeNativeQueueFamilyPolicyCode", header_source)
+        self.assertIn("DECL_PFN(uint32_t, doeNativeQueueDeferredSubmissionSyncPolicyCode", header_source)
 
     def test_napi_readback_map_prefers_doe_native_map_symbol(self) -> None:
         for path in (NAPI_BUFFER_PATH, NAPI_QUEUE_PATH, NAPI_ND_IMMEDIATES_PATH):

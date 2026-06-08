@@ -701,6 +701,7 @@ test "parseBackendLane accepts snake_case and kebab-case variants" {
     try testing.expectEqual(backend_policy.BackendLane.metal_webkit_comparable, parseBackendLane("metal-webkit-comparable").?);
     // vulkan lanes
     try testing.expectEqual(backend_policy.BackendLane.vulkan_doe_app, parseBackendLane("vulkan-doe-app").?);
+    try testing.expectEqual(backend_policy.BackendLane.vulkan_doe_compute_only_fence_diagnostic, parseBackendLane("vulkan-doe-compute-only-fence-diagnostic").?);
     try testing.expectEqual(backend_policy.BackendLane.vulkan_dawn_release, parseBackendLane("vulkan-dawn-release").?);
     // d3d12 lanes
     try testing.expectEqual(backend_policy.BackendLane.d3d12_doe_app, parseBackendLane("d3d12_doe_app").?);
@@ -721,6 +722,8 @@ test "backendLaneName round-trips with parseBackendLane for all lanes" {
         .metal_webkit_comparable,
         .vulkan_doe_app,
         .vulkan_doe_comparable,
+        .vulkan_doe_compute_only_diagnostic,
+        .vulkan_doe_compute_only_fence_diagnostic,
         .vulkan_doe_release,
         .vulkan_dawn_release,
         .d3d12_doe_app,

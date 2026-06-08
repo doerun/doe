@@ -34,6 +34,7 @@ const vk_feature_caps = if (has_vulkan) backend_capabilities.vk_feature_caps els
 const vk_device_caps = if (has_vulkan) backend_capabilities.vk_device_caps else struct {};
 const vulkan_feature_cache = if (has_vulkan) @import("doe_vulkan_feature_cache.zig") else struct {};
 const backend_policy = @import("backend/backend_policy.zig");
+const runtime_types = @import("backend/runtime_types.zig");
 
 const metal_bridge_create_default_device = backend_lifecycle.metal_bridge_create_default_device;
 const metal_bridge_device_new_command_queue = backend_lifecycle.metal_bridge_device_new_command_queue;
@@ -52,6 +53,7 @@ const MSG_QUEUE_UNAVAILABLE = "metal command queue unavailable";
 const MSG_DEVICE_ALLOCATION_FAILED = "device allocation failed";
 const MSG_VK_RUNTIME_INIT_FAILED = "vulkan runtime init failed";
 const MSG_D3D12_RUNTIME_INIT_FAILED = "d3d12 runtime init failed";
+const MSG_RUNTIME_POLICY_INVALID = "backend runtime policy invalid";
 
 const RequestedBackend = enum {
     metal,
@@ -89,7 +91,13 @@ fn requested_backend_from_lane(raw: []const u8) ?RequestedBackend {
     const lane = backend_policy.parse_lane(raw) orelse return null;
     return switch (lane) {
         .metal_doe_app, .metal_doe_directional, .metal_doe_comparable, .metal_doe_release, .metal_dawn_release, .metal_webkit_release, .metal_webkit_comparable => .metal,
-        .vulkan_doe_app, .vulkan_doe_comparable, .vulkan_doe_release, .vulkan_dawn_release => .vulkan,
+        .vulkan_doe_app,
+        .vulkan_doe_comparable,
+        .vulkan_doe_compute_only_diagnostic,
+        .vulkan_doe_compute_only_fence_diagnostic,
+        .vulkan_doe_release,
+        .vulkan_dawn_release,
+        => .vulkan,
         .d3d12_doe_app, .d3d12_doe_directional, .d3d12_doe_comparable, .d3d12_doe_release, .d3d12_dawn_release => .d3d12,
     };
 }
@@ -122,6 +130,43 @@ fn selected_backend() RequestedBackend {
     cached_selected_backend = backend;
     selected_backend_initialized = true;
     return backend;
+}
+
+fn selected_backend_lane() ?backend_policy.BackendLane {
+    const explicit_backend = std.process.getEnvVarOwned(alloc, "DOE_BACKEND") catch null;
+    if (explicit_backend) |raw_backend| {
+        defer alloc.free(raw_backend);
+        if (parse_requested_backend(raw_backend) != null) return null;
+    }
+
+    const lane_value = std.process.getEnvVarOwned(alloc, "FAWN_BACKEND_LANE") catch return null;
+    defer alloc.free(lane_value);
+    return backend_policy.parse_lane(lane_value);
+}
+
+const SelectedVulkanRuntimePolicy = struct {
+    queue_family_policy: runtime_types.QueueFamilyPolicy,
+    deferred_submission_sync_policy: runtime_types.DeferredSubmissionSyncPolicy,
+};
+
+fn selected_vulkan_policy() CreateDeviceError!SelectedVulkanRuntimePolicy {
+    const lane = selected_backend_lane() orelse {
+        const policy = backend_policy.default_policy_for_lane(.vulkan_doe_app);
+        return .{
+            .queue_family_policy = policy.queue_family_policy,
+            .deferred_submission_sync_policy = policy.deferred_submission_sync_policy,
+        };
+    };
+    const loaded_policy = backend_policy.load_policy_for_lane(
+        alloc,
+        backend_policy.DEFAULT_RUNTIME_POLICY_PATH,
+        lane,
+    ) catch return error.RuntimePolicyInvalid;
+    defer alloc.free(loaded_policy.owned_policy_hash);
+    return .{
+        .queue_family_policy = loaded_policy.policy.queue_family_policy,
+        .deferred_submission_sync_policy = loaded_policy.policy.deferred_submission_sync_policy,
+    };
 }
 
 fn probe_d3d12_adapter_caps() d3d12_device_caps.D3D12DeviceCaps {
@@ -159,6 +204,7 @@ const CreateDeviceError = error{
     DeviceAllocationFailed,
     VkRuntimeInitFailed,
     D3D12RuntimeInitFailed,
+    RuntimePolicyInvalid,
 };
 
 const CreateAdapterError = error{
@@ -172,6 +218,7 @@ fn create_device_error_message(err: CreateDeviceError) abi_base.WGPUStringView {
         error.DeviceAllocationFailed => stringView(MSG_DEVICE_ALLOCATION_FAILED),
         error.VkRuntimeInitFailed => stringView(MSG_VK_RUNTIME_INIT_FAILED),
         error.D3D12RuntimeInitFailed => stringView(MSG_D3D12_RUNTIME_INIT_FAILED),
+        error.RuntimePolicyInvalid => stringView(MSG_RUNTIME_POLICY_INVALID),
     };
 }
 
@@ -223,7 +270,13 @@ fn create_device_for_adapter(adapter: *DoeAdapter, adapter_raw: ?*anyopaque) Cre
                 alloc.destroy(dev);
                 return error.DeviceAllocationFailed;
             };
-            rt.* = NativeVulkanRuntime.init(alloc, null) catch {
+            const selected_policy = try selected_vulkan_policy();
+            rt.* = NativeVulkanRuntime.init_with_backend_policy(
+                alloc,
+                null,
+                selected_policy.queue_family_policy,
+                selected_policy.deferred_submission_sync_policy,
+            ) catch {
                 alloc.destroy(rt);
                 alloc.destroy(dev);
                 return error.VkRuntimeInitFailed;

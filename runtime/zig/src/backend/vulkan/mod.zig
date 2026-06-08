@@ -53,6 +53,7 @@ pub const ZigVulkanBackend = struct {
     upload_buffer_usage_mode: webgpu.UploadBufferUsageMode = .copy_dst_copy_src,
     upload_submit_every: u32 = UPLOAD_BATCH_LAZY,
     queue_family_policy: webgpu.QueueFamilyPolicy = .prefer_graphics_compute,
+    deferred_submission_sync_policy: webgpu.DeferredSubmissionSyncPolicy = .prefer_timeline_semaphore,
     queue_wait_mode: webgpu.QueueWaitMode = .process_events,
     queue_sync_mode: webgpu.QueueSyncMode = .per_command,
     gpu_timestamp_mode: webgpu.GpuTimestampMode = .auto,
@@ -89,7 +90,14 @@ pub const ZigVulkanBackend = struct {
         kernel_root: ?[]const u8,
         selection_policy: backend_policy.SelectionPolicy,
     ) !*ZigVulkanBackend {
-        return init_with_backend_policy(allocator, profile, kernel_root, selection_policy.upload_path_policy, selection_policy.queue_family_policy);
+        return init_with_backend_policy(
+            allocator,
+            profile,
+            kernel_root,
+            selection_policy.upload_path_policy,
+            selection_policy.queue_family_policy,
+            selection_policy.deferred_submission_sync_policy,
+        );
     }
 
     fn init_with_upload_path_policy(
@@ -98,7 +106,7 @@ pub const ZigVulkanBackend = struct {
         kernel_root: ?[]const u8,
         upload_path_policy: backend_policy.UploadPathPolicy,
     ) !*ZigVulkanBackend {
-        return init_with_backend_policy(allocator, profile, kernel_root, upload_path_policy, .prefer_graphics_compute);
+        return init_with_backend_policy(allocator, profile, kernel_root, upload_path_policy, .prefer_graphics_compute, .prefer_timeline_semaphore);
     }
 
     fn init_with_backend_policy(
@@ -107,6 +115,7 @@ pub const ZigVulkanBackend = struct {
         kernel_root: ?[]const u8,
         upload_path_policy: backend_policy.UploadPathPolicy,
         queue_family_policy: webgpu.QueueFamilyPolicy,
+        deferred_submission_sync_policy: webgpu.DeferredSubmissionSyncPolicy,
     ) !*ZigVulkanBackend {
         if (profile.api != .vulkan) return error.UnsupportedFeature;
 
@@ -123,6 +132,7 @@ pub const ZigVulkanBackend = struct {
             .upload_buffer_usage_mode = .copy_dst_copy_src,
             .upload_submit_every = UPLOAD_BATCH_LAZY,
             .queue_family_policy = queue_family_policy,
+            .deferred_submission_sync_policy = deferred_submission_sync_policy,
             .queue_wait_mode = .process_events,
             .queue_sync_mode = .per_command,
             .gpu_timestamp_mode = .auto,
@@ -212,10 +222,11 @@ pub const ZigVulkanBackend = struct {
 
     pub fn ensure_runtime_bootstrapped(self: *ZigVulkanBackend) !*native_runtime.NativeVulkanRuntime {
         if (self.runtime == null) {
-            self.runtime = try native_runtime.NativeVulkanRuntime.init_with_queue_family_policy(
+            self.runtime = try native_runtime.NativeVulkanRuntime.init_with_backend_policy(
                 self.allocator,
                 self.kernel_root_owned,
                 self.queue_family_policy,
+                self.deferred_submission_sync_policy,
             );
         }
         return &self.runtime.?;
