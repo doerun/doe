@@ -3,6 +3,57 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan recorded-binding prehash diagnostics
+
+The Vulkan recorded-dispatch path now builds layout and descriptor binding
+hashes while materializing recorded dispatch bindings, then passes those hashes
+into pipeline and descriptor preparation. Normal binding capture, command
+recording, and submit shape are unchanged; the retained path only removes a
+duplicate host walk over the same binding slice. The Node package shim also
+reuses write-batch scratch arrays and typed arrays for native queue-write batch
+calls while keeping the package execution policy thresholds unchanged.
+
+Node and Bun Gemma64 warm package receipts remain strict-comparable
+diagnostics, not claimable wins. Structural-equivalence, timing-policy,
+comparability-coherence, and comparable-runtime-invariant gates passed for the
+retained same-window comparisons, but the claim artifacts still classify the
+rows as diagnostic. More aggressive queue-write batching, a prepared-dispatch
+cache, timeline semaphore activation, and capture-ready binding capture were
+measured and reverted because they did not produce fair claimable wins.
+
+Artifacts:
+
+- Node recorded-binding prehash compare:
+  `bench/out/amd-vulkan/20260608T090004Z/gemma64.node-package.warm.ir.recorded-binding-prehash.same-window.compare.json`
+- Node recorded-binding prehash claim:
+  `bench/out/amd-vulkan/20260608T090004Z/gemma64.node-package.warm.ir.recorded-binding-prehash.same-window.claim.json`
+- Bun recorded-binding prehash compare:
+  `bench/out/amd-vulkan/20260608T090101Z/gemma64.bun-package.warm.ir.recorded-binding-prehash.same-window.compare.json`
+- Bun recorded-binding prehash claim:
+  `bench/out/amd-vulkan/20260608T090101Z/gemma64.bun-package.warm.ir.recorded-binding-prehash.same-window.claim.json`
+- Node recorded-binding prehash submit-breakdown diagnostic receipt:
+  `bench/out/amd-vulkan/20260608T085858Z/gemma64.node-package.warm.ir.recorded-binding-prehash-breakdown.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T085858Z.run.json`
+- Reverted queue-write batch threshold diagnostic receipt:
+  `bench/out/amd-vulkan/20260608T085016Z/gemma64.node-package.warm.ir.write-batch-min6-diagnostic.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T085016Z.run.json`
+- Reverted prepared-dispatch cache diagnostic receipt:
+  `bench/out/amd-vulkan/20260608T090629Z/gemma64.node-package.warm.ir.prepared-dispatch-cache-breakdown.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T090629Z.run.json`
+- Reverted timeline semaphore diagnostic receipt:
+  `bench/out/amd-vulkan/20260608T091030Z/gemma64.node-package.warm.ir.timeline-semaphore-breakdown.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T091030Z.run.json`
+- Reverted capture-ready binding diagnostic receipt:
+  `bench/out/amd-vulkan/20260608T091341Z/gemma64.node-package.warm.ir.capture-ready-prehash-breakdown.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T091341Z.run.json`
+
+Validation:
+
+- `zig build dropin -Doptimize=ReleaseFast --summary all` from
+  `runtime/zig`
+- `zig build test-wgsl --summary all` from `runtime/zig`
+- `node --check packages/doe-gpu/src/vendor/webgpu/index.js`
+- `python3 bench/gates/schema_gate.py`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_bun_webgpu_executor`
+- Structural-equivalence, timing-policy, comparability-coherence, comparable
+  runtime-invariant, and claim checks for the Node and Bun recorded-binding
+  prehash artifacts listed above.
+
 ## 2026-06-08 — Vulkan retained submit fast paths
 
 The Vulkan package path now keeps redundant compute pipeline and descriptor-set

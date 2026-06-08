@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @import("vk_constants.zig");
+const vk_binding_hash = @import("vk_binding_hash.zig");
 const vk_compute_sync = @import("vk_compute_sync.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_resources = @import("vk_resources.zig");
@@ -34,6 +35,44 @@ pub fn prepare_descriptor_sets(
     if (self.descriptor_set_count == 0) return;
     const bs = bindings orelse return error.InvalidArgument;
     const descriptor_bindings_hash = compute_descriptor_bindings_hash(bs);
+    try prepare_descriptor_sets_with_hash(
+        self,
+        bs,
+        descriptor_bindings_hash,
+        initialize_buffers_on_create,
+        stash_active_descriptor_state,
+        activate_cached_descriptor_state,
+    );
+}
+
+pub fn prepare_descriptor_sets_prehashed(
+    self: anytype,
+    bindings: ?[]const model_compute_types.KernelBinding,
+    descriptor_bindings_hash: u64,
+    initialize_buffers_on_create: bool,
+    stash_active_descriptor_state: anytype,
+    activate_cached_descriptor_state: anytype,
+) !void {
+    if (self.descriptor_set_count == 0) return;
+    const bs = bindings orelse return error.InvalidArgument;
+    try prepare_descriptor_sets_with_hash(
+        self,
+        bs,
+        descriptor_bindings_hash,
+        initialize_buffers_on_create,
+        stash_active_descriptor_state,
+        activate_cached_descriptor_state,
+    );
+}
+
+fn prepare_descriptor_sets_with_hash(
+    self: anytype,
+    bs: []const model_compute_types.KernelBinding,
+    descriptor_bindings_hash: u64,
+    initialize_buffers_on_create: bool,
+    stash_active_descriptor_state: anytype,
+    activate_cached_descriptor_state: anytype,
+) !void {
     if (self.has_descriptor_pool and self.has_current_descriptor_bindings_hash and descriptor_bindings_hash == self.current_descriptor_bindings_hash) {
         return;
     }
@@ -46,7 +85,7 @@ pub fn prepare_descriptor_sets(
     if (!self.recorded_submit_replay_active and (self.has_deferred_submissions or self.pending_uploads.items.len > 0)) {
         _ = try vk_upload.flush_queue(self);
     }
-    try ensure_descriptor_pool(self, bindings);
+    try ensure_descriptor_pool(self, bs);
     if (can_prepare_stack_buffer_descriptors(bs)) {
         try prepare_stack_buffer_descriptors(
             self,
@@ -379,22 +418,5 @@ pub fn descriptor_range(binding: model_compute_types.KernelBinding, buffer_size:
 }
 
 pub fn compute_descriptor_bindings_hash(bindings: []const model_compute_types.KernelBinding) u64 {
-    var hasher = std.hash.Wyhash.init(0);
-    for (bindings) |binding| {
-        hasher.update(std.mem.asBytes(&binding.group));
-        hasher.update(std.mem.asBytes(&binding.binding));
-        hasher.update(std.mem.asBytes(&binding.resource_kind));
-        hasher.update(std.mem.asBytes(&binding.resource_handle));
-        hasher.update(std.mem.asBytes(&binding.visibility));
-        hasher.update(std.mem.asBytes(&binding.buffer_offset));
-        hasher.update(std.mem.asBytes(&binding.buffer_size));
-        hasher.update(std.mem.asBytes(&binding.buffer_type));
-        hasher.update(std.mem.asBytes(&binding.texture_sample_type));
-        hasher.update(std.mem.asBytes(&binding.texture_view_dimension));
-        hasher.update(std.mem.asBytes(&binding.storage_texture_access));
-        hasher.update(std.mem.asBytes(&binding.texture_aspect));
-        hasher.update(std.mem.asBytes(&binding.texture_format));
-        hasher.update(std.mem.asBytes(&binding.texture_multisampled));
-    }
-    return hasher.final();
+    return vk_binding_hash.compute_descriptor_bindings_hash(bindings);
 }

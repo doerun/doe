@@ -842,6 +842,36 @@ function packNodeLazySubmitCommands(commands) {
   };
 }
 
+function ensureNodeQueueWriteBatchScratch(queue, count, byteLength, includeDataViews) {
+  let scratch = queue._writeBatchScratch;
+  if (!scratch) {
+    scratch = {};
+    queue._writeBatchScratch = scratch;
+  }
+  if (!Array.isArray(scratch.buffers) || scratch.buffers.length < count) {
+    scratch.buffers = new Array(count);
+  }
+  if (!(scratch.offsets instanceof BigUint64Array) || scratch.offsets.length < count) {
+    scratch.offsets = new BigUint64Array(count);
+  }
+  if (!(scratch.sizes instanceof Uint32Array) || scratch.sizes.length < count) {
+    scratch.sizes = new Uint32Array(count);
+  }
+  if (includeDataViews && (!Array.isArray(scratch.dataViews) || scratch.dataViews.length < count)) {
+    scratch.dataViews = new Array(count);
+  }
+  if (byteLength === 0 && !(scratch.data instanceof Uint8Array)) {
+    scratch.data = new Uint8Array(0);
+  } else if (byteLength > 0 && (!(scratch.data instanceof Uint8Array) || scratch.data.length < byteLength)) {
+    scratch.data = new Uint8Array(byteLength);
+  }
+  scratch.buffers.length = count;
+  if (includeDataViews) {
+    scratch.dataViews.length = count;
+  }
+  return scratch;
+}
+
 function submitNodeLazyPackedOrBatched(queueNative, deviceNative, commands) {
   const packed = packNodeLazySubmitCommands(commands);
   if (packed) {
@@ -1988,6 +2018,7 @@ const fullSurfaceBackend = {
     queue._submittedSerial = 0;
     queue._completedSerial = 0;
     queue._submitBreakdownNs = zeroQueueSubmitBreakdown();
+    queue._writeBatchScratch = {};
   },
   queueHasPendingSubmissions(queue) {
     return queue._completedSerial < queue._submittedSerial;
@@ -2097,7 +2128,7 @@ const fullSurfaceBackend = {
   queueWriteBuffer(_queue, queueNative, bufferNative, bufferOffset, view) {
     addon.queueWriteBuffer(queueNative, bufferNative, bufferOffset, view);
   },
-  queueWriteBufferBatch(_queue, queueNative, entries) {
+  queueWriteBufferBatch(queue, queueNative, entries) {
     if (!entries.length) {
       return;
     }
@@ -2119,10 +2150,11 @@ const fullSurfaceBackend = {
     if (!hasDataPtrBatch && byteLength > NODE_QUEUE_WRITE_BATCH_MAX_BYTES) {
       failValidation('GPUQueue.__doeWriteBufferBatch', 'compact batch data exceeds the package batch limit');
     }
-    const buffers = new Array(entries.length);
-    const offsets = new BigUint64Array(entries.length);
-    const sizes = new Uint32Array(entries.length);
-    const dataViews = hasDataPtrBatch ? new Array(entries.length) : null;
+    const scratch = ensureNodeQueueWriteBatchScratch(queue, entries.length, hasDataPtrBatch ? 0 : byteLength, hasDataPtrBatch);
+    const buffers = scratch.buffers;
+    const offsets = scratch.offsets.subarray(0, entries.length);
+    const sizes = scratch.sizes.subarray(0, entries.length);
+    const dataViews = hasDataPtrBatch ? scratch.dataViews : null;
     if (hasDataPtrBatch) {
       for (let index = 0; index < entries.length; index += 1) {
         const entry = entries[index];
@@ -2134,7 +2166,7 @@ const fullSurfaceBackend = {
       addon.queueWriteBufferBatchDataPtrs(queueNative, buffers, offsets, sizes, dataViews);
       return;
     }
-    const data = new Uint8Array(byteLength);
+    const data = scratch.data.subarray(0, byteLength);
     let dataOffset = 0;
     for (let index = 0; index < entries.length; index += 1) {
       const entry = entries[index];

@@ -9,6 +9,7 @@ const std = @import("std");
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const shader_translation_cache = @import("doe_shader_translation_cache.zig");
+const vk_binding_hash = @import("backend/vulkan/vk_binding_hash.zig");
 const vk_pipeline = @import("backend/vulkan/vk_pipeline.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
@@ -163,6 +164,7 @@ fn collect_recorded_bindings(
     buf_offsets: []const u64,
     buf_sizes: []const u64,
     out_bindings: []model_compute_types.KernelBinding,
+    hash_builder: ?*vk_binding_hash.BindingHashBuilder,
 ) usize {
     var count: usize = 0;
     const shader_module = pip.shader_module;
@@ -174,7 +176,7 @@ fn collect_recorded_bindings(
         if (count >= out_bindings.len) break;
         const group_u32: u32 = @intCast(slot / MAX_BIND);
         const binding_u32: u32 = @intCast(slot % MAX_BIND);
-        out_bindings[count] = .{
+        const binding = model_compute_types.KernelBinding{
             .group = group_u32,
             .binding = binding_u32,
             .resource_kind = .buffer,
@@ -186,6 +188,8 @@ fn collect_recorded_bindings(
             else
                 shader_buffer_binding_type(shader_module, group_u32, binding_u32),
         };
+        out_bindings[count] = binding;
+        if (hash_builder) |builder| builder.update(binding);
         count += 1;
     }
     return count;
@@ -204,13 +208,16 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
     };
 
     var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
+    var hash_builder = vk_binding_hash.BindingHashBuilder.init();
     const binding_count = collect_recorded_bindings(
         pip,
         dispatch.bufs[0..dispatch.buf_count],
         dispatch.buf_offsets[0..dispatch.buf_count],
         dispatch.buf_sizes[0..dispatch.buf_count],
         &binding_storage,
+        &hash_builder,
     );
+    const binding_hashes = hash_builder.finish();
     const bindings: ?[]const model_compute_types.KernelBinding = if (binding_count > 0)
         binding_storage[0..binding_count]
     else
@@ -223,7 +230,16 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
     // custom entries like "main_vec4" or "main_multicol".
     const entry_slice: ?[]const u8 = if (pip.vk_entry_point_owned) |ep| ep[0..] else null;
     if (pip.vk_spirv_hash_ready) {
-        rt.set_compute_shader_spirv_prehashed(spirv, pip.vk_spirv_hash, entry_slice, bindings, false) catch |err| {
+        vk_pipeline.set_compute_shader_spirv_prehashed_binding_hashes(
+            rt,
+            spirv,
+            pip.vk_spirv_hash,
+            entry_slice,
+            bindings,
+            binding_hashes.layout_hash,
+            binding_hashes.descriptor_bindings_hash,
+            false,
+        ) catch |err| {
             std.log.err("doe_vulkan_compute: set_compute_shader_spirv failed: {s}", .{@errorName(err)});
             return false;
         };

@@ -11,6 +11,7 @@ const vk_pipeline_cache = @import("vk_pipeline_cache.zig");
 const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 const vk_compute_sync = @import("vk_compute_sync.zig");
 const vk_descriptor_sets = @import("vk_descriptor_sets.zig");
+const vk_binding_hash = @import("vk_binding_hash.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const model_compute_types = @import("../../model_compute_types.zig");
@@ -329,6 +330,49 @@ pub fn set_compute_shader_spirv_with_hash(
     bindings: ?[]const model_compute_types.KernelBinding,
     initialize_buffers_on_create: bool,
 ) !void {
+    try set_compute_shader_spirv_with_hash_and_descriptor_hash(
+        self,
+        words,
+        pipeline_hash,
+        entry_point,
+        bindings,
+        null,
+        initialize_buffers_on_create,
+    );
+}
+
+pub fn set_compute_shader_spirv_prehashed_binding_hashes(
+    self: anytype,
+    words: []const u32,
+    spirv_hash: u64,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model_compute_types.KernelBinding,
+    layout_hash: u64,
+    descriptor_bindings_hash: u64,
+    initialize_buffers_on_create: bool,
+) !void {
+    if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
+    const pipeline_hash = compute_pipeline_hash_from_layout_hash(spirv_hash, entry_point, layout_hash);
+    try set_compute_shader_spirv_with_hash_and_descriptor_hash(
+        self,
+        words,
+        pipeline_hash,
+        entry_point,
+        bindings,
+        descriptor_bindings_hash,
+        initialize_buffers_on_create,
+    );
+}
+
+fn set_compute_shader_spirv_with_hash_and_descriptor_hash(
+    self: anytype,
+    words: []const u32,
+    pipeline_hash: u64,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model_compute_types.KernelBinding,
+    descriptor_bindings_hash: ?u64,
+    initialize_buffers_on_create: bool,
+) !void {
     if (!self.has_pipeline or pipeline_hash != self.current_pipeline_hash) {
         const previous_pipeline_hash = self.current_pipeline_hash;
         const had_active_state = has_active_compute_state(self);
@@ -342,7 +386,11 @@ pub fn set_compute_shader_spirv_with_hash(
             try build_pipeline_for_words(self, words, pipeline_hash, entry_point, bindings);
         }
     }
-    try prepare_descriptor_sets(self, bindings, initialize_buffers_on_create);
+    if (descriptor_bindings_hash) |hash| {
+        try prepare_descriptor_sets_prehashed(self, bindings, hash, initialize_buffers_on_create);
+    } else {
+        try prepare_descriptor_sets(self, bindings, initialize_buffers_on_create);
+    }
     vk_compute_sync.capture_current_compute_bindings(self, bindings);
 }
 
@@ -563,6 +611,22 @@ fn prepare_descriptor_sets(
     );
 }
 
+fn prepare_descriptor_sets_prehashed(
+    self: anytype,
+    bindings: ?[]const model_compute_types.KernelBinding,
+    descriptor_bindings_hash: u64,
+    initialize_buffers_on_create: bool,
+) !void {
+    try vk_descriptor_sets.prepare_descriptor_sets_prehashed(
+        self,
+        bindings,
+        descriptor_bindings_hash,
+        initialize_buffers_on_create,
+        stash_active_descriptor_state,
+        activate_cached_descriptor_state,
+    );
+}
+
 // --- Pure helpers ---
 
 pub fn descriptor_type_for_binding(binding: model_compute_types.KernelBinding) !u32 {
@@ -643,42 +707,11 @@ pub fn descriptor_range(binding: model_compute_types.KernelBinding, buffer_size:
 }
 
 pub fn compute_layout_hash(bindings: ?[]const model_compute_types.KernelBinding) u64 {
-    var hasher = std.hash.Wyhash.init(0);
-    if (bindings) |bs| {
-        for (bs) |binding| {
-            hasher.update(std.mem.asBytes(&binding.group));
-            hasher.update(std.mem.asBytes(&binding.binding));
-            hasher.update(std.mem.asBytes(&binding.resource_kind));
-            hasher.update(std.mem.asBytes(&binding.buffer_type));
-            hasher.update(std.mem.asBytes(&binding.texture_sample_type));
-            hasher.update(std.mem.asBytes(&binding.texture_view_dimension));
-            hasher.update(std.mem.asBytes(&binding.storage_texture_access));
-            hasher.update(std.mem.asBytes(&binding.texture_format));
-            hasher.update(std.mem.asBytes(&binding.texture_multisampled));
-        }
-    }
-    return hasher.final();
+    return vk_binding_hash.compute_layout_hash(bindings);
 }
 
 pub fn compute_descriptor_bindings_hash(bindings: []const model_compute_types.KernelBinding) u64 {
-    var hasher = std.hash.Wyhash.init(0);
-    for (bindings) |binding| {
-        hasher.update(std.mem.asBytes(&binding.group));
-        hasher.update(std.mem.asBytes(&binding.binding));
-        hasher.update(std.mem.asBytes(&binding.resource_kind));
-        hasher.update(std.mem.asBytes(&binding.resource_handle));
-        hasher.update(std.mem.asBytes(&binding.visibility));
-        hasher.update(std.mem.asBytes(&binding.buffer_offset));
-        hasher.update(std.mem.asBytes(&binding.buffer_size));
-        hasher.update(std.mem.asBytes(&binding.buffer_type));
-        hasher.update(std.mem.asBytes(&binding.texture_sample_type));
-        hasher.update(std.mem.asBytes(&binding.texture_view_dimension));
-        hasher.update(std.mem.asBytes(&binding.storage_texture_access));
-        hasher.update(std.mem.asBytes(&binding.texture_aspect));
-        hasher.update(std.mem.asBytes(&binding.texture_format));
-        hasher.update(std.mem.asBytes(&binding.texture_multisampled));
-    }
-    return hasher.final();
+    return vk_binding_hash.compute_descriptor_bindings_hash(bindings);
 }
 
 pub fn compute_pipeline_hash(
