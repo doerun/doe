@@ -1,10 +1,4 @@
 // NativeVulkanRuntime: top-level struct and public API for the Doe Vulkan backend.
-//
-//   vk_constants  — Vulkan API types, constants, extern functions, error mapping
-//   vk_device     — instance/adapter/device/queue bootstrap
-//   vk_upload     — upload staging, pool management, flush lifecycle
-//   vk_pipeline   — compute pipeline, shader, descriptor set management
-//   vk_resources  — buffer/texture resource lifecycle and format helpers
 
 const std = @import("std");
 const model_compute_types = @import("../../model_compute_types.zig");
@@ -90,6 +84,8 @@ pub const NativeVulkanRuntime = struct {
     current_descriptor_state_cache: std.AutoHashMapUnmanaged(u64, vk_pipeline.CachedDescriptorState) = .{},
     retired_pipeline_states: std.ArrayListUnmanaged(vk_pipeline.RetiredPipelineState) = .{},
     retired_descriptor_states: std.ArrayListUnmanaged(vk_pipeline.RetiredDescriptorState) = .{},
+    hot_compute_state_hashes: [vk_pipeline.HOT_COMPUTE_STATE_CACHE_CAPACITY]u64 = [_]u64{0} ** vk_pipeline.HOT_COMPUTE_STATE_CACHE_CAPACITY,
+    hot_compute_states: [vk_pipeline.HOT_COMPUTE_STATE_CACHE_CAPACITY]vk_pipeline.CachedComputeState = undefined,
     cached_compute_states: std.AutoHashMapUnmanaged(u64, vk_pipeline.CachedComputeState) = .{},
     kernel_spirv_cache: std.StringHashMapUnmanaged([]const u32) = .{},
     fast_upload_buffer: c.VkBuffer = VK_NULL_U64,

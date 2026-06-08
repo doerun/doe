@@ -2,6 +2,7 @@ const std = @import("std");
 const c = @import("vk_constants.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
+pub const HOT_COMPUTE_STATE_CACHE_CAPACITY: usize = 16;
 
 pub const CachedDescriptorState = struct {
     descriptor_pool: c.VkDescriptorPool = VK_NULL_U64,
@@ -134,9 +135,39 @@ pub fn destroy_cached_compute_state(self: anytype, cached: CachedComputeState) v
 }
 
 pub fn release_cached_compute_states(self: anytype) void {
+    for (self.hot_compute_state_hashes, 0..) |hash, index| {
+        if (hash == 0) continue;
+        destroy_cached_compute_state(self, self.hot_compute_states[index]);
+        self.hot_compute_state_hashes[index] = 0;
+    }
     var it = self.cached_compute_states.valueIterator();
     while (it.next()) |cached| destroy_cached_compute_state(self, cached.*);
     self.cached_compute_states.deinit(self.allocator);
+}
+
+fn take_hot_compute_state(self: anytype, pipeline_hash: u64) ?CachedComputeState {
+    if (pipeline_hash == 0) return null;
+    for (self.hot_compute_state_hashes, 0..) |hash, index| {
+        if (hash != pipeline_hash) continue;
+        const cached = self.hot_compute_states[index];
+        self.hot_compute_state_hashes[index] = 0;
+        return cached;
+    }
+    return null;
+}
+
+fn put_hot_compute_state(self: anytype, pipeline_hash: u64, cached: CachedComputeState) bool {
+    if (pipeline_hash == 0) return false;
+    for (self.hot_compute_state_hashes, 0..) |hash, index| {
+        if (hash != 0 and hash != pipeline_hash) continue;
+        if (hash == pipeline_hash) {
+            destroy_cached_compute_state(self, self.hot_compute_states[index]);
+        }
+        self.hot_compute_states[index] = cached;
+        self.hot_compute_state_hashes[index] = pipeline_hash;
+        return true;
+    }
+    return false;
 }
 
 pub fn stash_active_compute_state(self: anytype) !void {
@@ -148,13 +179,58 @@ pub fn stash_active_compute_state(self: anytype) !void {
     if (self.cached_compute_states.fetchRemove(cache_key)) |removed| {
         destroy_cached_compute_state(self, removed.value);
     }
+    if (put_hot_compute_state(self, cache_key, cached)) return;
     try self.cached_compute_states.put(self.allocator, cache_key, cached);
 }
 
 pub fn activate_cached_compute_state(self: anytype, pipeline_hash: u64) bool {
+    if (take_hot_compute_state(self, pipeline_hash)) |cached| {
+        restore_active_compute_state(self, cached);
+        return true;
+    }
     const removed = self.cached_compute_states.fetchRemove(pipeline_hash) orelse return false;
     restore_active_compute_state(self, removed.value);
     return true;
+}
+
+test "hot compute state cache activates before hash map fallback" {
+    const TestRuntime = struct {
+        allocator: std.mem.Allocator,
+        device: c.VkDevice = null,
+        shader_module: c.VkShaderModule = VK_NULL_U64,
+        pipeline_layout: c.VkPipelineLayout = VK_NULL_U64,
+        pipeline: c.VkPipeline = VK_NULL_U64,
+        descriptor_pool: c.VkDescriptorPool = VK_NULL_U64,
+        descriptor_set_layouts: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSetLayout = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
+        descriptor_sets: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSet = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
+        descriptor_set_count: u32 = 0,
+        current_pipeline_hash: u64 = 0,
+        current_layout_hash: u64 = 0,
+        current_descriptor_bindings_hash: u64 = 0,
+        current_entry_point_owned: ?[:0]u8 = null,
+        current_descriptor_state_cache: std.AutoHashMapUnmanaged(u64, CachedDescriptorState) = .{},
+        hot_compute_state_hashes: [HOT_COMPUTE_STATE_CACHE_CAPACITY]u64 = [_]u64{0} ** HOT_COMPUTE_STATE_CACHE_CAPACITY,
+        hot_compute_states: [HOT_COMPUTE_STATE_CACHE_CAPACITY]CachedComputeState = undefined,
+        cached_compute_states: std.AutoHashMapUnmanaged(u64, CachedComputeState) = .{},
+        has_shader_module: bool = false,
+        has_pipeline_layout: bool = false,
+        has_pipeline: bool = false,
+        has_descriptor_pool: bool = false,
+        has_current_descriptor_bindings_hash: bool = false,
+    };
+    var rt = TestRuntime{
+        .allocator = std.testing.allocator,
+        .current_pipeline_hash = 42,
+        .has_pipeline = true,
+        .pipeline = 100,
+    };
+    try stash_active_compute_state(&rt);
+    try std.testing.expectEqual(@as(u64, 42), rt.hot_compute_state_hashes[0]);
+    try std.testing.expectEqual(@as(usize, 0), rt.cached_compute_states.count());
+    try std.testing.expect(activate_cached_compute_state(&rt, 42));
+    try std.testing.expectEqual(@as(u64, 0), rt.hot_compute_state_hashes[0]);
+    try std.testing.expectEqual(@as(u64, 42), rt.current_pipeline_hash);
+    try std.testing.expectEqual(@as(c.VkPipeline, 100), rt.pipeline);
 }
 
 pub fn capture_active_descriptor_state(self: anytype) CachedDescriptorState {

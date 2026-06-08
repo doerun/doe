@@ -3,6 +3,44 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan hot compute-state cache remains diagnostic
+
+Vulkan pipeline-state switching now checks a fixed hot cache for inactive
+compute pipeline/descriptor state before falling back to the hash-map cache.
+The cache preserves the existing active/inactive ownership model: active state
+is still removed from the cache when restored, cached state is still destroyed
+through the existing release path, descriptor preparation still runs through
+the normal binding hash path, and compute binding capture remains on every
+prepared dispatch. The patch does not change command order, dispatch shape,
+copy/readback behavior, submit/wait behavior, or selected timing scope.
+
+Fresh Node package receipts after this change remain strict-comparable but
+diagnostic. The local claim sidecar keeps the row out of claimable status
+because selected operation timing tails are still not positive. Bun needs a
+fresh post-`dropin` package receipt before this change is used as Bun evidence.
+
+Artifacts:
+
+- Node Doe receipt:
+  `bench/out/amd-vulkan/20260608T180326Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T180326Z.run.json`
+- Node Dawn receipt:
+  `bench/out/amd-vulkan/20260608T180401Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared_resident/node_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T180401Z.run.json`
+- Node strict compare:
+  `bench/out/amd-vulkan/20260608T180401Z/gemma270m.node-package.decode.resident.warm.ir.hot-compute-state.compare.json`
+- Node local claim:
+  `bench/out/amd-vulkan/20260608T180401Z/gemma270m.node-package.decode.resident.warm.ir.hot-compute-state.claim.json`
+
+Validation:
+
+- `zig build test` from `runtime/zig`
+- `zig build dropin -Doptimize=ReleaseFast` from `runtime/zig`
+- `zig build dropin-full -Doptimize=ReleaseFast` from `runtime/zig`
+- `DOE_WEBGPU_SUBMIT_BREAKDOWN=1 /usr/bin/python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json --side baseline`
+- `/usr/bin/python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.decode.resident.warm.ir.json --side comparison`
+- post-hoc strict operation-timing compare over the fresh Node Doe and Dawn
+  receipts listed above
+- local claim-policy pass over the fresh Node strict compare listed above
+
 ## 2026-06-08 — Vulkan package dispatch prewarm is setup-only telemetry
 
 Vulkan package prepared sessions now expose a setup-only prepared-dispatch
