@@ -36,6 +36,9 @@ def _sample(*, backend: str, command_replay_ns: int) -> dict:
             "executionRowCount": 3,
             "executionSuccessCount": 3,
             "queueSyncMode": "per-command",
+            "packageReadbackMode": "native-map-read-copy-unmap",
+            "planId": "plan-alpha",
+            "planHash": "hash-alpha",
             "packageStepBreakdownNs": {
                 "submitAddonCommandReplayTotalNs": command_replay_ns,
                 "submitAddonFlushTotalNs": 0,
@@ -76,7 +79,7 @@ def _wall_coverage_sample(
 
 
 class CompareAssessmentTests(unittest.TestCase):
-    def test_submit_scope_mismatch_is_advisory_for_package_totals(self) -> None:
+    def test_submit_scope_mismatch_blocks_strict_package_totals(self) -> None:
         result = compare_assessment(
             workload_id="package_upload_readback",
             workload_comparable=True,
@@ -106,12 +109,12 @@ class CompareAssessmentTests(unittest.TestCase):
             resource_sample_target_count=0,
         )
 
-        self.assertTrue(result["comparable"])
-        self.assertNotIn(
+        self.assertFalse(result["comparable"])
+        self.assertIn(
             "baseline_comparison_submit_scope_match",
             result["blockingFailedObligations"],
         )
-        self.assertIn(
+        self.assertNotIn(
             "baseline_comparison_submit_scope_match",
             result["advisoryFailedObligations"],
         )
@@ -264,6 +267,66 @@ class CompareAssessmentTests(unittest.TestCase):
         self.assertFalse(result["comparable"])
         self.assertIn(
             "baseline_comparison_shader_source_receipts_match",
+            result["blockingFailedObligations"],
+        )
+
+    def test_package_readback_mode_mismatch_blocks_strict_package_compare(self) -> None:
+        baseline_sample = _sample(backend="doe_node_webgpu", command_replay_ns=0)
+        comparison_sample = _sample(backend="node_webgpu_package", command_replay_ns=0)
+        comparison_sample["traceMeta"]["packageReadbackMode"] = "map-async"
+
+        result = compare_assessment(
+            workload_id="inference_gemma3_270m_prefill_64tok_decode_64tok",
+            workload_comparable=True,
+            workload_domain="compute",
+            workload_api="webgpu",
+            workload_commands_path="bench/plans/generated/compat/inference_commands.json",
+            workload_path_asymmetry=False,
+            workload_path_asymmetry_note="",
+            baseline_command_repeat=1,
+            comparison_command_repeat=1,
+            baseline={"commandSamples": [baseline_sample]},
+            comparison={"commandSamples": [comparison_sample]},
+            required_timing_class="operation",
+            allow_baseline_no_execution=False,
+            resource_probe="none",
+            comparability_mode="strict",
+            resource_sample_target_count=0,
+        )
+
+        self.assertFalse(result["comparable"])
+        self.assertIn(
+            "baseline_comparison_package_readback_mode_match",
+            result["blockingFailedObligations"],
+        )
+
+    def test_package_plan_identity_mismatch_blocks_strict_package_compare(self) -> None:
+        baseline_sample = _sample(backend="doe_node_webgpu", command_replay_ns=0)
+        comparison_sample = _sample(backend="node_webgpu_package", command_replay_ns=0)
+        comparison_sample["traceMeta"]["planHash"] = "hash-beta"
+
+        result = compare_assessment(
+            workload_id="inference_gemma3_270m_prefill_64tok_decode_64tok",
+            workload_comparable=True,
+            workload_domain="compute",
+            workload_api="webgpu",
+            workload_commands_path="bench/plans/generated/compat/inference_commands.json",
+            workload_path_asymmetry=False,
+            workload_path_asymmetry_note="",
+            baseline_command_repeat=1,
+            comparison_command_repeat=1,
+            baseline={"commandSamples": [baseline_sample]},
+            comparison={"commandSamples": [comparison_sample]},
+            required_timing_class="operation",
+            allow_baseline_no_execution=False,
+            resource_probe="none",
+            comparability_mode="strict",
+            resource_sample_target_count=0,
+        )
+
+        self.assertFalse(result["comparable"])
+        self.assertIn(
+            "baseline_comparison_package_plan_identity_match",
             result["blockingFailedObligations"],
         )
 

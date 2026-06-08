@@ -373,7 +373,73 @@
           "p95ToMedianPermille": 0,
           "maxToMedianPermille": 0
         },
+        "submitAddonCommandReplayPrepareTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitAddonCommandReplayRecordTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitAddonCommandReplayCopyTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
         "submitAddonQueueSubmitTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitAddonCommandBufferEndTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitAddonSyncPrepareTotalNs": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0,
+          "mean": 0,
+          "range": 0,
+          "p95ToMedianPermille": 0,
+          "maxToMedianPermille": 0
+        },
+        "submitAddonDriverSubmitTotalNs": {
           "count": 1,
           "min": 0,
           "median": 0,
@@ -654,7 +720,13 @@
             "submitCommandPrepTotalNs": 0,
             "submitAddonCallTotalNs": 0,
             "submitAddonCommandReplayTotalNs": 0,
+            "submitAddonCommandReplayPrepareTotalNs": 0,
+            "submitAddonCommandReplayRecordTotalNs": 0,
+            "submitAddonCommandReplayCopyTotalNs": 0,
             "submitAddonQueueSubmitTotalNs": 0,
+            "submitAddonCommandBufferEndTotalNs": 0,
+            "submitAddonSyncPrepareTotalNs": 0,
+            "submitAddonDriverSubmitTotalNs": 0,
             "submitAddonFlushTotalNs": 0,
             "submitPostSubmitBookkeepingTotalNs": 0,
             "submitQueueFlushTotalNs": 0,
@@ -851,7 +923,73 @@
         "p95ToMedianPermille": 0,
         "maxToMedianPermille": 0
       },
+      "submitAddonCommandReplayPrepareTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitAddonCommandReplayRecordTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitAddonCommandReplayCopyTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
       "submitAddonQueueSubmitTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitAddonCommandBufferEndTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitAddonSyncPrepareTotalNs": {
+        "count": 1,
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "mean": 0,
+        "range": 0,
+        "p95ToMedianPermille": 0,
+        "maxToMedianPermille": 0
+      },
+      "submitAddonDriverSubmitTotalNs": {
         "count": 1,
         "min": 0,
         "median": 0,
@@ -1130,7 +1268,13 @@
           "submitCommandPrepTotalNs": 0,
           "submitAddonCallTotalNs": 0,
           "submitAddonCommandReplayTotalNs": 0,
+          "submitAddonCommandReplayPrepareTotalNs": 0,
+          "submitAddonCommandReplayRecordTotalNs": 0,
+          "submitAddonCommandReplayCopyTotalNs": 0,
           "submitAddonQueueSubmitTotalNs": 0,
+          "submitAddonCommandBufferEndTotalNs": 0,
+          "submitAddonSyncPrepareTotalNs": 0,
+          "submitAddonDriverSubmitTotalNs": 0,
           "submitAddonFlushTotalNs": 0,
           "submitPostSubmitBookkeepingTotalNs": 0,
           "submitQueueFlushTotalNs": 0,
@@ -1258,5 +1402,5 @@
       }
     ]
   },
-  "artifactHash": "bac6c4226e542f09c58a76296fbeaf38c5d6ff9c1be1dcb2ef588bf67461a519"
+  "artifactHash": "daf457ad0c831af6fecc011f53234a6b916c5ad20cbbd30f3b1b422bf6603892"
 }

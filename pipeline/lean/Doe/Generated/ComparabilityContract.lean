@@ -1,6 +1,6 @@
 import Doe.Core.Model
 
-def comparabilityContractSha256 : String := "04d87a105ff82ffcb7b5d124a96e583880b78c2587fce8759b71b22bdc48fc59"
+def comparabilityContractSha256 : String := "81dbcf87b65b5bdd1ea58dcc29d4bff013192aed4dda4a8a10787083a0619e90"
 
 inductive ComparabilityObligationId where
   | workloadMarkedComparable
@@ -15,6 +15,8 @@ inductive ComparabilityObligationId where
   | baselineComparisonTimingSelectionPolicyMatch
   | baselineComparisonQueueSyncModeMatch
   | baselineComparisonSubmitScopeMatch
+  | baselineComparisonPackageReadbackModeMatch
+  | baselineComparisonPackagePlanIdentityMatch
   | baselineComparisonTimingPhaseMatch
   | baselineComparisonPackageResidentBufferLoadModeMatch
   | baselineComparisonPackageResidentBufferLoadShapeMatch
@@ -80,6 +82,10 @@ structure ComparabilityFacts where
   baselineComparisonQueueSyncModeMatch : Bool
   submitScopeMatchApplies : Bool
   baselineComparisonSubmitScopeMatch : Bool
+  packageReadbackModeMatchApplies : Bool
+  baselineComparisonPackageReadbackModeMatch : Bool
+  packagePlanIdentityMatchApplies : Bool
+  baselineComparisonPackagePlanIdentityMatch : Bool
   timingPhaseMatchApplies : Bool
   baselineComparisonTimingPhaseMatch : Bool
   packageResidentBufferLoadModeMatchApplies : Bool
@@ -173,6 +179,14 @@ def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObliga
       blocking := true
       applicable := facts.submitScopeMatchApplies
       passes := facts.baselineComparisonSubmitScopeMatch },
+    { id := .baselineComparisonPackageReadbackModeMatch
+      blocking := true
+      applicable := facts.packageReadbackModeMatchApplies
+      passes := facts.baselineComparisonPackageReadbackModeMatch },
+    { id := .baselineComparisonPackagePlanIdentityMatch
+      blocking := true
+      applicable := facts.packagePlanIdentityMatchApplies
+      passes := facts.baselineComparisonPackagePlanIdentityMatch },
     { id := .baselineComparisonTimingPhaseMatch
       blocking := true
       applicable := facts.timingPhaseMatchApplies

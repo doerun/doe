@@ -256,6 +256,42 @@ def compare_assessment(
     left_resident_buffer_load_shapes = collect_resident_buffer_load_shapes(left_samples)
     right_resident_buffer_load_shapes = collect_resident_buffer_load_shapes(right_samples)
 
+    def collect_package_readback_modes(samples: list[dict[str, Any]]) -> set[str]:
+        modes: set[str] = set()
+        for sample in samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            value = trace_meta.get("packageReadbackMode")
+            if isinstance(value, str) and value.strip():
+                modes.add(value.strip())
+        return modes
+
+    left_package_readback_modes = collect_package_readback_modes(left_samples)
+    right_package_readback_modes = collect_package_readback_modes(right_samples)
+
+    def collect_package_plan_identities(samples: list[dict[str, Any]]) -> set[tuple[str, str]]:
+        identities: set[tuple[str, str]] = set()
+        for sample in samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            plan_id = trace_meta.get("planId")
+            plan_hash = trace_meta.get("planHash")
+            if not isinstance(plan_id, str) or not plan_id.strip():
+                continue
+            if not isinstance(plan_hash, str) or not plan_hash.strip():
+                continue
+            identities.add((plan_id.strip(), plan_hash.strip()))
+        return identities
+
+    left_package_plan_identities = collect_package_plan_identities(left_samples)
+    right_package_plan_identities = collect_package_plan_identities(right_samples)
+
     def collect_shader_source_receipt_hashes(samples: list[dict[str, Any]]) -> set[str]:
         hashes: set[str] = set()
         for sample in samples:
@@ -551,7 +587,7 @@ def compare_assessment(
         obligations,
         reasons,
         obligation_id="baseline_comparison_submit_scope_match",
-        blocking=False,
+        blocking=True,
         applicable=(
             comparability_mode == "strict"
             and is_dawn_vs_doe
@@ -570,6 +606,66 @@ def compare_assessment(
             "baselineExecutionBackends": sorted(left_execution_backends),
             "comparisonExecutionBackends": sorted(right_execution_backends),
             **submit_scope_details,
+        },
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_package_readback_mode_match",
+        blocking=True,
+        applicable=(
+            comparability_mode == "strict"
+            and package_execution_applies
+            and (
+                bool(left_package_readback_modes)
+                or bool(right_package_readback_modes)
+            )
+        ),
+        passes=(
+            len(left_package_readback_modes) == 1
+            and len(right_package_readback_modes) == 1
+            and left_package_readback_modes == right_package_readback_modes
+        ),
+        failure_reason=(
+            "baseline/comparison package readback mode mismatch: "
+            f"{left_package_readback_modes} vs {right_package_readback_modes}"
+        ),
+        details={
+            "baselinePackageReadbackModes": sorted(left_package_readback_modes),
+            "comparisonPackageReadbackModes": sorted(right_package_readback_modes),
+        },
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_package_plan_identity_match",
+        blocking=True,
+        applicable=(
+            comparability_mode == "strict"
+            and package_execution_applies
+            and (
+                bool(left_package_plan_identities)
+                or bool(right_package_plan_identities)
+            )
+        ),
+        passes=(
+            len(left_package_plan_identities) == 1
+            and len(right_package_plan_identities) == 1
+            and left_package_plan_identities == right_package_plan_identities
+        ),
+        failure_reason=(
+            "baseline/comparison package plan identity mismatch: "
+            f"{left_package_plan_identities} vs {right_package_plan_identities}"
+        ),
+        details={
+            "baselinePackagePlanIdentities": [
+                {"planId": plan_id, "planHash": plan_hash}
+                for plan_id, plan_hash in sorted(left_package_plan_identities)
+            ],
+            "comparisonPackagePlanIdentities": [
+                {"planId": plan_id, "planHash": plan_hash}
+                for plan_id, plan_hash in sorted(right_package_plan_identities)
+            ],
         },
     )
     (

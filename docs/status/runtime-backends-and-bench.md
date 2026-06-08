@@ -3,6 +3,36 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Package strict comparability hardens plan/readback/submit scope
+
+Strict package Dawn-vs-Doe comparison now treats package submit-scope mismatch
+as blocking and also blocks package readback-mode or plan-identity drift when
+those fields are present in trace metadata. This keeps Node/Bun package
+evidence tied to the same readback path and normalized plan identity instead of
+only matching dispatch/row counts. The comparability obligation JSON and the
+generated Lean contract were regenerated in lockstep.
+
+The hardened Node Gemma64 warm receipt join now classifies the existing Node
+row as non-comparable because submit-scope telemetry is asymmetric. The Bun
+Gemma64 warm receipt join remains comparable under the stricter package
+obligations and remains diagnostic under the selected-operation performance
+policy. See the artifacts for current metrics and obligation details.
+
+Artifacts:
+
+- Hardened Node compare:
+  `bench/out/amd-vulkan/20260608T010639Z/gemma64.node-package.warm.ir.hardened.compare.json`
+- Hardened Bun compare:
+  `bench/out/amd-vulkan/20260608T012021Z/gemma64.bun-package.warm.ir.hardened.compare.json`
+
+Validation:
+
+- `python3 bench/gates/schema_gate.py`
+- `python3 bench/gates/comparability_obligation_parity_gate.py`
+- `python3 -m unittest bench.tests.test_compare_assessment bench.tests.test_package_dispatch_prefix_profile`
+- `python3 -m unittest bench.tests.test_compare_assessment bench.tests.test_compare_from_artifacts bench.tests.test_claim_gate bench.tests.test_package_phase_delta bench.tests.test_package_dispatch_prefix_profile bench.tests.test_executor_registry`
+- Hardened strict receipt joins for the Node and Bun artifacts listed above.
+
 ## 2026-06-07 — Doe Chromium Vulkan canvas path reaches submit
 
 The local Fawn Chromium build now loads the Doe WebGPU runtime on the Linux
