@@ -3,6 +3,39 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Node package dispatch prewarm now unwraps public objects
+
+The Node package prewarm path now accepts the public `GPUComputePipeline` and
+`GPUBindGroup` objects passed by the shared package executor. It unwraps those
+objects to native handles before calling the N-API prepared-dispatch prewarm
+binding, matching the fixed Bun path and making the setup prewarm request
+actually prepare the recorded dispatch commands.
+
+Fresh Node package receipts after this change remain strict-comparable but
+diagnostic. The local claim sidecar keeps the row out of claimable status
+because selected operation timing is still not positive at the required tails.
+The setup prewarm cost is recorded outside selected timing through the existing
+package setup telemetry.
+
+Artifacts:
+
+- Node Doe receipt:
+  `bench/out/amd-vulkan/20260608T182532Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/doe_gpu_node_package_prepared_resident/doe_gpu_node_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T182532Z.run.json`
+- Node Dawn receipt:
+  `bench/out/amd-vulkan/20260608T182745Z/gemma270m.node-package.decode.resident.warm.ir.workspace/run-artifacts/node_webgpu_package_prepared_resident/node_webgpu_package_prepared_resident-inference_gemma3_270m_decode_1tok-20260608T182745Z.run.json`
+- Node strict compare:
+  `bench/out/amd-vulkan/20260608T182745Z/gemma270m.node-package.decode.resident.warm.ir.node-prewarm-fix.compare.json`
+- Node local claim:
+  `bench/out/amd-vulkan/20260608T182745Z/gemma270m.node-package.decode.resident.warm.ir.node-prewarm-fix.claim.json`
+
+Validation:
+
+- `node --check packages/doe-gpu/src/vendor/webgpu/index.js`
+- direct Node prepared-session debug run confirmed dispatch prewarm succeeds
+- Node package baseline/comparison runs listed above
+- strict operation-timing compare over the fresh Node receipts listed above
+- local claim-policy pass over the fresh strict compare listed above
+
 ## 2026-06-08 — Bun package dispatch prewarm now unwraps public objects
 
 The Bun FFI package prewarm path now accepts the same public

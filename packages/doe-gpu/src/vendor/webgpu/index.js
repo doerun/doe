@@ -2553,6 +2553,41 @@ export function nativeFastPathInfo() {
   return nativeAddon.nativeFastPathInfo();
 }
 
+function commandNativeResource(value, path, label) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === 'object' && '_native' in value) {
+    return assertLiveResource(value, path, label);
+  }
+  return value;
+}
+
+function prewarmCommandForAddon(cmd, index) {
+  if (!cmd || typeof cmd !== 'object') {
+    return cmd;
+  }
+  if (Number(cmd.t) !== 0) {
+    return { t: Number(cmd.t) || 0 };
+  }
+  const packed = {
+    ...cmd,
+    t: 0,
+    p: commandNativeResource(cmd.p, `prewarmPreparedDispatches[${index}].pipeline`, 'GPUComputePipeline'),
+  };
+  if ('b' in cmd) {
+    packed.b = commandNativeResource(cmd.b, `prewarmPreparedDispatches[${index}].bindGroup`, 'GPUBindGroup');
+  }
+  if (Array.isArray(cmd.bg)) {
+    packed.bg = cmd.bg.map((bg, bgIndex) => commandNativeResource(
+      bg,
+      `prewarmPreparedDispatches[${index}].bindGroups[${bgIndex}]`,
+      'GPUBindGroup',
+    ));
+  }
+  return packed;
+}
+
 export function prewarmPreparedDispatches(queue, dispatchCommands) {
   ensureLibrary();
   const nativeAddon = currentAddon();
@@ -2561,7 +2596,8 @@ export function prewarmPreparedDispatches(queue, dispatchCommands) {
   }
   const commands = Array.isArray(dispatchCommands) ? dispatchCommands : [];
   const native = assertLiveResource(queue, 'prewarmPreparedDispatches', 'GPUQueue');
-  const preparedCount = nativeAddon.prewarmPreparedDispatches(native, commands);
+  const packedCommands = commands.map((cmd, index) => prewarmCommandForAddon(cmd, index));
+  const preparedCount = nativeAddon.prewarmPreparedDispatches(native, packedCommands);
   return {
     available: true,
     requestedCount: commands.length,
