@@ -67,6 +67,7 @@ pub const NativeVulkanRuntime = struct {
     fence: c.VkFence = VK_NULL_U64,
     fence_pool_state: vk_sync.FencePool = .{},
     timeline_semaphore: vk_sync.TimelineSemaphore = .{},
+    timeline_semaphore_probe_done: bool = false,
     streaming_copy_buffer: c.VkCommandBuffer = null,
     streaming_copy_active: bool = false,
     streaming_copy_count: u32 = 0,
@@ -215,6 +216,7 @@ pub const NativeVulkanRuntime = struct {
             self.timeline_semaphore.deinit(self.device);
             self.has_timeline_semaphore = false;
         }
+        self.timeline_semaphore_probe_done = false;
         if (self.has_fence_pool) {
             self.fence_pool_state.deinit(self.device);
             self.has_fence_pool = false;
