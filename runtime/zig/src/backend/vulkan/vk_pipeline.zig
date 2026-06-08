@@ -351,15 +351,43 @@ pub fn set_compute_shader_spirv_prehashed_binding_hashes(
     descriptor_bindings_hash: u64,
     initialize_buffers_on_create: bool,
 ) !void {
+    try set_compute_shader_spirv_prehashed_binding_hashes_and_access(
+        self,
+        words,
+        spirv_hash,
+        entry_point,
+        bindings,
+        layout_hash,
+        descriptor_bindings_hash,
+        null,
+        true,
+        initialize_buffers_on_create,
+    );
+}
+
+pub fn set_compute_shader_spirv_prehashed_binding_hashes_and_access(
+    self: anytype,
+    words: []const u32,
+    spirv_hash: u64,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model_compute_types.KernelBinding,
+    layout_hash: u64,
+    descriptor_bindings_hash: u64,
+    compute_binding_access: ?[]const vk_compute_sync.ComputeBindingAccess,
+    compute_binding_tracking_complete: bool,
+    initialize_buffers_on_create: bool,
+) !void {
     if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
     const pipeline_hash = compute_pipeline_hash_from_layout_hash(spirv_hash, entry_point, layout_hash);
-    try set_compute_shader_spirv_with_hash_and_descriptor_hash(
+    try set_compute_shader_spirv_with_hash_descriptor_hash_and_access(
         self,
         words,
         pipeline_hash,
         entry_point,
         bindings,
         descriptor_bindings_hash,
+        compute_binding_access,
+        compute_binding_tracking_complete,
         initialize_buffers_on_create,
     );
 }
@@ -371,6 +399,30 @@ fn set_compute_shader_spirv_with_hash_and_descriptor_hash(
     entry_point: ?[]const u8,
     bindings: ?[]const model_compute_types.KernelBinding,
     descriptor_bindings_hash: ?u64,
+    initialize_buffers_on_create: bool,
+) !void {
+    try set_compute_shader_spirv_with_hash_descriptor_hash_and_access(
+        self,
+        words,
+        pipeline_hash,
+        entry_point,
+        bindings,
+        descriptor_bindings_hash,
+        null,
+        true,
+        initialize_buffers_on_create,
+    );
+}
+
+fn set_compute_shader_spirv_with_hash_descriptor_hash_and_access(
+    self: anytype,
+    words: []const u32,
+    pipeline_hash: u64,
+    entry_point: ?[]const u8,
+    bindings: ?[]const model_compute_types.KernelBinding,
+    descriptor_bindings_hash: ?u64,
+    compute_binding_access: ?[]const vk_compute_sync.ComputeBindingAccess,
+    compute_binding_tracking_complete: bool,
     initialize_buffers_on_create: bool,
 ) !void {
     if (!self.has_pipeline or pipeline_hash != self.current_pipeline_hash) {
@@ -391,7 +443,11 @@ fn set_compute_shader_spirv_with_hash_and_descriptor_hash(
     } else {
         try prepare_descriptor_sets(self, bindings, initialize_buffers_on_create);
     }
-    vk_compute_sync.capture_current_compute_bindings(self, bindings);
+    if (compute_binding_access) |access| {
+        vk_compute_sync.install_current_compute_binding_access(self, access, compute_binding_tracking_complete);
+    } else {
+        vk_compute_sync.capture_current_compute_bindings(self, bindings);
+    }
 }
 
 pub fn rebuild_compute_shader_spirv(self: anytype, words: []const u32) !void {

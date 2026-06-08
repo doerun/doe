@@ -10,6 +10,7 @@ const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const shader_translation_cache = @import("doe_shader_translation_cache.zig");
 const vk_binding_hash = @import("backend/vulkan/vk_binding_hash.zig");
+const vk_compute_sync = @import("backend/vulkan/vk_compute_sync.zig");
 const vk_pipeline = @import("backend/vulkan/vk_pipeline.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
@@ -165,6 +166,9 @@ fn collect_recorded_bindings(
     buf_sizes: []const u64,
     out_bindings: []model_compute_types.KernelBinding,
     hash_builder: ?*vk_binding_hash.BindingHashBuilder,
+    access_bindings: ?*[vk_compute_sync.MAX_TRACKED_COMPUTE_BINDINGS]vk_compute_sync.ComputeBindingAccess,
+    access_binding_count: ?*u32,
+    access_tracking_complete: ?*bool,
 ) usize {
     var count: usize = 0;
     const shader_module = pip.shader_module;
@@ -190,6 +194,18 @@ fn collect_recorded_bindings(
         };
         out_bindings[count] = binding;
         if (hash_builder) |builder| builder.update(binding);
+        if (access_bindings) |access_storage| {
+            if (access_binding_count) |access_count| {
+                if (access_tracking_complete) |tracking_complete| {
+                    vk_compute_sync.merge_kernel_binding_access(
+                        access_storage,
+                        access_count,
+                        tracking_complete,
+                        binding,
+                    );
+                }
+            }
+        }
         count += 1;
     }
     return count;
@@ -208,6 +224,9 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
     };
 
     var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
+    var access_storage: [vk_compute_sync.MAX_TRACKED_COMPUTE_BINDINGS]vk_compute_sync.ComputeBindingAccess = undefined;
+    var access_count: u32 = 0;
+    var access_tracking_complete = true;
     var hash_builder = vk_binding_hash.BindingHashBuilder.init();
     const binding_count = collect_recorded_bindings(
         pip,
@@ -216,12 +235,16 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
         dispatch.buf_sizes[0..dispatch.buf_count],
         &binding_storage,
         &hash_builder,
+        &access_storage,
+        &access_count,
+        &access_tracking_complete,
     );
     const binding_hashes = hash_builder.finish();
     const bindings: ?[]const model_compute_types.KernelBinding = if (binding_count > 0)
         binding_storage[0..binding_count]
     else
         null;
+    const compute_access = access_storage[0..@intCast(access_count)];
 
     // Pass the pipeline's captured entry-point name so the Vulkan
     // runtime matches the SPIR-V's actual OpEntryPoint. Null entry
@@ -230,7 +253,7 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
     // custom entries like "main_vec4" or "main_multicol".
     const entry_slice: ?[]const u8 = if (pip.vk_entry_point_owned) |ep| ep[0..] else null;
     if (pip.vk_spirv_hash_ready) {
-        vk_pipeline.set_compute_shader_spirv_prehashed_binding_hashes(
+        vk_pipeline.set_compute_shader_spirv_prehashed_binding_hashes_and_access(
             rt,
             spirv,
             pip.vk_spirv_hash,
@@ -238,6 +261,8 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
             bindings,
             binding_hashes.layout_hash,
             binding_hashes.descriptor_bindings_hash,
+            compute_access,
+            access_tracking_complete,
             false,
         ) catch |err| {
             std.log.err("doe_vulkan_compute: set_compute_shader_spirv failed: {s}", .{@errorName(err)});

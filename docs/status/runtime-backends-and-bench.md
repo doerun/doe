@@ -3,6 +3,55 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Package readback scope gate
+
+Strict package comparison now records the actual readback path used by every
+package readback sample and blocks comparable status when the declared readback
+mode hides different execution scopes. The new readback-scope obligation checks
+actual path telemetry plus normalized readback breakdown buckets, so native
+map/read/copy/unmap cannot be presented as comparable to mapAsync plus
+mapped-range host copy.
+
+The package execution policy now has a scoped `mapAsync-host-copy` mode for the
+AMD Vulkan Gemma64 prepared package lanes. The mode forces both Doe and Dawn
+package sides through mapAsync plus mapped-range host copy, keeping structural
+work, readback mode, and readback scope aligned. Fresh Node and Bun same-window
+receipts pass structural-equivalence, timing-policy, comparability-coherence,
+and comparable-runtime-invariant gates under that host-copy policy, but their
+claim artifacts remain diagnostic because Doe still loses selected operation
+timing. The retained Vulkan prepared binding-access path removes a duplicate
+host walk during recorded dispatch preparation; it is not enough by itself to
+make the fair package rows claimable. Native Vulkan queue-submit timing remains
+the next optimization target for this lane.
+
+Artifacts:
+
+- Node readback-scope failure before host-copy policy:
+  `bench/out/amd-vulkan/20260608T101444Z/gemma64.node-package.warm.ir.readback-scope-gate.same-window.compare.json`
+- Node host-copy strict compare:
+  `bench/out/amd-vulkan/20260608T102027Z/gemma64.node-package.warm.ir.host-copy-readback.same-window.compare.json`
+- Node host-copy claim:
+  `bench/out/amd-vulkan/20260608T102027Z/gemma64.node-package.warm.ir.host-copy-readback.same-window.claim.json`
+- Bun host-copy strict compare:
+  `bench/out/amd-vulkan/20260608T102124Z/gemma64.bun-package.warm.ir.host-copy-readback.same-window.compare.json`
+- Bun host-copy claim:
+  `bench/out/amd-vulkan/20260608T102124Z/gemma64.bun-package.warm.ir.host-copy-readback.same-window.claim.json`
+- Reverted timeline-semaphore diagnostic compare:
+  `bench/out/amd-vulkan/20260608T102608Z/gemma64.node-package.warm.ir.timeline-host-copy-readback.same-window.compare.json`
+- Prepared binding-access submit-breakdown diagnostic receipt:
+  `bench/out/amd-vulkan/20260608T100204Z/gemma64.node-package.warm.ir.prepared-compute-access-submit-breakdown.doe.workspace/run-artifacts/doe_gpu_node_package_prepared/doe_gpu_node_package_prepared-inference_gemma3_270m_prefill_64tok_decode_64tok-20260608T100204Z.run.json`
+
+Validation:
+
+- `python3 bench/gates/schema_gate.py`
+- `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_config_validation bench.tests.test_package_dispatch_prefix_profile bench.tests.test_compare_assessment bench.tests.test_comparability_coherence_smoke_floor`
+- `node --check bench/executors/node-webgpu/executor.js`
+- `zig build dropin -Doptimize=ReleaseFast --summary all` from
+  `runtime/zig`
+- Structural-equivalence, timing-policy, comparability-coherence, comparable
+  runtime-invariant, and claim checks for the Node and Bun host-copy artifacts
+  listed above.
+
 ## 2026-06-08 — Vulkan recorded-binding prehash diagnostics
 
 The Vulkan recorded-dispatch path now builds layout and descriptor binding

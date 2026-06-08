@@ -354,6 +354,70 @@ class CompareAssessmentTests(unittest.TestCase):
             result["blockingFailedObligations"],
         )
 
+    def test_package_readback_scope_mismatch_blocks_strict_package_compare(self) -> None:
+        def with_readback_scope(sample: dict, *, actual_path: str, native_ns: int, map_async_ns: int) -> dict:
+            updated = _sample(
+                backend=sample["traceMeta"]["executionBackend"],
+                command_replay_ns=0,
+            )
+            updated["traceMeta"]["packageReadbackMode"] = "native-map-read-copy-unmap"
+            updated["traceMeta"]["packageReadbackActualPaths"] = [actual_path]
+            updated["traceMeta"]["packageReadbackPathCounts"] = {actual_path: 1}
+            updated["traceMeta"]["packageStepBreakdownNs"].update({
+                "readbackTotalNs": 4_000_000,
+                "readbackMapReadCopyUnmapTotalNs": native_ns,
+                "readbackMapAsyncTotalNs": map_async_ns,
+                "readbackNativeReadCopyTotalNs": 0,
+                "readbackGetMappedRangeTotalNs": 0,
+                "readbackHostCopyTotalNs": 0,
+                "readbackUnmapTotalNs": 0,
+            })
+            return updated
+
+        baseline_samples = [
+            with_readback_scope(
+                _sample(backend="doe_node_webgpu", command_replay_ns=0),
+                actual_path="map-read-copy-unmap",
+                native_ns=3_500_000,
+                map_async_ns=0,
+            )
+            for _ in range(7)
+        ]
+        comparison_samples = [
+            with_readback_scope(
+                _sample(backend="node_webgpu_package", command_replay_ns=0),
+                actual_path="mapped-range-host-copy",
+                native_ns=0,
+                map_async_ns=3_500_000,
+            )
+            for _ in range(7)
+        ]
+
+        result = compare_assessment(
+            workload_id="inference_gemma3_270m_prefill_64tok_decode_64tok",
+            workload_comparable=True,
+            workload_domain="compute",
+            workload_api="webgpu",
+            workload_commands_path="bench/plans/generated/compat/inference_commands.json",
+            workload_path_asymmetry=False,
+            workload_path_asymmetry_note="",
+            baseline_command_repeat=1,
+            comparison_command_repeat=1,
+            baseline={"commandSamples": baseline_samples},
+            comparison={"commandSamples": comparison_samples},
+            required_timing_class="operation",
+            allow_baseline_no_execution=False,
+            resource_probe="none",
+            comparability_mode="strict",
+            resource_sample_target_count=0,
+        )
+
+        self.assertFalse(result["comparable"])
+        self.assertIn(
+            "baseline_comparison_package_readback_scope_match",
+            result["blockingFailedObligations"],
+        )
+
     def test_package_plan_identity_mismatch_blocks_strict_package_compare(self) -> None:
         baseline_sample = _sample(backend="doe_node_webgpu", command_replay_ns=0)
         comparison_sample = _sample(backend="node_webgpu_package", command_replay_ns=0)

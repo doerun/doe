@@ -113,23 +113,46 @@ pub fn capture_current_compute_bindings(
     const bs = bindings orelse return;
 
     for (bs) |binding| {
-        if (binding.resource_kind != .buffer or binding.resource_handle == 0) continue;
-        const access = access_for_buffer_binding(binding);
-        if (!access.reads and !access.writes) continue;
-        if (merge_current_binding_access(self, binding.resource_handle, access)) continue;
-
-        const index: usize = @intCast(self.current_compute_binding_count);
-        if (index >= MAX_TRACKED_COMPUTE_BINDINGS) {
-            self.current_compute_binding_tracking_complete = false;
-            return;
-        }
-        self.current_compute_bindings[index] = .{
-            .resource_handle = binding.resource_handle,
-            .reads = access.reads,
-            .writes = access.writes,
-        };
-        self.current_compute_binding_count += 1;
+        append_current_binding_access(self, binding);
     }
+}
+
+pub fn install_current_compute_binding_access(
+    self: anytype,
+    access: []const ComputeBindingAccess,
+    tracking_complete: bool,
+) void {
+    const count = @min(access.len, MAX_TRACKED_COMPUTE_BINDINGS);
+    self.current_compute_binding_count = @intCast(count);
+    self.current_compute_binding_tracking_complete = tracking_complete and access.len <= MAX_TRACKED_COMPUTE_BINDINGS;
+    for (access[0..count], 0..) |binding, index| {
+        self.current_compute_bindings[index] = binding;
+    }
+}
+
+pub fn merge_kernel_binding_access(
+    bindings: *[MAX_TRACKED_COMPUTE_BINDINGS]ComputeBindingAccess,
+    binding_count: *u32,
+    tracking_complete: *bool,
+    binding: model_compute_types.KernelBinding,
+) void {
+    if (!tracking_complete.*) return;
+    if (binding.resource_kind != .buffer or binding.resource_handle == 0) return;
+    const access = access_for_buffer_binding(binding);
+    if (!access.reads and !access.writes) return;
+    if (merge_binding_access(bindings, binding_count.*, binding.resource_handle, access)) return;
+
+    const index: usize = @intCast(binding_count.*);
+    if (index >= MAX_TRACKED_COMPUTE_BINDINGS) {
+        tracking_complete.* = false;
+        return;
+    }
+    bindings[index] = .{
+        .resource_handle = binding.resource_handle,
+        .reads = access.reads,
+        .writes = access.writes,
+    };
+    binding_count.* += 1;
 }
 
 pub fn make_prior_compute_writes_visible_for_current_bindings(
@@ -213,8 +236,42 @@ fn current_compute_bindings(self: anytype) []const ComputeBindingAccess {
     return self.current_compute_bindings[0..count];
 }
 
+fn append_current_binding_access(self: anytype, binding: model_compute_types.KernelBinding) void {
+    if (!self.current_compute_binding_tracking_complete) return;
+    if (binding.resource_kind != .buffer or binding.resource_handle == 0) return;
+    const access = access_for_buffer_binding(binding);
+    if (!access.reads and !access.writes) return;
+    if (merge_current_binding_access(self, binding.resource_handle, access)) return;
+
+    const index: usize = @intCast(self.current_compute_binding_count);
+    if (index >= MAX_TRACKED_COMPUTE_BINDINGS) {
+        self.current_compute_binding_tracking_complete = false;
+        return;
+    }
+    self.current_compute_bindings[index] = .{
+        .resource_handle = binding.resource_handle,
+        .reads = access.reads,
+        .writes = access.writes,
+    };
+    self.current_compute_binding_count += 1;
+}
+
 fn merge_current_binding_access(self: anytype, resource_handle: u64, access: ComputeBindingAccess) bool {
-    for (self.current_compute_bindings[0..@intCast(self.current_compute_binding_count)]) |*binding| {
+    return merge_binding_access(
+        &self.current_compute_bindings,
+        self.current_compute_binding_count,
+        resource_handle,
+        access,
+    );
+}
+
+fn merge_binding_access(
+    bindings: *[MAX_TRACKED_COMPUTE_BINDINGS]ComputeBindingAccess,
+    binding_count: u32,
+    resource_handle: u64,
+    access: ComputeBindingAccess,
+) bool {
+    for (bindings[0..@intCast(binding_count)]) |*binding| {
         if (binding.resource_handle != resource_handle) continue;
         binding.reads = binding.reads or access.reads;
         binding.writes = binding.writes or access.writes;

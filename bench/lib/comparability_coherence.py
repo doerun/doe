@@ -22,6 +22,7 @@ REQUIRED_COMPARABLE_OBLIGATIONS = (
     "workload_marked_comparable",
     "left_samples_present",
     "right_samples_present",
+    "baseline_comparison_package_readback_scope_match",
     "baseline_comparison_timing_phase_match",
     "baseline_comparison_execution_shape_match",
     "baseline_comparison_hardware_path_match",

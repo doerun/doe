@@ -69,6 +69,13 @@ def _workload(
                     "details": {},
                 },
                 {
+                    "id": "baseline_comparison_package_readback_scope_match",
+                    "applicable": False,
+                    "blocking": True,
+                    "passes": True,
+                    "details": {},
+                },
+                {
                     "id": "baseline_comparison_execution_shape_match",
                     "applicable": True,
                     "blocking": True,

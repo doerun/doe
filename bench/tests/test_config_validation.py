@@ -346,6 +346,24 @@ class TestRealConfigs(unittest.TestCase):
         with self.assertRaises(jsonschema.ValidationError):
             jsonschema.validate(invalid, schema)
 
+    def test_trace_meta_requires_package_readback_path_and_breakdown_fields(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        sch = repo_root / "config" / "trace-meta.schema.json"
+        schema = json.loads(sch.read_text(encoding="utf-8"))
+        package_required = set(schema["anyOf"][1]["required"])
+        self.assertIn("packageReadbackActualPaths", package_required)
+        self.assertIn("packageReadbackPathCounts", package_required)
+
+        step_required = set(schema["properties"]["packageStepBreakdownNs"]["required"])
+        self.assertIn("readbackTotalNs", step_required)
+        self.assertIn("readbackMapReadCopyUnmapTotalNs", step_required)
+        self.assertIn("readbackMapAsyncTotalNs", step_required)
+        self.assertIn("readbackNativeReadCopyTotalNs", step_required)
+        self.assertIn(
+            "mapAsync-host-copy",
+            schema["properties"]["packageReadbackMode"]["enum"],
+        )
+
     def test_trace_meta_determinism_accepts_stable_token_summary(self):
         repo_root = Path(__file__).resolve().parents[2]
         sch = repo_root / "config" / "trace-meta.schema.json"

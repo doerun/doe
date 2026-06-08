@@ -77,6 +77,25 @@ _PACKAGE_SUBMIT_SCOPE_BUCKETS: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
 )
+_PACKAGE_READBACK_SCOPE_BUCKETS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "nativeMapReadCopyUnmap",
+        ("readbackMapReadCopyUnmapTotalNs",),
+    ),
+    (
+        "mapAsync",
+        ("readbackMapAsyncTotalNs",),
+    ),
+    (
+        "mappedReadCopy",
+        (
+            "readbackNativeReadCopyTotalNs",
+            "readbackGetMappedRangeTotalNs",
+            "readbackHostCopyTotalNs",
+            "readbackUnmapTotalNs",
+        ),
+    ),
+)
 
 
 def _sample_normalized_wall_ms(sample: dict[str, Any]) -> float | None:
@@ -269,6 +288,147 @@ def assess_submit_scope_equivalence(
         "comparisonSubmitScopeSampleCount": right_sample_count,
         "submitScopeMismatchCount": len(mismatches),
         "submitScopeMismatches": mismatches,
+    }
+    return applies, len(mismatches) == 0, details, "; ".join(mismatches)
+
+
+def assess_package_readback_scope_equivalence(
+    *,
+    left_command_samples: list[dict[str, Any]],
+    right_command_samples: list[dict[str, Any]],
+) -> tuple[bool, bool, dict[str, Any], str]:
+    def collect_actual_paths(command_samples: list[dict[str, Any]]) -> set[str]:
+        paths: set[str] = set()
+        for sample in command_samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            raw_paths = trace_meta.get("packageReadbackActualPaths")
+            if isinstance(raw_paths, list):
+                for value in raw_paths:
+                    if isinstance(value, str) and value.strip():
+                        paths.add(value.strip())
+            raw_counts = trace_meta.get("packageReadbackPathCounts")
+            if isinstance(raw_counts, dict):
+                for key, value in raw_counts.items():
+                    if isinstance(key, str) and key.strip() and safe_int(value, default=0) > 0:
+                        paths.add(key.strip())
+        return paths
+
+    def collect_scope_fractions(
+        command_samples: list[dict[str, Any]],
+    ) -> tuple[dict[str, list[float]], int]:
+        fractions: dict[str, list[float]] = {
+            scope_key: [] for scope_key, _ in _PACKAGE_READBACK_SCOPE_BUCKETS
+        }
+        sample_count = 0
+        for sample in command_samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            breakdown = trace_meta.get("packageStepBreakdownNs")
+            if not isinstance(breakdown, dict):
+                continue
+            readback_total = safe_int(breakdown.get("readbackTotalNs"), default=0)
+            if readback_total <= 0:
+                continue
+            sample_count += 1
+            for scope_key, field_names in _PACKAGE_READBACK_SCOPE_BUCKETS:
+                scope_total = sum(
+                    max(0, safe_int(breakdown.get(field_name), default=0))
+                    for field_name in field_names
+                )
+                fractions[scope_key].append(max(0, scope_total) / readback_total)
+        return fractions, sample_count
+
+    left_paths = collect_actual_paths(left_command_samples)
+    right_paths = collect_actual_paths(right_command_samples)
+    left_fractions, left_sample_count = collect_scope_fractions(left_command_samples)
+    right_fractions, right_sample_count = collect_scope_fractions(right_command_samples)
+    left_medians: dict[str, float | None] = {}
+    right_medians: dict[str, float | None] = {}
+    sample_counts: dict[str, dict[str, int]] = {}
+    mismatches: list[str] = []
+
+    if left_paths and right_paths and left_paths != right_paths:
+        mismatches.append(
+            "baseline/comparison actual package readback paths differ: "
+            f"{sorted(left_paths)} vs {sorted(right_paths)}"
+        )
+
+    bucket_fields: dict[str, list[str]] = {
+        scope_key: list(field_names)
+        for scope_key, field_names in _PACKAGE_READBACK_SCOPE_BUCKETS
+    }
+    for scope_key, field_names in _PACKAGE_READBACK_SCOPE_BUCKETS:
+        left_values = left_fractions.get(scope_key, [])
+        right_values = right_fractions.get(scope_key, [])
+        left_median = float(statistics.median(left_values)) if left_values else None
+        right_median = float(statistics.median(right_values)) if right_values else None
+        left_medians[scope_key] = left_median
+        right_medians[scope_key] = right_median
+        sample_counts[scope_key] = {
+            "baseline": len(left_values),
+            "comparison": len(right_values),
+        }
+        if left_median is None or right_median is None:
+            continue
+        left_all_zero = _all_samples_zero(left_values)
+        right_all_zero = _all_samples_zero(right_values)
+        left_material = _material_sample_count(left_values)
+        right_material = _material_sample_count(right_values)
+        field_label = "+".join(field_names)
+        if left_all_zero and right_material >= _PHASE_MATERIAL_MIN_SAMPLES:
+            mismatches.append(
+                f"baseline readback reports zero {scope_key} ({field_label}) on every sample while "
+                f"comparison has {right_material} sample(s) >= {_PHASE_MATERIAL_FLOOR_FRACTION:.1%} "
+                f"of readbackTotalNs (median {right_median:.2%})"
+            )
+        elif right_all_zero and left_material >= _PHASE_MATERIAL_MIN_SAMPLES:
+            mismatches.append(
+                f"comparison readback reports zero {scope_key} ({field_label}) on every sample while "
+                f"baseline has {left_material} sample(s) >= {_PHASE_MATERIAL_FLOOR_FRACTION:.1%} "
+                f"of readbackTotalNs (median {left_median:.2%})"
+            )
+
+    applies = left_sample_count > 0 or right_sample_count > 0 or bool(left_paths) or bool(right_paths)
+    if applies and left_sample_count == 0:
+        mismatches.append(
+            "baseline package readback breakdown telemetry is missing while comparison reports readback scopes"
+        )
+    if applies and right_sample_count == 0:
+        mismatches.append(
+            "comparison package readback breakdown telemetry is missing while baseline reports readback scopes"
+        )
+    if applies and not left_paths:
+        mismatches.append(
+            "baseline package readback actual path telemetry is missing while comparison reports readback scope"
+        )
+    if applies and not right_paths:
+        mismatches.append(
+            "comparison package readback actual path telemetry is missing while baseline reports readback scope"
+        )
+
+    details: dict[str, Any] = {
+        "phaseAsymmetryThreshold": _PHASE_ASYMMETRY_THRESHOLD,
+        "phaseMaterialFloorFraction": _PHASE_MATERIAL_FLOOR_FRACTION,
+        "phaseMaterialMinSamples": _PHASE_MATERIAL_MIN_SAMPLES,
+        "phaseZeroEpsilon": _PHASE_ZERO_EPSILON,
+        "phaseGateFormulation": "normalized-readback-bucket-all-zero-one-side-vs-any-material-other-side",
+        "readbackScopeBucketFields": bucket_fields,
+        "baselinePackageReadbackActualPaths": sorted(left_paths),
+        "comparisonPackageReadbackActualPaths": sorted(right_paths),
+        "baselineMedianReadbackScopeFractions": left_medians,
+        "comparisonMedianReadbackScopeFractions": right_medians,
+        "readbackScopeSampleCounts": sample_counts,
+        "baselineReadbackScopeSampleCount": left_sample_count,
+        "comparisonReadbackScopeSampleCount": right_sample_count,
+        "readbackScopeMismatchCount": len(mismatches),
+        "readbackScopeMismatches": mismatches,
     }
     return applies, len(mismatches) == 0, details, "; ".join(mismatches)
 

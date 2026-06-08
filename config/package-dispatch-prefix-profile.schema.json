@@ -331,7 +331,7 @@
         "readbackQueueWaitNs": { "type": "integer", "minimum": 0 },
         "packageReadbackMode": {
           "type": "string",
-          "enum": ["native-map-read-copy-unmap", "mapAsync"]
+          "enum": ["native-map-read-copy-unmap", "mapAsync", "mapAsync-host-copy"]
         },
         "phaseBreakdownNs": { "$ref": "#/$defs/phaseBreakdownNs" },
         "packageNativeFastPaths": { "$ref": "#/$defs/packageNativeFastPaths" },

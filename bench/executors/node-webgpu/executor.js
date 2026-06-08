@@ -116,6 +116,7 @@ const READBACK_DIGEST_PROCESS_CACHE_MAX_ENTRIES = 1024;
 const readbackDigestProcessCache = new Map();
 const PACKAGE_READBACK_MODE_NATIVE = 'native-map-read-copy-unmap';
 const PACKAGE_READBACK_MODE_MAP_ASYNC = 'mapAsync';
+const PACKAGE_READBACK_MODE_MAP_ASYNC_HOST_COPY = 'mapAsync-host-copy';
 let packageExecutionPolicyPromise = null;
 
 function nsFromMs(ms) {
@@ -362,6 +363,9 @@ function packageReadbackModeFromEnv() {
   if (process.env.DOE_PACKAGE_READBACK_MODE === PACKAGE_READBACK_MODE_MAP_ASYNC) {
     return PACKAGE_READBACK_MODE_MAP_ASYNC;
   }
+  if (process.env.DOE_PACKAGE_READBACK_MODE === PACKAGE_READBACK_MODE_MAP_ASYNC_HOST_COPY) {
+    return PACKAGE_READBACK_MODE_MAP_ASYNC_HOST_COPY;
+  }
   if (process.env.DOE_PACKAGE_READBACK_MODE === PACKAGE_READBACK_MODE_NATIVE) {
     return PACKAGE_READBACK_MODE_NATIVE;
   }
@@ -376,9 +380,11 @@ export async function copyReadBufferBytes({
 }) {
   const expectedBytes = normalizePositiveInt(sizeBytes, 'readBuffer.sizeBytes');
   const breakdownNs = emptyReadbackBreakdownNs();
+  const forceMappedRangeHostCopy = readbackMode === PACKAGE_READBACK_MODE_MAP_ASYNC_HOST_COPY;
 
   if (
     readbackMode !== PACKAGE_READBACK_MODE_MAP_ASYNC
+    && !forceMappedRangeHostCopy
     && typeof buffer?._mapReadCopyUnmap === 'function'
   ) {
     const fastStartedAt = performance.now();
@@ -400,7 +406,7 @@ export async function copyReadBufferBytes({
   breakdownNs.readbackMapAsyncTotalNs += nsDelta(mapStartedAt);
 
   try {
-    if (typeof buffer?._readCopy === 'function') {
+    if (!forceMappedRangeHostCopy && typeof buffer?._readCopy === 'function') {
       const readCopyStartedAt = performance.now();
       const copied = buffer._readCopy(0, expectedBytes);
       breakdownNs.readbackNativeReadCopyTotalNs += nsDelta(readCopyStartedAt);
@@ -1447,9 +1453,7 @@ function packageReadbackModeForExecution(policy, {
     workloadId,
     packagePreparedSession,
   });
-  return entry?.mode === PACKAGE_READBACK_MODE_MAP_ASYNC
-    ? PACKAGE_READBACK_MODE_MAP_ASYNC
-    : PACKAGE_READBACK_MODE_NATIVE;
+  return entry?.mode ?? PACKAGE_READBACK_MODE_NATIVE;
 }
 
 function packagePolicyProvider(runtime) {
@@ -1958,6 +1962,7 @@ async function executeSample(
   const determinismCaptureRows = new Map();
   const readbackCaptures = [];
   const readbackDigestCache = new Map();
+  const readbackPathCounts = new Map();
   const materializedWriteDataCache = new Map();
   const compactWriteBatchCache = new Map();
   const packageFastPathStatsStart = snapshotPackageFastPathStats(runtime.providerModule);
@@ -2446,6 +2451,7 @@ async function executeSample(
         sizeBytes: buffer.size,
         readbackMode: packageReadbackMode,
       });
+      readbackPathCounts.set(readback.path, (readbackPathCounts.get(readback.path) ?? 0) + 1);
       const validationStartedAt = performance.now();
       const validation = validateSampleExpectation(readback.bytes, step.validate);
       readback.breakdownNs.readbackValidationTotalNs += nsDelta(validationStartedAt);
@@ -2567,6 +2573,10 @@ async function executeSample(
     runtime.providerModule,
     runtime.queue,
   );
+  const packageReadbackPathCounts = Object.fromEntries(
+    Array.from(readbackPathCounts.entries()).sort(([left], [right]) => left.localeCompare(right)),
+  );
+  const packageReadbackActualPaths = Object.keys(packageReadbackPathCounts);
 
   const meta = {
     schemaVersion: 1,
@@ -2624,6 +2634,8 @@ async function executeSample(
     packageResidentBufferLoads: residentBufferLoads,
     packageResidentBufferLoadBreakdown: residentBufferLoadBreakdown,
     packageReadbackMode,
+    packageReadbackActualPaths,
+    packageReadbackPathCounts,
     ...(packageNativeFastPaths ? { packageNativeFastPaths } : {}),
     ...(packageNativeQueueSyncInfo ? { packageNativeQueueSyncInfo } : {}),
     ...(packageFastPathStats ? { packageFastPathStats } : {}),

@@ -121,6 +121,10 @@ class PackageDispatchPrefixProfileTests(unittest.TestCase):
             schema["$defs"]["sample"]["properties"],
         )
         self.assertIn(
+            "mapAsync-host-copy",
+            schema["$defs"]["sample"]["properties"]["packageReadbackMode"]["enum"],
+        )
+        self.assertIn(
             "maxToMedianPermille",
             schema["$defs"]["nsSummary"]["properties"],
         )

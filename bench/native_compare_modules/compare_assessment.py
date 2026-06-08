@@ -28,6 +28,7 @@ from native_compare_modules.comparability import (
 from native_compare_modules.comparability_runtime import (
     _sample_normalized_wall_ms,
     assess_native_shader_artifact_equivalence,
+    assess_package_readback_scope_equivalence,
     assess_submit_scope_equivalence,
     assess_timing_phase_equivalence,
 )
@@ -633,6 +634,38 @@ def compare_assessment(
         details={
             "baselinePackageReadbackModes": sorted(left_package_readback_modes),
             "comparisonPackageReadbackModes": sorted(right_package_readback_modes),
+        },
+    )
+    (
+        readback_scope_match_applies,
+        readback_scope_match,
+        readback_scope_details,
+        readback_scope_failure_reason,
+    ) = assess_package_readback_scope_equivalence(
+        left_command_samples=left_samples,
+        right_command_samples=right_samples,
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_package_readback_scope_match",
+        blocking=True,
+        applicable=(
+            comparability_mode == "strict"
+            and package_execution_applies
+            and readback_scope_match_applies
+        ),
+        passes=readback_scope_match,
+        failure_reason=(
+            "baseline/comparison package readback scope mismatch: " + readback_scope_failure_reason
+            if readback_scope_failure_reason
+            else ""
+        ),
+        details={
+            "comparabilityMode": comparability_mode,
+            "baselineExecutionBackends": sorted(left_execution_backends),
+            "comparisonExecutionBackends": sorted(right_execution_backends),
+            **readback_scope_details,
         },
     )
     _record_obligation(

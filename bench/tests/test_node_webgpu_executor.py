@@ -360,6 +360,11 @@ class NodeWebGPUExecutorTests(unittest.TestCase):
         self.assertIn("nativeAddon.queueSyncInfo(native)", source)
         self.assertIn("function snapshotPackageNativeQueueSyncInfo(providerModule, queue)", executor_source)
         self.assertIn("packageNativeQueueSyncInfo", executor_source)
+        self.assertIn("const readbackPathCounts = new Map();", executor_source)
+        self.assertIn("readbackPathCounts.set(readback.path, (readbackPathCounts.get(readback.path) ?? 0) + 1);", executor_source)
+        self.assertIn("packageReadbackActualPaths", executor_source)
+        self.assertIn("packageReadbackPathCounts", executor_source)
+        self.assertIn("mapAsync-host-copy", executor_source)
 
     def test_bun_package_exports_native_fast_path_identity(self) -> None:
         public_bun_source = PACKAGE_BUN_PATH.read_text(encoding="utf-8")
@@ -840,6 +845,60 @@ console.log(JSON.stringify({{
         self.assertEqual(payload["calls"], [["mapAsync", 1], ["getMappedRange", 0, 4], ["unmap"]])
         self.assertEqual(payload["bytes"], [9, 10, 11, 12])
         self.assertEqual(payload["path"], "mapped-range-host-copy")
+
+    def test_readback_copy_helper_can_force_map_async_host_copy_path(self) -> None:
+        script = f"""
+import {{ copyReadBufferBytes }} from {json.dumps(EXECUTOR_MODULE_URL)};
+const calls = [];
+const buffer = {{
+  size: 4,
+  _mapReadCopyUnmap() {{
+    calls.push(['combined']);
+    return new Uint8Array([1, 2, 3, 4]).buffer;
+  }},
+  async mapAsync(mode) {{
+    calls.push(['mapAsync', mode]);
+  }},
+  _readCopy(offset, size) {{
+    calls.push(['readCopy', offset, size]);
+    return new Uint8Array([5, 6, 7, 8]).buffer;
+  }},
+  getMappedRange(offset, size) {{
+    calls.push(['getMappedRange', offset, size]);
+    return new Uint8Array([9, 10, 11, 12]).buffer;
+  }},
+  unmap() {{
+    calls.push(['unmap']);
+  }},
+}};
+const result = await copyReadBufferBytes({{
+  buffer,
+  globals: {{ GPUMapMode: {{ READ: 1 }} }},
+  sizeBytes: 4,
+  readbackMode: 'mapAsync-host-copy',
+}});
+console.log(JSON.stringify({{
+  calls,
+  bytes: Array.from(result.bytes),
+  path: result.path,
+  nativeReadCopyNs: result.breakdownNs.readbackNativeReadCopyTotalNs,
+  hostCopyNsPositive: result.breakdownNs.readbackHostCopyTotalNs >= 0,
+}}));
+"""
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["calls"], [["mapAsync", 1], ["getMappedRange", 0, 4], ["unmap"]])
+        self.assertEqual(payload["bytes"], [9, 10, 11, 12])
+        self.assertEqual(payload["path"], "mapped-range-host-copy")
+        self.assertEqual(payload["nativeReadCopyNs"], 0)
+        self.assertTrue(payload["hostCopyNsPositive"])
 
     def test_readback_copy_helper_keeps_standard_host_copy_fallback(self) -> None:
         script = f"""
@@ -1730,6 +1789,25 @@ console.log(JSON.stringify({{ matched, missed, nodeMatched, nodeColdMatched }}))
         self.assertEqual(payload["nodeMatched"]["mode"], "mapAsync")
         self.assertEqual(payload["nodeColdMatched"]["mode"], "native-map-read-copy-unmap")
         self.assertIsNone(payload["missed"])
+
+    def test_package_execution_policy_has_strict_gemma_host_copy_readback(self) -> None:
+        policy = json.loads(PACKAGE_EXECUTION_POLICY_PATH.read_text(encoding="utf-8"))
+        entries = policy["readbackMode"]
+        expected = {
+            ("node", "doe"),
+            ("node", "node-webgpu"),
+            ("bun", "doe"),
+            ("bun", "doe-ffi"),
+            ("bun", "bun-webgpu"),
+        }
+        actual = {
+            (entry["runtimeHost"], entry["provider"])
+            for entry in entries
+            if entry["mode"] == "mapAsync-host-copy"
+            and "inference_gemma3_270m_prefill_64tok_decode_64tok" in entry["workloadId"]
+            and entry.get("packagePreparedSession") is True
+        }
+        self.assertEqual(actual, expected)
 
     def test_package_execution_policy_keeps_bun_ffi_queue_on_mapasync(self) -> None:
         policy = json.loads(PACKAGE_EXECUTION_POLICY_PATH.read_text(encoding="utf-8"))

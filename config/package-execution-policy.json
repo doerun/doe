@@ -67,6 +67,30 @@
       "detail": "Prepared Node package-developer receipts keep the existing mapAsync session policy while native readback remains available through the session-specific cold public entry."
     },
     {
+      "id": "node-gemma64-prepared-doe-host-copy-readback",
+      "runtimeHost": "node",
+      "provider": "doe",
+      "workloadId": [
+        "inference_gemma3_270m_prefill_64tok_decode_64tok"
+      ],
+      "packagePreparedSession": true,
+      "mode": "mapAsync-host-copy",
+      "evidence": "bench/out/amd-vulkan/20260608T101444Z/gemma64.node-package.warm.ir.readback-scope-gate.same-window.compare.json",
+      "detail": "Strict AMD Vulkan Gemma prepared package comparison requires the Doe side to use mapAsync plus mapped-range host copy so readback scope matches the Dawn package path."
+    },
+    {
+      "id": "node-gemma64-prepared-dawn-host-copy-readback",
+      "runtimeHost": "node",
+      "provider": "node-webgpu",
+      "workloadId": [
+        "inference_gemma3_270m_prefill_64tok_decode_64tok"
+      ],
+      "packagePreparedSession": true,
+      "mode": "mapAsync-host-copy",
+      "evidence": "bench/out/amd-vulkan/20260608T101444Z/gemma64.node-package.warm.ir.readback-scope-gate.same-window.compare.json",
+      "detail": "Strict AMD Vulkan Gemma prepared package comparison records the Dawn package path as mapAsync plus mapped-range host copy instead of relying on the broader native readback default label."
+    },
+    {
       "id": "bun-package-developer-native-readback-vector",
       "runtimeHost": "bun",
       "provider": "doe",
@@ -90,6 +114,42 @@
       "mode": "mapAsync",
       "evidence": "bench/out/apple-metal/20260531T_shared_event_listener_node_bun/bun-listener.native-vs-mapasync.phase-delta.json",
       "detail": "The listener-backed public Bun package receipts select mapAsync for buffer, image, pipeline, and queue completion rows while the vector row keeps the native entry."
+    },
+    {
+      "id": "bun-gemma64-prepared-doe-host-copy-readback",
+      "runtimeHost": "bun",
+      "provider": "doe",
+      "workloadId": [
+        "inference_gemma3_270m_prefill_64tok_decode_64tok"
+      ],
+      "packagePreparedSession": true,
+      "mode": "mapAsync-host-copy",
+      "evidence": "bench/out/amd-vulkan/20260608T101444Z/gemma64.node-package.warm.ir.readback-scope-gate.same-window.compare.json",
+      "detail": "Strict AMD Vulkan Gemma prepared package comparison keeps Bun Doe readback on the mapped-range host-copy path when the package wrapper resolves directly to the Doe provider."
+    },
+    {
+      "id": "bun-gemma64-prepared-doe-ffi-host-copy-readback",
+      "runtimeHost": "bun",
+      "provider": "doe-ffi",
+      "workloadId": [
+        "inference_gemma3_270m_prefill_64tok_decode_64tok"
+      ],
+      "packagePreparedSession": true,
+      "mode": "mapAsync-host-copy",
+      "evidence": "bench/out/amd-vulkan/20260608T101444Z/gemma64.node-package.warm.ir.readback-scope-gate.same-window.compare.json",
+      "detail": "Strict AMD Vulkan Gemma prepared package comparison keeps Bun FFI readback on the mapped-range host-copy path when the install-facing wrapper resolves to the FFI provider."
+    },
+    {
+      "id": "bun-gemma64-prepared-dawn-host-copy-readback",
+      "runtimeHost": "bun",
+      "provider": "bun-webgpu",
+      "workloadId": [
+        "inference_gemma3_270m_prefill_64tok_decode_64tok"
+      ],
+      "packagePreparedSession": true,
+      "mode": "mapAsync-host-copy",
+      "evidence": "bench/out/amd-vulkan/20260608T101444Z/gemma64.node-package.warm.ir.readback-scope-gate.same-window.compare.json",
+      "detail": "Strict AMD Vulkan Gemma prepared package comparison records the Bun Dawn package path as mapAsync plus mapped-range host copy instead of relying on the broader native readback default label."
     }
   ],
   "unsupportedExecutions": []
