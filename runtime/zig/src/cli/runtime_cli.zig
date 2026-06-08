@@ -327,6 +327,11 @@ pub fn runCli() !void {
                 if (executed.adapter_ordinal) |ordinal| trace_summary.adapter_ordinal = ordinal;
                 if (executed.queue_family_index) |queue_family_index| trace_summary.queue_family_index = queue_family_index;
                 if (executed.present_capable) |present_capable| trace_summary.present_capable = present_capable;
+                if (executed.queue_family_policy) |policy| trace_summary.queue_family_policy = policy;
+                if (executed.queue_family_kind) |kind| trace_summary.queue_family_kind = kind;
+                if (executed.queue_family_queue_count) |queue_count| trace_summary.queue_family_queue_count = queue_count;
+                if (executed.queue_family_timestamp_valid_bits) |valid_bits| trace_summary.queue_family_timestamp_valid_bits = valid_bits;
+                if (executed.queue_family_supports_graphics) |supports_graphics| trace_summary.queue_family_supports_graphics = supports_graphics;
                 switch (executed.status) {
                     .ok => trace_summary.execution_success_count += 1,
                     .@"error" => trace_summary.execution_error_count += 1,

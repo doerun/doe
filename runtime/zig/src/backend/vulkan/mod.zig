@@ -52,6 +52,7 @@ pub const ZigVulkanBackend = struct {
     upload_path_policy: backend_policy.UploadPathPolicy = .allow_mapped_shortcuts,
     upload_buffer_usage_mode: webgpu.UploadBufferUsageMode = .copy_dst_copy_src,
     upload_submit_every: u32 = UPLOAD_BATCH_LAZY,
+    queue_family_policy: webgpu.QueueFamilyPolicy = .prefer_graphics_compute,
     queue_wait_mode: webgpu.QueueWaitMode = .process_events,
     queue_sync_mode: webgpu.QueueSyncMode = .per_command,
     gpu_timestamp_mode: webgpu.GpuTimestampMode = .auto,
@@ -88,7 +89,7 @@ pub const ZigVulkanBackend = struct {
         kernel_root: ?[]const u8,
         selection_policy: backend_policy.SelectionPolicy,
     ) !*ZigVulkanBackend {
-        return init_with_upload_path_policy(allocator, profile, kernel_root, selection_policy.upload_path_policy);
+        return init_with_backend_policy(allocator, profile, kernel_root, selection_policy.upload_path_policy, selection_policy.queue_family_policy);
     }
 
     fn init_with_upload_path_policy(
@@ -96,6 +97,16 @@ pub const ZigVulkanBackend = struct {
         profile: model.DeviceProfile,
         kernel_root: ?[]const u8,
         upload_path_policy: backend_policy.UploadPathPolicy,
+    ) !*ZigVulkanBackend {
+        return init_with_backend_policy(allocator, profile, kernel_root, upload_path_policy, .prefer_graphics_compute);
+    }
+
+    fn init_with_backend_policy(
+        allocator: std.mem.Allocator,
+        profile: model.DeviceProfile,
+        kernel_root: ?[]const u8,
+        upload_path_policy: backend_policy.UploadPathPolicy,
+        queue_family_policy: webgpu.QueueFamilyPolicy,
     ) !*ZigVulkanBackend {
         if (profile.api != .vulkan) return error.UnsupportedFeature;
 
@@ -111,6 +122,7 @@ pub const ZigVulkanBackend = struct {
             .upload_path_policy = upload_path_policy,
             .upload_buffer_usage_mode = .copy_dst_copy_src,
             .upload_submit_every = UPLOAD_BATCH_LAZY,
+            .queue_family_policy = queue_family_policy,
             .queue_wait_mode = .process_events,
             .queue_sync_mode = .per_command,
             .gpu_timestamp_mode = .auto,
@@ -162,6 +174,11 @@ pub const ZigVulkanBackend = struct {
                 .adapter_ordinal = null,
                 .queue_family_index = null,
                 .present_capable = null,
+                .queue_family_policy = null,
+                .queue_family_kind = null,
+                .queue_family_queue_count = null,
+                .queue_family_timestamp_valid_bits = null,
+                .queue_family_supports_graphics = null,
             },
         };
     }
@@ -195,7 +212,11 @@ pub const ZigVulkanBackend = struct {
 
     pub fn ensure_runtime_bootstrapped(self: *ZigVulkanBackend) !*native_runtime.NativeVulkanRuntime {
         if (self.runtime == null) {
-            self.runtime = try native_runtime.NativeVulkanRuntime.init(self.allocator, self.kernel_root_owned);
+            self.runtime = try native_runtime.NativeVulkanRuntime.init_with_queue_family_policy(
+                self.allocator,
+                self.kernel_root_owned,
+                self.queue_family_policy,
+            );
         }
         return &self.runtime.?;
     }
@@ -305,7 +326,7 @@ pub fn manifest_hash_from_context(ctx: *anyopaque) ?[]const u8 {
 pub fn adapter_ordinal_from_context(ctx: *anyopaque) ?u32 {
     const self = cast(ctx);
     if (self.runtime) |*runtime| {
-        return runtime.adapter_ordinal();
+        return runtime.adapter_ordinal_value;
     }
     return null;
 }
@@ -313,7 +334,7 @@ pub fn adapter_ordinal_from_context(ctx: *anyopaque) ?u32 {
 pub fn queue_family_index_from_context(ctx: *anyopaque) ?u32 {
     const self = cast(ctx);
     if (self.runtime) |*runtime| {
-        return runtime.queue_family_index_value();
+        return runtime.queue_family_index_value_cache;
     }
     return null;
 }
@@ -321,7 +342,48 @@ pub fn queue_family_index_from_context(ctx: *anyopaque) ?u32 {
 pub fn present_capable_from_context(ctx: *anyopaque) ?bool {
     const self = cast(ctx);
     if (self.runtime) |*runtime| {
-        return runtime.present_capable();
+        return runtime.present_capable_value;
+    }
+    return null;
+}
+
+pub fn queue_family_policy_from_context(ctx: *anyopaque) ?[]const u8 {
+    const self = cast(ctx);
+    if (self.runtime) |*runtime| {
+        return runtime.queue_family_policy.name();
+    }
+    return self.queue_family_policy.name();
+}
+
+pub fn queue_family_kind_from_context(ctx: *anyopaque) ?[]const u8 {
+    const self = cast(ctx);
+    if (self.runtime) |*runtime| {
+        const kind = runtime.queue_family_kind_value_cache orelse return null;
+        return kind.name();
+    }
+    return null;
+}
+
+pub fn queue_family_queue_count_from_context(ctx: *anyopaque) ?u32 {
+    const self = cast(ctx);
+    if (self.runtime) |*runtime| {
+        return runtime.queue_family_queue_count_value_cache;
+    }
+    return null;
+}
+
+pub fn queue_family_timestamp_valid_bits_from_context(ctx: *anyopaque) ?u32 {
+    const self = cast(ctx);
+    if (self.runtime) |*runtime| {
+        return runtime.queue_family_timestamp_valid_bits_value_cache;
+    }
+    return null;
+}
+
+pub fn queue_family_supports_graphics_from_context(ctx: *anyopaque) ?bool {
+    const self = cast(ctx);
+    if (self.runtime) |*runtime| {
+        return runtime.queue_family_supports_graphics_value_cache;
     }
     return null;
 }

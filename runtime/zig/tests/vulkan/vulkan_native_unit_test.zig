@@ -6,6 +6,7 @@ const vk_device = @import("../../src/backend/vulkan/vk_device.zig");
 const vk_constants = @import("../../src/backend/vulkan/vk_constants.zig");
 const backend_policy = @import("../../src/backend/backend_policy.zig");
 const native_runtime = @import("../../src/backend/vulkan/native_runtime.zig");
+const webgpu = @import("../../src/webgpu_ffi.zig");
 const model = @import("../../src/model.zig");
 
 // ============================================================
@@ -314,6 +315,42 @@ test "vulkan: queue_selection_score rewards graphics capability" {
     try std.testing.expect(vk_device.queue_selection_score(with_graphics) > vk_device.queue_selection_score(compute_only));
 }
 
+test "vulkan: queue_selection_score_for_policy can prefer compute-only queues" {
+    const compute_only = vk_device.QueueFamilySelection{
+        .index = 0,
+        .supports_graphics = false,
+        .timestamp_valid_bits = 64,
+        .queue_count = 1,
+    };
+    const with_graphics = vk_device.QueueFamilySelection{
+        .index = 1,
+        .supports_graphics = true,
+        .timestamp_valid_bits = 64,
+        .queue_count = 1,
+    };
+    try std.testing.expect(
+        vk_device.queue_selection_score_for_policy(compute_only, .prefer_compute_only) >
+            vk_device.queue_selection_score_for_policy(with_graphics, .prefer_compute_only),
+    );
+}
+
+test "vulkan: queue_family_kind records selected family role" {
+    const compute_only = vk_device.QueueFamilySelection{
+        .index = 0,
+        .supports_graphics = false,
+        .timestamp_valid_bits = 0,
+        .queue_count = 1,
+    };
+    const with_graphics = vk_device.QueueFamilySelection{
+        .index = 1,
+        .supports_graphics = true,
+        .timestamp_valid_bits = 0,
+        .queue_count = 1,
+    };
+    try std.testing.expectEqual(webgpu.QueueFamilyKind.compute_only, vk_device.queue_family_kind(compute_only));
+    try std.testing.expectEqual(webgpu.QueueFamilyKind.graphics_compute, vk_device.queue_family_kind(with_graphics));
+}
+
 test "vulkan: queue_selection_score rewards timestamp support" {
     const no_timestamp = vk_device.QueueFamilySelection{
         .index = 0,
@@ -609,14 +646,14 @@ test "vulkan: NativeVulkanRuntime default fast upload state is uninitialized" {
     try std.testing.expectEqual(@as(?*anyopaque, null), rt.fast_upload_mapped);
 }
 
-test "vulkan: NativeVulkanRuntime adapter info accessors return null/defaults" {
+test "vulkan: NativeVulkanRuntime adapter info caches default to null" {
     const rt = native_runtime.NativeVulkanRuntime{
         .allocator = std.testing.allocator,
         .kernel_root = null,
     };
-    try std.testing.expectEqual(@as(?u32, null), rt.adapter_ordinal());
-    try std.testing.expectEqual(@as(?u32, null), rt.queue_family_index_value());
-    try std.testing.expectEqual(@as(?bool, null), rt.present_capable());
+    try std.testing.expectEqual(@as(?u32, null), rt.adapter_ordinal_value);
+    try std.testing.expectEqual(@as(?u32, null), rt.queue_family_index_value_cache);
+    try std.testing.expectEqual(@as(?bool, null), rt.present_capable_value);
 }
 
 // ============================================================

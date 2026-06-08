@@ -1,5 +1,6 @@
 const std = @import("std");
 const backend_policy = @import("../../src/backend/backend_policy.zig");
+const runtime_types = @import("../../src/backend/runtime_types.zig");
 
 test "backend runtime policy loads local metal lane from config" {
     const loaded = try backend_policy.load_policy_for_lane(
@@ -13,7 +14,8 @@ test "backend runtime policy loads local metal lane from config" {
     try std.testing.expect(!loaded.policy.allow_fallback);
     try std.testing.expect(loaded.policy.strict_no_fallback);
     try std.testing.expect(loaded.policy.upload_path_policy == .staged_copy_only);
-    try std.testing.expectEqualStrings("backend-runtime-policy-v3", loaded.policy.policy_hash);
+    try std.testing.expectEqual(runtime_types.QueueFamilyPolicy.prefer_graphics_compute, loaded.policy.queue_family_policy);
+    try std.testing.expectEqualStrings("backend-runtime-policy-v4", loaded.policy.policy_hash);
 }
 
 test "backend runtime policy forces staged uploads on strict Vulkan lanes" {
@@ -28,7 +30,8 @@ test "backend runtime policy forces staged uploads on strict Vulkan lanes" {
     try std.testing.expect(!loaded.policy.allow_fallback);
     try std.testing.expect(loaded.policy.strict_no_fallback);
     try std.testing.expect(loaded.policy.upload_path_policy == .staged_copy_only);
-    try std.testing.expectEqualStrings("backend-runtime-policy-v3", loaded.policy.policy_hash);
+    try std.testing.expectEqual(runtime_types.QueueFamilyPolicy.prefer_graphics_compute, loaded.policy.queue_family_policy);
+    try std.testing.expectEqualStrings("backend-runtime-policy-v4", loaded.policy.policy_hash);
 }
 
 test "backend lane parser handles metal_doe_app and local metal lanes" {
@@ -66,13 +69,14 @@ test "backend runtime policy rejects fallback-enabled lane config" {
         .sub_path = path,
         .data =
         \\{
-        \\  "schemaVersion": 2,
-        \\  "selectionPolicyHashSeed": "backend-runtime-policy-v3",
+        \\  "schemaVersion": 3,
+        \\  "selectionPolicyHashSeed": "backend-runtime-policy-v4",
         \\  "lanes": {
         \\    "metal_doe_comparable": {
         \\      "defaultBackend": "doe_metal",
         \\      "allowFallback": true,
-        \\      "strictNoFallback": false
+        \\      "strictNoFallback": false,
+        \\      "queueFamilyPolicy": "prefer_graphics_compute"
         \\    }
         \\  }
         \\}
@@ -97,14 +101,15 @@ test "backend runtime policy rejects mapped shortcuts for strict staged-upload l
         .sub_path = path,
         .data =
         \\{
-        \\  "schemaVersion": 2,
-        \\  "selectionPolicyHashSeed": "backend-runtime-policy-v3",
+        \\  "schemaVersion": 3,
+        \\  "selectionPolicyHashSeed": "backend-runtime-policy-v4",
         \\  "lanes": {
         \\    "metal_doe_release": {
         \\      "defaultBackend": "doe_metal",
         \\      "allowFallback": false,
         \\      "strictNoFallback": true,
-        \\      "uploadPathPolicy": "allow_mapped_shortcuts"
+        \\      "uploadPathPolicy": "allow_mapped_shortcuts",
+        \\      "queueFamilyPolicy": "prefer_graphics_compute"
         \\    }
         \\  }
         \\}

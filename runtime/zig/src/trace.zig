@@ -81,6 +81,11 @@ pub const TraceRunSummary = struct {
     adapter_ordinal: ?u32 = null,
     queue_family_index: ?u32 = null,
     present_capable: ?bool = null,
+    queue_family_policy: ?[]const u8 = null,
+    queue_family_kind: ?[]const u8 = null,
+    queue_family_queue_count: ?u32 = null,
+    queue_family_timestamp_valid_bits: ?u32 = null,
+    queue_family_supports_graphics: ?bool = null,
     final_hash: u64,
     final_previous_hash: u64,
     profile_vendor: []const u8,
@@ -423,6 +428,23 @@ pub fn printTraceLineWithSemantic(
         if (exec.present_capable) |value| {
             try writef(stdout, ",\"executionPresentCapable\":{}", .{value});
         }
+        if (exec.queue_family_policy) |value| {
+            try stdout.writeAll(",\"executionQueueFamilyPolicy\":");
+            try writeJsonString(stdout, value);
+        }
+        if (exec.queue_family_kind) |value| {
+            try stdout.writeAll(",\"executionQueueFamilyKind\":");
+            try writeJsonString(stdout, value);
+        }
+        if (exec.queue_family_queue_count) |value| {
+            try writef(stdout, ",\"executionQueueFamilyQueueCount\":{}", .{value});
+        }
+        if (exec.queue_family_timestamp_valid_bits) |value| {
+            try writef(stdout, ",\"executionQueueFamilyTimestampValidBits\":{}", .{value});
+        }
+        if (exec.queue_family_supports_graphics) |value| {
+            try writef(stdout, ",\"executionQueueFamilySupportsGraphics\":{}", .{value});
+        }
     }
 
     try writef(stdout, "}}\n", .{});
@@ -690,6 +712,25 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     }
     if (summary.present_capable) |present_capable| {
         try writef(writer, "\"presentCapable\":{},", .{present_capable});
+    }
+    if (summary.queue_family_policy) |policy| {
+        try writer.writeAll("\"queueFamilyPolicy\":");
+        try writeJsonString(&writer, policy);
+        try writer.writeAll(",");
+    }
+    if (summary.queue_family_kind) |kind| {
+        try writer.writeAll("\"queueFamilyKind\":");
+        try writeJsonString(&writer, kind);
+        try writer.writeAll(",");
+    }
+    if (summary.queue_family_queue_count) |queue_count| {
+        try writef(writer, "\"queueFamilyQueueCount\":{},", .{queue_count});
+    }
+    if (summary.queue_family_timestamp_valid_bits) |valid_bits| {
+        try writef(writer, "\"queueFamilyTimestampValidBits\":{},", .{valid_bits});
+    }
+    if (summary.queue_family_supports_graphics) |supports_graphics| {
+        try writef(writer, "\"queueFamilySupportsGraphics\":{},", .{supports_graphics});
     }
     if (summary.queue_sync_mode) |sync_mode| {
         try writer.writeAll("\"queueSyncMode\":");

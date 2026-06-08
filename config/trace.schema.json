@@ -52,6 +52,17 @@
     "executionAdapterOrdinal": { "type": "integer", "minimum": 0 },
     "executionQueueFamilyIndex": { "type": "integer", "minimum": 0 },
     "executionPresentCapable": { "type": "boolean" },
+    "executionQueueFamilyPolicy": {
+      "type": "string",
+      "enum": ["prefer_graphics_compute", "prefer_compute_only", "require_compute_only"]
+    },
+    "executionQueueFamilyKind": {
+      "type": "string",
+      "enum": ["graphics_compute", "compute_only"]
+    },
+    "executionQueueFamilyQueueCount": { "type": "integer", "minimum": 0 },
+    "executionQueueFamilyTimestampValidBits": { "type": "integer", "minimum": 0 },
+    "executionQueueFamilySupportsGraphics": { "type": "boolean" },
     "executionDurationNs": { "type": "integer", "minimum": 0 },
     "executionSetupNs": { "type": "integer", "minimum": 0 },
     "executionEncodeNs": { "type": "integer", "minimum": 0 },

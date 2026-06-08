@@ -120,6 +120,11 @@ pub fn initTraceSummary(
             summary.shader_artifact_manifest_hash = selection.shader_artifact_manifest_hash;
             summary.host_plan_artifact_path = selection.host_plan_artifact_path;
             summary.host_plan_artifact_hash = selection.host_plan_artifact_hash;
+            if (selection.queue_family_policy) |policy| summary.queue_family_policy = policy;
+            if (selection.queue_family_kind) |kind| summary.queue_family_kind = kind;
+            if (selection.queue_family_queue_count) |queue_count| summary.queue_family_queue_count = queue_count;
+            if (selection.queue_family_timestamp_valid_bits) |valid_bits| summary.queue_family_timestamp_valid_bits = valid_bits;
+            if (selection.queue_family_supports_graphics) |supports_graphics| summary.queue_family_supports_graphics = supports_graphics;
         }
     }
 

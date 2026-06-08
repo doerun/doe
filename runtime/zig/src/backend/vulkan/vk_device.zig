@@ -4,6 +4,7 @@
 // creation, command pool, fence) and memory type queries.
 
 const std = @import("std");
+const webgpu = @import("../runtime_types.zig");
 const c = @import("vk_constants.zig");
 const vk_feature_caps = @import("vk_feature_caps.zig");
 const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
@@ -96,6 +97,10 @@ pub fn select_physical_device(self: anytype) !void {
     self.adapter_ordinal_value = selection.index;
     self.queue_family_index = selection.queue.index;
     self.queue_family_index_value_cache = selection.queue.index;
+    self.queue_family_kind_value_cache = queue_family_kind(selection.queue);
+    self.queue_family_queue_count_value_cache = selection.queue.queue_count;
+    self.queue_family_timestamp_valid_bits_value_cache = selection.queue.timestamp_valid_bits;
+    self.queue_family_supports_graphics_value_cache = selection.queue.supports_graphics;
     self.present_capable_value = selection.queue.supports_graphics;
     self.timestamp_query_supported_value = selection.queue.timestamp_valid_bits > 0;
 }
@@ -201,7 +206,7 @@ fn select_preferred_physical_device(self: anytype, devices: []const VkPhysicalDe
     var best: ?PhysicalDeviceSelection = null;
     for (devices, 0..) |device, index| {
         const queue = select_queue_family_for_device(self, device) catch continue;
-        const score = score_physical_device(device, queue);
+        const score = score_physical_device(device, queue, self.queue_family_policy);
         const candidate = PhysicalDeviceSelection{
             .index = @as(u32, @intCast(index)),
             .queue = queue,
@@ -231,14 +236,17 @@ fn select_queue_family_for_device(self: anytype, device: VkPhysicalDevice) !Queu
             .timestamp_valid_bits = family.timestampValidBits,
             .queue_count = family.queueCount,
         };
-        if (best == null or queue_selection_score(candidate) > queue_selection_score(best.?)) {
+        if (self.queue_family_policy == .require_compute_only and candidate.supports_graphics) {
+            continue;
+        }
+        if (best == null or queue_selection_score_for_policy(candidate, self.queue_family_policy) > queue_selection_score_for_policy(best.?, self.queue_family_policy)) {
             best = candidate;
         }
     }
     return best orelse error.UnsupportedFeature;
 }
 
-fn score_physical_device(device: VkPhysicalDevice, queue: QueueFamilySelection) u64 {
+fn score_physical_device(device: VkPhysicalDevice, queue: QueueFamilySelection, policy: webgpu.QueueFamilyPolicy) u64 {
     var memory_props = std.mem.zeroes(c.VkPhysicalDeviceMemoryProperties);
     c.vkGetPhysicalDeviceMemoryProperties(device, &memory_props);
 
@@ -251,15 +259,32 @@ fn score_physical_device(device: VkPhysicalDevice, queue: QueueFamilySelection) 
         device_local_heap_bytes +|= memory_props.memoryHeaps[memory_type.heapIndex].size;
     }
 
-    return queue_selection_score(queue) + (device_local_heap_bytes / (1024 * 1024));
+    return queue_selection_score_for_policy(queue, policy) + (device_local_heap_bytes / (1024 * 1024));
 }
 
 pub fn queue_selection_score(selection: QueueFamilySelection) u64 {
+    return queue_selection_score_for_policy(selection, .prefer_graphics_compute);
+}
+
+pub fn queue_selection_score_for_policy(selection: QueueFamilySelection, policy: webgpu.QueueFamilyPolicy) u64 {
     var score: u64 = 0;
     score +|= @as(u64, selection.queue_count) * 100;
-    if (selection.supports_graphics) score +|= 10_000;
+    switch (policy) {
+        .prefer_graphics_compute => {
+            if (selection.supports_graphics) score +|= 10_000;
+        },
+        .prefer_compute_only,
+        .require_compute_only,
+        => {
+            if (!selection.supports_graphics) score +|= 10_000;
+        },
+    }
     if (selection.timestamp_valid_bits > 0) score +|= 1_000;
     return score;
+}
+
+pub fn queue_family_kind(selection: QueueFamilySelection) webgpu.QueueFamilyKind {
+    return if (selection.supports_graphics) .graphics_compute else .compute_only;
 }
 
 pub fn create_fence_pool(self: anytype) !void {

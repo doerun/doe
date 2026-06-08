@@ -9,7 +9,6 @@ const std = @import("std");
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const shader_translation_cache = @import("doe_shader_translation_cache.zig");
-const vk_pipeline = @import("backend/vulkan/vk_pipeline.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
@@ -131,7 +130,7 @@ pub fn vulkan_copy_pipeline_spirv(
 ) error{OutOfMemory}!void {
     const src = shader.spirv_data orelse return;
     pip.spirv_data = alloc.dupe(u32, src) catch return error.OutOfMemory;
-    pip.vk_spirv_hash = vk_pipeline.compute_spirv_words_hash(src);
+    pip.vk_spirv_hash = std.hash.Wyhash.hash(0, std.mem.sliceAsBytes(src));
     pip.vk_spirv_hash_ready = true;
     populate_pipeline_buffer_binding_types(pip, shader);
 }

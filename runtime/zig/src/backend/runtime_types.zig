@@ -18,6 +18,32 @@ pub const QueueSyncMode = enum {
     deferred,
 };
 
+pub const QueueFamilyPolicy = enum {
+    prefer_graphics_compute,
+    prefer_compute_only,
+    require_compute_only,
+
+    pub fn name(self: QueueFamilyPolicy) []const u8 {
+        return switch (self) {
+            .prefer_graphics_compute => "prefer_graphics_compute",
+            .prefer_compute_only => "prefer_compute_only",
+            .require_compute_only => "require_compute_only",
+        };
+    }
+};
+
+pub const QueueFamilyKind = enum {
+    graphics_compute,
+    compute_only,
+
+    pub fn name(self: QueueFamilyKind) []const u8 {
+        return switch (self) {
+            .graphics_compute => "graphics_compute",
+            .compute_only => "compute_only",
+        };
+    }
+};
+
 pub const GpuTimestampMode = enum {
     auto,
     off,

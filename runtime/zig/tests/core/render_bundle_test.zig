@@ -94,6 +94,7 @@ test "push multiple commands preserves order" {
         .slot = 0,
         .buffer_handle = null,
         .offset = 0,
+        .size = 0,
     } });
     push_draw(&enc, 12, 2);
 
@@ -262,6 +263,7 @@ test "replay produces correct command sequence for mixed commands" {
         .slot = 0,
         .buffer_handle = null,
         .offset = 0,
+        .size = 0,
     } });
     push_draw(&enc, 6, 1);
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_index_buffer = .{
@@ -316,6 +318,7 @@ test "executeBundles replays indexed indirect bundles with fresh replay state" {
         .slot = 0,
         .buffer_handle = @ptrCast(&vertex_token_a),
         .offset = 16,
+        .size = 0,
     } });
     rb.bundle_encoder_push(&bundle_a_enc, BundleCmd{ .set_index_buffer = .{
         .buffer_handle = @ptrCast(&index_token_a),
@@ -601,6 +604,7 @@ test "all BundleCmdTag variants can be pushed and recovered" {
         .slot = 0,
         .buffer_handle = null,
         .offset = 0,
+        .size = 0,
     } });
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_index_buffer = .{
         .buffer_handle = null,
@@ -693,6 +697,7 @@ test "replay sequence: all command types recorded and data preserved" {
         .slot = 0,
         .buffer_handle = null,
         .offset = 0,
+        .size = 0,
     } });
 
     // 4. draw
@@ -866,6 +871,7 @@ test "replay sequence: multiple vertex buffer slots" {
             .slot = slot,
             .buffer_handle = null,
             .offset = @as(u64, slot) * 128,
+            .size = 0,
         } });
     }
 

@@ -1,5 +1,6 @@
 const std = @import("std");
 const backend_ids = @import("backend_ids.zig");
+const runtime_types = @import("runtime_types.zig");
 
 pub const BackendLane = enum {
     metal_doe_app,
@@ -32,6 +33,7 @@ pub const SelectionPolicy = struct {
     strict_no_fallback: bool,
     policy_hash: []const u8,
     upload_path_policy: UploadPathPolicy,
+    queue_family_policy: runtime_types.QueueFamilyPolicy,
 };
 
 pub const LoadedSelectionPolicy = struct {
@@ -42,8 +44,8 @@ pub const LoadedSelectionPolicy = struct {
 pub const DEFAULT_RUNTIME_POLICY_PATH = "config/backend-runtime-policy.json";
 const MAX_RUNTIME_POLICY_BYTES: usize = 64 * 1024;
 const MAX_RUNTIME_POLICY_SEARCH_DEPTH: usize = 4;
-const EXPECTED_SCHEMA_VERSION: i64 = 2;
-const DEFAULT_POLICY_HASH = "backend-runtime-policy-v3";
+const EXPECTED_SCHEMA_VERSION: i64 = 3;
+const DEFAULT_POLICY_HASH = "backend-runtime-policy-v4";
 
 pub const PolicyLoadError = error{
     InvalidRuntimePolicy,
@@ -202,6 +204,15 @@ pub fn load_policy_for_lane(
         return PolicyLoadError.InvalidRuntimePolicy;
     }
 
+    const queue_family_policy = blk: {
+        const queue_family_policy_value = lane_obj.get("queueFamilyPolicy") orelse return PolicyLoadError.InvalidRuntimePolicy;
+        const queue_family_policy_name = switch (queue_family_policy_value) {
+            .string => |value| value,
+            else => return PolicyLoadError.InvalidRuntimePolicy,
+        };
+        break :blk parse_queue_family_policy(queue_family_policy_name) orelse return PolicyLoadError.InvalidRuntimePolicy;
+    };
+
     return .{
         .policy = .{
             .lane = lane,
@@ -210,6 +221,7 @@ pub fn load_policy_for_lane(
             .strict_no_fallback = strict_no_fallback,
             .policy_hash = owned_policy_hash,
             .upload_path_policy = upload_path_policy,
+            .queue_family_policy = queue_family_policy,
         },
         .owned_policy_hash = owned_policy_hash,
     };
@@ -247,6 +259,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .metal_doe_comparable, .metal_doe_release => .{
             .lane = lane,
@@ -255,6 +268,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .staged_copy_only,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .metal_doe_directional => .{
             .lane = lane,
@@ -263,6 +277,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .metal_dawn_release => .{
             .lane = lane,
@@ -271,6 +286,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .metal_webkit_release => .{
             .lane = lane,
@@ -279,6 +295,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .metal_webkit_comparable => .{
             .lane = lane,
@@ -287,6 +304,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .staged_copy_only,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .vulkan_doe_app => .{
             .lane = lane,
@@ -295,6 +313,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .vulkan_doe_comparable, .vulkan_doe_release => .{
             .lane = lane,
@@ -303,6 +322,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .staged_copy_only,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .vulkan_dawn_release => .{
             .lane = lane,
@@ -311,6 +331,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .d3d12_doe_app => .{
             .lane = lane,
@@ -319,6 +340,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .d3d12_doe_comparable, .d3d12_doe_release => .{
             .lane = lane,
@@ -327,6 +349,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .staged_copy_only,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .d3d12_doe_directional => .{
             .lane = lane,
@@ -335,6 +358,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+            .queue_family_policy = .prefer_graphics_compute,
         },
         .d3d12_dawn_release => .{
             .lane = lane,
@@ -343,6 +367,7 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+            .queue_family_policy = .prefer_graphics_compute,
         },
     };
 }
@@ -350,6 +375,13 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
 fn parse_upload_path_policy(raw: []const u8) ?UploadPathPolicy {
     if (std.mem.eql(u8, raw, "allow_mapped_shortcuts")) return .allow_mapped_shortcuts;
     if (std.mem.eql(u8, raw, "staged_copy_only")) return .staged_copy_only;
+    return null;
+}
+
+fn parse_queue_family_policy(raw: []const u8) ?runtime_types.QueueFamilyPolicy {
+    if (std.mem.eql(u8, raw, "prefer_graphics_compute")) return .prefer_graphics_compute;
+    if (std.mem.eql(u8, raw, "prefer_compute_only")) return .prefer_compute_only;
+    if (std.mem.eql(u8, raw, "require_compute_only")) return .require_compute_only;
     return null;
 }
 
@@ -374,4 +406,10 @@ test "lane table round-trips canonical and alias names" {
     try testing.expectEqual(@as(?BackendLane, .metal_webkit_comparable), parse_lane("metal_webkit_comparable"));
     try testing.expectEqual(@as(?BackendLane, .metal_webkit_comparable), parse_lane("metal-webkit-comparable"));
     try testing.expectEqual(@as(?BackendLane, .vulkan_dawn_release), parse_lane("vulkan_dawn_directional"));
+}
+
+test "default Vulkan comparable policy declares graphics compute queue preference" {
+    const policy = default_policy_for_lane(.vulkan_doe_comparable);
+    try testing.expectEqual(runtime_types.QueueFamilyPolicy.prefer_graphics_compute, policy.queue_family_policy);
+    try testing.expectEqual(UploadPathPolicy.staged_copy_only, policy.upload_path_policy);
 }

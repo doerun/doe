@@ -3,6 +3,22 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-06-08 — Vulkan queue-family policy is manifest-backed telemetry
+
+Doe Vulkan queue-family selection now has an explicit runtime-policy contract.
+`config/backend-runtime-policy.json` schema version 3 requires
+`queueFamilyPolicy` on every lane, with `prefer_graphics_compute`,
+`prefer_compute_only`, and `require_compute_only` as the only accepted values.
+The default AMD Vulkan Doe lanes keep the previous graphics+compute preference,
+while compute-only probes must be declared in policy and `require_compute_only`
+fails closed if no compute-only family exists.
+
+Trace rows and trace-meta receipts now emit the requested queue-family policy
+and the selected family shape: kind, queue count, timestamp-valid bits, and
+graphics support. This makes queue-family experiments auditable before they are
+allowed into package comparability or claim gates. It does not promote any
+diagnostic row to claimable evidence by itself.
+
 ## 2026-06-07 — Doe Chromium Vulkan canvas path reaches submit
 
 The local Fawn Chromium build now loads the Doe WebGPU runtime on the Linux

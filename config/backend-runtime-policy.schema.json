@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "defaultLane", "lanes"],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 2 },
+    "schemaVersion": { "type": "integer", "const": 3 },
     "defaultLane": { "type": "string", "minLength": 1 },
     "selectionPolicyHashSeed": { "type": "string" },
     "cutoverPolicyPath": { "type": "string", "minLength": 1 },
@@ -14,7 +14,7 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["defaultBackend", "allowFallback", "strictNoFallback"],
+        "required": ["defaultBackend", "allowFallback", "strictNoFallback", "queueFamilyPolicy"],
         "properties": {
           "defaultBackend": { "type": "string", "enum": ["dawn_delegate", "webkit_delegate", "doe_metal", "doe_vulkan", "doe_d3d12"] },
           "allowFallback": { "type": "boolean", "const": false },
@@ -22,6 +22,10 @@
           "uploadPathPolicy": {
             "type": "string",
             "enum": ["allow_mapped_shortcuts", "staged_copy_only"]
+          },
+          "queueFamilyPolicy": {
+            "type": "string",
+            "enum": ["prefer_graphics_compute", "prefer_compute_only", "require_compute_only"]
           },
           "notes": { "type": "string" }
         }

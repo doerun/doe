@@ -99,6 +99,17 @@
     "deviceId": { "type": ["string", "null"] },
     "queueFamilyIndex": { "type": "integer", "minimum": 0 },
     "presentCapable": { "type": "boolean" },
+    "queueFamilyPolicy": {
+      "type": "string",
+      "enum": ["prefer_graphics_compute", "prefer_compute_only", "require_compute_only"]
+    },
+    "queueFamilyKind": {
+      "type": "string",
+      "enum": ["graphics_compute", "compute_only"]
+    },
+    "queueFamilyQueueCount": { "type": "integer", "minimum": 0 },
+    "queueFamilyTimestampValidBits": { "type": "integer", "minimum": 0 },
+    "queueFamilySupportsGraphics": { "type": "boolean" },
     "fallbackUsed": { "type": "boolean" },
     "selectionPolicyHash": { "type": "string" },
     "shaderArtifactManifestPath": { "type": "string" },

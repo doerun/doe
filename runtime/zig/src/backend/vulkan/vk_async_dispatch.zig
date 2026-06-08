@@ -25,9 +25,9 @@ pub fn execute(
     switch (diagnostics.mode) {
         .capability_introspection => {
             const encode_start = common_timing.now_ns();
-            _ = runtime.adapter_ordinal();
-            _ = runtime.queue_family_index_value();
-            _ = runtime.present_capable();
+            _ = runtime.adapter_ordinal_value;
+            _ = runtime.queue_family_index_value_cache;
+            _ = runtime.present_capable_value;
             const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
             return ok_result(setup_ns, encode_ns, 0, iterations);
         },
@@ -126,9 +126,9 @@ fn execute_full(
 ) !webgpu.NativeExecutionResult {
     const capability_ns = blk: {
         const encode_start = common_timing.now_ns();
-        _ = runtime.adapter_ordinal();
-        _ = runtime.queue_family_index_value();
-        _ = runtime.present_capable();
+        _ = runtime.adapter_ordinal_value;
+        _ = runtime.queue_family_index_value_cache;
+        _ = runtime.present_capable_value;
         break :blk common_timing.ns_delta(common_timing.now_ns(), encode_start);
     };
     var total_setup_ns = setup_ns;

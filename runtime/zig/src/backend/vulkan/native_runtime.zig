@@ -53,6 +53,11 @@ pub const NativeVulkanRuntime = struct {
     adapter_ordinal_value: ?u32 = null,
     queue_family_index: u32 = 0,
     queue_family_index_value_cache: ?u32 = null,
+    queue_family_policy: webgpu.QueueFamilyPolicy = .prefer_graphics_compute,
+    queue_family_kind_value_cache: ?webgpu.QueueFamilyKind = null,
+    queue_family_queue_count_value_cache: ?u32 = null,
+    queue_family_timestamp_valid_bits_value_cache: ?u32 = null,
+    queue_family_supports_graphics_value_cache: ?bool = null,
     present_capable_value: ?bool = null,
     timestamp_query_supported_value: bool = false,
     timestamp_query_pool: c.VkQueryPool = VK_NULL_U64,
@@ -148,7 +153,19 @@ pub const NativeVulkanRuntime = struct {
     pending_spirv_bytes_owned: ?[]u8 = null,
 
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeVulkanRuntime {
-        var self = NativeVulkanRuntime{ .allocator = allocator, .kernel_root = kernel_root };
+        return init_with_queue_family_policy(allocator, kernel_root, .prefer_graphics_compute);
+    }
+
+    pub fn init_with_queue_family_policy(
+        allocator: std.mem.Allocator,
+        kernel_root: ?[]const u8,
+        queue_family_policy: webgpu.QueueFamilyPolicy,
+    ) !NativeVulkanRuntime {
+        var self = NativeVulkanRuntime{
+            .allocator = allocator,
+            .kernel_root = kernel_root,
+            .queue_family_policy = queue_family_policy,
+        };
         errdefer self.deinit();
         try vk_device.bootstrap(&self);
         return self;
@@ -849,20 +866,6 @@ pub const NativeVulkanRuntime = struct {
         target_format: probe_ops.WGPUTextureFormat,
     ) !AsyncProbeResult {
         return probe_ops.pixel_local_storage_probe(self, iterations, target_format);
-    }
-
-    // --- Adapter info ---
-
-    pub fn adapter_ordinal(self: *const NativeVulkanRuntime) ?u32 {
-        return self.adapter_ordinal_value;
-    }
-
-    pub fn queue_family_index_value(self: *const NativeVulkanRuntime) ?u32 {
-        return self.queue_family_index_value_cache;
-    }
-
-    pub fn present_capable(self: *const NativeVulkanRuntime) ?bool {
-        return self.present_capable_value;
     }
 
     // --- Texture commands (delegated to vk_texture_commands.zig) ---

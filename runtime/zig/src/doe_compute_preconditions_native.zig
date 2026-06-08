@@ -9,7 +9,7 @@ pub const ValidationError = dispatch_preconditions.ValidationError;
 const bridge = queue_submit_ops.metal_bridge;
 
 fn failStoragePrecondition(reason: []const u8, group: u32, binding: u32) ValidationError {
-    std.log.err(
+    std.log.warn(
         "doe_compute_preconditions: storage dispatch precondition failed: {s} group={} binding={}",
         .{ reason, group, binding },
     );
@@ -23,7 +23,7 @@ fn failStorageExtentPrecondition(
     bound_bytes: u64,
     kind: ir.DispatchPreconditionKind,
 ) ValidationError {
-    std.log.err(
+    std.log.warn(
         "doe_compute_preconditions: storage dispatch precondition failed: requiredBytes={} boundBytes={} kind={s} group={} binding={}",
         .{ required_bytes, bound_bytes, @tagName(kind), group, binding },
     );

@@ -400,6 +400,11 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
                 trace_summary.selection_policy_hash = selection.selection_policy_hash;
                 trace_summary.shader_artifact_manifest_path = selection.shader_artifact_manifest_path;
                 trace_summary.shader_artifact_manifest_hash = selection.shader_artifact_manifest_hash;
+                if (selection.queue_family_policy) |policy| trace_summary.queue_family_policy = policy;
+                if (selection.queue_family_kind) |kind| trace_summary.queue_family_kind = kind;
+                if (selection.queue_family_queue_count) |queue_count| trace_summary.queue_family_queue_count = queue_count;
+                if (selection.queue_family_timestamp_valid_bits) |valid_bits| trace_summary.queue_family_timestamp_valid_bits = valid_bits;
+                if (selection.queue_family_supports_graphics) |supports_graphics| trace_summary.queue_family_supports_graphics = supports_graphics;
             }
         }
     }
@@ -458,6 +463,11 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
         if (execution_result.adapter_ordinal) |ordinal| trace_summary.adapter_ordinal = ordinal;
         if (execution_result.queue_family_index) |queue_family_index| trace_summary.queue_family_index = queue_family_index;
         if (execution_result.present_capable) |present_capable| trace_summary.present_capable = present_capable;
+        if (execution_result.queue_family_policy) |policy| trace_summary.queue_family_policy = policy;
+        if (execution_result.queue_family_kind) |kind| trace_summary.queue_family_kind = kind;
+        if (execution_result.queue_family_queue_count) |queue_count| trace_summary.queue_family_queue_count = queue_count;
+        if (execution_result.queue_family_timestamp_valid_bits) |valid_bits| trace_summary.queue_family_timestamp_valid_bits = valid_bits;
+        if (execution_result.queue_family_supports_graphics) |supports_graphics| trace_summary.queue_family_supports_graphics = supports_graphics;
 
         switch (execution_result.status) {
             .ok => trace_summary.execution_success_count += 1,

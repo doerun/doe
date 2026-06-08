@@ -507,6 +507,11 @@ Native Zig+WebGPU/FFI execution is implemented across backend modules in `runtim
 Execution capabilities:
 - `--backend native --execute` emits `executionBackend` fields in trace rows.
 - `upload`, `copy`, `barrier`, `dispatch`, `kernel_dispatch`, and `render_draw` all submit through real command buffers.
+- Vulkan queue-family selection is manifest-backed by
+  `config/backend-runtime-policy.json::lanes[*].queueFamilyPolicy`. Receipts
+  emit the requested policy plus selected queue-family kind, queue count,
+  timestamp-valid bits, and graphics support so compute-only queue probes cannot
+  be hidden heuristics.
 - native queue waiting is configurable via `--queue-wait-mode process-events|wait-any` (default: `process-events`; `wait-any` fails explicitly when unsupported).
 - queue synchronization timing is configurable via `--queue-sync-mode per-command|deferred` (default: `per-command`);
   deferred mode skips per-submit waits and performs one final queue flush after the command loop.

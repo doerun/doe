@@ -321,6 +321,7 @@ pub export fn doeNativeInstanceRelease(raw: ?*anyopaque) callconv(.c) void {
 pub export fn doeNativeInstanceWaitAny(inst: ?*anyopaque, count: usize, infos: [*]abi_callback.WGPUFutureWaitInfo, timeout_ns: u64) callconv(.c) u32 {
     _ = inst;
     _ = timeout_ns;
+    if (count == 0) return WGPU_WAIT_STATUS_SUCCESS;
     var any_completed = false;
     for (infos[0..count]) |*info| {
         if (future_ids.is_device_lost_future_id(info.future.id)) {

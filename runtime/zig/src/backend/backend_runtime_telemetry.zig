@@ -53,6 +53,11 @@ pub fn refresh(backend: *backend_iface.BackendIface) void {
                 backend.telemetry.adapter_ordinal = vulkan_backend.adapter_ordinal_from_context(backend.context);
                 backend.telemetry.queue_family_index = vulkan_backend.queue_family_index_from_context(backend.context);
                 backend.telemetry.present_capable = vulkan_backend.present_capable_from_context(backend.context);
+                backend.telemetry.queue_family_policy = vulkan_backend.queue_family_policy_from_context(backend.context);
+                backend.telemetry.queue_family_kind = vulkan_backend.queue_family_kind_from_context(backend.context);
+                backend.telemetry.queue_family_queue_count = vulkan_backend.queue_family_queue_count_from_context(backend.context);
+                backend.telemetry.queue_family_timestamp_valid_bits = vulkan_backend.queue_family_timestamp_valid_bits_from_context(backend.context);
+                backend.telemetry.queue_family_supports_graphics = vulkan_backend.queue_family_supports_graphics_from_context(backend.context);
                 const vulkan_cache_telemetry = vulkan_backend.pipeline_cache_warmup_telemetry_from_context(backend.context);
                 backend.telemetry.pipeline_cache_warmup_count = vulkan_cache_telemetry.count;
                 backend.telemetry.pipeline_cache_warmup_ns = vulkan_cache_telemetry.ns;

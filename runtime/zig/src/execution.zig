@@ -52,6 +52,11 @@ pub const ExecutionResult = struct {
     adapter_ordinal: ?u32,
     queue_family_index: ?u32,
     present_capable: ?bool,
+    queue_family_policy: ?[]const u8 = null,
+    queue_family_kind: ?[]const u8 = null,
+    queue_family_queue_count: ?u32 = null,
+    queue_family_timestamp_valid_bits: ?u32 = null,
+    queue_family_supports_graphics: ?bool = null,
     semantic: semantic_trace.SemanticContext = .{},
 };
 
@@ -208,6 +213,11 @@ pub const ExecutionContext = struct {
                     .adapter_ordinal = command_telemetry.adapter_ordinal,
                     .queue_family_index = command_telemetry.queue_family_index,
                     .present_capable = command_telemetry.present_capable,
+                    .queue_family_policy = command_telemetry.queue_family_policy,
+                    .queue_family_kind = command_telemetry.queue_family_kind,
+                    .queue_family_queue_count = command_telemetry.queue_family_queue_count,
+                    .queue_family_timestamp_valid_bits = command_telemetry.queue_family_timestamp_valid_bits,
+                    .queue_family_supports_graphics = command_telemetry.queue_family_supports_graphics,
                     .semantic = semantic,
                 };
             };
@@ -243,6 +253,11 @@ pub const ExecutionContext = struct {
                 .adapter_ordinal = command_telemetry.adapter_ordinal,
                 .queue_family_index = command_telemetry.queue_family_index,
                 .present_capable = command_telemetry.present_capable,
+                .queue_family_policy = command_telemetry.queue_family_policy,
+                .queue_family_kind = command_telemetry.queue_family_kind,
+                .queue_family_queue_count = command_telemetry.queue_family_queue_count,
+                .queue_family_timestamp_valid_bits = command_telemetry.queue_family_timestamp_valid_bits,
+                .queue_family_supports_graphics = command_telemetry.queue_family_supports_graphics,
                 .semantic = semantic,
             };
         }
@@ -372,6 +387,11 @@ pub const ExecutionContext = struct {
                     .adapter_ordinal = command_telemetry.adapter_ordinal,
                     .queue_family_index = command_telemetry.queue_family_index,
                     .present_capable = command_telemetry.present_capable,
+                    .queue_family_policy = command_telemetry.queue_family_policy,
+                    .queue_family_kind = command_telemetry.queue_family_kind,
+                    .queue_family_queue_count = command_telemetry.queue_family_queue_count,
+                    .queue_family_timestamp_valid_bits = command_telemetry.queue_family_timestamp_valid_bits,
+                    .queue_family_supports_graphics = command_telemetry.queue_family_supports_graphics,
                     .semantic = semantic,
                 };
             };
@@ -407,6 +427,11 @@ pub const ExecutionContext = struct {
                 .adapter_ordinal = command_telemetry.adapter_ordinal,
                 .queue_family_index = command_telemetry.queue_family_index,
                 .present_capable = command_telemetry.present_capable,
+                .queue_family_policy = command_telemetry.queue_family_policy,
+                .queue_family_kind = command_telemetry.queue_family_kind,
+                .queue_family_queue_count = command_telemetry.queue_family_queue_count,
+                .queue_family_timestamp_valid_bits = command_telemetry.queue_family_timestamp_valid_bits,
+                .queue_family_supports_graphics = command_telemetry.queue_family_supports_graphics,
                 .semantic = semantic,
             };
         }
