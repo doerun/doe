@@ -16,7 +16,14 @@ if str(BENCH_ROOT) not in sys.path:
 from native_compare_modules.comparability import compare_assessment  # noqa: E402
 
 
-def _sample(*, backend: str, command_replay_ns: int) -> dict:
+def _sample(
+    *,
+    backend: str,
+    command_replay_ns: int,
+    encoder_finish_ns: int = 0,
+    addon_flush_ns: int = 0,
+    queue_wait_ns: int = 0,
+) -> dict:
     return {
         "runIndex": 0,
         "measuredMs": 1.0,
@@ -40,9 +47,16 @@ def _sample(*, backend: str, command_replay_ns: int) -> dict:
             "planId": "plan-alpha",
             "planHash": "hash-alpha",
             "packageStepBreakdownNs": {
+                "submitCommandEncoderFinishTotalNs": encoder_finish_ns,
                 "submitAddonCommandReplayTotalNs": command_replay_ns,
-                "submitAddonFlushTotalNs": 0,
-                "submitQueueWaitTotalNs": 0,
+                "submitAddonCommandReplayPrepareTotalNs": 0,
+                "submitAddonCommandReplayRecordTotalNs": 0,
+                "submitAddonCommandReplayCopyTotalNs": 0,
+                "submitAddonCommandBufferEndTotalNs": 0,
+                "submitAddonFlushTotalNs": addon_flush_ns,
+                "submitQueueFlushTotalNs": 0,
+                "submitQueueFlushWaitCompletedTotalNs": 0,
+                "submitQueueWaitTotalNs": queue_wait_ns,
             },
             "shaderSourceReceiptsHash": "a" * 64,
             "shaderSourceReceipts": [
@@ -79,6 +93,46 @@ def _wall_coverage_sample(
 
 
 class CompareAssessmentTests(unittest.TestCase):
+    def test_submit_scope_allows_equivalent_command_materialization_bucket(self) -> None:
+        result = compare_assessment(
+            workload_id="package_upload_readback",
+            workload_comparable=True,
+            workload_domain="upload-readback",
+            workload_api="webgpu",
+            workload_commands_path="",
+            workload_path_asymmetry=False,
+            workload_path_asymmetry_note="",
+            baseline_command_repeat=1,
+            comparison_command_repeat=1,
+            baseline={
+                "commandSamples": [
+                    _sample(backend="doe_node_webgpu", command_replay_ns=2_000_000)
+                    for _ in range(7)
+                ],
+            },
+            comparison={
+                "commandSamples": [
+                    _sample(
+                        backend="node_webgpu_package",
+                        command_replay_ns=0,
+                        encoder_finish_ns=2_000_000,
+                    )
+                    for _ in range(7)
+                ],
+            },
+            required_timing_class="operation",
+            allow_baseline_no_execution=False,
+            resource_probe="none",
+            comparability_mode="strict",
+            resource_sample_target_count=0,
+        )
+
+        self.assertTrue(result["comparable"], result["reasons"])
+        self.assertNotIn(
+            "baseline_comparison_submit_scope_match",
+            result["blockingFailedObligations"],
+        )
+
     def test_submit_scope_mismatch_blocks_strict_package_totals(self) -> None:
         result = compare_assessment(
             workload_id="package_upload_readback",

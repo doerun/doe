@@ -55,10 +55,27 @@ _NATIVE_VULKAN_EXECUTION_BACKENDS = frozenset({
     "dawn_delegate",
 })
 _DEFAULT_COMPARE_KERNEL_ROOT = REPO_ROOT / "bench" / "kernels"
-_PACKAGE_SUBMIT_SCOPE_FIELDS: tuple[tuple[str, str], ...] = (
-    ("addonCommandReplay", "submitAddonCommandReplayTotalNs"),
-    ("addonFlush", "submitAddonFlushTotalNs"),
-    ("queueWait", "submitQueueWaitTotalNs"),
+_PACKAGE_SUBMIT_SCOPE_BUCKETS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "commandMaterialization",
+        (
+            "submitCommandEncoderFinishTotalNs",
+            "submitAddonCommandReplayTotalNs",
+            "submitAddonCommandReplayPrepareTotalNs",
+            "submitAddonCommandReplayRecordTotalNs",
+            "submitAddonCommandReplayCopyTotalNs",
+            "submitAddonCommandBufferEndTotalNs",
+        ),
+    ),
+    (
+        "completionWait",
+        (
+            "submitAddonFlushTotalNs",
+            "submitQueueFlushTotalNs",
+            "submitQueueFlushWaitCompletedTotalNs",
+            "submitQueueWaitTotalNs",
+        ),
+    ),
 )
 
 
@@ -165,7 +182,7 @@ def assess_submit_scope_equivalence(
         command_samples: list[dict[str, Any]],
     ) -> tuple[dict[str, list[float]], int]:
         fractions: dict[str, list[float]] = {
-            scope_key: [] for scope_key, _ in _PACKAGE_SUBMIT_SCOPE_FIELDS
+            scope_key: [] for scope_key, _ in _PACKAGE_SUBMIT_SCOPE_BUCKETS
         }
         sample_count = 0
         for sample in command_samples:
@@ -179,8 +196,11 @@ def assess_submit_scope_equivalence(
             if submit_wait_total <= 0 or not isinstance(breakdown, dict):
                 continue
             sample_count += 1
-            for scope_key, field_name in _PACKAGE_SUBMIT_SCOPE_FIELDS:
-                scope_total = safe_int(breakdown.get(field_name), default=0)
+            for scope_key, field_names in _PACKAGE_SUBMIT_SCOPE_BUCKETS:
+                scope_total = sum(
+                    max(0, safe_int(breakdown.get(field_name), default=0))
+                    for field_name in field_names
+                )
                 fractions[scope_key].append(max(0, scope_total) / submit_wait_total)
         return fractions, sample_count
 
@@ -191,7 +211,11 @@ def assess_submit_scope_equivalence(
     sample_counts: dict[str, dict[str, int]] = {}
     mismatches: list[str] = []
 
-    for scope_key, field_name in _PACKAGE_SUBMIT_SCOPE_FIELDS:
+    bucket_fields: dict[str, list[str]] = {
+        scope_key: list(field_names)
+        for scope_key, field_names in _PACKAGE_SUBMIT_SCOPE_BUCKETS
+    }
+    for scope_key, field_names in _PACKAGE_SUBMIT_SCOPE_BUCKETS:
         left_values = left_fractions.get(scope_key, [])
         right_values = right_fractions.get(scope_key, [])
         left_median = float(statistics.median(left_values)) if left_values else None
@@ -208,15 +232,16 @@ def assess_submit_scope_equivalence(
         right_all_zero = _all_samples_zero(right_values)
         left_material = _material_sample_count(left_values)
         right_material = _material_sample_count(right_values)
+        field_label = "+".join(field_names)
         if left_all_zero and right_material >= _PHASE_MATERIAL_MIN_SAMPLES:
             mismatches.append(
-                f"baseline submit_wait reports zero {field_name} on every sample while "
+                f"baseline submit_wait reports zero {scope_key} ({field_label}) on every sample while "
                 f"comparison has {right_material} sample(s) >= {_PHASE_MATERIAL_FLOOR_FRACTION:.1%} "
                 f"of submit_wait (median {right_median:.2%})"
             )
         elif right_all_zero and left_material >= _PHASE_MATERIAL_MIN_SAMPLES:
             mismatches.append(
-                f"comparison submit_wait reports zero {field_name} on every sample while "
+                f"comparison submit_wait reports zero {scope_key} ({field_label}) on every sample while "
                 f"baseline has {left_material} sample(s) >= {_PHASE_MATERIAL_FLOOR_FRACTION:.1%} "
                 f"of submit_wait (median {left_median:.2%})"
             )
@@ -235,7 +260,8 @@ def assess_submit_scope_equivalence(
         "phaseMaterialFloorFraction": _PHASE_MATERIAL_FLOOR_FRACTION,
         "phaseMaterialMinSamples": _PHASE_MATERIAL_MIN_SAMPLES,
         "phaseZeroEpsilon": _PHASE_ZERO_EPSILON,
-        "phaseGateFormulation": "all-zero-one-side-vs-any-material-other-side",
+        "phaseGateFormulation": "normalized-submit-bucket-all-zero-one-side-vs-any-material-other-side",
+        "submitScopeBucketFields": bucket_fields,
         "baselineMedianSubmitScopeFractions": left_medians,
         "comparisonMedianSubmitScopeFractions": right_medians,
         "submitScopeSampleCounts": sample_counts,
