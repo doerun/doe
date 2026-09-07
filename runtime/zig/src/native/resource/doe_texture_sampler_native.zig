@@ -679,7 +679,9 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi
 }
 
 pub export fn doeNativeTextureDestroy(raw: ?*anyopaque) callconv(.c) void {
-    _ = cast(DoeTexture, raw) orelse return;
+    const texture = cast(DoeTexture, raw) orelse return;
+    // Views and submitted commands retain the allocation until their last release.
+    texture.destroyed = true;
 }
 
 pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {

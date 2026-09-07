@@ -639,7 +639,7 @@ test "doeNativeCommandEncoderWriteTimestamp records a metal timestamp command" {
         },
         else => return error.UnexpectedCommandTag,
     }
-    query.releaseRecordedCommandReferences(enc.cmds.items);
+    @import("../../src/native/command/doe_command_references.zig").releaseAll(&enc.references);
     try std.testing.expectEqual(@as(u32, 1), qs.ref_count);
 }
 
@@ -681,7 +681,7 @@ test "doeNativeCommandEncoderResolveQuerySet records a metal resolve command" {
         },
         else => return error.UnexpectedCommandTag,
     }
-    query.releaseRecordedCommandReferences(enc.cmds.items);
+    @import("../../src/native/command/doe_command_references.zig").releaseAll(&enc.references);
     try std.testing.expectEqual(@as(u32, 1), qs.ref_count);
 }
 

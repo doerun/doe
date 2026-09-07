@@ -179,6 +179,146 @@ static bool invalid_buffer_copies(WGPUInstance instance, WGPUDevice device, WGPU
     return success;
 }
 
+static bool buffer_matches_u32(WGPUInstance instance, WGPUBuffer buffer, uint32_t expected) {
+    bool mapped = false;
+    WGPUBufferMapCallbackInfo callback = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
+    callback.mode = WGPUCallbackMode_AllowSpontaneous;
+    callback.callback = map_ready;
+    callback.userdata1 = &mapped;
+    wgpuBufferMapAsync(buffer, WGPUMapMode_Read, 0, sizeof(expected), callback);
+    wgpuInstanceProcessEvents(instance);
+    const uint32_t* output = mapped ? wgpuBufferGetConstMappedRange(buffer, 0, sizeof(expected)) : NULL;
+    const bool matches = output && *output == expected;
+    if (mapped) wgpuBufferUnmap(buffer);
+    return matches;
+}
+
+static bool unavailable_copy_resources(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
+    enum { MAPPED_SOURCE, MAPPED_DESTINATION, DESTROYED_SOURCE, DESTROYED_DESTINATION,
+           UNMAPPED_BEFORE_SUBMIT, RELEASED_SOURCE, AVAILABILITY_CASE_COUNT };
+    const uint32_t expected = 0x12345678u;
+    for (unsigned scenario = 0; scenario < AVAILABILITY_CASE_COUNT; ++scenario) {
+        WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
+        desc.size = sizeof(expected);
+        desc.usage = WGPUBufferUsage_CopySrc;
+        desc.mappedAtCreation = WGPU_TRUE;
+        WGPUBuffer source = wgpuDeviceCreateBuffer(device, &desc);
+        desc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        desc.mappedAtCreation = scenario == MAPPED_DESTINATION ? WGPU_TRUE : WGPU_FALSE;
+        WGPUBuffer destination = wgpuDeviceCreateBuffer(device, &desc);
+        if (!source || !destination) return false;
+        uint32_t* input = wgpuBufferGetMappedRange(source, 0, sizeof(expected));
+        if (!input) return false;
+        *input = expected;
+        if (scenario != MAPPED_SOURCE && scenario != UNMAPPED_BEFORE_SUBMIT) wgpuBufferUnmap(source);
+        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
+        if (!encoder) return false;
+        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+        wgpuCommandEncoderCopyBufferToBuffer(encoder, source, 0, destination, 0, sizeof(expected));
+        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
+        wgpuCommandEncoderRelease(encoder);
+        const bool recording_rejected = pop_validation(instance, device);
+        if (!commands || recording_rejected) return false;
+        if (scenario == DESTROYED_SOURCE) wgpuBufferDestroy(source);
+        if (scenario == DESTROYED_DESTINATION) wgpuBufferDestroy(destination);
+        if (scenario == UNMAPPED_BEFORE_SUBMIT) wgpuBufferUnmap(source);
+        if (scenario == RELEASED_SOURCE) { wgpuBufferRelease(source); source = NULL; }
+        desc.mappedAtCreation = WGPU_FALSE;
+        WGPUBuffer witness = wgpuDeviceCreateBuffer(device, &desc);
+        if (!witness) return false;
+        wgpuQueueWriteBuffer(queue, witness, 0, &expected, sizeof(expected));
+        encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
+        if (!encoder) return false;
+        wgpuCommandEncoderClearBuffer(encoder, witness, 0, sizeof(expected));
+        WGPUCommandBuffer first = wgpuCommandEncoderFinish(encoder, NULL);
+        wgpuCommandEncoderRelease(encoder);
+        if (!first) return false;
+        WGPUCommandBuffer batch[] = {first, commands};
+        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+        wgpuQueueSubmit(queue, 2, batch);
+        const bool rejected = pop_validation(instance, device);
+        const bool should_reject = scenario <= DESTROYED_DESTINATION;
+        bool success = rejected == should_reject;
+        if (success) success = buffer_matches_u32(instance, witness, should_reject ? expected : 0);
+        if (!should_reject && success) success = buffer_matches_u32(instance, destination, expected);
+        wgpuCommandBufferRelease(first);
+        wgpuBufferRelease(witness);
+        wgpuCommandBufferRelease(commands);
+        if (source) wgpuBufferRelease(source);
+        wgpuBufferRelease(destination);
+        if (!success) {
+            fprintf(stderr, "queue availability failed: case=%u rejected=%u expected=%u\n",
+                    scenario, rejected, should_reject);
+            return false;
+        }
+    }
+    printf("passed: submission rejects mapped/destroyed buffers; unmap and caller release preserve valid copies\n");
+    return true;
+}
+
+static bool texture_submission_lifetime(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
+    const uint32_t expected = 0x76543210u;
+    for (unsigned destroy = 0; destroy < 2; ++destroy) {
+        WGPUTextureDescriptor desc = WGPU_TEXTURE_DESCRIPTOR_INIT;
+        desc.usage = WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
+        desc.dimension = WGPUTextureDimension_2D;
+        desc.size = (WGPUExtent3D){1, 1, 1};
+        desc.format = WGPUTextureFormat_R32Uint;
+        WGPUTexture texture = wgpuDeviceCreateTexture(device, &desc);
+        WGPUBufferDescriptor buffer_desc = WGPU_BUFFER_DESCRIPTOR_INIT;
+        buffer_desc.size = sizeof(expected);
+        buffer_desc.usage = WGPUBufferUsage_CopySrc;
+        buffer_desc.mappedAtCreation = WGPU_TRUE;
+        WGPUBuffer input = wgpuDeviceCreateBuffer(device, &buffer_desc);
+        buffer_desc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        buffer_desc.mappedAtCreation = WGPU_FALSE;
+        WGPUBuffer output = wgpuDeviceCreateBuffer(device, &buffer_desc);
+        if (!texture || !input || !output) return false;
+        uint32_t* mapped = wgpuBufferGetMappedRange(input, 0, sizeof(expected));
+        if (!mapped) return false;
+        *mapped = expected;
+        wgpuBufferUnmap(input);
+        WGPUTexelCopyTextureInfo texture_copy = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+        texture_copy.texture = texture;
+        WGPUTexelCopyBufferInfo buffer_copy = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
+        buffer_copy.buffer = input;
+        buffer_copy.layout.bytesPerRow = TEXTURE_ROW_BYTES;
+        buffer_copy.layout.rowsPerImage = 1;
+        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
+        if (!encoder) return false;
+        wgpuCommandEncoderCopyBufferToTexture(encoder, &buffer_copy, &texture_copy, &desc.size);
+        buffer_copy.buffer = output;
+        wgpuCommandEncoderCopyTextureToBuffer(encoder, &texture_copy, &buffer_copy, &desc.size);
+        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
+        wgpuCommandEncoderRelease(encoder);
+        if (!commands) return false;
+        if (destroy) {
+            wgpuTextureDestroy(texture);
+            wgpuTextureDestroy(texture);
+            wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+            WGPUTextureView view = wgpuTextureCreateView(texture, NULL);
+            bool view_rejected = pop_validation(instance, device);
+            if (view) wgpuTextureViewRelease(view);
+            if (!view || view_rejected) return false;
+            wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+            wgpuQueueWriteTexture(queue, &texture_copy, &expected, sizeof(expected), &buffer_copy.layout, &desc.size);
+            if (!pop_validation(instance, device)) return false;
+        }
+        wgpuTextureRelease(texture);
+        wgpuBufferRelease(input);
+        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+        wgpuQueueSubmit(queue, 1, &commands);
+        const bool rejected = pop_validation(instance, device);
+        bool success = rejected == (destroy != 0);
+        if (!destroy && success) success = buffer_matches_u32(instance, output, expected);
+        wgpuCommandBufferRelease(commands);
+        wgpuBufferRelease(output);
+        if (!success) return false;
+    }
+    printf("passed: texture caller release preserves copies; explicit destruction rejects submission and writes\n");
+    return true;
+}
+
 static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue,
                     bool batch, bool via_texture, bool resident_roundtrip) {
     bool success = false, mapped = false;
@@ -393,6 +533,8 @@ int main(void) {
     if (!device) goto cleanup;
     queue = wgpuDeviceGetQueue(device);
     if (queue && invalid_pass_lifetimes(instance, device, queue) && invalid_buffer_copies(instance, device, queue) &&
+        unavailable_copy_resources(instance, device, queue) &&
+        texture_submission_lifetime(instance, device, queue) &&
         execute(instance, device, queue, false, false, false) &&
         execute(instance, device, queue, true, false, false)) {
         const bool layered_readback = execute(instance, device, queue, false, true, false);

@@ -130,7 +130,7 @@ pub fn doeNativeCommandEncoderWriteTimestampWithPosition(
     const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return;
     if (qs.destroyed or query_index >= qs.count) return;
     if (!recording.reserve(enc, 1, 1)) return;
-    native_helpers.object_add_ref(DoeQuerySet, qs_raw);
+    retainQueryAssumeCapacity(enc, qs_raw);
 
     if (comptime has_vulkan) {
         if (qs.backend == .vulkan) {
@@ -176,10 +176,8 @@ pub export fn doeNativeCommandEncoderResolveQuerySet(
     const copy_bytes = @as(usize, query_count) * TIMESTAMP_BYTES;
     const d_off: usize = @intCast(dst_offset);
     if (d_off + copy_bytes > @as(usize, @intCast(dst.size))) return;
-    if (!recording.reserve(enc, 1, 1)) return;
-    native_helpers.object_add_ref(DoeQuerySet, qs_raw);
-
-    if (!recording.reserve(enc, 0, 1)) return;
+    if (!recording.reserve(enc, 1, 2)) return;
+    retainQueryAssumeCapacity(enc, qs_raw);
     references.retainBufferAssumeCapacity(&enc.references, dst);
 
     if (comptime has_vulkan) {
@@ -299,17 +297,6 @@ pub export fn doeNativeQuerySetRelease(qs_raw: ?*anyopaque) callconv(.c) void {
     releaseQuerySetResources(qs);
     native_helpers.label_store.remove(qs_raw);
     native_helpers.alloc.destroy(qs);
-}
-
-pub fn releaseRecordedCommandReferences(cmds: []const native_cmds.RecordedCmd) void {
-    for (cmds) |cmd| {
-        const query_set = switch (cmd) {
-            .write_timestamp => |timestamp| timestamp.query_set,
-            .resolve_query_set => |resolve| resolve.query_set,
-            else => null,
-        };
-        if (query_set != null) doeNativeQuerySetRelease(query_set);
-    }
 }
 
 pub export fn doeNativeQuerySetGetCount(qs_raw: ?*anyopaque) callconv(.c) u32 {
@@ -462,7 +449,11 @@ pub export fn doeNativeRenderPassBeginOcclusionQuery(
 pub fn retainRecordedReference(enc: *native_types.DoeCommandEncoder, raw: ?*anyopaque) void {
     _ = native_helpers.cast(DoeQuerySet, raw) orelse return;
     if (!recording.reserve(enc, 0, 1)) return;
-    enc.references.appendAssumeCapacity(.{ .handle = raw, .release = doeNativeQuerySetRelease });
+    retainQueryAssumeCapacity(enc, raw);
+}
+
+fn retainQueryAssumeCapacity(enc: *native_types.DoeCommandEncoder, raw: ?*anyopaque) void {
+    enc.references.appendAssumeCapacity(.{ .handle = raw, .release = doeNativeQuerySetRelease, .kind = .query_set });
     native_helpers.object_add_ref(DoeQuerySet, raw);
 }
 

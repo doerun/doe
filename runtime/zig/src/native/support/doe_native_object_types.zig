@@ -300,6 +300,7 @@ pub const DoeTexture = struct {
     ref_count: u32 = 1,
     device_ref: ?*DoeDevice = null,
     error_object: bool = false,
+    destroyed: bool = false,
     backend: backend_contract.NativeBackendKind = .metal,
     mtl: ?*anyopaque = null,
     format: u32 = 0,
@@ -314,6 +315,10 @@ pub const DoeTexture = struct {
     view_format_count: usize = 0,
     vk_id: u64 = 0,
     vk_runtime_ref: ?*anyopaque = null,
+
+    pub fn isUnavailable(self: *const DoeTexture) bool {
+        return self.error_object or self.destroyed;
+    }
 };
 
 pub const DoeTextureView = struct {

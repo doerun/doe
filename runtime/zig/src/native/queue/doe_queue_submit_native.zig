@@ -10,6 +10,7 @@ const d3d12_submit = @import("doe_queue_submit_d3d12.zig");
 const metal_submit = @import("doe_queue_submit_metal.zig");
 const vulkan_submit = @import("doe_queue_submit_vulkan.zig");
 const compute_program = @import("../compute/doe_compute_program_native.zig");
+const availability = @import("doe_submission_validation.zig");
 
 comptime {
     _ = &compute_program.doeNativeComputeProgramSupported;
@@ -48,6 +49,10 @@ pub export fn doeNativeQueueSubmit(
             q.dev.error_scopes.deliver(@import("../../runtime/diagnostics/error_scope.zig").ERROR_TYPE_VALIDATION, "queue submission rejected failed recording or a different device");
             return;
         }
+        availability.validate(buffer.references.items) catch |err| {
+            q.dev.error_scopes.deliver(@import("../../runtime/diagnostics/error_scope.zig").ERROR_TYPE_VALIDATION, availability.message(err));
+            return;
+        };
     }
     if (q.dev.backend == .vulkan) {
         vulkan_submit.submit_vulkan_commands(q, count, cmd_bufs);

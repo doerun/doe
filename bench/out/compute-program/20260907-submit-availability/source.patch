@@ -1,0 +1,794 @@
+diff --git a/docs/process.md b/docs/process.md
+index f8e9460db..0d91a0f15 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -227,6 +227,18 @@ classified and cannot be promoted by benchmark results.
+   admission while preserving their explicit disjoint-alias and omitted-copy
+   contract. Public signatures and report schemas are unchanged. Regression
+   fixtures must declare valid devices/usages instead of bypassing admission.
++  Queue submission preflights the entire command-buffer batch before backend
++  execution. Typed resource leases expose mapped/destroyed buffers, destroyed
++  textures through views and bind groups, expired external textures, and destroyed
++  query sets, including dependencies inside render bundles. Query commands retain
++  their query through the same lease list used for cleanup and validation.
++  Explicit texture destruction invalidates future execution and writes; backing
++  storage stays owned until retained views/commands release it. Creating a view
++  does not restore a destroyed texture's availability. Unmapping before submission
++  permits valid work; caller release does not imply destruction. C-boundary tests
++  must verify whole-batch rejection without earlier command side effects and
++  successful subsequent work. This migrates internal lease metadata and failure
++  handling behind existing signatures; public schemas and receipts are unchanged.
+   Ordinary encoder, bundle, and query recording failures must poison recording
+   instead of aborting or publishing usable partial work. Fault-injection tests
+   cover recording and finish allocations, retained references, invalid bundle
+diff --git a/docs/status/compiler-and-webgpu.md b/docs/status/compiler-and-webgpu.md
+index 6357d0ae9..0e95c6bd8 100644
+--- a/docs/status/compiler-and-webgpu.md
++++ b/docs/status/compiler-and-webgpu.md
+@@ -34,14 +34,16 @@ need their respective tests and implementation.
+ 
+ ## Recording failures and submission ordering
+ 
+-Ordinary encoders, bundles, and queries preserve allocation failure state and
+-owned dependencies. Error command objects are rejected before submission.
+-Buffer copies validate device, usage, alignment, range, and aliasing before
+-allocation or leasing. Empty copies validate without recording work; whole-size
+-copies resolve from the source offset. Native fused constructors share admission
+-while retaining their disjoint-alias and omitted-copy contract. The failing C
+-reproduction, canonical tests, and retained-package acceptance are indexed at
+-`bench/out/compute-program/20260907-buffer-copy-admission/README.md`.
++Ordinary recording preserves allocation failures and owned dependencies. Buffer
++copies validate device, usage, aligned ranges and aliasing before allocation;
++empty and whole-size requests share that admission. Native fused constructors
++retain their disjoint-alias and omitted-copy contract. Queue submission checks
++all retained resources before executing any buffer in the batch, including bind
++groups and bundles. Query commands share the typed lease list. Texture destruction
++invalidates execution/writes while retained owners preserve backing allocation;
++caller release and unmapping before submission preserve valid work. Acceptance:
++`bench/out/compute-program/20260907-submit-availability/README.md`.
++Earlier copy admission: `bench/out/compute-program/20260907-buffer-copy-admission/README.md`.
+ 
+ Vulkan buffer/image copies execute at their recorded queue position without CPU
+ staging. Both directions share mip-relative extent, block, layer, stride, and
+@@ -53,8 +55,6 @@ fixture also runs with synchronization validation enabled.
+ The layered-copy and resident-restore regressions retain their pre-fix failures
+ and physical AMD Vulkan results at
+ `bench/out/compute-program/20260907-texture-transfers/README.md`.
+-The earlier recording-allocation checkpoint remains at
+-`bench/out/compute-program/20260906-ordinary-recording/README.md`.
+ These checks do not establish texture-origin/aspect conformance, concurrent queue
+ safety, physical Metal/D3D12 behavior, or a performance advantage.
+ 
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 06db2e622..64e41fd48 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -3490,9 +3490,9 @@
+       },
+       "src/native/command/doe_encoder_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "6e35a6b329f2c9b9af412a46ee1d792484701f5cd494983360061228d51243e2",
+-        "reason": "Keep: existing recording entrypoints consume shared native copy admission; ownership regressions use valid device and usage declarations.",
+-        "reviewer": "codex-copy-admission/2026-09-07"
++        "moduleSha256": "16bc7a7d596a7ec4a35adf52a6dd5bcad96d3a1dded5685c037cc88f9661c42d",
++        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
++        "reviewer": "codex-submit-availability/2026-09-07"
+       },
+       "src/native/command/doe_immediates_external_native.zig": {
+         "decision": "Keep",
+@@ -3568,9 +3568,9 @@
+       },
+       "src/native/queue/doe_queue_copy_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "e786048a85db29e44bd3d5b856dca63167c392614b9ebe6f6883e974fc9484b2",
+-        "reason": "Keep: reachable native implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-resource-lifetime/2026-09-06"
++        "moduleSha256": "125a0289b4b4a440f39719f0919e2533eefb44dedf2c7a485c099c9b2c8829c5",
++        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
++        "reviewer": "codex-submit-availability/2026-09-07"
+       },
+       "src/native/queue/doe_queue_flush_breakdown.zig": {
+         "decision": "Keep",
+@@ -3598,9 +3598,9 @@
+       },
+       "src/native/queue/doe_queue_submit_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "8314c6c6d7b53a2901af602c83d8eacebddfc942d5184c2186132df86a14189a",
+-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
+-        "reviewer": "codex-recording-ownership/2026-09-06"
++        "moduleSha256": "9659be6b94e27bbaa19bebef37e13c5dd689329500fac8fa681f85906f5b814a",
++        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
++        "reviewer": "codex-submit-availability/2026-09-07"
+       },
+       "src/native/queue/doe_queue_submit_shared.zig": {
+         "decision": "Keep",
+@@ -3658,9 +3658,9 @@
+       },
+       "src/native/resource/doe_command_texture_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "b7bc9a4ce909892d9ed08c55e2dc2b1e4c020fd32360c632ed6f7dc7ab60c89d",
+-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
+-        "reviewer": "codex-recording-ownership/2026-09-06"
++        "moduleSha256": "1b6d4e3faaeb1131c98b77bd2c37fdd3037c28a51d72ea99264ee05b1d121fe4",
++        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
++        "reviewer": "codex-submit-availability/2026-09-07"
+       },
+       "src/native/resource/doe_external_texture_native.zig": {
+         "decision": "Keep",
+@@ -3670,15 +3670,15 @@
+       },
+       "src/native/resource/doe_query_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "57b587586f5f4adff3d457c69fb5bc68d4e3d951ac160d2d9445da0efb6ee83c",
+-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
+-        "reviewer": "codex-pass-lifecycle/2026-09-06"
++        "moduleSha256": "ba22b6a85933a96959391c1861d9c0b6e34ad1c1eef374e9d4f0c22af1c007e2",
++        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
++        "reviewer": "codex-submit-availability/2026-09-07"
+       },
+       "src/native/resource/doe_texture_sampler_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "3cb6cac7493eab952c710323d77e4acc832ca01d9815f853ae9b2504b9eaca87",
+-        "reason": "Keep: cohesive native texture, texture-view, and sampler ABI ownership; the upstream chained swizzle descriptor belongs to texture-view normalization and does not justify a size-only split.",
+-        "reviewer": "codex-resource-lifetime/2026-09-06"
++        "moduleSha256": "41211b8c93caa82bae78fc871aff93df6b5242948dc905a1917d0cf04ba56e75",
++        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
++        "reviewer": "codex-submit-availability/2026-09-07"
+       },
+       "src/native/resource/doe_texture_validation.zig": {
+         "decision": "Keep",
+@@ -3754,9 +3754,9 @@
+       },
+       "src/native/support/doe_native_object_types.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "524ae75393b1cc10d8c2d153cf2ca1e848a1fcf4607763d4cd152cb83f94eaa0",
+-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
+-        "reviewer": "codex-recording-ownership/2026-09-06"
++        "moduleSha256": "5f000f463d4cfeca221b8d6d9d2593fcf00fef4ab226ab3234a09753386e21ef",
++        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
++        "reviewer": "codex-submit-availability/2026-09-07"
+       },
+       "src/native/support/doe_native_runtime_helpers.zig": {
+         "decision": "Keep",
+@@ -4264,9 +4264,9 @@
+       },
+       "src/native/command/doe_command_references.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "3c801dc8da77cca8ddc814d8aa1594765905a0009d5aee431c21858f720b8f1f",
+-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
+-        "reviewer": "codex-recording-ownership/2026-09-06"
++        "moduleSha256": "2dd0416b59926a218bd55958ee857bfdb271f4215728de70500716863a0a08bd",
++        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
++        "reviewer": "codex-submit-availability/2026-09-07"
+       },
+       "src/compiler/wgsl/pipeline/diagnostic.zig": {
+         "decision": "Keep",
+@@ -4288,9 +4288,9 @@
+       },
+       "src/contracts/resource_lease.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "d1f6757deec750f5b3dade5c1bef5c6e29ef6827db8fe837de5d068de427cb3f",
+-        "reason": "Keep: native object and neutral lease owners centralize atomic reference counts and synchronized label mutation without changing handle layout.",
+-        "reviewer": "codex-native-ownership/2026-09-06"
++        "moduleSha256": "28831fde0b74b7758b116dde0ee2ae8e03dc62b86d2e452e9824e33c53df237f",
++        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
++        "reviewer": "codex-submit-availability/2026-09-07"
+       },
+       "src/contracts/vertex_format.zig": {
+         "decision": "Keep",
+@@ -4321,6 +4321,12 @@
+         "moduleSha256": "c9f845ec06040a55045ae71a7524d6b8c717c61427fd7221269d8204dc52c402",
+         "reason": "Keep: shared typed buffer-copy admission validates device, usage, range, alignment and the declared alias policy before retaining resources.",
+         "reviewer": "codex-copy-admission/2026-09-07"
++      },
++      "src/native/queue/doe_submission_validation.zig": {
++        "decision": "Keep",
++        "moduleSha256": "acda1d9a23e62cbe03043688372e6561363c4d1ee6ed114c5c94874a98c62098",
++        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
++        "reviewer": "codex-submit-availability/2026-09-07"
+       }
+     },
+     "linePolicy": {
+diff --git a/runtime/zig/src/contracts/resource_lease.zig b/runtime/zig/src/contracts/resource_lease.zig
+index a2211b144..c6d318d03 100644
+--- a/runtime/zig/src/contracts/resource_lease.zig
++++ b/runtime/zig/src/contracts/resource_lease.zig
+@@ -2,8 +2,22 @@
+ const std = @import("std");
+ 
+ pub const ResourceLease = struct {
++    pub const Kind = enum {
++        untyped,
++        buffer,
++        texture,
++        texture_view,
++        bind_group,
++        compute_pipeline,
++        render_pipeline,
++        render_bundle,
++        query_set,
++        device,
++    };
++
+     handle: ?*anyopaque,
+     release: *const fn (?*anyopaque) callconv(.c) void,
++    kind: Kind = .untyped,
+ };
+ 
+ pub fn retainCount(count: *u32) void {
+diff --git a/runtime/zig/src/native/command/doe_command_references.zig b/runtime/zig/src/native/command/doe_command_references.zig
+index e8a225140..7b8131ca7 100644
+--- a/runtime/zig/src/native/command/doe_command_references.zig
++++ b/runtime/zig/src/native/command/doe_command_references.zig
+@@ -6,44 +6,45 @@ const exports = @import("../support/doe_native_exports.zig");
+ 
+ pub const List = std.ArrayListUnmanaged(commands.CommandReference);
+ 
+-fn retain(list: *List, object: anytype, release: *const fn (?*anyopaque) callconv(.c) void) void {
++fn retain(list: *List, object: anytype, kind: commands.CommandReference.Kind, release: *const fn (?*anyopaque) callconv(.c) void) void {
+     list.appendAssumeCapacity(.{
+         .handle = helpers.toOpaque(object),
+         .release = release,
++        .kind = kind,
+     });
+     helpers.object_add_ref(@TypeOf(object.*), helpers.toOpaque(object));
+ }
+ 
+ pub fn retainBufferAssumeCapacity(list: *List, buffer: *objects.DoeBuffer) void {
+-    retain(list, buffer, exports.doeNativeBufferRelease);
++    retain(list, buffer, .buffer, exports.doeNativeBufferRelease);
+ }
+ 
+ pub fn retainTextureAssumeCapacity(list: *List, texture: *objects.DoeTexture) void {
+-    retain(list, texture, exports.doeNativeTextureRelease);
++    retain(list, texture, .texture, exports.doeNativeTextureRelease);
+ }
+ 
+ pub fn retainTextureViewAssumeCapacity(list: *List, view: *objects.DoeTextureView) void {
+-    retain(list, view, exports.doeNativeTextureViewRelease);
++    retain(list, view, .texture_view, exports.doeNativeTextureViewRelease);
+ }
+ 
+ pub fn retainRenderPipelineAssumeCapacity(list: *List, pipeline: *objects.DoeRenderPipeline) void {
+-    retain(list, pipeline, exports.doeNativeRenderPipelineRelease);
++    retain(list, pipeline, .render_pipeline, exports.doeNativeRenderPipelineRelease);
+ }
+ 
+ pub fn retainRenderBundleAssumeCapacity(list: *List, bundle: *@import("../../runtime/render/render_bundle.zig").DoeRenderBundle) void {
+-    retain(list, bundle, exports.doeNativeRenderBundleRelease);
++    retain(list, bundle, .render_bundle, exports.doeNativeRenderBundleRelease);
+ }
+ 
+ pub fn retainDeviceAssumeCapacity(list: *List, device: *objects.DoeDevice) void {
+-    retain(list, device, exports.doeNativeDeviceRelease);
++    retain(list, device, .device, exports.doeNativeDeviceRelease);
+ }
+ 
+ pub fn retainPipelineAssumeCapacity(list: *List, pipeline: *objects.DoeComputePipeline) void {
+-    retain(list, pipeline, exports.doeNativeComputePipelineRelease);
++    retain(list, pipeline, .compute_pipeline, exports.doeNativeComputePipelineRelease);
+ }
+ 
+ pub fn retainBindGroupAssumeCapacity(list: *List, group: *objects.DoeBindGroup) void {
+-    retain(list, group, exports.doeNativeBindGroupRelease);
++    retain(list, group, .bind_group, exports.doeNativeBindGroupRelease);
+ }
+ 
+ pub fn releaseAll(references: *List) void {
+diff --git a/runtime/zig/src/native/command/doe_encoder_native.zig b/runtime/zig/src/native/command/doe_encoder_native.zig
+index 5cff45260..22ee83c7e 100644
+--- a/runtime/zig/src/native/command/doe_encoder_native.zig
++++ b/runtime/zig/src/native/command/doe_encoder_native.zig
+@@ -54,7 +54,6 @@ pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void
+     if (cast(DoeCommandEncoder, raw)) |e| {
+         if (!native_helpers.object_should_destroy(e)) return;
+         label_store.remove(raw);
+-        query_native.releaseRecordedCommandReferences(e.cmds.items);
+         e.cmds.deinit(e.allocator);
+         @import("../../contracts/resource_lease.zig").releaseAll(e.allocator, &e.references);
+         if (e.device_ref) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
+@@ -231,7 +230,6 @@ pub export fn doeNativeCommandBufferRelease(raw: ?*anyopaque) callconv(.c) void
+     if (cast(DoeCommandBuffer, raw)) |cb| {
+         if (!native_helpers.object_should_destroy(cb)) return;
+         label_store.remove(raw);
+-        query_native.releaseRecordedCommandReferences(cb.cmds.items);
+         cb.cmds.deinit(cb.allocator);
+         @import("../../contracts/resource_lease.zig").releaseAll(cb.allocator, &cb.references);
+         if (cb.device_ref) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
+diff --git a/runtime/zig/src/native/queue/doe_queue_copy_native.zig b/runtime/zig/src/native/queue/doe_queue_copy_native.zig
+index ff67a1b18..3427eba6a 100644
+--- a/runtime/zig/src/native/queue/doe_queue_copy_native.zig
++++ b/runtime/zig/src/native/queue/doe_queue_copy_native.zig
+@@ -234,7 +234,10 @@ fn copy_texture_for_browser_passthrough(
+ ) void {
+     const src_texture = texture_sampler.registeredTexture(source.texture) orelse return;
+     const dst_texture = texture_sampler.registeredTexture(destination.texture) orelse return;
+-    if (src_texture.error_object or dst_texture.error_object) return;
++    if (src_texture.isUnavailable() or dst_texture.isUnavailable()) {
++        q.dev.error_scopes.deliver(error_scope.ERROR_TYPE_VALIDATION, "texture copy requires valid, undestroyed textures");
++        return;
++    }
+     const flip_y = if (options) |browser_options| browser_options.flipY != 0 else false;
+ 
+     if (q.dev.backend == .vulkan) {
+@@ -354,7 +357,10 @@ fn copy_external_texture_to_dst(
+     }
+     const src_mtl = ext_texture_mod.resolvePlane0MtlHandle(ext) orelse return;
+     const dst_texture = texture_sampler.registeredTexture(destination.texture) orelse return;
+-    if (dst_texture.error_object) return;
++    if (dst_texture.isUnavailable()) {
++        queue.dev.error_scopes.deliver(error_scope.ERROR_TYPE_VALIDATION, "texture copy requires a valid, undestroyed destination");
++        return;
++    }
+     const dst_mtl = dst_texture.mtl orelse return;
+     if (queue.dev.backend != .metal) return;
+     const cmd_buf = bridge.metal_bridge_create_command_buffer(queue.dev.mtl_queue);
+diff --git a/runtime/zig/src/native/queue/doe_queue_submit_native.zig b/runtime/zig/src/native/queue/doe_queue_submit_native.zig
+index f8cc9d25c..2bb9f43b0 100644
+--- a/runtime/zig/src/native/queue/doe_queue_submit_native.zig
++++ b/runtime/zig/src/native/queue/doe_queue_submit_native.zig
+@@ -10,6 +10,7 @@ const d3d12_submit = @import("doe_queue_submit_d3d12.zig");
+ const metal_submit = @import("doe_queue_submit_metal.zig");
+ const vulkan_submit = @import("doe_queue_submit_vulkan.zig");
+ const compute_program = @import("../compute/doe_compute_program_native.zig");
++const availability = @import("doe_submission_validation.zig");
+ 
+ comptime {
+     _ = &compute_program.doeNativeComputeProgramSupported;
+@@ -48,6 +49,10 @@ pub export fn doeNativeQueueSubmit(
+             q.dev.error_scopes.deliver(@import("../../runtime/diagnostics/error_scope.zig").ERROR_TYPE_VALIDATION, "queue submission rejected failed recording or a different device");
+             return;
+         }
++        availability.validate(buffer.references.items) catch |err| {
++            q.dev.error_scopes.deliver(@import("../../runtime/diagnostics/error_scope.zig").ERROR_TYPE_VALIDATION, availability.message(err));
++            return;
++        };
+     }
+     if (q.dev.backend == .vulkan) {
+         vulkan_submit.submit_vulkan_commands(q, count, cmd_bufs);
+diff --git a/runtime/zig/src/native/queue/doe_submission_validation.zig b/runtime/zig/src/native/queue/doe_submission_validation.zig
+new file mode 100644
+index 000000000..8025e561b
+--- /dev/null
++++ b/runtime/zig/src/native/queue/doe_submission_validation.zig
+@@ -0,0 +1,147 @@
++const std = @import("std");
++const leases = @import("../../contracts/resource_lease.zig");
++const objects = @import("../support/doe_native_object_types.zig");
++const helpers = @import("../support/doe_native_object_helpers.zig");
++const queries = @import("../resource/doe_query_native.zig");
++const external = @import("../resource/doe_external_texture_native.zig");
++const bundles = @import("../../runtime/render/render_bundle.zig");
++
++pub const ValidationError = error{
++    InvalidReference,
++    BufferUnavailable,
++    BufferMapped,
++    TextureUnavailable,
++    ExternalTextureExpired,
++    QueryDestroyed,
++    InvalidBundle,
++};
++
++pub fn message(err: ValidationError) []const u8 {
++    return switch (err) {
++        error.InvalidReference => "queue submission requires a valid retained resource",
++        error.BufferUnavailable => "queue submission uses an invalid or destroyed buffer",
++        error.BufferMapped => "queue submission requires buffers to be unmapped",
++        error.TextureUnavailable => "queue submission uses an invalid or destroyed texture",
++        error.ExternalTextureExpired => "queue submission uses an expired external texture",
++        error.QueryDestroyed => "queue submission uses a destroyed query set",
++        error.InvalidBundle => "queue submission uses an invalid render bundle",
++    };
++}
++
++pub fn validate(references: []const leases.ResourceLease) ValidationError!void {
++    for (references) |reference| switch (reference.kind) {
++        .buffer => try validateBuffer(try object(objects.DoeBuffer, reference.handle)),
++        .texture => try validateTexture(try object(objects.DoeTexture, reference.handle)),
++        .texture_view => try validateView(try object(objects.DoeTextureView, reference.handle)),
++        .bind_group => try validateGroup(try object(objects.DoeBindGroup, reference.handle)),
++        .render_bundle => {
++            const bundle = try object(bundles.DoeRenderBundle, reference.handle);
++            if (bundle.error_object) return error.InvalidBundle;
++            try validate(bundle.references.items);
++        },
++        .query_set => {
++            const query = try object(queries.DoeQuerySet, reference.handle);
++            if (query.destroyed) return error.QueryDestroyed;
++        },
++        .compute_pipeline => _ = try object(objects.DoeComputePipeline, reference.handle),
++        .render_pipeline => _ = try object(objects.DoeRenderPipeline, reference.handle),
++        .device => _ = try object(objects.DoeDevice, reference.handle),
++        .untyped => return error.InvalidReference,
++    };
++}
++
++fn object(comptime T: type, raw: ?*anyopaque) ValidationError!*T {
++    return helpers.cast(T, raw) orelse error.InvalidReference;
++}
++
++fn validateBuffer(buffer: *const objects.DoeBuffer) ValidationError!void {
++    if (buffer.error_object or buffer.destroyed) return error.BufferUnavailable;
++    if (buffer.mapped) return error.BufferMapped;
++}
++
++fn validateTexture(texture: *const objects.DoeTexture) ValidationError!void {
++    if (texture.isUnavailable()) return error.TextureUnavailable;
++}
++
++fn validateView(view: *const objects.DoeTextureView) ValidationError!void {
++    try validateTexture(view.tex);
++}
++
++fn validateGroup(group: *const objects.DoeBindGroup) ValidationError!void {
++    for (group.retained_buffers) |buffer| if (buffer) |value| try validateBuffer(value);
++    for (group.retained_texture_views) |view| if (view) |value| try validateView(value);
++    for (group.render_texture_views[0..group.render_texture_view_count]) |view| {
++        try validateView(view orelse return error.InvalidReference);
++    }
++    for (group.retained_external_textures) |raw| if (raw != null) {
++        const texture = try object(external.DoeExternalTexture, raw);
++        if (texture.expired) return error.ExternalTextureExpired;
++        if (!texture.native_imported) {
++            try validateView(try object(objects.DoeTextureView, texture.plane0));
++            if (!texture.is_single_plane) try validateView(try object(objects.DoeTextureView, texture.plane1));
++        }
++    };
++}
++
++fn testReference(kind: leases.ResourceLease.Kind, raw: ?*anyopaque) leases.ResourceLease {
++    return .{ .kind = kind, .handle = raw, .release = struct {
++        fn unused(_: ?*anyopaque) callconv(.c) void {}
++    }.unused };
++}
++
++test "submission rechecks mutable resources through bind groups and bundles without taking ownership" {
++    var buffer: objects.DoeBuffer = .{ .ref_count = 2 };
++    var texture: objects.DoeTexture = .{};
++    var view: objects.DoeTextureView = .{ .tex = &texture };
++    var group: objects.DoeBindGroup = .{};
++    group.retained_buffers[0] = &buffer;
++    group.render_texture_views[0] = &view;
++    group.render_texture_view_count = 1;
++    var external_texture: external.DoeExternalTexture = .{ .plane0 = &view };
++    group.retained_external_textures[1] = @ptrCast(&external_texture);
++    var group_references = [_]leases.ResourceLease{testReference(.bind_group, &group)};
++    var bundle: bundles.DoeRenderBundle = .{
++        .allocator = std.testing.allocator,
++        .color_format = 0,
++        .depth_stencil_format = 0,
++        .sample_count = 1,
++        .cmds = &.{},
++        .references = .{ .items = &group_references, .capacity = group_references.len },
++    };
++    const references = [_]leases.ResourceLease{testReference(.render_bundle, &bundle)};
++    try validate(&references);
++    buffer.mapped = true;
++    try std.testing.expectError(error.BufferMapped, validate(&references));
++    buffer.mapped = false;
++    buffer.destroyed = true;
++    try std.testing.expectError(error.BufferUnavailable, validate(&references));
++    buffer.destroyed = false;
++    buffer.error_object = true;
++    try std.testing.expectError(error.BufferUnavailable, validate(&references));
++    buffer.error_object = false;
++    texture.destroyed = true;
++    try std.testing.expectError(error.TextureUnavailable, validate(&references));
++    texture.destroyed = false;
++    external_texture.expired = true;
++    try std.testing.expectError(error.ExternalTextureExpired, validate(&references));
++    external_texture.expired = false;
++    bundle.error_object = true;
++    try std.testing.expectError(error.InvalidBundle, validate(&references));
++    bundle.error_object = false;
++    try validate(&references);
++    try std.testing.expectEqual(@as(u32, 2), buffer.ref_count);
++}
++
++test "submission validates direct leases and rejects destroyed queries and untyped references" {
++    var query: queries.DoeQuerySet = .{};
++    const references = [_]leases.ResourceLease{testReference(.query_set, &query)};
++    try validate(&references);
++    query.destroyed = true;
++    try std.testing.expectError(error.QueryDestroyed, validate(&references));
++    try std.testing.expectError(error.InvalidReference, validate(&.{testReference(.untyped, &query)}));
++    try std.testing.expectError(error.InvalidReference, validate(&.{testReference(.buffer, null)}));
++    var buffer: objects.DoeBuffer = .{ .mapped = true };
++    try std.testing.expectError(error.BufferMapped, validate(&.{testReference(.buffer, &buffer)}));
++    var texture: objects.DoeTexture = .{ .destroyed = true };
++    try std.testing.expectError(error.TextureUnavailable, validate(&.{testReference(.texture, &texture)}));
++}
+diff --git a/runtime/zig/src/native/resource/doe_command_texture_native.zig b/runtime/zig/src/native/resource/doe_command_texture_native.zig
+index 70ca0c793..052bc6e61 100644
+--- a/runtime/zig/src/native/resource/doe_command_texture_native.zig
++++ b/runtime/zig/src/native/resource/doe_command_texture_native.zig
+@@ -123,7 +123,10 @@ pub export fn doeNativeQueueWriteTexture(
+ ) callconv(.c) void {
+     const q = cast(DoeQueue, queue_raw);
+     const tex = cast(DoeTexture, texture_raw) orelse return;
+-    if (tex.error_object) return;
++    if (tex.isUnavailable()) {
++        if (q) |queue| queue.dev.error_scopes.deliver(@import("../../runtime/diagnostics/error_scope.zig").ERROR_TYPE_VALIDATION, "texture write requires a valid, undestroyed texture");
++        return;
++    }
+     if (resource_ops.handleVulkanQueueWriteTexture(q, tex, .{
+         .data_ptr = data_ptr,
+         .data_len = data_len,
+diff --git a/runtime/zig/src/native/resource/doe_query_native.zig b/runtime/zig/src/native/resource/doe_query_native.zig
+index cc71aa4c6..b86038ba9 100644
+--- a/runtime/zig/src/native/resource/doe_query_native.zig
++++ b/runtime/zig/src/native/resource/doe_query_native.zig
+@@ -130,7 +130,7 @@ pub fn doeNativeCommandEncoderWriteTimestampWithPosition(
+     const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return;
+     if (qs.destroyed or query_index >= qs.count) return;
+     if (!recording.reserve(enc, 1, 1)) return;
+-    native_helpers.object_add_ref(DoeQuerySet, qs_raw);
++    retainQueryAssumeCapacity(enc, qs_raw);
+ 
+     if (comptime has_vulkan) {
+         if (qs.backend == .vulkan) {
+@@ -176,10 +176,8 @@ pub export fn doeNativeCommandEncoderResolveQuerySet(
+     const copy_bytes = @as(usize, query_count) * TIMESTAMP_BYTES;
+     const d_off: usize = @intCast(dst_offset);
+     if (d_off + copy_bytes > @as(usize, @intCast(dst.size))) return;
+-    if (!recording.reserve(enc, 1, 1)) return;
+-    native_helpers.object_add_ref(DoeQuerySet, qs_raw);
+-
+-    if (!recording.reserve(enc, 0, 1)) return;
++    if (!recording.reserve(enc, 1, 2)) return;
++    retainQueryAssumeCapacity(enc, qs_raw);
+     references.retainBufferAssumeCapacity(&enc.references, dst);
+ 
+     if (comptime has_vulkan) {
+@@ -301,17 +299,6 @@ pub export fn doeNativeQuerySetRelease(qs_raw: ?*anyopaque) callconv(.c) void {
+     native_helpers.alloc.destroy(qs);
+ }
+ 
+-pub fn releaseRecordedCommandReferences(cmds: []const native_cmds.RecordedCmd) void {
+-    for (cmds) |cmd| {
+-        const query_set = switch (cmd) {
+-            .write_timestamp => |timestamp| timestamp.query_set,
+-            .resolve_query_set => |resolve| resolve.query_set,
+-            else => null,
+-        };
+-        if (query_set != null) doeNativeQuerySetRelease(query_set);
+-    }
+-}
+-
+ pub export fn doeNativeQuerySetGetCount(qs_raw: ?*anyopaque) callconv(.c) u32 {
+     const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return 0;
+     return qs.count;
+@@ -462,7 +449,11 @@ pub export fn doeNativeRenderPassBeginOcclusionQuery(
+ pub fn retainRecordedReference(enc: *native_types.DoeCommandEncoder, raw: ?*anyopaque) void {
+     _ = native_helpers.cast(DoeQuerySet, raw) orelse return;
+     if (!recording.reserve(enc, 0, 1)) return;
+-    enc.references.appendAssumeCapacity(.{ .handle = raw, .release = doeNativeQuerySetRelease });
++    retainQueryAssumeCapacity(enc, raw);
++}
++
++fn retainQueryAssumeCapacity(enc: *native_types.DoeCommandEncoder, raw: ?*anyopaque) void {
++    enc.references.appendAssumeCapacity(.{ .handle = raw, .release = doeNativeQuerySetRelease, .kind = .query_set });
+     native_helpers.object_add_ref(DoeQuerySet, raw);
+ }
+ 
+diff --git a/runtime/zig/src/native/resource/doe_texture_sampler_native.zig b/runtime/zig/src/native/resource/doe_texture_sampler_native.zig
+index ed4045e17..0217b1345 100644
+--- a/runtime/zig/src/native/resource/doe_texture_sampler_native.zig
++++ b/runtime/zig/src/native/resource/doe_texture_sampler_native.zig
+@@ -679,7 +679,9 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi
+ }
+ 
+ pub export fn doeNativeTextureDestroy(raw: ?*anyopaque) callconv(.c) void {
+-    _ = cast(DoeTexture, raw) orelse return;
++    const texture = cast(DoeTexture, raw) orelse return;
++    // Views and submitted commands retain the allocation until their last release.
++    texture.destroyed = true;
+ }
+ 
+ pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
+diff --git a/runtime/zig/src/native/support/doe_native_object_types.zig b/runtime/zig/src/native/support/doe_native_object_types.zig
+index 985ab76a4..39d2420ca 100644
+--- a/runtime/zig/src/native/support/doe_native_object_types.zig
++++ b/runtime/zig/src/native/support/doe_native_object_types.zig
+@@ -300,6 +300,7 @@ pub const DoeTexture = struct {
+     ref_count: u32 = 1,
+     device_ref: ?*DoeDevice = null,
+     error_object: bool = false,
++    destroyed: bool = false,
+     backend: backend_contract.NativeBackendKind = .metal,
+     mtl: ?*anyopaque = null,
+     format: u32 = 0,
+@@ -314,6 +315,10 @@ pub const DoeTexture = struct {
+     view_format_count: usize = 0,
+     vk_id: u64 = 0,
+     vk_runtime_ref: ?*anyopaque = null,
++
++    pub fn isUnavailable(self: *const DoeTexture) bool {
++        return self.error_object or self.destroyed;
++    }
+ };
+ 
+ pub const DoeTextureView = struct {
+diff --git a/runtime/zig/tests/core/native_shader_render_test.zig b/runtime/zig/tests/core/native_shader_render_test.zig
+index 876ddf378..9908f6fbd 100644
+--- a/runtime/zig/tests/core/native_shader_render_test.zig
++++ b/runtime/zig/tests/core/native_shader_render_test.zig
+@@ -639,7 +639,7 @@ test "doeNativeCommandEncoderWriteTimestamp records a metal timestamp command" {
+         },
+         else => return error.UnexpectedCommandTag,
+     }
+-    query.releaseRecordedCommandReferences(enc.cmds.items);
++    @import("../../src/native/command/doe_command_references.zig").releaseAll(&enc.references);
+     try std.testing.expectEqual(@as(u32, 1), qs.ref_count);
+ }
+ 
+@@ -681,7 +681,7 @@ test "doeNativeCommandEncoderResolveQuerySet records a metal resolve command" {
+         },
+         else => return error.UnexpectedCommandTag,
+     }
+-    query.releaseRecordedCommandReferences(enc.cmds.items);
++    @import("../../src/native/command/doe_command_references.zig").releaseAll(&enc.references);
+     try std.testing.expectEqual(@as(u32, 1), qs.ref_count);
+ }
+ 
+diff --git a/runtime/zig/tests/native_recorded_compute.c b/runtime/zig/tests/native_recorded_compute.c
+index 8425c8aa2..5f063619b 100644
+--- a/runtime/zig/tests/native_recorded_compute.c
++++ b/runtime/zig/tests/native_recorded_compute.c
+@@ -179,6 +179,146 @@ static bool invalid_buffer_copies(WGPUInstance instance, WGPUDevice device, WGPU
+     return success;
+ }
+ 
++static bool buffer_matches_u32(WGPUInstance instance, WGPUBuffer buffer, uint32_t expected) {
++    bool mapped = false;
++    WGPUBufferMapCallbackInfo callback = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
++    callback.mode = WGPUCallbackMode_AllowSpontaneous;
++    callback.callback = map_ready;
++    callback.userdata1 = &mapped;
++    wgpuBufferMapAsync(buffer, WGPUMapMode_Read, 0, sizeof(expected), callback);
++    wgpuInstanceProcessEvents(instance);
++    const uint32_t* output = mapped ? wgpuBufferGetConstMappedRange(buffer, 0, sizeof(expected)) : NULL;
++    const bool matches = output && *output == expected;
++    if (mapped) wgpuBufferUnmap(buffer);
++    return matches;
++}
++
++static bool unavailable_copy_resources(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
++    enum { MAPPED_SOURCE, MAPPED_DESTINATION, DESTROYED_SOURCE, DESTROYED_DESTINATION,
++           UNMAPPED_BEFORE_SUBMIT, RELEASED_SOURCE, AVAILABILITY_CASE_COUNT };
++    const uint32_t expected = 0x12345678u;
++    for (unsigned scenario = 0; scenario < AVAILABILITY_CASE_COUNT; ++scenario) {
++        WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
++        desc.size = sizeof(expected);
++        desc.usage = WGPUBufferUsage_CopySrc;
++        desc.mappedAtCreation = WGPU_TRUE;
++        WGPUBuffer source = wgpuDeviceCreateBuffer(device, &desc);
++        desc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
++        desc.mappedAtCreation = scenario == MAPPED_DESTINATION ? WGPU_TRUE : WGPU_FALSE;
++        WGPUBuffer destination = wgpuDeviceCreateBuffer(device, &desc);
++        if (!source || !destination) return false;
++        uint32_t* input = wgpuBufferGetMappedRange(source, 0, sizeof(expected));
++        if (!input) return false;
++        *input = expected;
++        if (scenario != MAPPED_SOURCE && scenario != UNMAPPED_BEFORE_SUBMIT) wgpuBufferUnmap(source);
++        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
++        if (!encoder) return false;
++        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++        wgpuCommandEncoderCopyBufferToBuffer(encoder, source, 0, destination, 0, sizeof(expected));
++        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
++        wgpuCommandEncoderRelease(encoder);
++        const bool recording_rejected = pop_validation(instance, device);
++        if (!commands || recording_rejected) return false;
++        if (scenario == DESTROYED_SOURCE) wgpuBufferDestroy(source);
++        if (scenario == DESTROYED_DESTINATION) wgpuBufferDestroy(destination);
++        if (scenario == UNMAPPED_BEFORE_SUBMIT) wgpuBufferUnmap(source);
++        if (scenario == RELEASED_SOURCE) { wgpuBufferRelease(source); source = NULL; }
++        desc.mappedAtCreation = WGPU_FALSE;
++        WGPUBuffer witness = wgpuDeviceCreateBuffer(device, &desc);
++        if (!witness) return false;
++        wgpuQueueWriteBuffer(queue, witness, 0, &expected, sizeof(expected));
++        encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
++        if (!encoder) return false;
++        wgpuCommandEncoderClearBuffer(encoder, witness, 0, sizeof(expected));
++        WGPUCommandBuffer first = wgpuCommandEncoderFinish(encoder, NULL);
++        wgpuCommandEncoderRelease(encoder);
++        if (!first) return false;
++        WGPUCommandBuffer batch[] = {first, commands};
++        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++        wgpuQueueSubmit(queue, 2, batch);
++        const bool rejected = pop_validation(instance, device);
++        const bool should_reject = scenario <= DESTROYED_DESTINATION;
++        bool success = rejected == should_reject;
++        if (success) success = buffer_matches_u32(instance, witness, should_reject ? expected : 0);
++        if (!should_reject && success) success = buffer_matches_u32(instance, destination, expected);
++        wgpuCommandBufferRelease(first);
++        wgpuBufferRelease(witness);
++        wgpuCommandBufferRelease(commands);
++        if (source) wgpuBufferRelease(source);
++        wgpuBufferRelease(destination);
++        if (!success) {
++            fprintf(stderr, "queue availability failed: case=%u rejected=%u expected=%u\n",
++                    scenario, rejected, should_reject);
++            return false;
++        }
++    }
++    printf("passed: submission rejects mapped/destroyed buffers; unmap and caller release preserve valid copies\n");
++    return true;
++}
++
++static bool texture_submission_lifetime(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
++    const uint32_t expected = 0x76543210u;
++    for (unsigned destroy = 0; destroy < 2; ++destroy) {
++        WGPUTextureDescriptor desc = WGPU_TEXTURE_DESCRIPTOR_INIT;
++        desc.usage = WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
++        desc.dimension = WGPUTextureDimension_2D;
++        desc.size = (WGPUExtent3D){1, 1, 1};
++        desc.format = WGPUTextureFormat_R32Uint;
++        WGPUTexture texture = wgpuDeviceCreateTexture(device, &desc);
++        WGPUBufferDescriptor buffer_desc = WGPU_BUFFER_DESCRIPTOR_INIT;
++        buffer_desc.size = sizeof(expected);
++        buffer_desc.usage = WGPUBufferUsage_CopySrc;
++        buffer_desc.mappedAtCreation = WGPU_TRUE;
++        WGPUBuffer input = wgpuDeviceCreateBuffer(device, &buffer_desc);
++        buffer_desc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
++        buffer_desc.mappedAtCreation = WGPU_FALSE;
++        WGPUBuffer output = wgpuDeviceCreateBuffer(device, &buffer_desc);
++        if (!texture || !input || !output) return false;
++        uint32_t* mapped = wgpuBufferGetMappedRange(input, 0, sizeof(expected));
++        if (!mapped) return false;
++        *mapped = expected;
++        wgpuBufferUnmap(input);
++        WGPUTexelCopyTextureInfo texture_copy = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
++        texture_copy.texture = texture;
++        WGPUTexelCopyBufferInfo buffer_copy = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
++        buffer_copy.buffer = input;
++        buffer_copy.layout.bytesPerRow = TEXTURE_ROW_BYTES;
++        buffer_copy.layout.rowsPerImage = 1;
++        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
++        if (!encoder) return false;
++        wgpuCommandEncoderCopyBufferToTexture(encoder, &buffer_copy, &texture_copy, &desc.size);
++        buffer_copy.buffer = output;
++        wgpuCommandEncoderCopyTextureToBuffer(encoder, &texture_copy, &buffer_copy, &desc.size);
++        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
++        wgpuCommandEncoderRelease(encoder);
++        if (!commands) return false;
++        if (destroy) {
++            wgpuTextureDestroy(texture);
++            wgpuTextureDestroy(texture);
++            wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++            WGPUTextureView view = wgpuTextureCreateView(texture, NULL);
++            bool view_rejected = pop_validation(instance, device);
++            if (view) wgpuTextureViewRelease(view);
++            if (!view || view_rejected) return false;
++            wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++            wgpuQueueWriteTexture(queue, &texture_copy, &expected, sizeof(expected), &buffer_copy.layout, &desc.size);
++            if (!pop_validation(instance, device)) return false;
++        }
++        wgpuTextureRelease(texture);
++        wgpuBufferRelease(input);
++        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++        wgpuQueueSubmit(queue, 1, &commands);
++        const bool rejected = pop_validation(instance, device);
++        bool success = rejected == (destroy != 0);
++        if (!destroy && success) success = buffer_matches_u32(instance, output, expected);
++        wgpuCommandBufferRelease(commands);
++        wgpuBufferRelease(output);
++        if (!success) return false;
++    }
++    printf("passed: texture caller release preserves copies; explicit destruction rejects submission and writes\n");
++    return true;
++}
++
+ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue,
+                     bool batch, bool via_texture, bool resident_roundtrip) {
+     bool success = false, mapped = false;
+@@ -393,6 +533,8 @@ int main(void) {
+     if (!device) goto cleanup;
+     queue = wgpuDeviceGetQueue(device);
+     if (queue && invalid_pass_lifetimes(instance, device, queue) && invalid_buffer_copies(instance, device, queue) &&
++        unavailable_copy_resources(instance, device, queue) &&
++        texture_submission_lifetime(instance, device, queue) &&
+         execute(instance, device, queue, false, false, false) &&
+         execute(instance, device, queue, true, false, false)) {
+         const bool layered_readback = execute(instance, device, queue, false, true, false);

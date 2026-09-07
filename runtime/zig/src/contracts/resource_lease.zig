@@ -2,8 +2,22 @@
 const std = @import("std");
 
 pub const ResourceLease = struct {
+    pub const Kind = enum {
+        untyped,
+        buffer,
+        texture,
+        texture_view,
+        bind_group,
+        compute_pipeline,
+        render_pipeline,
+        render_bundle,
+        query_set,
+        device,
+    };
+
     handle: ?*anyopaque,
     release: *const fn (?*anyopaque) callconv(.c) void,
+    kind: Kind = .untyped,
 };
 
 pub fn retainCount(count: *u32) void {

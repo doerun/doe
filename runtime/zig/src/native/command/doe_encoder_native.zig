@@ -54,7 +54,6 @@ pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void
     if (cast(DoeCommandEncoder, raw)) |e| {
         if (!native_helpers.object_should_destroy(e)) return;
         label_store.remove(raw);
-        query_native.releaseRecordedCommandReferences(e.cmds.items);
         e.cmds.deinit(e.allocator);
         @import("../../contracts/resource_lease.zig").releaseAll(e.allocator, &e.references);
         if (e.device_ref) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
@@ -231,7 +230,6 @@ pub export fn doeNativeCommandBufferRelease(raw: ?*anyopaque) callconv(.c) void 
     if (cast(DoeCommandBuffer, raw)) |cb| {
         if (!native_helpers.object_should_destroy(cb)) return;
         label_store.remove(raw);
-        query_native.releaseRecordedCommandReferences(cb.cmds.items);
         cb.cmds.deinit(cb.allocator);
         @import("../../contracts/resource_lease.zig").releaseAll(cb.allocator, &cb.references);
         if (cb.device_ref) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));

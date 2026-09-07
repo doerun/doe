@@ -34,14 +34,16 @@ need their respective tests and implementation.
 
 ## Recording failures and submission ordering
 
-Ordinary encoders, bundles, and queries preserve allocation failure state and
-owned dependencies. Error command objects are rejected before submission.
-Buffer copies validate device, usage, alignment, range, and aliasing before
-allocation or leasing. Empty copies validate without recording work; whole-size
-copies resolve from the source offset. Native fused constructors share admission
-while retaining their disjoint-alias and omitted-copy contract. The failing C
-reproduction, canonical tests, and retained-package acceptance are indexed at
-`bench/out/compute-program/20260907-buffer-copy-admission/README.md`.
+Ordinary recording preserves allocation failures and owned dependencies. Buffer
+copies validate device, usage, aligned ranges and aliasing before allocation;
+empty and whole-size requests share that admission. Native fused constructors
+retain their disjoint-alias and omitted-copy contract. Queue submission checks
+all retained resources before executing any buffer in the batch, including bind
+groups and bundles. Query commands share the typed lease list. Texture destruction
+invalidates execution/writes while retained owners preserve backing allocation;
+caller release and unmapping before submission preserve valid work. Acceptance:
+`bench/out/compute-program/20260907-submit-availability/README.md`.
+Earlier copy admission: `bench/out/compute-program/20260907-buffer-copy-admission/README.md`.
 
 Vulkan buffer/image copies execute at their recorded queue position without CPU
 staging. Both directions share mip-relative extent, block, layer, stride, and
@@ -53,8 +55,6 @@ fixture also runs with synchronization validation enabled.
 The layered-copy and resident-restore regressions retain their pre-fix failures
 and physical AMD Vulkan results at
 `bench/out/compute-program/20260907-texture-transfers/README.md`.
-The earlier recording-allocation checkpoint remains at
-`bench/out/compute-program/20260906-ordinary-recording/README.md`.
 These checks do not establish texture-origin/aspect conformance, concurrent queue
 safety, physical Metal/D3D12 behavior, or a performance advantage.
 

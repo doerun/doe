@@ -227,6 +227,18 @@ classified and cannot be promoted by benchmark results.
   admission while preserving their explicit disjoint-alias and omitted-copy
   contract. Public signatures and report schemas are unchanged. Regression
   fixtures must declare valid devices/usages instead of bypassing admission.
+  Queue submission preflights the entire command-buffer batch before backend
+  execution. Typed resource leases expose mapped/destroyed buffers, destroyed
+  textures through views and bind groups, expired external textures, and destroyed
+  query sets, including dependencies inside render bundles. Query commands retain
+  their query through the same lease list used for cleanup and validation.
+  Explicit texture destruction invalidates future execution and writes; backing
+  storage stays owned until retained views/commands release it. Creating a view
+  does not restore a destroyed texture's availability. Unmapping before submission
+  permits valid work; caller release does not imply destruction. C-boundary tests
+  must verify whole-batch rejection without earlier command side effects and
+  successful subsequent work. This migrates internal lease metadata and failure
+  handling behind existing signatures; public schemas and receipts are unchanged.
   Ordinary encoder, bundle, and query recording failures must poison recording
   instead of aborting or publishing usable partial work. Fault-injection tests
   cover recording and finish allocations, retained references, invalid bundle

@@ -1,0 +1,4 @@
+queue availability failed: case=0 rejected=0 expected=1
+backend=6 adapter=4 vendor=4098 device=5510 GPU=Radeon 8060S Graphics (RADV STRIX_HALO) description=Radeon 8060S Graphics (RADV STRIX_HALO)
+passed: invalid pass lifetimes and unsupported immediate payloads/layouts reject before execution
+passed: buffer copy alignment, range, identity, usage and empty-copy validation

@@ -234,7 +234,10 @@ fn copy_texture_for_browser_passthrough(
 ) void {
     const src_texture = texture_sampler.registeredTexture(source.texture) orelse return;
     const dst_texture = texture_sampler.registeredTexture(destination.texture) orelse return;
-    if (src_texture.error_object or dst_texture.error_object) return;
+    if (src_texture.isUnavailable() or dst_texture.isUnavailable()) {
+        q.dev.error_scopes.deliver(error_scope.ERROR_TYPE_VALIDATION, "texture copy requires valid, undestroyed textures");
+        return;
+    }
     const flip_y = if (options) |browser_options| browser_options.flipY != 0 else false;
 
     if (q.dev.backend == .vulkan) {
@@ -354,7 +357,10 @@ fn copy_external_texture_to_dst(
     }
     const src_mtl = ext_texture_mod.resolvePlane0MtlHandle(ext) orelse return;
     const dst_texture = texture_sampler.registeredTexture(destination.texture) orelse return;
-    if (dst_texture.error_object) return;
+    if (dst_texture.isUnavailable()) {
+        queue.dev.error_scopes.deliver(error_scope.ERROR_TYPE_VALIDATION, "texture copy requires a valid, undestroyed destination");
+        return;
+    }
     const dst_mtl = dst_texture.mtl orelse return;
     if (queue.dev.backend != .metal) return;
     const cmd_buf = bridge.metal_bridge_create_command_buffer(queue.dev.mtl_queue);

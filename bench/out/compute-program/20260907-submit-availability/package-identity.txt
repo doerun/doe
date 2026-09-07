@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "hosts": [
+    {
+      "executable": "/usr/bin/node",
+      "executableHash": "d0efb6fcb9d023ba4e2b160ec2384dc28fe4f17732141ef47f676828fa960505",
+      "host": "node",
+      "libraryHash": "2275796385b096189d1fef12789852210867997eb350ab0fcbaf265d955ed755",
+      "status": "passed"
+    },
+    {
+      "executable": "/home/x/.bun/bin/bun",
+      "executableHash": "3632a4fae998deaad2358e22ae74d1fd6c673b9be760a470e3a0044267cb4438",
+      "host": "bun",
+      "libraryHash": "2275796385b096189d1fef12789852210867997eb350ab0fcbaf265d955ed755",
+      "status": "passed"
+    },
+    {
+      "executable": "/home/x/deco/doe/bench/out/toolchains/electron-43.4.0/node_modules/electron/dist/electron",
+      "executableHash": "6853bb400e98582dcc104ca8b9e90f013cd2223575253731e0c429925981c733",
+      "host": "electron",
+      "libraryHash": "2275796385b096189d1fef12789852210867997eb350ab0fcbaf265d955ed755",
+      "status": "passed"
+    }
+  ],
+  "packages": [
+    {
+      "hash": "255b84b7140b0ca5a726b2b045c6c0c890fdd899bb51ed7f83b1b3711213b1e2",
+      "path": "doe-gpu-0.5.0.tgz"
+    },
+    {
+      "hash": "c5317a3f97f6d918a2e30e77c1d1c0e87c9577b881592dd8bcf8f9369df88f79",
+      "path": "doe-gpu-linux-x64-0.5.0.tgz"
+    }
+  ]
+}

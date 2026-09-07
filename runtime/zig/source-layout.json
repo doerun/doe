@@ -3490,9 +3490,9 @@
       },
       "src/native/command/doe_encoder_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "6e35a6b329f2c9b9af412a46ee1d792484701f5cd494983360061228d51243e2",
-        "reason": "Keep: existing recording entrypoints consume shared native copy admission; ownership regressions use valid device and usage declarations.",
-        "reviewer": "codex-copy-admission/2026-09-07"
+        "moduleSha256": "16bc7a7d596a7ec4a35adf52a6dd5bcad96d3a1dded5685c037cc88f9661c42d",
+        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+        "reviewer": "codex-submit-availability/2026-09-07"
       },
       "src/native/command/doe_immediates_external_native.zig": {
         "decision": "Keep",
@@ -3568,9 +3568,9 @@
       },
       "src/native/queue/doe_queue_copy_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "e786048a85db29e44bd3d5b856dca63167c392614b9ebe6f6883e974fc9484b2",
-        "reason": "Keep: reachable native implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-resource-lifetime/2026-09-06"
+        "moduleSha256": "125a0289b4b4a440f39719f0919e2533eefb44dedf2c7a485c099c9b2c8829c5",
+        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+        "reviewer": "codex-submit-availability/2026-09-07"
       },
       "src/native/queue/doe_queue_flush_breakdown.zig": {
         "decision": "Keep",
@@ -3598,9 +3598,9 @@
       },
       "src/native/queue/doe_queue_submit_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "8314c6c6d7b53a2901af602c83d8eacebddfc942d5184c2186132df86a14189a",
-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
-        "reviewer": "codex-recording-ownership/2026-09-06"
+        "moduleSha256": "9659be6b94e27bbaa19bebef37e13c5dd689329500fac8fa681f85906f5b814a",
+        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+        "reviewer": "codex-submit-availability/2026-09-07"
       },
       "src/native/queue/doe_queue_submit_shared.zig": {
         "decision": "Keep",
@@ -3658,9 +3658,9 @@
       },
       "src/native/resource/doe_command_texture_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "b7bc9a4ce909892d9ed08c55e2dc2b1e4c020fd32360c632ed6f7dc7ab60c89d",
-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
-        "reviewer": "codex-recording-ownership/2026-09-06"
+        "moduleSha256": "1b6d4e3faaeb1131c98b77bd2c37fdd3037c28a51d72ea99264ee05b1d121fe4",
+        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+        "reviewer": "codex-submit-availability/2026-09-07"
       },
       "src/native/resource/doe_external_texture_native.zig": {
         "decision": "Keep",
@@ -3670,15 +3670,15 @@
       },
       "src/native/resource/doe_query_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "57b587586f5f4adff3d457c69fb5bc68d4e3d951ac160d2d9445da0efb6ee83c",
-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
-        "reviewer": "codex-pass-lifecycle/2026-09-06"
+        "moduleSha256": "ba22b6a85933a96959391c1861d9c0b6e34ad1c1eef374e9d4f0c22af1c007e2",
+        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+        "reviewer": "codex-submit-availability/2026-09-07"
       },
       "src/native/resource/doe_texture_sampler_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "3cb6cac7493eab952c710323d77e4acc832ca01d9815f853ae9b2504b9eaca87",
-        "reason": "Keep: cohesive native texture, texture-view, and sampler ABI ownership; the upstream chained swizzle descriptor belongs to texture-view normalization and does not justify a size-only split.",
-        "reviewer": "codex-resource-lifetime/2026-09-06"
+        "moduleSha256": "41211b8c93caa82bae78fc871aff93df6b5242948dc905a1917d0cf04ba56e75",
+        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+        "reviewer": "codex-submit-availability/2026-09-07"
       },
       "src/native/resource/doe_texture_validation.zig": {
         "decision": "Keep",
@@ -3754,9 +3754,9 @@
       },
       "src/native/support/doe_native_object_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "524ae75393b1cc10d8c2d153cf2ca1e848a1fcf4607763d4cd152cb83f94eaa0",
-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
-        "reviewer": "codex-recording-ownership/2026-09-06"
+        "moduleSha256": "5f000f463d4cfeca221b8d6d9d2593fcf00fef4ab226ab3234a09753386e21ef",
+        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+        "reviewer": "codex-submit-availability/2026-09-07"
       },
       "src/native/support/doe_native_runtime_helpers.zig": {
         "decision": "Keep",
@@ -4264,9 +4264,9 @@
       },
       "src/native/command/doe_command_references.zig": {
         "decision": "Keep",
-        "moduleSha256": "3c801dc8da77cca8ddc814d8aa1594765905a0009d5aee431c21858f720b8f1f",
-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
-        "reviewer": "codex-recording-ownership/2026-09-06"
+        "moduleSha256": "2dd0416b59926a218bd55958ee857bfdb271f4215728de70500716863a0a08bd",
+        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+        "reviewer": "codex-submit-availability/2026-09-07"
       },
       "src/compiler/wgsl/pipeline/diagnostic.zig": {
         "decision": "Keep",
@@ -4288,9 +4288,9 @@
       },
       "src/contracts/resource_lease.zig": {
         "decision": "Keep",
-        "moduleSha256": "d1f6757deec750f5b3dade5c1bef5c6e29ef6827db8fe837de5d068de427cb3f",
-        "reason": "Keep: native object and neutral lease owners centralize atomic reference counts and synchronized label mutation without changing handle layout.",
-        "reviewer": "codex-native-ownership/2026-09-06"
+        "moduleSha256": "28831fde0b74b7758b116dde0ee2ae8e03dc62b86d2e452e9824e33c53df237f",
+        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+        "reviewer": "codex-submit-availability/2026-09-07"
       },
       "src/contracts/vertex_format.zig": {
         "decision": "Keep",
@@ -4321,6 +4321,12 @@
         "moduleSha256": "c9f845ec06040a55045ae71a7524d6b8c717c61427fd7221269d8204dc52c402",
         "reason": "Keep: shared typed buffer-copy admission validates device, usage, range, alignment and the declared alias policy before retaining resources.",
         "reviewer": "codex-copy-admission/2026-09-07"
+      },
+      "src/native/queue/doe_submission_validation.zig": {
+        "decision": "Keep",
+        "moduleSha256": "acda1d9a23e62cbe03043688372e6561363c4d1ee6ed114c5c94874a98c62098",
+        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+        "reviewer": "codex-submit-availability/2026-09-07"
       }
     },
     "linePolicy": {

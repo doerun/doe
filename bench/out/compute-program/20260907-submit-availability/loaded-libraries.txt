@@ -1,0 +1,5 @@
+	linux-vdso.so.1 (0x0000710c32bda000)
+	libwebgpu_doe.so => /home/x/deco/doe/runtime/zig/zig-out/lib/libwebgpu_doe.so (0x0000710c32800000)
+	libc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 (0x0000710c32400000)
+	libvulkan.so.1 => /usr/lib/x86_64-linux-gnu/libvulkan.so.1 (0x0000710c32b23000)
+	/lib64/ld-linux-x86-64.so.2 (0x0000710c32bdc000)

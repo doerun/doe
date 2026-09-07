@@ -123,7 +123,10 @@ pub export fn doeNativeQueueWriteTexture(
 ) callconv(.c) void {
     const q = cast(DoeQueue, queue_raw);
     const tex = cast(DoeTexture, texture_raw) orelse return;
-    if (tex.error_object) return;
+    if (tex.isUnavailable()) {
+        if (q) |queue| queue.dev.error_scopes.deliver(@import("../../runtime/diagnostics/error_scope.zig").ERROR_TYPE_VALIDATION, "texture write requires a valid, undestroyed texture");
+        return;
+    }
     if (resource_ops.handleVulkanQueueWriteTexture(q, tex, .{
         .data_ptr = data_ptr,
         .data_len = data_len,
