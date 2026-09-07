@@ -1,0 +1,78 @@
+Zig source architecture review signals:
+src/backend/vulkan/native_runtime.zig: 1004 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_render.zig: 981 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_resources.zig: 1069 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_upload.zig: 843 lines exceeds advisory review signal 800
+src/backend/vulkan/vulkan_surface.zig: 808 lines exceeds advisory review signal 800
+src/compiler/tsir/digest.zig: 999 lines exceeds advisory review signal 800
+src/compiler/tsir/emit_kernel_body.zig: 895 lines exceeds advisory review signal 800
+src/compiler/tsir/frontend.zig: 885 lines exceeds advisory review signal 800
+src/compiler/tsir/reference_extended_ops.zig: 841 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_exec_v1.zig: 989 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_compile_source.zig: 895 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_runtime.zig: 837 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_ir_walk.zig: 888 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_layout.zig: 911 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/msl/emit_msl_ir.zig: 973 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig: 839 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig: 1005 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/parser_expr.zig: 851 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/sema.zig: 805 lines exceeds advisory review signal 800
+src/compiler/wgsl/ir/ir_transform_robustness.zig: 984 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_proof_match.zig: 890 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_uniform_bounds.zig: 878 lines exceeds advisory review signal 800
+src/dropin/dropin_browser_shared_memory.zig: 806 lines exceeds advisory review signal 800
+src/native/compute/doe_compute_fast.zig: 1061 lines exceeds advisory review signal 800
+src/native/queue/doe_queue_submit_metal.zig: 829 lines exceeds advisory review signal 800
+src/native/resource/doe_texture_sampler_native.zig: 827 lines exceeds advisory review signal 800
+src/native/shader/doe_shader_native.zig: 956 lines exceeds advisory review signal 800
+src/native/vulkan/vulkan_compute_native.zig: 1039 lines exceeds advisory review signal 800
+src/runtime/trace/trace.zig: 879 lines exceeds advisory review signal 800
+src/spatial/csl/csl_host_plan_tool.zig: 828 lines exceeds advisory review signal 800
+test
++- run test failure
+[default] (warn): doe: createShaderModule failed: unsupported sType 0xffffffff
+[default] (warn): doe: createComputePipeline failed: shader module is null or invalid. Ensure createShaderModule succeeded (check stderr for WGSL translation errors).
+[default] (warn): doe: createShaderModule failed: MTLLibrary creation returned null
+thread 755850 panic: attempt to use null value
+/home/x/deco/doe/runtime/zig/src/native/compute/doe_compute_fast.zig:391:6: 0x1e65686 in test.fused command constructor retains inputs and unwinds invalid copy (test_suite.zig)
+    ).?;
+     ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/compiler/test_runner.zig:130:29: 0x12fa0a3 in mainServer (test_runner.zig)
+                test_fn.func() catch |err| switch (err) {
+                            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/compiler/test_runner.zig:64:26: 0x12fb326 in main (test_runner.zig)
+        return mainServer() catch @panic("internal test runner failure");
+                         ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:618:22: 0x12f5955 in main (std.zig)
+            root.main();
+                     ^
+../sysdeps/nptl/libc_start_call_main.h:59:16: 0x7bfc08e2a600 in __libc_start_call_main (../sysdeps/x86/libc-start.c)
+../csu/libc-start.c:360:3: 0x7bfc08e2a717 in __libc_start_main_impl (../sysdeps/x86/libc-start.c)
+???:?:?: 0x1ec06f4 in ??? (???)
+???:?:?: 0x0 in ??? (???)
+error: while executing test 'src.native.compute.doe_compute_fast.test.fused command constructor retains inputs and unwinds invalid copy', the following command terminated with signal 6 (expected exited with code 0):
+./.zig-cache/o/a09ab46f4f2650e27cdb8059521d0358/test --cache-dir=./.zig-cache --seed=0xfacf5ec5 --listen=-
+
+Build Summary: 11/13 steps succeeded; 1 failed; 3261/3265 tests passed; 4 skipped
+test transitive failure
++- run python3 success 892ms MaxRSS:14M
++- run python3 success 436ms MaxRSS:27M
++- run python3 success 39ms MaxRSS:21M
++- run python3 success 50ms MaxRSS:20M
++- run python3 success 35ms MaxRSS:21M
++- run python3 success 78ms MaxRSS:12M
++- run test failure
+   +- compile test Debug native success 1s MaxRSS:296M
+      +- options cached
+test-wgsl success
++- run python3 (reused)
++- run python3 (reused)
++- run python3 (reused)
++- run python3 (reused)
++- run test 1114 passed 5s MaxRSS:15M
+   +- compile test Debug native cached 14ms MaxRSS:40M
+      +- options (reused)
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/733fbf42161afb46891734eb0a832a0e/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0xfacf5ec5 -Z49189e25f264633d test test-wgsl --summary all

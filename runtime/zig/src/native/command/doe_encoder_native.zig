@@ -1,4 +1,6 @@
 const recording = @import("doe_command_recording.zig");
+const buffer_copy = @import("doe_buffer_copy.zig");
+const buffer_abi = @import("../../core/abi/wgpu_core_base_types.zig");
 // doe_encoder_native.zig — Bind group layout, bind group, pipeline layout,
 // command encoder, and command buffer exports for Doe native Metal backend.
 // Sharded from doe_wgpu_native.zig to stay under the line-limit policy.
@@ -105,20 +107,30 @@ pub export fn doeNativeCommandEncoderBeginComputePass(enc_raw: ?*anyopaque, desc
 pub export fn doeNativeCopyBufferToBuffer(enc_raw: ?*anyopaque, src_raw: ?*anyopaque, src_off: u64, dst_raw: ?*anyopaque, dst_off: u64, size: u64) callconv(.c) void {
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
     if (!recording.requireOpen(enc)) return;
-    const src = cast(DoeBuffer, src_raw) orelse return;
-    const dst = cast(DoeBuffer, dst_raw) orelse return;
-    if (src.error_object or dst.error_object or src.destroyed or dst.destroyed) return;
-    if (!recording.reserve(enc, 0, 1)) return;
+    const request = buffer_copy.Copy{
+        .source = cast(DoeBuffer, src_raw),
+        .source_offset = src_off,
+        .destination = cast(DoeBuffer, dst_raw),
+        .destination_offset = dst_off,
+        .size = size,
+    };
+    const copy_size = buffer_copy.validate(enc.dev, request, .distinct_buffers) catch |err| {
+        recording.fail(enc, err);
+        return;
+    };
+    const src = request.source.?;
+    const dst = request.destination.?;
+    if (copy_size == 0) return;
+    if (!recording.reserve(enc, 1, 2)) return;
     references.retainBufferAssumeCapacity(&enc.references, src);
-    if (!recording.reserve(enc, 0, 1)) return;
     references.retainBufferAssumeCapacity(&enc.references, dst);
-    if (!recording.append(enc, .{ .copy_buf = .{
+    enc.cmds.appendAssumeCapacity(.{ .copy_buf = .{
         .src = @ptrCast(src),
         .src_off = src_off,
         .dst = @ptrCast(dst),
         .dst_off = dst_off,
-        .size = size,
-    } })) return;
+        .size = copy_size,
+    } });
 }
 
 pub export fn doeNativeCommandEncoderCopyBufferToTexture(
@@ -259,8 +271,8 @@ pub export fn doeNativeCommandEncoderPopDebugGroup(
 
 test "recorded copies transfer resource ownership to command buffers" {
     var device = DoeDevice{};
-    var source = DoeBuffer{ .size = 16 };
-    var destination = DoeBuffer{ .size = 16 };
+    var source = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
+    var destination = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
     const encoder = doeNativeDeviceCreateCommandEncoder(toOpaque(&device), null).?;
     doeNativeCopyBufferToBuffer(encoder, toOpaque(&source), 0, toOpaque(&destination), 0, 16);
     try std.testing.expectEqual(@as(u32, 2), source.ref_count);
@@ -277,13 +289,37 @@ test "recorded copies transfer resource ownership to command buffers" {
 
 test "abandoned encoder releases resources without finishing" {
     var device = DoeDevice{};
-    var buffer = DoeBuffer{ .size = 16 };
+    var source = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
+    var destination = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
     const encoder = doeNativeDeviceCreateCommandEncoder(toOpaque(&device), null).?;
-    doeNativeCopyBufferToBuffer(encoder, toOpaque(&buffer), 0, toOpaque(&buffer), 0, 16);
-    try std.testing.expectEqual(@as(u32, 3), buffer.ref_count);
+    doeNativeCopyBufferToBuffer(encoder, toOpaque(&source), 0, toOpaque(&destination), 0, 16);
+    try std.testing.expectEqual(@as(u32, 2), source.ref_count);
+    try std.testing.expectEqual(@as(u32, 2), destination.ref_count);
     doeNativeCommandEncoderRelease(encoder);
-    try std.testing.expectEqual(@as(u32, 1), buffer.ref_count);
+    try std.testing.expectEqual(@as(u32, 1), source.ref_count);
+    try std.testing.expectEqual(@as(u32, 1), destination.ref_count);
     try std.testing.expectEqual(@as(u32, 1), device.ref_count);
+}
+
+test "copy validation precedes allocation and empty copies acquire no leases" {
+    var device = DoeDevice{};
+    var source = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
+    var destination = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
+    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{});
+    const encoder = try createEncoder(failing.allocator(), &device);
+    defer doeNativeCommandEncoderRelease(toOpaque(encoder));
+    failing.fail_index = failing.alloc_index;
+    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&source), 16, toOpaque(&destination), 16, 0);
+    try std.testing.expect(encoder.state == .open);
+    try std.testing.expectEqual(@as(usize, 0), encoder.cmds.items.len);
+    try std.testing.expectEqual(@as(usize, 0), encoder.references.items.len);
+    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&source), 0, toOpaque(&destination), 0, 20);
+    try std.testing.expectEqual(error.BufferCopyOutOfBounds, encoder.state.failed);
+    try std.testing.expectEqual(@as(u32, 1), source.ref_count);
+    try std.testing.expectEqual(@as(u32, 1), destination.ref_count);
+    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&source), 0, toOpaque(&destination), 0, 16);
+    try std.testing.expectEqual(error.BufferCopyOutOfBounds, encoder.state.failed);
+    try std.testing.expectEqual(@as(usize, 0), encoder.cmds.items.len);
 }
 
 test "compute pass pins encoder and transferred pipeline and binding state" {
@@ -360,12 +396,13 @@ fn recordingAllocationScenario(allocator: std.mem.Allocator, fixture: RecordingF
     var pipeline = native_types.DoeComputePipeline{};
     var render_pipeline = native_types.DoeRenderPipeline{};
     var group = DoeBindGroup{};
-    var buffer = DoeBuffer{ .size = 512 };
+    var buffer = DoeBuffer{ .dev = &device, .size = 512, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
+    var destination = DoeBuffer{ .dev = &device, .size = 512, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
     var texture = DoeTexture{};
     var view = native_types.DoeTextureView{ .tex = &texture };
     var query = query_native.DoeQuerySet{ .count = 2 };
     defer {
-        for ([_]u32{ device.ref_count, pipeline.ref_count, render_pipeline.ref_count, group.ref_count, buffer.ref_count, texture.ref_count, view.ref_count, query.ref_count }) |count|
+        for ([_]u32{ device.ref_count, pipeline.ref_count, render_pipeline.ref_count, group.ref_count, buffer.ref_count, destination.ref_count, texture.ref_count, view.ref_count, query.ref_count }) |count|
             std.testing.expectEqual(@as(u32, 1), count) catch @panic("ordinary recording leaked a caller reference");
     }
     const encoder = try createEncoder(allocator, &device);
@@ -400,7 +437,7 @@ fn recordingAllocationScenario(allocator: std.mem.Allocator, fixture: RecordingF
             render.doeNativeRenderPassEnd(pass);
         },
         .copy => for (0..repetitions) |_| {
-            doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&buffer), 0, toOpaque(&buffer), 16, 16);
+            doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&buffer), 0, toOpaque(&destination), 16, 16);
             doeNativeCommandEncoderCopyBufferToTexture(toOpaque(encoder), toOpaque(&buffer), 0, 256, 1, toOpaque(&texture), 0, 1, 1, 1);
             doeNativeCommandEncoderCopyTextureToBuffer(toOpaque(encoder), toOpaque(&texture), 0, toOpaque(&buffer), 0, 256, 1, 1, 1, 1);
         },
@@ -432,13 +469,14 @@ test "failed recording finishes as an error object and cannot submit or resume" 
     };
     var device = DoeDevice{};
     var queue = native_types.DoeQueue{ .dev = &device };
-    var buffer = DoeBuffer{ .size = 32 };
+    var buffer = DoeBuffer{ .dev = &device, .size = 32, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
+    var destination = DoeBuffer{ .dev = &device, .size = 32, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
     var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{});
     const encoder = try createEncoder(failing.allocator(), &device);
     defer doeNativeCommandEncoderRelease(toOpaque(encoder));
     device.error_scopes.push(errors.FILTER_OUT_OF_MEMORY);
     failing.fail_index = failing.alloc_index;
-    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&buffer), 0, toOpaque(&buffer), 16, 16);
+    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&buffer), 0, toOpaque(&destination), 16, 16);
     try std.testing.expectEqual(error.OutOfMemory, encoder.state.failed);
     var capture = Capture{};
     try std.testing.expect(device.error_scopes.pop(.{ .callback = Capture.receive, .userdata1 = &capture }));
@@ -456,7 +494,7 @@ test "failed recording finishes as an error object and cannot submit or resume" 
     @import("../queue/doe_queue_submit_native.zig").doeNativeQueueSubmit(toOpaque(&queue), submitted.len, &submitted);
     try std.testing.expect(device.error_scopes.pop(.{ .callback = Capture.receive, .userdata1 = &capture }));
     try std.testing.expectEqual(errors.ERROR_TYPE_VALIDATION, capture.kind);
-    doeNativeCopyBufferToBuffer(toOpaque(valid_encoder), toOpaque(&buffer), 0, toOpaque(&buffer), 16, 16);
+    doeNativeCopyBufferToBuffer(toOpaque(valid_encoder), toOpaque(&buffer), 0, toOpaque(&destination), 16, 16);
     try std.testing.expectEqual(error.InvalidState, valid_encoder.state.failed);
     try std.testing.expectEqual(@as(usize, 0), valid_encoder.cmds.items.len);
     try std.testing.expectEqual(@as(u32, 1), buffer.ref_count);

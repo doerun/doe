@@ -8,8 +8,10 @@ const trace = @import("../diagnostics/doe_program_identity_trace.zig");
 const bindings = @import("doe_compute_bind_groups.zig");
 const preconditions = @import("doe_compute_preconditions_native.zig");
 const vulkan = @import("doe_compute_fast_vulkan.zig");
+const buffer_copy = @import("../command/doe_buffer_copy.zig");
+const buffer_abi = @import("../../core/abi/wgpu_core_base_types.zig");
 
-pub const ConstructionError = std.mem.Allocator.Error || preconditions.ValidationError || error{ InvalidArgument, InvalidState };
+pub const ConstructionError = std.mem.Allocator.Error || preconditions.ValidationError || buffer_copy.ValidationError || error{InvalidState};
 
 pub const Dispatch = struct {
     pipeline: *objects.DoeComputePipeline,
@@ -18,13 +20,7 @@ pub const Dispatch = struct {
     workgroups: [3]u32,
 };
 
-pub const Copy = struct {
-    source: ?*objects.DoeBuffer,
-    source_offset: u64,
-    destination: ?*objects.DoeBuffer,
-    destination_offset: u64,
-    size: u64,
-};
+pub const Copy = buffer_copy.Copy;
 
 pub const Builder = struct {
     pending: ?*objects.DoeCommandBuffer,
@@ -97,10 +93,10 @@ pub const Builder = struct {
     pub fn appendCopy(self: *Builder, request: Copy) ConstructionError!void {
         const buffer = self.pending orelse return error.InvalidState;
         if (request.size == 0) return;
-        const source = request.source orelse return error.InvalidArgument;
-        const destination = request.destination orelse return error.InvalidArgument;
-        if (source.error_object or source.destroyed or destination.error_object or destination.destroyed)
-            return error.InvalidArgument;
+        const size = try buffer_copy.validate(buffer.dev, request, .disjoint_ranges);
+        if (size == 0) return;
+        const source = request.source.?;
+        const destination = request.destination.?;
         try reserve(buffer, 2);
         references.retainBufferAssumeCapacity(&buffer.references, source);
         references.retainBufferAssumeCapacity(&buffer.references, destination);
@@ -109,7 +105,7 @@ pub const Builder = struct {
             .src_off = request.source_offset,
             .dst = helpers.toOpaque(destination),
             .dst_off = request.destination_offset,
-            .size = request.size,
+            .size = size,
         } });
     }
 
@@ -124,8 +120,8 @@ fn allocationFailureScenario(allocator: std.mem.Allocator) !void {
     var device = objects.DoeDevice{};
     var pipeline = objects.DoeComputePipeline{};
     var group = objects.DoeBindGroup{};
-    var source = objects.DoeBuffer{ .size = 16 };
-    var destination = objects.DoeBuffer{ .size = 16 };
+    var source = objects.DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
+    var destination = objects.DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
     defer {
         for ([_]u32{ device.ref_count, pipeline.ref_count, group.ref_count, source.ref_count, destination.ref_count }) |count|
             std.testing.expectEqual(@as(u32, 1), count) catch @panic("fused recording leaked a caller reference");
@@ -156,7 +152,7 @@ test "fused recording rolls back every allocation failure and transfers complete
 
 fn copyAllocationFailureScenario(allocator: std.mem.Allocator) !void {
     var device = objects.DoeDevice{};
-    var buffer = objects.DoeBuffer{ .size = 32 };
+    var buffer = objects.DoeBuffer{ .dev = &device, .size = 32, .usage = buffer_abi.WGPUBufferUsage_CopySrc | buffer_abi.WGPUBufferUsage_CopyDst };
     defer {
         std.testing.expectEqual(@as(u32, 1), device.ref_count) catch @panic("copy recording leaked its device");
         std.testing.expectEqual(@as(u32, 1), buffer.ref_count) catch @panic("copy recording leaked an aliased buffer");

@@ -219,6 +219,14 @@ classified and cannot be promoted by benchmark results.
   single and batched constructor outputs after caller release. Its library hash
   must match the retained package. The addon's ordinary encoding helper is a
   different path and cannot stand in for this native-constructor check.
+  Ordinary buffer copies validate objects, device identity, source/destination
+  usage, aligned ranges, and distinct buffers before allocation or reference
+  retention. Whole-size requests resolve from the source offset. Empty ordinary
+  copies still validate but record no work. Failures poison the encoder and map
+  to WebGPU validation scopes. Native fused constructors share range/device/usage
+  admission while preserving their explicit disjoint-alias and omitted-copy
+  contract. Public signatures and report schemas are unchanged. Regression
+  fixtures must declare valid devices/usages instead of bypassing admission.
   Ordinary encoder, bundle, and query recording failures must poison recording
   instead of aborting or publishing usable partial work. Fault-injection tests
   cover recording and finish allocations, retained references, invalid bundle

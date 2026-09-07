@@ -359,6 +359,7 @@ fn constructionFailure(device: *DoeDevice, err: recorded.ConstructionError) ?*an
 }
 
 test "fused command constructor retains inputs and unwinds invalid copy" {
+    const buffer_abi = @import("../../core/abi/wgpu_core_base_types.zig");
     const Capture = struct {
         error_type: u32 = error_scope.ERROR_TYPE_NO_ERROR,
         invalid_argument: bool = false,
@@ -374,8 +375,8 @@ test "fused command constructor retains inputs and unwinds invalid copy" {
     var device = DoeDevice{};
     var pipeline = DoeComputePipeline{};
     var group = native_types.DoeBindGroup{};
-    var source = native_types.DoeBuffer{ .size = 16 };
-    var destination = native_types.DoeBuffer{ .size = 16 };
+    var source = native_types.DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
+    var destination = native_types.DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
     const command = doeNativeCreateComputeDispatchCopyCommandBufferOneBindGroup(
         toOpaque(&device),
         toOpaque(&pipeline),

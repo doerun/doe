@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_native_program_identity_trace_validation",
+  "inputs": {
+    "trace": {
+      "path": "bench/out/compute-program/20260907-buffer-copy-admission/native.jsonl",
+      "sha256": "6cacaa770d3ae8e7c0c9bb3d966b94fabd383ecc3676d2ee64779a43a9dfd2e8"
+    },
+    "rowSchema": {
+      "path": "config/native-program-identity-trace-row.schema.json",
+      "sha256": "34799d1a2571070bb34ac7f14e36a42a0f63616c9216ab86d6ca0e16c0db4a89"
+    },
+    "artifactRoot": "bench/out/compute-program/20260907-buffer-copy-admission",
+    "spirvValidator": "/usr/bin/spirv-val",
+    "requireRenderCompletion": false
+  },
+  "counts": {
+    "rows": 100,
+    "processes": 1,
+    "dispatches": 6,
+    "renderDraws": 0,
+    "submissions": 6,
+    "artifacts": 1
+  },
+  "checks": {
+    "rowSchemaValid": true,
+    "processSequenceValid": true,
+    "computeSubmissionValid": true,
+    "renderCompletionValid": true,
+    "backendArtifactsValid": true
+  },
+  "artifacts": [
+    {
+      "stage": "compute",
+      "path": "bench/out/compute-program/20260907-buffer-copy-admission/doe-native-vulkan-e87af05585b40f17668ad3c6a6e5a266dcd383ae0d8cc7c139331a96bf4c2aa0.spv",
+      "expectedSha256": "e87af05585b40f17668ad3c6a6e5a266dcd383ae0d8cc7c139331a96bf4c2aa0",
+      "actualSha256": "e87af05585b40f17668ad3c6a6e5a266dcd383ae0d8cc7c139331a96bf4c2aa0",
+      "spirvValPassed": true
+    }
+  ],
+  "verdict": {
+    "status": "passed",
+    "failureCodes": [],
+    "claimBoundary": "native journal schema, event sequence, completion, and exact SPIR-V bytes; not public-observer identity, output correctness, driver identity, or performance"
+  },
+  "validationSha256": "c385f64f6890157d7445b027d1a52dc4f96429bcec31a1915fa373c37dd6eb70"
+}

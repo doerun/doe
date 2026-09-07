@@ -132,6 +132,53 @@ static bool texture_is_zero(WGPUInstance instance, WGPUDevice device, WGPUQueue 
     return zero;
 }
 
+static bool invalid_buffer_copies(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
+    enum { SOURCE_ALIGNMENT, DESTINATION_ALIGNMENT, SIZE_ALIGNMENT, SOURCE_RANGE,
+           DESTINATION_RANGE, SAME_BUFFER, SOURCE_USAGE, DESTINATION_USAGE,
+           ZERO_SIZE_USAGE, COPY_CASE_COUNT };
+    WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
+    desc.size = ELEMENT_COUNT * sizeof(uint32_t);
+    desc.usage = WGPUBufferUsage_CopySrc | WGPUBufferUsage_CopyDst;
+    WGPUBuffer source = wgpuDeviceCreateBuffer(device, &desc);
+    WGPUBuffer destination = wgpuDeviceCreateBuffer(device, &desc);
+    desc.usage = WGPUBufferUsage_Storage;
+    WGPUBuffer wrong_usage = wgpuDeviceCreateBuffer(device, &desc);
+    bool success = source && destination && wrong_usage;
+    for (unsigned scenario = 0; success && scenario < COPY_CASE_COUNT; ++scenario) {
+        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
+        if (!encoder) { success = false; break; }
+        const uint64_t source_offset = scenario == SOURCE_ALIGNMENT ? 1 :
+            scenario == SOURCE_RANGE ? desc.size : 0;
+        const uint64_t destination_offset = scenario == DESTINATION_ALIGNMENT ? 1 :
+            scenario == DESTINATION_RANGE ? desc.size : 0;
+        const uint64_t size = scenario == SIZE_ALIGNMENT ? 1 :
+            scenario == ZERO_SIZE_USAGE ? 0 : sizeof(uint32_t);
+        WGPUBuffer src = scenario == SOURCE_USAGE || scenario == ZERO_SIZE_USAGE ? wrong_usage : source;
+        WGPUBuffer dst = scenario == SAME_BUFFER ? source :
+            scenario == DESTINATION_USAGE ? wrong_usage : destination;
+        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+        wgpuCommandEncoderCopyBufferToBuffer(encoder, src, source_offset, dst, destination_offset, size);
+        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
+        const bool recording_rejected = pop_validation(instance, device);
+        wgpuCommandEncoderRelease(encoder);
+        bool submit_rejected = false;
+        if (commands && recording_rejected) {
+            wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+            wgpuQueueSubmit(queue, 1, &commands);
+            submit_rejected = pop_validation(instance, device);
+        }
+        if (commands) wgpuCommandBufferRelease(commands);
+        success = recording_rejected && submit_rejected;
+        if (!success) fprintf(stderr, "invalid buffer copy admitted: case=%u recording=%u submission=%u\n",
+                              scenario, recording_rejected, submit_rejected);
+    }
+    if (source) wgpuBufferRelease(source);
+    if (destination) wgpuBufferRelease(destination);
+    if (wrong_usage) wgpuBufferRelease(wrong_usage);
+    if (success) printf("passed: buffer copy alignment, range, identity, usage and empty-copy validation\n");
+    return success;
+}
+
 static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue,
                     bool batch, bool via_texture, bool resident_roundtrip) {
     bool success = false, mapped = false;
@@ -345,7 +392,8 @@ int main(void) {
     wgpuInstanceProcessEvents(instance);
     if (!device) goto cleanup;
     queue = wgpuDeviceGetQueue(device);
-    if (queue && invalid_pass_lifetimes(instance, device, queue) && execute(instance, device, queue, false, false, false) &&
+    if (queue && invalid_pass_lifetimes(instance, device, queue) && invalid_buffer_copies(instance, device, queue) &&
+        execute(instance, device, queue, false, false, false) &&
         execute(instance, device, queue, true, false, false)) {
         const bool layered_readback = execute(instance, device, queue, false, true, false);
         const bool resident_roundtrip = execute(instance, device, queue, false, true, true);

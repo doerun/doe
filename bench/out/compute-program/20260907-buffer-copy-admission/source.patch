@@ -1,0 +1,592 @@
+diff --git a/docs/process.md b/docs/process.md
+index 5500d1180..f8e9460db 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -219,6 +219,14 @@ classified and cannot be promoted by benchmark results.
+   single and batched constructor outputs after caller release. Its library hash
+   must match the retained package. The addon's ordinary encoding helper is a
+   different path and cannot stand in for this native-constructor check.
++  Ordinary buffer copies validate objects, device identity, source/destination
++  usage, aligned ranges, and distinct buffers before allocation or reference
++  retention. Whole-size requests resolve from the source offset. Empty ordinary
++  copies still validate but record no work. Failures poison the encoder and map
++  to WebGPU validation scopes. Native fused constructors share range/device/usage
++  admission while preserving their explicit disjoint-alias and omitted-copy
++  contract. Public signatures and report schemas are unchanged. Regression
++  fixtures must declare valid devices/usages instead of bypassing admission.
+   Ordinary encoder, bundle, and query recording failures must poison recording
+   instead of aborting or publishing usable partial work. Fault-injection tests
+   cover recording and finish allocations, retained references, invalid bundle
+diff --git a/docs/status/compiler-and-webgpu.md b/docs/status/compiler-and-webgpu.md
+index f9fda81de..6357d0ae9 100644
+--- a/docs/status/compiler-and-webgpu.md
++++ b/docs/status/compiler-and-webgpu.md
+@@ -34,13 +34,14 @@ need their respective tests and implementation.
+ 
+ ## Recording failures and submission ordering
+ 
+-Ordinary encoders, render bundles, and query recording now retain explicit
+-failure state. Allocation failures report through existing device error scopes;
+-finish produces an error command object when allocation permits, and queue
+-submission rejects it before executing the submitted list. Commands, passes,
+-bundles, and retained dependencies keep their owning allocator through cleanup.
+-Fault-injection tests cover recording growth, abandoned state, failed finish,
+-rejected replay/submission, and subsequent valid recording.
++Ordinary encoders, bundles, and queries preserve allocation failure state and
++owned dependencies. Error command objects are rejected before submission.
++Buffer copies validate device, usage, alignment, range, and aliasing before
++allocation or leasing. Empty copies validate without recording work; whole-size
++copies resolve from the source offset. Native fused constructors share admission
++while retaining their disjoint-alias and omitted-copy contract. The failing C
++reproduction, canonical tests, and retained-package acceptance are indexed at
++`bench/out/compute-program/20260907-buffer-copy-admission/README.md`.
+ 
+ Vulkan buffer/image copies execute at their recorded queue position without CPU
+ staging. Both directions share mip-relative extent, block, layer, stride, and
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index d774101e2..06db2e622 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -3490,9 +3490,9 @@
+       },
+       "src/native/command/doe_encoder_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "337f2d760871add06a5d20abf080c5725e031641b1818a3f6093377c6816e718",
+-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
+-        "reviewer": "codex-pass-lifecycle/2026-09-06"
++        "moduleSha256": "6e35a6b329f2c9b9af412a46ee1d792484701f5cd494983360061228d51243e2",
++        "reason": "Keep: existing recording entrypoints consume shared native copy admission; ownership regressions use valid device and usage declarations.",
++        "reviewer": "codex-copy-admission/2026-09-07"
+       },
+       "src/native/command/doe_immediates_external_native.zig": {
+         "decision": "Keep",
+@@ -3514,9 +3514,9 @@
+       },
+       "src/native/compute/doe_compute_fast.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "854a6193877a8ffd3a8dc27195a75a2bc20adb6e0abf5046a5c9f156c3345530",
+-        "reason": "Keep: native fused C entrypoints adapt to the transactional recorded-compute owner; direct submission remains local.",
+-        "reviewer": "codex-recorded-allocation/2026-09-06"
++        "moduleSha256": "368479d80096bc2e12b9d5beca0ca458632aa896f3d67c529be3018de3991586",
++        "reason": "Keep: existing recording entrypoints consume shared native copy admission; ownership regressions use valid device and usage declarations.",
++        "reviewer": "codex-copy-admission/2026-09-07"
+       },
+       "src/native/compute/doe_compute_fast_vulkan.zig": {
+         "decision": "Keep",
+@@ -3958,9 +3958,9 @@
+       },
+       "src/runtime/diagnostics/error_scope.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "a74dfbd5f615b5c79c5c6e29d518f11ca55c40cefbc83b03332a6b089f644b18",
+-        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
+-        "reviewer": "codex-immediate-admission/2026-09-06"
++        "moduleSha256": "0459ef562c9564db0f2b5059d1ee65770de28a5dbdcfa80a7fd3da20e0f1fa54",
++        "reason": "Keep: shared typed buffer-copy admission validates device, usage, range, alignment and the declared alias policy before retaining resources.",
++        "reviewer": "codex-copy-admission/2026-09-07"
+       },
+       "src/runtime/env_flags.zig": {
+         "decision": "Keep",
+@@ -4300,21 +4300,27 @@
+       },
+       "src/native/compute/doe_compute_recorded.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "ebe494e7f41615581dd85fef995fe5336226436ddd6bb5781ce263c0c3af1b37",
+-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
+-        "reviewer": "codex-recording-ownership/2026-09-06"
++        "moduleSha256": "ba39cef5fdb16a6d3fe2960c0ea70d86379b31a8541063788cdacf9bdca69823",
++        "reason": "Keep: shared typed buffer-copy admission validates device, usage, range, alignment and the declared alias policy before retaining resources.",
++        "reviewer": "codex-copy-admission/2026-09-07"
+       },
+       "src/contracts/command_recording.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "a136a4160e8a7cd8fa3c241be2eaf52ca797a7fe1b2eeecbd6cb4111aa222a0f",
+-        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
+-        "reviewer": "codex-immediate-admission/2026-09-06"
++        "moduleSha256": "cbc3b137cae4d510cf3d765870fd4d56d189d29334b9efb7ebca0999734167a0",
++        "reason": "Keep: shared typed buffer-copy admission validates device, usage, range, alignment and the declared alias policy before retaining resources.",
++        "reviewer": "codex-copy-admission/2026-09-07"
+       },
+       "src/native/command/doe_command_recording.zig": {
+         "decision": "Keep",
+         "moduleSha256": "eb6d1594bc2202c94a659d06bc05549f21eb8f669d2f15e45f5e4551e5cf4869",
+         "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
+         "reviewer": "codex-immediate-admission/2026-09-06"
++      },
++      "src/native/command/doe_buffer_copy.zig": {
++        "decision": "Keep",
++        "moduleSha256": "c9f845ec06040a55045ae71a7524d6b8c717c61427fd7221269d8204dc52c402",
++        "reason": "Keep: shared typed buffer-copy admission validates device, usage, range, alignment and the declared alias policy before retaining resources.",
++        "reviewer": "codex-copy-admission/2026-09-07"
+       }
+     },
+     "linePolicy": {
+diff --git a/runtime/zig/src/contracts/command_recording.zig b/runtime/zig/src/contracts/command_recording.zig
+index 6e38cc1cb..744c7ee55 100644
+--- a/runtime/zig/src/contracts/command_recording.zig
++++ b/runtime/zig/src/contracts/command_recording.zig
+@@ -1,10 +1,24 @@
+-pub const Failure = error{ OutOfMemory, InvalidState, InvalidArgument, ImmediateDataUnsupported };
++pub const BufferCopyError = error{
++    InvalidArgument,
++    BufferCopyDeviceMismatch,
++    BufferCopyUsageMissing,
++    BufferCopyUnaligned,
++    BufferCopyOutOfBounds,
++    BufferCopyAliasing,
++};
++
++pub const Failure = BufferCopyError || error{ OutOfMemory, InvalidState, ImmediateDataUnsupported };
+ 
+ pub fn message(cause: Failure) []const u8 {
+     return switch (cause) {
+         error.OutOfMemory => "GPU command recording could not allocate owned storage",
+         error.InvalidState => "GPU command recording requires an open encoder or its active pass",
+         error.InvalidArgument => "GPU command recording received an invalid dependency or payload",
++        error.BufferCopyDeviceMismatch => "buffer copy requires both buffers to belong to the encoder's device",
++        error.BufferCopyUsageMissing => "buffer copy requires COPY_SRC on source and COPY_DST on destination",
++        error.BufferCopyUnaligned => "buffer copy offsets and size must be multiples of four bytes",
++        error.BufferCopyOutOfBounds => "buffer copy range exceeds the source or destination size",
++        error.BufferCopyAliasing => "buffer copy source and destination alias outside the permitted copy contract",
+         error.ImmediateDataUnsupported => "setImmediates: shader-visible immediate data is unsupported; use buffer bindings",
+     };
+ }
+diff --git a/runtime/zig/src/native/command/doe_buffer_copy.zig b/runtime/zig/src/native/command/doe_buffer_copy.zig
+new file mode 100644
+index 000000000..c20a514f3
+--- /dev/null
++++ b/runtime/zig/src/native/command/doe_buffer_copy.zig
+@@ -0,0 +1,96 @@
++const std = @import("std");
++const contract = @import("../../contracts/command_recording.zig");
++const abi = @import("../../core/abi/wgpu_core_base_types.zig");
++const objects = @import("../support/doe_native_object_types.zig");
++
++const COPY_ALIGNMENT: u64 = 4;
++
++pub const Copy = struct {
++    source: ?*objects.DoeBuffer,
++    source_offset: u64,
++    destination: ?*objects.DoeBuffer,
++    destination_offset: u64,
++    size: u64,
++};
++
++pub const AliasPolicy = enum { distinct_buffers, disjoint_ranges };
++pub const ValidationError = contract.BufferCopyError;
++
++pub fn validate(device: *objects.DoeDevice, copy: Copy, alias: AliasPolicy) ValidationError!u64 {
++    const source = copy.source orelse return error.InvalidArgument;
++    const destination = copy.destination orelse return error.InvalidArgument;
++    if (source.error_object or source.destroyed or destination.error_object or destination.destroyed)
++        return error.InvalidArgument;
++    if (source.dev != device or destination.dev != device) return error.BufferCopyDeviceMismatch;
++    if (source.usage & abi.WGPUBufferUsage_CopySrc == 0 or destination.usage & abi.WGPUBufferUsage_CopyDst == 0)
++        return error.BufferCopyUsageMissing;
++    if (copy.source_offset > source.size or copy.destination_offset > destination.size)
++        return error.BufferCopyOutOfBounds;
++    const size = if (copy.size == std.math.maxInt(u64)) source.size - copy.source_offset else copy.size;
++    if (copy.source_offset % COPY_ALIGNMENT != 0 or copy.destination_offset % COPY_ALIGNMENT != 0 or size % COPY_ALIGNMENT != 0)
++        return error.BufferCopyUnaligned;
++    if (size > source.size - copy.source_offset or size > destination.size - copy.destination_offset)
++        return error.BufferCopyOutOfBounds;
++    if (source == destination and (alias == .distinct_buffers or
++        (size != 0 and copy.source_offset < copy.destination_offset + size and copy.destination_offset < copy.source_offset + size)))
++        return error.BufferCopyAliasing;
++    return size;
++}
++
++test "buffer copy validation resolves whole size and keeps alias contracts explicit" {
++    var device = objects.DoeDevice{};
++    var source = objects.DoeBuffer{ .dev = &device, .size = 32, .usage = abi.WGPUBufferUsage_CopySrc | abi.WGPUBufferUsage_CopyDst };
++    var destination = objects.DoeBuffer{ .dev = &device, .size = 16, .usage = abi.WGPUBufferUsage_CopyDst };
++    var copy = Copy{ .source = &source, .source_offset = 16, .destination = &destination, .destination_offset = 0, .size = std.math.maxInt(u64) };
++    try std.testing.expectEqual(@as(u64, 16), try validate(&device, copy, .distinct_buffers));
++    copy.source_offset = 32;
++    copy.destination_offset = 16;
++    try std.testing.expectEqual(@as(u64, 0), try validate(&device, copy, .distinct_buffers));
++    copy = .{ .source = &source, .source_offset = 0, .destination = &source, .destination_offset = 16, .size = 16 };
++    try std.testing.expectEqual(@as(u64, 16), try validate(&device, copy, .disjoint_ranges));
++    try std.testing.expectError(error.BufferCopyAliasing, validate(&device, copy, .distinct_buffers));
++    copy.destination_offset = 12;
++    try std.testing.expectError(error.BufferCopyAliasing, validate(&device, copy, .disjoint_ranges));
++    copy.size = 0;
++    try std.testing.expectError(error.BufferCopyAliasing, validate(&device, copy, .distinct_buffers));
++}
++
++test "buffer copy admission rejects device usage alignment range and object failures" {
++    var device = objects.DoeDevice{};
++    var other = objects.DoeDevice{};
++    var source = objects.DoeBuffer{ .dev = &device, .size = 16, .usage = abi.WGPUBufferUsage_CopySrc };
++    var destination = objects.DoeBuffer{ .dev = &device, .size = 16, .usage = abi.WGPUBufferUsage_CopyDst };
++    var copy = Copy{ .source = &source, .source_offset = 0, .destination = &destination, .destination_offset = 0, .size = 4 };
++    try std.testing.expectError(error.BufferCopyDeviceMismatch, validate(&other, copy, .distinct_buffers));
++    destination.dev = null;
++    try std.testing.expectError(error.BufferCopyDeviceMismatch, validate(&device, copy, .distinct_buffers));
++    destination.dev = &device;
++    for ([_]u64{ 0, 4 }) |size| {
++        copy.size = size;
++        source.usage = 0;
++        try std.testing.expectError(error.BufferCopyUsageMissing, validate(&device, copy, .distinct_buffers));
++        source.usage = abi.WGPUBufferUsage_CopySrc;
++        destination.usage = 0;
++        try std.testing.expectError(error.BufferCopyUsageMissing, validate(&device, copy, .distinct_buffers));
++        destination.usage = abi.WGPUBufferUsage_CopyDst;
++    }
++    copy.source_offset = 1;
++    try std.testing.expectError(error.BufferCopyUnaligned, validate(&device, copy, .distinct_buffers));
++    copy.source_offset = 0;
++    copy.destination_offset = 1;
++    try std.testing.expectError(error.BufferCopyUnaligned, validate(&device, copy, .distinct_buffers));
++    copy.destination_offset = 0;
++    copy.size = 1;
++    try std.testing.expectError(error.BufferCopyUnaligned, validate(&device, copy, .distinct_buffers));
++    copy.size = 20;
++    try std.testing.expectError(error.BufferCopyOutOfBounds, validate(&device, copy, .distinct_buffers));
++    copy.source_offset = std.math.maxInt(u64) - 3;
++    try std.testing.expectError(error.BufferCopyOutOfBounds, validate(&device, copy, .distinct_buffers));
++    copy.source_offset = 0;
++    copy.size = 4;
++    source.destroyed = true;
++    try std.testing.expectError(error.InvalidArgument, validate(&device, copy, .distinct_buffers));
++    source.destroyed = false;
++    destination.error_object = true;
++    try std.testing.expectError(error.InvalidArgument, validate(&device, copy, .distinct_buffers));
++}
+diff --git a/runtime/zig/src/native/command/doe_encoder_native.zig b/runtime/zig/src/native/command/doe_encoder_native.zig
+index faaa7d41b..5cff45260 100644
+--- a/runtime/zig/src/native/command/doe_encoder_native.zig
++++ b/runtime/zig/src/native/command/doe_encoder_native.zig
+@@ -1,4 +1,6 @@
+ const recording = @import("doe_command_recording.zig");
++const buffer_copy = @import("doe_buffer_copy.zig");
++const buffer_abi = @import("../../core/abi/wgpu_core_base_types.zig");
+ // doe_encoder_native.zig — Bind group layout, bind group, pipeline layout,
+ // command encoder, and command buffer exports for Doe native Metal backend.
+ // Sharded from doe_wgpu_native.zig to stay under the line-limit policy.
+@@ -105,20 +107,30 @@ pub export fn doeNativeCommandEncoderBeginComputePass(enc_raw: ?*anyopaque, desc
+ pub export fn doeNativeCopyBufferToBuffer(enc_raw: ?*anyopaque, src_raw: ?*anyopaque, src_off: u64, dst_raw: ?*anyopaque, dst_off: u64, size: u64) callconv(.c) void {
+     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
+     if (!recording.requireOpen(enc)) return;
+-    const src = cast(DoeBuffer, src_raw) orelse return;
+-    const dst = cast(DoeBuffer, dst_raw) orelse return;
+-    if (src.error_object or dst.error_object or src.destroyed or dst.destroyed) return;
+-    if (!recording.reserve(enc, 0, 1)) return;
++    const request = buffer_copy.Copy{
++        .source = cast(DoeBuffer, src_raw),
++        .source_offset = src_off,
++        .destination = cast(DoeBuffer, dst_raw),
++        .destination_offset = dst_off,
++        .size = size,
++    };
++    const copy_size = buffer_copy.validate(enc.dev, request, .distinct_buffers) catch |err| {
++        recording.fail(enc, err);
++        return;
++    };
++    const src = request.source.?;
++    const dst = request.destination.?;
++    if (copy_size == 0) return;
++    if (!recording.reserve(enc, 1, 2)) return;
+     references.retainBufferAssumeCapacity(&enc.references, src);
+-    if (!recording.reserve(enc, 0, 1)) return;
+     references.retainBufferAssumeCapacity(&enc.references, dst);
+-    if (!recording.append(enc, .{ .copy_buf = .{
++    enc.cmds.appendAssumeCapacity(.{ .copy_buf = .{
+         .src = @ptrCast(src),
+         .src_off = src_off,
+         .dst = @ptrCast(dst),
+         .dst_off = dst_off,
+-        .size = size,
+-    } })) return;
++        .size = copy_size,
++    } });
+ }
+ 
+ pub export fn doeNativeCommandEncoderCopyBufferToTexture(
+@@ -259,8 +271,8 @@ pub export fn doeNativeCommandEncoderPopDebugGroup(
+ 
+ test "recorded copies transfer resource ownership to command buffers" {
+     var device = DoeDevice{};
+-    var source = DoeBuffer{ .size = 16 };
+-    var destination = DoeBuffer{ .size = 16 };
++    var source = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
++    var destination = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
+     const encoder = doeNativeDeviceCreateCommandEncoder(toOpaque(&device), null).?;
+     doeNativeCopyBufferToBuffer(encoder, toOpaque(&source), 0, toOpaque(&destination), 0, 16);
+     try std.testing.expectEqual(@as(u32, 2), source.ref_count);
+@@ -277,15 +289,39 @@ test "recorded copies transfer resource ownership to command buffers" {
+ 
+ test "abandoned encoder releases resources without finishing" {
+     var device = DoeDevice{};
+-    var buffer = DoeBuffer{ .size = 16 };
++    var source = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
++    var destination = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
+     const encoder = doeNativeDeviceCreateCommandEncoder(toOpaque(&device), null).?;
+-    doeNativeCopyBufferToBuffer(encoder, toOpaque(&buffer), 0, toOpaque(&buffer), 0, 16);
+-    try std.testing.expectEqual(@as(u32, 3), buffer.ref_count);
++    doeNativeCopyBufferToBuffer(encoder, toOpaque(&source), 0, toOpaque(&destination), 0, 16);
++    try std.testing.expectEqual(@as(u32, 2), source.ref_count);
++    try std.testing.expectEqual(@as(u32, 2), destination.ref_count);
+     doeNativeCommandEncoderRelease(encoder);
+-    try std.testing.expectEqual(@as(u32, 1), buffer.ref_count);
++    try std.testing.expectEqual(@as(u32, 1), source.ref_count);
++    try std.testing.expectEqual(@as(u32, 1), destination.ref_count);
+     try std.testing.expectEqual(@as(u32, 1), device.ref_count);
+ }
+ 
++test "copy validation precedes allocation and empty copies acquire no leases" {
++    var device = DoeDevice{};
++    var source = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
++    var destination = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
++    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{});
++    const encoder = try createEncoder(failing.allocator(), &device);
++    defer doeNativeCommandEncoderRelease(toOpaque(encoder));
++    failing.fail_index = failing.alloc_index;
++    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&source), 16, toOpaque(&destination), 16, 0);
++    try std.testing.expect(encoder.state == .open);
++    try std.testing.expectEqual(@as(usize, 0), encoder.cmds.items.len);
++    try std.testing.expectEqual(@as(usize, 0), encoder.references.items.len);
++    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&source), 0, toOpaque(&destination), 0, 20);
++    try std.testing.expectEqual(error.BufferCopyOutOfBounds, encoder.state.failed);
++    try std.testing.expectEqual(@as(u32, 1), source.ref_count);
++    try std.testing.expectEqual(@as(u32, 1), destination.ref_count);
++    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&source), 0, toOpaque(&destination), 0, 16);
++    try std.testing.expectEqual(error.BufferCopyOutOfBounds, encoder.state.failed);
++    try std.testing.expectEqual(@as(usize, 0), encoder.cmds.items.len);
++}
++
+ test "compute pass pins encoder and transferred pipeline and binding state" {
+     const compute = @import("../compute/doe_compute_ext_native.zig");
+     var device = DoeDevice{};
+@@ -360,12 +396,13 @@ fn recordingAllocationScenario(allocator: std.mem.Allocator, fixture: RecordingF
+     var pipeline = native_types.DoeComputePipeline{};
+     var render_pipeline = native_types.DoeRenderPipeline{};
+     var group = DoeBindGroup{};
+-    var buffer = DoeBuffer{ .size = 512 };
++    var buffer = DoeBuffer{ .dev = &device, .size = 512, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
++    var destination = DoeBuffer{ .dev = &device, .size = 512, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
+     var texture = DoeTexture{};
+     var view = native_types.DoeTextureView{ .tex = &texture };
+     var query = query_native.DoeQuerySet{ .count = 2 };
+     defer {
+-        for ([_]u32{ device.ref_count, pipeline.ref_count, render_pipeline.ref_count, group.ref_count, buffer.ref_count, texture.ref_count, view.ref_count, query.ref_count }) |count|
++        for ([_]u32{ device.ref_count, pipeline.ref_count, render_pipeline.ref_count, group.ref_count, buffer.ref_count, destination.ref_count, texture.ref_count, view.ref_count, query.ref_count }) |count|
+             std.testing.expectEqual(@as(u32, 1), count) catch @panic("ordinary recording leaked a caller reference");
+     }
+     const encoder = try createEncoder(allocator, &device);
+@@ -400,7 +437,7 @@ fn recordingAllocationScenario(allocator: std.mem.Allocator, fixture: RecordingF
+             render.doeNativeRenderPassEnd(pass);
+         },
+         .copy => for (0..repetitions) |_| {
+-            doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&buffer), 0, toOpaque(&buffer), 16, 16);
++            doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&buffer), 0, toOpaque(&destination), 16, 16);
+             doeNativeCommandEncoderCopyBufferToTexture(toOpaque(encoder), toOpaque(&buffer), 0, 256, 1, toOpaque(&texture), 0, 1, 1, 1);
+             doeNativeCommandEncoderCopyTextureToBuffer(toOpaque(encoder), toOpaque(&texture), 0, toOpaque(&buffer), 0, 256, 1, 1, 1, 1);
+         },
+@@ -432,13 +469,14 @@ test "failed recording finishes as an error object and cannot submit or resume"
+     };
+     var device = DoeDevice{};
+     var queue = native_types.DoeQueue{ .dev = &device };
+-    var buffer = DoeBuffer{ .size = 32 };
++    var buffer = DoeBuffer{ .dev = &device, .size = 32, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
++    var destination = DoeBuffer{ .dev = &device, .size = 32, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
+     var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{});
+     const encoder = try createEncoder(failing.allocator(), &device);
+     defer doeNativeCommandEncoderRelease(toOpaque(encoder));
+     device.error_scopes.push(errors.FILTER_OUT_OF_MEMORY);
+     failing.fail_index = failing.alloc_index;
+-    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&buffer), 0, toOpaque(&buffer), 16, 16);
++    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&buffer), 0, toOpaque(&destination), 16, 16);
+     try std.testing.expectEqual(error.OutOfMemory, encoder.state.failed);
+     var capture = Capture{};
+     try std.testing.expect(device.error_scopes.pop(.{ .callback = Capture.receive, .userdata1 = &capture }));
+@@ -456,7 +494,7 @@ test "failed recording finishes as an error object and cannot submit or resume"
+     @import("../queue/doe_queue_submit_native.zig").doeNativeQueueSubmit(toOpaque(&queue), submitted.len, &submitted);
+     try std.testing.expect(device.error_scopes.pop(.{ .callback = Capture.receive, .userdata1 = &capture }));
+     try std.testing.expectEqual(errors.ERROR_TYPE_VALIDATION, capture.kind);
+-    doeNativeCopyBufferToBuffer(toOpaque(valid_encoder), toOpaque(&buffer), 0, toOpaque(&buffer), 16, 16);
++    doeNativeCopyBufferToBuffer(toOpaque(valid_encoder), toOpaque(&buffer), 0, toOpaque(&destination), 16, 16);
+     try std.testing.expectEqual(error.InvalidState, valid_encoder.state.failed);
+     try std.testing.expectEqual(@as(usize, 0), valid_encoder.cmds.items.len);
+     try std.testing.expectEqual(@as(u32, 1), buffer.ref_count);
+diff --git a/runtime/zig/src/native/compute/doe_compute_fast.zig b/runtime/zig/src/native/compute/doe_compute_fast.zig
+index 7ef7a9014..7b607eb63 100644
+--- a/runtime/zig/src/native/compute/doe_compute_fast.zig
++++ b/runtime/zig/src/native/compute/doe_compute_fast.zig
+@@ -359,6 +359,7 @@ fn constructionFailure(device: *DoeDevice, err: recorded.ConstructionError) ?*an
+ }
+ 
+ test "fused command constructor retains inputs and unwinds invalid copy" {
++    const buffer_abi = @import("../../core/abi/wgpu_core_base_types.zig");
+     const Capture = struct {
+         error_type: u32 = error_scope.ERROR_TYPE_NO_ERROR,
+         invalid_argument: bool = false,
+@@ -374,8 +375,8 @@ test "fused command constructor retains inputs and unwinds invalid copy" {
+     var device = DoeDevice{};
+     var pipeline = DoeComputePipeline{};
+     var group = native_types.DoeBindGroup{};
+-    var source = native_types.DoeBuffer{ .size = 16 };
+-    var destination = native_types.DoeBuffer{ .size = 16 };
++    var source = native_types.DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
++    var destination = native_types.DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
+     const command = doeNativeCreateComputeDispatchCopyCommandBufferOneBindGroup(
+         toOpaque(&device),
+         toOpaque(&pipeline),
+diff --git a/runtime/zig/src/native/compute/doe_compute_recorded.zig b/runtime/zig/src/native/compute/doe_compute_recorded.zig
+index a882207ed..d218d1f1d 100644
+--- a/runtime/zig/src/native/compute/doe_compute_recorded.zig
++++ b/runtime/zig/src/native/compute/doe_compute_recorded.zig
+@@ -8,8 +8,10 @@ const trace = @import("../diagnostics/doe_program_identity_trace.zig");
+ const bindings = @import("doe_compute_bind_groups.zig");
+ const preconditions = @import("doe_compute_preconditions_native.zig");
+ const vulkan = @import("doe_compute_fast_vulkan.zig");
++const buffer_copy = @import("../command/doe_buffer_copy.zig");
++const buffer_abi = @import("../../core/abi/wgpu_core_base_types.zig");
+ 
+-pub const ConstructionError = std.mem.Allocator.Error || preconditions.ValidationError || error{ InvalidArgument, InvalidState };
++pub const ConstructionError = std.mem.Allocator.Error || preconditions.ValidationError || buffer_copy.ValidationError || error{InvalidState};
+ 
+ pub const Dispatch = struct {
+     pipeline: *objects.DoeComputePipeline,
+@@ -18,13 +20,7 @@ pub const Dispatch = struct {
+     workgroups: [3]u32,
+ };
+ 
+-pub const Copy = struct {
+-    source: ?*objects.DoeBuffer,
+-    source_offset: u64,
+-    destination: ?*objects.DoeBuffer,
+-    destination_offset: u64,
+-    size: u64,
+-};
++pub const Copy = buffer_copy.Copy;
+ 
+ pub const Builder = struct {
+     pending: ?*objects.DoeCommandBuffer,
+@@ -97,10 +93,10 @@ pub const Builder = struct {
+     pub fn appendCopy(self: *Builder, request: Copy) ConstructionError!void {
+         const buffer = self.pending orelse return error.InvalidState;
+         if (request.size == 0) return;
+-        const source = request.source orelse return error.InvalidArgument;
+-        const destination = request.destination orelse return error.InvalidArgument;
+-        if (source.error_object or source.destroyed or destination.error_object or destination.destroyed)
+-            return error.InvalidArgument;
++        const size = try buffer_copy.validate(buffer.dev, request, .disjoint_ranges);
++        if (size == 0) return;
++        const source = request.source.?;
++        const destination = request.destination.?;
+         try reserve(buffer, 2);
+         references.retainBufferAssumeCapacity(&buffer.references, source);
+         references.retainBufferAssumeCapacity(&buffer.references, destination);
+@@ -109,7 +105,7 @@ pub const Builder = struct {
+             .src_off = request.source_offset,
+             .dst = helpers.toOpaque(destination),
+             .dst_off = request.destination_offset,
+-            .size = request.size,
++            .size = size,
+         } });
+     }
+ 
+@@ -124,8 +120,8 @@ fn allocationFailureScenario(allocator: std.mem.Allocator) !void {
+     var device = objects.DoeDevice{};
+     var pipeline = objects.DoeComputePipeline{};
+     var group = objects.DoeBindGroup{};
+-    var source = objects.DoeBuffer{ .size = 16 };
+-    var destination = objects.DoeBuffer{ .size = 16 };
++    var source = objects.DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
++    var destination = objects.DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
+     defer {
+         for ([_]u32{ device.ref_count, pipeline.ref_count, group.ref_count, source.ref_count, destination.ref_count }) |count|
+             std.testing.expectEqual(@as(u32, 1), count) catch @panic("fused recording leaked a caller reference");
+@@ -156,7 +152,7 @@ test "fused recording rolls back every allocation failure and transfers complete
+ 
+ fn copyAllocationFailureScenario(allocator: std.mem.Allocator) !void {
+     var device = objects.DoeDevice{};
+-    var buffer = objects.DoeBuffer{ .size = 32 };
++    var buffer = objects.DoeBuffer{ .dev = &device, .size = 32, .usage = buffer_abi.WGPUBufferUsage_CopySrc | buffer_abi.WGPUBufferUsage_CopyDst };
+     defer {
+         std.testing.expectEqual(@as(u32, 1), device.ref_count) catch @panic("copy recording leaked its device");
+         std.testing.expectEqual(@as(u32, 1), buffer.ref_count) catch @panic("copy recording leaked an aliased buffer");
+diff --git a/runtime/zig/src/runtime/diagnostics/error_scope.zig b/runtime/zig/src/runtime/diagnostics/error_scope.zig
+index 42645d9a2..b376fa210 100644
+--- a/runtime/zig/src/runtime/diagnostics/error_scope.zig
++++ b/runtime/zig/src/runtime/diagnostics/error_scope.zig
+@@ -231,6 +231,11 @@ pub fn zig_error_to_type(err: anyerror) u32 {
+     return switch (err) {
+         error.OutOfMemory => ERROR_TYPE_OUT_OF_MEMORY,
+         error.InvalidArgument,
++        error.BufferCopyDeviceMismatch,
++        error.BufferCopyUsageMissing,
++        error.BufferCopyUnaligned,
++        error.BufferCopyOutOfBounds,
++        error.BufferCopyAliasing,
+         error.InvalidState,
+         error.ImmediateDataUnsupported,
+         error.ShaderCompileFailed,
+diff --git a/runtime/zig/tests/native_recorded_compute.c b/runtime/zig/tests/native_recorded_compute.c
+index 10b75cc25..8425c8aa2 100644
+--- a/runtime/zig/tests/native_recorded_compute.c
++++ b/runtime/zig/tests/native_recorded_compute.c
+@@ -132,6 +132,53 @@ static bool texture_is_zero(WGPUInstance instance, WGPUDevice device, WGPUQueue
+     return zero;
+ }
+ 
++static bool invalid_buffer_copies(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
++    enum { SOURCE_ALIGNMENT, DESTINATION_ALIGNMENT, SIZE_ALIGNMENT, SOURCE_RANGE,
++           DESTINATION_RANGE, SAME_BUFFER, SOURCE_USAGE, DESTINATION_USAGE,
++           ZERO_SIZE_USAGE, COPY_CASE_COUNT };
++    WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
++    desc.size = ELEMENT_COUNT * sizeof(uint32_t);
++    desc.usage = WGPUBufferUsage_CopySrc | WGPUBufferUsage_CopyDst;
++    WGPUBuffer source = wgpuDeviceCreateBuffer(device, &desc);
++    WGPUBuffer destination = wgpuDeviceCreateBuffer(device, &desc);
++    desc.usage = WGPUBufferUsage_Storage;
++    WGPUBuffer wrong_usage = wgpuDeviceCreateBuffer(device, &desc);
++    bool success = source && destination && wrong_usage;
++    for (unsigned scenario = 0; success && scenario < COPY_CASE_COUNT; ++scenario) {
++        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
++        if (!encoder) { success = false; break; }
++        const uint64_t source_offset = scenario == SOURCE_ALIGNMENT ? 1 :
++            scenario == SOURCE_RANGE ? desc.size : 0;
++        const uint64_t destination_offset = scenario == DESTINATION_ALIGNMENT ? 1 :
++            scenario == DESTINATION_RANGE ? desc.size : 0;
++        const uint64_t size = scenario == SIZE_ALIGNMENT ? 1 :
++            scenario == ZERO_SIZE_USAGE ? 0 : sizeof(uint32_t);
++        WGPUBuffer src = scenario == SOURCE_USAGE || scenario == ZERO_SIZE_USAGE ? wrong_usage : source;
++        WGPUBuffer dst = scenario == SAME_BUFFER ? source :
++            scenario == DESTINATION_USAGE ? wrong_usage : destination;
++        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++        wgpuCommandEncoderCopyBufferToBuffer(encoder, src, source_offset, dst, destination_offset, size);
++        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
++        const bool recording_rejected = pop_validation(instance, device);
++        wgpuCommandEncoderRelease(encoder);
++        bool submit_rejected = false;
++        if (commands && recording_rejected) {
++            wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++            wgpuQueueSubmit(queue, 1, &commands);
++            submit_rejected = pop_validation(instance, device);
++        }
++        if (commands) wgpuCommandBufferRelease(commands);
++        success = recording_rejected && submit_rejected;
++        if (!success) fprintf(stderr, "invalid buffer copy admitted: case=%u recording=%u submission=%u\n",
++                              scenario, recording_rejected, submit_rejected);
++    }
++    if (source) wgpuBufferRelease(source);
++    if (destination) wgpuBufferRelease(destination);
++    if (wrong_usage) wgpuBufferRelease(wrong_usage);
++    if (success) printf("passed: buffer copy alignment, range, identity, usage and empty-copy validation\n");
++    return success;
++}
++
+ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue,
+                     bool batch, bool via_texture, bool resident_roundtrip) {
+     bool success = false, mapped = false;
+@@ -345,7 +392,8 @@ int main(void) {
+     wgpuInstanceProcessEvents(instance);
+     if (!device) goto cleanup;
+     queue = wgpuDeviceGetQueue(device);
+-    if (queue && invalid_pass_lifetimes(instance, device, queue) && execute(instance, device, queue, false, false, false) &&
++    if (queue && invalid_pass_lifetimes(instance, device, queue) && invalid_buffer_copies(instance, device, queue) &&
++        execute(instance, device, queue, false, false, false) &&
+         execute(instance, device, queue, true, false, false)) {
+         const bool layered_readback = execute(instance, device, queue, false, true, false);
+         const bool resident_roundtrip = execute(instance, device, queue, false, true, true);

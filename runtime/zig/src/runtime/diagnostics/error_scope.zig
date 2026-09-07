@@ -231,6 +231,11 @@ pub fn zig_error_to_type(err: anyerror) u32 {
     return switch (err) {
         error.OutOfMemory => ERROR_TYPE_OUT_OF_MEMORY,
         error.InvalidArgument,
+        error.BufferCopyDeviceMismatch,
+        error.BufferCopyUsageMissing,
+        error.BufferCopyUnaligned,
+        error.BufferCopyOutOfBounds,
+        error.BufferCopyAliasing,
         error.InvalidState,
         error.ImmediateDataUnsupported,
         error.ShaderCompileFailed,
