@@ -126,6 +126,13 @@ classified and cannot be promoted by benchmark results.
   from explicit resource destruction. Vertex-format ABI values must match the
   pinned WebGPU header; backend conversion remains local. Render shader-code
   retention must roll back each failed allocation before publishing the pipeline.
+  Vulkan buffer allocation must include the vertex/index usages consumed by
+  native rendering, including after storage promotion. Retained-package direct,
+  indexed, bundled, and depth/load regressions must also pass synchronization
+  validation when that layer is enabled. Package qualification rejects native
+  Vulkan validation errors in either captured stream even when the process
+  returns success. This tightens admission behind the existing report schema;
+  it does not assert that runs without the layer received Vulkan validation.
   These regressions do not qualify untested attachment, query, or driver-loss
   behavior.
 - Strict resident-state updates require an instance- and revision-bound reset

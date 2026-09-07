@@ -1360,9 +1360,9 @@
       },
       "src/backend/vulkan/vk_resources.zig": {
         "decision": "Keep",
-        "moduleSha256": "346141b597bdd5bb0f68c4ac8c5d1566d75d8cb0b24a6b6581d54c3745ee362d",
-        "reason": "Keep: Vulkan owns native image-view admission; copy-only texture views retain WebGPU metadata without allocating an invalid native view.",
-        "reviewer": "codex-texture-transfer/2026-09-07"
+        "moduleSha256": "f0613fa0c7e91f8be433074796fbe51cfef270f6505d5dfaa56345ce3714c037",
+        "reason": "Keep: shared native buffer allocation includes the vertex/index usages consumed by rendering and preserves them through storage promotion.",
+        "reviewer": "codex-render-validation/2026-09-07"
       },
       "src/backend/vulkan/vk_runtime_probe_ops.zig": {
         "decision": "Keep",

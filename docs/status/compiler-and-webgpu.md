@@ -120,17 +120,17 @@ reference release is distinct from explicit destruction. The native-addon
 regression writes vertex data after recording, releases caller references, and
 checks the submitted image for direct and bundled draws.
 
-Vertex-format ABI interpretation now has a shared typed owner checked against
-the pinned WebGPU header, with backend-specific conversions kept local. Vulkan
-render pipeline shader copies publish transactionally; allocator regressions
-cover partial construction. Metal pipeline publication preserves its retained
-layout and prepared vertex layouts. Native handle reference counts use atomic
-lease operations; this does not establish general concurrent queue safety.
+Vertex-format ABI interpretation has one typed owner checked against the pinned
+header. Vulkan buffers include native vertex/index usage, and rendering receives
+physical synchronization validation. Qualification rejects native validation
+errors even on successful process exit. The failing and corrected runs are at
+`bench/out/compute-program/20260907-render-validation/README.md`.
+Render shader copies publish transactionally. Metal preserves its retained layout
+and prepared vertex layouts. Atomic reference leases do not establish concurrent
+queue safety.
 
-The acceptance checkpoint is indexed in
-`bench/out/shader-ownership/20260906-owned-diagnostics/README.md`, with retained
-package results at
-`bench/out/compute-program/20260906-render-ownership-qualified/summary.json`.
+Earlier ownership evidence: `bench/out/shader-ownership/20260906-owned-diagnostics/README.md`
+and `bench/out/compute-program/20260906-render-ownership-qualified/summary.json`.
 This targeted image test does not establish full render-pass conformance,
 attachment load/store and resolve behavior across multiple draws, render query
 coverage, or physical Metal/D3D12 execution.

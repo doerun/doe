@@ -1,0 +1,164 @@
+diff --git a/bench/runners/qualify_compute_program_package.py b/bench/runners/qualify_compute_program_package.py
+index 628981825..cd17424ca 100644
+--- a/bench/runners/qualify_compute_program_package.py
++++ b/bench/runners/qualify_compute_program_package.py
+@@ -16,6 +16,21 @@ from bench.gates.compute_program_gate import digest
+ ROOT = Path(__file__).resolve().parents[2]
+ 
+ 
++def validate_process_result(
++    result: subprocess.CompletedProcess[str], label: str,
++) -> None:
++    """Reject failed processes and native validation errors before qualification."""
++    if result.returncode:
++        raise ValueError(f'{label}: exit {result.returncode}; see retained stdout/stderr')
++    for stream, text in [('stdout', result.stdout), ('stderr', result.stderr)]:
++        for line in text.splitlines():
++            if line.startswith('Validation Error:') or 'SYNC-HAZARD' in line:
++                raise ValueError(
++                    f'{label}: Vulkan validation error in {stream}; '
++                    'see retained stdout/stderr'
++                )
++
++
+ def main() -> int:
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument('--output', type=Path, required=True)
+@@ -46,8 +61,7 @@ def main() -> int:
+                                 capture_output=True, text=True, check=False, timeout=args.timeout_ms / 1000)
+         (output / f'{label}.stdout').write_text(result.stdout)
+         (output / f'{label}.stderr').write_text(result.stderr)
+-        if result.returncode:
+-            raise ValueError(f'{label}: exit {result.returncode}; see retained stdout/stderr')
++        validate_process_result(result, label)
+         return result.stdout
+ 
+     try:
+diff --git a/bench/tests/test_compute_program_package.py b/bench/tests/test_compute_program_package.py
+index b2e02e5ab..b1e54190d 100644
+--- a/bench/tests/test_compute_program_package.py
++++ b/bench/tests/test_compute_program_package.py
+@@ -4,6 +4,7 @@ from __future__ import annotations
+ import io
+ import json
+ import shutil
++import subprocess
+ import tarfile
+ import tempfile
+ import unittest
+@@ -13,10 +14,34 @@ import jsonschema
+ 
+ from bench.lib.compute_program_package import load_qualification, validate_package_root
+ from bench.lib.hash_utils import file_sha256
++from bench.runners.qualify_compute_program_package import validate_process_result
+ 
+ ROOT = Path(__file__).resolve().parents[2]
+ 
+ 
++class QualificationProcessTests(unittest.TestCase):
++    def test_zero_exit_cannot_hide_vulkan_validation_failures(self) -> None:
++        for message in [
++            'Validation Error: [ VUID-vkCmdBindVertexBuffers-pBuffers-00627 ]',
++            'Validation Error: [ VUID-vkCmdBindIndexBuffer-buffer-08784 ]',
++            '[SYNC-HAZARD-READ-AFTER-WRITE] unprotected transfer',
++        ]:
++            for stream in ['stdout', 'stderr']:
++                with self.subTest(message=message, stream=stream):
++                    output = {'stdout': 'ok: pixels match\n', 'stderr': ''}
++                    output[stream] += message + '\n'
++                    result = subprocess.CompletedProcess(['fixture'], 0, **output)
++                    with self.assertRaisesRegex(ValueError, 'Vulkan validation'):
++                        validate_process_result(result, 'rendering')
++
++    def test_clean_completion_and_nonzero_exit_remain_distinct(self) -> None:
++        result = subprocess.CompletedProcess(['fixture'], 0, 'ok: pixels match', '')
++        validate_process_result(result, 'rendering')
++        result.returncode = 1
++        with self.assertRaisesRegex(ValueError, 'rendering: exit 1'):
++            validate_process_result(result, 'rendering')
++
++
+ class ComputeProgramPackageTests(unittest.TestCase):
+     def setUp(self) -> None:
+         temporary = tempfile.TemporaryDirectory()
+diff --git a/docs/process.md b/docs/process.md
+index 852de9375..5500d1180 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -126,6 +126,13 @@ classified and cannot be promoted by benchmark results.
+   from explicit resource destruction. Vertex-format ABI values must match the
+   pinned WebGPU header; backend conversion remains local. Render shader-code
+   retention must roll back each failed allocation before publishing the pipeline.
++  Vulkan buffer allocation must include the vertex/index usages consumed by
++  native rendering, including after storage promotion. Retained-package direct,
++  indexed, bundled, and depth/load regressions must also pass synchronization
++  validation when that layer is enabled. Package qualification rejects native
++  Vulkan validation errors in either captured stream even when the process
++  returns success. This tightens admission behind the existing report schema;
++  it does not assert that runs without the layer received Vulkan validation.
+   These regressions do not qualify untested attachment, query, or driver-loss
+   behavior.
+ - Strict resident-state updates require an instance- and revision-bound reset
+diff --git a/docs/status/compiler-and-webgpu.md b/docs/status/compiler-and-webgpu.md
+index b392b3cf7..f9fda81de 100644
+--- a/docs/status/compiler-and-webgpu.md
++++ b/docs/status/compiler-and-webgpu.md
+@@ -120,17 +120,17 @@ reference release is distinct from explicit destruction. The native-addon
+ regression writes vertex data after recording, releases caller references, and
+ checks the submitted image for direct and bundled draws.
+ 
+-Vertex-format ABI interpretation now has a shared typed owner checked against
+-the pinned WebGPU header, with backend-specific conversions kept local. Vulkan
+-render pipeline shader copies publish transactionally; allocator regressions
+-cover partial construction. Metal pipeline publication preserves its retained
+-layout and prepared vertex layouts. Native handle reference counts use atomic
+-lease operations; this does not establish general concurrent queue safety.
+-
+-The acceptance checkpoint is indexed in
+-`bench/out/shader-ownership/20260906-owned-diagnostics/README.md`, with retained
+-package results at
+-`bench/out/compute-program/20260906-render-ownership-qualified/summary.json`.
++Vertex-format ABI interpretation has one typed owner checked against the pinned
++header. Vulkan buffers include native vertex/index usage, and rendering receives
++physical synchronization validation. Qualification rejects native validation
++errors even on successful process exit. The failing and corrected runs are at
++`bench/out/compute-program/20260907-render-validation/README.md`.
++Render shader copies publish transactionally. Metal preserves its retained layout
++and prepared vertex layouts. Atomic reference leases do not establish concurrent
++queue safety.
++
++Earlier ownership evidence: `bench/out/shader-ownership/20260906-owned-diagnostics/README.md`
++and `bench/out/compute-program/20260906-render-ownership-qualified/summary.json`.
+ This targeted image test does not establish full render-pass conformance,
+ attachment load/store and resolve behavior across multiple draws, render query
+ coverage, or physical Metal/D3D12 execution.
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index cb72450cb..d774101e2 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -1360,9 +1360,9 @@
+       },
+       "src/backend/vulkan/vk_resources.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "346141b597bdd5bb0f68c4ac8c5d1566d75d8cb0b24a6b6581d54c3745ee362d",
+-        "reason": "Keep: Vulkan owns native image-view admission; copy-only texture views retain WebGPU metadata without allocating an invalid native view.",
+-        "reviewer": "codex-texture-transfer/2026-09-07"
++        "moduleSha256": "f0613fa0c7e91f8be433074796fbe51cfef270f6505d5dfaa56345ce3714c037",
++        "reason": "Keep: shared native buffer allocation includes the vertex/index usages consumed by rendering and preserves them through storage promotion.",
++        "reviewer": "codex-render-validation/2026-09-07"
+       },
+       "src/backend/vulkan/vk_runtime_probe_ops.zig": {
+         "decision": "Keep",
+diff --git a/runtime/zig/src/backend/vulkan/vk_resources.zig b/runtime/zig/src/backend/vulkan/vk_resources.zig
+index b24ad5e21..690a2125a 100644
+--- a/runtime/zig/src/backend/vulkan/vk_resources.zig
++++ b/runtime/zig/src/backend/vulkan/vk_resources.zig
+@@ -268,6 +268,8 @@ fn create_compute_buffer_with_kind(
+         .size = bytes,
+         .usage = c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+             c.VK_BUFFER_USAGE_TRANSFER_DST_BIT |
++            c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
++            c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+             c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+             c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+             c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,

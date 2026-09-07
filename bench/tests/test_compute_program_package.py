@@ -4,6 +4,7 @@ from __future__ import annotations
 import io
 import json
 import shutil
+import subprocess
 import tarfile
 import tempfile
 import unittest
@@ -13,8 +14,32 @@ import jsonschema
 
 from bench.lib.compute_program_package import load_qualification, validate_package_root
 from bench.lib.hash_utils import file_sha256
+from bench.runners.qualify_compute_program_package import validate_process_result
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+class QualificationProcessTests(unittest.TestCase):
+    def test_zero_exit_cannot_hide_vulkan_validation_failures(self) -> None:
+        for message in [
+            'Validation Error: [ VUID-vkCmdBindVertexBuffers-pBuffers-00627 ]',
+            'Validation Error: [ VUID-vkCmdBindIndexBuffer-buffer-08784 ]',
+            '[SYNC-HAZARD-READ-AFTER-WRITE] unprotected transfer',
+        ]:
+            for stream in ['stdout', 'stderr']:
+                with self.subTest(message=message, stream=stream):
+                    output = {'stdout': 'ok: pixels match\n', 'stderr': ''}
+                    output[stream] += message + '\n'
+                    result = subprocess.CompletedProcess(['fixture'], 0, **output)
+                    with self.assertRaisesRegex(ValueError, 'Vulkan validation'):
+                        validate_process_result(result, 'rendering')
+
+    def test_clean_completion_and_nonzero_exit_remain_distinct(self) -> None:
+        result = subprocess.CompletedProcess(['fixture'], 0, 'ok: pixels match', '')
+        validate_process_result(result, 'rendering')
+        result.returncode = 1
+        with self.assertRaisesRegex(ValueError, 'rendering: exit 1'):
+            validate_process_result(result, 'rendering')
 
 
 class ComputeProgramPackageTests(unittest.TestCase):

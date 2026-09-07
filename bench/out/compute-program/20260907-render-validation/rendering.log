@@ -1,0 +1,59 @@
+Validation Error: [ VUID-vkCmdBindVertexBuffers-pBuffers-00627 ] | MessageID = 0x9ae31e79
+vkCmdBindVertexBuffers(): pBuffers[0] (VkBuffer 0x80000000008) was created with VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_2_TRANSFER_DST_BIT|VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT|VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT but requires VK_BUFFER_USAGE_2_VERTEX_BUFFER_BIT.
+The Vulkan spec states: All elements of pBuffers must have been created with the VK_BUFFER_USAGE_VERTEX_BUFFER_BIT usage flag set (https://docs.vulkan.org/spec/latest/chapters/fxvertex.html#VUID-vkCmdBindVertexBuffers-pBuffers-00627)
+Objects: 2
+    [0] VkCommandBuffer 0x63b29d0f2030
+    [1] VkBuffer 0x80000000008
+
+Validation Error: [ VUID-vkCmdBindIndexBuffer-buffer-08784 ] | MessageID = 0xa736eee3
+vkCmdBindIndexBuffer(): buffer (VkBuffer 0xa000000000a) was created with VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_2_TRANSFER_DST_BIT|VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT|VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT but requires VK_BUFFER_USAGE_2_INDEX_BUFFER_BIT.
+The Vulkan spec states: buffer must have been created with the VK_BUFFER_USAGE_INDEX_BUFFER_BIT usage flag set (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdBindIndexBuffer-buffer-08784)
+Objects: 2
+    [0] VkCommandBuffer 0x63b29d0f2030
+    [1] VkBuffer 0xa000000000a
+
+Validation Error: [ VUID-vkCmdBindVertexBuffers-pBuffers-00627 ] | MessageID = 0x9ae31e79
+vkCmdBindVertexBuffers(): pBuffers[0] (VkBuffer 0x80000000008) was created with VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_2_TRANSFER_DST_BIT|VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT|VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT but requires VK_BUFFER_USAGE_2_VERTEX_BUFFER_BIT.
+The Vulkan spec states: All elements of pBuffers must have been created with the VK_BUFFER_USAGE_VERTEX_BUFFER_BIT usage flag set (https://docs.vulkan.org/spec/latest/chapters/fxvertex.html#VUID-vkCmdBindVertexBuffers-pBuffers-00627)
+Objects: 2
+    [0] VkCommandBuffer 0x63b29d0f2030
+    [1] VkBuffer 0x80000000008
+
+Validation Error: [ VUID-vkCmdBindIndexBuffer-buffer-08784 ] | MessageID = 0xa736eee3
+vkCmdBindIndexBuffer(): buffer (VkBuffer 0xa000000000a) was created with VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_2_TRANSFER_DST_BIT|VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT|VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT but requires VK_BUFFER_USAGE_2_INDEX_BUFFER_BIT.
+The Vulkan spec states: buffer must have been created with the VK_BUFFER_USAGE_INDEX_BUFFER_BIT usage flag set (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdBindIndexBuffer-buffer-08784)
+Objects: 2
+    [0] VkCommandBuffer 0x63b29d0f2030
+    [1] VkBuffer 0xa000000000a
+
+ok: direct draws preserve color through a load pass and caller release
+Validation Error: [ VUID-vkCmdBindVertexBuffers-pBuffers-00627 ] | MessageID = 0x9ae31e79
+vkCmdBindVertexBuffers(): pBuffers[0] (VkBuffer 0x250000000025) was created with VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_2_TRANSFER_DST_BIT|VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT|VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT but requires VK_BUFFER_USAGE_2_VERTEX_BUFFER_BIT.
+The Vulkan spec states: All elements of pBuffers must have been created with the VK_BUFFER_USAGE_VERTEX_BUFFER_BIT usage flag set (https://docs.vulkan.org/spec/latest/chapters/fxvertex.html#VUID-vkCmdBindVertexBuffers-pBuffers-00627)
+Objects: 2
+    [0] VkCommandBuffer 0x63b29d0f2030
+    [1] VkBuffer 0x250000000025
+
+Validation Error: [ VUID-vkCmdBindIndexBuffer-buffer-08784 ] | MessageID = 0xa736eee3
+vkCmdBindIndexBuffer(): buffer (VkBuffer 0x270000000027) was created with VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_2_TRANSFER_DST_BIT|VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT|VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT but requires VK_BUFFER_USAGE_2_INDEX_BUFFER_BIT.
+The Vulkan spec states: buffer must have been created with the VK_BUFFER_USAGE_INDEX_BUFFER_BIT usage flag set (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdBindIndexBuffer-buffer-08784)
+Objects: 2
+    [0] VkCommandBuffer 0x63b29d0f2030
+    [1] VkBuffer 0x270000000027
+
+Validation Error: [ VUID-vkCmdBindVertexBuffers-pBuffers-00627 ] | MessageID = 0x9ae31e79
+vkCmdBindVertexBuffers(): pBuffers[0] (VkBuffer 0x250000000025) was created with VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_2_TRANSFER_DST_BIT|VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT|VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT but requires VK_BUFFER_USAGE_2_VERTEX_BUFFER_BIT.
+The Vulkan spec states: All elements of pBuffers must have been created with the VK_BUFFER_USAGE_VERTEX_BUFFER_BIT usage flag set (https://docs.vulkan.org/spec/latest/chapters/fxvertex.html#VUID-vkCmdBindVertexBuffers-pBuffers-00627)
+Objects: 2
+    [0] VkCommandBuffer 0x63b29d0f2030
+    [1] VkBuffer 0x250000000025
+
+Validation Error: [ VUID-vkCmdBindIndexBuffer-buffer-08784 ] | MessageID = 0xa736eee3
+vkCmdBindIndexBuffer(): buffer (VkBuffer 0x270000000027) was created with VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_2_TRANSFER_DST_BIT|VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT|VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT but requires VK_BUFFER_USAGE_2_INDEX_BUFFER_BIT.
+The Vulkan spec states: buffer must have been created with the VK_BUFFER_USAGE_INDEX_BUFFER_BIT usage flag set (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdBindIndexBuffer-buffer-08784)
+Objects: 2
+    [0] VkCommandBuffer 0x63b29d0f2030
+    [1] VkBuffer 0x270000000027
+
+ok: bundle draws preserve color through a load pass and caller release
+ok: depth survives draws, load/read-only passes, and caller release; an empty clear resets it
