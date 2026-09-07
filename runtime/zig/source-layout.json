@@ -964,9 +964,9 @@
       },
       "src/backend/dropin_resource_ops.zig": {
         "decision": "Keep",
-        "moduleSha256": "b4ca1a088ec0d77ee4b30e05a41fb4254c6294f5fe6c4d0907f5e7c43b62bcb9",
-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
-        "reviewer": "codex-recording-ownership/2026-09-06"
+        "moduleSha256": "5f4b5de2571d190f898615d90f8d206b5702f0a71866b2822770a8804556ada9",
+        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
+        "reviewer": "codex-texture-transfer/2026-09-07"
       },
       "src/backend/dropin_surface_ops.zig": {
         "decision": "Keep",
@@ -1228,9 +1228,9 @@
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "6fc0f003f059a2163d92e1a056157134fab22cd5ad676b058961f1486b3944f2",
-        "reason": "Keep: device owner retains native resource generations and exact active descriptor identity alongside compute cache ownership.",
-        "reviewer": "codex-descriptor-identity/2026-09-05"
+        "moduleSha256": "04db092e9d827c128811c6fa396934a4ef1a95011e3fd18c865c4b126ee719e2",
+        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
+        "reviewer": "codex-texture-transfer/2026-09-07"
       },
       "src/backend/vulkan/vk_adapter_probe.zig": {
         "decision": "Keep",
@@ -1360,9 +1360,9 @@
       },
       "src/backend/vulkan/vk_resources.zig": {
         "decision": "Keep",
-        "moduleSha256": "9f57e2bd939f5dcae0b7ff1c95bd70b53abaafa73672a47da58c9bc5f3e8a346",
-        "reason": "Keep: texture resources own layout-to-access synchronization, including persistent depth/stencil attachment reads and writes.",
-        "reviewer": "codex-depth-ownership/2026-09-06"
+        "moduleSha256": "346141b597bdd5bb0f68c4ac8c5d1566d75d8cb0b24a6b6581d54c3745ee362d",
+        "reason": "Keep: Vulkan owns native image-view admission; copy-only texture views retain WebGPU metadata without allocating an invalid native view.",
+        "reviewer": "codex-texture-transfer/2026-09-07"
       },
       "src/backend/vulkan/vk_runtime_probe_ops.zig": {
         "decision": "Keep",
@@ -1408,9 +1408,9 @@
       },
       "src/backend/vulkan/vk_texture_commands.zig": {
         "decision": "Keep",
-        "moduleSha256": "a79c1d8b65e44b8aefd027f2446588140e224708181cc42e4ffdc4d38a7f1440",
-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
-        "reviewer": "codex-recording-ownership/2026-09-06"
+        "moduleSha256": "a3f6f3edfcdb2ba8f7e485ceba1cc1acfae9a84798ec662636d2dee7a5e01b96",
+        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
+        "reviewer": "codex-texture-transfer/2026-09-07"
       },
       "src/backend/vulkan/vk_upload.zig": {
         "decision": "Keep",
@@ -3610,9 +3610,9 @@
       },
       "src/native/queue/doe_queue_submit_vulkan.zig": {
         "decision": "Keep",
-        "moduleSha256": "81678a6d03ea0520cb9bac9e6283239894e75e073f715af9f3047137fa61be52",
-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
-        "reviewer": "codex-recording-ownership/2026-09-06"
+        "moduleSha256": "cb42554031bb767392ecda4925109ae8866e8988f56b6b4478179b2185d94171",
+        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
+        "reviewer": "codex-texture-transfer/2026-09-07"
       },
       "src/native/render/doe_bundle_native.zig": {
         "decision": "Keep",
@@ -3838,9 +3838,9 @@
       },
       "src/native/vulkan/vulkan_texture_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "d46396ee8187983b773214f1995c48b70133aeeed922cdb190e8b6ef0c68c67e",
-        "reason": "Keep: public image and view lifecycle publishes unique allocation generations through the Vulkan resource owner.",
-        "reviewer": "codex-descriptor-identity/2026-09-05"
+        "moduleSha256": "1189377efd5f769573e7899b4674b4a96176eb2657e124690c6684d244e1499f",
+        "reason": "Keep: Vulkan owns native image-view admission; copy-only texture views retain WebGPU metadata without allocating an invalid native view.",
+        "reviewer": "codex-texture-transfer/2026-09-07"
       },
       "src/plan/dawn_plan_types.zig": {
         "decision": "Keep",

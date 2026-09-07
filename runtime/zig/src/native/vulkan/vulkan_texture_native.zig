@@ -85,6 +85,7 @@ pub fn vulkan_create_texture_view(tex: *shared.DoeTexture, tv: *shared.DoeTextur
     ) catch {
         return false;
     };
+    if (vk_view == shared.c.VK_NULL_U64) return true;
     const key: u64 = vk_view;
     const result = rt.textures.getOrPut(rt.allocator, key) catch {
         shared.vk_resources.release_texture_view_with_device(rt.device, vk_view);

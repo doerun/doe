@@ -15,8 +15,6 @@ pub const vk_resources = if (builtin.os.tag == .linux) @import("vulkan/vk_resour
 pub const vk_timestamp = if (builtin.os.tag == .linux) @import("vulkan/vk_timestamp.zig") else struct {};
 pub const vk_dispatch_indirect = if (builtin.os.tag == .linux) @import("vulkan/vk_dispatch_indirect.zig") else struct {};
 
-const DoeBuffer = native_types.DoeBuffer;
-const DoeCommandEncoder = native_types.DoeCommandEncoder;
 const DoeDevice = native_types.DoeDevice;
 const DoeQueue = native_types.DoeQueue;
 const DoeTexture = native_types.DoeTexture;
@@ -62,43 +60,6 @@ fn failVulkanResourceOp(dev: *DoeDevice, comptime operation: []const u8, reason:
 
 fn failVulkanResourceError(dev: *DoeDevice, comptime operation: []const u8, err: anyerror) bool {
     return failVulkanResourceOp(dev, operation, @errorName(err));
-}
-
-pub fn handleVulkanCopyTextureToBuffer(
-    enc: *DoeCommandEncoder,
-    src_texture: *DoeTexture,
-    src_mip_level: u32,
-    dst_buffer: *DoeBuffer,
-    dst_offset: u64,
-    dst_bytes_per_row: u32,
-    dst_rows_per_image: u32,
-    width: u32,
-    height: u32,
-    depth_or_array_layers: u32,
-) bool {
-    _ = depth_or_array_layers;
-    if (enc.dev.backend != .vulkan) return false;
-    if (comptime !has_vulkan) return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "backend compiled without Vulkan support");
-    const rt = native_rt_helpers.device_vk_runtime(enc.dev) orelse
-        return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "device has no Vulkan runtime");
-    if (src_texture.vk_id == 0) return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "source texture has no Vulkan resource");
-    if (dst_buffer.vk_id == 0) return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "destination buffer has no Vulkan resource");
-    const dcb = rt.compute_buffers.get(dst_buffer.vk_id) orelse
-        return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "destination buffer resource is not registered");
-    const mapped_ptr = dcb.mapped orelse
-        return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "destination buffer resource is not CPU-mapped");
-    rt.texture_read(.{
-        .handle = src_texture.vk_id,
-        .mip_level = src_mip_level,
-        .width = width,
-        .height = height,
-        .format = src_texture.format,
-        .dst_buffer = @as(*anyopaque, @ptrCast(mapped_ptr)),
-        .dst_offset = dst_offset,
-        .dst_bytes_per_row = dst_bytes_per_row,
-        .dst_rows_per_image = dst_rows_per_image,
-    }) catch |err| return failVulkanResourceError(enc.dev, "copyTextureToBuffer", err);
-    return true;
 }
 
 pub fn handleVulkanQueueWriteTexture(

@@ -218,10 +218,18 @@ classified and cannot be promoted by benchmark results.
   replay, rejected queue submission, and a subsequent valid encoder. Error
   command buffers cannot enter prepared execution. This changes failure handling
   behind existing WebGPU signatures and error categories; no public descriptor,
-  config, trace, or receipt fields are added. Vulkan buffer-to-texture copies
-  execute only at submission, with source GPU writes visible at the recorded
-  position. The native regression must reject an abandoned-copy side effect and
-  check the submitted dispatch/texture-copy/readback result after caller release.
+  config, trace, or receipt fields are added. Vulkan buffer/image copies in both
+  directions execute at submission with prior GPU writes visible at the recorded
+  position. Texture-to-buffer copies use the destination GPU resource, including
+  unmapped resident storage; they cannot substitute CPU staging or ignore layers.
+  Shared layout validation checks the last accessed byte without writing padding.
+  Copy-only textures and WebGPU views retain metadata without allocating Vulkan
+  image views. Physical transfer acceptance also checks Vulkan synchronization
+  validation, including explicit view creation and release.
+  Native regressions must reject an abandoned-copy side effect, check layered
+  readback and resident restore followed by a dependent dispatch, and release
+  caller references before submission. Copy completion remains part of the
+  recorded submission journal; no separate CPU-readback completion is fabricated.
   A command encoder owns exactly one active pass identity. Pass operations must
   match it; end returns the encoder to open recording, while caller release does
   not end a pass. Nested passes, finish during a pass, encoder commands inside a

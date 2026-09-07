@@ -754,7 +754,9 @@ pub fn create_texture_resource_full(
             .layerCount = if (view_type == c.VK_IMAGE_VIEW_TYPE_3D) 1 else image_array_layers,
         },
     };
-    try c.check_vk(c.vkCreateImageView(self.device, &view_info, null, &view));
+    if (texture_has_view_usage(effective_usage)) {
+        try c.check_vk(c.vkCreateImageView(self.device, &view_info, null, &view));
+    }
     errdefer if (view != VK_NULL_U64) c.vkDestroyImageView(self.device, view, null);
 
     return .{
@@ -826,6 +828,9 @@ pub fn create_texture_view(
     swizzle_b: u32,
     swizzle_a: u32,
 ) !VkImageView {
+    // Copy-only WebGPU views retain metadata and their parent without a
+    // Vulkan image view: transfer commands consume the image directly.
+    if (!texture_has_view_usage(texture.usage)) return VK_NULL_U64;
     var view: VkImageView = VK_NULL_U64;
     const resolved_format = if (format != 0) format else texture.format;
     const resolved_level_count = if (mip_level_count != 0) mip_level_count else texture.mip_levels - base_mip_level;
@@ -1024,6 +1029,23 @@ pub fn image_usage_for_texture(usage: model_gpu_types.WGPUFlags, format: model_g
             c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     }
     return out;
+}
+
+fn texture_has_view_usage(usage: model_gpu_types.WGPUFlags) bool {
+    const view_usage = model_gpu_types.WGPUTextureUsage_TextureBinding |
+        model_gpu_types.WGPUTextureUsage_StorageBinding |
+        model_gpu_types.WGPUTextureUsage_RenderAttachment;
+    return usage & view_usage != 0;
+}
+
+test "copy-only textures do not require Vulkan image views" {
+    const copies = model_gpu_types.WGPUTextureUsage_CopySrc | model_gpu_types.WGPUTextureUsage_CopyDst;
+    try std.testing.expect(!texture_has_view_usage(effective_texture_usage(copies)));
+    for ([_]model_gpu_types.WGPUFlags{
+        model_gpu_types.WGPUTextureUsage_TextureBinding,
+        model_gpu_types.WGPUTextureUsage_StorageBinding,
+        model_gpu_types.WGPUTextureUsage_RenderAttachment,
+    }) |usage| try std.testing.expect(texture_has_view_usage(copies | usage));
 }
 
 pub fn bytes_per_pixel_for_texture_format(format: model_gpu_types.WGPUTextureFormat) u32 {

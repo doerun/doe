@@ -1,0 +1,752 @@
+diff --git a/docs/process.md b/docs/process.md
+index b21bbfb05..852de9375 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -218,10 +218,18 @@ classified and cannot be promoted by benchmark results.
+   replay, rejected queue submission, and a subsequent valid encoder. Error
+   command buffers cannot enter prepared execution. This changes failure handling
+   behind existing WebGPU signatures and error categories; no public descriptor,
+-  config, trace, or receipt fields are added. Vulkan buffer-to-texture copies
+-  execute only at submission, with source GPU writes visible at the recorded
+-  position. The native regression must reject an abandoned-copy side effect and
+-  check the submitted dispatch/texture-copy/readback result after caller release.
++  config, trace, or receipt fields are added. Vulkan buffer/image copies in both
++  directions execute at submission with prior GPU writes visible at the recorded
++  position. Texture-to-buffer copies use the destination GPU resource, including
++  unmapped resident storage; they cannot substitute CPU staging or ignore layers.
++  Shared layout validation checks the last accessed byte without writing padding.
++  Copy-only textures and WebGPU views retain metadata without allocating Vulkan
++  image views. Physical transfer acceptance also checks Vulkan synchronization
++  validation, including explicit view creation and release.
++  Native regressions must reject an abandoned-copy side effect, check layered
++  readback and resident restore followed by a dependent dispatch, and release
++  caller references before submission. Copy completion remains part of the
++  recorded submission journal; no separate CPU-readback completion is fabricated.
+   A command encoder owns exactly one active pass identity. Pass operations must
+   match it; end returns the encoder to open recording, while caller release does
+   not end a pass. Nested passes, finish during a pass, encoder commands inside a
+diff --git a/docs/status/compiler-and-webgpu.md b/docs/status/compiler-and-webgpu.md
+index 1db30b3eb..b392b3cf7 100644
+--- a/docs/status/compiler-and-webgpu.md
++++ b/docs/status/compiler-and-webgpu.md
+@@ -13,8 +13,7 @@ Payload execution is unsupported; former proc-surface diagnostics did not
+ establish shader-visible behavior. The capability inventory, spec index, and
+ generated reports reflect that distinction.
+ 
+-Tests, the pre-fix C-boundary failure, and retained-package qualification are
+-indexed at `bench/out/compute-program/20260906-immediate-admission/README.md`.
++Acceptance: `bench/out/compute-program/20260906-immediate-admission/README.md`.
+ No backend gains immediate-data execution through this correction.
+ 
+ ## Active pass ownership
+@@ -43,15 +42,20 @@ bundles, and retained dependencies keep their owning allocator through cleanup.
+ Fault-injection tests cover recording growth, abandoned state, failed finish,
+ rejected replay/submission, and subsequent valid recording.
+ 
+-Vulkan buffer-to-texture copies execute at their recorded queue position using
+-the source GPU buffer. An abandoned recording cannot change its destination.
+-Copy layout validation checks mip-relative extents, block geometry, layers,
+-strides, and the last accessed source byte. The physical regression retains the
+-pre-fix failure and verifies dispatch/copy/readback after caller reference release.
+-Source, canonical tests, and exact Node/Bun/Electron main-process packages are
+-indexed at `bench/out/compute-program/20260906-ordinary-recording/README.md`.
+-This does not establish complete pass-state validation, texture-copy conformance,
+-concurrent queue safety, physical Metal/D3D12 behavior, or a performance advantage.
++Vulkan buffer/image copies execute at their recorded queue position without CPU
++staging. Both directions share mip-relative extent, block, layer, stride, and
++last-accessed-byte validation. Texture copies can feed resident storage and a
++dependent dispatch; mapped readback receives explicit transfer visibility.
++Abandoned recordings do not execute, and padding remains untouched. Copy-only
++textures and their WebGPU views allocate no Vulkan image views; the physical
++fixture also runs with synchronization validation enabled.
++The layered-copy and resident-restore regressions retain their pre-fix failures
++and physical AMD Vulkan results at
++`bench/out/compute-program/20260907-texture-transfers/README.md`.
++The earlier recording-allocation checkpoint remains at
++`bench/out/compute-program/20260906-ordinary-recording/README.md`.
++These checks do not establish texture-origin/aspect conformance, concurrent queue
++safety, physical Metal/D3D12 behavior, or a performance advantage.
+ 
+ ## Transactional fused command construction
+ 
+@@ -68,10 +72,8 @@ executes the single and batched native constructors after rejected construction,
+ releases caller state before submission, and checks independent integer outputs.
+ It uses the same library bytes as retained-package qualification; the addon's
+ similarly named helper uses ordinary encoding and is separate evidence.
+-The implementation, canonical tests, and retained-package regressions are indexed at
+-`bench/out/compute-program/20260906-recorded-allocation/README.md`.
+-That earlier checkpoint covers the fused constructors. Ordinary recording and
+-its distinct native entrypoints are covered by the checkpoint above.
++Fused-constructor acceptance: `bench/out/compute-program/20260906-recorded-allocation/README.md`.
++Ordinary recording is covered by the checkpoint above.
+ 
+ ## Depth attachment ownership
+ 
+@@ -152,7 +154,6 @@ independent image, heat, and simulation checks are retained in
+ `bench/out/compute-program/20260906-shader-ownership-audits/`.
+ Physical Metal validation is still required.
+ 
+-
+ ## Scalar compute fusion and allocation failures
+ 
+ The SPIR-V compute pipeline has a versioned arithmetic policy and a typed IR
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index c0c2f50f0..cb72450cb 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -964,9 +964,9 @@
+       },
+       "src/backend/dropin_resource_ops.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "b4ca1a088ec0d77ee4b30e05a41fb4254c6294f5fe6c4d0907f5e7c43b62bcb9",
+-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
+-        "reviewer": "codex-recording-ownership/2026-09-06"
++        "moduleSha256": "5f4b5de2571d190f898615d90f8d206b5702f0a71866b2822770a8804556ada9",
++        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
++        "reviewer": "codex-texture-transfer/2026-09-07"
+       },
+       "src/backend/dropin_surface_ops.zig": {
+         "decision": "Keep",
+@@ -1228,9 +1228,9 @@
+       },
+       "src/backend/vulkan/native_runtime.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "6fc0f003f059a2163d92e1a056157134fab22cd5ad676b058961f1486b3944f2",
+-        "reason": "Keep: device owner retains native resource generations and exact active descriptor identity alongside compute cache ownership.",
+-        "reviewer": "codex-descriptor-identity/2026-09-05"
++        "moduleSha256": "04db092e9d827c128811c6fa396934a4ef1a95011e3fd18c865c4b126ee719e2",
++        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
++        "reviewer": "codex-texture-transfer/2026-09-07"
+       },
+       "src/backend/vulkan/vk_adapter_probe.zig": {
+         "decision": "Keep",
+@@ -1360,9 +1360,9 @@
+       },
+       "src/backend/vulkan/vk_resources.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "9f57e2bd939f5dcae0b7ff1c95bd70b53abaafa73672a47da58c9bc5f3e8a346",
+-        "reason": "Keep: texture resources own layout-to-access synchronization, including persistent depth/stencil attachment reads and writes.",
+-        "reviewer": "codex-depth-ownership/2026-09-06"
++        "moduleSha256": "346141b597bdd5bb0f68c4ac8c5d1566d75d8cb0b24a6b6581d54c3745ee362d",
++        "reason": "Keep: Vulkan owns native image-view admission; copy-only texture views retain WebGPU metadata without allocating an invalid native view.",
++        "reviewer": "codex-texture-transfer/2026-09-07"
+       },
+       "src/backend/vulkan/vk_runtime_probe_ops.zig": {
+         "decision": "Keep",
+@@ -1408,9 +1408,9 @@
+       },
+       "src/backend/vulkan/vk_texture_commands.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "a79c1d8b65e44b8aefd027f2446588140e224708181cc42e4ffdc4d38a7f1440",
+-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
+-        "reviewer": "codex-recording-ownership/2026-09-06"
++        "moduleSha256": "a3f6f3edfcdb2ba8f7e485ceba1cc1acfae9a84798ec662636d2dee7a5e01b96",
++        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
++        "reviewer": "codex-texture-transfer/2026-09-07"
+       },
+       "src/backend/vulkan/vk_upload.zig": {
+         "decision": "Keep",
+@@ -3610,9 +3610,9 @@
+       },
+       "src/native/queue/doe_queue_submit_vulkan.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "81678a6d03ea0520cb9bac9e6283239894e75e073f715af9f3047137fa61be52",
+-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
+-        "reviewer": "codex-recording-ownership/2026-09-06"
++        "moduleSha256": "cb42554031bb767392ecda4925109ae8866e8988f56b6b4478179b2185d94171",
++        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
++        "reviewer": "codex-texture-transfer/2026-09-07"
+       },
+       "src/native/render/doe_bundle_native.zig": {
+         "decision": "Keep",
+@@ -3838,9 +3838,9 @@
+       },
+       "src/native/vulkan/vulkan_texture_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "d46396ee8187983b773214f1995c48b70133aeeed922cdb190e8b6ef0c68c67e",
+-        "reason": "Keep: public image and view lifecycle publishes unique allocation generations through the Vulkan resource owner.",
+-        "reviewer": "codex-descriptor-identity/2026-09-05"
++        "moduleSha256": "1189377efd5f769573e7899b4674b4a96176eb2657e124690c6684d244e1499f",
++        "reason": "Keep: Vulkan owns native image-view admission; copy-only texture views retain WebGPU metadata without allocating an invalid native view.",
++        "reviewer": "codex-texture-transfer/2026-09-07"
+       },
+       "src/plan/dawn_plan_types.zig": {
+         "decision": "Keep",
+diff --git a/runtime/zig/src/backend/dropin_resource_ops.zig b/runtime/zig/src/backend/dropin_resource_ops.zig
+index 79f57964a..bef9bb590 100644
+--- a/runtime/zig/src/backend/dropin_resource_ops.zig
++++ b/runtime/zig/src/backend/dropin_resource_ops.zig
+@@ -15,8 +15,6 @@ pub const vk_resources = if (builtin.os.tag == .linux) @import("vulkan/vk_resour
+ pub const vk_timestamp = if (builtin.os.tag == .linux) @import("vulkan/vk_timestamp.zig") else struct {};
+ pub const vk_dispatch_indirect = if (builtin.os.tag == .linux) @import("vulkan/vk_dispatch_indirect.zig") else struct {};
+ 
+-const DoeBuffer = native_types.DoeBuffer;
+-const DoeCommandEncoder = native_types.DoeCommandEncoder;
+ const DoeDevice = native_types.DoeDevice;
+ const DoeQueue = native_types.DoeQueue;
+ const DoeTexture = native_types.DoeTexture;
+@@ -64,43 +62,6 @@ fn failVulkanResourceError(dev: *DoeDevice, comptime operation: []const u8, err:
+     return failVulkanResourceOp(dev, operation, @errorName(err));
+ }
+ 
+-pub fn handleVulkanCopyTextureToBuffer(
+-    enc: *DoeCommandEncoder,
+-    src_texture: *DoeTexture,
+-    src_mip_level: u32,
+-    dst_buffer: *DoeBuffer,
+-    dst_offset: u64,
+-    dst_bytes_per_row: u32,
+-    dst_rows_per_image: u32,
+-    width: u32,
+-    height: u32,
+-    depth_or_array_layers: u32,
+-) bool {
+-    _ = depth_or_array_layers;
+-    if (enc.dev.backend != .vulkan) return false;
+-    if (comptime !has_vulkan) return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "backend compiled without Vulkan support");
+-    const rt = native_rt_helpers.device_vk_runtime(enc.dev) orelse
+-        return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "device has no Vulkan runtime");
+-    if (src_texture.vk_id == 0) return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "source texture has no Vulkan resource");
+-    if (dst_buffer.vk_id == 0) return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "destination buffer has no Vulkan resource");
+-    const dcb = rt.compute_buffers.get(dst_buffer.vk_id) orelse
+-        return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "destination buffer resource is not registered");
+-    const mapped_ptr = dcb.mapped orelse
+-        return failVulkanResourceOp(enc.dev, "copyTextureToBuffer", "destination buffer resource is not CPU-mapped");
+-    rt.texture_read(.{
+-        .handle = src_texture.vk_id,
+-        .mip_level = src_mip_level,
+-        .width = width,
+-        .height = height,
+-        .format = src_texture.format,
+-        .dst_buffer = @as(*anyopaque, @ptrCast(mapped_ptr)),
+-        .dst_offset = dst_offset,
+-        .dst_bytes_per_row = dst_bytes_per_row,
+-        .dst_rows_per_image = dst_rows_per_image,
+-    }) catch |err| return failVulkanResourceError(enc.dev, "copyTextureToBuffer", err);
+-    return true;
+-}
+-
+ pub fn handleVulkanQueueWriteTexture(
+     queue: ?*DoeQueue,
+     texture: *DoeTexture,
+diff --git a/runtime/zig/src/backend/vulkan/native_runtime.zig b/runtime/zig/src/backend/vulkan/native_runtime.zig
+index 413ddbda1..397bfb0fa 100644
+--- a/runtime/zig/src/backend/vulkan/native_runtime.zig
++++ b/runtime/zig/src/backend/vulkan/native_runtime.zig
+@@ -945,9 +945,6 @@ pub const NativeVulkanRuntime = struct {
+     pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.TextureWriteCommand) !void {
+         return vk_texture_commands.texture_write(self, cmd_arg);
+     }
+-    pub fn texture_read(self: *NativeVulkanRuntime, args: anytype) !void {
+-        return vk_texture_commands.texture_read(self, .{ .handle = args.handle, .mip_level = args.mip_level, .width = args.width, .height = args.height, .format = args.format, .dst_buffer = args.dst_buffer, .dst_offset = args.dst_offset, .dst_bytes_per_row = args.dst_bytes_per_row, .dst_rows_per_image = args.dst_rows_per_image });
+-    }
+     pub fn texture_copy(self: *NativeVulkanRuntime, args: anytype) !void {
+         return vk_texture_commands.texture_copy(self, .{ .src_handle = args.src_handle, .src_mip = args.src_mip, .src_x = args.src_x, .src_y = args.src_y, .src_z = args.src_z, .dst_handle = args.dst_handle, .dst_mip = args.dst_mip, .dst_x = args.dst_x, .dst_y = args.dst_y, .dst_z = args.dst_z, .width = args.width, .height = args.height, .depth_or_layers = args.depth_or_layers });
+     }
+diff --git a/runtime/zig/src/backend/vulkan/vk_resources.zig b/runtime/zig/src/backend/vulkan/vk_resources.zig
+index a2dd04e24..b24ad5e21 100644
+--- a/runtime/zig/src/backend/vulkan/vk_resources.zig
++++ b/runtime/zig/src/backend/vulkan/vk_resources.zig
+@@ -754,7 +754,9 @@ pub fn create_texture_resource_full(
+             .layerCount = if (view_type == c.VK_IMAGE_VIEW_TYPE_3D) 1 else image_array_layers,
+         },
+     };
+-    try c.check_vk(c.vkCreateImageView(self.device, &view_info, null, &view));
++    if (texture_has_view_usage(effective_usage)) {
++        try c.check_vk(c.vkCreateImageView(self.device, &view_info, null, &view));
++    }
+     errdefer if (view != VK_NULL_U64) c.vkDestroyImageView(self.device, view, null);
+ 
+     return .{
+@@ -826,6 +828,9 @@ pub fn create_texture_view(
+     swizzle_b: u32,
+     swizzle_a: u32,
+ ) !VkImageView {
++    // Copy-only WebGPU views retain metadata and their parent without a
++    // Vulkan image view: transfer commands consume the image directly.
++    if (!texture_has_view_usage(texture.usage)) return VK_NULL_U64;
+     var view: VkImageView = VK_NULL_U64;
+     const resolved_format = if (format != 0) format else texture.format;
+     const resolved_level_count = if (mip_level_count != 0) mip_level_count else texture.mip_levels - base_mip_level;
+@@ -1026,6 +1031,23 @@ pub fn image_usage_for_texture(usage: model_gpu_types.WGPUFlags, format: model_g
+     return out;
+ }
+ 
++fn texture_has_view_usage(usage: model_gpu_types.WGPUFlags) bool {
++    const view_usage = model_gpu_types.WGPUTextureUsage_TextureBinding |
++        model_gpu_types.WGPUTextureUsage_StorageBinding |
++        model_gpu_types.WGPUTextureUsage_RenderAttachment;
++    return usage & view_usage != 0;
++}
++
++test "copy-only textures do not require Vulkan image views" {
++    const copies = model_gpu_types.WGPUTextureUsage_CopySrc | model_gpu_types.WGPUTextureUsage_CopyDst;
++    try std.testing.expect(!texture_has_view_usage(effective_texture_usage(copies)));
++    for ([_]model_gpu_types.WGPUFlags{
++        model_gpu_types.WGPUTextureUsage_TextureBinding,
++        model_gpu_types.WGPUTextureUsage_StorageBinding,
++        model_gpu_types.WGPUTextureUsage_RenderAttachment,
++    }) |usage| try std.testing.expect(texture_has_view_usage(copies | usage));
++}
++
+ pub fn bytes_per_pixel_for_texture_format(format: model_gpu_types.WGPUTextureFormat) u32 {
+     return vk_formats.bytes_per_pixel(format) catch 4;
+ }
+diff --git a/runtime/zig/src/backend/vulkan/vk_texture_commands.zig b/runtime/zig/src/backend/vulkan/vk_texture_commands.zig
+index 03200b59c..bc47c893a 100644
+--- a/runtime/zig/src/backend/vulkan/vk_texture_commands.zig
++++ b/runtime/zig/src/backend/vulkan/vk_texture_commands.zig
+@@ -11,17 +11,7 @@ const vk_sync = @import("vk_sync.zig");
+ const vk_upload = @import("vk_upload.zig");
+ const vk_resources = @import("vk_resources.zig");
+ const vk_formats = @import("vk_formats.zig");
+-
+-const TextureReadExtent = struct {
+-    width: u32,
+-    height: u32,
+-};
+-
+-fn texture_read_copy_extent(width: u32, height: u32) TextureReadExtent {
+-    // WebGPU's copy extent is already expressed in the selected mip's
+-    // coordinate space. Applying the mip shift again truncates readback.
+-    return .{ .width = width, .height = height };
+-}
++const vk_compute_sync = @import("vk_compute_sync.zig");
+ 
+ pub const BufferCopy = struct {
+     offset: u64,
+@@ -33,7 +23,7 @@ pub const BufferCopy = struct {
+     depth_or_layers: u32,
+ };
+ 
+-pub fn buffer_copy_region(source_size: u64, texture: vk_resources.TextureResource, copy: BufferCopy) !c.VkBufferImageCopy {
++pub fn buffer_copy_region(buffer_size: u64, texture: vk_resources.TextureResource, copy: BufferCopy) !c.VkBufferImageCopy {
+     if (copy.mip >= texture.mip_levels or copy.mip >= @bitSizeOf(u32) or texture.sample_count != 1)
+         return error.InvalidArgument;
+     if (texture.format == model_gpu_types.WGPUTextureFormat_Depth24Plus or
+@@ -65,7 +55,7 @@ pub fn buffer_copy_region(source_size: u64, texture: vk_resources.TextureResourc
+         required = try std.math.add(u64, required, try std.math.mul(u64, pitch, rows - 1));
+         required = try std.math.add(u64, required, row_bytes);
+     }
+-    if (copy.offset > source_size or required > source_size - copy.offset) return error.InvalidArgument;
++    if (copy.offset > buffer_size or required > buffer_size - copy.offset) return error.InvalidArgument;
+     const row_length = std.math.cast(u32, (pitch / bytes) * block[0]) orelse return error.InvalidArgument;
+     const image_height = std.math.cast(u32, image_rows * block[1]) orelse return error.InvalidArgument;
+     return .{
+@@ -83,21 +73,41 @@ pub fn buffer_copy_region(source_size: u64, texture: vk_resources.TextureResourc
+     };
+ }
+ 
+-pub fn record_buffer_copy(self: anytype, source: vk_resources.ComputeBuffer, texture: *vk_resources.TextureResource, copy: BufferCopy) !void {
+-    const region = try buffer_copy_region(source.size, texture.*, copy);
+-    if (copy.width == 0 or copy.height == 0 or copy.depth_or_layers == 0) return;
++pub fn record_buffer_copy(self: anytype, source: vk_resources.ComputeBuffer, texture: *vk_resources.TextureResource, copy: BufferCopy) !bool {
++    return record_buffer_image_copy(.buffer_to_texture, self, source, texture, copy);
++}
++
++pub fn record_texture_to_buffer(self: anytype, texture: *vk_resources.TextureResource, destination: vk_resources.ComputeBuffer, copy: BufferCopy) !bool {
++    return record_buffer_image_copy(.texture_to_buffer, self, destination, texture, copy);
++}
++
++const CopyDirection = enum { buffer_to_texture, texture_to_buffer };
++
++fn record_buffer_image_copy(comptime direction: CopyDirection, self: anytype, buffer: vk_resources.ComputeBuffer, texture: *vk_resources.TextureResource, copy: BufferCopy) !bool {
++    const region = try buffer_copy_region(buffer.size, texture.*, copy);
++    if (copy.width == 0 or copy.height == 0 or copy.depth_or_layers == 0) return false;
+     const command_buffer = try self.begin_prepared_dispatch_replay();
+     const barrier = c.VkMemoryBarrier{
+         .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+         .pNext = null,
+         .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT | c.VK_ACCESS_TRANSFER_WRITE_BIT,
+-        .dstAccessMask = c.VK_ACCESS_TRANSFER_READ_BIT,
++        .dstAccessMask = c.VK_ACCESS_TRANSFER_READ_BIT | c.VK_ACCESS_TRANSFER_WRITE_BIT,
+     };
+     c.vkCmdPipelineBarrier(command_buffer, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, @ptrCast(&barrier), 0, null, 0, null);
+-    vk_resources.transition_texture_layout(command_buffer, texture.*, texture.layout, c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, c.VK_ACCESS_MEMORY_READ_BIT | c.VK_ACCESS_MEMORY_WRITE_BIT, c.VK_ACCESS_TRANSFER_WRITE_BIT, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT);
+-    c.vkCmdCopyBufferToImage(command_buffer, source.buffer, texture.image, c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, @ptrCast(&region));
+-    vk_resources.transition_texture_layout(command_buffer, texture.*, c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, c.VK_IMAGE_LAYOUT_GENERAL, c.VK_ACCESS_TRANSFER_WRITE_BIT, c.VK_ACCESS_MEMORY_READ_BIT | c.VK_ACCESS_MEMORY_WRITE_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
++    const layout = if (direction == .buffer_to_texture) c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL else c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
++    const access = if (direction == .buffer_to_texture) c.VK_ACCESS_TRANSFER_WRITE_BIT else c.VK_ACCESS_TRANSFER_READ_BIT;
++    vk_resources.transition_texture_layout(command_buffer, texture.*, texture.layout, layout, c.VK_ACCESS_MEMORY_READ_BIT | c.VK_ACCESS_MEMORY_WRITE_BIT, access, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT);
++    switch (direction) {
++        .buffer_to_texture => c.vkCmdCopyBufferToImage(command_buffer, buffer.buffer, texture.image, layout, 1, @ptrCast(&region)),
++        .texture_to_buffer => {
++            c.vkCmdCopyImageToBuffer(command_buffer, texture.image, layout, buffer.buffer, 1, @ptrCast(&region));
++            self.has_pending_transfer_writes = true;
++            if (buffer.mapped != null) vk_compute_sync.make_transfer_writes_visible_for_host_read(command_buffer);
++        },
++    }
++    vk_resources.transition_texture_layout(command_buffer, texture.*, layout, c.VK_IMAGE_LAYOUT_GENERAL, access, c.VK_ACCESS_MEMORY_READ_BIT | c.VK_ACCESS_MEMORY_WRITE_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+     vk_resources.mark_texture_image_layout(self, texture.image, c.VK_IMAGE_LAYOUT_GENERAL);
++    return true;
+ }
+ 
+ test "buffer image copy validates the last accessed byte and mip-relative layers" {
+@@ -215,92 +225,6 @@ pub fn texture_write(self: anytype, cmd_arg: model_texture_types.TextureWriteCom
+     vk_resources.mark_texture_image_layout(self, resource.image, c.VK_IMAGE_LAYOUT_GENERAL);
+ }
+ 
+-pub fn texture_read(self: anytype, args: struct {
+-    handle: u64,
+-    mip_level: u32,
+-    width: u32,
+-    height: u32,
+-    format: model_gpu_types.WGPUTextureFormat,
+-    dst_buffer: *anyopaque,
+-    dst_offset: u64,
+-    dst_bytes_per_row: u32,
+-    dst_rows_per_image: u32,
+-}) !void {
+-    const texture = self.textures.getPtr(args.handle) orelse return error.InvalidState;
+-    if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+-        _ = try self.flush_queue();
+-    }
+-    try vk_device.ensure_submission_state(self);
+-    const rows = if (args.dst_rows_per_image > 0) args.dst_rows_per_image else args.height;
+-    const bpp = vk_resources.bytes_per_pixel_for_texture_format(args.format);
+-    const byte_count: u64 = @as(u64, args.dst_bytes_per_row) * rows;
+-    const staging = try vk_resources.create_host_visible_buffer(self, byte_count, c.VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+-    defer vk_resources.destroy_host_visible_buffer(self, staging);
+-    try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
+-    var begin_info = c.VkCommandBufferBeginInfo{
+-        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+-        .pNext = null,
+-        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+-        .pInheritanceInfo = null,
+-    };
+-    try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
+-    const prev_layout = texture.layout;
+-    vk_resources.transition_texture_layout(
+-        self.primary_command_buffer,
+-        texture.*,
+-        prev_layout,
+-        c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+-        vk_resources.texture_transition_source(prev_layout).src_access_mask,
+-        c.VK_ACCESS_TRANSFER_READ_BIT,
+-        vk_resources.texture_transition_source(prev_layout).src_stage,
+-        c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+-    );
+-    const copy_extent = texture_read_copy_extent(args.width, args.height);
+-    var region = c.VkBufferImageCopy{
+-        .bufferOffset = 0,
+-        .bufferRowLength = if (args.dst_bytes_per_row > 0) args.dst_bytes_per_row / bpp else 0,
+-        .bufferImageHeight = rows,
+-        .imageSubresource = .{
+-            .aspectMask = vk_formats.aspect_mask_for_format(args.format),
+-            .mipLevel = args.mip_level,
+-            .baseArrayLayer = 0,
+-            .layerCount = 1,
+-        },
+-        .imageOffset = .{ .x = 0, .y = 0, .z = 0 },
+-        .imageExtent = .{
+-            .width = copy_extent.width,
+-            .height = copy_extent.height,
+-            .depth = 1,
+-        },
+-    };
+-    c.vkCmdCopyImageToBuffer(self.primary_command_buffer, texture.image, c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging.buffer, 1, @ptrCast(&region));
+-    vk_resources.transition_texture_layout(
+-        self.primary_command_buffer,
+-        texture.*,
+-        c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+-        c.VK_IMAGE_LAYOUT_GENERAL,
+-        c.VK_ACCESS_TRANSFER_READ_BIT,
+-        c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
+-        c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+-        c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+-    );
+-    try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
+-    try submit_and_wait_timeline(self);
+-    vk_resources.mark_texture_image_layout(self, texture.image, c.VK_IMAGE_LAYOUT_GENERAL);
+-    if (staging.mapped) |raw| {
+-        const dst: [*]u8 = @ptrCast(args.dst_buffer);
+-        const off: usize = @intCast(args.dst_offset);
+-        const n: usize = @intCast(byte_count);
+-        @memcpy(dst[off .. off + n], @as([*]const u8, @ptrCast(raw))[0..n]);
+-    }
+-}
+-
+-test "texture read copy extent is already mip-relative" {
+-    const extent = texture_read_copy_extent(32, 16);
+-    try std.testing.expectEqual(@as(u32, 32), extent.width);
+-    try std.testing.expectEqual(@as(u32, 16), extent.height);
+-}
+-
+ pub fn texture_copy(self: anytype, args: struct {
+     src_handle: u64,
+     src_mip: u32,
+diff --git a/runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig b/runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig
+index a8cd70268..46febfcc7 100644
+--- a/runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig
++++ b/runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig
+@@ -171,30 +171,35 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
+                     recorded_replay_work = true;
+                 },
+                 .copy_texture_to_buffer => |copy_cmd| {
+-                    if (!flushRecordedReplay(q, rt, &recorded_replay_work, "before copy_texture_to_buffer")) continue;
+-                    resetPreparedDispatchState(&prepared_dispatch);
+-                    const src_texture = cast(native_types.DoeTexture, copy_cmd.src_texture) orelse continue;
+-                    const dst_buffer = cast(native_types.DoeBuffer, copy_cmd.dst_buffer) orelse continue;
+-                    if (src_texture.vk_id == 0 or dst_buffer.vk_id == 0) continue;
+-                    const dcb = rt.compute_buffers.get(dst_buffer.vk_id) orelse continue;
+-                    const mapped_ptr = dcb.mapped orelse continue;
+-                    rt.texture_read(.{
+-                        .handle = src_texture.vk_id,
+-                        .mip_level = copy_cmd.src_mip_level,
++                    const source = cast(native_types.DoeTexture, copy_cmd.src_texture) orelse {
++                        shared.deliverInternalError(q.dev, "Vulkan copyTextureToBuffer: invalid source texture", .{});
++                        return;
++                    };
++                    const destination = cast(native_types.DoeBuffer, copy_cmd.dst_buffer) orelse {
++                        shared.deliverInternalError(q.dev, "Vulkan copyTextureToBuffer: invalid destination buffer", .{});
++                        return;
++                    };
++                    const texture = rt.textures.getPtr(source.vk_id) orelse {
++                        shared.deliverInternalError(q.dev, "Vulkan copyTextureToBuffer: source resource unavailable", .{});
++                        return;
++                    };
++                    const destination_resource = rt.compute_buffers.get(destination.vk_id) orelse {
++                        shared.deliverInternalError(q.dev, "Vulkan copyTextureToBuffer: destination resource unavailable", .{});
++                        return;
++                    };
++                    const recorded = queue_submit_ops.vulkan_texture_commands.record_texture_to_buffer(rt, texture, destination_resource, .{
++                        .offset = copy_cmd.dst_offset,
++                        .bytes_per_row = copy_cmd.dst_bytes_per_row,
++                        .rows_per_image = copy_cmd.dst_rows_per_image,
++                        .mip = copy_cmd.src_mip_level,
+                         .width = copy_cmd.width,
+                         .height = copy_cmd.height,
+-                        .format = src_texture.format,
+-                        .dst_buffer = @as(*anyopaque, @ptrCast(mapped_ptr)),
+-                        .dst_offset = copy_cmd.dst_offset,
+-                        .dst_bytes_per_row = copy_cmd.dst_bytes_per_row,
+-                        .dst_rows_per_image = copy_cmd.dst_rows_per_image,
++                        .depth_or_layers = copy_cmd.depth_or_array_layers,
+                     }) catch |err| {
+-                        shared.deliverInternalError(
+-                            q.dev,
+-                            "doe_queue_submit: vulkan copy_texture_to_buffer: {s}",
+-                            .{@errorName(err)},
+-                        );
++                        shared.deliverInternalError(q.dev, "Vulkan copyTextureToBuffer: {s}", .{@errorName(err)});
++                        return;
+                     };
++                    recorded_replay_work = recorded_replay_work or recorded;
+                 },
+                 .copy_texture_to_texture => |copy_cmd| {
+                     if (!flushRecordedReplay(q, rt, &recorded_replay_work, "before copy_texture_to_texture")) continue;
+@@ -244,8 +249,14 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
+                     recorded_replay_work = true;
+                 },
+                 .copy_buffer_to_texture => |copy| {
+-                    const source = cast(native_types.DoeBuffer, copy.src_buffer) orelse return;
+-                    const destination = cast(native_types.DoeTexture, copy.dst_texture) orelse return;
++                    const source = cast(native_types.DoeBuffer, copy.src_buffer) orelse {
++                        shared.deliverInternalError(q.dev, "Vulkan copyBufferToTexture: invalid source buffer", .{});
++                        return;
++                    };
++                    const destination = cast(native_types.DoeTexture, copy.dst_texture) orelse {
++                        shared.deliverInternalError(q.dev, "Vulkan copyBufferToTexture: invalid destination texture", .{});
++                        return;
++                    };
+                     const source_resource = rt.compute_buffers.get(source.vk_id) orelse {
+                         shared.deliverInternalError(q.dev, "Vulkan copyBufferToTexture: source resource unavailable", .{});
+                         return;
+@@ -254,7 +265,7 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
+                         shared.deliverInternalError(q.dev, "Vulkan copyBufferToTexture: destination resource unavailable", .{});
+                         return;
+                     };
+-                    queue_submit_ops.vulkan_texture_commands.record_buffer_copy(rt, source_resource, texture, .{
++                    const recorded = queue_submit_ops.vulkan_texture_commands.record_buffer_copy(rt, source_resource, texture, .{
+                         .offset = copy.src_offset,
+                         .bytes_per_row = copy.src_bytes_per_row,
+                         .rows_per_image = copy.src_rows_per_image,
+@@ -266,7 +277,7 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
+                         shared.deliverInternalError(q.dev, "Vulkan copyBufferToTexture: {s}", .{@errorName(err)});
+                         return;
+                     };
+-                    recorded_replay_work = true;
++                    recorded_replay_work = recorded_replay_work or recorded;
+                 },
+                 .render_pass => {
+                     shared.deliverInternalError(q.dev, "Vulkan submission received commands recorded for another backend", .{});
+diff --git a/runtime/zig/src/native/vulkan/vulkan_texture_native.zig b/runtime/zig/src/native/vulkan/vulkan_texture_native.zig
+index e3574093a..9f8a681b9 100644
+--- a/runtime/zig/src/native/vulkan/vulkan_texture_native.zig
++++ b/runtime/zig/src/native/vulkan/vulkan_texture_native.zig
+@@ -85,6 +85,7 @@ pub fn vulkan_create_texture_view(tex: *shared.DoeTexture, tv: *shared.DoeTextur
+     ) catch {
+         return false;
+     };
++    if (vk_view == shared.c.VK_NULL_U64) return true;
+     const key: u64 = vk_view;
+     const result = rt.textures.getOrPut(rt.allocator, key) catch {
+         shared.vk_resources.release_texture_view_with_device(rt.device, vk_view);
+diff --git a/runtime/zig/tests/native_recorded_compute.c b/runtime/zig/tests/native_recorded_compute.c
+index 6afbc98b0..10b75cc25 100644
+--- a/runtime/zig/tests/native_recorded_compute.c
++++ b/runtime/zig/tests/native_recorded_compute.c
+@@ -10,7 +10,9 @@ extern WGPUCommandBuffer doeNativeCreateComputeDispatchBatchCopyCommandBuffer(
+     WGPUDevice, size_t, WGPUComputePipeline*, WGPUBindGroup*, const uint32_t*, const uint32_t*,
+     WGPUBuffer, uint64_t, WGPUBuffer, uint64_t, uint64_t);
+ 
+-enum { ELEMENT_COUNT = 4, NATIVE_BIND_GROUP_STRIDE = 4, AMD_PCI_VENDOR_ID = 0x1002 };
++enum { ELEMENT_COUNT = 4, NATIVE_BIND_GROUP_STRIDE = 4, AMD_PCI_VENDOR_ID = 0x1002,
++       TEXTURE_ROW_BYTES = 256, TEXTURE_LAYER_COUNT = 2, RESIDENT_STORAGE_BYTES = 65536 };
++static const uint32_t PADDING_SENTINEL = 0xaabbccddu;
+ 
+ static void adapter_ready(WGPURequestAdapterStatus status, WGPUAdapter adapter,
+                           WGPUStringView message, void* result, void* unused) {
+@@ -106,7 +108,7 @@ static bool texture_is_zero(WGPUInstance instance, WGPUDevice device, WGPUQueue
+     source.texture = texture;
+     WGPUTexelCopyBufferInfo target = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
+     target.buffer = readback;
+-    target.layout.bytesPerRow = 256;
++    target.layout.bytesPerRow = TEXTURE_ROW_BYTES;
+     target.layout.rowsPerImage = 1;
+     WGPUExtent3D extent = {ELEMENT_COUNT, 1, 1};
+     wgpuCommandEncoderCopyTextureToBuffer(encoder, &source, &target, &extent);
+@@ -130,7 +132,8 @@ static bool texture_is_zero(WGPUInstance instance, WGPUDevice device, WGPUQueue
+     return zero;
+ }
+ 
+-static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue, bool batch, bool via_texture) {
++static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue,
++                    bool batch, bool via_texture, bool resident_roundtrip) {
+     bool success = false, mapped = false;
+     WGPUShaderModule shader = NULL;
+     WGPUComputePipeline pipeline = NULL;
+@@ -161,17 +164,19 @@ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue, b
+     layout = wgpuComputePipelineGetBindGroupLayout(pipeline, 0);
+     REQUIRE(layout);
+     WGPUBufferDescriptor buffer_desc = WGPU_BUFFER_DESCRIPTOR_INIT;
+-    buffer_desc.size = sizeof(input);
++    buffer_desc.size = via_texture ? TEXTURE_ROW_BYTES + sizeof(input) : sizeof(input);
++    if (resident_roundtrip) buffer_desc.size = RESIDENT_STORAGE_BYTES;
+     buffer_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopySrc | WGPUBufferUsage_CopyDst;
+     storage = wgpuDeviceCreateBuffer(device, &buffer_desc);
+-    if (via_texture) buffer_desc.size = 256;
++    if (via_texture) buffer_desc.size = TEXTURE_ROW_BYTES * TEXTURE_LAYER_COUNT;
+     buffer_desc.usage = WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst;
+     readback = wgpuDeviceCreateBuffer(device, &buffer_desc);
+     REQUIRE(storage && readback);
+     wgpuQueueWriteBuffer(queue, storage, 0, input, sizeof(input));
++    if (via_texture) wgpuQueueWriteBuffer(queue, storage, TEXTURE_ROW_BYTES, input, sizeof(input));
+     WGPUBindGroupEntry entry = WGPU_BIND_GROUP_ENTRY_INIT;
+     entry.buffer = storage;
+-    entry.size = sizeof(input);
++    entry.size = resident_roundtrip ? RESIDENT_STORAGE_BYTES : sizeof(input);
+     WGPUBindGroupDescriptor group_desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
+     group_desc.layout = layout;
+     group_desc.entryCount = 1;
+@@ -185,27 +190,35 @@ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue, b
+     REQUIRE(!invalid);
+     if (via_texture) {
+         WGPUTextureDescriptor texture_desc = WGPU_TEXTURE_DESCRIPTOR_INIT;
+-        texture_desc.size = (WGPUExtent3D){ELEMENT_COUNT, 1, 1};
++        texture_desc.size = (WGPUExtent3D){ELEMENT_COUNT, 1, TEXTURE_LAYER_COUNT};
+         texture_desc.dimension = WGPUTextureDimension_2D;
+         texture_desc.format = WGPUTextureFormat_RGBA8Unorm;
+         texture_desc.usage = WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
+         texture = wgpuDeviceCreateTexture(device, &texture_desc);
+         REQUIRE(texture);
++        WGPUTextureView copy_view = wgpuTextureCreateView(texture, NULL);
++        REQUIRE(copy_view);
++        wgpuTextureViewRelease(copy_view);
+         WGPUTexelCopyTextureInfo image = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+         image.texture = texture;
+         WGPUTexelCopyBufferInfo source_buffer = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
+         source_buffer.buffer = storage;
+-        source_buffer.layout.bytesPerRow = 256;
++        source_buffer.layout.bytesPerRow = TEXTURE_ROW_BYTES;
+         source_buffer.layout.rowsPerImage = 1;
+         WGPUTexelCopyBufferInfo target_buffer = source_buffer;
+         target_buffer.buffer = readback;
+         const uint32_t zeros[ELEMENT_COUNT] = {0};
+-        wgpuQueueWriteTexture(queue, &image, zeros, sizeof(zeros), &source_buffer.layout, &texture_desc.size);
++        const WGPUExtent3D first_layer = {ELEMENT_COUNT, 1, 1};
++        wgpuQueueWriteTexture(queue, &image, zeros, sizeof(zeros), &source_buffer.layout, &first_layer);
+         WGPUCommandEncoder abandoned = wgpuDeviceCreateCommandEncoder(device, NULL);
+         REQUIRE(abandoned);
+         wgpuCommandEncoderCopyBufferToTexture(abandoned, &source_buffer, &image, &texture_desc.size);
+         wgpuCommandEncoderRelease(abandoned);
+         REQUIRE(texture_is_zero(instance, device, queue, texture, readback));
++        uint32_t sentinel[TEXTURE_ROW_BYTES * TEXTURE_LAYER_COUNT / sizeof(uint32_t)];
++        for (size_t index = 0; index < sizeof(sentinel) / sizeof(sentinel[0]); ++index)
++            sentinel[index] = PADDING_SENTINEL;
++        wgpuQueueWriteBuffer(queue, readback, 0, sentinel, sizeof(sentinel));
+         WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
+         REQUIRE(encoder);
+         WGPUComputePassEncoder pass = wgpuCommandEncoderBeginComputePass(encoder, NULL);
+@@ -216,7 +229,21 @@ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue, b
+         wgpuComputePassEncoderEnd(pass);
+         wgpuComputePassEncoderRelease(pass);
+         wgpuCommandEncoderCopyBufferToTexture(encoder, &source_buffer, &image, &texture_desc.size);
++        if (resident_roundtrip) {
++            target_buffer.buffer = storage;
++            wgpuCommandEncoderClearBuffer(encoder, storage, 0, TEXTURE_ROW_BYTES + sizeof(input));
++        }
+         wgpuCommandEncoderCopyTextureToBuffer(encoder, &image, &target_buffer, &texture_desc.size);
++        if (resident_roundtrip) {
++            pass = wgpuCommandEncoderBeginComputePass(encoder, NULL);
++            if (!pass) { wgpuCommandEncoderRelease(encoder); REQUIRE(pass); }
++            wgpuComputePassEncoderSetPipeline(pass, pipeline);
++            wgpuComputePassEncoderSetBindGroup(pass, 0, group, 0, NULL);
++            wgpuComputePassEncoderDispatchWorkgroups(pass, ELEMENT_COUNT, 1, 1);
++            wgpuComputePassEncoderEnd(pass);
++            wgpuComputePassEncoderRelease(pass);
++            wgpuCommandEncoderCopyBufferToBuffer(encoder, storage, 0, readback, 0, TEXTURE_ROW_BYTES + sizeof(input));
++        }
+         commands = wgpuCommandEncoderFinish(encoder, NULL);
+         wgpuCommandEncoderRelease(encoder);
+         wgpuTextureRelease(texture); texture = NULL;
+@@ -245,15 +272,29 @@ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue, b
+     mapping.mode = WGPUCallbackMode_AllowSpontaneous;
+     mapping.callback = map_ready;
+     mapping.userdata1 = &mapped;
+-    wgpuBufferMapAsync(readback, WGPUMapMode_Read, 0, sizeof(input), mapping);
++    const size_t mapped_bytes = via_texture ? TEXTURE_ROW_BYTES * TEXTURE_LAYER_COUNT : sizeof(input);
++    wgpuBufferMapAsync(readback, WGPUMapMode_Read, 0, mapped_bytes, mapping);
+     wgpuInstanceProcessEvents(instance);
+     REQUIRE(mapped);
+-    const uint32_t* output = wgpuBufferGetConstMappedRange(readback, 0, sizeof(input));
++    const uint32_t* output = wgpuBufferGetConstMappedRange(readback, 0, mapped_bytes);
+     REQUIRE(output);
+     for (size_t index = 0; index < ELEMENT_COUNT; ++index)
+-        REQUIRE(output[index] == input[index] + (batch ? 2u : 1u));
+-    if (via_texture)
+-        printf("passed: abandoned texture copy, caller release, ordered GPU dispatch/texture copy/readback\n");
++        REQUIRE(output[index] == input[index] + ((batch || resident_roundtrip) ? 2u : 1u));
++    if (via_texture) {
++        for (size_t index = 0; index < ELEMENT_COUNT; ++index)
++            REQUIRE(output[TEXTURE_ROW_BYTES / sizeof(uint32_t) + index] == input[index]);
++        for (size_t index = TEXTURE_ROW_BYTES / sizeof(uint32_t) + ELEMENT_COUNT;
++             index < mapped_bytes / sizeof(uint32_t); ++index)
++            REQUIRE(output[index] == PADDING_SENTINEL);
++        if (!resident_roundtrip) {
++            for (size_t index = ELEMENT_COUNT; index < TEXTURE_ROW_BYTES / sizeof(uint32_t); ++index)
++                REQUIRE(output[index] == PADDING_SENTINEL);
++        }
++    }
++    if (resident_roundtrip)
++        printf("passed: layered texture restore into resident storage, dependent dispatch, caller release/readback\n");
++    else if (via_texture)
++        printf("passed: abandoned texture copy, caller release, ordered GPU dispatch/layered texture copy/readback\n");
+     else
+         printf("passed: %s native constructor, failed construction, caller release, dispatch/copy/readback\n", batch ? "batch" : "single");
+     success = true;
+@@ -304,8 +345,12 @@ int main(void) {
+     wgpuInstanceProcessEvents(instance);
+     if (!device) goto cleanup;
+     queue = wgpuDeviceGetQueue(device);
+-    if (queue && invalid_pass_lifetimes(instance, device, queue) && execute(instance, device, queue, false, false) &&
+-        execute(instance, device, queue, true, false) && execute(instance, device, queue, false, true)) result = 0;
++    if (queue && invalid_pass_lifetimes(instance, device, queue) && execute(instance, device, queue, false, false, false) &&
++        execute(instance, device, queue, true, false, false)) {
++        const bool layered_readback = execute(instance, device, queue, false, true, false);
++        const bool resident_roundtrip = execute(instance, device, queue, false, true, true);
++        if (layered_readback && resident_roundtrip) result = 0;
++    }
+ cleanup:
+     if (queue) wgpuQueueRelease(queue);
+     if (device) { wgpuDeviceDestroy(device); wgpuDeviceRelease(device); }

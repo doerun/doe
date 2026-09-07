@@ -11,17 +11,7 @@ const vk_sync = @import("vk_sync.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const vk_formats = @import("vk_formats.zig");
-
-const TextureReadExtent = struct {
-    width: u32,
-    height: u32,
-};
-
-fn texture_read_copy_extent(width: u32, height: u32) TextureReadExtent {
-    // WebGPU's copy extent is already expressed in the selected mip's
-    // coordinate space. Applying the mip shift again truncates readback.
-    return .{ .width = width, .height = height };
-}
+const vk_compute_sync = @import("vk_compute_sync.zig");
 
 pub const BufferCopy = struct {
     offset: u64,
@@ -33,7 +23,7 @@ pub const BufferCopy = struct {
     depth_or_layers: u32,
 };
 
-pub fn buffer_copy_region(source_size: u64, texture: vk_resources.TextureResource, copy: BufferCopy) !c.VkBufferImageCopy {
+pub fn buffer_copy_region(buffer_size: u64, texture: vk_resources.TextureResource, copy: BufferCopy) !c.VkBufferImageCopy {
     if (copy.mip >= texture.mip_levels or copy.mip >= @bitSizeOf(u32) or texture.sample_count != 1)
         return error.InvalidArgument;
     if (texture.format == model_gpu_types.WGPUTextureFormat_Depth24Plus or
@@ -65,7 +55,7 @@ pub fn buffer_copy_region(source_size: u64, texture: vk_resources.TextureResourc
         required = try std.math.add(u64, required, try std.math.mul(u64, pitch, rows - 1));
         required = try std.math.add(u64, required, row_bytes);
     }
-    if (copy.offset > source_size or required > source_size - copy.offset) return error.InvalidArgument;
+    if (copy.offset > buffer_size or required > buffer_size - copy.offset) return error.InvalidArgument;
     const row_length = std.math.cast(u32, (pitch / bytes) * block[0]) orelse return error.InvalidArgument;
     const image_height = std.math.cast(u32, image_rows * block[1]) orelse return error.InvalidArgument;
     return .{
@@ -83,21 +73,41 @@ pub fn buffer_copy_region(source_size: u64, texture: vk_resources.TextureResourc
     };
 }
 
-pub fn record_buffer_copy(self: anytype, source: vk_resources.ComputeBuffer, texture: *vk_resources.TextureResource, copy: BufferCopy) !void {
-    const region = try buffer_copy_region(source.size, texture.*, copy);
-    if (copy.width == 0 or copy.height == 0 or copy.depth_or_layers == 0) return;
+pub fn record_buffer_copy(self: anytype, source: vk_resources.ComputeBuffer, texture: *vk_resources.TextureResource, copy: BufferCopy) !bool {
+    return record_buffer_image_copy(.buffer_to_texture, self, source, texture, copy);
+}
+
+pub fn record_texture_to_buffer(self: anytype, texture: *vk_resources.TextureResource, destination: vk_resources.ComputeBuffer, copy: BufferCopy) !bool {
+    return record_buffer_image_copy(.texture_to_buffer, self, destination, texture, copy);
+}
+
+const CopyDirection = enum { buffer_to_texture, texture_to_buffer };
+
+fn record_buffer_image_copy(comptime direction: CopyDirection, self: anytype, buffer: vk_resources.ComputeBuffer, texture: *vk_resources.TextureResource, copy: BufferCopy) !bool {
+    const region = try buffer_copy_region(buffer.size, texture.*, copy);
+    if (copy.width == 0 or copy.height == 0 or copy.depth_or_layers == 0) return false;
     const command_buffer = try self.begin_prepared_dispatch_replay();
     const barrier = c.VkMemoryBarrier{
         .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
         .pNext = null,
         .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT | c.VK_ACCESS_TRANSFER_WRITE_BIT,
-        .dstAccessMask = c.VK_ACCESS_TRANSFER_READ_BIT,
+        .dstAccessMask = c.VK_ACCESS_TRANSFER_READ_BIT | c.VK_ACCESS_TRANSFER_WRITE_BIT,
     };
     c.vkCmdPipelineBarrier(command_buffer, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, @ptrCast(&barrier), 0, null, 0, null);
-    vk_resources.transition_texture_layout(command_buffer, texture.*, texture.layout, c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, c.VK_ACCESS_MEMORY_READ_BIT | c.VK_ACCESS_MEMORY_WRITE_BIT, c.VK_ACCESS_TRANSFER_WRITE_BIT, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT);
-    c.vkCmdCopyBufferToImage(command_buffer, source.buffer, texture.image, c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, @ptrCast(&region));
-    vk_resources.transition_texture_layout(command_buffer, texture.*, c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, c.VK_IMAGE_LAYOUT_GENERAL, c.VK_ACCESS_TRANSFER_WRITE_BIT, c.VK_ACCESS_MEMORY_READ_BIT | c.VK_ACCESS_MEMORY_WRITE_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+    const layout = if (direction == .buffer_to_texture) c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL else c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    const access = if (direction == .buffer_to_texture) c.VK_ACCESS_TRANSFER_WRITE_BIT else c.VK_ACCESS_TRANSFER_READ_BIT;
+    vk_resources.transition_texture_layout(command_buffer, texture.*, texture.layout, layout, c.VK_ACCESS_MEMORY_READ_BIT | c.VK_ACCESS_MEMORY_WRITE_BIT, access, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT);
+    switch (direction) {
+        .buffer_to_texture => c.vkCmdCopyBufferToImage(command_buffer, buffer.buffer, texture.image, layout, 1, @ptrCast(&region)),
+        .texture_to_buffer => {
+            c.vkCmdCopyImageToBuffer(command_buffer, texture.image, layout, buffer.buffer, 1, @ptrCast(&region));
+            self.has_pending_transfer_writes = true;
+            if (buffer.mapped != null) vk_compute_sync.make_transfer_writes_visible_for_host_read(command_buffer);
+        },
+    }
+    vk_resources.transition_texture_layout(command_buffer, texture.*, layout, c.VK_IMAGE_LAYOUT_GENERAL, access, c.VK_ACCESS_MEMORY_READ_BIT | c.VK_ACCESS_MEMORY_WRITE_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
     vk_resources.mark_texture_image_layout(self, texture.image, c.VK_IMAGE_LAYOUT_GENERAL);
+    return true;
 }
 
 test "buffer image copy validates the last accessed byte and mip-relative layers" {
@@ -213,92 +223,6 @@ pub fn texture_write(self: anytype, cmd_arg: model_texture_types.TextureWriteCom
     try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
     try submit_and_wait_timeline(self);
     vk_resources.mark_texture_image_layout(self, resource.image, c.VK_IMAGE_LAYOUT_GENERAL);
-}
-
-pub fn texture_read(self: anytype, args: struct {
-    handle: u64,
-    mip_level: u32,
-    width: u32,
-    height: u32,
-    format: model_gpu_types.WGPUTextureFormat,
-    dst_buffer: *anyopaque,
-    dst_offset: u64,
-    dst_bytes_per_row: u32,
-    dst_rows_per_image: u32,
-}) !void {
-    const texture = self.textures.getPtr(args.handle) orelse return error.InvalidState;
-    if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
-        _ = try self.flush_queue();
-    }
-    try vk_device.ensure_submission_state(self);
-    const rows = if (args.dst_rows_per_image > 0) args.dst_rows_per_image else args.height;
-    const bpp = vk_resources.bytes_per_pixel_for_texture_format(args.format);
-    const byte_count: u64 = @as(u64, args.dst_bytes_per_row) * rows;
-    const staging = try vk_resources.create_host_visible_buffer(self, byte_count, c.VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    defer vk_resources.destroy_host_visible_buffer(self, staging);
-    try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
-    var begin_info = c.VkCommandBufferBeginInfo{
-        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .pNext = null,
-        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        .pInheritanceInfo = null,
-    };
-    try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
-    const prev_layout = texture.layout;
-    vk_resources.transition_texture_layout(
-        self.primary_command_buffer,
-        texture.*,
-        prev_layout,
-        c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        vk_resources.texture_transition_source(prev_layout).src_access_mask,
-        c.VK_ACCESS_TRANSFER_READ_BIT,
-        vk_resources.texture_transition_source(prev_layout).src_stage,
-        c.VK_PIPELINE_STAGE_TRANSFER_BIT,
-    );
-    const copy_extent = texture_read_copy_extent(args.width, args.height);
-    var region = c.VkBufferImageCopy{
-        .bufferOffset = 0,
-        .bufferRowLength = if (args.dst_bytes_per_row > 0) args.dst_bytes_per_row / bpp else 0,
-        .bufferImageHeight = rows,
-        .imageSubresource = .{
-            .aspectMask = vk_formats.aspect_mask_for_format(args.format),
-            .mipLevel = args.mip_level,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-        .imageOffset = .{ .x = 0, .y = 0, .z = 0 },
-        .imageExtent = .{
-            .width = copy_extent.width,
-            .height = copy_extent.height,
-            .depth = 1,
-        },
-    };
-    c.vkCmdCopyImageToBuffer(self.primary_command_buffer, texture.image, c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging.buffer, 1, @ptrCast(&region));
-    vk_resources.transition_texture_layout(
-        self.primary_command_buffer,
-        texture.*,
-        c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        c.VK_IMAGE_LAYOUT_GENERAL,
-        c.VK_ACCESS_TRANSFER_READ_BIT,
-        c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
-        c.VK_PIPELINE_STAGE_TRANSFER_BIT,
-        c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-    );
-    try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
-    try submit_and_wait_timeline(self);
-    vk_resources.mark_texture_image_layout(self, texture.image, c.VK_IMAGE_LAYOUT_GENERAL);
-    if (staging.mapped) |raw| {
-        const dst: [*]u8 = @ptrCast(args.dst_buffer);
-        const off: usize = @intCast(args.dst_offset);
-        const n: usize = @intCast(byte_count);
-        @memcpy(dst[off .. off + n], @as([*]const u8, @ptrCast(raw))[0..n]);
-    }
-}
-
-test "texture read copy extent is already mip-relative" {
-    const extent = texture_read_copy_extent(32, 16);
-    try std.testing.expectEqual(@as(u32, 32), extent.width);
-    try std.testing.expectEqual(@as(u32, 16), extent.height);
 }
 
 pub fn texture_copy(self: anytype, args: struct {

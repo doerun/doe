@@ -10,7 +10,9 @@ extern WGPUCommandBuffer doeNativeCreateComputeDispatchBatchCopyCommandBuffer(
     WGPUDevice, size_t, WGPUComputePipeline*, WGPUBindGroup*, const uint32_t*, const uint32_t*,
     WGPUBuffer, uint64_t, WGPUBuffer, uint64_t, uint64_t);
 
-enum { ELEMENT_COUNT = 4, NATIVE_BIND_GROUP_STRIDE = 4, AMD_PCI_VENDOR_ID = 0x1002 };
+enum { ELEMENT_COUNT = 4, NATIVE_BIND_GROUP_STRIDE = 4, AMD_PCI_VENDOR_ID = 0x1002,
+       TEXTURE_ROW_BYTES = 256, TEXTURE_LAYER_COUNT = 2, RESIDENT_STORAGE_BYTES = 65536 };
+static const uint32_t PADDING_SENTINEL = 0xaabbccddu;
 
 static void adapter_ready(WGPURequestAdapterStatus status, WGPUAdapter adapter,
                           WGPUStringView message, void* result, void* unused) {
@@ -106,7 +108,7 @@ static bool texture_is_zero(WGPUInstance instance, WGPUDevice device, WGPUQueue 
     source.texture = texture;
     WGPUTexelCopyBufferInfo target = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
     target.buffer = readback;
-    target.layout.bytesPerRow = 256;
+    target.layout.bytesPerRow = TEXTURE_ROW_BYTES;
     target.layout.rowsPerImage = 1;
     WGPUExtent3D extent = {ELEMENT_COUNT, 1, 1};
     wgpuCommandEncoderCopyTextureToBuffer(encoder, &source, &target, &extent);
@@ -130,7 +132,8 @@ static bool texture_is_zero(WGPUInstance instance, WGPUDevice device, WGPUQueue 
     return zero;
 }
 
-static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue, bool batch, bool via_texture) {
+static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue,
+                    bool batch, bool via_texture, bool resident_roundtrip) {
     bool success = false, mapped = false;
     WGPUShaderModule shader = NULL;
     WGPUComputePipeline pipeline = NULL;
@@ -161,17 +164,19 @@ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue, b
     layout = wgpuComputePipelineGetBindGroupLayout(pipeline, 0);
     REQUIRE(layout);
     WGPUBufferDescriptor buffer_desc = WGPU_BUFFER_DESCRIPTOR_INIT;
-    buffer_desc.size = sizeof(input);
+    buffer_desc.size = via_texture ? TEXTURE_ROW_BYTES + sizeof(input) : sizeof(input);
+    if (resident_roundtrip) buffer_desc.size = RESIDENT_STORAGE_BYTES;
     buffer_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopySrc | WGPUBufferUsage_CopyDst;
     storage = wgpuDeviceCreateBuffer(device, &buffer_desc);
-    if (via_texture) buffer_desc.size = 256;
+    if (via_texture) buffer_desc.size = TEXTURE_ROW_BYTES * TEXTURE_LAYER_COUNT;
     buffer_desc.usage = WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst;
     readback = wgpuDeviceCreateBuffer(device, &buffer_desc);
     REQUIRE(storage && readback);
     wgpuQueueWriteBuffer(queue, storage, 0, input, sizeof(input));
+    if (via_texture) wgpuQueueWriteBuffer(queue, storage, TEXTURE_ROW_BYTES, input, sizeof(input));
     WGPUBindGroupEntry entry = WGPU_BIND_GROUP_ENTRY_INIT;
     entry.buffer = storage;
-    entry.size = sizeof(input);
+    entry.size = resident_roundtrip ? RESIDENT_STORAGE_BYTES : sizeof(input);
     WGPUBindGroupDescriptor group_desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
     group_desc.layout = layout;
     group_desc.entryCount = 1;
@@ -185,27 +190,35 @@ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue, b
     REQUIRE(!invalid);
     if (via_texture) {
         WGPUTextureDescriptor texture_desc = WGPU_TEXTURE_DESCRIPTOR_INIT;
-        texture_desc.size = (WGPUExtent3D){ELEMENT_COUNT, 1, 1};
+        texture_desc.size = (WGPUExtent3D){ELEMENT_COUNT, 1, TEXTURE_LAYER_COUNT};
         texture_desc.dimension = WGPUTextureDimension_2D;
         texture_desc.format = WGPUTextureFormat_RGBA8Unorm;
         texture_desc.usage = WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
         texture = wgpuDeviceCreateTexture(device, &texture_desc);
         REQUIRE(texture);
+        WGPUTextureView copy_view = wgpuTextureCreateView(texture, NULL);
+        REQUIRE(copy_view);
+        wgpuTextureViewRelease(copy_view);
         WGPUTexelCopyTextureInfo image = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
         image.texture = texture;
         WGPUTexelCopyBufferInfo source_buffer = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
         source_buffer.buffer = storage;
-        source_buffer.layout.bytesPerRow = 256;
+        source_buffer.layout.bytesPerRow = TEXTURE_ROW_BYTES;
         source_buffer.layout.rowsPerImage = 1;
         WGPUTexelCopyBufferInfo target_buffer = source_buffer;
         target_buffer.buffer = readback;
         const uint32_t zeros[ELEMENT_COUNT] = {0};
-        wgpuQueueWriteTexture(queue, &image, zeros, sizeof(zeros), &source_buffer.layout, &texture_desc.size);
+        const WGPUExtent3D first_layer = {ELEMENT_COUNT, 1, 1};
+        wgpuQueueWriteTexture(queue, &image, zeros, sizeof(zeros), &source_buffer.layout, &first_layer);
         WGPUCommandEncoder abandoned = wgpuDeviceCreateCommandEncoder(device, NULL);
         REQUIRE(abandoned);
         wgpuCommandEncoderCopyBufferToTexture(abandoned, &source_buffer, &image, &texture_desc.size);
         wgpuCommandEncoderRelease(abandoned);
         REQUIRE(texture_is_zero(instance, device, queue, texture, readback));
+        uint32_t sentinel[TEXTURE_ROW_BYTES * TEXTURE_LAYER_COUNT / sizeof(uint32_t)];
+        for (size_t index = 0; index < sizeof(sentinel) / sizeof(sentinel[0]); ++index)
+            sentinel[index] = PADDING_SENTINEL;
+        wgpuQueueWriteBuffer(queue, readback, 0, sentinel, sizeof(sentinel));
         WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
         REQUIRE(encoder);
         WGPUComputePassEncoder pass = wgpuCommandEncoderBeginComputePass(encoder, NULL);
@@ -216,7 +229,21 @@ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue, b
         wgpuComputePassEncoderEnd(pass);
         wgpuComputePassEncoderRelease(pass);
         wgpuCommandEncoderCopyBufferToTexture(encoder, &source_buffer, &image, &texture_desc.size);
+        if (resident_roundtrip) {
+            target_buffer.buffer = storage;
+            wgpuCommandEncoderClearBuffer(encoder, storage, 0, TEXTURE_ROW_BYTES + sizeof(input));
+        }
         wgpuCommandEncoderCopyTextureToBuffer(encoder, &image, &target_buffer, &texture_desc.size);
+        if (resident_roundtrip) {
+            pass = wgpuCommandEncoderBeginComputePass(encoder, NULL);
+            if (!pass) { wgpuCommandEncoderRelease(encoder); REQUIRE(pass); }
+            wgpuComputePassEncoderSetPipeline(pass, pipeline);
+            wgpuComputePassEncoderSetBindGroup(pass, 0, group, 0, NULL);
+            wgpuComputePassEncoderDispatchWorkgroups(pass, ELEMENT_COUNT, 1, 1);
+            wgpuComputePassEncoderEnd(pass);
+            wgpuComputePassEncoderRelease(pass);
+            wgpuCommandEncoderCopyBufferToBuffer(encoder, storage, 0, readback, 0, TEXTURE_ROW_BYTES + sizeof(input));
+        }
         commands = wgpuCommandEncoderFinish(encoder, NULL);
         wgpuCommandEncoderRelease(encoder);
         wgpuTextureRelease(texture); texture = NULL;
@@ -245,15 +272,29 @@ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue, b
     mapping.mode = WGPUCallbackMode_AllowSpontaneous;
     mapping.callback = map_ready;
     mapping.userdata1 = &mapped;
-    wgpuBufferMapAsync(readback, WGPUMapMode_Read, 0, sizeof(input), mapping);
+    const size_t mapped_bytes = via_texture ? TEXTURE_ROW_BYTES * TEXTURE_LAYER_COUNT : sizeof(input);
+    wgpuBufferMapAsync(readback, WGPUMapMode_Read, 0, mapped_bytes, mapping);
     wgpuInstanceProcessEvents(instance);
     REQUIRE(mapped);
-    const uint32_t* output = wgpuBufferGetConstMappedRange(readback, 0, sizeof(input));
+    const uint32_t* output = wgpuBufferGetConstMappedRange(readback, 0, mapped_bytes);
     REQUIRE(output);
     for (size_t index = 0; index < ELEMENT_COUNT; ++index)
-        REQUIRE(output[index] == input[index] + (batch ? 2u : 1u));
-    if (via_texture)
-        printf("passed: abandoned texture copy, caller release, ordered GPU dispatch/texture copy/readback\n");
+        REQUIRE(output[index] == input[index] + ((batch || resident_roundtrip) ? 2u : 1u));
+    if (via_texture) {
+        for (size_t index = 0; index < ELEMENT_COUNT; ++index)
+            REQUIRE(output[TEXTURE_ROW_BYTES / sizeof(uint32_t) + index] == input[index]);
+        for (size_t index = TEXTURE_ROW_BYTES / sizeof(uint32_t) + ELEMENT_COUNT;
+             index < mapped_bytes / sizeof(uint32_t); ++index)
+            REQUIRE(output[index] == PADDING_SENTINEL);
+        if (!resident_roundtrip) {
+            for (size_t index = ELEMENT_COUNT; index < TEXTURE_ROW_BYTES / sizeof(uint32_t); ++index)
+                REQUIRE(output[index] == PADDING_SENTINEL);
+        }
+    }
+    if (resident_roundtrip)
+        printf("passed: layered texture restore into resident storage, dependent dispatch, caller release/readback\n");
+    else if (via_texture)
+        printf("passed: abandoned texture copy, caller release, ordered GPU dispatch/layered texture copy/readback\n");
     else
         printf("passed: %s native constructor, failed construction, caller release, dispatch/copy/readback\n", batch ? "batch" : "single");
     success = true;
@@ -304,8 +345,12 @@ int main(void) {
     wgpuInstanceProcessEvents(instance);
     if (!device) goto cleanup;
     queue = wgpuDeviceGetQueue(device);
-    if (queue && invalid_pass_lifetimes(instance, device, queue) && execute(instance, device, queue, false, false) &&
-        execute(instance, device, queue, true, false) && execute(instance, device, queue, false, true)) result = 0;
+    if (queue && invalid_pass_lifetimes(instance, device, queue) && execute(instance, device, queue, false, false, false) &&
+        execute(instance, device, queue, true, false, false)) {
+        const bool layered_readback = execute(instance, device, queue, false, true, false);
+        const bool resident_roundtrip = execute(instance, device, queue, false, true, true);
+        if (layered_readback && resident_roundtrip) result = 0;
+    }
 cleanup:
     if (queue) wgpuQueueRelease(queue);
     if (device) { wgpuDeviceDestroy(device); wgpuDeviceRelease(device); }

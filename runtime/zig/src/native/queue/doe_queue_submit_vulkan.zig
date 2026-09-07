@@ -171,30 +171,35 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                     recorded_replay_work = true;
                 },
                 .copy_texture_to_buffer => |copy_cmd| {
-                    if (!flushRecordedReplay(q, rt, &recorded_replay_work, "before copy_texture_to_buffer")) continue;
-                    resetPreparedDispatchState(&prepared_dispatch);
-                    const src_texture = cast(native_types.DoeTexture, copy_cmd.src_texture) orelse continue;
-                    const dst_buffer = cast(native_types.DoeBuffer, copy_cmd.dst_buffer) orelse continue;
-                    if (src_texture.vk_id == 0 or dst_buffer.vk_id == 0) continue;
-                    const dcb = rt.compute_buffers.get(dst_buffer.vk_id) orelse continue;
-                    const mapped_ptr = dcb.mapped orelse continue;
-                    rt.texture_read(.{
-                        .handle = src_texture.vk_id,
-                        .mip_level = copy_cmd.src_mip_level,
+                    const source = cast(native_types.DoeTexture, copy_cmd.src_texture) orelse {
+                        shared.deliverInternalError(q.dev, "Vulkan copyTextureToBuffer: invalid source texture", .{});
+                        return;
+                    };
+                    const destination = cast(native_types.DoeBuffer, copy_cmd.dst_buffer) orelse {
+                        shared.deliverInternalError(q.dev, "Vulkan copyTextureToBuffer: invalid destination buffer", .{});
+                        return;
+                    };
+                    const texture = rt.textures.getPtr(source.vk_id) orelse {
+                        shared.deliverInternalError(q.dev, "Vulkan copyTextureToBuffer: source resource unavailable", .{});
+                        return;
+                    };
+                    const destination_resource = rt.compute_buffers.get(destination.vk_id) orelse {
+                        shared.deliverInternalError(q.dev, "Vulkan copyTextureToBuffer: destination resource unavailable", .{});
+                        return;
+                    };
+                    const recorded = queue_submit_ops.vulkan_texture_commands.record_texture_to_buffer(rt, texture, destination_resource, .{
+                        .offset = copy_cmd.dst_offset,
+                        .bytes_per_row = copy_cmd.dst_bytes_per_row,
+                        .rows_per_image = copy_cmd.dst_rows_per_image,
+                        .mip = copy_cmd.src_mip_level,
                         .width = copy_cmd.width,
                         .height = copy_cmd.height,
-                        .format = src_texture.format,
-                        .dst_buffer = @as(*anyopaque, @ptrCast(mapped_ptr)),
-                        .dst_offset = copy_cmd.dst_offset,
-                        .dst_bytes_per_row = copy_cmd.dst_bytes_per_row,
-                        .dst_rows_per_image = copy_cmd.dst_rows_per_image,
+                        .depth_or_layers = copy_cmd.depth_or_array_layers,
                     }) catch |err| {
-                        shared.deliverInternalError(
-                            q.dev,
-                            "doe_queue_submit: vulkan copy_texture_to_buffer: {s}",
-                            .{@errorName(err)},
-                        );
+                        shared.deliverInternalError(q.dev, "Vulkan copyTextureToBuffer: {s}", .{@errorName(err)});
+                        return;
                     };
+                    recorded_replay_work = recorded_replay_work or recorded;
                 },
                 .copy_texture_to_texture => |copy_cmd| {
                     if (!flushRecordedReplay(q, rt, &recorded_replay_work, "before copy_texture_to_texture")) continue;
@@ -244,8 +249,14 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                     recorded_replay_work = true;
                 },
                 .copy_buffer_to_texture => |copy| {
-                    const source = cast(native_types.DoeBuffer, copy.src_buffer) orelse return;
-                    const destination = cast(native_types.DoeTexture, copy.dst_texture) orelse return;
+                    const source = cast(native_types.DoeBuffer, copy.src_buffer) orelse {
+                        shared.deliverInternalError(q.dev, "Vulkan copyBufferToTexture: invalid source buffer", .{});
+                        return;
+                    };
+                    const destination = cast(native_types.DoeTexture, copy.dst_texture) orelse {
+                        shared.deliverInternalError(q.dev, "Vulkan copyBufferToTexture: invalid destination texture", .{});
+                        return;
+                    };
                     const source_resource = rt.compute_buffers.get(source.vk_id) orelse {
                         shared.deliverInternalError(q.dev, "Vulkan copyBufferToTexture: source resource unavailable", .{});
                         return;
@@ -254,7 +265,7 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                         shared.deliverInternalError(q.dev, "Vulkan copyBufferToTexture: destination resource unavailable", .{});
                         return;
                     };
-                    queue_submit_ops.vulkan_texture_commands.record_buffer_copy(rt, source_resource, texture, .{
+                    const recorded = queue_submit_ops.vulkan_texture_commands.record_buffer_copy(rt, source_resource, texture, .{
                         .offset = copy.src_offset,
                         .bytes_per_row = copy.src_bytes_per_row,
                         .rows_per_image = copy.src_rows_per_image,
@@ -266,7 +277,7 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                         shared.deliverInternalError(q.dev, "Vulkan copyBufferToTexture: {s}", .{@errorName(err)});
                         return;
                     };
-                    recorded_replay_work = true;
+                    recorded_replay_work = recorded_replay_work or recorded;
                 },
                 .render_pass => {
                     shared.deliverInternalError(q.dev, "Vulkan submission received commands recorded for another backend", .{});

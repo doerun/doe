@@ -13,8 +13,7 @@ Payload execution is unsupported; former proc-surface diagnostics did not
 establish shader-visible behavior. The capability inventory, spec index, and
 generated reports reflect that distinction.
 
-Tests, the pre-fix C-boundary failure, and retained-package qualification are
-indexed at `bench/out/compute-program/20260906-immediate-admission/README.md`.
+Acceptance: `bench/out/compute-program/20260906-immediate-admission/README.md`.
 No backend gains immediate-data execution through this correction.
 
 ## Active pass ownership
@@ -43,15 +42,20 @@ bundles, and retained dependencies keep their owning allocator through cleanup.
 Fault-injection tests cover recording growth, abandoned state, failed finish,
 rejected replay/submission, and subsequent valid recording.
 
-Vulkan buffer-to-texture copies execute at their recorded queue position using
-the source GPU buffer. An abandoned recording cannot change its destination.
-Copy layout validation checks mip-relative extents, block geometry, layers,
-strides, and the last accessed source byte. The physical regression retains the
-pre-fix failure and verifies dispatch/copy/readback after caller reference release.
-Source, canonical tests, and exact Node/Bun/Electron main-process packages are
-indexed at `bench/out/compute-program/20260906-ordinary-recording/README.md`.
-This does not establish complete pass-state validation, texture-copy conformance,
-concurrent queue safety, physical Metal/D3D12 behavior, or a performance advantage.
+Vulkan buffer/image copies execute at their recorded queue position without CPU
+staging. Both directions share mip-relative extent, block, layer, stride, and
+last-accessed-byte validation. Texture copies can feed resident storage and a
+dependent dispatch; mapped readback receives explicit transfer visibility.
+Abandoned recordings do not execute, and padding remains untouched. Copy-only
+textures and their WebGPU views allocate no Vulkan image views; the physical
+fixture also runs with synchronization validation enabled.
+The layered-copy and resident-restore regressions retain their pre-fix failures
+and physical AMD Vulkan results at
+`bench/out/compute-program/20260907-texture-transfers/README.md`.
+The earlier recording-allocation checkpoint remains at
+`bench/out/compute-program/20260906-ordinary-recording/README.md`.
+These checks do not establish texture-origin/aspect conformance, concurrent queue
+safety, physical Metal/D3D12 behavior, or a performance advantage.
 
 ## Transactional fused command construction
 
@@ -68,10 +72,8 @@ executes the single and batched native constructors after rejected construction,
 releases caller state before submission, and checks independent integer outputs.
 It uses the same library bytes as retained-package qualification; the addon's
 similarly named helper uses ordinary encoding and is separate evidence.
-The implementation, canonical tests, and retained-package regressions are indexed at
-`bench/out/compute-program/20260906-recorded-allocation/README.md`.
-That earlier checkpoint covers the fused constructors. Ordinary recording and
-its distinct native entrypoints are covered by the checkpoint above.
+Fused-constructor acceptance: `bench/out/compute-program/20260906-recorded-allocation/README.md`.
+Ordinary recording is covered by the checkpoint above.
 
 ## Depth attachment ownership
 
@@ -151,7 +153,6 @@ in `bench/out/compute-program/20260906-shader-ownership-qualified/summary.json`;
 independent image, heat, and simulation checks are retained in
 `bench/out/compute-program/20260906-shader-ownership-audits/`.
 Physical Metal validation is still required.
-
 
 ## Scalar compute fusion and allocation failures
 
