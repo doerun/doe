@@ -1,0 +1,3 @@
+ok: native reflection rejects failures, preserves empty success, and keeps module diagnostics
+ok: constant builtin initializers execute their computed scalar and vector values
+ok: unevaluated constant initializers report failure and preserve earlier shader diagnostics

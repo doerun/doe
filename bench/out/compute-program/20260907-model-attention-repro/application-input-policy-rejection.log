@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/x/deco/doe/bench/gates/compute_program_gate.py", line 331, in <module>
+    validate_matrix(args.matrix.resolve(), Path(__file__).resolve().parents[2], args.policy.resolve())
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/x/deco/doe/bench/gates/compute_program_gate.py", line 301, in validate_matrix
+    raise ValueError(f'{path}: unsuccessful matrix or changed policy')
+ValueError: /home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/summary.json: unsuccessful matrix or changed policy

@@ -1,0 +1,2156 @@
+{
+  "schemaVersion": 5,
+  "kind": "compute_program_evaluation",
+  "claimStatus": "diagnostic",
+  "packageQualification": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/package-inputs/summary.json",
+    "hash": "df7c4addedd5be2ab2b48960bd6ca02d848e07d3c8871d735ace0bc32f449506"
+  },
+  "packageRoot": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/installed-package/node_modules/doe-gpu",
+  "provider": "doe-webgpu",
+  "application": "heat_diffusion",
+  "phase": "measure",
+  "backend": "vulkan",
+  "policyHash": "3578e47cc86f78c80a7845e8ffe0275228ac69201420e8da4399c99cb7e2fae6",
+  "programPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.program.json",
+  "inputPaths": {
+    "input": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.input.input.bin"
+  },
+  "fixturePath": null,
+  "runtime": {
+    "name": "node",
+    "version": "v22.22.1"
+  },
+  "status": "passed",
+  "error": null,
+  "samples": [
+    {
+      "wallMs": 0.7854389999999967,
+      "cpuMs": 0.672,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 7,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 7,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263915201951",
+          "endTicks": "1896263915253249",
+          "elapsedNs": 51298
+        },
+        "timingMs": {
+          "upload": 0.02300299999998856,
+          "encode": 0.19101999999998043,
+          "submitWait": 0.24606299999999237,
+          "readback": 0.03091800000001399,
+          "total": 0.6398349999999766
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-7.output.f32"
+    },
+    {
+      "wallMs": 1.3474879999999985,
+      "cpuMs": 1.329,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 8,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 8,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263916375521",
+          "endTicks": "1896263916426899",
+          "elapsedNs": 51378
+        },
+        "timingMs": {
+          "upload": 0.018886000000009062,
+          "encode": 0.2757699999999943,
+          "submitWait": 0.6163610000000119,
+          "readback": 0.06876000000002591,
+          "total": 1.1860840000000223
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-8.output.f32"
+    },
+    {
+      "wallMs": 1.7412699999999859,
+      "cpuMs": 1.6,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 9,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 9,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263918656545",
+          "endTicks": "1896263918707923",
+          "elapsedNs": 51378
+        },
+        "timingMs": {
+          "upload": 0.11411400000000071,
+          "encode": 0.5100510000000043,
+          "submitWait": 0.560625999999985,
+          "readback": 0.11210099999999557,
+          "total": 1.480068000000017
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-9.output.f32"
+    },
+    {
+      "wallMs": 1.47505799999999,
+      "cpuMs": 1.368,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 10,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 10,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263920245594",
+          "endTicks": "1896263920297172",
+          "elapsedNs": 51578
+        },
+        "timingMs": {
+          "upload": 0.033533000000005586,
+          "encode": 0.3102739999999926,
+          "submitWait": 0.43367699999998877,
+          "readback": 0.11450600000000577,
+          "total": 1.2416589999999985
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-10.output.f32"
+    },
+    {
+      "wallMs": 1.2103700000000117,
+      "cpuMs": 1.092,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 11,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 11,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263922494397",
+          "endTicks": "1896263922545775",
+          "elapsedNs": 51378
+        },
+        "timingMs": {
+          "upload": 0.025186999999988302,
+          "encode": 0.30409199999999714,
+          "submitWait": 0.30256999999997447,
+          "readback": 0.03512599999999111,
+          "total": 0.842897999999991
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-11.output.f32"
+    },
+    {
+      "wallMs": 1.077418999999992,
+      "cpuMs": 0.829,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 12,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 12,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263923811820",
+          "endTicks": "1896263923918543",
+          "elapsedNs": 106723
+        },
+        "timingMs": {
+          "upload": 0.020268000000015718,
+          "encode": 0.2638680000000022,
+          "submitWait": 0.39378200000001584,
+          "readback": 0.031579000000022006,
+          "total": 0.8798269999999775
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-12.output.f32"
+    },
+    {
+      "wallMs": 0.9409420000000068,
+      "cpuMs": 0.814,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 13,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 13,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263925106430",
+          "endTicks": "1896263925158048",
+          "elapsedNs": 51618
+        },
+        "timingMs": {
+          "upload": 0.020337999999981093,
+          "encode": 0.25328700000000026,
+          "submitWait": 0.2711810000000128,
+          "readback": 0.031378999999986945,
+          "total": 0.7472479999999848
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-13.output.f32"
+    },
+    {
+      "wallMs": 0.945602000000008,
+      "cpuMs": 0.819,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 14,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 14,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263926329474",
+          "endTicks": "1896263926381012",
+          "elapsedNs": 51538
+        },
+        "timingMs": {
+          "upload": 0.01900600000001873,
+          "encode": 0.25761499999998705,
+          "submitWait": 0.2820419999999899,
+          "readback": 0.03181000000000722,
+          "total": 0.7602120000000241
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-14.output.f32"
+    },
+    {
+      "wallMs": 0.9394599999999969,
+      "cpuMs": 0.815,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 15,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 15,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263927550273",
+          "endTicks": "1896263927601811",
+          "elapsedNs": 51538
+        },
+        "timingMs": {
+          "upload": 0.01939700000002631,
+          "encode": 0.25363799999999515,
+          "submitWait": 0.2818010000000015,
+          "readback": 0.030708000000004176,
+          "total": 0.7536389999999926
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-15.output.f32"
+    },
+    {
+      "wallMs": 0.9498690000000067,
+      "cpuMs": 0.825,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 16,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 16,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263928787133",
+          "endTicks": "1896263928838751",
+          "elapsedNs": 51618
+        },
+        "timingMs": {
+          "upload": 0.01935699999998519,
+          "encode": 0.2638069999999857,
+          "submitWait": 0.2761899999999855,
+          "readback": 0.03505599999999731,
+          "total": 0.7631279999999947
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-16.output.f32"
+    },
+    {
+      "wallMs": 0.9331779999999981,
+      "cpuMs": 0.808,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 17,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 17,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263930012882",
+          "endTicks": "1896263930064661",
+          "elapsedNs": 51779
+        },
+        "timingMs": {
+          "upload": 0.019517000000007556,
+          "encode": 0.24842799999998988,
+          "submitWait": 0.2730149999999867,
+          "readback": 0.0306680000000199,
+          "total": 0.7404250000000161
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-17.output.f32"
+    },
+    {
+      "wallMs": 0.9214560000000063,
+      "cpuMs": 0.813,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 18,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 18,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263931210498",
+          "endTicks": "1896263931261835",
+          "elapsedNs": 51337
+        },
+        "timingMs": {
+          "upload": 0.01957699999999818,
+          "encode": 0.24980099999999084,
+          "submitWait": 0.25870700000001534,
+          "readback": 0.03103899999999271,
+          "total": 0.7338220000000035
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-18.output.f32"
+    },
+    {
+      "wallMs": 1.3566360000000088,
+      "cpuMs": 1.244,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 19,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 19,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263932847688",
+          "endTicks": "1896263932899186",
+          "elapsedNs": 51498
+        },
+        "timingMs": {
+          "upload": 0.032490999999993164,
+          "encode": 0.4887209999999982,
+          "submitWait": 0.3414939999999831,
+          "readback": 0.033141999999998006,
+          "total": 1.07019600000001
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-19.output.f32"
+    },
+    {
+      "wallMs": 0.9364240000000166,
+      "cpuMs": 0.807,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 20,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 20,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263934075080",
+          "endTicks": "1896263934126819",
+          "elapsedNs": 51739
+        },
+        "timingMs": {
+          "upload": 0.019687000000004673,
+          "encode": 0.2502420000000143,
+          "submitWait": 0.2790650000000028,
+          "readback": 0.031478999999990265,
+          "total": 0.7492109999999741
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-20.output.f32"
+    },
+    {
+      "wallMs": 1.0994809999999973,
+      "cpuMs": 1.358,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 21,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 21,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263935436157",
+          "endTicks": "1896263935487735",
+          "elapsedNs": 51578
+        },
+        "timingMs": {
+          "upload": 0.019798000000008642,
+          "encode": 0.35504899999997974,
+          "submitWait": 0.31416200000001027,
+          "readback": 0.04078699999999458,
+          "total": 0.9079000000000121
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-21.output.f32"
+    },
+    {
+      "wallMs": 1.1291569999999922,
+      "cpuMs": 2.342,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 22,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 22,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263937026598",
+          "endTicks": "1896263937077976",
+          "elapsedNs": 51378
+        },
+        "timingMs": {
+          "upload": 0.027782000000001972,
+          "encode": 0.3934910000000116,
+          "submitWait": 0.2729940000000113,
+          "readback": 0.0357879999999966,
+          "total": 0.907650000000018
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-22.output.f32"
+    },
+    {
+      "wallMs": 0.9384980000000098,
+      "cpuMs": 0.811,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 23,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 23,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263938274239",
+          "endTicks": "1896263938325456",
+          "elapsedNs": 51217
+        },
+        "timingMs": {
+          "upload": 0.020870000000002165,
+          "encode": 0.25834699999998634,
+          "submitWait": 0.262976000000009,
+          "readback": 0.03139899999999329,
+          "total": 0.7502530000000149
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-23.output.f32"
+    },
+    {
+      "wallMs": 1.1553559999999834,
+      "cpuMs": 0.783,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 24,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 24,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263939562847",
+          "endTicks": "1896263939772806",
+          "elapsedNs": 209959
+        },
+        "timingMs": {
+          "upload": 0.019566999999995005,
+          "encode": 0.23849899999999025,
+          "submitWait": 0.5112129999999979,
+          "readback": 0.03217099999997686,
+          "total": 0.9692359999999951
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-24.output.f32"
+    },
+    {
+      "wallMs": 0.8952060000000017,
+      "cpuMs": 0.773,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 25,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 25,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263940934393",
+          "endTicks": "1896263940985731",
+          "elapsedNs": 51338
+        },
+        "timingMs": {
+          "upload": 0.01879499999998302,
+          "encode": 0.2350420000000213,
+          "submitWait": 0.25534099999998716,
+          "readback": 0.029455000000012888,
+          "total": 0.7057099999999821
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-25.output.f32"
+    },
+    {
+      "wallMs": 0.8899370000000033,
+      "cpuMs": 0.769,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 26,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 26,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263942105118",
+          "endTicks": "1896263942156656",
+          "elapsedNs": 51538
+        },
+        "timingMs": {
+          "upload": 0.01880599999998367,
+          "encode": 0.23567399999998884,
+          "submitWait": 0.25324699999998757,
+          "readback": 0.03086799999999812,
+          "total": 0.7049379999999985
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-26.output.f32"
+    },
+    {
+      "wallMs": 0.8961679999999888,
+      "cpuMs": 0.775,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 27,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 27,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263943288897",
+          "endTicks": "1896263943340355",
+          "elapsedNs": 51458
+        },
+        "timingMs": {
+          "upload": 0.0186649999999986,
+          "encode": 0.23836900000000583,
+          "submitWait": 0.2520450000000096,
+          "readback": 0.02999700000000871,
+          "total": 0.7107689999999991
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-27.output.f32"
+    },
+    {
+      "wallMs": 0.8938740000000109,
+      "cpuMs": 0.776,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 28,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 28,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263944462747",
+          "endTicks": "1896263944514125",
+          "elapsedNs": 51378
+        },
+        "timingMs": {
+          "upload": 0.018293999999997368,
+          "encode": 0.23982200000000375,
+          "submitWait": 0.25381800000002386,
+          "readback": 0.03066799999999148,
+          "total": 0.709146000000004
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-28.output.f32"
+    },
+    {
+      "wallMs": 0.9217459999999846,
+      "cpuMs": 0.771,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 29,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 29,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263945657678",
+          "endTicks": "1896263945709175",
+          "elapsedNs": 51497
+        },
+        "timingMs": {
+          "upload": 0.01822400000000357,
+          "encode": 0.23658600000001684,
+          "submitWait": 0.2862700000000018,
+          "readback": 0.029886000000004742,
+          "total": 0.7370480000000157
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-29.output.f32"
+    },
+    {
+      "wallMs": 1.0337969999999927,
+      "cpuMs": 0.915,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 30,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 30,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263946941327",
+          "endTicks": "1896263946992624",
+          "elapsedNs": 51297
+        },
+        "timingMs": {
+          "upload": 0.050255000000021255,
+          "encode": 0.30035599999999363,
+          "submitWait": 0.2827729999999917,
+          "readback": 0.03718000000000643,
+          "total": 0.8457730000000083
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-30.output.f32"
+    },
+    {
+      "wallMs": 0.980938000000009,
+      "cpuMs": 0.836,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 31,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 31,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263948209396",
+          "endTicks": "1896263948260974",
+          "elapsedNs": 51578
+        },
+        "timingMs": {
+          "upload": 0.0207189999999855,
+          "encode": 0.2476570000000038,
+          "submitWait": 0.2886839999999893,
+          "readback": 0.05647600000000352,
+          "total": 0.789196000000004
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-31.output.f32"
+    },
+    {
+      "wallMs": 1.084682999999984,
+      "cpuMs": 1.388,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 32,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 32,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263949606821",
+          "endTicks": "1896263949658279",
+          "elapsedNs": 51458
+        },
+        "timingMs": {
+          "upload": 0.02003700000000208,
+          "encode": 0.34462899999999763,
+          "submitWait": 0.27031900000000064,
+          "readback": 0.06197699999998463,
+          "total": 0.8664420000000064
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-32.output.f32"
+    },
+    {
+      "wallMs": 1.0520219999999938,
+      "cpuMs": 0.928,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 33,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 33,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263950986162",
+          "endTicks": "1896263951037499",
+          "elapsedNs": 51337
+        },
+        "timingMs": {
+          "upload": 0.020117999999996528,
+          "encode": 0.30236999999999625,
+          "submitWait": 0.27481699999998455,
+          "readback": 0.05922200000000544,
+          "total": 0.8259259999999813
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-33.output.f32"
+    },
+    {
+      "wallMs": 0.9873000000000047,
+      "cpuMs": 0.871,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 34,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 34,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263952254762",
+          "endTicks": "1896263952306260",
+          "elapsedNs": 51498
+        },
+        "timingMs": {
+          "upload": 0.019025999999996657,
+          "encode": 0.2624840000000006,
+          "submitWait": 0.2594090000000051,
+          "readback": 0.058951000000007525,
+          "total": 0.7720350000000167
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-34.output.f32"
+    },
+    {
+      "wallMs": 1.2608649999999955,
+      "cpuMs": 0.9,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 35,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 35,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263953610668",
+          "endTicks": "1896263953820667",
+          "elapsedNs": 209999
+        },
+        "timingMs": {
+          "upload": 0.01985700000000179,
+          "encode": 0.28205100000002403,
+          "submitWait": 0.5139880000000119,
+          "readback": 0.05896099999998228,
+          "total": 1.043295999999998
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-35.output.f32"
+    },
+    {
+      "wallMs": 0.9785329999999988,
+      "cpuMs": 0.861,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 36,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 36,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263955058299",
+          "endTicks": "1896263955109556",
+          "elapsedNs": 51257
+        },
+        "timingMs": {
+          "upload": 0.018995999999987134,
+          "encode": 0.25574100000000044,
+          "submitWait": 0.2605899999999792,
+          "readback": 0.05854999999999677,
+          "total": 0.7608029999999815
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-36.output.f32"
+    },
+    {
+      "wallMs": 1.0012959999999964,
+      "cpuMs": 0.884,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 37,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 37,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263956339253",
+          "endTicks": "1896263956390550",
+          "elapsedNs": 51297
+        },
+        "timingMs": {
+          "upload": 0.019055000000008704,
+          "encode": 0.2782139999999913,
+          "submitWait": 0.265309000000002,
+          "readback": 0.05791999999999575,
+          "total": 0.7876039999999875
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-37.output.f32"
+    },
+    {
+      "wallMs": 1.03488999999999,
+      "cpuMs": 0.873,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 38,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 38,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263957661796",
+          "endTicks": "1896263957713093",
+          "elapsedNs": 51297
+        },
+        "timingMs": {
+          "upload": 0.019205999999996948,
+          "encode": 0.2721519999999771,
+          "submitWait": 0.3057760000000087,
+          "readback": 0.05872099999999136,
+          "total": 0.8232509999999991
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-38.output.f32"
+    }
+  ],
+  "warmups": [
+    {
+      "wallMs": 1.719930000000005,
+      "cpuMs": 1.347,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 2,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 2,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263908546165",
+          "endTicks": "1896263908756244",
+          "elapsedNs": 210079
+        },
+        "timingMs": {
+          "upload": 0.09149299999998561,
+          "encode": 0.35856599999999617,
+          "submitWait": 0.6238249999999823,
+          "readback": 0.03713000000001898,
+          "total": 1.2676179999999988
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-2.output.f32"
+    },
+    {
+      "wallMs": 1.8799009999999896,
+      "cpuMs": 1.799,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 3,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 3,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263910404747",
+          "endTicks": "1896263910456525",
+          "elapsedNs": 51778
+        },
+        "timingMs": {
+          "upload": 0.024856999999997242,
+          "encode": 0.685922000000005,
+          "submitWait": 0.5809849999999983,
+          "readback": 0.08241599999999494,
+          "total": 1.7267830000000117
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-3.output.f32"
+    },
+    {
+      "wallMs": 0.9584460000000092,
+      "cpuMs": 0.719,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 4,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 4,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263912039322",
+          "endTicks": "1896263912090980",
+          "elapsedNs": 51658
+        },
+        "timingMs": {
+          "upload": 0.020638999999988528,
+          "encode": 0.19310400000000527,
+          "submitWait": 0.4290990000000079,
+          "readback": 0.03163000000000693,
+          "total": 0.8077320000000157
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-4.output.f32"
+    },
+    {
+      "wallMs": 0.8704200000000242,
+      "cpuMs": 0.736,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 5,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 5,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263913136367",
+          "endTicks": "1896263913187744",
+          "elapsedNs": 51377
+        },
+        "timingMs": {
+          "upload": 0.021080000000011978,
+          "encode": 0.2193539999999814,
+          "submitWait": 0.25469000000001074,
+          "readback": 0.03400400000001014,
+          "total": 0.6585809999999981
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-5.output.f32"
+    },
+    {
+      "wallMs": 0.8535980000000052,
+      "cpuMs": 0.784,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+        "execution": "webgpu",
+        "run": 6,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 6,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1896263914124865",
+          "endTicks": "1896263914176363",
+          "elapsedNs": 51498
+        },
+        "timingMs": {
+          "upload": 0.019736999999992122,
+          "encode": 0.18596999999999753,
+          "submitWait": 0.2483479999999929,
+          "readback": 0.030698000000001002,
+          "total": 0.6141570000000058
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-6.output.f32"
+    }
+  ],
+  "lifecycleRuns": [],
+  "cold": {
+    "wallMs": 4.5567939999999965,
+    "cpuMs": 4.08,
+    "oracle": {
+      "passed": true,
+      "maxAbsoluteError": 1.1377925479560957e-7,
+      "firstFailure": null
+    },
+    "receipt": {
+      "schemaVersion": 5,
+      "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+      "programInstance": "5b9752af-362a-45f9-ba35-bb4de1e7df3a",
+      "execution": "webgpu",
+      "run": 1,
+      "inputHashes": {
+        "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+      },
+      "inputOrigins": {
+        "input": {
+          "kind": "host",
+          "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        }
+      },
+      "residentStateBefore": {},
+      "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+      "outputGeneration": 1,
+      "dispatchCount": 32,
+      "clearedBytes": 786432,
+      "uploadedBytes": 262144,
+      "copiedInputBytes": 0,
+      "submissionCount": 1,
+      "readbackBytes": 262160,
+      "readbackPath": "mapAsync-copy-unmap",
+      "completionMode": "queue-and-map",
+      "allocatedBufferBytes": 1310752,
+      "gpuTiming": {
+        "periodNs": 1,
+        "validBits": 64,
+        "source": "webgpu-nanoseconds",
+        "scope": "compute-pass",
+        "beginTicks": "1896263900473988",
+        "endTicks": "1896263901434794",
+        "elapsedNs": 960806
+      },
+      "timingMs": {
+        "upload": 0.14151699999999323,
+        "encode": 1.0288989999999956,
+        "submitWait": 2.4226830000000064,
+        "readback": 0.18482799999998178,
+        "total": 4.080186000000026
+      }
+    },
+    "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.run-1.output.f32"
+  },
+  "failedRun": null,
+  "preparationMs": 4.835730000000012,
+  "deviceStartupMs": 74.509919,
+  "adapter": {
+    "vendor": "AMD",
+    "architecture": "vulkan",
+    "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "isFallbackAdapter": false,
+    "vendorID": 4098,
+    "deviceID": 5510,
+    "driverVersion": 109051907
+  },
+  "providerArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/doe-webgpu.c4e7b08e36f6528de37f2ee2ca6dc42f5ac7090b4e5b0d83a7574b6221d72701.provider.bin",
+    "hash": "c4e7b08e36f6528de37f2ee2ca6dc42f5ac7090b4e5b0d83a7574b6221d72701"
+  },
+  "allocatedBufferBytes": 1310752,
+  "peakProcessRssBytes": 172576768,
+  "providerAddonArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/doe.aff549e509fbfe91851e8c2122bdffd1a9e0aad7d89c27de1fb4277d0e98f184.addon.node",
+    "hash": "aff549e509fbfe91851e8c2122bdffd1a9e0aad7d89c27de1fb4277d0e98f184"
+  },
+  "timestampCalibrationArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/hardware-profile.json",
+    "hash": "f8cacb066c323eaa3a12a6e54f28a18e451b3961b9888490de31297592156023"
+  },
+  "lifecycle": null,
+  "observed": {
+    "dispatchesEncoded": 0,
+    "submissions": 0,
+    "maps": 0
+  },
+  "latencyStatsMs": {
+    "count": 32,
+    "mean": 1.0560736874999987,
+    "min": 0.7854389999999967,
+    "max": 1.7412699999999859,
+    "median": 0.980938000000009,
+    "p95": 1.47505799999999,
+    "p99": 1.7412699999999859
+  },
+  "cpuStatsMs": {
+    "count": 32,
+    "mean": 0.9827812499999999,
+    "min": 0.672,
+    "max": 2.342,
+    "median": 0.829,
+    "p95": 1.6,
+    "p99": 2.342
+  },
+  "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+  "teardownMs": 1.8522690000000068,
+  "gpuStatsNs": {
+    "count": 32,
+    "mean": 63086.15625,
+    "min": 51217,
+    "max": 209999,
+    "median": 51458,
+    "p95": 209959,
+    "p99": 209999
+  },
+  "expectedPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications-retry/heat_diffusion.doe-webgpu.process-2.json.expected.f64",
+  "preparation": {
+    "reusedResources": 0,
+    "createdResources": 14
+  },
+  "measurementLimits": [
+    "GPU timestamps bracket compute only; useful-operation wall includes all runtime and readback work",
+    "Peak device memory unavailable; requested buffers and process RSS reported",
+    "Forced device loss is not an observed driver-loss recovery",
+    "Dawn and wgpu adapter APIs do not expose a numeric driver version"
+  ]
+}

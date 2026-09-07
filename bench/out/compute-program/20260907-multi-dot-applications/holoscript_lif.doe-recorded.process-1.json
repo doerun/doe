@@ -1,0 +1,2538 @@
+{
+  "schemaVersion": 5,
+  "kind": "compute_program_evaluation",
+  "claimStatus": "diagnostic",
+  "packageQualification": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/package-inputs/summary.json",
+    "hash": "df7c4addedd5be2ab2b48960bd6ca02d848e07d3c8871d735ace0bc32f449506"
+  },
+  "packageRoot": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/installed-package/node_modules/doe-gpu",
+  "provider": "doe-recorded",
+  "application": "holoscript_lif",
+  "phase": "measure",
+  "backend": "vulkan",
+  "policyHash": "c73779df2451e6520e244fbb5e53726f041af1e971a9a133128acdf3a76bae05",
+  "programPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.program.json",
+  "inputPaths": {
+    "params": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.params.input.bin",
+    "membrane": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.membrane.input.bin",
+    "stimulus": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.stimulus.input.bin"
+  },
+  "fixturePath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/fixtures/holoscript_lif/fixture.json",
+  "runtime": {
+    "name": "node",
+    "version": "v22.22.1"
+  },
+  "status": "passed",
+  "error": null,
+  "samples": [
+    {
+      "wallMs": 0.7463860000000011,
+      "cpuMs": 0.607,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 7,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 7,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947572331961",
+          "endTicks": "1895947572370755",
+          "elapsedNs": 38794
+        },
+        "timingMs": {
+          "upload": 0.027280999999987898,
+          "encode": 0.0006109999999921456,
+          "submitWait": 0.18800399999997808,
+          "readback": 0.04575599999998303,
+          "total": 0.4818879999999979
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-7.output.f32"
+    },
+    {
+      "wallMs": 0.7550119999999936,
+      "cpuMs": 0.601,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 8,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 8,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947573553482",
+          "endTicks": "1895947573592396",
+          "elapsedNs": 38914
+        },
+        "timingMs": {
+          "upload": 0.026640000000014652,
+          "encode": 0.0005310000000235959,
+          "submitWait": 0.199405999999982,
+          "readback": 0.044655000000005884,
+          "total": 0.4903240000000153
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-8.output.f32"
+    },
+    {
+      "wallMs": 0.9628040000000055,
+      "cpuMs": 0.788,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 9,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 9,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947574802876",
+          "endTicks": "1895947574841629",
+          "elapsedNs": 38753
+        },
+        "timingMs": {
+          "upload": 0.026420000000001664,
+          "encode": 0.0005510000000015225,
+          "submitWait": 0.3166970000000049,
+          "readback": 0.09952799999999229,
+          "total": 0.6654540000000111
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-9.output.f32"
+    },
+    {
+      "wallMs": 0.8533579999999859,
+      "cpuMs": 0.702,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 10,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 10,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947576251859",
+          "endTicks": "1895947576290652",
+          "elapsedNs": 38793
+        },
+        "timingMs": {
+          "upload": 0.02876399999999535,
+          "encode": 0.0005820000000085201,
+          "submitWait": 0.27083999999999264,
+          "readback": 0.05561500000001729,
+          "total": 0.5793319999999937
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-10.output.f32"
+    },
+    {
+      "wallMs": 0.9002170000000262,
+      "cpuMs": 0.609,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 11,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 11,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947577665565",
+          "endTicks": "1895947577786034",
+          "elapsedNs": 120469
+        },
+        "timingMs": {
+          "upload": 0.02847299999999109,
+          "encode": 0.0005209999999920001,
+          "submitWait": 0.3414330000000234,
+          "readback": 0.044302999999985104,
+          "total": 0.6353569999999991
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-11.output.f32"
+    },
+    {
+      "wallMs": 0.7549630000000036,
+      "cpuMs": 0.602,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 12,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 12,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947578991584",
+          "endTicks": "1895947579030298",
+          "elapsedNs": 38714
+        },
+        "timingMs": {
+          "upload": 0.027861999999998943,
+          "encode": 0.0004909999999824777,
+          "submitWait": 0.19353499999999713,
+          "readback": 0.0433620000000019,
+          "total": 0.48785899999998605
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-12.output.f32"
+    },
+    {
+      "wallMs": 0.735777000000013,
+      "cpuMs": 0.59,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 13,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 13,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947580196083",
+          "endTicks": "1895947580234876",
+          "elapsedNs": 38793
+        },
+        "timingMs": {
+          "upload": 0.02643999999997959,
+          "encode": 0.0005309999999951742,
+          "submitWait": 0.18280500000000188,
+          "readback": 0.04103799999998614,
+          "total": 0.47484499999998775
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-13.output.f32"
+    },
+    {
+      "wallMs": 0.9675330000000031,
+      "cpuMs": 0.813,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 14,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 14,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947581960365",
+          "endTicks": "1895947581998958",
+          "elapsedNs": 38593
+        },
+        "timingMs": {
+          "upload": 0.026350000000007867,
+          "encode": 0.0005010000000140735,
+          "submitWait": 0.19077899999999204,
+          "readback": 0.04220900000001393,
+          "total": 0.4789519999999925
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-14.output.f32"
+    },
+    {
+      "wallMs": 1.1537939999999764,
+      "cpuMs": 0.999,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 15,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 15,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947583184471",
+          "endTicks": "1895947583223144",
+          "elapsedNs": 38673
+        },
+        "timingMs": {
+          "upload": 0.030406999999996742,
+          "encode": 0.0005409999999983484,
+          "submitWait": 0.18068099999999276,
+          "readback": 0.04201899999998204,
+          "total": 0.867102999999986
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-15.output.f32"
+    },
+    {
+      "wallMs": 0.789227000000011,
+      "cpuMs": 0.651,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 16,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 16,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947585425158",
+          "endTicks": "1895947585463711",
+          "elapsedNs": 38553
+        },
+        "timingMs": {
+          "upload": 0.032461000000012064,
+          "encode": 0.0005719999999769243,
+          "submitWait": 0.20393400000000383,
+          "readback": 0.049964000000016995,
+          "total": 0.5099209999999914
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-16.output.f32"
+    },
+    {
+      "wallMs": 1.0952139999999986,
+      "cpuMs": 0.75,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 17,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 17,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947586924868",
+          "endTicks": "1895947586963581",
+          "elapsedNs": 38713
+        },
+        "timingMs": {
+          "upload": 0.02829300000001922,
+          "encode": 0.0004410000000234504,
+          "submitWait": 0.3880110000000059,
+          "readback": 0.11929499999999393,
+          "total": 0.7609140000000139
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-17.output.f32"
+    },
+    {
+      "wallMs": 0.8757909999999924,
+      "cpuMs": 0.742,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 18,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 18,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947588310450",
+          "endTicks": "1895947588349084",
+          "elapsedNs": 38634
+        },
+        "timingMs": {
+          "upload": 0.026749999999992724,
+          "encode": 0.00043999999999755346,
+          "submitWait": 0.17357799999999202,
+          "readback": 0.09602099999997904,
+          "total": 0.5160419999999988
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-18.output.f32"
+    },
+    {
+      "wallMs": 1.0328159999999968,
+      "cpuMs": 0.789,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 19,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 19,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947589776616",
+          "endTicks": "1895947589848352",
+          "elapsedNs": 71736
+        },
+        "timingMs": {
+          "upload": 0.027071000000006507,
+          "encode": 0.000461000000001377,
+          "submitWait": 0.28513699999999176,
+          "readback": 0.09655200000000264,
+          "total": 0.6315099999999916
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-19.output.f32"
+    },
+    {
+      "wallMs": 0.8880839999999921,
+      "cpuMs": 0.759,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 20,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 20,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947591365545",
+          "endTicks": "1895947591404138",
+          "elapsedNs": 38593
+        },
+        "timingMs": {
+          "upload": 0.03336299999998005,
+          "encode": 0.000641000000001668,
+          "submitWait": 0.18344500000000608,
+          "readback": 0.09918700000000058,
+          "total": 0.5396670000000086
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-20.output.f32"
+    },
+    {
+      "wallMs": 1.038927000000001,
+      "cpuMs": 0.869,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 21,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 21,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947592909178",
+          "endTicks": "1895947592947731",
+          "elapsedNs": 38553
+        },
+        "timingMs": {
+          "upload": 0.027722999999980402,
+          "encode": 0.0005009999999856518,
+          "submitWait": 0.21522600000000125,
+          "readback": 0.09318600000000288,
+          "total": 0.5569100000000162
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-21.output.f32"
+    },
+    {
+      "wallMs": 0.8526059999999802,
+      "cpuMs": 0.698,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 22,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 22,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947594261507",
+          "endTicks": "1895947594300141",
+          "elapsedNs": 38634
+        },
+        "timingMs": {
+          "upload": 0.02732199999999807,
+          "encode": 0.0005609999999762749,
+          "submitWait": 0.20103900000000863,
+          "readback": 0.092094000000003,
+          "total": 0.541089999999997
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-22.output.f32"
+    },
+    {
+      "wallMs": 1.1338870000000156,
+      "cpuMs": 1.069,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 23,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 23,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947595925589",
+          "endTicks": "1895947595964303",
+          "elapsedNs": 38714
+        },
+        "timingMs": {
+          "upload": 0.29342299999999,
+          "encode": 0.000591000000014219,
+          "submitWait": 0.26832500000000437,
+          "readback": 0.03647900000001414,
+          "total": 0.8202359999999942
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-23.output.f32"
+    },
+    {
+      "wallMs": 0.7139149999999859,
+      "cpuMs": 0.566,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 24,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 24,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947597138183",
+          "endTicks": "1895947597176776",
+          "elapsedNs": 38593
+        },
+        "timingMs": {
+          "upload": 0.027421000000003914,
+          "encode": 0.0006009999999889715,
+          "submitWait": 0.1822429999999997,
+          "readback": 0.03140899999999647,
+          "total": 0.46303199999999833
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-24.output.f32"
+    },
+    {
+      "wallMs": 0.8984530000000177,
+      "cpuMs": 0.547,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 25,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 25,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947598351959",
+          "endTicks": "1895947598500161",
+          "elapsedNs": 148202
+        },
+        "timingMs": {
+          "upload": 0.024607000000003154,
+          "encode": 0.0003509999999948832,
+          "submitWait": 0.3800760000000025,
+          "readback": 0.029366000000010217,
+          "total": 0.6505059999999787
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-25.output.f32"
+    },
+    {
+      "wallMs": 0.7213889999999878,
+      "cpuMs": 0.582,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 26,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 26,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947599671166",
+          "endTicks": "1895947599709959",
+          "elapsedNs": 38793
+        },
+        "timingMs": {
+          "upload": 0.02960600000000113,
+          "encode": 0.0005510000000015225,
+          "submitWait": 0.17831600000002368,
+          "readback": 0.03494600000001924,
+          "total": 0.4629329999999925
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-26.output.f32"
+    },
+    {
+      "wallMs": 0.685212000000007,
+      "cpuMs": 0.55,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 27,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 27,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947600838714",
+          "endTicks": "1895947600877307",
+          "elapsedNs": 38593
+        },
+        "timingMs": {
+          "upload": 0.02474700000001917,
+          "encode": 0.0003810000000044056,
+          "submitWait": 0.1657820000000072,
+          "readback": 0.029836999999986347,
+          "total": 0.4383459999999957
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-27.output.f32"
+    },
+    {
+      "wallMs": 0.7122420000000034,
+      "cpuMs": 0.593,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 28,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 28,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947602139916",
+          "endTicks": "1895947602178910",
+          "elapsedNs": 38994
+        },
+        "timingMs": {
+          "upload": 0.030297999999987724,
+          "encode": 0.0007210000000270611,
+          "submitWait": 0.16342799999998192,
+          "readback": 0.03308300000000486,
+          "total": 0.45178200000000857
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-28.output.f32"
+    },
+    {
+      "wallMs": 0.8783850000000086,
+      "cpuMs": 0.552,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 29,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 29,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947603362129",
+          "endTicks": "1895947603509448",
+          "elapsedNs": 147319
+        },
+        "timingMs": {
+          "upload": 0.02520699999999465,
+          "encode": 0.0003310000000169566,
+          "submitWait": 0.3587959999999839,
+          "readback": 0.030115999999992482,
+          "total": 0.6306690000000117
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-29.output.f32"
+    },
+    {
+      "wallMs": 1.7844829999999945,
+      "cpuMs": 1.642,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 30,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 30,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947605169152",
+          "endTicks": "1895947605207745",
+          "elapsedNs": 38593
+        },
+        "timingMs": {
+          "upload": 0.07742599999997424,
+          "encode": 0.002044000000012147,
+          "submitWait": 0.2812199999999905,
+          "readback": 0.08666400000001317,
+          "total": 1.1204510000000028
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-30.output.f32"
+    },
+    {
+      "wallMs": 0.7321389999999894,
+      "cpuMs": 0.589,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 31,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 31,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947607484000",
+          "endTicks": "1895947607522914",
+          "elapsedNs": 38914
+        },
+        "timingMs": {
+          "upload": 0.02944600000000719,
+          "encode": 0.0006710000000111904,
+          "submitWait": 0.19088899999999853,
+          "readback": 0.033141999999998006,
+          "total": 0.4784520000000043
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-31.output.f32"
+    },
+    {
+      "wallMs": 0.8156869999999969,
+      "cpuMs": 0.57,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 32,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 32,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947608747841",
+          "endTicks": "1895947608822223",
+          "elapsedNs": 74382
+        },
+        "timingMs": {
+          "upload": 0.026288999999991347,
+          "encode": 0.0004199999999912052,
+          "submitWait": 0.286280000000005,
+          "readback": 0.0312590000000057,
+          "total": 0.5632019999999898
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-32.output.f32"
+    },
+    {
+      "wallMs": 0.7252860000000112,
+      "cpuMs": 0.571,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 33,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 33,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947609979201",
+          "endTicks": "1895947610017955",
+          "elapsedNs": 38754
+        },
+        "timingMs": {
+          "upload": 0.026458999999988464,
+          "encode": 0.0003899999999816828,
+          "submitWait": 0.1939649999999915,
+          "readback": 0.03294200000001979,
+          "total": 0.4728410000000167
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-33.output.f32"
+    },
+    {
+      "wallMs": 0.7358360000000062,
+      "cpuMs": 0.595,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 34,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 34,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947611372148",
+          "endTicks": "1895947611410781",
+          "elapsedNs": 38633
+        },
+        "timingMs": {
+          "upload": 0.027782000000001972,
+          "encode": 0.0006010000000173932,
+          "submitWait": 0.19076999999998634,
+          "readback": 0.03473500000001195,
+          "total": 0.47262000000000626
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-34.output.f32"
+    },
+    {
+      "wallMs": 0.6971240000000023,
+      "cpuMs": 0.56,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 35,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 35,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947612560375",
+          "endTicks": "1895947612598969",
+          "elapsedNs": 38594
+        },
+        "timingMs": {
+          "upload": 0.026600000000001955,
+          "encode": 0.0006010000000173932,
+          "submitWait": 0.1689280000000224,
+          "readback": 0.03086799999999812,
+          "total": 0.44428700000000276
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-35.output.f32"
+    },
+    {
+      "wallMs": 0.6874349999999936,
+      "cpuMs": 0.548,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 36,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 36,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947613711583",
+          "endTicks": "1895947613750176",
+          "elapsedNs": 38593
+        },
+        "timingMs": {
+          "upload": 0.02396500000000401,
+          "encode": 0.0003309999999885349,
+          "submitWait": 0.1670750000000112,
+          "readback": 0.03051800000000071,
+          "total": 0.4385169999999903
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-36.output.f32"
+    },
+    {
+      "wallMs": 0.6920440000000099,
+      "cpuMs": 0.544,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 37,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 37,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947614870304",
+          "endTicks": "1895947614908898",
+          "elapsedNs": 38594
+        },
+        "timingMs": {
+          "upload": 0.024146000000001777,
+          "encode": 0.0003810000000044056,
+          "submitWait": 0.17440899999999715,
+          "readback": 0.029816000000010945,
+          "total": 0.444406999999984
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-37.output.f32"
+    },
+    {
+      "wallMs": 0.6874250000000188,
+      "cpuMs": 0.549,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 38,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 38,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947616026691",
+          "endTicks": "1895947616065205",
+          "elapsedNs": 38514
+        },
+        "timingMs": {
+          "upload": 0.024675999999999476,
+          "encode": 0.000510999999988826,
+          "submitWait": 0.1644900000000007,
+          "readback": 0.030037000000021408,
+          "total": 0.43831599999998616
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-38.output.f32"
+    }
+  ],
+  "warmups": [
+    {
+      "wallMs": 1.1525120000000015,
+      "cpuMs": 2.564,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 2,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 2,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947563903948",
+          "endTicks": "1895947564052550",
+          "elapsedNs": 148602
+        },
+        "timingMs": {
+          "upload": 0.07909899999998515,
+          "encode": 0.0008919999999932315,
+          "submitWait": 0.4379650000000197,
+          "readback": 0.053321000000011054,
+          "total": 0.8191829999999811
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-2.output.f32"
+    },
+    {
+      "wallMs": 0.9732339999999908,
+      "cpuMs": 0.854,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 3,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 3,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947566007795",
+          "endTicks": "1895947566046468",
+          "elapsedNs": 38673
+        },
+        "timingMs": {
+          "upload": 0.07386900000000196,
+          "encode": 0.0009119999999995798,
+          "submitWait": 0.17823599999999828,
+          "readback": 0.04243000000002439,
+          "total": 0.5453980000000058
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-3.output.f32"
+    },
+    {
+      "wallMs": 1.4918010000000095,
+      "cpuMs": 1.344,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 4,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 4,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947567336509",
+          "endTicks": "1895947567375183",
+          "elapsedNs": 38674
+        },
+        "timingMs": {
+          "upload": 0.03916399999999953,
+          "encode": 0.0013030000000071595,
+          "submitWait": 0.31542400000000725,
+          "readback": 0.09848599999997987,
+          "total": 1.1704059999999856
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-4.output.f32"
+    },
+    {
+      "wallMs": 0.9626340000000084,
+      "cpuMs": 0.815,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 5,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 5,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947569670223",
+          "endTicks": "1895947569757389",
+          "elapsedNs": 87166
+        },
+        "timingMs": {
+          "upload": 0.032811999999978525,
+          "encode": 0.0008219999999994343,
+          "submitWait": 0.3204740000000186,
+          "readback": 0.048130999999983715,
+          "total": 0.6393539999999973
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-5.output.f32"
+    },
+    {
+      "wallMs": 0.7825440000000015,
+      "cpuMs": 0.644,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+        "execution": "gpu-recorded",
+        "run": 6,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 6,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895947571077477",
+          "endTicks": "1895947571116391",
+          "elapsedNs": 38914
+        },
+        "timingMs": {
+          "upload": 0.03257100000001856,
+          "encode": 0.0013919999999814081,
+          "submitWait": 0.19733200000001716,
+          "readback": 0.047598999999991065,
+          "total": 0.5189370000000224
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-6.output.f32"
+    }
+  ],
+  "lifecycleRuns": [],
+  "cold": {
+    "wallMs": 1.972155999999984,
+    "cpuMs": 1.906,
+    "oracle": {
+      "passed": true,
+      "maxAbsoluteError": 0.000011444091796875,
+      "firstFailure": null
+    },
+    "receipt": {
+      "schemaVersion": 5,
+      "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+      "programInstance": "8603b316-ae92-4090-affa-7bba4044ad5e",
+      "execution": "gpu-recorded",
+      "run": 1,
+      "inputHashes": {
+        "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+        "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+        "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+      },
+      "inputOrigins": {
+        "params": {
+          "kind": "host",
+          "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+        },
+        "membrane": {
+          "kind": "host",
+          "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+        },
+        "stimulus": {
+          "kind": "host",
+          "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        }
+      },
+      "residentStateBefore": {},
+      "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+      "outputGeneration": 1,
+      "dispatchCount": 11,
+      "clearedBytes": 1048576,
+      "uploadedBytes": 524320,
+      "copiedInputBytes": 0,
+      "submissionCount": 1,
+      "readbackBytes": 524304,
+      "readbackPath": "mapAsync-copy-unmap",
+      "completionMode": "queue-and-map",
+      "allocatedBufferBytes": 2097216,
+      "gpuTiming": {
+        "periodNs": 1,
+        "validBits": 64,
+        "source": "webgpu-nanoseconds",
+        "scope": "compute-pass",
+        "beginTicks": "1895947552225318",
+        "endTicks": "1895947552265314",
+        "elapsedNs": 39996
+      },
+      "timingMs": {
+        "upload": 0.29669900000001803,
+        "encode": 0.012143000000008897,
+        "submitWait": 0.38767100000001165,
+        "readback": 0.20079800000002024,
+        "total": 1.3131050000000073
+      }
+    },
+    "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.run-1.output.f32"
+  },
+  "failedRun": null,
+  "preparationMs": 7.858618000000007,
+  "deviceStartupMs": 72.00588,
+  "adapter": {
+    "vendor": "AMD",
+    "architecture": "vulkan",
+    "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "isFallbackAdapter": false,
+    "vendorID": 4098,
+    "deviceID": 5510,
+    "driverVersion": 109051907
+  },
+  "providerArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/doe-recorded.c4e7b08e36f6528de37f2ee2ca6dc42f5ac7090b4e5b0d83a7574b6221d72701.provider.bin",
+    "hash": "c4e7b08e36f6528de37f2ee2ca6dc42f5ac7090b4e5b0d83a7574b6221d72701"
+  },
+  "allocatedBufferBytes": 2097216,
+  "peakProcessRssBytes": 178622464,
+  "providerAddonArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/doe.aff549e509fbfe91851e8c2122bdffd1a9e0aad7d89c27de1fb4277d0e98f184.addon.node",
+    "hash": "aff549e509fbfe91851e8c2122bdffd1a9e0aad7d89c27de1fb4277d0e98f184"
+  },
+  "timestampCalibrationArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/hardware-profile.json",
+    "hash": "f8cacb066c323eaa3a12a6e54f28a18e451b3961b9888490de31297592156023"
+  },
+  "lifecycle": null,
+  "observed": {
+    "dispatchesEncoded": 0,
+    "submissions": 0,
+    "maps": 0
+  },
+  "latencyStatsMs": {
+    "count": 32,
+    "mean": 0.8657328437500009,
+    "min": 0.685212000000007,
+    "max": 1.7844829999999945,
+    "median": 0.789227000000011,
+    "p95": 1.1537939999999764,
+    "p99": 1.7844829999999945
+  },
+  "cpuStatsMs": {
+    "count": 32,
+    "mean": 0.6936249999999999,
+    "min": 0.544,
+    "max": 1.642,
+    "median": 0.601,
+    "p95": 1.069,
+    "p99": 1.642
+  },
+  "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+  "teardownMs": 1.8139890000000207,
+  "gpuStatsNs": {
+    "count": 32,
+    "mean": 50209.09375,
+    "min": 38514,
+    "max": 148202,
+    "median": 38713,
+    "p95": 147319,
+    "p99": 148202
+  },
+  "expectedPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/holoscript_lif.doe-recorded.process-1.json.expected.f64",
+  "preparation": {
+    "reusedResources": 0,
+    "createdResources": 17
+  },
+  "measurementLimits": [
+    "GPU timestamps bracket compute only; useful-operation wall includes all runtime and readback work",
+    "Peak device memory unavailable; requested buffers and process RSS reported",
+    "Forced device loss is not an observed driver-loss recovery",
+    "Dawn and wgpu adapter APIs do not expose a numeric driver version"
+  ]
+}

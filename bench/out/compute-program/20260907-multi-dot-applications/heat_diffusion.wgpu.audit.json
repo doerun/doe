@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 5,
+  "kind": "compute_program_evaluation",
+  "claimStatus": "diagnostic",
+  "packageQualification": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/package-inputs/summary.json",
+    "hash": "df7c4addedd5be2ab2b48960bd6ca02d848e07d3c8871d735ace0bc32f449506"
+  },
+  "packageRoot": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/installed-package/node_modules/doe-gpu",
+  "provider": "wgpu",
+  "application": "heat_diffusion",
+  "phase": "audit",
+  "backend": "vulkan",
+  "policyHash": "c73779df2451e6520e244fbb5e53726f041af1e971a9a133128acdf3a76bae05",
+  "programPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/heat_diffusion.wgpu.audit.json.program.json",
+  "inputPaths": {
+    "input": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/heat_diffusion.wgpu.audit.json.input.input.bin"
+  },
+  "fixturePath": null,
+  "runtime": {
+    "name": "deno",
+    "version": "2.9.6"
+  },
+  "status": "passed",
+  "error": null,
+  "samples": [
+    {
+      "wallMs": 12.381321000000014,
+      "cpuMs": 2.223,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "d9c8b903-69ff-4115-a226-1129952b42d2",
+        "execution": "webgpu",
+        "run": 2,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 2,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 10.019,
+          "validBits": 64,
+          "source": "wgpu-vulkan-query-ticks",
+          "scope": "compute-pass",
+          "beginTicks": "189232001557964",
+          "endTicks": "189232001579092",
+          "elapsedNs": 211681.432
+        },
+        "timingMs": {
+          "upload": 0.23230799999998908,
+          "encode": 0.10540799999995443,
+          "submitWait": 11.677053,
+          "readback": 0.04554600000000164,
+          "total": 12.201812999999959
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/heat_diffusion.wgpu.audit.json.run-2.output.f32"
+    }
+  ],
+  "warmups": [],
+  "lifecycleRuns": [
+    {
+      "wallMs": 12.181855000000041,
+      "cpuMs": 0.652,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 1.1377925479560957e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+        "programInstance": "d9c8b903-69ff-4115-a226-1129952b42d2",
+        "execution": "webgpu",
+        "run": 3,
+        "inputHashes": {
+          "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+        "outputGeneration": 3,
+        "dispatchCount": 32,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 10.019,
+          "validBits": 64,
+          "source": "wgpu-vulkan-query-ticks",
+          "scope": "compute-pass",
+          "beginTicks": "189232002906085",
+          "endTicks": "189232002927189",
+          "elapsedNs": 211440.976
+        },
+        "timingMs": {
+          "upload": 0.022301999999967848,
+          "encode": 0.07226599999995642,
+          "submitWait": 11.778926000000013,
+          "readback": 0.036289000000010674,
+          "total": 12.035819000000004
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/heat_diffusion.wgpu.audit.json.run-3.output.f32"
+    }
+  ],
+  "cold": {
+    "wallMs": 13.499287000000038,
+    "cpuMs": 2.866,
+    "oracle": {
+      "passed": true,
+      "maxAbsoluteError": 1.1377925479560957e-7,
+      "firstFailure": null
+    },
+    "receipt": {
+      "schemaVersion": 5,
+      "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+      "programInstance": "d9c8b903-69ff-4115-a226-1129952b42d2",
+      "execution": "webgpu",
+      "run": 1,
+      "inputHashes": {
+        "input": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+      },
+      "inputOrigins": {
+        "input": {
+          "kind": "host",
+          "hash": "7d85f2bc8217b3c5de9be6ec2afe49592606101b117b3a3451085fbb062c1ab7"
+        }
+      },
+      "residentStateBefore": {},
+      "outputHash": "aaff06acfef1b81b84549c3d16c5ea5f742c232cdbfa2f3fa23c323e3cb2f79e",
+      "outputGeneration": 1,
+      "dispatchCount": 32,
+      "clearedBytes": 786432,
+      "uploadedBytes": 262144,
+      "copiedInputBytes": 0,
+      "submissionCount": 1,
+      "readbackBytes": 262160,
+      "readbackPath": "mapAsync-copy-unmap",
+      "completionMode": "queue-and-map",
+      "allocatedBufferBytes": 1310752,
+      "gpuTiming": {
+        "periodNs": 10.019,
+        "validBits": 64,
+        "source": "wgpu-vulkan-query-ticks",
+        "scope": "compute-pass",
+        "beginTicks": "189232000122241",
+        "endTicks": "189232000127417",
+        "elapsedNs": 51858.344
+      },
+      "timingMs": {
+        "upload": 0.21588699999995242,
+        "encode": 0.5879679999999894,
+        "submitWait": 11.798031000000037,
+        "readback": 0.10875499999997373,
+        "total": 12.989356999999984
+      }
+    },
+    "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/heat_diffusion.wgpu.audit.json.run-1.output.f32"
+  },
+  "failedRun": null,
+  "preparationMs": 8.808037000000013,
+  "deviceStartupMs": 128.586883,
+  "adapter": {
+    "vendor": "4098",
+    "architecture": "",
+    "device": "5510",
+    "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "isFallbackAdapter": false,
+    "vendorID": null,
+    "deviceID": null,
+    "driverVersion": null
+  },
+  "providerArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/wgpu.bceb5b6a6239b0b010418406d8c77a508f67cf4337d94288f1c19fe71304aab0.provider.bin",
+    "hash": "bceb5b6a6239b0b010418406d8c77a508f67cf4337d94288f1c19fe71304aab0"
+  },
+  "allocatedBufferBytes": 1310752,
+  "peakProcessRssBytes": 423358464,
+  "providerAddonArtifact": null,
+  "timestampCalibrationArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/hardware-profile.json",
+    "hash": "f8cacb066c323eaa3a12a6e54f28a18e451b3961b9888490de31297592156023"
+  },
+  "lifecycle": {
+    "cancellationRejected": true,
+    "reuseAfterCancellation": true
+  },
+  "observed": {
+    "dispatchesEncoded": 96,
+    "submissions": 3,
+    "maps": 3
+  },
+  "latencyStatsMs": {
+    "count": 1,
+    "mean": 12.381321000000014,
+    "min": 12.381321000000014,
+    "max": 12.381321000000014,
+    "median": 12.381321000000014,
+    "p95": 12.381321000000014,
+    "p99": 12.381321000000014
+  },
+  "cpuStatsMs": {
+    "count": 1,
+    "mean": 2.223,
+    "min": 2.223,
+    "max": 2.223,
+    "median": 2.223,
+    "p95": 2.223,
+    "p99": 2.223
+  },
+  "programHash": "c362c5cef785f4d93f66fde596b664278e5704d60a16b07ab5b5770c9d510d25",
+  "teardownMs": 0.08530099999995855,
+  "gpuStatsNs": {
+    "count": 1,
+    "mean": 211681.432,
+    "min": 211681.432,
+    "max": 211681.432,
+    "median": 211681.432,
+    "p95": 211681.432,
+    "p99": 211681.432
+  },
+  "expectedPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/heat_diffusion.wgpu.audit.json.expected.f64",
+  "preparation": {
+    "reusedResources": 0,
+    "createdResources": 14
+  },
+  "measurementLimits": [
+    "GPU timestamps bracket compute only; useful-operation wall includes all runtime and readback work",
+    "Peak device memory unavailable; requested buffers and process RSS reported",
+    "Forced device loss is not an observed driver-loss recovery",
+    "Dawn and wgpu adapter APIs do not expose a numeric driver version"
+  ]
+}

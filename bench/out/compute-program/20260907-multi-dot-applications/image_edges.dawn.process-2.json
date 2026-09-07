@@ -1,0 +1,2153 @@
+{
+  "schemaVersion": 5,
+  "kind": "compute_program_evaluation",
+  "claimStatus": "diagnostic",
+  "packageQualification": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/package-inputs/summary.json",
+    "hash": "df7c4addedd5be2ab2b48960bd6ca02d848e07d3c8871d735ace0bc32f449506"
+  },
+  "packageRoot": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/installed-package/node_modules/doe-gpu",
+  "provider": "dawn",
+  "application": "image_edges",
+  "phase": "measure",
+  "backend": "vulkan",
+  "policyHash": "c73779df2451e6520e244fbb5e53726f041af1e971a9a133128acdf3a76bae05",
+  "programPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.program.json",
+  "inputPaths": {
+    "input": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.input.input.bin"
+  },
+  "fixturePath": null,
+  "runtime": {
+    "name": "node",
+    "version": "v22.22.1"
+  },
+  "status": "passed",
+  "error": null,
+  "samples": [
+    {
+      "wallMs": 0.6144780000000196,
+      "cpuMs": 0.612,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 7,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 7,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903870325715",
+          "endTicks": "1895903870332528",
+          "elapsedNs": 6813
+        },
+        "timingMs": {
+          "upload": 0.019876999999979716,
+          "encode": 0.04527500000000373,
+          "submitWait": 0.13948199999998678,
+          "readback": 0.06579400000001101,
+          "total": 0.41414100000000076
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-7.output.f32"
+    },
+    {
+      "wallMs": 0.5593539999999848,
+      "cpuMs": 0.557,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 8,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 8,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903871135695",
+          "endTicks": "1895903871142467",
+          "elapsedNs": 6772
+        },
+        "timingMs": {
+          "upload": 0.014908000000019683,
+          "encode": 0.039815000000004375,
+          "submitWait": 0.13055600000001277,
+          "readback": 0.06166600000000244,
+          "total": 0.3718599999999981
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-8.output.f32"
+    },
+    {
+      "wallMs": 0.7075729999999965,
+      "cpuMs": 0.705,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 9,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 9,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903871986401",
+          "endTicks": "1895903871993214",
+          "elapsedNs": 6813
+        },
+        "timingMs": {
+          "upload": 0.013776000000007116,
+          "encode": 0.040877000000023145,
+          "submitWait": 0.18055099999997992,
+          "readback": 0.06280899999998724,
+          "total": 0.4196809999999971
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-9.output.f32"
+    },
+    {
+      "wallMs": 0.5848220000000026,
+      "cpuMs": 0.582,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 10,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 10,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903872895437",
+          "endTicks": "1895903872902570",
+          "elapsedNs": 7133
+        },
+        "timingMs": {
+          "upload": 0.014356999999989739,
+          "encode": 0.05516400000001909,
+          "submitWait": 0.12317199999998252,
+          "readback": 0.0704330000000084,
+          "total": 0.3842339999999922
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-10.output.f32"
+    },
+    {
+      "wallMs": 0.5597450000000208,
+      "cpuMs": 0.558,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 11,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 11,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903873691380",
+          "endTicks": "1895903873698513",
+          "elapsedNs": 7133
+        },
+        "timingMs": {
+          "upload": 0.013896000000016784,
+          "encode": 0.038082000000002836,
+          "submitWait": 0.12712999999999397,
+          "readback": 0.07419900000002144,
+          "total": 0.37289200000000733
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-11.output.f32"
+    },
+    {
+      "wallMs": 0.542853000000008,
+      "cpuMs": 0.541,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 12,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 12,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903874472726",
+          "endTicks": "1895903874479859",
+          "elapsedNs": 7133
+        },
+        "timingMs": {
+          "upload": 0.013756000000000768,
+          "encode": 0.037319999999994025,
+          "submitWait": 0.1271289999999965,
+          "readback": 0.06264799999999582,
+          "total": 0.3595279999999832
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-12.output.f32"
+    },
+    {
+      "wallMs": 0.5971150000000023,
+      "cpuMs": 0.595,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 13,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 13,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903875298796",
+          "endTicks": "1895903875305889",
+          "elapsedNs": 7093
+        },
+        "timingMs": {
+          "upload": 0.014087000000017724,
+          "encode": 0.037140000000022155,
+          "submitWait": 0.18373600000001034,
+          "readback": 0.05928199999999606,
+          "total": 0.41264799999999013
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-13.output.f32"
+    },
+    {
+      "wallMs": 0.5391759999999977,
+      "cpuMs": 0.537,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 14,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 14,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903876057259",
+          "endTicks": "1895903876064353",
+          "elapsedNs": 7094
+        },
+        "timingMs": {
+          "upload": 0.0136359999999911,
+          "encode": 0.03710999999998421,
+          "submitWait": 0.1252059999999915,
+          "readback": 0.05930200000000241,
+          "total": 0.35254399999999464
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-14.output.f32"
+    },
+    {
+      "wallMs": 0.5397979999999905,
+      "cpuMs": 0.538,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 15,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 15,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903876808128",
+          "endTicks": "1895903876815221",
+          "elapsedNs": 7093
+        },
+        "timingMs": {
+          "upload": 0.0136359999999911,
+          "encode": 0.035477000000014414,
+          "submitWait": 0.12692899999998986,
+          "readback": 0.060575000000000045,
+          "total": 0.3551599999999837
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-15.output.f32"
+    },
+    {
+      "wallMs": 0.5466699999999776,
+      "cpuMs": 0.545,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 16,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 16,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903877581559",
+          "endTicks": "1895903877588693",
+          "elapsedNs": 7134
+        },
+        "timingMs": {
+          "upload": 0.012945000000001983,
+          "encode": 0.03671900000000505,
+          "submitWait": 0.12957499999998845,
+          "readback": 0.058459999999996626,
+          "total": 0.36133999999998423
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-16.output.f32"
+    },
+    {
+      "wallMs": 0.5374529999999993,
+      "cpuMs": 0.537,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 17,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 17,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903878345813",
+          "endTicks": "1895903878352907",
+          "elapsedNs": 7094
+        },
+        "timingMs": {
+          "upload": 0.013104999999995925,
+          "encode": 0.03753100000000131,
+          "submitWait": 0.12693000000001575,
+          "readback": 0.058620999999988044,
+          "total": 0.3543269999999836
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-17.output.f32"
+    },
+    {
+      "wallMs": 0.5346570000000099,
+      "cpuMs": 0.533,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 18,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 18,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903879103295",
+          "endTicks": "1895903879110468",
+          "elapsedNs": 7173
+        },
+        "timingMs": {
+          "upload": 0.012793999999985317,
+          "encode": 0.0373909999999853,
+          "submitWait": 0.12468499999999949,
+          "readback": 0.057839000000001306,
+          "total": 0.3506710000000055
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-18.output.f32"
+    },
+    {
+      "wallMs": 0.5286260000000027,
+      "cpuMs": 0.527,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 19,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 19,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903879842121",
+          "endTicks": "1895903879849214",
+          "elapsedNs": 7093
+        },
+        "timingMs": {
+          "upload": 0.012934999999998809,
+          "encode": 0.03644800000000714,
+          "submitWait": 0.1163490000000138,
+          "readback": 0.057959000000010974,
+          "total": 0.343767999999983
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-19.output.f32"
+    },
+    {
+      "wallMs": 0.5410189999999773,
+      "cpuMs": 0.54,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 20,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 20,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903880589914",
+          "endTicks": "1895903880597048",
+          "elapsedNs": 7134
+        },
+        "timingMs": {
+          "upload": 0.013445000000018581,
+          "encode": 0.03893300000001432,
+          "submitWait": 0.11928499999999076,
+          "readback": 0.06328899999999749,
+          "total": 0.3569829999999854
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-20.output.f32"
+    },
+    {
+      "wallMs": 0.5390360000000101,
+      "cpuMs": 0.537,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 21,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 21,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903881351994",
+          "endTicks": "1895903881359127",
+          "elapsedNs": 7133
+        },
+        "timingMs": {
+          "upload": 0.012484000000000606,
+          "encode": 0.03652900000000159,
+          "submitWait": 0.12618799999998487,
+          "readback": 0.06477200000000494,
+          "total": 0.3576240000000155
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-21.output.f32"
+    },
+    {
+      "wallMs": 0.5327739999999892,
+      "cpuMs": 0.531,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 22,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 22,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903882119143",
+          "endTicks": "1895903882126357",
+          "elapsedNs": 7214
+        },
+        "timingMs": {
+          "upload": 0.013034000000004653,
+          "encode": 0.03610800000001291,
+          "submitWait": 0.12500499999998738,
+          "readback": 0.05804900000001112,
+          "total": 0.3497090000000185
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-22.output.f32"
+    },
+    {
+      "wallMs": 0.5240369999999928,
+      "cpuMs": 0.523,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 23,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 23,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903882857389",
+          "endTicks": "1895903882864482",
+          "elapsedNs": 7093
+        },
+        "timingMs": {
+          "upload": 0.01238299999999981,
+          "encode": 0.036889999999999645,
+          "submitWait": 0.11733100000000718,
+          "readback": 0.057518000000015945,
+          "total": 0.34182400000000257
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-23.output.f32"
+    },
+    {
+      "wallMs": 0.536500999999987,
+      "cpuMs": 0.535,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 24,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 24,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903883601515",
+          "endTicks": "1895903883608728",
+          "elapsedNs": 7213
+        },
+        "timingMs": {
+          "upload": 0.01254400000001965,
+          "encode": 0.03687000000002172,
+          "submitWait": 0.12083699999999453,
+          "readback": 0.05784900000000448,
+          "total": 0.3503599999999949
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-24.output.f32"
+    },
+    {
+      "wallMs": 0.5369320000000073,
+      "cpuMs": 0.536,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 25,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 25,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903884368374",
+          "endTicks": "1895903884375507",
+          "elapsedNs": 7133
+        },
+        "timingMs": {
+          "upload": 0.01425699999998642,
+          "encode": 0.036839999999983775,
+          "submitWait": 0.12720999999999094,
+          "readback": 0.05792899999997303,
+          "total": 0.35441800000000967
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-25.output.f32"
+    },
+    {
+      "wallMs": 0.5358500000000106,
+      "cpuMs": 0.534,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 26,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 26,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903885130694",
+          "endTicks": "1895903885137828",
+          "elapsedNs": 7134
+        },
+        "timingMs": {
+          "upload": 0.013835999999997739,
+          "encode": 0.036848999999989474,
+          "submitWait": 0.12581700000001206,
+          "readback": 0.05915199999998322,
+          "total": 0.35368700000000786
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-26.output.f32"
+    },
+    {
+      "wallMs": 0.5214330000000018,
+      "cpuMs": 0.519,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 27,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 27,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903885868268",
+          "endTicks": "1895903885875442",
+          "elapsedNs": 7174
+        },
+        "timingMs": {
+          "upload": 0.012292999999999665,
+          "encode": 0.04170899999999733,
+          "submitWait": 0.10823400000001016,
+          "readback": 0.059180999999995265,
+          "total": 0.3393389999999954
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-27.output.f32"
+    },
+    {
+      "wallMs": 0.536892000000023,
+      "cpuMs": 0.536,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 28,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 28,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903886614929",
+          "endTicks": "1895903886622103",
+          "elapsedNs": 7174
+        },
+        "timingMs": {
+          "upload": 0.012213000000002694,
+          "encode": 0.037040000000018836,
+          "submitWait": 0.12340299999999615,
+          "readback": 0.05932200000000876,
+          "total": 0.35330600000000345
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-28.output.f32"
+    },
+    {
+      "wallMs": 0.5222739999999817,
+      "cpuMs": 0.521,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 29,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 29,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903887362863",
+          "endTicks": "1895903887369996",
+          "elapsedNs": 7133
+        },
+        "timingMs": {
+          "upload": 0.012913999999994985,
+          "encode": 0.037581000000017184,
+          "submitWait": 0.11350400000000604,
+          "readback": 0.058671000000003914,
+          "total": 0.34041100000001734
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-29.output.f32"
+    },
+    {
+      "wallMs": 0.5898320000000012,
+      "cpuMs": 0.588,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 30,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 30,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903888125243",
+          "endTicks": "1895903888132457",
+          "elapsedNs": 7214
+        },
+        "timingMs": {
+          "upload": 0.01282399999999484,
+          "encode": 0.037690999999995256,
+          "submitWait": 0.17239399999999705,
+          "readback": 0.06015300000001389,
+          "total": 0.40249900000000594
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-30.output.f32"
+    },
+    {
+      "wallMs": 0.5686409999999853,
+      "cpuMs": 1.414,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 31,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 31,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903888939952",
+          "endTicks": "1895903888947085",
+          "elapsedNs": 7133
+        },
+        "timingMs": {
+          "upload": 0.013956000000007407,
+          "encode": 0.038914000000005444,
+          "submitWait": 0.11257200000000012,
+          "readback": 0.05922100000000796,
+          "total": 0.37673999999998387
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-31.output.f32"
+    },
+    {
+      "wallMs": 0.5327640000000144,
+      "cpuMs": 0.531,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 32,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 32,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903889720937",
+          "endTicks": "1895903889728030",
+          "elapsedNs": 7093
+        },
+        "timingMs": {
+          "upload": 0.012993999999991956,
+          "encode": 0.03758000000001971,
+          "submitWait": 0.11464599999999336,
+          "readback": 0.0645319999999856,
+          "total": 0.34856600000000526
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-32.output.f32"
+    },
+    {
+      "wallMs": 0.5397070000000213,
+      "cpuMs": 0.538,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 33,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 33,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903890482005",
+          "endTicks": "1895903890489139",
+          "elapsedNs": 7134
+        },
+        "timingMs": {
+          "upload": 0.01388600000001361,
+          "encode": 0.03702999999998724,
+          "submitWait": 0.12759100000002377,
+          "readback": 0.058800999999988335,
+          "total": 0.35554000000001906
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-33.output.f32"
+    },
+    {
+      "wallMs": 0.5374419999999986,
+      "cpuMs": 0.536,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 34,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 34,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903891242182",
+          "endTicks": "1895903891249315",
+          "elapsedNs": 7133
+        },
+        "timingMs": {
+          "upload": 0.014397000000002436,
+          "encode": 0.0353059999999914,
+          "submitWait": 0.1275900000000263,
+          "readback": 0.05961200000001554,
+          "total": 0.35493899999997325
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-34.output.f32"
+    },
+    {
+      "wallMs": 0.5846810000000175,
+      "cpuMs": 0.583,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 35,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 35,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903892043445",
+          "endTicks": "1895903892050578",
+          "elapsedNs": 7133
+        },
+        "timingMs": {
+          "upload": 0.012764000000004216,
+          "encode": 0.03584699999998975,
+          "submitWait": 0.17297600000000557,
+          "readback": 0.058309999999977435,
+          "total": 0.39740799999998444
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-35.output.f32"
+    },
+    {
+      "wallMs": 0.5368209999999749,
+      "cpuMs": 0.536,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 36,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 36,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903892796698",
+          "endTicks": "1895903892803872",
+          "elapsedNs": 7174
+        },
+        "timingMs": {
+          "upload": 0.012664000000000897,
+          "encode": 0.0347759999999937,
+          "submitWait": 0.12909299999998325,
+          "readback": 0.057968999999985726,
+          "total": 0.35226299999999355
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-36.output.f32"
+    },
+    {
+      "wallMs": 0.5352189999999837,
+      "cpuMs": 0.534,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 37,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 37,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903893547537",
+          "endTicks": "1895903893554631",
+          "elapsedNs": 7094
+        },
+        "timingMs": {
+          "upload": 0.012342999999987114,
+          "encode": 0.036127999999990834,
+          "submitWait": 0.12812199999999052,
+          "readback": 0.05907199999998625,
+          "total": 0.35310499999999934
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-37.output.f32"
+    },
+    {
+      "wallMs": 0.531109999999984,
+      "cpuMs": 0.53,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 38,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 38,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903894297274",
+          "endTicks": "1895903894304488",
+          "elapsedNs": 7214
+        },
+        "timingMs": {
+          "upload": 0.012653999999997723,
+          "encode": 0.04351200000002109,
+          "submitWait": 0.11193099999999845,
+          "readback": 0.05971199999999044,
+          "total": 0.3466329999999971
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-38.output.f32"
+    }
+  ],
+  "warmups": [
+    {
+      "wallMs": 0.8435889999999802,
+      "cpuMs": 0.837,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 2,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 2,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903865631367",
+          "endTicks": "1895903865660301",
+          "elapsedNs": 28934
+        },
+        "timingMs": {
+          "upload": 0.03133900000000267,
+          "encode": 0.0931759999999997,
+          "submitWait": 0.29158899999998766,
+          "readback": 0.072496000000001,
+          "total": 0.6376319999999964
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-2.output.f32"
+    },
+    {
+      "wallMs": 0.5980670000000146,
+      "cpuMs": 0.595,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 3,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 3,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903866566601",
+          "endTicks": "1895903866573254",
+          "elapsedNs": 6653
+        },
+        "timingMs": {
+          "upload": 0.015699999999981173,
+          "encode": 0.05462300000002074,
+          "submitWait": 0.14571399999999812,
+          "readback": 0.06430100000000039,
+          "total": 0.4179369999999949
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-3.output.f32"
+    },
+    {
+      "wallMs": 0.6001609999999857,
+      "cpuMs": 0.598,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 4,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 4,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903867417217",
+          "endTicks": "1895903867423950",
+          "elapsedNs": 6733
+        },
+        "timingMs": {
+          "upload": 0.014668000000000347,
+          "encode": 0.046076999999996815,
+          "submitWait": 0.13159799999999677,
+          "readback": 0.0645319999999856,
+          "total": 0.40252900000001546
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-4.output.f32"
+    },
+    {
+      "wallMs": 0.7077639999999974,
+      "cpuMs": 0.701,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 5,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 5,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903868393610",
+          "endTicks": "1895903868400222",
+          "elapsedNs": 6612
+        },
+        "timingMs": {
+          "upload": 0.015298999999998841,
+          "encode": 0.05989199999999073,
+          "submitWait": 0.13614600000002497,
+          "readback": 0.06681499999999119,
+          "total": 0.45018799999999715
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-5.output.f32"
+    },
+    {
+      "wallMs": 0.7913010000000043,
+      "cpuMs": 0.788,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 4.7646514994559297e-7,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+        "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+        "execution": "webgpu",
+        "run": 6,
+        "inputHashes": {
+          "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        },
+        "inputOrigins": {
+          "input": {
+            "kind": "host",
+            "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+        "outputGeneration": 6,
+        "dispatchCount": 3,
+        "clearedBytes": 786432,
+        "uploadedBytes": 262144,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 262160,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 1310752,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1895903869320539",
+          "endTicks": "1895903869327191",
+          "elapsedNs": 6652
+        },
+        "timingMs": {
+          "upload": 0.014216999999973723,
+          "encode": 0.04966300000000956,
+          "submitWait": 0.1605119999999829,
+          "readback": 0.0610449999999787,
+          "total": 0.4130880000000161
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-6.output.f32"
+    }
+  ],
+  "lifecycleRuns": [],
+  "cold": {
+    "wallMs": 3.596365999999989,
+    "cpuMs": 3.558,
+    "oracle": {
+      "passed": true,
+      "maxAbsoluteError": 4.7646514994559297e-7,
+      "firstFailure": null
+    },
+    "receipt": {
+      "schemaVersion": 5,
+      "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+      "programInstance": "816e4e63-ef81-49f0-8d23-f4ab70c060e3",
+      "execution": "webgpu",
+      "run": 1,
+      "inputHashes": {
+        "input": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+      },
+      "inputOrigins": {
+        "input": {
+          "kind": "host",
+          "hash": "69a9ddc694a4764a93a2a0f5080da7e9ba497c8e9e5b512a589183ba9dc9c952"
+        }
+      },
+      "residentStateBefore": {},
+      "outputHash": "ed19ef43fc672f86e07bede7617e348e2939f6f5406b6db4b0f72d8f7f03d420",
+      "outputGeneration": 1,
+      "dispatchCount": 3,
+      "clearedBytes": 786432,
+      "uploadedBytes": 262144,
+      "copiedInputBytes": 0,
+      "submissionCount": 1,
+      "readbackBytes": 262160,
+      "readbackPath": "mapAsync-copy-unmap",
+      "completionMode": "queue-and-map",
+      "allocatedBufferBytes": 1310752,
+      "gpuTiming": {
+        "periodNs": 1,
+        "validBits": 64,
+        "source": "webgpu-nanoseconds",
+        "scope": "compute-pass",
+        "beginTicks": "1895903860229942",
+        "endTicks": "1895903860237195",
+        "elapsedNs": 7253
+      },
+      "timingMs": {
+        "upload": 0.49538399999997296,
+        "encode": 1.2997190000000103,
+        "submitWait": 0.6561360000000036,
+        "readback": 0.13887200000002053,
+        "total": 2.9247310000000084
+      }
+    },
+    "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.run-1.output.f32"
+  },
+  "failedRun": null,
+  "preparationMs": 5.928981999999991,
+  "deviceStartupMs": 42.958816,
+  "adapter": {
+    "vendor": "amd",
+    "architecture": "rdna-3",
+    "device": "radeon-8060s-graphics-radv-strix-halo-",
+    "description": "radv: Mesa 26.0.3-1ubuntu1",
+    "isFallbackAdapter": false,
+    "vendorID": null,
+    "deviceID": null,
+    "driverVersion": null
+  },
+  "providerArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/dawn.fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1.provider.bin",
+    "hash": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1"
+  },
+  "allocatedBufferBytes": 1310752,
+  "peakProcessRssBytes": 183693312,
+  "providerAddonArtifact": null,
+  "timestampCalibrationArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/hardware-profile.json",
+    "hash": "f8cacb066c323eaa3a12a6e54f28a18e451b3961b9888490de31297592156023"
+  },
+  "lifecycle": null,
+  "observed": {
+    "dispatchesEncoded": 0,
+    "submissions": 0,
+    "maps": 0
+  },
+  "latencyStatsMs": {
+    "count": 32,
+    "mean": 0.5523526562499992,
+    "min": 0.5214330000000018,
+    "max": 0.7075729999999965,
+    "median": 0.5374529999999993,
+    "p95": 0.6144780000000196,
+    "p99": 0.7075729999999965
+  },
+  "cpuStatsMs": {
+    "count": 32,
+    "mean": 0.5771562500000001,
+    "min": 0.519,
+    "max": 1.414,
+    "median": 0.537,
+    "p95": 0.705,
+    "p99": 1.414
+  },
+  "programHash": "13758252664fb18981a59d26a6cd572038920e33fb681c423810e23e6e4cae73",
+  "teardownMs": 0.7680269999999894,
+  "gpuStatsNs": {
+    "count": 32,
+    "mean": 7107.125,
+    "min": 6772,
+    "max": 7214,
+    "median": 7133,
+    "p95": 7214,
+    "p99": 7214
+  },
+  "expectedPath": "/home/x/deco/doe/bench/out/compute-program/20260907-multi-dot-applications/image_edges.dawn.process-2.json.expected.f64",
+  "preparation": {
+    "reusedResources": 0,
+    "createdResources": 19
+  },
+  "measurementLimits": [
+    "GPU timestamps bracket compute only; useful-operation wall includes all runtime and readback work",
+    "Peak device memory unavailable; requested buffers and process RSS reported",
+    "Forced device loss is not an observed driver-loss recovery",
+    "Dawn and wgpu adapter APIs do not expose a numeric driver version"
+  ]
+}

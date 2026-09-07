@@ -1,0 +1,4 @@
+D0 shader sha256 fd293dfe48026b61fb4af3283c6b44eb3827d2aff9152d72a0c0f6b9894bcb1c
+adapter {"vendor":"AMD","architecture":"vulkan","device":"Radeon 8060S Graphics (RADV STRIX_HALO)","description":"Radeon 8060S Graphics (RADV STRIX_HALO)","isFallbackAdapter":false,"subgroupMinSize":32,"subgroupMaxSize":32,"vendorID":4098,"deviceID":5510,"driverVersion":109051907}
+output sha256 93e09b061ce514f4d3c78658d4dc938f5944a376401a85e727a2a3eea6fc7d31
+against retained model output {"changed":232,"maxAbsoluteError":7.152557373046875e-7}

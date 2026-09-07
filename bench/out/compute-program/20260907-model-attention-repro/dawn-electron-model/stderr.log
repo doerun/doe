@@ -1,0 +1,14 @@
+Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+Warning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+External buffers are not allowed
+FATAL ERROR: Error::New napi_get_last_error_info
+----- Native stack trace -----
+
+ 1: 0x628eed71e32d node::OnFatalError(char const*, char const*) [/home/x/deco/doe/bench/out/external-projects/doppler/upstream/node_modules/electron/dist/electron --headless --no-sandbox --disable-gpu --doppler-root --model-dir --model-id --prompt --runtime-profile --out-dir --decode-steps --temperature --top-k --top-p --repetition-penalty --seed --kernel-path-policy-mode --kernel-path-policy-on-incompatible --kernel-path-policy-source-scope --no-chat-template /home/x/deco/doe/bench/external-projects/doppler/electron-app /home/x/deco/doe/bench/out/external-projects/doppler/upstream /home/x/deco/doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32 gemma-3-270m-it-q4k-ehf16-af32 The color of the sky on a clear day is profiles/production /home/x/deco/doe/bench/out/compute-program/20260907-model-attention-repro/dawn-electron-model 4 0 1 1 1 0 locked error model,manifest,config]
+
+----- JavaScript stack trace -----
+
+1: #destroyPendingBuffers (file:///home/x/deco/doe/bench/out/external-projects/doppler/upstream/src/memory/buffer-pool.js:355:16)
+2: file:///home/x/deco/doe/bench/out/external-projects/doppler/upstream/src/memory/buffer-pool.js:424:36
+
+

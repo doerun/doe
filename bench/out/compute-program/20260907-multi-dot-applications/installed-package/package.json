@@ -1,0 +1,1 @@
+{"name":"doe-retained-application-evaluation","private":true,"type":"module","dependencies":{"doe-gpu":"file:../package-inputs/doe-gpu-0.5.0.tgz","doe-gpu-linux-x64":"file:../package-inputs/doe-gpu-linux-x64-0.5.0.tgz"}}

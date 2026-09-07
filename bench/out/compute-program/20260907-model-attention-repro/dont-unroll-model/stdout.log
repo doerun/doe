@@ -1,0 +1,22 @@
+[280.9ms][TestHarness] Initializing WebGPU...
+[301.0ms][Platform] No specific platform matched for adapter (vendor=AMD, arch=vulkan), falling back to generic
+[GPU] AMD vulkan, f16/subgroups, 4.0GB, submit probe: 2.2ms
+[329.6ms][TestHarness] GPU: hasF16=true, hasSubgroups=true
+[329.7ms][TestHarness] Fetching manifest...
+[334.7ms][TestHarness] Model: transformer
+[335.5ms][TestHarness] Creating pipeline...
+[Doppler] Log level set to: ERROR
+{
+  "ok": true,
+  "receipt": "bench/out/compute-program/20260907-model-attention-repro/dont-unroll-model/doppler_int4ple_reference_export.json",
+  "tensor": "bench/out/compute-program/20260907-model-attention-repro/dont-unroll-model/final_logits.f32",
+  "tensorSha256": "39a673744aa323bed9828ffa893ac70f169572770beec01e378339255246d920",
+  "tokenCount": 12,
+  "logitsShape": [
+    262144
+  ],
+  "decodeStepsRequested": 4,
+  "decodeStepsProduced": 4
+}
+[Doppler] Log level set to: INFO
+[2798.7ms][Pipeline] Unloaded

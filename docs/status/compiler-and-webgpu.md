@@ -153,18 +153,18 @@ Metal libraries have device owners and independent shader leases. CPU reference
 accounting and Vulkan qualification do not establish physical Metal behavior:
 `bench/out/shader-ownership/20260906-owned-diagnostics/README.md`.
 
-## Scalar compute fusion and allocation failures
+## Compute arithmetic and model acceptance
 
-The SPIR-V compute pipeline has a versioned arithmetic policy and a typed IR
-transform preserving operand order and ownership. Its physical continuous
-simulation correction, unchanged oracle, and remaining cross-backend boundary
-are recorded in [reusable compute programs](reusable-compute-programs.md).
-
-Allocation-failure regressions repair name publication in semantic analysis and
-IR building, ownership transfer for entry points, and robustness builtin names.
-Allocation errors now retain their original typed cause. Correction evidence is
-under `bench/out/compute-program/20260905-resident-fusion-correction/`; this does
-not establish general shader conformance or remove unrelated downstream gaps.
+The versioned SPIR-V policy preserves operand order, scalar fusion, and
+innermost loops containing multiple dot products. Retained Doe packages pass
+the frozen model numerical checks against the source-built Electron Dawn
+control. Its existing mapping correction transfers from HoloScript; the
+unmodified npm control still fails at Electron's external-buffer boundary.
+Reproductions, independent kernel references, package checks, and control
+identities: `bench/out/compute-program/20260907-model-attention-repro/README.md`.
+This does not establish a model performance advantage or universal conformance.
+Earlier allocation/fusion corrections and unchanged resident simulation oracles
+remain at `bench/out/compute-program/20260905-resident-fusion-correction/`.
 
 ## Current boundary
 
@@ -180,8 +180,8 @@ not establish general shader conformance or remove unrelated downstream gaps.
 
 - Close remaining WGSL semantic-analysis and backend-emission failures on real
   downstream shaders.
-- Produce non-zero, oracle-validated state for the WebGPU model transcript
-  path.
+- Integrate the source-built Electron control into canonical model qualification
+  and retain its explicit patch, binary, and comparison provenance.
 - Publish broader CTS evidence before using conformance or replacement
   language.
 - Make compiler and runtime failure diagnostics preserve the original typed

@@ -202,6 +202,9 @@ Completed checks and bounded prolonged-session evidence are indexed at
 full residency peaks, model acceptance, and fair comparisons remain distinct.
 The initializer correction and subsequent package verification are retained at
 `bench/out/compute-program/20260907-constant-initializers/README.md`.
+The dot-loop correction passes frozen model numerical checks against the
+source-built Electron control; canonical control admission remains separate:
+`bench/out/compute-program/20260907-model-attention-repro/README.md`.
 
 Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
 Large Deno ratios remain suspicious host-path observations until audited;

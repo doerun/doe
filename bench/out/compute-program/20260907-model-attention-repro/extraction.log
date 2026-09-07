@@ -1,0 +1,3 @@
+Retained Q/K/V inputs agree byte-for-byte before first changed attention output.
+W0 model maximum absolute error against reconstructed f64 reference: 2.0091086145868076e-06
+D0 model maximum absolute error against reconstructed f64 reference: 2.0091086145868076e-06

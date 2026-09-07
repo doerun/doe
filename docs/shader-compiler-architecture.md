@@ -69,7 +69,7 @@ platform coverage require their own acceptance evidence.
 
 ## Compute arithmetic policy
 
-`config/spirv-compute-arithmetic-policy.json` selects scalar `f32` arithmetic
+`config/spirv-compute-arithmetic-policy.json` selects arithmetic and loop controls
 for compute-only SPIR-V modules at build time. `fuse-trailing-add` transforms
 `(a + b*c) + d` into `a + fma(b,c,d)` in typed IR before emission. The operand
 evaluation order and multiplicity remain unchanged. Integer, vector, graphics,
@@ -81,7 +81,17 @@ not promise improved accuracy for every input. Frozen application numerical
 requirements remain blocking; agreement among providers is not an oracle.
 The transform owns no workload names, source hashes, or input-specific rules.
 
-Migration: the policy is an additive build contract; rebuild the native library
+Policy version 2 requires `multiDotLoops`. `preserve` marks innermost emitted
+loops containing multiple dot products with SPIR-V `DontUnroll`. This limits
+driver unrolling that changes rounding across repeated dot accumulation;
+`driver-default` retains the previous loop controls. Other loops, graphics and
+mixed-stage modules, and other targets keep their existing controls. It adds no
+GPU checks or source-specific selection. Driver hints do not promise bitwise
+agreement across devices: frozen numerical tests and physical execution remain
+required. Rebuild and requalify prepared artifacts when the policy changes.
+
+Migration: version 1 configurations add an explicit `multiDotLoops` value and
+advance to version 2. Rebuild the native library
 and retain the new library and generated SPIR-V identities. The original WGSL,
 descriptor, and receipt fields keep their meanings. Existing pipeline reuse
 compares actual SPIR-V words, so differently lowered programs cannot share a

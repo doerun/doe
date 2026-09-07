@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "kind": "compute_program_fixture",
+  "application": "holoscript_lif",
+  "sourceRepo": "https://github.com/brianonbased-dev/HoloScript",
+  "sourceCommit": "337a39a869a552c814933c587fe65b34a0a2c95d",
+  "caseId": "large-65536x10",
+  "generatorRuntime": "v22.22.1; TypeScript 5.9.3",
+  "adaptation": "Unchanged lif_step WGSL and upstream CPU twin; declared ticks are batched, with an added packing pass preserving both membrane and spike readbacks on every provider.",
+  "program": {
+    "path": "program.json",
+    "hash": "e1d0cf2a1fd9da5ab8668cf5e3cbfab4cd4d200e28f35f5efde2a0d476fe760e"
+  },
+  "inputs": {
+    "params": {
+      "path": "inputs/params.bin",
+      "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+    },
+    "membrane": {
+      "path": "inputs/membrane.bin",
+      "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+    },
+    "stimulus": {
+      "path": "inputs/stimulus.bin",
+      "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+    }
+  },
+  "expected": {
+    "path": "expected.f64",
+    "hash": "fa14b41ac015b0fa0e7a66059034d94e3177d5845f4b217fd4b55119a16392b6"
+  },
+  "sources": [
+    {
+      "path": "upstream/packages/snn-webgpu/src/shaders/lif-neuron.wgsl",
+      "hash": "269f7201fb527f3e0a44e21fd382aa4878597f7de2e9c598fd5eb324183af89a"
+    },
+    {
+      "path": "upstream/packages/snn-webgpu/src/types.ts",
+      "hash": "187dad4150adba6cf3726cb5371bc1199b3fc77b132f2e624ecf7e5579b68881"
+    },
+    {
+      "path": "upstream/packages/snn-webgpu/src/poc/cpu-reference.ts",
+      "hash": "b1b1b1078702e702950d25b9edcce6ed5e8c482daaa9d84d8c68b304e2242f23"
+    },
+    {
+      "path": "upstream/LICENSE",
+      "hash": "44004175873df8faf3d8135e1d7f80a5820e7b4d562344d5ddfa76cc4b915564"
+    },
+    {
+      "path": "upstream/packages/snn-webgpu/package.json",
+      "hash": "cc3fe8e5f4be16eb0207416ec2de2d3a46c4b62714a93105323cb42831691f8b"
+    },
+    {
+      "path": "toolchain/typescript.cjs",
+      "hash": "3ae902c92cc44dace175c0e69e13a4b0899f6983c6121d76b9ab8dd5795e7675"
+    },
+    {
+      "path": "toolchain/typescript.LICENSE.txt",
+      "hash": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47"
+    },
+    {
+      "path": "contract/lif-determinism.harness.json",
+      "hash": "5e83770891f5a562753bd7e7128e3a48246a608f0574faa9435746f00ceb6955"
+    },
+    {
+      "path": "contract/lif-determinism.inputs.json",
+      "hash": "2b0b69c8e5dd14c2f85189fc2714c0f0e6cf8872d5852804784e101658f5d192"
+    },
+    {
+      "path": "contract/lif-determinism.oracle.md",
+      "hash": "a22e434b41fe7888a6a5b2b547e8bc0cdf60d88e9be208a6161fc5f6221a4bb9"
+    },
+    {
+      "path": "generator.mjs",
+      "hash": "109a0c58df4fd034ff2e925475edceeae6a3157f3dba026112b1f900c497fcae"
+    },
+    {
+      "path": "oracle/types.js",
+      "hash": "1a637deba10f045ccb3166e6ddd6f4646f73034a6dd971089a24b1c415000dd8"
+    },
+    {
+      "path": "oracle/poc/cpu-reference.js",
+      "hash": "bbb408961fa98d692189f529c38601c11f1a9dd67de21eca27a6f2a689436e20"
+    },
+    {
+      "path": "oracle/package.json",
+      "hash": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae"
+    }
+  ],
+  "checks": [
+    {
+      "offset": 0,
+      "count": 65536,
+      "mode": "both",
+      "absoluteTolerance": 0.00005,
+      "relativeTolerance": 0.0001,
+      "relativeEpsilon": 0.000001
+    },
+    {
+      "offset": 65536,
+      "count": 65536,
+      "mode": "exact",
+      "absoluteTolerance": 0,
+      "relativeTolerance": 0,
+      "relativeEpsilon": 0
+    }
+  ]
+}

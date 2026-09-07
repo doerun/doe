@@ -1,0 +1,482 @@
+diff --git a/config/spirv-compute-arithmetic-policy.json b/config/spirv-compute-arithmetic-policy.json
+index 14767e8cb..f5753b7b8 100644
+--- a/config/spirv-compute-arithmetic-policy.json
++++ b/config/spirv-compute-arithmetic-policy.json
+@@ -1,4 +1,5 @@
+ {
+-  "schemaVersion": 1,
+-  "offsetMultiplyAdd": "fuse-trailing-add"
++  "schemaVersion": 2,
++  "offsetMultiplyAdd": "fuse-trailing-add",
++  "multiDotLoops": "preserve"
+ }
+diff --git a/config/spirv-compute-arithmetic-policy.schema.json b/config/spirv-compute-arithmetic-policy.schema.json
+index c31cc66ee..f962c2f93 100644
+--- a/config/spirv-compute-arithmetic-policy.schema.json
++++ b/config/spirv-compute-arithmetic-policy.schema.json
+@@ -3,13 +3,18 @@
+   "title": "SPIR-V compute arithmetic policy",
+   "type": "object",
+   "additionalProperties": false,
+-  "required": ["schemaVersion", "offsetMultiplyAdd"],
++  "required": ["schemaVersion", "offsetMultiplyAdd", "multiDotLoops"],
+   "properties": {
+-    "schemaVersion": {"type": "integer", "const": 1},
++    "schemaVersion": {"type": "integer", "const": 2},
+     "offsetMultiplyAdd": {
+       "type": "string",
+       "enum": ["source-order", "fuse-trailing-add"],
+       "description": "Build-time scalar f32 policy for compute-only SPIR-V modules. Fuse (a + b*c) + d as a + fma(b,c,d) while preserving operand evaluation order. Other emitters and mixed-stage modules retain their existing policy."
++    },
++    "multiDotLoops": {
++      "type": "string",
++      "enum": ["driver-default", "preserve"],
++      "description": "Build-time policy for compute-only SPIR-V modules. Preserve innermost loops containing multiple emitted OpDot instructions with DontUnroll to avoid driver unrolling changing accumulated rounding. Other loops and other targets retain their existing controls."
+     }
+   }
+ }
+diff --git a/docs/process.md b/docs/process.md
+index 09f326656..9567fd4d3 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -162,6 +162,10 @@ classified and cannot be promoted by benchmark results.
+   allocation-failure tests and retained-package dispatch/readback regressions
+   cover this distinction. This corrects compilation behind existing WGSL and
+   WebGPU interfaces; descriptor and receipt schemas are unchanged.
++  Compute loop-control changes require unchanged model checkpoints and logits,
++  independent kernel reference checks, and tests that unaffected loops and
++  shader stages retain their controls. Numerical experiments must be separated
++  from retained-package qualification and performance evidence.
+ - Native addon pass descriptors are checked against the runtime's pinned WebGPU
+   header by `packages/doe-gpu/scripts/build-addon.js`; an ABI layout mismatch
+   fails the build. Retained-package qualification exercises timestamp pass
+diff --git a/docs/shader-compiler-architecture.md b/docs/shader-compiler-architecture.md
+index fe3a3cd09..e1926fee8 100644
+--- a/docs/shader-compiler-architecture.md
++++ b/docs/shader-compiler-architecture.md
+@@ -69,7 +69,7 @@ platform coverage require their own acceptance evidence.
+ 
+ ## Compute arithmetic policy
+ 
+-`config/spirv-compute-arithmetic-policy.json` selects scalar `f32` arithmetic
++`config/spirv-compute-arithmetic-policy.json` selects arithmetic and loop controls
+ for compute-only SPIR-V modules at build time. `fuse-trailing-add` transforms
+ `(a + b*c) + d` into `a + fma(b,c,d)` in typed IR before emission. The operand
+ evaluation order and multiplicity remain unchanged. Integer, vector, graphics,
+@@ -81,7 +81,17 @@ not promise improved accuracy for every input. Frozen application numerical
+ requirements remain blocking; agreement among providers is not an oracle.
+ The transform owns no workload names, source hashes, or input-specific rules.
+ 
+-Migration: the policy is an additive build contract; rebuild the native library
++Policy version 2 requires `multiDotLoops`. `preserve` marks innermost emitted
++loops containing multiple dot products with SPIR-V `DontUnroll`. This limits
++driver unrolling that changes rounding across repeated dot accumulation;
++`driver-default` retains the previous loop controls. Other loops, graphics and
++mixed-stage modules, and other targets keep their existing controls. It adds no
++GPU checks or source-specific selection. Driver hints do not promise bitwise
++agreement across devices: frozen numerical tests and physical execution remain
++required. Rebuild and requalify prepared artifacts when the policy changes.
++
++Migration: version 1 configurations add an explicit `multiDotLoops` value and
++advance to version 2. Rebuild the native library
+ and retain the new library and generated SPIR-V identities. The original WGSL,
+ descriptor, and receipt fields keep their meanings. Existing pipeline reuse
+ compares actual SPIR-V words, so differently lowered programs cannot share a
+diff --git a/docs/status/compiler-and-webgpu.md b/docs/status/compiler-and-webgpu.md
+index d7562e2ab..43a9155de 100644
+--- a/docs/status/compiler-and-webgpu.md
++++ b/docs/status/compiler-and-webgpu.md
+@@ -153,18 +153,18 @@ Metal libraries have device owners and independent shader leases. CPU reference
+ accounting and Vulkan qualification do not establish physical Metal behavior:
+ `bench/out/shader-ownership/20260906-owned-diagnostics/README.md`.
+ 
+-## Scalar compute fusion and allocation failures
+-
+-The SPIR-V compute pipeline has a versioned arithmetic policy and a typed IR
+-transform preserving operand order and ownership. Its physical continuous
+-simulation correction, unchanged oracle, and remaining cross-backend boundary
+-are recorded in [reusable compute programs](reusable-compute-programs.md).
+-
+-Allocation-failure regressions repair name publication in semantic analysis and
+-IR building, ownership transfer for entry points, and robustness builtin names.
+-Allocation errors now retain their original typed cause. Correction evidence is
+-under `bench/out/compute-program/20260905-resident-fusion-correction/`; this does
+-not establish general shader conformance or remove unrelated downstream gaps.
++## Compute arithmetic and model acceptance
++
++The versioned SPIR-V policy preserves operand order, scalar fusion, and
++innermost loops containing multiple dot products. Retained Doe packages pass
++the frozen model numerical checks against the source-built Electron Dawn
++control. Its existing mapping correction transfers from HoloScript; the
++unmodified npm control still fails at Electron's external-buffer boundary.
++Reproductions, independent kernel references, package checks, and control
++identities: `bench/out/compute-program/20260907-model-attention-repro/README.md`.
++This does not establish a model performance advantage or universal conformance.
++Earlier allocation/fusion corrections and unchanged resident simulation oracles
++remain at `bench/out/compute-program/20260905-resident-fusion-correction/`.
+ 
+ ## Current boundary
+ 
+@@ -180,8 +180,8 @@ not establish general shader conformance or remove unrelated downstream gaps.
+ 
+ - Close remaining WGSL semantic-analysis and backend-emission failures on real
+   downstream shaders.
+-- Produce non-zero, oracle-validated state for the WebGPU model transcript
+-  path.
++- Integrate the source-built Electron control into canonical model qualification
++  and retain its explicit patch, binary, and comparison provenance.
+ - Publish broader CTS evidence before using conformance or replacement
+   language.
+ - Make compiler and runtime failure diagnostics preserve the original typed
+diff --git a/docs/status/reusable-compute-programs.md b/docs/status/reusable-compute-programs.md
+index 4e2887329..0c2b92c83 100644
+--- a/docs/status/reusable-compute-programs.md
++++ b/docs/status/reusable-compute-programs.md
+@@ -202,6 +202,9 @@ Completed checks and bounded prolonged-session evidence are indexed at
+ full residency peaks, model acceptance, and fair comparisons remain distinct.
+ The initializer correction and subsequent package verification are retained at
+ `bench/out/compute-program/20260907-constant-initializers/README.md`.
++The dot-loop correction passes frozen model numerical checks against the
++source-built Electron control; canonical control admission remains separate:
++`bench/out/compute-program/20260907-model-attention-repro/README.md`.
+ 
+ Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
+ Large Deno ratios remain suspicious host-path observations until audited;
+diff --git a/packages/doe-gpu/test/integration/test-integration-compute-program.js b/packages/doe-gpu/test/integration/test-integration-compute-program.js
+index f380ccb6a..e62154147 100644
+--- a/packages/doe-gpu/test/integration/test-integration-compute-program.js
++++ b/packages/doe-gpu/test/integration/test-integration-compute-program.js
+@@ -98,6 +98,45 @@ try {
+     } finally { await program.close(); }
+   }
+   console.log('ok: arithmetic transformation preserves dynamic operand order and evaluates each call once');
++  const dotWidth = 256;
++  const dotRows = 4;
++  const dotInputs = Float32Array.from({ length: dotWidth * (dotRows + 1) },
++    (_, i) => ((i * 37) % 127 - 63) / 32);
++  const dotExpected = Array.from({ length: dotRows }, (_, row) => {
++    let sum = 0;
++    for (let i = 0; i < dotWidth; i++) sum += dotInputs[i] * dotInputs[dotWidth * (row + 1) + i];
++    return sum;
++  });
++  const dotSearch = {
++    schemaVersion: 1, id: 'paired_dot_search',
++    buffers: [
++      { id: 'input', size: dotInputs.byteLength, type: 'storage', role: 'input' },
++      { id: 'output', size: dotRows * Float32Array.BYTES_PER_ELEMENT, type: 'storage', role: 'output' },
++    ],
++    shaders: [{ id: 'search', entryPoint: 'main', code: `
++      @group(0) @binding(0) var<storage, read> data: array<vec4<f32>>;
++      @group(0) @binding(1) var<storage, read_write> output: array<f32>;
++      @compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3<u32>) {
++        let base = (id.x + 1u) * ${dotWidth / 4}u;
++        var sum = 0.0;
++        for (var i = 0u; i < ${dotWidth / 4}u; i += 2u) {
++          sum = sum + dot(data[i], data[base+i]) + dot(data[i+1u], data[base+i+1u]);
++        }
++        output[id.x] = sum;
++      }` }],
++    steps: [{ shader: 'search', bindings: [
++      { binding: 0, buffer: 'input' }, { binding: 1, buffer: 'output' },
++    ], workgroups: [dotRows, 1, 1] }],
++    output: 'output',
++  };
++  for (const execution of ['webgpu', 'native-recorded', ...(process.platform === 'linux' ? ['gpu-recorded'] : [])]) {
++    const program = await prepareComputeProgram(device, dotSearch, { execution });
++    try {
++      const result = await program.run({ input: dotInputs });
++      assert.deepEqual([...new Float32Array(result.output.buffer)], dotExpected);
++    } finally { await program.close(); }
++  }
++  console.log('ok: paired dot-product search matches independent exact sums across execution modes');
+   for (const [code, kind] of [
+     ['// source line one\nnot valid WGSL', 'UnexpectedToken'],
+     ['@compute @workgroup_size(1) fn main() {\n let value: u32 = missing_value;\n}', 'UnknownIdentifier'],
+diff --git a/runtime/zig/build.zig b/runtime/zig/build.zig
+index a90ee5d64..437d93062 100644
+--- a/runtime/zig/build.zig
++++ b/runtime/zig/build.zig
+@@ -320,11 +320,16 @@ fn configure_non_windows_graphics(artifact: *std.Build.Step.Compile, b: *std.Bui
+ fn addCompilerArithmeticPolicy(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
+     const bytes = std.fs.cwd().readFileAlloc(allocator, "../../config/spirv-compute-arithmetic-policy.json", 64 * 1024) catch
+         @panic("failed to read spirv-compute-arithmetic-policy.json");
+-    const Policy = struct { schemaVersion: u32, offsetMultiplyAdd: enum { @"source-order", @"fuse-trailing-add" } };
++    const Policy = struct {
++        schemaVersion: u32,
++        offsetMultiplyAdd: enum { @"source-order", @"fuse-trailing-add" },
++        multiDotLoops: enum { @"driver-default", preserve },
++    };
+     const policy = std.json.parseFromSlice(Policy, allocator, bytes, .{}) catch
+         @panic("invalid SPIR-V compute arithmetic policy");
+-    if (policy.value.schemaVersion != 1) @panic("unsupported SPIR-V compute arithmetic policy version");
++    if (policy.value.schemaVersion != 2) @panic("unsupported SPIR-V compute arithmetic policy version");
+     options.addOption(bool, "spirv_compute_fuse_trailing_add", policy.value.offsetMultiplyAdd == .@"fuse-trailing-add");
++    options.addOption(bool, "spirv_compute_preserve_multi_dot_loops", policy.value.multiDotLoops == .preserve);
+ }
+ 
+ fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 7cfa48c02..2792ab6ac 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -2290,9 +2290,9 @@
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "bc8667882895825e542279e3019210b715d3fdd9cf9a0d7c45d7ad0f44db5e55",
++        "moduleSha256": "e5f68e6ae94eaeadf8bd2abe2f8645c2593e7836d316d49cdde50fd365e59e15",
+         "reason": "Keep: reachable compiler implementation shared by 5 production consumers with no conflicting ownership signal.",
+-        "reviewer": "codex-constant-initializers/2026-09-07"
++        "reviewer": "codex-multi-dot-loops/2026-09-07"
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig": {
+         "decision": "Keep",
+@@ -2302,15 +2302,15 @@
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "45b28658724eb9de78eb2615c78d8d3d93a704c36e8aea7c8f484b26b1daa150",
++        "moduleSha256": "03800bd885a95bb1338a511acb42df974ea8078245fc845229ddc571508bdd70",
+         "reason": "Keep: SPIR-V function/control-flow lowering state machine; builtin, stage, texture, and serialization responsibilities are separate.",
+-        "reviewer": "codex-constant-initializers/2026-09-07"
++        "reviewer": "codex-multi-dot-loops/2026-09-07"
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "f37bdf4918f32f0937c1ab2b0bb8e6b8b60b474eca1d3cf25cd46fb9273f2a06",
++        "moduleSha256": "8ba309d366547c0e9169c1cb9cd06ebd346c1b82446c7659616c64325fe17048",
+         "reason": "Keep: reachable compiler implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-doe-wgsl-correctness/2026-09-01"
++        "reviewer": "codex-multi-dot-loops/2026-09-07"
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_matrix.zig": {
+         "decision": "Keep",
+@@ -2344,9 +2344,9 @@
+       },
+       "src/compiler/wgsl/emit/spirv/spirv_spec.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "c46fdd2fd6ec257561f264b728669117dbc6bfce1e33e535c36a4db6edb1b140",
++        "moduleSha256": "b5df9e28d6e57107578eaee74a159c0c3b3bca45eeafd6144fbb269acf9836c1",
+         "reason": "Keep: reachable compiler implementation shared by 2 production consumers with no conflicting ownership signal.",
+-        "reviewer": "codex-doe-wgsl-vulkan-capabilities/2026-09-01"
++        "reviewer": "codex-multi-dot-loops/2026-09-07"
+       },
+       "src/compiler/wgsl/emit/toolchain.zig": {
+         "decision": "Keep",
+@@ -2482,9 +2482,9 @@
+       },
+       "src/compiler/wgsl/ir/ir_query.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "9a3922c918ca3e4ce59e9b5a14b2eaf6d5d8475e286c1085c8bc6d5745bbbd43",
++        "moduleSha256": "5e333c0126f5fcb0310a5337bae64a6e17fd6051e228013a909d3ce8a604ce89",
+         "reason": "Keep: reachable compiler implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-doe-completion/2026-08-24"
++        "reviewer": "codex-multi-dot-loops/2026-09-07"
+       },
+       "src/compiler/wgsl/ir/ir_transform_robustness.zig": {
+         "decision": "Keep",
+@@ -2554,9 +2554,9 @@
+       },
+       "src/compiler/wgsl/pipeline/translate_spirv.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "033e5e4c3815d935c5fd795363556451813150382348ca785f1217f113142ee8",
++        "moduleSha256": "3605958633eff88d7176d5407816b4a40d766330ad56f26eaed0dc010fa4b99e",
+         "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "reviewer": "codex-multi-dot-loops/2026-09-07"
+       },
+       "src/compiler/wgsl/proof/dispatch_proof_loop_match.zig": {
+         "decision": "Keep",
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig
+index eb65b0337..dd8e2ece0 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig
+@@ -1,4 +1,6 @@
+ const std = @import("std");
++const build_options = @import("build_options");
++const ir_query = @import("../../ir/ir_query.zig");
+ const ir = @import("../../ir/ir.zig");
+ const spirv = @import("spirv_builder.zig");
+ const emit_spirv_shared = @import("emit_spirv_shared.zig");
+@@ -28,6 +30,7 @@ fn emitImpl(module: *const ir.Module, stage_filter: ?ir.ShaderStage, out: []u8)
+ 
+ pub const Emitter = struct {
+     module: *const ir.Module,
++    preserve_multi_dot_loops: bool,
+     alloc: std.mem.Allocator,
+     builder: spirv.Builder,
+     type_ids: []u32,
+@@ -73,6 +76,7 @@ pub const Emitter = struct {
+ 
+         return .{
+             .module = module,
++            .preserve_multi_dot_loops = build_options.spirv_compute_preserve_multi_dot_loops and ir_query.isComputeOnlyModule(module),
+             .alloc = alloc,
+             .builder = spirv.Builder.init(alloc),
+             .type_ids = type_ids,
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
+index 50fd84249..91f5506b2 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
+@@ -225,15 +225,15 @@ pub fn FunctionState(comptime EmitterT: type) type {
+ 
+                     try self.emitter.builder.append_function_inst(spirv.Opcode.Branch, &.{header_label});
+                     try self.emit_label(header_label);
+-                    if (loop_stmt.cond) |cond| {
+-                        const cond_id = try self.emit_value_expr(cond);
+-                        try self.emitter.builder.append_function_inst(spirv.Opcode.LoopMerge, &.{ merge_label, continue_label, spirv.LoopControl.None });
++                    const condition = if (loop_stmt.cond) |cond| try self.emit_value_expr(cond) else null;
++                    try self.emitter.builder.append_function_inst(spirv.Opcode.LoopMerge, &.{ merge_label, continue_label, spirv.LoopControl.None });
++                    const body_offset = self.emitter.builder.functions.items.len;
++                    if (condition) |cond_id| {
+                         try self.emitter.builder.append_function_inst(
+                             spirv.Opcode.BranchConditional,
+                             &.{ cond_id, body_label, merge_label },
+                         );
+                     } else {
+-                        try self.emitter.builder.append_function_inst(spirv.Opcode.LoopMerge, &.{ merge_label, continue_label, spirv.LoopControl.None });
+                         try self.emitter.builder.append_function_inst(spirv.Opcode.Branch, &.{body_label});
+                     }
+ 
+@@ -251,6 +251,11 @@ pub fn FunctionState(comptime EmitterT: type) type {
+                     _ = self.break_targets.pop();
+                     _ = self.continue_targets.pop();
+ 
++                    if (self.emitter.preserve_multi_dot_loops) {
++                        const words = self.emitter.builder.functions.items;
++                        words[body_offset - 1] = emit_spirv_fn_helpers.multiDotLoopControl(words[body_offset..]);
++                    }
++
+                     try self.emit_label(merge_label);
+                     return false;
+                 },
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig
+index 53182a38f..0ad7e01b9 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig
+@@ -2,6 +2,21 @@ const std = @import("std");
+ const ir = @import("../../ir/ir.zig");
+ const spirv = @import("spirv_spec.zig");
+ 
++pub fn multiDotLoopControl(body: []const u32) u32 {
++    const multi_dot_minimum = 2;
++    var dot_count: usize = 0;
++    var offset: usize = 0;
++    while (offset < body.len) {
++        const word_count = body[offset] >> 16;
++        const opcode: u16 = @truncate(body[offset]);
++        std.debug.assert(word_count > 0 and word_count <= body.len - offset);
++        if (opcode == spirv.Opcode.LoopMerge) return spirv.LoopControl.None;
++        if (opcode == spirv.Opcode.Dot) dot_count += 1;
++        offset += word_count;
++    }
++    return if (dot_count >= multi_dot_minimum) spirv.LoopControl.DontUnroll else spirv.LoopControl.None;
++}
++
+ pub const AccessChainEntry = struct {
+     root_id: u32,
+     ptr_type: u32,
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/spirv_spec.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/spirv_spec.zig
+index 288174997..007cda2f4 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/spirv_spec.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/spirv_spec.zig
+@@ -195,6 +195,7 @@ pub const SelectionControl = struct {
+ 
+ pub const LoopControl = struct {
+     pub const None: u32 = 0;
++    pub const DontUnroll: u32 = 2;
+ };
+ 
+ pub const Opcode = struct {
+diff --git a/runtime/zig/src/compiler/wgsl/ir/ir_query.zig b/runtime/zig/src/compiler/wgsl/ir/ir_query.zig
+index 4a22cb593..5204a6b13 100644
+--- a/runtime/zig/src/compiler/wgsl/ir/ir_query.zig
++++ b/runtime/zig/src/compiler/wgsl/ir/ir_query.zig
+@@ -3,6 +3,12 @@ const std = @import("std");
+ const ir = @import("ir.zig");
+ const layout_utils = @import("layout_utils.zig");
+ 
++pub fn isComputeOnlyModule(module: *const ir.Module) bool {
++    if (module.entry_points.items.len == 0) return false;
++    for (module.entry_points.items) |entry| if (entry.stage != .compute) return false;
++    return true;
++}
++
+ pub fn resolveValueAlias(function: *const ir.Function, expr_id: ir.ExprId) ir.ExprId {
+     var current = expr_id;
+     while (true) {
+diff --git a/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig b/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig
+index ffddf15be..2350e8006 100644
+--- a/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig
++++ b/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig
+@@ -1,6 +1,7 @@
+ const std = @import("std");
+ const analysis = @import("analysis.zig");
+ const ir = @import("../ir/ir.zig");
++const ir_query = @import("../ir/ir_query.zig");
+ const float_fusion = @import("../ir/ir_transform_float_fusion.zig");
+ const ir_validate = @import("../ir/ir_validate.zig");
+ const build_options = @import("build_options");
+@@ -8,8 +9,7 @@ pub const emitter = @import("../emit/spirv/emit_spirv.zig");
+ pub const MAX_OUTPUT: usize = emitter.MAX_OUTPUT;
+ 
+ pub fn prepareComputeIrWithDiagnostic(module: *ir.Module, diagnostic: *analysis.Diagnostic) analysis.TranslateError!void {
+-    if (!build_options.spirv_compute_fuse_trailing_add or module.entry_points.items.len == 0) return;
+-    for (module.entry_points.items) |entry| if (entry.stage != .compute) return;
++    if (!build_options.spirv_compute_fuse_trailing_add or !ir_query.isComputeOnlyModule(module)) return;
+     _ = float_fusion.apply(module) catch |err| {
+         diagnostic.setLastErrorDetailPublic(.ir_transform, err, @errorName(err));
+         return err;
+diff --git a/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig b/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig
+index 1a13cdaa2..92982caf7 100644
+--- a/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig
++++ b/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig
+@@ -10,6 +10,48 @@ const allocator = testing.allocator;
+ const MAX_SPIRV_OUTPUT = mod.MAX_SPIRV_OUTPUT;
+ const translateToSpirv = mod.translateToSpirv;
+ 
++const DOT_LOOPS =
++    \\@group(0) @binding(0) var<storage, read> data: array<vec4<f32>>;
++    \\@group(0) @binding(1) var<storage, read_write> output: array<f32>;
++    \\fn reduce() -> f32 {
++    \\    var total = 0.0;
++    \\    for (var outer = 0u; outer < 2u; outer++) {
++    \\        for (var i = 0u; i < 16u; i++) {
++    \\            total = total + dot(data[i], data[i+1u]) + dot(data[i+2u], data[i+3u]);
++    \\        }
++    \\    }
++    \\    for (var i = 0u; i < 16u; i++) { total += dot(data[i], data[i+1u]); }
++    \\    return total;
++    \\}
++;
++
++test "spirv compute policy preserves innermost multiple-dot loops without changing other loops or stages" {
++    const cases = .{
++        .{ DOT_LOOPS ++ "@compute @workgroup_size(1) fn main() { output[0] = reduce(); }", @as(u32, 1) },
++        .{ DOT_LOOPS ++ "@fragment fn main() -> @location(0) vec4<f32> { return vec4<f32>(reduce()); }", @as(u32, 0) },
++        .{ DOT_LOOPS ++ "@compute @workgroup_size(1) fn main() { output[0] = reduce(); } @fragment fn fragment() -> @location(0) vec4<f32> { return vec4<f32>(reduce()); }", @as(u32, 0) },
++    };
++    inline for (cases) |case| {
++        var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
++        const len = try translateToSpirv(allocator, case[0], &binary);
++        var offset: usize = 5;
++        var preserved: u32 = 0;
++        var loops: u32 = 0;
++        while (offset < len / 4) {
++            const instruction = read_u32_le(&binary, offset * 4);
++            const word_count = instruction >> 16;
++            try testing.expect(word_count > 0);
++            if (@as(u16, @truncate(instruction)) == spirv.Opcode.LoopMerge) {
++                loops += 1;
++                if (read_u32_le(&binary, (offset + 3) * 4) == spirv.LoopControl.DontUnroll) preserved += 1;
++            }
++            offset += word_count;
++        }
++        try testing.expectEqual(@as(u32, 3), loops);
++        try testing.expectEqual(if (@import("build_options").spirv_compute_preserve_multi_dot_loops) case[1] else @as(u32, 0), preserved);
++    }
++}
++
+ fn read_u32_le(bytes: []const u8, offset: usize) u32 {
+     return std.mem.readInt(u32, @as(*const [4]u8, @ptrCast(bytes[offset .. offset + 4].ptr)), .little);
+ }

@@ -1,0 +1,9 @@
+[291.8ms][TestHarness] Initializing WebGPU...
+[GPU] amd rdna-3, f16/subgroups, 4.0GB, submit probe: 0.5ms
+[302.2ms][TestHarness] GPU: hasF16=true, hasSubgroups=true
+[302.3ms][TestHarness] Fetching manifest...
+[305.7ms][TestHarness] Model: transformer
+[306.3ms][TestHarness] Creating pipeline...
+[Doppler] Log level set to: ERROR
+[Doppler] Log level set to: INFO
+[1343.2ms][Pipeline] Unloaded

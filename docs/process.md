@@ -162,6 +162,10 @@ classified and cannot be promoted by benchmark results.
   allocation-failure tests and retained-package dispatch/readback regressions
   cover this distinction. This corrects compilation behind existing WGSL and
   WebGPU interfaces; descriptor and receipt schemas are unchanged.
+  Compute loop-control changes require unchanged model checkpoints and logits,
+  independent kernel reference checks, and tests that unaffected loops and
+  shader stages retain their controls. Numerical experiments must be separated
+  from retained-package qualification and performance evidence.
 - Native addon pass descriptors are checked against the runtime's pinned WebGPU
   header by `packages/doe-gpu/scripts/build-addon.js`; an ABI layout mismatch
   fails the build. Retained-package qualification exercises timestamp pass

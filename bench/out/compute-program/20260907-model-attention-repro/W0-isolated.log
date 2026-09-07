@@ -1,0 +1,6 @@
+Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+Warning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+W0 shader sha256 1cc3ee644b5a87cf21c94590edc98980af8779d9eb92d0ece086546dfcd2630c
+adapter {"subgroupMatrixConfigs":[{},{},{},{},{},{}]}
+output sha256 93e09b061ce514f4d3c78658d4dc938f5944a376401a85e727a2a3eea6fc7d31
+against retained model output {"changed":0,"maxAbsoluteError":0}

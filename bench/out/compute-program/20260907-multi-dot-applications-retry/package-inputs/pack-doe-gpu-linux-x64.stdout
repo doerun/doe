@@ -1,0 +1,51 @@
+[
+  {
+    "id": "doe-gpu-linux-x64@0.5.0",
+    "name": "doe-gpu-linux-x64",
+    "version": "0.5.0",
+    "size": 3179955,
+    "unpackedSize": 12011542,
+    "shasum": "223ac7ed94239b4643bf17fd79546868cc9ad9b1",
+    "integrity": "sha512-n8I/hfMLonRW1kLEjTGqoUvdD+GsYSoOUfkkXEnbLJV5GLdSqTm7/9AeXqbcvf5RL8udNh5+CcTpS01HS/TiAQ==",
+    "filename": "doe-gpu-linux-x64-0.5.0.tgz",
+    "files": [
+      {
+        "path": "LICENSE",
+        "size": 10773,
+        "mode": 420
+      },
+      {
+        "path": "bin/doe_napi.node",
+        "size": 436864,
+        "mode": 493
+      },
+      {
+        "path": "bin/doe-build-metadata.json",
+        "size": 422,
+        "mode": 420
+      },
+      {
+        "path": "bin/libwebgpu_doe.so",
+        "size": 11562632,
+        "mode": 493
+      },
+      {
+        "path": "bin/metadata.json",
+        "size": 143,
+        "mode": 420
+      },
+      {
+        "path": "index.js",
+        "size": 290,
+        "mode": 420
+      },
+      {
+        "path": "package.json",
+        "size": 418,
+        "mode": 420
+      }
+    ],
+    "entryCount": 7,
+    "bundled": []
+  }
+]

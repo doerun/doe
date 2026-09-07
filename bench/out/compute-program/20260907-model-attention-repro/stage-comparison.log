@@ -1,0 +1,9 @@
+score changed 3 first [770, 777, 778] maxAbs 9.5367431640625e-07
+exp changed 2 first [777, 778] maxAbs 7.450580596923828e-08
+sum changed 256 first [768, 769, 770, 771, 772, 773, 774, 775] maxAbs 1.1920928955078125e-07
+accum changed 171 first [768, 769, 773, 774, 775, 776, 777, 778] maxAbs 4.76837158203125e-07
+Traceback (most recent call last):
+  File "/home/x/deco/doe/bench/out/compute-program/20260907-model-attention-repro/capture-stages.py", line 45, in <module>
+    assert output.read_bytes() == (here / f'{lane}-model.f32').read_bytes(), ('dot-accum', lane)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('dot-accum', 'D0')

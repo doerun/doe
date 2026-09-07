@@ -98,6 +98,45 @@ try {
     } finally { await program.close(); }
   }
   console.log('ok: arithmetic transformation preserves dynamic operand order and evaluates each call once');
+  const dotWidth = 256;
+  const dotRows = 4;
+  const dotInputs = Float32Array.from({ length: dotWidth * (dotRows + 1) },
+    (_, i) => ((i * 37) % 127 - 63) / 32);
+  const dotExpected = Array.from({ length: dotRows }, (_, row) => {
+    let sum = 0;
+    for (let i = 0; i < dotWidth; i++) sum += dotInputs[i] * dotInputs[dotWidth * (row + 1) + i];
+    return sum;
+  });
+  const dotSearch = {
+    schemaVersion: 1, id: 'paired_dot_search',
+    buffers: [
+      { id: 'input', size: dotInputs.byteLength, type: 'storage', role: 'input' },
+      { id: 'output', size: dotRows * Float32Array.BYTES_PER_ELEMENT, type: 'storage', role: 'output' },
+    ],
+    shaders: [{ id: 'search', entryPoint: 'main', code: `
+      @group(0) @binding(0) var<storage, read> data: array<vec4<f32>>;
+      @group(0) @binding(1) var<storage, read_write> output: array<f32>;
+      @compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+        let base = (id.x + 1u) * ${dotWidth / 4}u;
+        var sum = 0.0;
+        for (var i = 0u; i < ${dotWidth / 4}u; i += 2u) {
+          sum = sum + dot(data[i], data[base+i]) + dot(data[i+1u], data[base+i+1u]);
+        }
+        output[id.x] = sum;
+      }` }],
+    steps: [{ shader: 'search', bindings: [
+      { binding: 0, buffer: 'input' }, { binding: 1, buffer: 'output' },
+    ], workgroups: [dotRows, 1, 1] }],
+    output: 'output',
+  };
+  for (const execution of ['webgpu', 'native-recorded', ...(process.platform === 'linux' ? ['gpu-recorded'] : [])]) {
+    const program = await prepareComputeProgram(device, dotSearch, { execution });
+    try {
+      const result = await program.run({ input: dotInputs });
+      assert.deepEqual([...new Float32Array(result.output.buffer)], dotExpected);
+    } finally { await program.close(); }
+  }
+  console.log('ok: paired dot-product search matches independent exact sums across execution modes');
   for (const [code, kind] of [
     ['// source line one\nnot valid WGSL', 'UnexpectedToken'],
     ['@compute @workgroup_size(1) fn main() {\n let value: u32 = missing_value;\n}', 'UnknownIdentifier'],

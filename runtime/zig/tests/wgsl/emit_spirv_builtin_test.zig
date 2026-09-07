@@ -10,6 +10,48 @@ const allocator = testing.allocator;
 const MAX_SPIRV_OUTPUT = mod.MAX_SPIRV_OUTPUT;
 const translateToSpirv = mod.translateToSpirv;
 
+const DOT_LOOPS =
+    \\@group(0) @binding(0) var<storage, read> data: array<vec4<f32>>;
+    \\@group(0) @binding(1) var<storage, read_write> output: array<f32>;
+    \\fn reduce() -> f32 {
+    \\    var total = 0.0;
+    \\    for (var outer = 0u; outer < 2u; outer++) {
+    \\        for (var i = 0u; i < 16u; i++) {
+    \\            total = total + dot(data[i], data[i+1u]) + dot(data[i+2u], data[i+3u]);
+    \\        }
+    \\    }
+    \\    for (var i = 0u; i < 16u; i++) { total += dot(data[i], data[i+1u]); }
+    \\    return total;
+    \\}
+;
+
+test "spirv compute policy preserves innermost multiple-dot loops without changing other loops or stages" {
+    const cases = .{
+        .{ DOT_LOOPS ++ "@compute @workgroup_size(1) fn main() { output[0] = reduce(); }", @as(u32, 1) },
+        .{ DOT_LOOPS ++ "@fragment fn main() -> @location(0) vec4<f32> { return vec4<f32>(reduce()); }", @as(u32, 0) },
+        .{ DOT_LOOPS ++ "@compute @workgroup_size(1) fn main() { output[0] = reduce(); } @fragment fn fragment() -> @location(0) vec4<f32> { return vec4<f32>(reduce()); }", @as(u32, 0) },
+    };
+    inline for (cases) |case| {
+        var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
+        const len = try translateToSpirv(allocator, case[0], &binary);
+        var offset: usize = 5;
+        var preserved: u32 = 0;
+        var loops: u32 = 0;
+        while (offset < len / 4) {
+            const instruction = read_u32_le(&binary, offset * 4);
+            const word_count = instruction >> 16;
+            try testing.expect(word_count > 0);
+            if (@as(u16, @truncate(instruction)) == spirv.Opcode.LoopMerge) {
+                loops += 1;
+                if (read_u32_le(&binary, (offset + 3) * 4) == spirv.LoopControl.DontUnroll) preserved += 1;
+            }
+            offset += word_count;
+        }
+        try testing.expectEqual(@as(u32, 3), loops);
+        try testing.expectEqual(if (@import("build_options").spirv_compute_preserve_multi_dot_loops) case[1] else @as(u32, 0), preserved);
+    }
+}
+
 fn read_u32_le(bytes: []const u8, offset: usize) u32 {
     return std.mem.readInt(u32, @as(*const [4]u8, @ptrCast(bytes[offset .. offset + 4].ptr)), .little);
 }

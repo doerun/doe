@@ -1,0 +1,127 @@
+{
+  "actualDecodeSteps": 4,
+  "artifactKind": "doppler_int4ple_decode_transcript",
+  "decodeStepsProduced": 4,
+  "decodeStepsRequested": 4,
+  "executionGraphSha256": "7ee28f72675261fdcf3261f125189a26291c16740daef79bcb2bae0bc66c26c3",
+  "generatedTokenIds": [
+    236769,
+    236776,
+    236768,
+    236743
+  ],
+  "generatedTokenIdsSha256": "880a8319ff3b076b1d7013636126cb97876d5738d9dc9d9fbcc5ce0305586335",
+  "inputSetSha256": "2d0b391fe246ea27fb4fe31dba1ddf6ab554ad77ee58d018fa65abebded59c9b",
+  "manifestSha256": "230104df762ff394095326d8e9fa4dc144d431bbd61ad5139e1030e66836ab78",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "promptTokenCount": 12,
+  "requestedDecodeSteps": 4,
+  "sampling": {
+    "padTokenId": 0,
+    "repetitionPenalty": 1,
+    "seed": 0,
+    "temperature": 0,
+    "topK": 1,
+    "topP": 1
+  },
+  "schemaVersion": 1,
+  "steps": [
+    {
+      "byteLength": 1048576,
+      "contextTokenCount": 12,
+      "dtype": "float32",
+      "path": "bench/out/compute-program/20260907-model-attention-repro/dont-unroll-model/final_logits.f32",
+      "phase": "prefill",
+      "preview": [
+        -13.468646049499512,
+        0.1735239028930664,
+        -4.954582691192627,
+        -16.027587890625,
+        0.29596415162086487,
+        -11.702917098999023,
+        -6.788572788238525,
+        -12.86109447479248
+      ],
+      "selectedText": "(",
+      "selectedTokenId": 236769,
+      "sha256": "39a673744aa323bed9828ffa893ac70f169572770beec01e378339255246d920",
+      "shape": [
+        262144
+      ],
+      "stepIndex": 0
+    },
+    {
+      "byteLength": 1048576,
+      "contextTokenCount": 13,
+      "dtype": "float32",
+      "path": "bench/out/compute-program/20260907-model-attention-repro/dont-unroll-model/logits_step_001.f32",
+      "phase": "decode",
+      "preview": [
+        -22.78078842163086,
+        -8.066815376281738,
+        -14.685748100280762,
+        -25.610727310180664,
+        0.5730622410774231,
+        -18.10987091064453,
+        -14.487197875976562,
+        -20.679521560668945
+      ],
+      "selectedText": "A",
+      "selectedTokenId": 236776,
+      "sha256": "daf147502c2d12f6d4185d64d3c3bd7a156a13c06fa9949409a2fae08f91c50b",
+      "shape": [
+        262144
+      ],
+      "stepIndex": 1
+    },
+    {
+      "byteLength": 1048576,
+      "contextTokenCount": 14,
+      "dtype": "float32",
+      "path": "bench/out/compute-program/20260907-model-attention-repro/dont-unroll-model/logits_step_002.f32",
+      "phase": "decode",
+      "preview": [
+        -19.33383560180664,
+        0.4440057873725891,
+        6.405732154846191,
+        -19.335498809814453,
+        2.623279094696045,
+        -16.148651123046875,
+        -12.863493919372559,
+        -18.285737991333008
+      ],
+      "selectedText": ")",
+      "selectedTokenId": 236768,
+      "sha256": "051275e12448849e409f687b352efc40c18e282ba6f183491ba2a1790b9b42c3",
+      "shape": [
+        262144
+      ],
+      "stepIndex": 2
+    },
+    {
+      "byteLength": 1048576,
+      "contextTokenCount": 15,
+      "dtype": "float32",
+      "path": "bench/out/compute-program/20260907-model-attention-repro/dont-unroll-model/logits_step_003.f32",
+      "phase": "decode",
+      "preview": [
+        -15.597495079040527,
+        -0.5828711986541748,
+        -0.8411736488342285,
+        -13.875775337219238,
+        2.211442232131958,
+        -9.576641082763672,
+        -4.323959827423096,
+        -7.457725524902344
+      ],
+      "selectedText": " ",
+      "selectedTokenId": 236743,
+      "sha256": "ce79e4034cc99603a57feea452c26c8da732f07f9369ee075896494fc89ae655",
+      "shape": [
+        262144
+      ],
+      "stepIndex": 3
+    }
+  ],
+  "stopReason": "decode_steps_exhausted"
+}

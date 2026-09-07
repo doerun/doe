@@ -1,0 +1,5 @@
+node-webgpu v0.4.0 and source-built v0.3.10 share Dawn c5d549e250b9225744929ae860b369cb4304a767 and identical index.js.
+The retained binary is the existing source-built control with the exact canonical Electron mapping patch.
+18a44f1e81cd3697156e7ddd3456e9f0d346a0afabb76588379b5b2f6dca50b4  index.js
+98359dec2b4778a82b61a4d6a643953bdd3995ab162e5ddfcc5d51df335479f9  dist/linux-x64.dawn.node
+818d603296f63c5a198db890eb9a88663492110c3e2659c9aceca4e423ee870d  source.patch
