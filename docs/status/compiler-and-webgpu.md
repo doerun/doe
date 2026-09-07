@@ -158,10 +158,11 @@ accounting and Vulkan qualification do not establish physical Metal behavior:
 The versioned SPIR-V policy preserves operand order, scalar fusion, and
 innermost loops containing multiple dot products. Retained Doe packages pass
 the frozen model numerical checks against the source-built Electron Dawn
-control. Its existing mapping correction transfers from HoloScript; the
+control through canonical qualification and loaded-library checks. Its existing
+mapping correction transfers from HoloScript; the
 unmodified npm control still fails at Electron's external-buffer boundary.
 Reproductions, independent kernel references, package checks, and control
-identities: `bench/out/compute-program/20260907-model-attention-repro/README.md`.
+identities: `bench/out/external-projects/doppler/20260907-multi-dot-p0-qualified/README.md`.
 This does not establish a model performance advantage or universal conformance.
 Earlier allocation/fusion corrections and unchanged resident simulation oracles
 remain at `bench/out/compute-program/20260905-resident-fusion-correction/`.
@@ -172,16 +173,14 @@ remain at `bench/out/compute-program/20260905-resident-fusion-correction/`.
   Vulkan, and D3D12/DXIL.
 - Browser-corpus and CTS-subset evidence exists, but it does not establish full
   WebGPU conformance or a general Doe-over-Tint claim.
-- The shared-contract WebGPU lane has transcript and parity plumbing but is not
-  green end to end for the promoted model path.
+- The retained model path passes its frozen oracle against explicitly selected
+  P0; this does not promote its shared-contract or performance release lanes.
 - TSIR status lives in [`tsir.md`](tsir.md).
 
 ## Active blockers
 
-- Close remaining WGSL semantic-analysis and backend-emission failures on real
-  downstream shaders.
-- Integrate the source-built Electron control into canonical model qualification
-  and retain its explicit patch, binary, and comparison provenance.
+- Extend accepted downstream shader coverage beyond the retained corpus;
+  universal shader support is not established by its passing result.
 - Publish broader CTS evidence before using conformance or replacement
   language.
 - Make compiler and runtime failure diagnostics preserve the original typed

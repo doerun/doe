@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gemma Electron qualification result",
+  "description": "Versioned result envelope. Application, source, model and provider metadata retain their external-project harness contracts; transcript semantics belong to the frozen model oracle.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactKind", "status", "runId", "comparisonBaseline", "packageQualification", "source", "model", "application", "supportTarget", "providers", "runs", "pass"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "artifactKind": { "const": "doe-gemma270m-electron-qualification-result" },
+    "status": { "enum": ["passed", "failed"] },
+    "runId": { "type": "string", "minLength": 1 },
+    "comparisonBaseline": { "enum": ["W0", "P0"] },
+    "packageQualification": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/hashBoundFile" }] },
+    "source": { "$ref": "#/$defs/harnessMetadata" },
+    "model": { "$ref": "#/$defs/harnessMetadata" },
+    "application": { "$ref": "#/$defs/harnessMetadata" },
+    "supportTarget": { "$ref": "#/$defs/harnessMetadata" },
+    "providers": {
+      "type": "object", "additionalProperties": false, "required": ["W0", "D0"],
+      "properties": {
+        "W0": { "$ref": "#/$defs/harnessMetadata" },
+        "D0": { "$ref": "#/$defs/harnessMetadata" }
+      }
+    },
+    "runs": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "W0": { "$ref": "#/$defs/run" }, "D0": { "$ref": "#/$defs/run" } }
+    },
+    "oracle": {
+      "type": "object", "additionalProperties": false, "required": ["path", "sha256", "status"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "status": { "enum": ["passed", "failed"] }
+      }
+    },
+    "failure": {
+      "type": "object", "additionalProperties": false, "required": ["stage", "message"],
+      "properties": { "stage": { "type": "string" }, "message": { "type": "string" } }
+    },
+    "pass": { "type": "boolean" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "comparisonBaseline": { "const": "P0" } } },
+      "then": { "properties": { "providers": { "properties": { "W0": { "required": ["sourceBuild"] } } } } }
+    },
+    {
+      "if": { "properties": { "pass": { "const": true } } },
+      "then": {
+        "required": ["oracle"],
+        "properties": {
+          "status": { "const": "passed" },
+          "oracle": { "properties": { "status": { "const": "passed" } } },
+          "runs": {
+            "required": ["W0", "D0"],
+            "properties": {
+              "W0": { "$ref": "#/$defs/completedRun" },
+              "D0": { "$ref": "#/$defs/completedRun" }
+            }
+          }
+        }
+      },
+      "else": { "properties": { "status": { "const": "failed" } } }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "hashBoundFile": {
+      "type": "object", "additionalProperties": false, "required": ["path", "sha256"],
+      "properties": { "path": { "type": "string", "minLength": 1 }, "sha256": { "$ref": "#/$defs/sha256" } }
+    },
+    "harnessMetadata": {
+      "description": "Pass-through metadata validated by external-project-harness.schema.json before execution; extensions retain that single authority.",
+      "type": "object", "additionalProperties": true
+    },
+    "completedRun": {
+      "required": ["nativeIdentity", "receiptPath", "receiptSha256"],
+      "properties": { "exitCode": { "const": 0 }, "signal": { "type": "null" }, "timedOut": { "const": false }, "outputLimitExceeded": { "const": false } }
+    },
+    "run": {
+      "type": "object", "additionalProperties": false,
+      "required": ["lane", "providerId", "wrapperPath", "wrapperSha256", "targetPath", "targetSha256", "command", "exitCode", "signal", "timedOut", "outputLimitExceeded", "elapsedNs", "stdoutPath", "stdoutSha256", "stderrPath", "stderrSha256"],
+      "properties": {
+        "lane": { "enum": ["W0", "D0"] },
+        "providerId": { "enum": ["dawn-node-webgpu", "doe-gpu"] },
+        "wrapperPath": { "type": "string" }, "wrapperSha256": { "$ref": "#/$defs/sha256" },
+        "targetPath": { "type": "string" }, "targetSha256": { "$ref": "#/$defs/sha256" },
+        "command": { "type": "array", "items": { "type": "string" } },
+        "exitCode": { "type": ["integer", "null"] }, "signal": { "type": ["string", "null"] },
+        "timedOut": { "type": "boolean" }, "outputLimitExceeded": { "type": "boolean" },
+        "elapsedNs": { "type": "number", "minimum": 0 },
+        "stdoutPath": { "type": "string" }, "stdoutSha256": { "$ref": "#/$defs/sha256" },
+        "stderrPath": { "type": "string" }, "stderrSha256": { "$ref": "#/$defs/sha256" },
+        "receiptPath": { "type": "string" }, "receiptSha256": { "$ref": "#/$defs/sha256" },
+        "nativeIdentity": { "$ref": "#/$defs/hashBoundFile" }
+      }
+    }
+  }
+}

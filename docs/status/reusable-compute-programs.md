@@ -185,7 +185,7 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
 - [x] Verify retained package hashes and clean Node, Bun, and Electron main-process
   installation. Run public C-boundary copy regressions against the retained
   native binary, including origins, untouched pixels, dimensions, and aspects.
-- [ ] Close demonstrated downstream shader and model failures with independent
+- [x] Close demonstrated downstream shader and model failures with independent
   accepted outputs; retain reproductions and cross-program regressions.
 - [ ] Measure prolonged sessions, native allocation retention, observed device
   memory, concurrency, and bounded cancellation/recovery. Distinguish sampled
@@ -199,12 +199,12 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
 
 Completed checks and bounded prolonged-session evidence are indexed at
 `bench/out/compute-program/20260907-linux-completion/README.md`. Driver-loss,
-full residency peaks, model acceptance, and fair comparisons remain distinct.
+full residency peaks, and fair comparisons remain distinct.
 The initializer correction and subsequent package verification are retained at
 `bench/out/compute-program/20260907-constant-initializers/README.md`.
-The dot-loop correction passes frozen model numerical checks against the
-source-built Electron control; canonical control admission remains separate:
-`bench/out/compute-program/20260907-model-attention-repro/README.md`.
+The dot-loop correction and explicitly selected source-built Electron control
+pass canonical model qualification with the retained package and loaded-library
+identity checks: `bench/out/external-projects/doppler/20260907-multi-dot-p0-qualified/README.md`.
 
 Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
 Large Deno ratios remain suspicious host-path observations until audited;

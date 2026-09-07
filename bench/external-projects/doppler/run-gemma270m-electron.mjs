@@ -8,7 +8,7 @@ import {
   stat,
   writeFile,
 } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { evaluateQualification } from './oracle.mjs';
@@ -19,6 +19,7 @@ const harnessPath = resolve(harnessDir, 'gemma270m-electron.harness.json');
 const exportTool = resolve(repoRoot, 'bench/tools/export_doppler_int4ple_reference.mjs');
 const timeoutMs = 7_200_000;
 const maxOutputBytes = 16 * 1024 * 1024;
+const packageInstallTimeoutMs = 120_000;
 
 function parseArgs(argv) {
   const values = {
@@ -26,6 +27,8 @@ function parseArgs(argv) {
     upstreamRoot: '',
     preparationReceipt: '',
     out: '',
+    incumbent: 'W0',
+    packageQualification: '',
   };
   for (let index = 2; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -34,6 +37,8 @@ function parseArgs(argv) {
       '--upstream-root': 'upstreamRoot',
       '--preparation-receipt': 'preparationReceipt',
       '--out': 'out',
+      '--incumbent': 'incumbent',
+      '--package-qualification': 'packageQualification',
     }[argument];
     if (!key) throw new Error(`unsupported argument: ${argument}`);
     const value = argv[index + 1];
@@ -42,8 +47,10 @@ function parseArgs(argv) {
     index += 1;
   }
   for (const [key, value] of Object.entries(values)) {
+    if (key === 'packageQualification') continue;
     if (!value) throw new Error(`${key} is required`);
   }
+  if (!['W0', 'P0'].includes(values.incumbent)) throw new Error('--incumbent must be W0 or P0');
   return values;
 }
 
@@ -89,6 +96,22 @@ async function requireHash(path, expected, label) {
     throw new Error(`${label} hash mismatch: expected ${expected}, received ${actual}`);
   }
   return actual;
+}
+
+export async function validateProviderIdentity(provider, repository, upstream) {
+  const targetRoot = provider.targetRoot === 'repo' ? repository : upstream;
+  const target = resolve(targetRoot, provider.target.path);
+  await requireHash(target, provider.target.sha256, `${provider.id} provider target`);
+  if (provider.sourceBuild) {
+    for (const key of ['patch', 'library', 'provenance']) {
+      const reference = provider.sourceBuild[key];
+      await requireHash(resolve(repository, reference.path), reference.sha256, `source-built ${key}`);
+    }
+    const loadedLibrary = resolve(dirname(target), 'dist', `${process.platform}-${process.arch}.dawn.node`);
+    if (await realpath(loadedLibrary) !== await realpath(resolve(repository, provider.sourceBuild.library.path))) {
+      throw new Error('Source-built library must be the native module loaded by the provider target');
+    }
+  }
 }
 
 function requireSuccess(result, label) {
@@ -180,13 +203,8 @@ async function validateContract(contract, upstreamRoot, preparationReceiptPath) 
   for (const [label, link] of repoLinks) {
     await requireHash(resolve(repoRoot, link.path), link.sha256, label);
   }
-  for (const [lane, provider] of Object.entries(contract.providers)) {
-    const targetRoot = provider.targetRoot === 'repo' ? repoRoot : upstreamRoot;
-    await requireHash(
-      resolve(targetRoot, provider.target.path),
-      provider.target.sha256,
-      `${lane} provider target`,
-    );
+  for (const provider of Object.values(contract.providers)) {
+    await validateProviderIdentity(provider, repoRoot, upstreamRoot);
   }
   return { manifest, manifestPath };
 }
@@ -308,11 +326,38 @@ async function main() {
   const outputPath = resolve(args.out);
   const runRoot = dirname(outputPath);
   const oraclePath = resolve(runRoot, 'oracle.json');
+  if ([outputPath, oraclePath, resolve(runRoot, 'lanes'), resolve(runRoot, 'package-admission')].some(existsSync)) {
+    throw new Error('Qualification output already exists; use a new run directory');
+  }
   const harness = await loadJson(harnessPath);
   const contract = {
     ...harness.workload.modelContract,
     upstreamCommit: harness.upstream.commit,
   };
+  const incumbent = contract.providers[args.incumbent];
+  if (!incumbent || (args.incumbent === 'P0' && !incumbent.sourceBuild)) {
+    throw new Error('Selected incumbent lacks its frozen provider and source-build contract');
+  }
+  contract.providers = { W0: incumbent, D0: contract.providers.D0 };
+  let packageQualification = null;
+  let qualifiedLibraryHash = null;
+  if (args.packageQualification) {
+    const qualification = await realpath(resolve(args.packageQualification));
+    const destination = resolve(runRoot, 'package-admission');
+    await mkdir(destination, { recursive: true });
+    const install = spawnSync('python3', ['-c',
+      'from pathlib import Path; import sys; from bench.lib.compute_program_package import install_qualification; print(install_qualification(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), int(sys.argv[4])))',
+      qualification, destination, repoRoot, String(packageInstallTimeoutMs)],
+    { cwd: repoRoot, encoding: 'utf8', timeout: packageInstallTimeoutMs, maxBuffer: maxOutputBytes });
+    requireSuccess(install, 'Retained model package installation');
+    const packageRoot = install.stdout.trim();
+    contract.providers.D0 = { ...contract.providers.D0,
+      target: { ...contract.providers.D0.target,
+        path: relative(repoRoot, resolve(packageRoot, 'src/compute.js')) } };
+    const retainedQualification = resolve(destination, 'package-inputs/summary.json');
+    packageQualification = { path: retainedQualification, sha256: await sha256File(retainedQualification) };
+    qualifiedLibraryHash = (await loadJson(retainedQualification)).hosts[0].libraryHash;
+  }
   const upstreamRoot = await realpath(resolve(args.upstreamRoot));
   const { manifestPath } = await validateContract(
     contract,
@@ -363,10 +408,12 @@ async function main() {
       || !existsSync(receiptPath)
     ) {
       await writeJson(outputPath, {
-        schemaVersion: 1,
+        schemaVersion: 2,
         artifactKind: 'doe-gemma270m-electron-qualification-result',
         status: 'failed',
         runId: args.runId,
+        comparisonBaseline: args.incumbent,
+        packageQualification,
         source: {
           repositoryUrl: harness.upstream.repositoryUrl,
           commit: contract.upstreamCommit,
@@ -396,15 +443,28 @@ async function main() {
     receipts[lane] = await loadJson(receiptPath);
     runs[lane].receiptPath = receiptPath;
     runs[lane].receiptSha256 = await sha256File(receiptPath);
+    const nativeIdentityPath = resolve(laneRoots[lane], 'native-identity.json');
+    const nativeIdentity = await loadJson(nativeIdentityPath);
+    if (!nativeIdentity.loaded || nativeIdentity.providerId !== contract.providers[lane].id) {
+      throw new Error(`${lane} did not load its selected native provider`);
+    }
+    const expectedHash = contract.providers[lane].sourceBuild?.library.sha256
+      ?? (lane === 'D0' ? qualifiedLibraryHash : nativeIdentity.library.sha256);
+    if (nativeIdentity.library.sha256 !== expectedHash) throw new Error(`${lane} loaded the wrong native library`);
+    await requireHash(nativeIdentity.library.path, expectedHash, `${lane} loaded native library`);
+    await validateProviderIdentity(contract.providers[lane], repoRoot, upstreamRoot);
+    runs[lane].nativeIdentity = { path: nativeIdentityPath, sha256: await sha256File(nativeIdentityPath) };
   }
 
   const oracle = await evaluateQualification({ contract, laneRoots, receipts });
   await writeJson(oraclePath, oracle);
   const result = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     artifactKind: 'doe-gemma270m-electron-qualification-result',
     status: oracle.pass ? 'passed' : 'failed',
     runId: args.runId,
+    comparisonBaseline: args.incumbent,
+    packageQualification,
     source: {
       repositoryUrl: harness.upstream.repositoryUrl,
       commit: contract.upstreamCommit,
@@ -434,7 +494,7 @@ async function main() {
   return oracle.pass ? 0 : 1;
 }
 
-main()
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()
   .then((code) => {
     process.exitCode = code;
   })

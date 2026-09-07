@@ -1,0 +1,257 @@
+{
+  "artifactKind": "doppler_manifest_execution_graph",
+  "execution": {
+    "decode": [
+      [
+        "input_norm",
+        "rmsnorm"
+      ],
+      [
+        "q_proj",
+        "gemv",
+        "layer.{L}.self_attn.q_proj"
+      ],
+      [
+        "k_proj",
+        "gemv",
+        "layer.{L}.self_attn.k_proj"
+      ],
+      [
+        "v_proj",
+        "gemv",
+        "layer.{L}.self_attn.v_proj"
+      ],
+      [
+        "rope_q",
+        "rope"
+      ],
+      [
+        "rope_k",
+        "rope"
+      ],
+      [
+        "attention",
+        "attn_decode"
+      ],
+      [
+        "o_proj",
+        "gemv",
+        "layer.{L}.self_attn.o_proj"
+      ],
+      [
+        "attn_residual",
+        "residual"
+      ],
+      [
+        "post_attn_norm",
+        "rmsnorm"
+      ],
+      [
+        "gate_proj",
+        "gemv",
+        "layer.{L}.mlp.gate_proj"
+      ],
+      [
+        "up_proj",
+        "gemv",
+        "layer.{L}.mlp.up_proj"
+      ],
+      [
+        "activation",
+        "gelu"
+      ],
+      [
+        "down_proj",
+        "gemv",
+        "layer.{L}.mlp.down_proj"
+      ],
+      [
+        "ffn_residual",
+        "residual"
+      ]
+    ],
+    "kernels": {
+      "attn_decode": {
+        "digest": "sha256:fa4a40535b2aa1389b0510329fb31675d4da50ddfdfbf1e8125c7213c7ffb525",
+        "entry": "main",
+        "kernel": "attention_decode_online_head256_f16kv.wgsl",
+        "precision": {
+          "kvDtype": "f16"
+        }
+      },
+      "attn_head256": {
+        "digest": "sha256:4ecdc079e322a770350414244cb383d72ae7ffa47ed620c64ff425c93413e97a",
+        "entry": "main",
+        "kernel": "attention_head256_f16kv.wgsl",
+        "precision": {
+          "kvDtype": "f16"
+        }
+      },
+      "attn_small": {
+        "digest": "sha256:ad3bb913c17167eb28fefc6abd24602ea0f148bc22a2b5f437eeffcc6f7fc668",
+        "entry": "main",
+        "kernel": "attention_small_f16kv.wgsl",
+        "precision": {
+          "kvDtype": "f16"
+        }
+      },
+      "embed": {
+        "digest": "sha256:4b12653c53247b32ebde7f6cf6a989d6248977e3816c761540b990b5f9818cb6",
+        "entry": "main",
+        "kernel": "gather.wgsl"
+      },
+      "gelu": {
+        "constants": {
+          "HAS_GATE": true
+        },
+        "digest": "sha256:7f8900b69de5107e4cf424cac0d4de1539591ece34e977ff30f6f7364460ab34",
+        "entry": "main",
+        "kernel": "gelu.wgsl"
+      },
+      "gemv": {
+        "digest": "sha256:2ea9aea659367210fbf61d922c0d4ee17cdac68ffb506b3bc5516e498071e011",
+        "entry": "main_vec4",
+        "kernel": "matmul_gemv_subgroup.wgsl"
+      },
+      "lm_head_gemv": {
+        "constants": {
+          "MULTICOL_COLS_PER_WG": 8,
+          "MULTICOL_THREADS_PER_COL": 32
+        },
+        "digest": "sha256:e41f94574d5ac54dd2710036da5d5acc643a483b79b2d74b86825efdaaa7438f",
+        "entry": "main_multicol",
+        "kernel": "matmul_gemv_subgroup.wgsl"
+      },
+      "residual": {
+        "digest": "sha256:abd19bc08ad668a7cad562e2bc0a4be1aa8827ad4300d8d474b7fc2af4c27117",
+        "entry": "main",
+        "kernel": "residual.wgsl"
+      },
+      "rmsnorm": {
+        "digest": "sha256:284d3efb0ad0991fc57ece5f634cbc8a931fcab36f193b2b6832561d4cc79ef1",
+        "entry": "main",
+        "kernel": "rmsnorm.wgsl"
+      },
+      "rope": {
+        "digest": "sha256:b2da9d396668981dab9794c2973b668279f768994466b083d2105730555e1a5b",
+        "entry": "main",
+        "kernel": "rope.wgsl"
+      },
+      "sample": {
+        "digest": "sha256:7ff3dd675b4737d920e0b3889e15c4fedde8410a353bbc6d4651db76ce69eb9b",
+        "entry": "sample_single_pass",
+        "kernel": "sample.wgsl"
+      },
+      "tiled": {
+        "digest": "sha256:e94ae5374e8b43dd48b663eff59a45c822c3784d5702a1145266b6ffd15ba78c",
+        "entry": "main",
+        "kernel": "matmul_f16w_f32a_tiled.wgsl"
+      }
+    },
+    "policies": {
+      "dtypeTransition": "require_cast_step",
+      "unresolvedKernel": "error",
+      "unsupportedPrecision": "error"
+    },
+    "postLayer": [
+      [
+        "final_norm",
+        "rmsnorm"
+      ],
+      [
+        "lm_head",
+        "lm_head_gemv",
+        "lm_head"
+      ],
+      [
+        "lm_head_prefill",
+        "tiled",
+        "lm_head"
+      ],
+      [
+        "sample",
+        "sample"
+      ]
+    ],
+    "preLayer": [
+      [
+        "embed",
+        "embed",
+        "embed_tokens"
+      ]
+    ],
+    "prefill": [
+      [
+        "input_norm",
+        "rmsnorm"
+      ],
+      [
+        "q_proj",
+        "tiled",
+        "layer.{L}.self_attn.q_proj"
+      ],
+      [
+        "k_proj",
+        "tiled",
+        "layer.{L}.self_attn.k_proj"
+      ],
+      [
+        "v_proj",
+        "tiled",
+        "layer.{L}.self_attn.v_proj"
+      ],
+      [
+        "rope_q",
+        "rope"
+      ],
+      [
+        "rope_k",
+        "rope"
+      ],
+      [
+        "attention",
+        "attn_head256"
+      ],
+      [
+        "o_proj",
+        "tiled",
+        "layer.{L}.self_attn.o_proj"
+      ],
+      [
+        "attn_residual",
+        "residual"
+      ],
+      [
+        "post_attn_norm",
+        "rmsnorm"
+      ],
+      [
+        "gate_proj",
+        "tiled",
+        "layer.{L}.mlp.gate_proj"
+      ],
+      [
+        "up_proj",
+        "tiled",
+        "layer.{L}.mlp.up_proj"
+      ],
+      [
+        "activation",
+        "gelu"
+      ],
+      [
+        "down_proj",
+        "tiled",
+        "layer.{L}.mlp.down_proj"
+      ],
+      [
+        "ffn_residual",
+        "residual"
+      ]
+    ]
+  },
+  "manifestSha256": "230104df762ff394095326d8e9fa4dc144d431bbd61ad5139e1030e66836ab78",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "schemaVersion": 1,
+  "source": "manifest.inference.execution"
+}

@@ -83,6 +83,33 @@ pinned monorepo can install and build its workspace before installing an
 isolated application fixture. The CLI schema-validates these fields and does
 not infer legacy defaults.
 
+Harness version 5 adds an optional, explicitly selected source-built `P0` model
+control. Version 4 manifests remain readable and cannot declare this control.
+The Gemma Electron runner defaults to `--incumbent W0`; `--incumbent P0` requires
+the declared source revision and hash-bound patch, native library, and provenance.
+The library must be the one loaded by the pinned provider entrypoint. There is
+no automatic fallback after an incumbent failure.
+
+For a retained-package model run, prepare the frozen harness, then run:
+
+```bash
+node bench/external-projects/doppler/run-gemma270m-electron.mjs \
+  --run-id <run-id> --upstream-root <prepared-upstream> \
+  --preparation-receipt <run-root>/preparation.json \
+  --out <run-root>/result.json --incumbent P0 \
+  --package-qualification <qualified-package-directory>/summary.json
+```
+
+Result version 2 records `comparisonBaseline` and a nullable hash-bound
+`packageQualification`. The oracle's historical `W0` slot means the explicitly
+named comparison baseline; it cannot be reported as unmodified npm W0 when P0
+was selected. Both Electron processes record their actually loaded native
+library before model execution. The result binds these identity sidecars and
+checks the selected control and qualified Doe library hashes after execution.
+The result envelope and native identity have registered schemas; model and
+provider metadata continue to use the harness contract and frozen oracle.
+Historical version 1 results are not rewritten or treated as version 2 evidence.
+
 The orchestration is manifest-driven. It bootstraps declared tools, captures
 tool versions, verifies physical hardware, clones or reuses the registry URL,
 checks out the exact registry commit, rejects local source changes, executes

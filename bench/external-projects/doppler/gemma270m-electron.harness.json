@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "artifactKind": "external-project-harness",
   "actorId": "doppler",
   "harnessId": "gemma270m-electron",
@@ -120,7 +120,7 @@
         },
         "entrypoint": {
           "path": "bench/external-projects/doppler/electron-app/main.mjs",
-          "sha256": "354b5921dcb928025250b50260559c8c6e86c251239ada16b67ec8951b3c4169"
+          "sha256": "6cefd4c5323c02f2656dba73be0db9d636dd43277d26544c47a4cdd97f14e418"
         }
       },
       "prompt": {
@@ -190,6 +190,34 @@
           "target": {
             "path": "packages/doe-gpu/src/compute.js",
             "sha256": "f0c7e4c93097a4960e91034f0a56f399ed702a250cf1bf38fb2afb5565b651a7"
+          }
+        },
+        "P0": {
+          "id": "dawn-node-webgpu",
+          "wrapper": {
+            "path": "bench/external-projects/doppler/provider-dawn.mjs",
+            "sha256": "61422ded8d5d3334dbe568be23a6ca3e41631a157ade8f4bf0132465c68a8d33"
+          },
+          "targetRoot": "repo",
+          "target": {
+            "path": "bench/out/compute-program/20260907-model-attention-repro/p0-provider/index.js",
+            "sha256": "18a44f1e81cd3697156e7ddd3456e9f0d346a0afabb76588379b5b2f6dca50b4"
+          },
+          "sourceBuild": {
+            "kind": "electron-owned-mappings-p0",
+            "sourceRevision": "c5d549e250b9225744929ae860b369cb4304a767",
+            "patch": {
+              "path": "bench/external-projects/holoscript-snn-webgpu/electron-node-webgpu-p0.patch",
+              "sha256": "818d603296f63c5a198db890eb9a88663492110c3e2659c9aceca4e423ee870d"
+            },
+            "library": {
+              "path": "bench/out/compute-program/20260907-model-attention-repro/p0-provider/dist/linux-x64.dawn.node",
+              "sha256": "98359dec2b4778a82b61a4d6a643953bdd3995ab162e5ddfcc5d51df335479f9"
+            },
+            "provenance": {
+              "path": "bench/out/compute-program/20260907-model-attention-repro/p0-provider/provenance.txt",
+              "sha256": "8cbed8f557b5cc55fae6a61792cb2fa19bb9dbcadd6d753b51b44012ddd6012b"
+            }
           }
         }
       }

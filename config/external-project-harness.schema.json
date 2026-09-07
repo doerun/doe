@@ -23,7 +23,7 @@
     "releasePolicy"
   ],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 4 },
+    "schemaVersion": { "type": "integer", "enum": [4, 5] },
     "artifactKind": { "type": "string", "const": "external-project-harness" },
     "actorId": { "$ref": "#/$defs/id" },
     "harnessId": { "$ref": "#/$defs/id" },
@@ -461,7 +461,19 @@
           "type": "string",
           "enum": ["repo", "upstream"]
         },
-        "target": { "$ref": "#/$defs/hashBoundPath" }
+        "target": { "$ref": "#/$defs/hashBoundPath" },
+        "sourceBuild": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "sourceRevision", "patch", "library", "provenance"],
+          "properties": {
+            "kind": { "const": "electron-owned-mappings-p0" },
+            "sourceRevision": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+            "patch": { "$ref": "#/$defs/hashBoundPath" },
+            "library": { "$ref": "#/$defs/hashBoundPath" },
+            "provenance": { "$ref": "#/$defs/hashBoundPath" }
+          }
+        }
       }
     },
     "modelArtifactSource": {
@@ -612,7 +624,13 @@
           "required": ["W0", "D0"],
           "properties": {
             "W0": { "$ref": "#/$defs/modelProviderIdentity" },
-            "D0": { "$ref": "#/$defs/modelProviderIdentity" }
+            "D0": { "$ref": "#/$defs/modelProviderIdentity" },
+            "P0": {
+              "allOf": [
+                { "$ref": "#/$defs/modelProviderIdentity" },
+                { "required": ["sourceBuild"] }
+              ]
+            }
           }
         }
       }
@@ -670,5 +688,49 @@
         "construction": { "type": "string", "minLength": 1 }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 4
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "workload": {
+            "properties": {
+              "modelContract": {
+                "properties": {
+                  "providers": {
+                    "properties": {
+                      "P0": {
+                        "not": {}
+                      },
+                      "W0": {
+                        "not": {
+                          "required": [
+                            "sourceBuild"
+                          ]
+                        }
+                      },
+                      "D0": {
+                        "not": {
+                          "required": [
+                            "sourceBuild"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

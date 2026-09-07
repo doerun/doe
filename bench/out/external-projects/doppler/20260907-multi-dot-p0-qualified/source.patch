@@ -1,0 +1,644 @@
+diff --git a/bench/external-projects/README.md b/bench/external-projects/README.md
+index 2126cbed7..72e331278 100644
+--- a/bench/external-projects/README.md
++++ b/bench/external-projects/README.md
+@@ -83,6 +83,33 @@ pinned monorepo can install and build its workspace before installing an
+ isolated application fixture. The CLI schema-validates these fields and does
+ not infer legacy defaults.
+ 
++Harness version 5 adds an optional, explicitly selected source-built `P0` model
++control. Version 4 manifests remain readable and cannot declare this control.
++The Gemma Electron runner defaults to `--incumbent W0`; `--incumbent P0` requires
++the declared source revision and hash-bound patch, native library, and provenance.
++The library must be the one loaded by the pinned provider entrypoint. There is
++no automatic fallback after an incumbent failure.
++
++For a retained-package model run, prepare the frozen harness, then run:
++
++```bash
++node bench/external-projects/doppler/run-gemma270m-electron.mjs \
++  --run-id <run-id> --upstream-root <prepared-upstream> \
++  --preparation-receipt <run-root>/preparation.json \
++  --out <run-root>/result.json --incumbent P0 \
++  --package-qualification <qualified-package-directory>/summary.json
++```
++
++Result version 2 records `comparisonBaseline` and a nullable hash-bound
++`packageQualification`. The oracle's historical `W0` slot means the explicitly
++named comparison baseline; it cannot be reported as unmodified npm W0 when P0
++was selected. Both Electron processes record their actually loaded native
++library before model execution. The result binds these identity sidecars and
++checks the selected control and qualified Doe library hashes after execution.
++The result envelope and native identity have registered schemas; model and
++provider metadata continue to use the harness contract and frozen oracle.
++Historical version 1 results are not rewritten or treated as version 2 evidence.
++
+ The orchestration is manifest-driven. It bootstraps declared tools, captures
+ tool versions, verifies physical hardware, clones or reuses the registry URL,
+ checks out the exact registry commit, rejects local source changes, executes
+diff --git a/bench/external-projects/doppler/electron-app/main.mjs b/bench/external-projects/doppler/electron-app/main.mjs
+index 4c3ca4620..1e7c06973 100644
+--- a/bench/external-projects/doppler/electron-app/main.mjs
++++ b/bench/external-projects/doppler/electron-app/main.mjs
+@@ -1,4 +1,7 @@
+ import 'electron';
++import { createHash } from 'node:crypto';
++import { readFile, realpath, writeFile } from 'node:fs/promises';
++import { dirname, resolve } from 'node:path';
+ import { pathToFileURL } from 'node:url';
+ 
+ const exportTool = process.env.DOE_DOPPLER_QUALIFICATION_EXPORT_TOOL;
+@@ -12,4 +15,20 @@ if (workloadArgsStart < 0) {
+ }
+ process.argv = [process.argv[0], exportTool, ...process.argv.slice(workloadArgsStart)];
+ 
++const wrapper = await import(pathToFileURL(process.env.DOPPLER_NODE_WEBGPU_MODULE).href);
++const provider = wrapper.__doeHarnessProviderIdentity;
++const nativePath = await realpath(provider.id === 'doe-gpu'
++  ? provider.providerInfo.doeLibraryPath
++  : resolve(dirname(provider.modulePath), 'dist', `${process.platform}-${process.arch}.dawn.node`));
++const loaded = process.report.getReport().sharedObjects.includes(nativePath);
++if (!loaded) throw new Error(`Selected provider library is not loaded: ${nativePath}`);
++const nativeIdentity = {
++  schemaVersion: 1,
++  providerId: provider.id,
++  library: { path: nativePath, sha256: createHash('sha256').update(await readFile(nativePath)).digest('hex') },
++  loaded,
++};
++const outputDirectory = process.argv[process.argv.indexOf('--out-dir') + 1];
++await writeFile(resolve(outputDirectory, 'native-identity.json'), `${JSON.stringify(nativeIdentity, null, 2)}\n`);
++
+ await import(pathToFileURL(exportTool).href);
+diff --git a/bench/external-projects/doppler/gemma270m-electron.harness.json b/bench/external-projects/doppler/gemma270m-electron.harness.json
+index 1bf73c1e0..05b12b69f 100644
+--- a/bench/external-projects/doppler/gemma270m-electron.harness.json
++++ b/bench/external-projects/doppler/gemma270m-electron.harness.json
+@@ -1,5 +1,5 @@
+ {
+-  "schemaVersion": 4,
++  "schemaVersion": 5,
+   "artifactKind": "external-project-harness",
+   "actorId": "doppler",
+   "harnessId": "gemma270m-electron",
+@@ -120,7 +120,7 @@
+         },
+         "entrypoint": {
+           "path": "bench/external-projects/doppler/electron-app/main.mjs",
+-          "sha256": "354b5921dcb928025250b50260559c8c6e86c251239ada16b67ec8951b3c4169"
++          "sha256": "6cefd4c5323c02f2656dba73be0db9d636dd43277d26544c47a4cdd97f14e418"
+         }
+       },
+       "prompt": {
+@@ -191,6 +191,34 @@
+             "path": "packages/doe-gpu/src/compute.js",
+             "sha256": "f0c7e4c93097a4960e91034f0a56f399ed702a250cf1bf38fb2afb5565b651a7"
+           }
++        },
++        "P0": {
++          "id": "dawn-node-webgpu",
++          "wrapper": {
++            "path": "bench/external-projects/doppler/provider-dawn.mjs",
++            "sha256": "61422ded8d5d3334dbe568be23a6ca3e41631a157ade8f4bf0132465c68a8d33"
++          },
++          "targetRoot": "repo",
++          "target": {
++            "path": "bench/out/compute-program/20260907-model-attention-repro/p0-provider/index.js",
++            "sha256": "18a44f1e81cd3697156e7ddd3456e9f0d346a0afabb76588379b5b2f6dca50b4"
++          },
++          "sourceBuild": {
++            "kind": "electron-owned-mappings-p0",
++            "sourceRevision": "c5d549e250b9225744929ae860b369cb4304a767",
++            "patch": {
++              "path": "bench/external-projects/holoscript-snn-webgpu/electron-node-webgpu-p0.patch",
++              "sha256": "818d603296f63c5a198db890eb9a88663492110c3e2659c9aceca4e423ee870d"
++            },
++            "library": {
++              "path": "bench/out/compute-program/20260907-model-attention-repro/p0-provider/dist/linux-x64.dawn.node",
++              "sha256": "98359dec2b4778a82b61a4d6a643953bdd3995ab162e5ddfcc5d51df335479f9"
++            },
++            "provenance": {
++              "path": "bench/out/compute-program/20260907-model-attention-repro/p0-provider/provenance.txt",
++              "sha256": "8cbed8f557b5cc55fae6a61792cb2fa19bb9dbcadd6d753b51b44012ddd6012b"
++            }
++          }
+         }
+       }
+     },
+diff --git a/bench/external-projects/doppler/run-gemma270m-electron.mjs b/bench/external-projects/doppler/run-gemma270m-electron.mjs
+index 0192b35c5..5d55eed98 100644
+--- a/bench/external-projects/doppler/run-gemma270m-electron.mjs
++++ b/bench/external-projects/doppler/run-gemma270m-electron.mjs
+@@ -8,7 +8,7 @@ import {
+   stat,
+   writeFile,
+ } from 'node:fs/promises';
+-import { dirname, resolve } from 'node:path';
++import { dirname, relative, resolve } from 'node:path';
+ import { fileURLToPath } from 'node:url';
+ 
+ import { evaluateQualification } from './oracle.mjs';
+@@ -19,6 +19,7 @@ const harnessPath = resolve(harnessDir, 'gemma270m-electron.harness.json');
+ const exportTool = resolve(repoRoot, 'bench/tools/export_doppler_int4ple_reference.mjs');
+ const timeoutMs = 7_200_000;
+ const maxOutputBytes = 16 * 1024 * 1024;
++const packageInstallTimeoutMs = 120_000;
+ 
+ function parseArgs(argv) {
+   const values = {
+@@ -26,6 +27,8 @@ function parseArgs(argv) {
+     upstreamRoot: '',
+     preparationReceipt: '',
+     out: '',
++    incumbent: 'W0',
++    packageQualification: '',
+   };
+   for (let index = 2; index < argv.length; index += 1) {
+     const argument = argv[index];
+@@ -34,6 +37,8 @@ function parseArgs(argv) {
+       '--upstream-root': 'upstreamRoot',
+       '--preparation-receipt': 'preparationReceipt',
+       '--out': 'out',
++      '--incumbent': 'incumbent',
++      '--package-qualification': 'packageQualification',
+     }[argument];
+     if (!key) throw new Error(`unsupported argument: ${argument}`);
+     const value = argv[index + 1];
+@@ -42,8 +47,10 @@ function parseArgs(argv) {
+     index += 1;
+   }
+   for (const [key, value] of Object.entries(values)) {
++    if (key === 'packageQualification') continue;
+     if (!value) throw new Error(`${key} is required`);
+   }
++  if (!['W0', 'P0'].includes(values.incumbent)) throw new Error('--incumbent must be W0 or P0');
+   return values;
+ }
+ 
+@@ -91,6 +98,22 @@ async function requireHash(path, expected, label) {
+   return actual;
+ }
+ 
++export async function validateProviderIdentity(provider, repository, upstream) {
++  const targetRoot = provider.targetRoot === 'repo' ? repository : upstream;
++  const target = resolve(targetRoot, provider.target.path);
++  await requireHash(target, provider.target.sha256, `${provider.id} provider target`);
++  if (provider.sourceBuild) {
++    for (const key of ['patch', 'library', 'provenance']) {
++      const reference = provider.sourceBuild[key];
++      await requireHash(resolve(repository, reference.path), reference.sha256, `source-built ${key}`);
++    }
++    const loadedLibrary = resolve(dirname(target), 'dist', `${process.platform}-${process.arch}.dawn.node`);
++    if (await realpath(loadedLibrary) !== await realpath(resolve(repository, provider.sourceBuild.library.path))) {
++      throw new Error('Source-built library must be the native module loaded by the provider target');
++    }
++  }
++}
++
+ function requireSuccess(result, label) {
+   if (result.status !== 0) {
+     throw new Error(
+@@ -180,13 +203,8 @@ async function validateContract(contract, upstreamRoot, preparationReceiptPath)
+   for (const [label, link] of repoLinks) {
+     await requireHash(resolve(repoRoot, link.path), link.sha256, label);
+   }
+-  for (const [lane, provider] of Object.entries(contract.providers)) {
+-    const targetRoot = provider.targetRoot === 'repo' ? repoRoot : upstreamRoot;
+-    await requireHash(
+-      resolve(targetRoot, provider.target.path),
+-      provider.target.sha256,
+-      `${lane} provider target`,
+-    );
++  for (const provider of Object.values(contract.providers)) {
++    await validateProviderIdentity(provider, repoRoot, upstreamRoot);
+   }
+   return { manifest, manifestPath };
+ }
+@@ -308,11 +326,38 @@ async function main() {
+   const outputPath = resolve(args.out);
+   const runRoot = dirname(outputPath);
+   const oraclePath = resolve(runRoot, 'oracle.json');
++  if ([outputPath, oraclePath, resolve(runRoot, 'lanes'), resolve(runRoot, 'package-admission')].some(existsSync)) {
++    throw new Error('Qualification output already exists; use a new run directory');
++  }
+   const harness = await loadJson(harnessPath);
+   const contract = {
+     ...harness.workload.modelContract,
+     upstreamCommit: harness.upstream.commit,
+   };
++  const incumbent = contract.providers[args.incumbent];
++  if (!incumbent || (args.incumbent === 'P0' && !incumbent.sourceBuild)) {
++    throw new Error('Selected incumbent lacks its frozen provider and source-build contract');
++  }
++  contract.providers = { W0: incumbent, D0: contract.providers.D0 };
++  let packageQualification = null;
++  let qualifiedLibraryHash = null;
++  if (args.packageQualification) {
++    const qualification = await realpath(resolve(args.packageQualification));
++    const destination = resolve(runRoot, 'package-admission');
++    await mkdir(destination, { recursive: true });
++    const install = spawnSync('python3', ['-c',
++      'from pathlib import Path; import sys; from bench.lib.compute_program_package import install_qualification; print(install_qualification(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), int(sys.argv[4])))',
++      qualification, destination, repoRoot, String(packageInstallTimeoutMs)],
++    { cwd: repoRoot, encoding: 'utf8', timeout: packageInstallTimeoutMs, maxBuffer: maxOutputBytes });
++    requireSuccess(install, 'Retained model package installation');
++    const packageRoot = install.stdout.trim();
++    contract.providers.D0 = { ...contract.providers.D0,
++      target: { ...contract.providers.D0.target,
++        path: relative(repoRoot, resolve(packageRoot, 'src/compute.js')) } };
++    const retainedQualification = resolve(destination, 'package-inputs/summary.json');
++    packageQualification = { path: retainedQualification, sha256: await sha256File(retainedQualification) };
++    qualifiedLibraryHash = (await loadJson(retainedQualification)).hosts[0].libraryHash;
++  }
+   const upstreamRoot = await realpath(resolve(args.upstreamRoot));
+   const { manifestPath } = await validateContract(
+     contract,
+@@ -363,10 +408,12 @@ async function main() {
+       || !existsSync(receiptPath)
+     ) {
+       await writeJson(outputPath, {
+-        schemaVersion: 1,
++        schemaVersion: 2,
+         artifactKind: 'doe-gemma270m-electron-qualification-result',
+         status: 'failed',
+         runId: args.runId,
++        comparisonBaseline: args.incumbent,
++        packageQualification,
+         source: {
+           repositoryUrl: harness.upstream.repositoryUrl,
+           commit: contract.upstreamCommit,
+@@ -396,15 +443,28 @@ async function main() {
+     receipts[lane] = await loadJson(receiptPath);
+     runs[lane].receiptPath = receiptPath;
+     runs[lane].receiptSha256 = await sha256File(receiptPath);
++    const nativeIdentityPath = resolve(laneRoots[lane], 'native-identity.json');
++    const nativeIdentity = await loadJson(nativeIdentityPath);
++    if (!nativeIdentity.loaded || nativeIdentity.providerId !== contract.providers[lane].id) {
++      throw new Error(`${lane} did not load its selected native provider`);
++    }
++    const expectedHash = contract.providers[lane].sourceBuild?.library.sha256
++      ?? (lane === 'D0' ? qualifiedLibraryHash : nativeIdentity.library.sha256);
++    if (nativeIdentity.library.sha256 !== expectedHash) throw new Error(`${lane} loaded the wrong native library`);
++    await requireHash(nativeIdentity.library.path, expectedHash, `${lane} loaded native library`);
++    await validateProviderIdentity(contract.providers[lane], repoRoot, upstreamRoot);
++    runs[lane].nativeIdentity = { path: nativeIdentityPath, sha256: await sha256File(nativeIdentityPath) };
+   }
+ 
+   const oracle = await evaluateQualification({ contract, laneRoots, receipts });
+   await writeJson(oraclePath, oracle);
+   const result = {
+-    schemaVersion: 1,
++    schemaVersion: 2,
+     artifactKind: 'doe-gemma270m-electron-qualification-result',
+     status: oracle.pass ? 'passed' : 'failed',
+     runId: args.runId,
++    comparisonBaseline: args.incumbent,
++    packageQualification,
+     source: {
+       repositoryUrl: harness.upstream.repositoryUrl,
+       commit: contract.upstreamCommit,
+@@ -434,7 +494,7 @@ async function main() {
+   return oracle.pass ? 0 : 1;
+ }
+ 
+-main()
++if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()
+   .then((code) => {
+     process.exitCode = code;
+   })
+diff --git a/bench/tests/test_doppler_gemma270m_electron_harness.py b/bench/tests/test_doppler_gemma270m_electron_harness.py
+index a1182cc4d..274c349ae 100644
+--- a/bench/tests/test_doppler_gemma270m_electron_harness.py
++++ b/bench/tests/test_doppler_gemma270m_electron_harness.py
+@@ -1,8 +1,10 @@
+ from __future__ import annotations
+ 
+ import copy
++import hashlib
+ import json
+ import subprocess
++import tempfile
+ import unittest
+ from pathlib import Path
+ 
+@@ -94,6 +96,7 @@ class DopplerGemma270mElectronHarnessTests(unittest.TestCase):
+         self.assertFalse(model["execution"]["useChatTemplate"])
+         self.assertEqual(model["providers"]["W0"]["id"], "dawn-node-webgpu")
+         self.assertEqual(model["providers"]["D0"]["id"], "doe-gpu")
++        self.assertEqual(model["providers"]["P0"]["sourceBuild"]["kind"], "electron-owned-mappings-p0")
+         self.assertEqual(
+             resolved["supportTargets"],
+             [
+@@ -108,6 +111,7 @@ class DopplerGemma270mElectronHarnessTests(unittest.TestCase):
+                 }
+             ],
+         )
++
+         self.assertEqual(
+             plan["outputs"]["preparationReceipt"],
+             "bench/out/external-projects/doppler/amd-gemma270m-qm0/preparation.json",
+@@ -132,6 +136,97 @@ class DopplerGemma270mElectronHarnessTests(unittest.TestCase):
+             ],
+         )
+ 
++    def test_source_built_control_requires_patch_and_native_identity(self) -> None:
++        for missing in ("patch", "library", "provenance", "sourceRevision"):
++            with self.subTest(missing=missing):
++                payload = copy.deepcopy(self.harness)
++                del payload["workload"]["modelContract"]["providers"]["P0"]["sourceBuild"][missing]
++                self.assertTrue(list(self.validator.iter_errors(payload)))
++
++    def test_unknown_incumbent_rejects_before_preparation_or_execution(self) -> None:
++        runner = REPO_ROOT / self.harness["workload"]["command"][1]
++        result = subprocess.run(
++            ["node", str(runner), "--run-id", "invalid-control", "--upstream-root", "/missing",
++             "--preparation-receipt", "/missing", "--out", "/missing", "--incumbent", "automatic"],
++            capture_output=True, text=True, check=False,
++        )
++        self.assertNotEqual(result.returncode, 0)
++        self.assertIn("--incumbent must be W0 or P0", result.stderr)
++
++    def test_p0_requires_versioned_opt_in(self) -> None:
++        payload = copy.deepcopy(self.harness)
++        payload["schemaVersion"] = 4
++        self.assertTrue(list(self.validator.iter_errors(payload)))
++        del payload["workload"]["modelContract"]["providers"]["P0"]
++        self.assertEqual(list(self.validator.iter_errors(payload)), [])
++
++    def test_interrupted_output_is_not_reused(self) -> None:
++        runner = REPO_ROOT / self.harness["workload"]["command"][1]
++        with tempfile.TemporaryDirectory() as directory:
++            root = Path(directory)
++            (root / "lanes").mkdir()
++            result = subprocess.run(
++                ["node", str(runner), "--run-id", "interrupted", "--upstream-root", "/missing",
++                 "--preparation-receipt", "/missing", "--out", str(root / "result.json")],
++                capture_output=True, text=True, check=False,
++            )
++            self.assertNotEqual(result.returncode, 0)
++            self.assertIn("Qualification output already exists", result.stderr)
++
++    def test_passing_result_requires_loaded_library_receipts_and_p0_provenance(self) -> None:
++        schema = json.loads((REPO_ROOT / "config/gemma270m-electron-qualification.schema.json").read_text())
++        validator = jsonschema.Draft202012Validator(schema)
++        # Use the retained physical result when available, without requiring GPU work in this test.
++        path = REPO_ROOT / "bench/out/external-projects/doppler/20260907-multi-dot-p0-qualified/result.json"
++        if not path.exists():
++            self.skipTest("retained physical model result unavailable")
++        result = json.loads(path.read_text())
++        self.assertEqual(list(validator.iter_errors(result)), [])
++        for removal in (("runs", "D0", "nativeIdentity"), ("providers", "W0", "sourceBuild")):
++            payload = copy.deepcopy(result)
++            del payload[removal[0]][removal[1]][removal[2]]
++            self.assertTrue(list(validator.iter_errors(payload)))
++        result["runs"]["D0"]["exitCode"] = 1
++        self.assertTrue(list(validator.iter_errors(result)))
++
++    def test_source_identity_rejects_changed_patch_and_unloaded_library(self) -> None:
++        runner = (REPO_ROOT / self.harness["workload"]["command"][1]).as_uri()
++        script = (
++            "const {validateProviderIdentity} = await import(process.argv[1]);"
++            "const provider = JSON.parse(process.argv[2]);"
++            "await validateProviderIdentity(provider, process.argv[3], process.argv[3]);"
++        )
++        with tempfile.TemporaryDirectory() as directory:
++            root = Path(directory)
++            def artifact(name: str, content: bytes) -> dict:
++                target = root / name
++                target.parent.mkdir(parents=True, exist_ok=True)
++                target.write_bytes(content)
++                return {"path": name, "sha256": hashlib.sha256(content).hexdigest()}
++
++            provider = {
++                "id": "dawn-node-webgpu", "targetRoot": "repo",
++                "target": artifact("index.js", b"provider"),
++                "sourceBuild": {
++                    "library": artifact("dist/linux-x64.dawn.node", b"native"),
++                    "patch": artifact("source.patch", b"patch"),
++                    "provenance": artifact("provenance.txt", b"source"),
++                },
++            }
++            def check() -> subprocess.CompletedProcess:
++                return subprocess.run(
++                    ["node", "--input-type=module", "-e", script, runner,
++                     json.dumps(provider), str(root)],
++                    capture_output=True, text=True, check=False,
++                )
++
++            self.assertEqual(check().returncode, 0)
++            (root / "source.patch").write_bytes(b"changed")
++            self.assertIn("source-built patch hash mismatch", check().stderr)
++            (root / "source.patch").write_bytes(b"patch")
++            provider["sourceBuild"]["library"] = artifact("unloaded.dawn.node", b"native")
++            self.assertIn("must be the native module loaded", check().stderr)
++
+ 
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/config/external-project-harness.schema.json b/config/external-project-harness.schema.json
+index 243b873bc..764093a0d 100644
+--- a/config/external-project-harness.schema.json
++++ b/config/external-project-harness.schema.json
+@@ -23,7 +23,7 @@
+     "releasePolicy"
+   ],
+   "properties": {
+-    "schemaVersion": { "type": "integer", "const": 4 },
++    "schemaVersion": { "type": "integer", "enum": [4, 5] },
+     "artifactKind": { "type": "string", "const": "external-project-harness" },
+     "actorId": { "$ref": "#/$defs/id" },
+     "harnessId": { "$ref": "#/$defs/id" },
+@@ -461,7 +461,19 @@
+           "type": "string",
+           "enum": ["repo", "upstream"]
+         },
+-        "target": { "$ref": "#/$defs/hashBoundPath" }
++        "target": { "$ref": "#/$defs/hashBoundPath" },
++        "sourceBuild": {
++          "type": "object",
++          "additionalProperties": false,
++          "required": ["kind", "sourceRevision", "patch", "library", "provenance"],
++          "properties": {
++            "kind": { "const": "electron-owned-mappings-p0" },
++            "sourceRevision": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
++            "patch": { "$ref": "#/$defs/hashBoundPath" },
++            "library": { "$ref": "#/$defs/hashBoundPath" },
++            "provenance": { "$ref": "#/$defs/hashBoundPath" }
++          }
++        }
+       }
+     },
+     "modelArtifactSource": {
+@@ -612,7 +624,13 @@
+           "required": ["W0", "D0"],
+           "properties": {
+             "W0": { "$ref": "#/$defs/modelProviderIdentity" },
+-            "D0": { "$ref": "#/$defs/modelProviderIdentity" }
++            "D0": { "$ref": "#/$defs/modelProviderIdentity" },
++            "P0": {
++              "allOf": [
++                { "$ref": "#/$defs/modelProviderIdentity" },
++                { "required": ["sourceBuild"] }
++              ]
++            }
+           }
+         }
+       }
+@@ -670,5 +688,49 @@
+         "construction": { "type": "string", "minLength": 1 }
+       }
+     }
+-  }
++  },
++  "allOf": [
++    {
++      "if": {
++        "properties": {
++          "schemaVersion": {
++            "const": 4
++          }
++        }
++      },
++      "then": {
++        "properties": {
++          "workload": {
++            "properties": {
++              "modelContract": {
++                "properties": {
++                  "providers": {
++                    "properties": {
++                      "P0": {
++                        "not": {}
++                      },
++                      "W0": {
++                        "not": {
++                          "required": [
++                            "sourceBuild"
++                          ]
++                        }
++                      },
++                      "D0": {
++                        "not": {
++                          "required": [
++                            "sourceBuild"
++                          ]
++                        }
++                      }
++                    }
++                  }
++                }
++              }
++            }
++          }
++        }
++      }
++    }
++  ]
+ }
+diff --git a/config/schema-targets.json b/config/schema-targets.json
+index 10c7d6504..333fbc964 100644
+--- a/config/schema-targets.json
++++ b/config/schema-targets.json
+@@ -1,6 +1,18 @@
+ {
+   "schemaVersion": 2,
+   "targets": [
++    {
++      "schema": "config/gemma270m-electron-qualification.schema.json",
++      "data": "bench/out/external-projects/doppler/20260907-multi-dot-p0-qualified/result.json"
++    },
++    {
++      "schema": "config/gemma270m-electron-native-identity.schema.json",
++      "data": "bench/out/external-projects/doppler/20260907-multi-dot-p0-qualified/lanes/W0/native-identity.json"
++    },
++    {
++      "schema": "config/gemma270m-electron-native-identity.schema.json",
++      "data": "bench/out/external-projects/doppler/20260907-multi-dot-p0-qualified/lanes/D0/native-identity.json"
++    },
+     {
+       "schema": "config/compute-program.schema.json",
+       "data": "bench/fixtures/program-candidate/batched-program.json"
+diff --git a/docs/process.md b/docs/process.md
+index 9567fd4d3..755841cdb 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -399,6 +399,11 @@ library identity, and common executor source are blocking checks. A workspace
+ library run cannot substitute for that installation evidence. Evaluation
+ artifact migration is documented in
+ [`reusable-compute-programs.md`](reusable-compute-programs.md).
++Electron model qualification also checks the libraries actually loaded by both
++providers. Source-built controls require explicit selection and retained patch,
++binary, and source provenance; their identity cannot inherit unmodified npm
++control claims. The versioned result and migration are documented in
++[`external project harnesses`](../bench/external-projects/README.md).
+ Portable qualification records resolve archive and evidence filenames against
+ their own retained directory. Relocation preserves hashes; it cannot rewrite
+ provenance or accept escaping paths. Verification checks every recorded input.
+diff --git a/docs/status/compiler-and-webgpu.md b/docs/status/compiler-and-webgpu.md
+index 43a9155de..e9d283383 100644
+--- a/docs/status/compiler-and-webgpu.md
++++ b/docs/status/compiler-and-webgpu.md
+@@ -158,10 +158,11 @@ accounting and Vulkan qualification do not establish physical Metal behavior:
+ The versioned SPIR-V policy preserves operand order, scalar fusion, and
+ innermost loops containing multiple dot products. Retained Doe packages pass
+ the frozen model numerical checks against the source-built Electron Dawn
+-control. Its existing mapping correction transfers from HoloScript; the
++control through canonical qualification and loaded-library checks. Its existing
++mapping correction transfers from HoloScript; the
+ unmodified npm control still fails at Electron's external-buffer boundary.
+ Reproductions, independent kernel references, package checks, and control
+-identities: `bench/out/compute-program/20260907-model-attention-repro/README.md`.
++identities: `bench/out/external-projects/doppler/20260907-multi-dot-p0-qualified/README.md`.
+ This does not establish a model performance advantage or universal conformance.
+ Earlier allocation/fusion corrections and unchanged resident simulation oracles
+ remain at `bench/out/compute-program/20260905-resident-fusion-correction/`.
+@@ -172,16 +173,14 @@ remain at `bench/out/compute-program/20260905-resident-fusion-correction/`.
+   Vulkan, and D3D12/DXIL.
+ - Browser-corpus and CTS-subset evidence exists, but it does not establish full
+   WebGPU conformance or a general Doe-over-Tint claim.
+-- The shared-contract WebGPU lane has transcript and parity plumbing but is not
+-  green end to end for the promoted model path.
++- The retained model path passes its frozen oracle against explicitly selected
++  P0; this does not promote its shared-contract or performance release lanes.
+ - TSIR status lives in [`tsir.md`](tsir.md).
+ 
+ ## Active blockers
+ 
+-- Close remaining WGSL semantic-analysis and backend-emission failures on real
+-  downstream shaders.
+-- Integrate the source-built Electron control into canonical model qualification
+-  and retain its explicit patch, binary, and comparison provenance.
++- Extend accepted downstream shader coverage beyond the retained corpus;
++  universal shader support is not established by its passing result.
+ - Publish broader CTS evidence before using conformance or replacement
+   language.
+ - Make compiler and runtime failure diagnostics preserve the original typed
+diff --git a/docs/status/reusable-compute-programs.md b/docs/status/reusable-compute-programs.md
+index 0c2b92c83..5d536614e 100644
+--- a/docs/status/reusable-compute-programs.md
++++ b/docs/status/reusable-compute-programs.md
+@@ -185,7 +185,7 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
+ - [x] Verify retained package hashes and clean Node, Bun, and Electron main-process
+   installation. Run public C-boundary copy regressions against the retained
+   native binary, including origins, untouched pixels, dimensions, and aspects.
+-- [ ] Close demonstrated downstream shader and model failures with independent
++- [x] Close demonstrated downstream shader and model failures with independent
+   accepted outputs; retain reproductions and cross-program regressions.
+ - [ ] Measure prolonged sessions, native allocation retention, observed device
+   memory, concurrency, and bounded cancellation/recovery. Distinguish sampled
+@@ -199,12 +199,12 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
+ 
+ Completed checks and bounded prolonged-session evidence are indexed at
+ `bench/out/compute-program/20260907-linux-completion/README.md`. Driver-loss,
+-full residency peaks, model acceptance, and fair comparisons remain distinct.
++full residency peaks, and fair comparisons remain distinct.
+ The initializer correction and subsequent package verification are retained at
+ `bench/out/compute-program/20260907-constant-initializers/README.md`.
+-The dot-loop correction passes frozen model numerical checks against the
+-source-built Electron control; canonical control admission remains separate:
+-`bench/out/compute-program/20260907-model-attention-repro/README.md`.
++The dot-loop correction and explicitly selected source-built Electron control
++pass canonical model qualification with the retained package and loaded-library
++identity checks: `bench/out/external-projects/doppler/20260907-multi-dot-p0-qualified/README.md`.
+ 
+ Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
+ Large Deno ratios remain suspicious host-path observations until audited;

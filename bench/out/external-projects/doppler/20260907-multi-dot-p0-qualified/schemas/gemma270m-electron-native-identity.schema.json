@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gemma Electron loaded native provider",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "providerId", "library", "loaded"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "providerId": { "enum": ["dawn-node-webgpu", "doe-gpu"] },
+    "library": {
+      "type": "object", "additionalProperties": false, "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "loaded": { "const": true }
+  }
+}
