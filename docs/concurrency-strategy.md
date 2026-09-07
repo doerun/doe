@@ -26,6 +26,32 @@ The runtime should converge on:
 This document owns the contract until the runtime exposes a replacement
 schema-backed object-thread classification surface.
 
+## Native addon ownership and migration
+
+Each N-API environment owns its cached JavaScript methods, promises, timeout,
+and device-callback lists. Native callbacks enqueue notifications; they do not
+mutate another environment's list. Environment cleanup unregisters native
+callbacks before Node finalizes their bridges. Cleanup ordering follows the
+[Node-API lifecycle contract](https://nodejs.org/api/n-api.html#finalization-on-the-exit-of-the-nodejs-environment).
+
+The addon initializes native symbols under a loader lock and retains the loaded
+library for its process lifetime. Repeated selection of that library reuses it;
+selecting a different library in the same addon fails explicitly. Use a separate
+process to compare different native builds. This replaces unsafe library reload
+and process-global JavaScript caches without changing public fields or schemas.
+Optional native symbols are resolved with the same initial symbol table.
+
+Device-loss registration replaces or unregisters the device's previous callback.
+Registry mutation is synchronized; notification detaches its entry before calling
+user code, allowing callback reentry. This does not make concurrent destruction
+of a device and application mutation of that same device a qualified operation.
+
+Current physical concurrency acceptance covers independent devices in Node
+workers, recreated environments, and a surviving parent device. It does not
+qualify arbitrary shared-device mutation, physical driver loss, or other hosts'
+worker implementations. Retained execution and failure artifacts are indexed in
+`bench/out/compute-program/20260907-async-pipeline-ownership/README.md`.
+
 ## Tooling I/O contexts
 
 Tooling and orchestration paths now have a separate explicit I/O seam in
@@ -45,7 +71,8 @@ explicit runtime threading model unless a separate architecture row changes it.
 1. bounded worker pool for CPU-side background jobs
 2. real background compute-pipeline creation through async ABI entrypoints
 3. real background render-pipeline creation through async ABI entrypoints
-4. single-flight deduplication for duplicate in-flight async pipeline requests via a shared runtime coordinator
+4. in-flight async request sharing after exact comparison of owned descriptions,
+   device and resource identities; hashes only select comparison candidates
 5. worker-delivered callback dispatch for queue/timeline completion paths via a shared runtime dispatcher
 6. queue-role policy surface for inference-oriented scheduling
 7. benchmark harness skeleton for concurrency evidence
@@ -54,10 +81,17 @@ explicit runtime threading model unless a separate architecture row changes it.
 
 1. make model warmup and upload preparation parallel by default
 2. add cache-backed background pipeline warmup for known model graphs
-3. connect async pipeline single-flight to persistent pipeline-cache hit/miss telemetry
+3. measure actual backend pipeline reuse during background warmup
 4. benchmark and tune worker-pool sizing per backend and workload class
 
 ## Evidence
+
+Async requests retain descriptor strings, constants, blends and resource leases
+until completion. Callbacks receive independent pipeline references; releasing
+an earlier callback's result cannot invalidate a later callback. Descriptor
+copy failures roll back through the request's allocator and report an error.
+Unsupported descriptor chains reject before scheduling. Creation markers are
+not compiled pipelines and no longer populate a separate process cache.
 
 Concurrency claims should be made only from benchmark artifacts that show:
 

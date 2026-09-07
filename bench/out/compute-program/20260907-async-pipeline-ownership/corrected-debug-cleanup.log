@@ -1,0 +1,3 @@
+callback status=1 pipeline=0x742f07fe0000 message=
+remaining DRM descriptors=0
+PASS: asynchronous render callback and final cleanup

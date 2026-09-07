@@ -1,0 +1,3 @@
+callback status=1 pipeline=0x754623de0000 message=
+remaining DRM descriptors=2
+reproduce: bench/out/compute-program/20260907-async-pipeline-ownership/reproduce.c:58: main: Assertion `drm == 0' failed.

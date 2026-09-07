@@ -1,0 +1,410 @@
+{
+  "actorId": "doppler",
+  "artifactKind": "external-project-preparation-receipt",
+  "artifacts": [
+    {
+      "id": "doe-package-module",
+      "path": "packages/doe-gpu/src/index.js",
+      "sha256": "dd74834f48d1659011fc5cec7428ed19d55db8ff4cb39bcb44263d3053228955",
+      "sizeBytes": 123
+    },
+    {
+      "id": "doe-build-metadata",
+      "path": "runtime/zig/zig-out/share/doe-build-metadata.json",
+      "sha256": "ceba8b2150bd17e852fcbf894bf251fd63d61180b9a1cd8af67a88b2ec223fcb",
+      "sizeBytes": 422
+    },
+    {
+      "id": "doe-node-addon",
+      "path": "packages/doe-gpu/build/Release/doe_napi.node",
+      "sha256": "4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66",
+      "sizeBytes": 424080
+    },
+    {
+      "id": "doe-native-library-linux",
+      "path": "runtime/zig/zig-out/lib/libwebgpu_doe.so",
+      "sha256": "1e6fb735b3e0e22351f59f9939eb738e888019ec3ff322b71b90d899c08bdf9e",
+      "sizeBytes": 11632368
+    },
+    {
+      "id": "harness-provider-module",
+      "path": "bench/external-projects/doppler/provider-doe.mjs",
+      "sha256": "b0b32da0a28f612b7d17531dbe9ae1d5917fa8c7caeddd5a30ea66dfa4d3809f",
+      "sizeBytes": 712
+    }
+  ],
+  "contracts": [
+    {
+      "id": "ecosystem-registry",
+      "path": "config/ecosystem-registry.json",
+      "sha256": "becf0a7df6a0fc334b50d8b89faeda86f2a2cffb95265b4b97e37c744bcfa580",
+      "sizeBytes": 66817
+    },
+    {
+      "id": "harness-manifest",
+      "path": "bench/external-projects/doppler/gemma270m-electron.harness.json",
+      "sha256": "67607f7f3b6a2b2009fce6c21617c1dfe94c6f2c2311581eaffe2c56c78ea444",
+      "sizeBytes": 13706
+    },
+    {
+      "id": "reproduction-policy",
+      "path": "config/external-project-reproduction-policy.json",
+      "sha256": "e1c1dfb669f2660adee3b90f5cb09b4894edc80dd260ad19396889aa46208cf7",
+      "sizeBytes": 4734
+    }
+  ],
+  "failure": null,
+  "generatedAt": "2026-09-07T18:25:55.770400Z",
+  "hardware": {
+    "probe": {
+      "command": [
+        "python3",
+        "-m",
+        "bench.runners.probe_vulkan_host_profile",
+        "--profile",
+        "linux_amd_vulkan"
+      ],
+      "elapsedNs": 64649835,
+      "exitCode": 0,
+      "id": "linux-vulkan-physical-adapter",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/06-linux-vulkan-physical-adapter.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/06-linux-vulkan-physical-adapter.stdout.log",
+      "stdoutSha256": "a859e494743a5e494bdf9138f3c1251959bee9c5287a5d49b9557e027a036a66",
+      "workingDirectory": "."
+    },
+    "prohibitedPatterns": [
+      "llvmpipe",
+      "SwiftShader",
+      "PHYSICAL_DEVICE_TYPE_CPU"
+    ],
+    "requiredPatterns": [
+      "PHYSICAL_DEVICE_TYPE_(?:INTEGRATED|DISCRETE)_GPU"
+    ],
+    "status": "passed"
+  },
+  "harnessId": "gemma270m-electron",
+  "host": {
+    "machine": "x86_64",
+    "operatingSystem": "Linux",
+    "platform": "linux",
+    "python": "3.14.4",
+    "release": "7.0.0-29-generic"
+  },
+  "receiptSha256": "06b3249cff80dbea00e0dd3a7f6d091545eaaada0ef7d4fe4fae1cbac6c9cafa",
+  "runId": "20260907-concurrent-p0-qualified",
+  "schemaVersion": 1,
+  "source": {
+    "actualCommit": "c27d1354b24f2ddfaaccd2742d1550a848db1931",
+    "clean": true,
+    "originUrl": "https://github.com/clocksmith/doppler",
+    "repositoryUrl": "https://github.com/clocksmith/doppler",
+    "requestedCommit": "c27d1354b24f2ddfaaccd2742d1550a848db1931",
+    "upstreamRoot": "bench/out/external-projects/doppler/upstream"
+  },
+  "status": "passed",
+  "steps": [
+    {
+      "command": [
+        "python3",
+        "bench/tools/bootstrap_zig.py"
+      ],
+      "elapsedNs": 58080775,
+      "exitCode": 0,
+      "id": "bootstrap-zig",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/01-bootstrap-zig.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/01-bootstrap-zig.stdout.log",
+      "stdoutSha256": "750a67896e9f544dc8c6b1e8d22d03ff8d5203af2b125a17b163cc82db6547cb",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=false",
+        "-c",
+        "core.fileMode=false",
+        "-C",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+        "status",
+        "--porcelain"
+      ],
+      "elapsedNs": 20031773,
+      "exitCode": 0,
+      "id": "verify-upstream-clean-before-checkout",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/07-verify-upstream-clean-before-checkout.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/07-verify-upstream-clean-before-checkout.stdout.log",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=false",
+        "-c",
+        "core.fileMode=false",
+        "-C",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+        "remote",
+        "get-url",
+        "origin"
+      ],
+      "elapsedNs": 945621,
+      "exitCode": 0,
+      "id": "verify-upstream-origin",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/08-verify-upstream-origin.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/08-verify-upstream-origin.stdout.log",
+      "stdoutSha256": "80d33e3c3bbc37b0e9270ae7eb8689b1b46f291aa1cd0f41ccff4f3a73e3b73e",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=false",
+        "-c",
+        "core.fileMode=false",
+        "-C",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+        "cat-file",
+        "-e",
+        "c27d1354b24f2ddfaaccd2742d1550a848db1931^{commit}"
+      ],
+      "elapsedNs": 1547394,
+      "exitCode": 0,
+      "id": "verify-pinned-commit-present",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/09-verify-pinned-commit-present.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/09-verify-pinned-commit-present.stdout.log",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=false",
+        "-c",
+        "core.fileMode=false",
+        "-C",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+        "checkout",
+        "--detach",
+        "c27d1354b24f2ddfaaccd2742d1550a848db1931"
+      ],
+      "elapsedNs": 32216498,
+      "exitCode": 0,
+      "id": "checkout-pinned-commit",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/10-checkout-pinned-commit.stderr.log",
+      "stderrSha256": "098a5f941a15cb889d8621ff2a827263e614da5415fa72b7f01da18d2e3fa3c2",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/10-checkout-pinned-commit.stdout.log",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=false",
+        "-c",
+        "core.fileMode=false",
+        "-C",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+        "rev-parse",
+        "HEAD"
+      ],
+      "elapsedNs": 901037,
+      "exitCode": 0,
+      "id": "verify-pinned-head",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/11-verify-pinned-head.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/11-verify-pinned-head.stdout.log",
+      "stdoutSha256": "6f614bd23d3df12507366709c0b394261cdbc4d42fd053cb77d38c7ccc5c3595",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.autocrlf=false",
+        "-c",
+        "core.fileMode=false",
+        "-C",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+        "status",
+        "--porcelain"
+      ],
+      "elapsedNs": 7863628,
+      "exitCode": 0,
+      "id": "verify-upstream-clean-after-checkout",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/12-verify-upstream-clean-after-checkout.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/12-verify-upstream-clean-after-checkout.stdout.log",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        "npm",
+        "ci",
+        "--include=optional"
+      ],
+      "elapsedNs": 7930562549,
+      "exitCode": 0,
+      "id": "install-doppler-dependencies",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/13-install-doppler-dependencies.stderr.log",
+      "stderrSha256": "e23dc8ea74f65a310920a690a167dfac7553f23b67679bdcc98653c1da8a1c20",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/13-install-doppler-dependencies.stdout.log",
+      "stdoutSha256": "7df2558ecd04c48ae310a349d2d184c68d60822f50b816a11afdca3c80ee84a8",
+      "workingDirectory": "bench/out/external-projects/doppler/upstream"
+    },
+    {
+      "command": [
+        "npm",
+        "install",
+        "--no-save",
+        "--package-lock=false",
+        "electron@43.4.0"
+      ],
+      "elapsedNs": 5897474255,
+      "exitCode": 0,
+      "id": "install-electron-runtime",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/14-install-electron-runtime.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/14-install-electron-runtime.stdout.log",
+      "stdoutSha256": "89c7d7f742db2169b9e7e2c2cddb7a262b7d1ae3193df2945f27c194f6e678ed",
+      "workingDirectory": "bench/out/external-projects/doppler/upstream"
+    },
+    {
+      "command": [
+        "node",
+        "node_modules/electron/install.js"
+      ],
+      "elapsedNs": 681142890,
+      "exitCode": 0,
+      "id": "install-electron-binary",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/15-install-electron-binary.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/15-install-electron-binary.stdout.log",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "workingDirectory": "bench/out/external-projects/doppler/upstream"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.fileMode=false",
+        "-C",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+        "status",
+        "--porcelain"
+      ],
+      "elapsedNs": 10279728,
+      "exitCode": 0,
+      "id": "verify-upstream-clean-after-install",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/16-verify-upstream-clean-after-install.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/16-verify-upstream-clean-after-install.stdout.log",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        "../../.tooling/zig-0.15.2/zig",
+        "build",
+        "dropin",
+        "-Doptimize=ReleaseFast"
+      ],
+      "elapsedNs": 107939807,
+      "exitCode": 0,
+      "id": "build-doe-dropin",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/17-build-doe-dropin.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/17-build-doe-dropin.stdout.log",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "workingDirectory": "runtime/zig"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "build:addon"
+      ],
+      "elapsedNs": 1182723849,
+      "exitCode": 0,
+      "id": "build-doe-node-addon-linux",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/18-build-doe-node-addon-linux.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/18-build-doe-node-addon-linux.stdout.log",
+      "stdoutSha256": "4ff3b44e68e9047a82e591bd51fee5cc530e7cf93e9c8ee7c1a7cfe842357ce8",
+      "workingDirectory": "packages/doe-gpu"
+    }
+  ],
+  "supportTarget": {
+    "claimEligible": false,
+    "status": "matched",
+    "targetId": "linux-x64-radeon-8060s-radv-26-0-3-electron-43-4-0"
+  },
+  "toolVersions": [
+    {
+      "command": [
+        "git",
+        "--version"
+      ],
+      "elapsedNs": 1403834,
+      "exitCode": 0,
+      "id": "git",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/02-git.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/02-git.stdout.log",
+      "stdoutSha256": "97452bcde974ef512f9552791fc4f6a3219a724877671fba270baca1a6075b74",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        "node",
+        "--version"
+      ],
+      "elapsedNs": 19852335,
+      "exitCode": 0,
+      "id": "node",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/03-node.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/03-node.stdout.log",
+      "stdoutSha256": "d757d43c53951704e32c04b9b1e6b4cc65713b659e72fcdbb02f5200675c7fd8",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        "npm",
+        "--version"
+      ],
+      "elapsedNs": 205803698,
+      "exitCode": 0,
+      "id": "npm",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/04-npm.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/04-npm.stdout.log",
+      "stdoutSha256": "1b9487d55bea47fea50d226cc9c53bc548877ad2a318bac8fbc8b320f429e5c5",
+      "workingDirectory": "."
+    },
+    {
+      "command": [
+        ".tooling/zig-0.15.2/zig",
+        "version"
+      ],
+      "elapsedNs": 4217412,
+      "exitCode": 0,
+      "id": "zig",
+      "stderrPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/05-zig.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/logs/preparation/05-zig.stdout.log",
+      "stdoutSha256": "355a2e14f6a7f2cb387d9d3b75a3550980d020ee1d005b139b62290c1645068a",
+      "workingDirectory": "."
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "providerId": "doe-gpu",
+  "library": {
+    "path": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/package-admission/installed-package/node_modules/doe-gpu-linux-x64/bin/libwebgpu_doe.so",
+    "sha256": "1e6fb735b3e0e22351f59f9939eb738e888019ec3ff322b71b90d899c08bdf9e"
+  },
+  "loaded": true
+}

@@ -300,6 +300,10 @@
         {
           "path": "tests/core/quirk_registry_build_test.zig",
           "kind": "integration"
+        },
+        {
+          "path": "src/dropin/wgpu_dropin_ext_a_pipeline.zig",
+          "kind": "inline"
         }
       ]
     },

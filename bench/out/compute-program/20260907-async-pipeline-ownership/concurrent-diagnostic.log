@@ -1,0 +1,6 @@
+{"phase":"entry","main":true}
+{"phase":"release-workers"}
+{"phase":"entry","main":false,"worker":2}
+{"phase":"entry","main":false,"worker":1}
+{"phase":"entry","main":false,"worker":0}
+{"phase":"entry","main":false,"worker":3}

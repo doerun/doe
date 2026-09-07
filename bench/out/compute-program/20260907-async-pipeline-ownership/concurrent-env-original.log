@@ -1,0 +1,19 @@
+{"worker":3,"generation":0,"execution":"webgpu","cycles":8,"runs":32,"status":"passed"}
+{"worker":1,"generation":0,"execution":"webgpu","cycles":8,"runs":32,"status":"passed"}
+{"worker":0,"generation":0,"execution":"webgpu","cycles":8,"runs":32,"status":"passed"}
+{"worker":2,"generation":0,"execution":"webgpu","cycles":8,"runs":32,"status":"passed"}
+{"worker":3,"generation":0,"execution":"native-recorded","cycles":8,"runs":32,"status":"passed"}
+{"worker":1,"generation":0,"execution":"native-recorded","cycles":8,"runs":32,"status":"passed"}
+{"worker":0,"generation":0,"execution":"native-recorded","cycles":8,"runs":32,"status":"passed"}
+{"worker":2,"generation":0,"execution":"native-recorded","cycles":8,"runs":32,"status":"passed"}
+
+
+#
+# Fatal error in , line 0
+# Check failed: maybe_code.has_value().
+#
+#
+#
+#FailureMessage Object: 0x7e122e091e70
+----- Native stack trace -----
+

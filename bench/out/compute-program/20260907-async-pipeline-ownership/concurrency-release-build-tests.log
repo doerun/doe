@@ -1,0 +1,133 @@
+Zig source architecture review signals:
+src/backend/vulkan/native_runtime.zig: 1004 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_render.zig: 981 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_resources.zig: 1069 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_upload.zig: 843 lines exceeds advisory review signal 800
+src/backend/vulkan/vulkan_surface.zig: 808 lines exceeds advisory review signal 800
+src/compiler/tsir/digest.zig: 999 lines exceeds advisory review signal 800
+src/compiler/tsir/emit_kernel_body.zig: 895 lines exceeds advisory review signal 800
+src/compiler/tsir/frontend.zig: 885 lines exceeds advisory review signal 800
+src/compiler/tsir/reference_extended_ops.zig: 841 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_exec_v1.zig: 989 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_compile_source.zig: 895 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_runtime.zig: 837 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_ir_walk.zig: 888 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_layout.zig: 911 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/msl/emit_msl_ir.zig: 976 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig: 839 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig: 1046 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/parser_expr.zig: 851 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/sema.zig: 806 lines exceeds advisory review signal 800
+src/compiler/wgsl/ir/ir_transform_robustness.zig: 984 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_proof_match.zig: 890 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_uniform_bounds.zig: 878 lines exceeds advisory review signal 800
+src/dropin/dropin_browser_shared_memory.zig: 806 lines exceeds advisory review signal 800
+src/native/compute/doe_compute_fast.zig: 1062 lines exceeds advisory review signal 800
+src/native/queue/doe_queue_submit_metal.zig: 837 lines exceeds advisory review signal 800
+src/native/resource/doe_texture_sampler_native.zig: 829 lines exceeds advisory review signal 800
+src/native/shader/doe_shader_native.zig: 956 lines exceeds advisory review signal 800
+src/native/vulkan/vulkan_compute_native.zig: 1039 lines exceeds advisory review signal 800
+src/runtime/trace/trace.zig: 879 lines exceeds advisory review signal 800
+src/spatial/csl/csl_host_plan_tool.zig: 828 lines exceeds advisory review signal 800
+test-full
++- run test stderr
+[default] (warn): doe: createShaderModule failed: unsupported sType 0xffffffff
+[default] (warn): doe: createComputePipeline failed: shader module is null or invalid. Ensure createShaderModule succeeded (check stderr for WGSL translation errors).
+[default] (warn): doe: createShaderModule failed: MTLLibrary creation returned null
+[default] (warn): doe_compute_preconditions: storage dispatch precondition failed: requiredBytes=3072 boundBytes=2047 kind=flat_index_2d_dispatch_x group=0 binding=1
+[default] (warn): doe_compute_preconditions: storage dispatch precondition failed: buffer missing group=0 binding=0
+
+Build Summary: 71/71 steps succeeded; 2192/2196 tests passed; 4 skipped
+test-full success
++- run python3 success 1s MaxRSS:14M
++- run python3 success 726ms MaxRSS:28M
++- run python3 success 40ms MaxRSS:22M
++- run python3 success 78ms MaxRSS:21M
++- run python3 success 64ms MaxRSS:21M
++- run python3 success 100ms MaxRSS:12M
++- run test 2192 passed 4 skipped 817ms MaxRSS:77M
+   +- compile test ReleaseFast native success 1m MaxRSS:1G
+      +- options cached
+install success
++- dropin success
+|  +- install webgpu_doe success
+|  |  +- compile lib webgpu_doe ReleaseFast native success 35s MaxRSS:697M
+|  |     +- options (reused)
+|  +- install generated to share/doe-build-metadata.json cached
+|     +- WriteFile doe-build-metadata.json cached
++- install onnxruntime_doe_ep cached
+|  +- compile lib onnxruntime_doe_ep ReleaseFast native cached 18ms MaxRSS:36M
++- install doe-ort-ep-smoke cached
+|  +- compile exe doe-ort-ep-smoke ReleaseFast native cached 15ms MaxRSS:37M
++- install doe-ort-ep-session-smoke cached
+|  +- compile exe doe-ort-ep-session-smoke ReleaseFast native cached 25ms MaxRSS:35M
++- install doe-ort-incumbent-session-smoke cached
+|  +- compile exe doe-ort-incumbent-session-smoke ReleaseFast native cached 25ms MaxRSS:35M
++- install doe-zig-runtime success
+|  +- compile exe doe-zig-runtime ReleaseFast native success 49s MaxRSS:898M
+|     +- options (reused)
++- module-core-runner success
+|  +- install module-core-runner success
+|     +- compile exe module-core-runner ReleaseFast native success 11s MaxRSS:280M
+|        +- options (reused)
++- emit-msl success
+|  +- install doe-emit-msl success
+|     +- compile exe doe-emit-msl ReleaseFast native success 13s MaxRSS:339M
+|        +- options (reused)
++- emit-ir-digest success
+|  +- install doe-emit-ir-digest success
+|     +- compile exe doe-emit-ir-digest ReleaseFast native success 11s MaxRSS:326M
+|        +- options (reused)
++- emit-csl success
+|  +- install doe-emit-csl success
+|     +- compile exe doe-emit-csl ReleaseFast native success 17s MaxRSS:401M
+|        +- options (reused)
++- emit-tsir-attention-canary success
+|  +- install doe-emit-tsir-attention-canary success
+|     +- compile exe doe-emit-tsir-attention-canary ReleaseFast native success 4s MaxRSS:217M
+|        +- options (reused)
++- emit-hlsl success
+|  +- install doe-emit-hlsl success
+|     +- compile exe doe-emit-hlsl ReleaseFast native success 12s MaxRSS:332M
+|        +- options (reused)
++- emit-dxil success
+|  +- install doe-emit-dxil success
+|     +- compile exe doe-emit-dxil ReleaseFast native success 11s MaxRSS:320M
+|        +- options (reused)
++- emit-spirv success
+|  +- install doe-emit-spirv success
+|     +- compile exe doe-emit-spirv ReleaseFast native success 15s MaxRSS:372M
+|        +- options (reused)
++- webgpu-plan-executor success
+|  +- install webgpu-plan-executor success
+|     +- compile exe webgpu-plan-executor ReleaseFast native success 5s MaxRSS:225M
+|        +- options (reused)
++- doe-plan-executor success
+|  +- install doe-plan-executor success
+|     +- compile exe doe-plan-executor ReleaseFast native success 26s MaxRSS:566M
+|        +- options (reused)
++- csl-sim-runner success
+|  +- install doe-csl-sim-runner success
+|     +- compile exe doe-csl-sim-runner ReleaseFast native success 4s MaxRSS:189M
+|        +- options (reused)
++- csl-bundle-emitter success
+|  +- install doe-csl-bundle-emitter success
+|     +- compile exe doe-csl-bundle-emitter ReleaseFast native success 17s MaxRSS:402M
+|        +- options (reused)
++- csl-host-plan-tool success
+|  +- install doe-csl-host-plan-tool success
+|     +- compile exe doe-csl-host-plan-tool ReleaseFast native success 24s MaxRSS:491M
+|        +- options (reused)
++- tsir-bootstrap-manifest-inputs success
+|  +- install doe-tsir-bootstrap-manifest-inputs success
+|     +- compile exe doe-tsir-bootstrap-manifest-inputs ReleaseFast native success 13s MaxRSS:330M
+|        +- options (reused)
++- tsir-bootstrap-oracle success
+|  +- install doe-tsir-bootstrap-oracle success
+|     +- compile exe doe-tsir-bootstrap-oracle ReleaseFast native success 8s MaxRSS:255M
+|        +- options (reused)
++- run python3 (reused)
++- run python3 (reused)
++- run python3 (reused)
++- run python3 (reused)
+

@@ -1,5 +1,13 @@
 # Reusable compute programs
 
+## Concurrent native ownership
+
+Independent Node workers now have isolated addon state and a stable native
+library binding. Async pipeline snapshots, callback leases, and worker startup
+have allocation-failure coverage. Public C and retained-package acceptance are
+indexed at `bench/out/compute-program/20260907-async-pipeline-ownership/README.md`.
+Shared-device mutation and physical driver loss remain outside this evidence.
+
 ## Bounded candidate development
 
 `bench/cli.py program candidate` accepts candidate WGSL against a separately

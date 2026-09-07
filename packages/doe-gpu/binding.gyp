@@ -4,6 +4,7 @@
       "target_name": "doe_napi",
       "sources": [
         "../../runtime/bridge/webgpu-addon/doe_napi_globals.c",
+        "../../runtime/bridge/webgpu-addon/doe_napi_env.c",
         "../../runtime/bridge/webgpu-addon/doe_napi_helpers.c",
         "../../runtime/bridge/webgpu-addon/doe_napi_instance.c",
         "../../runtime/bridge/webgpu-addon/doe_napi_buffer.c",

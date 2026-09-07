@@ -1,0 +1,13 @@
+{"worker":1,"execution":"webgpu","cycles":8,"runs":32,"status":"passed"}
+{"worker":3,"execution":"webgpu","cycles":8,"runs":32,"status":"passed"}
+{"worker":0,"execution":"webgpu","cycles":8,"runs":32,"status":"passed"}
+{"worker":2,"execution":"webgpu","cycles":8,"runs":32,"status":"passed"}
+{"worker":1,"execution":"native-recorded","cycles":8,"runs":32,"status":"passed"}
+{"worker":3,"execution":"native-recorded","cycles":8,"runs":32,"status":"passed"}
+{"worker":2,"execution":"native-recorded","cycles":8,"runs":32,"status":"passed"}
+{"worker":0,"execution":"native-recorded","cycles":8,"runs":32,"status":"passed"}
+{"worker":1,"execution":"gpu-recorded","cycles":8,"runs":32,"status":"passed"}
+{"worker":2,"execution":"gpu-recorded","cycles":8,"runs":32,"status":"passed"}
+{"worker":0,"execution":"gpu-recorded","cycles":8,"runs":32,"status":"passed"}
+{"worker":3,"execution":"gpu-recorded","cycles":8,"runs":32,"status":"passed"}
+PASS: concurrent isolated devices, repeated creation, accepted outputs, and teardown

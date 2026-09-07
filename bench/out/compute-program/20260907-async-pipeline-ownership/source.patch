@@ -1,0 +1,3084 @@
+diff --git a/bench/runners/qualify_compute_program_package.py b/bench/runners/qualify_compute_program_package.py
+index cd17424ca..0e3b9215e 100644
+--- a/bench/runners/qualify_compute_program_package.py
++++ b/bench/runners/qualify_compute_program_package.py
+@@ -57,8 +57,16 @@ def main() -> int:
+                    if not key.startswith('DOE_') and key not in ('NODE_PATH', 'NODE_OPTIONS', 'ELECTRON_RUN_AS_NODE')}
+ 
+     def run(command: list[str], cwd: Path, label: str, extra: dict[str, str] | None = None) -> str:
+-        result = subprocess.run(command, cwd=cwd, env={**environment, **(extra or {})},
+-                                capture_output=True, text=True, check=False, timeout=args.timeout_ms / 1000)
++        try:
++            result = subprocess.run(command, cwd=cwd, env={**environment, **(extra or {})},
++                                    capture_output=True, text=True, check=False, timeout=args.timeout_ms / 1000)
++        except subprocess.TimeoutExpired as error:
++            for stream in ['stdout', 'stderr']:
++                value = getattr(error, stream) or ''
++                if isinstance(value, bytes):
++                    value = value.decode('utf-8', errors='replace')
++                (output / f'{label}.{stream}').write_text(value)
++            raise
+         (output / f'{label}.stdout').write_text(result.stdout)
+         (output / f'{label}.stderr').write_text(result.stderr)
+         validate_process_result(result, label)
+@@ -114,6 +122,8 @@ def main() -> int:
+                     regressions.append(('resources', 'native-resource-retention'))
+                 if host == 'node':
+                     regressions.append(('live-simulation', 'live-simulation'))
++                    if args.platform_package == 'doe-gpu-linux-x64':
++                        regressions.append(('concurrent-devices', 'native-concurrent-devices'))
+                 helper = (ROOT / 'packages/doe-gpu/test/integration/native-addon-test-helper.js').read_text()
+                 for original, replacement in replacements.items():
+                     helper = helper.replace(original, replacement)
+diff --git a/config/zig-test-inventory.json b/config/zig-test-inventory.json
+index efdc92c99..c7cb1d237 100644
+--- a/config/zig-test-inventory.json
++++ b/config/zig-test-inventory.json
+@@ -300,6 +300,10 @@
+         {
+           "path": "tests/core/quirk_registry_build_test.zig",
+           "kind": "integration"
++        },
++        {
++          "path": "src/dropin/wgpu_dropin_ext_a_pipeline.zig",
++          "kind": "inline"
+         }
+       ]
+     },
+diff --git a/docs/concurrency-strategy.md b/docs/concurrency-strategy.md
+index 1caa3e34e..b47a5a3de 100644
+--- a/docs/concurrency-strategy.md
++++ b/docs/concurrency-strategy.md
+@@ -26,6 +26,32 @@ The runtime should converge on:
+ This document owns the contract until the runtime exposes a replacement
+ schema-backed object-thread classification surface.
+ 
++## Native addon ownership and migration
++
++Each N-API environment owns its cached JavaScript methods, promises, timeout,
++and device-callback lists. Native callbacks enqueue notifications; they do not
++mutate another environment's list. Environment cleanup unregisters native
++callbacks before Node finalizes their bridges. Cleanup ordering follows the
++[Node-API lifecycle contract](https://nodejs.org/api/n-api.html#finalization-on-the-exit-of-the-nodejs-environment).
++
++The addon initializes native symbols under a loader lock and retains the loaded
++library for its process lifetime. Repeated selection of that library reuses it;
++selecting a different library in the same addon fails explicitly. Use a separate
++process to compare different native builds. This replaces unsafe library reload
++and process-global JavaScript caches without changing public fields or schemas.
++Optional native symbols are resolved with the same initial symbol table.
++
++Device-loss registration replaces or unregisters the device's previous callback.
++Registry mutation is synchronized; notification detaches its entry before calling
++user code, allowing callback reentry. This does not make concurrent destruction
++of a device and application mutation of that same device a qualified operation.
++
++Current physical concurrency acceptance covers independent devices in Node
++workers, recreated environments, and a surviving parent device. It does not
++qualify arbitrary shared-device mutation, physical driver loss, or other hosts'
++worker implementations. Retained execution and failure artifacts are indexed in
++`bench/out/compute-program/20260907-async-pipeline-ownership/README.md`.
++
+ ## Tooling I/O contexts
+ 
+ Tooling and orchestration paths now have a separate explicit I/O seam in
+@@ -45,7 +71,8 @@ explicit runtime threading model unless a separate architecture row changes it.
+ 1. bounded worker pool for CPU-side background jobs
+ 2. real background compute-pipeline creation through async ABI entrypoints
+ 3. real background render-pipeline creation through async ABI entrypoints
+-4. single-flight deduplication for duplicate in-flight async pipeline requests via a shared runtime coordinator
++4. in-flight async request sharing after exact comparison of owned descriptions,
++   device and resource identities; hashes only select comparison candidates
+ 5. worker-delivered callback dispatch for queue/timeline completion paths via a shared runtime dispatcher
+ 6. queue-role policy surface for inference-oriented scheduling
+ 7. benchmark harness skeleton for concurrency evidence
+@@ -54,11 +81,18 @@ explicit runtime threading model unless a separate architecture row changes it.
+ 
+ 1. make model warmup and upload preparation parallel by default
+ 2. add cache-backed background pipeline warmup for known model graphs
+-3. connect async pipeline single-flight to persistent pipeline-cache hit/miss telemetry
++3. measure actual backend pipeline reuse during background warmup
+ 4. benchmark and tune worker-pool sizing per backend and workload class
+ 
+ ## Evidence
+ 
++Async requests retain descriptor strings, constants, blends and resource leases
++until completion. Callbacks receive independent pipeline references; releasing
++an earlier callback's result cannot invalidate a later callback. Descriptor
++copy failures roll back through the request's allocator and report an error.
++Unsupported descriptor chains reject before scheduling. Creation markers are
++not compiled pipelines and no longer populate a separate process cache.
++
+ Concurrency claims should be made only from benchmark artifacts that show:
+ 
+ 1. cold-start latency
+diff --git a/docs/process.md b/docs/process.md
+index 755841cdb..712807ced 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -215,6 +215,16 @@ classified and cannot be promoted by benchmark results.
+   resource references must keep required backend cleanup valid.
+   Linux retained-package qualification executes the DRM regression in every
+   controlled host, covering timestamp scratch allocations and labeled queues.
++- Async pipeline requests own all deferred descriptor data and native resources.
++  Allocation and worker-start failures must unwind without losing joined callbacks.
++  Hash collisions require exact descriptor comparison; callback results receive
++  independent leases. The public C async fixture checks validation, release during
++  callbacks, caller teardown, and eventual device cleanup against the retained
++  library. Linux package qualification also checks isolated Node workers through
++  ordinary, recorded, and native-direct execution, including environment recreation
++  while a parent device remains usable. Native symbols stay bound to one loaded
++  library per addon; JavaScript references and callback lists belong to their N-API
++  environment. These repairs preserve existing public fields and receipt schemas.
+ - Native command lifetime tests release caller-owned compute state and copy
+   resources before deferred use. Recording must preserve those references
+   through finish and submission, release abandoned state, and unwind failed
+diff --git a/docs/status/reusable-compute-programs.md b/docs/status/reusable-compute-programs.md
+index 5d536614e..689bdbaf8 100644
+--- a/docs/status/reusable-compute-programs.md
++++ b/docs/status/reusable-compute-programs.md
+@@ -1,5 +1,13 @@
+ # Reusable compute programs
+ 
++## Concurrent native ownership
++
++Independent Node workers now have isolated addon state and a stable native
++library binding. Async pipeline snapshots, callback leases, and worker startup
++have allocation-failure coverage. Public C and retained-package acceptance are
++indexed at `bench/out/compute-program/20260907-async-pipeline-ownership/README.md`.
++Shared-device mutation and physical driver loss remain outside this evidence.
++
+ ## Bounded candidate development
+ 
+ `bench/cli.py program candidate` accepts candidate WGSL against a separately
+diff --git a/packages/doe-gpu/binding.gyp b/packages/doe-gpu/binding.gyp
+index 02a71b30d..08ea1061f 100644
+--- a/packages/doe-gpu/binding.gyp
++++ b/packages/doe-gpu/binding.gyp
+@@ -4,6 +4,7 @@
+       "target_name": "doe_napi",
+       "sources": [
+         "../../runtime/bridge/webgpu-addon/doe_napi_globals.c",
++        "../../runtime/bridge/webgpu-addon/doe_napi_env.c",
+         "../../runtime/bridge/webgpu-addon/doe_napi_helpers.c",
+         "../../runtime/bridge/webgpu-addon/doe_napi_instance.c",
+         "../../runtime/bridge/webgpu-addon/doe_napi_buffer.c",
+diff --git a/packages/doe-gpu/test/integration/test-integration-native-concurrent-devices.js b/packages/doe-gpu/test/integration/test-integration-native-concurrent-devices.js
+new file mode 100644
+index 000000000..4fa054431
+--- /dev/null
++++ b/packages/doe-gpu/test/integration/test-integration-native-concurrent-devices.js
+@@ -0,0 +1,146 @@
++// Exercise independent N-API environments against one retained native library.
++import assert from 'node:assert/strict';
++import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
++import { createNativeDirect, globals, requestAdapter } from '../../src/native.js';
++import { prepareComputeProgram } from '../../src/compute-program.js';
++
++const WORKER_COUNT = 4;
++const WORKER_GENERATIONS = 2;
++const DEVICE_CYCLES = 8;
++const RUNS = 32;
++const WORD_COUNT = 64;
++const BUFFER_BYTES = WORD_COUNT * Uint32Array.BYTES_PER_ELEMENT;
++const EXECUTIONS = Object.freeze(['webgpu', 'native-recorded', 'gpu-recorded']);
++
++function inputFor(worker, cycle, run) {
++  return new Uint32Array(WORD_COUNT).fill((worker + 1) * 10000 + cycle * 100 + run);
++}
++
++async function copyWithNativeDirect(device, input) {
++  const usage = globals.GPUBufferUsage;
++  const source = device.createBuffer({
++    size: BUFFER_BYTES, usage: usage.COPY_SRC | usage.COPY_DST,
++  });
++  const output = device.createBuffer({
++    size: BUFFER_BYTES, usage: usage.COPY_DST | usage.MAP_READ,
++  });
++  try {
++    device.queue.writeBuffer(source, 0, input);
++    const encoder = device.createCommandEncoder();
++    encoder.copyBufferToBuffer(source, 0, output, 0, BUFFER_BYTES);
++    device.queue.submit([encoder.finish()]);
++    await Promise.all([
++      device.queue.onSubmittedWorkDone(),
++      output.mapAsync(globals.GPUMapMode.READ),
++    ]);
++    assert.deepEqual(new Uint32Array(output.getMappedRange()).slice(), input);
++    output.unmap();
++  } finally {
++    source.destroy();
++    output.destroy();
++  }
++}
++
++async function runWorkerGeneration(generation) {
++  const start = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
++  const workers = Array.from({ length: WORKER_COUNT }, (_, id) => new Worker(
++    new URL(import.meta.url), { workerData: { id, generation, start } }
++  ));
++  let ready = 0;
++  const completed = workers.map(worker => new Promise((resolve, reject) => {
++    worker.on('message', message => {
++      if (message.phase === 'ready') {
++        ready += 1;
++        if (ready === WORKER_COUNT) {
++          Atomics.store(new Int32Array(start), 0, 1);
++          Atomics.notify(new Int32Array(start), 0);
++        }
++      } else {
++        console.log(JSON.stringify(message));
++      }
++    });
++    worker.on('error', reject);
++    worker.on('exit', code => code === 0 ? resolve() : reject(new Error(`worker exit ${code}`)));
++  }));
++  try {
++    await Promise.all(completed);
++  } finally {
++    await Promise.all(workers.map(worker => worker.terminate()));
++  }
++}
++
++if (isMainThread) {
++  const adapter = await createNativeDirect().requestAdapter();
++  const device = await adapter.requestDevice();
++  try {
++    for (let generation = 0; generation < WORKER_GENERATIONS; generation += 1) {
++      await runWorkerGeneration(generation);
++      await copyWithNativeDirect(device, inputFor(WORKER_COUNT, generation, 0));
++    }
++  } finally {
++    device.destroy();
++    adapter.destroy();
++  }
++  console.log('ok: isolated worker devices, exact outputs, recreated environments, surviving parent');
++} else {
++  const { id, generation, start } = workerData;
++  parentPort.postMessage({ phase: 'ready' });
++  Atomics.wait(new Int32Array(start), 0, 0);
++  const descriptor = {
++    schemaVersion: 1, id: 'concurrent_devices',
++    buffers: [
++      { id: 'input', size: BUFFER_BYTES, type: 'storage', role: 'input' },
++      { id: 'output', size: BUFFER_BYTES, type: 'storage', role: 'output' },
++    ],
++    shaders: [{
++      id: 'sum', entryPoint: 'main', code: `
++        @group(0) @binding(0) var<storage, read> input: array<u32>;
++        @group(0) @binding(1) var<storage, read_write> output: array<u32>;
++        @compute @workgroup_size(64) fn main(@builtin(global_invocation_id) id: vec3<u32>) {
++          output[id.x] = input[id.x] + id.x;
++        }`,
++    }],
++    steps: [{
++      shader: 'sum',
++      bindings: [{ binding: 0, buffer: 'input' }, { binding: 1, buffer: 'output' }],
++      workgroups: [1, 1, 1],
++    }],
++    output: 'output',
++  };
++  for (const execution of EXECUTIONS) {
++    for (let cycle = 0; cycle < DEVICE_CYCLES; cycle += 1) {
++      const adapter = await requestAdapter({ backend: 'vulkan' });
++      const device = await adapter.requestDevice();
++      let program;
++      try {
++        program = await prepareComputeProgram(device, descriptor, { execution });
++        for (let run = 0; run < RUNS; run += 1) {
++          const input = inputFor(id, cycle, run);
++          const result = await program.run({ input });
++          const output = new Uint32Array(
++            result.output.buffer, result.output.byteOffset, WORD_COUNT
++          );
++          assert(output.every((value, index) => value === input[index] + index));
++        }
++      } finally {
++        await program?.close();
++        device.destroy();
++        adapter.destroy();
++      }
++    }
++    parentPort.postMessage({
++      worker: id, generation, execution, cycles: DEVICE_CYCLES, runs: RUNS, status: 'passed',
++    });
++  }
++  for (let cycle = 0; cycle < DEVICE_CYCLES; cycle += 1) {
++    const adapter = await createNativeDirect().requestAdapter();
++    const device = await adapter.requestDevice();
++    try {
++      await copyWithNativeDirect(device, inputFor(id, cycle, 0));
++    } finally {
++      device.destroy();
++      adapter.destroy();
++    }
++  }
++  parentPort.postMessage({ worker: id, generation, execution: 'native-direct', status: 'passed' });
++}
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_buffer.c b/runtime/bridge/webgpu-addon/doe_napi_buffer.c
+index 0dc026582..d4d878307 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_buffer.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_buffer.c
+@@ -98,7 +98,7 @@ napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
+         WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
+             (size_t)offset_i, (size_t)size_i, cb_info);
+         if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
+-        if (!process_events_until(inst, &result.done, current_timeout_ns()))
++        if (!process_events_until(inst, &result.done, current_timeout_ns(env)))
+             return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
+         if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+             return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
+@@ -264,7 +264,7 @@ napi_value doe_buffer_map_read_copy_unmap(napi_env env, napi_callback_info info)
+             WGPUFuture future = pfn_wgpuQueueOnSubmittedWorkDone(queue, cb_info);
+             if (future.id == 0) NAPI_THROW(env, "bufferMapReadCopyUnmap: queue work-done future unavailable");
+             const uint64_t wait_started_ns = monotonic_now_ns();
+-            if (!process_events_until(inst, &qresult.done, current_timeout_ns())) {
++            if (!process_events_until(inst, &qresult.done, current_timeout_ns(env))) {
+                 NAPI_THROW(env, "bufferMapReadCopyUnmap: queue wait timed out");
+             }
+             wait_completed_ns = monotonic_now_ns() - wait_started_ns;
+@@ -291,7 +291,7 @@ napi_value doe_buffer_map_read_copy_unmap(napi_env env, napi_callback_info info)
+     } else if (pfn_wgpuBufferMapAsync2) {
+         WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i, cb_info);
+         if (future.id == 0) NAPI_THROW(env, "bufferMapReadCopyUnmap: bufferMapAsync future unavailable");
+-        if (!process_events_until(inst, &result.done, current_timeout_ns()))
++        if (!process_events_until(inst, &result.done, current_timeout_ns(env)))
+             return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapReadCopyUnmap: bufferMapAsync timed out", result.status, result.message);
+         if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+             return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapReadCopyUnmap: bufferMapAsync failed", result.status, result.message);
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_caps.c b/runtime/bridge/webgpu-addon/doe_napi_caps.c
+index d578f828a..292e909ac 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_caps.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_caps.c
+@@ -258,7 +258,7 @@ napi_value doe_device_set_uncaptured_error_callback(napi_env env, napi_callback_
+     WGPUDevice device = unwrap_ptr(env, _args[0]);
+     if (!device) NAPI_THROW(env, "Invalid device");
+ 
+-    DeviceCallbackBinding* old = binding_take(&g_uncaptured_bindings, device);
++    DeviceCallbackBinding* old = binding_take(&doe_env_state(env)->uncaptured_bindings, device);
+     if (old) {
+         pfn_doeNativeDeviceSetUncapturedErrorCallback(device, NULL, NULL, NULL);
+         release_binding(old);
+@@ -285,7 +285,7 @@ napi_value doe_device_set_uncaptured_error_callback(napi_env env, napi_callback_
+         NAPI_THROW(env, "Failed to create uncaptured-error callback bridge");
+     }
+     napi_unref_threadsafe_function(env, binding->tsfn);
+-    binding_insert(&g_uncaptured_bindings, binding);
++    binding_insert(&doe_env_state(env)->uncaptured_bindings, binding);
+     pfn_doeNativeDeviceSetUncapturedErrorCallback(device, uncaptured_error_native_callback, binding, NULL);
+     napi_value result;
+     napi_get_boolean(env, true, &result);
+@@ -303,7 +303,7 @@ napi_value doe_device_register_lost_callback(napi_env env, napi_callback_info in
+     WGPUDevice device = unwrap_ptr(env, _args[0]);
+     if (!device) NAPI_THROW(env, "Invalid device");
+ 
+-    DeviceCallbackBinding* old = binding_take(&g_lost_bindings, device);
++    DeviceCallbackBinding* old = binding_take(&doe_env_state(env)->lost_bindings, device);
+     if (old) {
+         release_binding(old);
+     }
+@@ -326,7 +326,7 @@ napi_value doe_device_register_lost_callback(napi_env env, napi_callback_info in
+         NAPI_THROW(env, "Failed to create device-lost callback bridge");
+     }
+     napi_unref_threadsafe_function(env, binding->tsfn);
+-    binding_insert(&g_lost_bindings, binding);
++    binding_insert(&doe_env_state(env)->lost_bindings, binding);
+     pfn_doeNativeDeviceRegisterLostCallback(device, lost_native_callback, binding);
+     napi_value result;
+     napi_get_boolean(env, true, &result);
+@@ -743,7 +743,7 @@ napi_value doe_set_timeout_ms(napi_env env, napi_callback_info info) {
+     NAPI_ASSERT_ARGC(env, info, 1);
+     uint32_t timeout_ms = 0;
+     napi_get_value_uint32(env, _args[0], &timeout_ms);
+-    g_timeout_ns = (uint64_t)timeout_ms * 1000000ULL;
++    doe_env_state(env)->timeout_ns = (uint64_t)timeout_ms * 1000000ULL;
+     return NULL;
+ }
+ 
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_env.c b/runtime/bridge/webgpu-addon/doe_napi_env.c
+new file mode 100644
+index 000000000..52d0d96f4
+--- /dev/null
++++ b/runtime/bridge/webgpu-addon/doe_napi_env.c
+@@ -0,0 +1,53 @@
++#include "doe_napi_internal.h"
++
++DoeEnvState* doe_env_state(napi_env env) {
++    DoeEnvState* state = NULL;
++    napi_get_instance_data(env, (void**)&state);
++    return state;
++}
++
++static void env_cleanup(void* data) {
++    DoeEnvState* state = (DoeEnvState*)data;
++    // Cleanup hooks run before Node independently finalizes TSFNs and instance data.
++    while (state->uncaptured_bindings) {
++        DeviceCallbackBinding* binding = state->uncaptured_bindings;
++        state->uncaptured_bindings = binding->next;
++        pfn_doeNativeDeviceSetUncapturedErrorCallback(binding->device, NULL, NULL, NULL);
++        release_binding(binding);
++    }
++    while (state->lost_bindings) {
++        DeviceCallbackBinding* binding = state->lost_bindings;
++        state->lost_bindings = binding->next;
++        pfn_doeNativeDeviceRegisterLostCallback(binding->device, NULL, NULL);
++        release_binding(binding);
++    }
++}
++
++static void env_finalize(napi_env env, void* data, void* hint) {
++    (void)env;
++    (void)hint;
++    // N-API owns reference teardown; cached references never outlive this environment.
++    free(data);
++}
++
++bool doe_env_init(napi_env env) {
++    DoeEnvState* state = (DoeEnvState*)calloc(1, sizeof(DoeEnvState));
++    if (!state) return false;
++    state->timeout_ns = DOE_DEFAULT_TIMEOUT_NS;
++    const char* timeout = getenv("DOE_TIMEOUT_MS");
++    if (timeout && timeout[0] != '\0') {
++        char* end = NULL;
++        unsigned long parsed = strtoul(timeout, &end, 10);
++        if (end && *end == '\0') state->timeout_ns = (uint64_t)parsed * 1000000ULL;
++    }
++    if (napi_add_env_cleanup_hook(env, env_cleanup, state) != napi_ok) {
++        free(state);
++        return false;
++    }
++    if (napi_set_instance_data(env, state, env_finalize, NULL) != napi_ok) {
++        napi_remove_env_cleanup_hook(env, env_cleanup, state);
++        free(state);
++        return false;
++    }
++    return true;
++}
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_globals.c b/runtime/bridge/webgpu-addon/doe_napi_globals.c
+index 7e91e7de6..3ea1f5112 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_globals.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_globals.c
+@@ -8,6 +8,17 @@
+ 
+ #include "doe_napi_internal.h"
+ 
++#ifdef _WIN32
++static SRWLOCK library_mutex = SRWLOCK_INIT;
++static void library_lock(void) { AcquireSRWLockExclusive(&library_mutex); }
++static void library_unlock(void) { ReleaseSRWLockExclusive(&library_mutex); }
++#else
++#include <pthread.h>
++static pthread_mutex_t library_mutex = PTHREAD_MUTEX_INITIALIZER;
++static void library_lock(void) { pthread_mutex_lock(&library_mutex); }
++static void library_unlock(void) { pthread_mutex_unlock(&library_mutex); }
++#endif
++
+ /* ================================================================
+  * Function pointer definitions — DECL_PFN extern decls are in the header;
+  * these are the actual storage definitions.
+@@ -201,71 +212,16 @@ FnMetalBridgeRelease pfn_metalBridgeRelease = NULL;
+  * Shared state globals
+  * ================================================================ */
+ 
+-void* g_lib = NULL;
+-uint64_t g_timeout_ns = DOE_DEFAULT_TIMEOUT_NS;
+-DeviceCallbackBinding* g_uncaptured_bindings = NULL;
+-DeviceCallbackBinding* g_lost_bindings = NULL;
+-
+-/* ================================================================
+- * Native-direct method refs
+- * ================================================================ */
+-
+-napi_ref native_direct_method_gpu_request_adapter_ref = NULL;
+-napi_ref native_direct_method_adapter_request_device_ref = NULL;
+-napi_ref native_direct_method_adapter_destroy_ref = NULL;
+-napi_ref native_direct_method_queue_submit_ref = NULL;
+-napi_ref native_direct_method_queue_write_buffer_ref = NULL;
+-napi_ref native_direct_method_queue_write_buffer_batch_ref = NULL;
+-napi_ref native_direct_method_queue_on_submitted_work_done_ref = NULL;
+-napi_ref native_direct_method_device_create_buffer_ref = NULL;
+-napi_ref native_direct_method_device_create_shader_module_ref = NULL;
+-napi_ref native_direct_method_device_create_compute_pipeline_ref = NULL;
+-napi_ref native_direct_method_device_create_compute_pipeline_async_ref = NULL;
+-napi_ref native_direct_method_device_create_bind_group_layout_ref = NULL;
+-napi_ref native_direct_method_device_create_bind_group_ref = NULL;
+-napi_ref native_direct_method_device_create_pipeline_layout_ref = NULL;
+-napi_ref native_direct_method_device_create_command_encoder_ref = NULL;
+-napi_ref native_direct_method_device_destroy_ref = NULL;
+-napi_ref native_direct_method_buffer_map_async_ref = NULL;
+-napi_ref native_direct_method_buffer_get_mapped_range_ref = NULL;
+-napi_ref native_direct_method_buffer_read_copy_ref = NULL;
+-napi_ref native_direct_method_buffer_map_read_copy_unmap_ref = NULL;
+-napi_ref native_direct_method_buffer_unmap_ref = NULL;
+-napi_ref native_direct_method_buffer_destroy_ref = NULL;
+-napi_ref native_direct_method_command_encoder_begin_compute_pass_ref = NULL;
+-napi_ref native_direct_method_command_encoder_copy_buffer_to_buffer_ref = NULL;
+-napi_ref native_direct_method_command_encoder_finish_ref = NULL;
+-napi_ref native_direct_method_compute_pass_set_pipeline_ref = NULL;
+-napi_ref native_direct_method_compute_pass_set_bind_group_ref = NULL;
+-napi_ref native_direct_method_compute_pass_dispatch_workgroups_ref = NULL;
+-napi_ref native_direct_method_compute_pass_dispatch_workgroups_indirect_ref = NULL;
+-napi_ref native_direct_method_compute_pass_end_ref = NULL;
+-napi_ref native_direct_method_compute_pass_set_immediates_ref = NULL;
+-napi_ref native_direct_method_compute_pass_push_debug_group_ref = NULL;
+-napi_ref native_direct_method_compute_pass_pop_debug_group_ref = NULL;
+-napi_ref native_direct_method_compute_pass_insert_debug_marker_ref = NULL;
+-napi_ref native_direct_method_render_pass_set_immediates_ref = NULL;
+-napi_ref native_direct_method_render_pass_set_viewport_ref = NULL;
+-napi_ref native_direct_method_render_pass_set_scissor_rect_ref = NULL;
+-napi_ref native_direct_method_render_pass_set_blend_constant_ref = NULL;
+-napi_ref native_direct_method_render_pass_set_stencil_reference_ref = NULL;
+-napi_ref native_direct_method_render_pass_push_debug_group_ref = NULL;
+-napi_ref native_direct_method_render_pass_pop_debug_group_ref = NULL;
+-napi_ref native_direct_method_render_pass_insert_debug_marker_ref = NULL;
+-napi_ref native_direct_method_render_pass_draw_indirect_ref = NULL;
+-napi_ref native_direct_method_render_pass_draw_indexed_indirect_ref = NULL;
+-napi_ref native_direct_method_render_bundle_encoder_set_immediates_ref = NULL;
+-napi_ref native_direct_method_adapter_get_preferred_canvas_format_ref = NULL;
+-napi_ref native_direct_method_device_add_event_listener_ref = NULL;
+-napi_ref native_direct_method_device_remove_event_listener_ref = NULL;
+-napi_ref native_direct_method_device_import_external_texture_ref = NULL;
+-napi_ref native_direct_method_command_encoder_clear_buffer_ref = NULL;
+-napi_ref native_direct_method_command_encoder_copy_texture_to_texture_ref = NULL;
+-napi_ref native_direct_method_queue_write_texture_ref = NULL;
+-napi_ref native_direct_method_adapter_get_info_ref = NULL;
+-napi_ref native_direct_method_shader_module_get_compilation_info_ref = NULL;
+-napi_ref native_direct_resolved_undefined_promise_ref = NULL;
++FnWgpuComputePassEncoderPushDebugGroup pfn_wgpuComputePassEncoderPushDebugGroup = NULL;
++FnWgpuComputePassEncoderPopDebugGroup pfn_wgpuComputePassEncoderPopDebugGroup = NULL;
++FnWgpuComputePassEncoderInsertDebugMarker pfn_wgpuComputePassEncoderInsertDebugMarker = NULL;
++FnWgpuRenderPassEncoderDrawIndirect pfn_wgpuRenderPassEncoderDrawIndirect = NULL;
++FnWgpuRenderPassEncoderDrawIndexedIndirect pfn_wgpuRenderPassEncoderDrawIndexedIndirect = NULL;
++FnDoeNativeRenderPassExecuteBundles pfn_doeNativeRenderPassExecuteBundles = NULL;
++FnWgpuRenderBundleEncoderDrawIndirect pfn_wgpuRenderBundleEncoderDrawIndirect = NULL;
++FnWgpuRenderBundleEncoderDrawIndexedIndirect pfn_wgpuRenderBundleEncoderDrawIndexedIndirect = NULL;
+ 
++void* g_lib = NULL;
+ /* ================================================================
+  * Library loading
+  * ================================================================ */
+@@ -273,23 +229,35 @@ napi_ref native_direct_resolved_undefined_promise_ref = NULL;
+ napi_value doe_load_library(napi_env env, napi_callback_info info) {
+     NAPI_ASSERT_ARGC(env, info, 1);
+     size_t path_len = 0;
+-    napi_get_value_string_utf8(env, _args[0], NULL, 0, &path_len);
++    if (_argc < 1 || napi_get_value_string_utf8(env, _args[0], NULL, 0, &path_len) != napi_ok)
++        NAPI_THROW(env, "loadLibrary requires a library path string");
+     char* path = (char*)malloc(path_len + 1);
+-    napi_get_value_string_utf8(env, _args[0], path, path_len + 1, &path_len);
++    if (!path) NAPI_THROW(env, "Out of memory retaining library path");
++    if (napi_get_value_string_utf8(env, _args[0], path, path_len + 1, &path_len) != napi_ok) {
++        free(path);
++        NAPI_THROW(env, "Invalid library path");
++    }
+ 
+-    if (g_lib) { LIB_CLOSE(g_lib); g_lib = NULL; }
+-    g_lib = LIB_OPEN(path);
++    library_lock();
++    void* candidate = LIB_OPEN(path);
+     free(path);
+-    if (!g_lib) NAPI_THROW(env, "Failed to load libwebgpu_doe");
+-
+-    const char* timeout_env = getenv("DOE_TIMEOUT_MS");
+-    if (timeout_env && timeout_env[0] != '\0') {
+-        char* end = NULL;
+-        unsigned long parsed = strtoul(timeout_env, &end, 10);
+-        if (end && *end == '\0') {
+-            g_timeout_ns = (uint64_t)parsed * 1000000ULL;
+-        }
++    if (!candidate) {
++        library_unlock();
++        NAPI_THROW(env, "Failed to load libwebgpu_doe");
+     }
++    if (g_lib) {
++        const bool same_library = candidate == g_lib;
++        LIB_CLOSE(candidate);
++        library_unlock();
++        if (!same_library)
++            NAPI_THROW(env, "A different Doe native library is already loaded; use a separate process");
++        doe_env_state(env)->library_loaded = true;
++        napi_value result;
++        napi_get_boolean(env, true, &result);
++        return result;
++    }
++    // Keep this handle for the process lifetime: objects and native workers may outlive an env.
++    g_lib = candidate;
+ 
+     LOAD_SYM(wgpuCreateInstance);
+     LOAD_SYM(wgpuInstanceRelease);
+@@ -490,6 +458,15 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
+     pfn_metalBridgeConfigureSurfaceHost = (FnMetalBridgeConfigureSurfaceHost)LIB_SYM(g_lib, "metal_bridge_configure_surface_host");
+     pfn_metalBridgeRelease = (FnMetalBridgeRelease)LIB_SYM(g_lib, "metal_bridge_release");
+ 
++    pfn_wgpuComputePassEncoderPushDebugGroup = (FnWgpuComputePassEncoderPushDebugGroup)LIB_SYM(g_lib, "wgpuComputePassEncoderPushDebugGroup");
++    pfn_wgpuComputePassEncoderPopDebugGroup = (FnWgpuComputePassEncoderPopDebugGroup)LIB_SYM(g_lib, "wgpuComputePassEncoderPopDebugGroup");
++    pfn_wgpuComputePassEncoderInsertDebugMarker = (FnWgpuComputePassEncoderInsertDebugMarker)LIB_SYM(g_lib, "wgpuComputePassEncoderInsertDebugMarker");
++    pfn_wgpuRenderPassEncoderDrawIndirect = (FnWgpuRenderPassEncoderDrawIndirect)LIB_SYM(g_lib, "wgpuRenderPassEncoderDrawIndirect");
++    pfn_wgpuRenderPassEncoderDrawIndexedIndirect = (FnWgpuRenderPassEncoderDrawIndexedIndirect)LIB_SYM(g_lib, "wgpuRenderPassEncoderDrawIndexedIndirect");
++    pfn_doeNativeRenderPassExecuteBundles = (FnDoeNativeRenderPassExecuteBundles)LIB_SYM(g_lib, "doeNativeRenderPassExecuteBundles");
++    pfn_wgpuRenderBundleEncoderDrawIndirect = (FnWgpuRenderBundleEncoderDrawIndirect)LIB_SYM(g_lib, "wgpuRenderBundleEncoderDrawIndirect");
++    pfn_wgpuRenderBundleEncoderDrawIndexedIndirect = (FnWgpuRenderBundleEncoderDrawIndexedIndirect)LIB_SYM(g_lib, "wgpuRenderBundleEncoderDrawIndexedIndirect");
++
+     /* Validate all critical function pointers were resolved. */
+     if (!pfn_wgpuCreateInstance || !pfn_wgpuInstanceRelease || !pfn_wgpuInstanceRequestAdapter ||
+         !pfn_wgpuInstanceWaitAny || !pfn_wgpuInstanceProcessEvents ||
+@@ -502,9 +479,12 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
+         !pfn_wgpuBufferMapAsync2) {
+         LIB_CLOSE(g_lib);
+         g_lib = NULL;
++        library_unlock();
+         NAPI_THROW(env, "Failed to resolve required symbols from libwebgpu_doe");
+     }
+ 
++    library_unlock();
++    doe_env_state(env)->library_loaded = true;
+     napi_value result;
+     napi_get_boolean(env, true, &result);
+     return result;
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_helpers.c b/runtime/bridge/webgpu-addon/doe_napi_helpers.c
+index 89cc04055..2ee5906c1 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_helpers.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_helpers.c
+@@ -8,8 +8,8 @@
+  * Error/string helpers
+  * ================================================================ */
+ 
+-uint64_t current_timeout_ns(void) {
+-    return g_timeout_ns;
++uint64_t current_timeout_ns(napi_env env) {
++    return doe_env_state(env)->timeout_ns;
+ }
+ 
+ void copy_library_error_message(char* out, size_t out_len) {
+@@ -348,8 +348,6 @@ void lost_native_callback(uint32_t reason, const char* message_ptr, size_t messa
+         if (payload->message) free(payload->message);
+         free(payload);
+     }
+-    binding_take(&g_lost_bindings, binding->device);
+-    release_binding(binding);
+ }
+ 
+ /* ================================================================
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_init.c b/runtime/bridge/webgpu-addon/doe_napi_init.c
+index 18ba1a501..2e26b0962 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_init.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_init.c
+@@ -208,6 +208,7 @@ napi_value doe_package_pipeline_cache_flush(napi_env env, napi_callback_info inf
+  * ================================================================ */
+ 
+ napi_value doe_module_init(napi_env env, napi_value exports) {
++    if (!doe_env_init(env)) NAPI_THROW(env, "Failed to initialize addon environment");
+     napi_property_descriptor descriptors[] = {
+         EXPORT_FN("loadLibrary",                              doe_load_library),
+         EXPORT_FN("nativeDirectCreate",                       doe_native_direct_create),
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_instance.c b/runtime/bridge/webgpu-addon/doe_napi_instance.c
+index 92d240eab..093ea594b 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_instance.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_instance.c
+@@ -127,7 +127,7 @@ napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
+         future = pfn_wgpuInstanceRequestAdapter(inst, opts_ptr, callback_info);
+     }
+     if (future.id == 0) NAPI_THROW(env, "requestAdapter future unavailable");
+-    if (!process_events_until(inst, &result.done, current_timeout_ns()))
++    if (!process_events_until(inst, &result.done, current_timeout_ns(env)))
+         return throw_status_error(env, "DOE_REQUEST_ADAPTER_TIMEOUT", "requestAdapter timed out", result.status, result.message);
+     if (result.status != WGPU_REQUEST_STATUS_SUCCESS || !result.adapter)
+         return throw_status_error(env, "DOE_REQUEST_ADAPTER_ERROR", "requestAdapter failed", result.status, result.message);
+@@ -472,7 +472,7 @@ napi_value doe_request_device(napi_env env, napi_callback_info info) {
+         if (descriptor.defaultQueue.label.data) free((void*)descriptor.defaultQueue.label.data);
+         NAPI_THROW(env, "requestDevice future unavailable");
+     }
+-    if (!process_events_until(inst, &result.done, current_timeout_ns())) {
++    if (!process_events_until(inst, &result.done, current_timeout_ns(env))) {
+         free(required_features);
+         if (descriptor.label.data) free((void*)descriptor.label.data);
+         if (descriptor.defaultQueue.label.data) free((void*)descriptor.defaultQueue.label.data);
+@@ -509,8 +509,8 @@ napi_value doe_device_release(napi_env env, napi_callback_info info) {
+     NAPI_ASSERT_ARGC(env, info, 1);
+     void* device = unwrap_ptr(env, _args[0]);
+     if (device) {
+-        DeviceCallbackBinding* lost = binding_take(&g_lost_bindings, device);
+-        DeviceCallbackBinding* uncaptured = binding_take(&g_uncaptured_bindings, device);
++        DeviceCallbackBinding* lost = binding_take(&doe_env_state(env)->lost_bindings, device);
++        DeviceCallbackBinding* uncaptured = binding_take(&doe_env_state(env)->uncaptured_bindings, device);
+         if (lost && pfn_doeNativeDeviceRegisterLostCallback) {
+             pfn_doeNativeDeviceRegisterLostCallback(device, NULL, NULL);
+         }
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_internal.h b/runtime/bridge/webgpu-addon/doe_napi_internal.h
+index ae33851db..e37e1f68b 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_internal.h
++++ b/runtime/bridge/webgpu-addon/doe_napi_internal.h
+@@ -731,10 +731,24 @@ typedef struct { uint32_t status; uint32_t done; char message[DOE_ERROR_BUF_CAP]
+ typedef struct { uint32_t status; uint32_t done; char message[DOE_ERROR_BUF_CAP]; } QueueWorkDoneResult;
+ typedef struct { uint32_t done; uint32_t error_type; char message[DOE_ERROR_BUF_CAP]; } DevicePopErrorScopeResult;
+ 
++typedef void (*FnWgpuComputePassEncoderPushDebugGroup)(WGPUComputePassEncoder, WGPUStringView);
++typedef void (*FnWgpuComputePassEncoderPopDebugGroup)(WGPUComputePassEncoder);
++typedef void (*FnWgpuComputePassEncoderInsertDebugMarker)(WGPUComputePassEncoder, WGPUStringView);
++typedef void (*FnWgpuRenderPassEncoderDrawIndirect)(WGPURenderPassEncoder, WGPUBuffer, uint64_t);
++typedef void (*FnWgpuRenderPassEncoderDrawIndexedIndirect)(WGPURenderPassEncoder, WGPUBuffer, uint64_t);
++typedef void (*FnDoeNativeRenderPassExecuteBundles)(void*, size_t, void* const*);
++typedef void (*FnWgpuRenderBundleEncoderDrawIndirect)(void*, WGPUBuffer, uint64_t);
++typedef void (*FnWgpuRenderBundleEncoderDrawIndexedIndirect)(void*, WGPUBuffer, uint64_t);
++extern FnWgpuComputePassEncoderPushDebugGroup pfn_wgpuComputePassEncoderPushDebugGroup;
++extern FnWgpuComputePassEncoderPopDebugGroup pfn_wgpuComputePassEncoderPopDebugGroup;
++extern FnWgpuComputePassEncoderInsertDebugMarker pfn_wgpuComputePassEncoderInsertDebugMarker;
++extern FnWgpuRenderPassEncoderDrawIndirect pfn_wgpuRenderPassEncoderDrawIndirect;
++extern FnWgpuRenderPassEncoderDrawIndexedIndirect pfn_wgpuRenderPassEncoderDrawIndexedIndirect;
++extern FnDoeNativeRenderPassExecuteBundles pfn_doeNativeRenderPassExecuteBundles;
++extern FnWgpuRenderBundleEncoderDrawIndirect pfn_wgpuRenderBundleEncoderDrawIndirect;
++extern FnWgpuRenderBundleEncoderDrawIndexedIndirect pfn_wgpuRenderBundleEncoderDrawIndexedIndirect;
++
+ extern void* g_lib;
+-extern uint64_t g_timeout_ns;
+-extern DeviceCallbackBinding* g_uncaptured_bindings;
+-extern DeviceCallbackBinding* g_lost_bindings;
+ 
+ /* Native-direct property key constants */
+ #define DOE_DIRECT_NATIVE "__doe_native"
+@@ -763,64 +777,73 @@ typedef struct {
+     uint32_t map_mode;
+ } NativeDirectBufferCache;
+ 
+-/* Native-direct method refs (one per cached method) */
+-extern napi_ref native_direct_method_gpu_request_adapter_ref;
+-extern napi_ref native_direct_method_adapter_request_device_ref;
+-extern napi_ref native_direct_method_adapter_destroy_ref;
+-extern napi_ref native_direct_method_queue_submit_ref;
+-extern napi_ref native_direct_method_queue_write_buffer_ref;
+-extern napi_ref native_direct_method_queue_write_buffer_batch_ref;
+-extern napi_ref native_direct_method_queue_on_submitted_work_done_ref;
+-extern napi_ref native_direct_method_device_create_buffer_ref;
+-extern napi_ref native_direct_method_device_create_shader_module_ref;
+-extern napi_ref native_direct_method_device_create_compute_pipeline_ref;
+-extern napi_ref native_direct_method_device_create_compute_pipeline_async_ref;
+-extern napi_ref native_direct_method_device_create_bind_group_layout_ref;
+-extern napi_ref native_direct_method_device_create_bind_group_ref;
+-extern napi_ref native_direct_method_device_create_pipeline_layout_ref;
+-extern napi_ref native_direct_method_device_create_command_encoder_ref;
+-extern napi_ref native_direct_method_device_destroy_ref;
+-extern napi_ref native_direct_method_buffer_map_async_ref;
+-extern napi_ref native_direct_method_buffer_get_mapped_range_ref;
+-extern napi_ref native_direct_method_buffer_read_copy_ref;
+-extern napi_ref native_direct_method_buffer_map_read_copy_unmap_ref;
+-extern napi_ref native_direct_method_buffer_unmap_ref;
+-extern napi_ref native_direct_method_buffer_destroy_ref;
+-extern napi_ref native_direct_method_command_encoder_begin_compute_pass_ref;
+-extern napi_ref native_direct_method_command_encoder_copy_buffer_to_buffer_ref;
+-extern napi_ref native_direct_method_command_encoder_finish_ref;
+-extern napi_ref native_direct_method_compute_pass_set_pipeline_ref;
+-extern napi_ref native_direct_method_compute_pass_set_bind_group_ref;
+-extern napi_ref native_direct_method_compute_pass_dispatch_workgroups_ref;
+-extern napi_ref native_direct_method_compute_pass_dispatch_workgroups_indirect_ref;
+-extern napi_ref native_direct_method_compute_pass_end_ref;
+-extern napi_ref native_direct_method_compute_pass_set_immediates_ref;
+-extern napi_ref native_direct_method_compute_pass_push_debug_group_ref;
+-extern napi_ref native_direct_method_compute_pass_pop_debug_group_ref;
+-extern napi_ref native_direct_method_compute_pass_insert_debug_marker_ref;
+-extern napi_ref native_direct_method_render_pass_set_immediates_ref;
+-extern napi_ref native_direct_method_render_pass_set_viewport_ref;
+-extern napi_ref native_direct_method_render_pass_set_scissor_rect_ref;
+-extern napi_ref native_direct_method_render_pass_set_blend_constant_ref;
+-extern napi_ref native_direct_method_render_pass_set_stencil_reference_ref;
+-extern napi_ref native_direct_method_render_pass_push_debug_group_ref;
+-extern napi_ref native_direct_method_render_pass_pop_debug_group_ref;
+-extern napi_ref native_direct_method_render_pass_insert_debug_marker_ref;
+-extern napi_ref native_direct_method_render_pass_draw_indirect_ref;
+-extern napi_ref native_direct_method_render_pass_draw_indexed_indirect_ref;
+-extern napi_ref native_direct_method_render_bundle_encoder_set_immediates_ref;
+-extern napi_ref native_direct_method_render_bundle_encoder_draw_indirect_ref;
+-extern napi_ref native_direct_method_render_bundle_encoder_draw_indexed_indirect_ref;
+-extern napi_ref native_direct_method_adapter_get_preferred_canvas_format_ref;
+-extern napi_ref native_direct_method_device_add_event_listener_ref;
+-extern napi_ref native_direct_method_device_remove_event_listener_ref;
+-extern napi_ref native_direct_method_device_import_external_texture_ref;
+-extern napi_ref native_direct_method_command_encoder_clear_buffer_ref;
+-extern napi_ref native_direct_method_command_encoder_copy_texture_to_texture_ref;
+-extern napi_ref native_direct_method_queue_write_texture_ref;
+-extern napi_ref native_direct_method_adapter_get_info_ref;
+-extern napi_ref native_direct_method_shader_module_get_compilation_info_ref;
+-extern napi_ref native_direct_resolved_undefined_promise_ref;
++/* State is owned by an addon environment, never shared between Node workers. */
++typedef struct {
++    bool library_loaded;
++    uint64_t timeout_ns;
++    DeviceCallbackBinding* uncaptured_bindings;
++    DeviceCallbackBinding* lost_bindings;
++    napi_ref native_direct_method_gpu_request_adapter_ref;
++    napi_ref native_direct_method_adapter_request_device_ref;
++    napi_ref native_direct_method_adapter_destroy_ref;
++    napi_ref native_direct_method_queue_submit_ref;
++    napi_ref native_direct_method_queue_write_buffer_ref;
++    napi_ref native_direct_method_queue_write_buffer_batch_ref;
++    napi_ref native_direct_method_queue_on_submitted_work_done_ref;
++    napi_ref native_direct_method_device_create_buffer_ref;
++    napi_ref native_direct_method_device_create_shader_module_ref;
++    napi_ref native_direct_method_device_create_compute_pipeline_ref;
++    napi_ref native_direct_method_device_create_compute_pipeline_async_ref;
++    napi_ref native_direct_method_device_create_bind_group_layout_ref;
++    napi_ref native_direct_method_device_create_bind_group_ref;
++    napi_ref native_direct_method_device_create_pipeline_layout_ref;
++    napi_ref native_direct_method_device_create_command_encoder_ref;
++    napi_ref native_direct_method_device_destroy_ref;
++    napi_ref native_direct_method_buffer_map_async_ref;
++    napi_ref native_direct_method_buffer_get_mapped_range_ref;
++    napi_ref native_direct_method_buffer_read_copy_ref;
++    napi_ref native_direct_method_buffer_map_read_copy_unmap_ref;
++    napi_ref native_direct_method_buffer_unmap_ref;
++    napi_ref native_direct_method_buffer_destroy_ref;
++    napi_ref native_direct_method_command_encoder_begin_compute_pass_ref;
++    napi_ref native_direct_method_command_encoder_copy_buffer_to_buffer_ref;
++    napi_ref native_direct_method_command_encoder_finish_ref;
++    napi_ref native_direct_method_compute_pass_set_pipeline_ref;
++    napi_ref native_direct_method_compute_pass_set_bind_group_ref;
++    napi_ref native_direct_method_compute_pass_dispatch_workgroups_ref;
++    napi_ref native_direct_method_compute_pass_dispatch_workgroups_indirect_ref;
++    napi_ref native_direct_method_compute_pass_end_ref;
++    napi_ref native_direct_method_compute_pass_set_immediates_ref;
++    napi_ref native_direct_method_compute_pass_push_debug_group_ref;
++    napi_ref native_direct_method_compute_pass_pop_debug_group_ref;
++    napi_ref native_direct_method_compute_pass_insert_debug_marker_ref;
++    napi_ref native_direct_method_render_pass_set_immediates_ref;
++    napi_ref native_direct_method_render_pass_set_viewport_ref;
++    napi_ref native_direct_method_render_pass_set_scissor_rect_ref;
++    napi_ref native_direct_method_render_pass_set_blend_constant_ref;
++    napi_ref native_direct_method_render_pass_set_stencil_reference_ref;
++    napi_ref native_direct_method_render_pass_push_debug_group_ref;
++    napi_ref native_direct_method_render_pass_pop_debug_group_ref;
++    napi_ref native_direct_method_render_pass_insert_debug_marker_ref;
++    napi_ref native_direct_method_render_pass_draw_indirect_ref;
++    napi_ref native_direct_method_render_pass_draw_indexed_indirect_ref;
++    napi_ref native_direct_method_render_bundle_encoder_set_immediates_ref;
++    napi_ref native_direct_method_render_bundle_encoder_draw_indirect_ref;
++    napi_ref native_direct_method_render_bundle_encoder_draw_indexed_indirect_ref;
++    napi_ref native_direct_method_adapter_get_preferred_canvas_format_ref;
++    napi_ref native_direct_method_device_add_event_listener_ref;
++    napi_ref native_direct_method_device_remove_event_listener_ref;
++    napi_ref native_direct_method_device_import_external_texture_ref;
++    napi_ref native_direct_method_command_encoder_clear_buffer_ref;
++    napi_ref native_direct_method_command_encoder_copy_texture_to_texture_ref;
++    napi_ref native_direct_method_queue_write_texture_ref;
++    napi_ref native_direct_method_adapter_get_info_ref;
++    napi_ref native_direct_method_shader_module_get_compilation_info_ref;
++    napi_ref native_direct_resolved_undefined_promise_ref;
++} DoeEnvState;
++
++DoeEnvState* doe_env_state(napi_env env);
++bool doe_env_init(napi_env env);
+ 
+ /* ================================================================
+  * N-API utility macros
+@@ -832,7 +855,7 @@ extern napi_ref native_direct_resolved_undefined_promise_ref;
+     size_t _argc = (n); napi_value _args[MAX_NAPI_ARGS]; \
+     if ((n) > MAX_NAPI_ARGS) NAPI_THROW(env, "too many args"); \
+     if (napi_get_cb_info(env, info, &_argc, _args, NULL, NULL) != napi_ok) NAPI_THROW(env, "napi_get_cb_info failed")
+-#define CHECK_LIB_LOADED(env) do { if (!g_lib) NAPI_THROW(env, "Library not loaded"); } while(0)
++#define CHECK_LIB_LOADED(env) do { if (!doe_env_state(env)->library_loaded) NAPI_THROW(env, "Library not loaded"); } while(0)
+ #define LOAD_SYM(name) pfn_##name = (PFN_##name)LIB_SYM(g_lib, #name)
+ #define EXPORT_FN(name, fn) { name, 0, fn, 0, 0, 0, napi_default, 0 }
+ 
+@@ -854,7 +877,7 @@ char* dup_string_value(napi_env env, napi_value value, size_t* out_len);
+ napi_valuetype prop_type(napi_env env, napi_value obj, const char* key);
+ 
+ /* Error/string helpers */
+-uint64_t current_timeout_ns(void);
++uint64_t current_timeout_ns(napi_env env);
+ void copy_library_error_message(char* out, size_t out_len);
+ void copy_library_error_meta(PFN_doeNativeCopyLastErrorMessage fn, char* out, size_t out_len);
+ uint64_t monotonic_now_ns(void);
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_nd_creators.c b/runtime/bridge/webgpu-addon/doe_napi_nd_creators.c
+index 431dcfc1d..eb74b4bfc 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_nd_creators.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_nd_creators.c
+@@ -317,7 +317,7 @@ static napi_value native_direct_adapter_request_device(napi_env env, napi_callba
+         if (descriptor.defaultQueue.label.data) free((void*)descriptor.defaultQueue.label.data);
+         NAPI_THROW(env, "requestDevice future unavailable");
+     }
+-    if (!process_events_until(inst, &result.done, current_timeout_ns())) {
++    if (!process_events_until(inst, &result.done, current_timeout_ns(env))) {
+         free(required_features);
+         if (descriptor.label.data) free((void*)descriptor.label.data);
+         if (descriptor.defaultQueue.label.data) free((void*)descriptor.defaultQueue.label.data);
+@@ -722,7 +722,7 @@ napi_value create_native_direct_gpu_object(napi_env env, WGPUInstance instance)
+     napi_create_object(env, &obj);
+     native_direct_set_external_prop(env, obj, DOE_DIRECT_INSTANCE, instance);
+     native_direct_wrap_handle_cache(env, obj, instance, NULL);
+-    native_direct_add_cached_method(env, obj, "requestAdapter", native_direct_gpu_request_adapter, &native_direct_method_gpu_request_adapter_ref);
++    native_direct_add_cached_method(env, obj, "requestAdapter", native_direct_gpu_request_adapter, &doe_env_state(env)->native_direct_method_gpu_request_adapter_ref);
+     return obj;
+ }
+ 
+@@ -736,11 +736,11 @@ napi_value create_native_direct_adapter_object(napi_env env, WGPUInstance instan
+     WGPULimits limits = native_direct_query_adapter_limits(adapter, &limits_ok);
+     native_direct_set_object_prop(env, obj, "limits", limits_ok ? create_limits_object(env, &limits) : native_direct_create_empty_object(env));
+     native_direct_set_object_prop(env, obj, "features", native_direct_create_feature_set(env, native_direct_adapter_has_feature_value, adapter));
+-    native_direct_add_cached_method(env, obj, "requestDevice", native_direct_adapter_request_device, &native_direct_method_adapter_request_device_ref);
+-    native_direct_add_cached_method(env, obj, "destroy", native_direct_adapter_destroy, &native_direct_method_adapter_destroy_ref);
+-    native_direct_add_cached_method(env, obj, "getPreferredCanvasFormat", native_direct_adapter_get_preferred_canvas_format, &native_direct_method_adapter_get_preferred_canvas_format_ref);
++    native_direct_add_cached_method(env, obj, "requestDevice", native_direct_adapter_request_device, &doe_env_state(env)->native_direct_method_adapter_request_device_ref);
++    native_direct_add_cached_method(env, obj, "destroy", native_direct_adapter_destroy, &doe_env_state(env)->native_direct_method_adapter_destroy_ref);
++    native_direct_add_cached_method(env, obj, "getPreferredCanvasFormat", native_direct_adapter_get_preferred_canvas_format, &doe_env_state(env)->native_direct_method_adapter_get_preferred_canvas_format_ref);
+     /* GPUAdapter.info — method that returns the info object directly (not async). */
+-    native_direct_add_cached_method(env, obj, "getInfo", native_direct_adapter_get_info, &native_direct_method_adapter_get_info_ref);
++    native_direct_add_cached_method(env, obj, "getInfo", native_direct_adapter_get_info, &doe_env_state(env)->native_direct_method_adapter_get_info_ref);
+     return obj;
+ }
+ 
+@@ -758,11 +758,11 @@ napi_value create_native_direct_queue_object(napi_env env, WGPUInstance instance
+     native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_SUBMIT_WAIT_MS, 0.0);
+     native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_QUEUE_FLUSH_MS, 0.0);
+     native_direct_wrap_queue_cache(env, obj, instance, queue);
+-    native_direct_add_cached_method(env, obj, "submit", native_direct_queue_submit, &native_direct_method_queue_submit_ref);
+-    native_direct_add_cached_method(env, obj, "writeBuffer", native_direct_queue_write_buffer, &native_direct_method_queue_write_buffer_ref);
+-    native_direct_add_cached_method(env, obj, "writeBufferBatch", native_direct_queue_write_buffer_batch, &native_direct_method_queue_write_buffer_batch_ref);
+-    native_direct_add_cached_method(env, obj, "writeTexture", native_direct_queue_write_texture, &native_direct_method_queue_write_texture_ref);
+-    native_direct_add_cached_method(env, obj, "onSubmittedWorkDone", native_direct_queue_on_submitted_work_done, &native_direct_method_queue_on_submitted_work_done_ref);
++    native_direct_add_cached_method(env, obj, "submit", native_direct_queue_submit, &doe_env_state(env)->native_direct_method_queue_submit_ref);
++    native_direct_add_cached_method(env, obj, "writeBuffer", native_direct_queue_write_buffer, &doe_env_state(env)->native_direct_method_queue_write_buffer_ref);
++    native_direct_add_cached_method(env, obj, "writeBufferBatch", native_direct_queue_write_buffer_batch, &doe_env_state(env)->native_direct_method_queue_write_buffer_batch_ref);
++    native_direct_add_cached_method(env, obj, "writeTexture", native_direct_queue_write_texture, &doe_env_state(env)->native_direct_method_queue_write_texture_ref);
++    native_direct_add_cached_method(env, obj, "onSubmittedWorkDone", native_direct_queue_on_submitted_work_done, &doe_env_state(env)->native_direct_method_queue_on_submitted_work_done_ref);
+     return obj;
+ }
+ 
+@@ -781,18 +781,18 @@ napi_value create_native_direct_device_object(napi_env env, WGPUInstance instanc
+     native_direct_set_object_prop(env, obj, "limits", limits_ok ? create_limits_object(env, &limits) : native_direct_create_empty_object(env));
+     native_direct_set_object_prop(env, obj, "features", native_direct_create_feature_set(env, native_direct_device_has_feature_value, device));
+     native_direct_set_object_prop(env, obj, "queue", create_native_direct_queue_object(env, instance, queue));
+-    native_direct_add_cached_method(env, obj, "createBuffer", native_direct_device_create_buffer, &native_direct_method_device_create_buffer_ref);
+-    native_direct_add_cached_method(env, obj, "createShaderModule", native_direct_device_create_shader_module, &native_direct_method_device_create_shader_module_ref);
+-    native_direct_add_cached_method(env, obj, "createComputePipeline", native_direct_device_create_compute_pipeline, &native_direct_method_device_create_compute_pipeline_ref);
+-    native_direct_add_cached_method(env, obj, "createComputePipelineAsync", native_direct_device_create_compute_pipeline_async, &native_direct_method_device_create_compute_pipeline_async_ref);
+-    native_direct_add_cached_method(env, obj, "createBindGroupLayout", native_direct_device_create_bind_group_layout, &native_direct_method_device_create_bind_group_layout_ref);
+-    native_direct_add_cached_method(env, obj, "createBindGroup", native_direct_device_create_bind_group, &native_direct_method_device_create_bind_group_ref);
+-    native_direct_add_cached_method(env, obj, "createPipelineLayout", native_direct_device_create_pipeline_layout, &native_direct_method_device_create_pipeline_layout_ref);
+-    native_direct_add_cached_method(env, obj, "createCommandEncoder", native_direct_device_create_command_encoder, &native_direct_method_device_create_command_encoder_ref);
+-    native_direct_add_cached_method(env, obj, "destroy", native_direct_device_destroy, &native_direct_method_device_destroy_ref);
+-    native_direct_add_cached_method(env, obj, "addEventListener", native_direct_device_add_event_listener, &native_direct_method_device_add_event_listener_ref);
+-    native_direct_add_cached_method(env, obj, "removeEventListener", native_direct_device_remove_event_listener, &native_direct_method_device_remove_event_listener_ref);
+-    native_direct_add_cached_method(env, obj, "importExternalTexture", native_direct_device_import_external_texture, &native_direct_method_device_import_external_texture_ref);
++    native_direct_add_cached_method(env, obj, "createBuffer", native_direct_device_create_buffer, &doe_env_state(env)->native_direct_method_device_create_buffer_ref);
++    native_direct_add_cached_method(env, obj, "createShaderModule", native_direct_device_create_shader_module, &doe_env_state(env)->native_direct_method_device_create_shader_module_ref);
++    native_direct_add_cached_method(env, obj, "createComputePipeline", native_direct_device_create_compute_pipeline, &doe_env_state(env)->native_direct_method_device_create_compute_pipeline_ref);
++    native_direct_add_cached_method(env, obj, "createComputePipelineAsync", native_direct_device_create_compute_pipeline_async, &doe_env_state(env)->native_direct_method_device_create_compute_pipeline_async_ref);
++    native_direct_add_cached_method(env, obj, "createBindGroupLayout", native_direct_device_create_bind_group_layout, &doe_env_state(env)->native_direct_method_device_create_bind_group_layout_ref);
++    native_direct_add_cached_method(env, obj, "createBindGroup", native_direct_device_create_bind_group, &doe_env_state(env)->native_direct_method_device_create_bind_group_ref);
++    native_direct_add_cached_method(env, obj, "createPipelineLayout", native_direct_device_create_pipeline_layout, &doe_env_state(env)->native_direct_method_device_create_pipeline_layout_ref);
++    native_direct_add_cached_method(env, obj, "createCommandEncoder", native_direct_device_create_command_encoder, &doe_env_state(env)->native_direct_method_device_create_command_encoder_ref);
++    native_direct_add_cached_method(env, obj, "destroy", native_direct_device_destroy, &doe_env_state(env)->native_direct_method_device_destroy_ref);
++    native_direct_add_cached_method(env, obj, "addEventListener", native_direct_device_add_event_listener, &doe_env_state(env)->native_direct_method_device_add_event_listener_ref);
++    native_direct_add_cached_method(env, obj, "removeEventListener", native_direct_device_remove_event_listener, &doe_env_state(env)->native_direct_method_device_remove_event_listener_ref);
++    native_direct_add_cached_method(env, obj, "importExternalTexture", native_direct_device_import_external_texture, &doe_env_state(env)->native_direct_method_device_import_external_texture_ref);
+     return obj;
+ }
+ 
+@@ -814,12 +814,12 @@ napi_value create_native_direct_buffer_object(napi_env env, WGPUInstance instanc
+     native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_COPY_MS, 0.0);
+     native_direct_set_double_prop(env, obj, DOE_DIRECT_DIAG_MAP_READ_COPY_UNMAP_UNMAP_MS, 0.0);
+     native_direct_wrap_buffer_cache(env, obj, instance, buffer, size, usage, queue_obj);
+-    native_direct_add_cached_method(env, obj, "mapAsync", native_direct_buffer_map_async, &native_direct_method_buffer_map_async_ref);
+-    native_direct_add_cached_method(env, obj, "getMappedRange", native_direct_buffer_get_mapped_range, &native_direct_method_buffer_get_mapped_range_ref);
+-    native_direct_add_cached_method(env, obj, "_readCopy", native_direct_buffer_read_copy, &native_direct_method_buffer_read_copy_ref);
+-    native_direct_add_cached_method(env, obj, "_mapReadCopyUnmap", native_direct_buffer_map_read_copy_unmap, &native_direct_method_buffer_map_read_copy_unmap_ref);
+-    native_direct_add_cached_method(env, obj, "unmap", native_direct_buffer_unmap, &native_direct_method_buffer_unmap_ref);
+-    native_direct_add_cached_method(env, obj, "destroy", native_direct_buffer_destroy, &native_direct_method_buffer_destroy_ref);
++    native_direct_add_cached_method(env, obj, "mapAsync", native_direct_buffer_map_async, &doe_env_state(env)->native_direct_method_buffer_map_async_ref);
++    native_direct_add_cached_method(env, obj, "getMappedRange", native_direct_buffer_get_mapped_range, &doe_env_state(env)->native_direct_method_buffer_get_mapped_range_ref);
++    native_direct_add_cached_method(env, obj, "_readCopy", native_direct_buffer_read_copy, &doe_env_state(env)->native_direct_method_buffer_read_copy_ref);
++    native_direct_add_cached_method(env, obj, "_mapReadCopyUnmap", native_direct_buffer_map_read_copy_unmap, &doe_env_state(env)->native_direct_method_buffer_map_read_copy_unmap_ref);
++    native_direct_add_cached_method(env, obj, "unmap", native_direct_buffer_unmap, &doe_env_state(env)->native_direct_method_buffer_unmap_ref);
++    native_direct_add_cached_method(env, obj, "destroy", native_direct_buffer_destroy, &doe_env_state(env)->native_direct_method_buffer_destroy_ref);
+     return obj;
+ }
+ 
+@@ -853,7 +853,7 @@ napi_value create_native_direct_shader_module_object(napi_env env, WGPUShaderMod
+     native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, shader_module);
+     native_direct_wrap_handle_cache(env, obj, NULL, shader_module);
+     /* GPUShaderModule.getCompilationInfo() — returns a Promise<GPUCompilationInfo>. */
+-    native_direct_add_cached_method(env, obj, "getCompilationInfo", native_direct_shader_module_get_compilation_info, &native_direct_method_shader_module_get_compilation_info_ref);
++    native_direct_add_cached_method(env, obj, "getCompilationInfo", native_direct_shader_module_get_compilation_info, &doe_env_state(env)->native_direct_method_shader_module_get_compilation_info_ref);
+     return obj;
+ }
+ 
+@@ -878,11 +878,11 @@ napi_value create_native_direct_command_encoder_object(napi_env env, WGPUCommand
+     napi_create_object(env, &obj);
+     native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, encoder);
+     native_direct_wrap_handle_cache(env, obj, NULL, encoder);
+-    native_direct_add_cached_method(env, obj, "beginComputePass", native_direct_command_encoder_begin_compute_pass, &native_direct_method_command_encoder_begin_compute_pass_ref);
+-    native_direct_add_cached_method(env, obj, "copyBufferToBuffer", native_direct_command_encoder_copy_buffer_to_buffer, &native_direct_method_command_encoder_copy_buffer_to_buffer_ref);
+-    native_direct_add_cached_method(env, obj, "clearBuffer", native_direct_command_encoder_clear_buffer, &native_direct_method_command_encoder_clear_buffer_ref);
+-    native_direct_add_cached_method(env, obj, "copyTextureToTexture", native_direct_command_encoder_copy_texture_to_texture, &native_direct_method_command_encoder_copy_texture_to_texture_ref);
+-    native_direct_add_cached_method(env, obj, "finish", native_direct_command_encoder_finish, &native_direct_method_command_encoder_finish_ref);
++    native_direct_add_cached_method(env, obj, "beginComputePass", native_direct_command_encoder_begin_compute_pass, &doe_env_state(env)->native_direct_method_command_encoder_begin_compute_pass_ref);
++    native_direct_add_cached_method(env, obj, "copyBufferToBuffer", native_direct_command_encoder_copy_buffer_to_buffer, &doe_env_state(env)->native_direct_method_command_encoder_copy_buffer_to_buffer_ref);
++    native_direct_add_cached_method(env, obj, "clearBuffer", native_direct_command_encoder_clear_buffer, &doe_env_state(env)->native_direct_method_command_encoder_clear_buffer_ref);
++    native_direct_add_cached_method(env, obj, "copyTextureToTexture", native_direct_command_encoder_copy_texture_to_texture, &doe_env_state(env)->native_direct_method_command_encoder_copy_texture_to_texture_ref);
++    native_direct_add_cached_method(env, obj, "finish", native_direct_command_encoder_finish, &doe_env_state(env)->native_direct_method_command_encoder_finish_ref);
+     return obj;
+ }
+ 
+@@ -891,16 +891,16 @@ napi_value create_native_direct_compute_pass_object(napi_env env, WGPUComputePas
+     napi_create_object(env, &obj);
+     native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, pass);
+     native_direct_wrap_handle_cache(env, obj, NULL, pass);
+-    native_direct_add_cached_method(env, obj, "setPipeline", native_direct_compute_pass_set_pipeline, &native_direct_method_compute_pass_set_pipeline_ref);
+-    native_direct_add_cached_method(env, obj, "setBindGroup", native_direct_compute_pass_set_bind_group, &native_direct_method_compute_pass_set_bind_group_ref);
+-    native_direct_add_cached_method(env, obj, "dispatchWorkgroups", native_direct_compute_pass_dispatch_workgroups, &native_direct_method_compute_pass_dispatch_workgroups_ref);
+-    native_direct_add_cached_method(env, obj, "dispatchWorkgroupsIndirect", native_direct_compute_pass_dispatch_workgroups_indirect, &native_direct_method_compute_pass_dispatch_workgroups_indirect_ref);
+-    native_direct_add_cached_method(env, obj, "end", native_direct_compute_pass_end, &native_direct_method_compute_pass_end_ref);
++    native_direct_add_cached_method(env, obj, "setPipeline", native_direct_compute_pass_set_pipeline, &doe_env_state(env)->native_direct_method_compute_pass_set_pipeline_ref);
++    native_direct_add_cached_method(env, obj, "setBindGroup", native_direct_compute_pass_set_bind_group, &doe_env_state(env)->native_direct_method_compute_pass_set_bind_group_ref);
++    native_direct_add_cached_method(env, obj, "dispatchWorkgroups", native_direct_compute_pass_dispatch_workgroups, &doe_env_state(env)->native_direct_method_compute_pass_dispatch_workgroups_ref);
++    native_direct_add_cached_method(env, obj, "dispatchWorkgroupsIndirect", native_direct_compute_pass_dispatch_workgroups_indirect, &doe_env_state(env)->native_direct_method_compute_pass_dispatch_workgroups_indirect_ref);
++    native_direct_add_cached_method(env, obj, "end", native_direct_compute_pass_end, &doe_env_state(env)->native_direct_method_compute_pass_end_ref);
+     /* GPUBindingCommandsMixin#setImmediates — covers both mixin and compute-pass-specific contract */
+-    native_direct_add_cached_method(env, obj, "setImmediates", native_direct_compute_pass_set_immediates, &native_direct_method_compute_pass_set_immediates_ref);
+-    native_direct_add_cached_method(env, obj, "pushDebugGroup", native_direct_compute_pass_push_debug_group, &native_direct_method_compute_pass_push_debug_group_ref);
+-    native_direct_add_cached_method(env, obj, "popDebugGroup", native_direct_compute_pass_pop_debug_group, &native_direct_method_compute_pass_pop_debug_group_ref);
+-    native_direct_add_cached_method(env, obj, "insertDebugMarker", native_direct_compute_pass_insert_debug_marker, &native_direct_method_compute_pass_insert_debug_marker_ref);
++    native_direct_add_cached_method(env, obj, "setImmediates", native_direct_compute_pass_set_immediates, &doe_env_state(env)->native_direct_method_compute_pass_set_immediates_ref);
++    native_direct_add_cached_method(env, obj, "pushDebugGroup", native_direct_compute_pass_push_debug_group, &doe_env_state(env)->native_direct_method_compute_pass_push_debug_group_ref);
++    native_direct_add_cached_method(env, obj, "popDebugGroup", native_direct_compute_pass_pop_debug_group, &doe_env_state(env)->native_direct_method_compute_pass_pop_debug_group_ref);
++    native_direct_add_cached_method(env, obj, "insertDebugMarker", native_direct_compute_pass_insert_debug_marker, &doe_env_state(env)->native_direct_method_compute_pass_insert_debug_marker_ref);
+     return obj;
+ }
+ 
+@@ -912,18 +912,18 @@ napi_value create_native_direct_render_pass_object(napi_env env, WGPURenderPassE
+     native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, pass);
+     native_direct_wrap_handle_cache(env, obj, NULL, pass);
+     /* GPURenderPassEncoder#setImmediates (GPUBindingCommandsMixin) */
+-    native_direct_add_cached_method(env, obj, "setImmediates", native_direct_render_pass_set_immediates, &native_direct_method_render_pass_set_immediates_ref);
++    native_direct_add_cached_method(env, obj, "setImmediates", native_direct_render_pass_set_immediates, &doe_env_state(env)->native_direct_method_render_pass_set_immediates_ref);
+     /* GPURenderPassEncoder dynamic state */
+-    native_direct_add_cached_method(env, obj, "setViewport", native_direct_render_pass_set_viewport, &native_direct_method_render_pass_set_viewport_ref);
+-    native_direct_add_cached_method(env, obj, "setScissorRect", native_direct_render_pass_set_scissor_rect, &native_direct_method_render_pass_set_scissor_rect_ref);
+-    native_direct_add_cached_method(env, obj, "setBlendConstant", native_direct_render_pass_set_blend_constant, &native_direct_method_render_pass_set_blend_constant_ref);
+-    native_direct_add_cached_method(env, obj, "setStencilReference", native_direct_render_pass_set_stencil_reference, &native_direct_method_render_pass_set_stencil_reference_ref);
+-    native_direct_add_cached_method(env, obj, "drawIndirect", native_direct_render_pass_draw_indirect, &native_direct_method_render_pass_draw_indirect_ref);
+-    native_direct_add_cached_method(env, obj, "drawIndexedIndirect", native_direct_render_pass_draw_indexed_indirect, &native_direct_method_render_pass_draw_indexed_indirect_ref);
++    native_direct_add_cached_method(env, obj, "setViewport", native_direct_render_pass_set_viewport, &doe_env_state(env)->native_direct_method_render_pass_set_viewport_ref);
++    native_direct_add_cached_method(env, obj, "setScissorRect", native_direct_render_pass_set_scissor_rect, &doe_env_state(env)->native_direct_method_render_pass_set_scissor_rect_ref);
++    native_direct_add_cached_method(env, obj, "setBlendConstant", native_direct_render_pass_set_blend_constant, &doe_env_state(env)->native_direct_method_render_pass_set_blend_constant_ref);
++    native_direct_add_cached_method(env, obj, "setStencilReference", native_direct_render_pass_set_stencil_reference, &doe_env_state(env)->native_direct_method_render_pass_set_stencil_reference_ref);
++    native_direct_add_cached_method(env, obj, "drawIndirect", native_direct_render_pass_draw_indirect, &doe_env_state(env)->native_direct_method_render_pass_draw_indirect_ref);
++    native_direct_add_cached_method(env, obj, "drawIndexedIndirect", native_direct_render_pass_draw_indexed_indirect, &doe_env_state(env)->native_direct_method_render_pass_draw_indexed_indirect_ref);
+     /* GPURenderPassEncoder debug markers */
+-    native_direct_add_cached_method(env, obj, "pushDebugGroup", native_direct_render_pass_push_debug_group, &native_direct_method_render_pass_push_debug_group_ref);
+-    native_direct_add_cached_method(env, obj, "popDebugGroup", native_direct_render_pass_pop_debug_group, &native_direct_method_render_pass_pop_debug_group_ref);
+-    native_direct_add_cached_method(env, obj, "insertDebugMarker", native_direct_render_pass_insert_debug_marker, &native_direct_method_render_pass_insert_debug_marker_ref);
++    native_direct_add_cached_method(env, obj, "pushDebugGroup", native_direct_render_pass_push_debug_group, &doe_env_state(env)->native_direct_method_render_pass_push_debug_group_ref);
++    native_direct_add_cached_method(env, obj, "popDebugGroup", native_direct_render_pass_pop_debug_group, &doe_env_state(env)->native_direct_method_render_pass_pop_debug_group_ref);
++    native_direct_add_cached_method(env, obj, "insertDebugMarker", native_direct_render_pass_insert_debug_marker, &doe_env_state(env)->native_direct_method_render_pass_insert_debug_marker_ref);
+     return obj;
+ }
+ 
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_nd_device.c b/runtime/bridge/webgpu-addon/doe_napi_nd_device.c
+index e4c852573..f6e89176e 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_nd_device.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_nd_device.c
+@@ -453,8 +453,8 @@ napi_value native_direct_device_destroy(napi_env env, napi_callback_info info) {
+     NativeDirectHandleCache* device_cache = native_direct_get_handle_cache(env, this_arg);
+     WGPUDevice device = device_cache ? (WGPUDevice)device_cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+     if (device) {
+-        DeviceCallbackBinding* lost = binding_take(&g_lost_bindings, device);
+-        DeviceCallbackBinding* uncaptured = binding_take(&g_uncaptured_bindings, device);
++        DeviceCallbackBinding* lost = binding_take(&doe_env_state(env)->lost_bindings, device);
++        DeviceCallbackBinding* uncaptured = binding_take(&doe_env_state(env)->uncaptured_bindings, device);
+         if (lost && pfn_doeNativeDeviceRegisterLostCallback) {
+             pfn_doeNativeDeviceRegisterLostCallback(device, NULL, NULL);
+         }
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_nd_encoder.c b/runtime/bridge/webgpu-addon/doe_napi_nd_encoder.c
+index a2c28907b..ea12adc22 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_nd_encoder.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_nd_encoder.c
+@@ -1,60 +1,10 @@
+ #include "doe_napi_internal.h"
+ 
+-typedef void (*FnWgpuComputePassEncoderPushDebugGroup)(WGPUComputePassEncoder, WGPUStringView);
+-typedef void (*FnWgpuComputePassEncoderPopDebugGroup)(WGPUComputePassEncoder);
+-typedef void (*FnWgpuComputePassEncoderInsertDebugMarker)(WGPUComputePassEncoder, WGPUStringView);
+-typedef void (*FnWgpuRenderPassEncoderDrawIndirect)(WGPURenderPassEncoder, WGPUBuffer, uint64_t);
+-typedef void (*FnWgpuRenderPassEncoderDrawIndexedIndirect)(WGPURenderPassEncoder, WGPUBuffer, uint64_t);
+ 
+-static FnWgpuComputePassEncoderPushDebugGroup resolve_wgpu_compute_pass_push_debug_group(void) {
+-    static FnWgpuComputePassEncoderPushDebugGroup fn = NULL;
+-    static bool loaded = false;
+-    if (!loaded) {
+-        loaded = true;
+-        fn = g_lib ? (FnWgpuComputePassEncoderPushDebugGroup)LIB_SYM(g_lib, "wgpuComputePassEncoderPushDebugGroup") : NULL;
+-    }
+-    return fn;
+-}
+ 
+-static FnWgpuComputePassEncoderPopDebugGroup resolve_wgpu_compute_pass_pop_debug_group(void) {
+-    static FnWgpuComputePassEncoderPopDebugGroup fn = NULL;
+-    static bool loaded = false;
+-    if (!loaded) {
+-        loaded = true;
+-        fn = g_lib ? (FnWgpuComputePassEncoderPopDebugGroup)LIB_SYM(g_lib, "wgpuComputePassEncoderPopDebugGroup") : NULL;
+-    }
+-    return fn;
+-}
+ 
+-static FnWgpuComputePassEncoderInsertDebugMarker resolve_wgpu_compute_pass_insert_debug_marker(void) {
+-    static FnWgpuComputePassEncoderInsertDebugMarker fn = NULL;
+-    static bool loaded = false;
+-    if (!loaded) {
+-        loaded = true;
+-        fn = g_lib ? (FnWgpuComputePassEncoderInsertDebugMarker)LIB_SYM(g_lib, "wgpuComputePassEncoderInsertDebugMarker") : NULL;
+-    }
+-    return fn;
+-}
+ 
+-static FnWgpuRenderPassEncoderDrawIndirect resolve_wgpu_render_pass_draw_indirect(void) {
+-    static FnWgpuRenderPassEncoderDrawIndirect fn = NULL;
+-    static bool loaded = false;
+-    if (!loaded) {
+-        loaded = true;
+-        fn = g_lib ? (FnWgpuRenderPassEncoderDrawIndirect)LIB_SYM(g_lib, "wgpuRenderPassEncoderDrawIndirect") : NULL;
+-    }
+-    return fn;
+-}
+ 
+-static FnWgpuRenderPassEncoderDrawIndexedIndirect resolve_wgpu_render_pass_draw_indexed_indirect(void) {
+-    static FnWgpuRenderPassEncoderDrawIndexedIndirect fn = NULL;
+-    static bool loaded = false;
+-    if (!loaded) {
+-        loaded = true;
+-        fn = g_lib ? (FnWgpuRenderPassEncoderDrawIndexedIndirect)LIB_SYM(g_lib, "wgpuRenderPassEncoderDrawIndexedIndirect") : NULL;
+-    }
+-    return fn;
+-}
+ 
+ napi_value native_direct_command_encoder_begin_compute_pass(napi_env env, napi_callback_info info) {
+     size_t argc = 2;
+@@ -347,7 +297,7 @@ napi_value native_direct_compute_pass_push_debug_group(napi_env env, napi_callba
+     napi_value this_arg;
+     napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+     if (argc < 1) NAPI_THROW(env, "pushDebugGroup requires groupLabel");
+-    FnWgpuComputePassEncoderPushDebugGroup fn = resolve_wgpu_compute_pass_push_debug_group();
++    FnWgpuComputePassEncoderPushDebugGroup fn = pfn_wgpuComputePassEncoderPushDebugGroup;
+     if (!fn) NAPI_THROW(env, "computePassPushDebugGroup not available");
+     NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+     WGPUComputePassEncoder pass = cache ? (WGPUComputePassEncoder)cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+@@ -368,7 +318,7 @@ napi_value native_direct_compute_pass_pop_debug_group(napi_env env, napi_callbac
+     size_t argc = 0;
+     napi_value this_arg;
+     napi_get_cb_info(env, info, &argc, NULL, &this_arg, NULL);
+-    FnWgpuComputePassEncoderPopDebugGroup fn = resolve_wgpu_compute_pass_pop_debug_group();
++    FnWgpuComputePassEncoderPopDebugGroup fn = pfn_wgpuComputePassEncoderPopDebugGroup;
+     if (!fn) NAPI_THROW(env, "computePassPopDebugGroup not available");
+     NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+     WGPUComputePassEncoder pass = cache ? (WGPUComputePassEncoder)cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+@@ -385,7 +335,7 @@ napi_value native_direct_compute_pass_insert_debug_marker(napi_env env, napi_cal
+     napi_value this_arg;
+     napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+     if (argc < 1) NAPI_THROW(env, "insertDebugMarker requires markerLabel");
+-    FnWgpuComputePassEncoderInsertDebugMarker fn = resolve_wgpu_compute_pass_insert_debug_marker();
++    FnWgpuComputePassEncoderInsertDebugMarker fn = pfn_wgpuComputePassEncoderInsertDebugMarker;
+     if (!fn) NAPI_THROW(env, "computePassInsertDebugMarker not available");
+     NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+     WGPUComputePassEncoder pass = cache ? (WGPUComputePassEncoder)cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+@@ -629,7 +579,7 @@ napi_value native_direct_render_pass_draw_indirect(napi_env env, napi_callback_i
+     napi_value this_arg;
+     napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+     if (argc < 1) NAPI_THROW(env, "drawIndirect requires an indirect buffer");
+-    FnWgpuRenderPassEncoderDrawIndirect fn = resolve_wgpu_render_pass_draw_indirect();
++    FnWgpuRenderPassEncoderDrawIndirect fn = pfn_wgpuRenderPassEncoderDrawIndirect;
+     if (!fn) NAPI_THROW(env, "renderPassDrawIndirect not available");
+     NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+     WGPURenderPassEncoder pass = cache ? (WGPURenderPassEncoder)cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+@@ -650,7 +600,7 @@ napi_value native_direct_render_pass_draw_indexed_indirect(napi_env env, napi_ca
+     napi_value this_arg;
+     napi_get_cb_info(env, info, &argc, argv, &this_arg, NULL);
+     if (argc < 1) NAPI_THROW(env, "drawIndexedIndirect requires an indirect buffer");
+-    FnWgpuRenderPassEncoderDrawIndexedIndirect fn = resolve_wgpu_render_pass_draw_indexed_indirect();
++    FnWgpuRenderPassEncoderDrawIndexedIndirect fn = pfn_wgpuRenderPassEncoderDrawIndexedIndirect;
+     if (!fn) NAPI_THROW(env, "renderPassDrawIndexedIndirect not available");
+     NativeDirectHandleCache* cache = native_direct_get_handle_cache(env, this_arg);
+     WGPURenderPassEncoder pass = cache ? (WGPURenderPassEncoder)cache->native : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_nd_immediates.c b/runtime/bridge/webgpu-addon/doe_napi_nd_immediates.c
+index 98b691457..d36ef268e 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_nd_immediates.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_nd_immediates.c
+@@ -422,7 +422,7 @@ napi_value native_direct_queue_on_submitted_work_done(napi_env env, napi_callbac
+                     if (!result.done) pfn_wgpuInstanceProcessEvents(inst);
+                 } else if (wait_status == WGPU_WAIT_STATUS_TIMED_OUT) {
+                     pfn_wgpuInstanceProcessEvents(inst);
+-                    if (monotonic_now_ns() - start_ns >= current_timeout_ns()) {
++                    if (monotonic_now_ns() - start_ns >= current_timeout_ns(env)) {
+                         napi_throw_error(env, "DOE_QUEUE_TIMEOUT", "queue wait timed out");
+                         return NULL;
+                     }
+@@ -488,7 +488,7 @@ napi_value native_direct_buffer_map_async(napi_env env, napi_callback_info info)
+             WGPUFuture future = pfn_wgpuQueueOnSubmittedWorkDone(queue, cb_info);
+             if (future.id == 0) NAPI_THROW(env, "queue work-done future unavailable");
+             const uint64_t flush_started_ns = monotonic_now_ns();
+-            if (!process_events_until(inst, &result.done, current_timeout_ns())) {
++            if (!process_events_until(inst, &result.done, current_timeout_ns(env))) {
+                 return throw_status_error(env, "DOE_QUEUE_TIMEOUT", "queue wait timed out", result.status, result.message);
+             }
+             if (result.status != WGPU_QUEUE_WORK_DONE_STATUS_SUCCESS) {
+@@ -517,7 +517,7 @@ napi_value native_direct_buffer_map_async(napi_env env, napi_callback_info info)
+     } else if (pfn_wgpuBufferMapAsync2) {
+         WGPUFuture future = pfn_wgpuBufferMapAsync2(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
+         if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
+-        if (!process_events_until(inst, &result.done, current_timeout_ns())) {
++        if (!process_events_until(inst, &result.done, current_timeout_ns(env))) {
+             return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
+         }
+         if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
+@@ -708,7 +708,7 @@ napi_value native_direct_buffer_map_read_copy_unmap(napi_env env, napi_callback_
+             WGPUFuture future = pfn_wgpuQueueOnSubmittedWorkDone(queue, cb_info);
+             if (future.id == 0) NAPI_THROW(env, "queue work-done future unavailable");
+             const uint64_t wait_started_ns = monotonic_now_ns();
+-            if (!process_events_until(inst, &qresult.done, current_timeout_ns())) {
++            if (!process_events_until(inst, &qresult.done, current_timeout_ns(env))) {
+                 NAPI_THROW(env, "queue wait timed out in mapReadCopyUnmap");
+             }
+             queue_wait_completed_ms = native_direct_elapsed_ms(wait_started_ns);
+@@ -733,7 +733,7 @@ napi_value native_direct_buffer_map_read_copy_unmap(napi_env env, napi_callback_
+     } else if (pfn_wgpuBufferMapAsync2) {
+         WGPUFuture future = pfn_wgpuBufferMapAsync2(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
+         if (future.id == 0) NAPI_THROW(env, "mapReadCopyUnmap: map future unavailable");
+-        if (!process_events_until(inst, &result.done, current_timeout_ns())) {
++        if (!process_events_until(inst, &result.done, current_timeout_ns(env))) {
+             NAPI_THROW(env, "mapReadCopyUnmap: map timed out");
+         }
+     } else {
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_nd_infra.c b/runtime/bridge/webgpu-addon/doe_napi_nd_infra.c
+index 835ab1b85..f8915e480 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_nd_infra.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_nd_infra.c
+@@ -16,14 +16,14 @@ napi_value native_direct_resolved_promise(napi_env env, napi_value value) {
+ 
+ napi_value native_direct_resolved_undefined_promise(napi_env env) {
+     napi_value promise;
+-    if (native_direct_resolved_undefined_promise_ref) {
+-        napi_get_reference_value(env, native_direct_resolved_undefined_promise_ref, &promise);
++    if (doe_env_state(env)->native_direct_resolved_undefined_promise_ref) {
++        napi_get_reference_value(env, doe_env_state(env)->native_direct_resolved_undefined_promise_ref, &promise);
+         return promise;
+     }
+     napi_value undefined_value;
+     napi_get_undefined(env, &undefined_value);
+     promise = native_direct_resolved_promise(env, undefined_value);
+-    napi_create_reference(env, promise, 1, &native_direct_resolved_undefined_promise_ref);
++    napi_create_reference(env, promise, 1, &doe_env_state(env)->native_direct_resolved_undefined_promise_ref);
+     return promise;
+ }
+ 
+@@ -321,7 +321,7 @@ WGPUAdapter native_direct_request_adapter_sync(napi_env env, WGPUInstance inst,
+         future = pfn_wgpuInstanceRequestAdapter(inst, opts_ptr, callback_info);
+     }
+     if (future.id == 0) NAPI_THROW(env, "requestAdapter future unavailable");
+-    if (!process_events_until(inst, &result.done, current_timeout_ns())) {
++    if (!process_events_until(inst, &result.done, current_timeout_ns(env))) {
+         throw_status_error(env, "DOE_REQUEST_ADAPTER_TIMEOUT", "requestAdapter timed out", result.status, result.message);
+         return NULL;
+     }
+@@ -348,7 +348,7 @@ WGPUDevice native_direct_request_device_sync(napi_env env, WGPUInstance inst, WG
+         ? pfn_doeNativeAdapterRequestDevice(adapter, NULL, cb_info)
+         : pfn_wgpuAdapterRequestDevice(adapter, NULL, cb_info);
+     if (future.id == 0) NAPI_THROW(env, "requestDevice future unavailable");
+-    if (!process_events_until(inst, &result.done, current_timeout_ns())) {
++    if (!process_events_until(inst, &result.done, current_timeout_ns(env))) {
+         throw_status_error(env, "DOE_REQUEST_DEVICE_TIMEOUT", "requestDevice timed out", result.status, result.message);
+         return NULL;
+     }
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_nd_stubs.c b/runtime/bridge/webgpu-addon/doe_napi_nd_stubs.c
+index d64808c7f..b0a6ef12e 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_nd_stubs.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_nd_stubs.c
+@@ -44,6 +44,6 @@ create_native_direct_render_bundle_encoder_object(napi_env env, void* encoder) {
+     native_direct_set_external_prop(env, obj, DOE_DIRECT_NATIVE, encoder);
+     native_direct_wrap_handle_cache(env, obj, NULL, encoder);
+     /* GPURenderBundleEncoder#setImmediates (GPUBindingCommandsMixin) */
+-    native_direct_add_cached_method(env, obj, "setImmediates", native_direct_render_bundle_encoder_set_immediates, &native_direct_method_render_bundle_encoder_set_immediates_ref);
++    native_direct_add_cached_method(env, obj, "setImmediates", native_direct_render_bundle_encoder_set_immediates, &doe_env_state(env)->native_direct_method_render_bundle_encoder_set_immediates_ref);
+     return obj;
+ }
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_queue.c b/runtime/bridge/webgpu-addon/doe_napi_queue.c
+index 2fd99a8a9..a553ad747 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_queue.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_queue.c
+@@ -1408,7 +1408,7 @@ napi_value doe_queue_flush(napi_env env, napi_callback_info info) {
+             if (!result.done) pfn_wgpuInstanceProcessEvents(inst);
+         } else if (wait_status == WGPU_WAIT_STATUS_TIMED_OUT) {
+             pfn_wgpuInstanceProcessEvents(inst);
+-            if (monotonic_now_ns() - start_ns >= current_timeout_ns()) {
++            if (monotonic_now_ns() - start_ns >= current_timeout_ns(env)) {
+                 napi_throw_error(env, "DOE_QUEUE_TIMEOUT", "queueFlush: queue wait timed out");
+                 return NULL;
+             }
+@@ -1925,7 +1925,7 @@ napi_value doe_compute_dispatch_flush_and_map_sync(napi_env env, napi_callback_i
+     } else if (pfn_wgpuBufferMapAsync2) {
+         WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i, cb_info);
+         if (future.id == 0) NAPI_THROW(env, "flushAndMapSync: bufferMapAsync future unavailable");
+-        if (!process_events_until(inst, &result.done, current_timeout_ns()))
++        if (!process_events_until(inst, &result.done, current_timeout_ns(env)))
+             return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "flushAndMapSync: bufferMapAsync timed out", result.status, result.message);
+         if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+             return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "flushAndMapSync: bufferMapAsync failed", result.status, result.message);
+diff --git a/runtime/bridge/webgpu-addon/doe_napi_render.c b/runtime/bridge/webgpu-addon/doe_napi_render.c
+index 3c85c9759..12b38947b 100644
+--- a/runtime/bridge/webgpu-addon/doe_napi_render.c
++++ b/runtime/bridge/webgpu-addon/doe_napi_render.c
+@@ -66,94 +66,14 @@ static WGPUBlendComponent parse_blend_component(napi_env env, napi_value obj) {
+     return comp;
+ }
+ 
+-typedef void (*FnWgpuComputePassEncoderPushDebugGroup)(WGPUComputePassEncoder, WGPUStringView);
+-typedef void (*FnWgpuComputePassEncoderPopDebugGroup)(WGPUComputePassEncoder);
+-typedef void (*FnWgpuComputePassEncoderInsertDebugMarker)(WGPUComputePassEncoder, WGPUStringView);
+-typedef void (*FnWgpuRenderPassEncoderDrawIndirect)(WGPURenderPassEncoder, WGPUBuffer, uint64_t);
+-typedef void (*FnWgpuRenderPassEncoderDrawIndexedIndirect)(WGPURenderPassEncoder, WGPUBuffer, uint64_t);
+-typedef void (*FnDoeNativeRenderPassExecuteBundles)(void*, size_t, void* const*);
+-typedef void (*FnWgpuRenderBundleEncoderDrawIndirect)(void*, WGPUBuffer, uint64_t);
+-typedef void (*FnWgpuRenderBundleEncoderDrawIndexedIndirect)(void*, WGPUBuffer, uint64_t);
+-
+-static FnWgpuComputePassEncoderPushDebugGroup resolve_wgpu_compute_pass_push_debug_group(void) {
+-    static FnWgpuComputePassEncoderPushDebugGroup fn = NULL;
+-    static bool resolved = false;
+-    if (!resolved) {
+-        fn = (FnWgpuComputePassEncoderPushDebugGroup)LIB_SYM(g_lib, "wgpuComputePassEncoderPushDebugGroup");
+-        resolved = true;
+-    }
+-    return fn;
+-}
+ 
+-static FnWgpuComputePassEncoderPopDebugGroup resolve_wgpu_compute_pass_pop_debug_group(void) {
+-    static FnWgpuComputePassEncoderPopDebugGroup fn = NULL;
+-    static bool resolved = false;
+-    if (!resolved) {
+-        fn = (FnWgpuComputePassEncoderPopDebugGroup)LIB_SYM(g_lib, "wgpuComputePassEncoderPopDebugGroup");
+-        resolved = true;
+-    }
+-    return fn;
+-}
+ 
+-static FnWgpuComputePassEncoderInsertDebugMarker resolve_wgpu_compute_pass_insert_debug_marker(void) {
+-    static FnWgpuComputePassEncoderInsertDebugMarker fn = NULL;
+-    static bool resolved = false;
+-    if (!resolved) {
+-        fn = (FnWgpuComputePassEncoderInsertDebugMarker)LIB_SYM(g_lib, "wgpuComputePassEncoderInsertDebugMarker");
+-        resolved = true;
+-    }
+-    return fn;
+-}
+ 
+-static FnWgpuRenderPassEncoderDrawIndirect resolve_wgpu_render_pass_draw_indirect(void) {
+-    static FnWgpuRenderPassEncoderDrawIndirect fn = NULL;
+-    static bool resolved = false;
+-    if (!resolved) {
+-        fn = (FnWgpuRenderPassEncoderDrawIndirect)LIB_SYM(g_lib, "wgpuRenderPassEncoderDrawIndirect");
+-        resolved = true;
+-    }
+-    return fn;
+-}
+ 
+-static FnWgpuRenderPassEncoderDrawIndexedIndirect resolve_wgpu_render_pass_draw_indexed_indirect(void) {
+-    static FnWgpuRenderPassEncoderDrawIndexedIndirect fn = NULL;
+-    static bool resolved = false;
+-    if (!resolved) {
+-        fn = (FnWgpuRenderPassEncoderDrawIndexedIndirect)LIB_SYM(g_lib, "wgpuRenderPassEncoderDrawIndexedIndirect");
+-        resolved = true;
+-    }
+-    return fn;
+-}
+ 
+-static FnDoeNativeRenderPassExecuteBundles resolve_doe_native_render_pass_execute_bundles(void) {
+-    static FnDoeNativeRenderPassExecuteBundles fn = NULL;
+-    static bool resolved = false;
+-    if (!resolved) {
+-        fn = (FnDoeNativeRenderPassExecuteBundles)LIB_SYM(g_lib, "doeNativeRenderPassExecuteBundles");
+-        resolved = true;
+-    }
+-    return fn;
+-}
+ 
+-static FnWgpuRenderBundleEncoderDrawIndirect resolve_wgpu_render_bundle_encoder_draw_indirect(void) {
+-    static FnWgpuRenderBundleEncoderDrawIndirect fn = NULL;
+-    static bool resolved = false;
+-    if (!resolved) {
+-        fn = (FnWgpuRenderBundleEncoderDrawIndirect)LIB_SYM(g_lib, "wgpuRenderBundleEncoderDrawIndirect");
+-        resolved = true;
+-    }
+-    return fn;
+-}
+ 
+-static FnWgpuRenderBundleEncoderDrawIndexedIndirect resolve_wgpu_render_bundle_encoder_draw_indexed_indirect(void) {
+-    static FnWgpuRenderBundleEncoderDrawIndexedIndirect fn = NULL;
+-    static bool resolved = false;
+-    if (!resolved) {
+-        fn = (FnWgpuRenderBundleEncoderDrawIndexedIndirect)LIB_SYM(g_lib, "wgpuRenderBundleEncoderDrawIndexedIndirect");
+-        resolved = true;
+-    }
+-    return fn;
+-}
++
+ 
+ /* Render Pipeline */
+ 
+@@ -578,7 +498,7 @@ napi_value doe_render_pass_draw_indexed(napi_env env, napi_callback_info info) {
+ napi_value doe_render_pass_execute_bundles(napi_env env, napi_callback_info info) {
+     NAPI_ASSERT_ARGC(env, info, 2);
+     void* pass = unwrap_ptr(env, _args[0]);
+-    FnDoeNativeRenderPassExecuteBundles fn = resolve_doe_native_render_pass_execute_bundles();
++    FnDoeNativeRenderPassExecuteBundles fn = pfn_doeNativeRenderPassExecuteBundles;
+     if (!pass || !fn) NAPI_THROW(env, "renderPassExecuteBundles not available");
+     bool is_array = false;
+     napi_is_array(env, _args[1], &is_array);
+@@ -693,7 +613,7 @@ napi_value doe_render_pass_insert_debug_marker(napi_env env, napi_callback_info
+ napi_value doe_compute_pass_push_debug_group(napi_env env, napi_callback_info info) {
+     NAPI_ASSERT_ARGC(env, info, 2);
+     WGPUComputePassEncoder pass = unwrap_ptr(env, _args[0]);
+-    FnWgpuComputePassEncoderPushDebugGroup fn = resolve_wgpu_compute_pass_push_debug_group();
++    FnWgpuComputePassEncoderPushDebugGroup fn = pfn_wgpuComputePassEncoderPushDebugGroup;
+     if (!pass || !fn) NAPI_THROW(env, "computePassPushDebugGroup not available");
+     size_t label_len = 0;
+     napi_get_value_string_utf8(env, _args[1], NULL, 0, &label_len);
+@@ -708,7 +628,7 @@ napi_value doe_compute_pass_push_debug_group(napi_env env, napi_callback_info in
+ napi_value doe_compute_pass_pop_debug_group(napi_env env, napi_callback_info info) {
+     NAPI_ASSERT_ARGC(env, info, 1);
+     WGPUComputePassEncoder pass = unwrap_ptr(env, _args[0]);
+-    FnWgpuComputePassEncoderPopDebugGroup fn = resolve_wgpu_compute_pass_pop_debug_group();
++    FnWgpuComputePassEncoderPopDebugGroup fn = pfn_wgpuComputePassEncoderPopDebugGroup;
+     if (!pass || !fn) NAPI_THROW(env, "computePassPopDebugGroup not available");
+     fn(pass);
+     return NULL;
+@@ -717,7 +637,7 @@ napi_value doe_compute_pass_pop_debug_group(napi_env env, napi_callback_info inf
+ napi_value doe_compute_pass_insert_debug_marker(napi_env env, napi_callback_info info) {
+     NAPI_ASSERT_ARGC(env, info, 2);
+     WGPUComputePassEncoder pass = unwrap_ptr(env, _args[0]);
+-    FnWgpuComputePassEncoderInsertDebugMarker fn = resolve_wgpu_compute_pass_insert_debug_marker();
++    FnWgpuComputePassEncoderInsertDebugMarker fn = pfn_wgpuComputePassEncoderInsertDebugMarker;
+     if (!pass || !fn) NAPI_THROW(env, "computePassInsertDebugMarker not available");
+     size_t label_len = 0;
+     napi_get_value_string_utf8(env, _args[1], NULL, 0, &label_len);
+@@ -733,7 +653,7 @@ napi_value doe_render_pass_draw_indirect(napi_env env, napi_callback_info info)
+     NAPI_ASSERT_ARGC(env, info, 3);
+     WGPURenderPassEncoder pass = unwrap_ptr(env, _args[0]);
+     WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
+-    FnWgpuRenderPassEncoderDrawIndirect fn = resolve_wgpu_render_pass_draw_indirect();
++    FnWgpuRenderPassEncoderDrawIndirect fn = pfn_wgpuRenderPassEncoderDrawIndirect;
+     if (!pass || !buffer || !fn) NAPI_THROW(env, "renderPassDrawIndirect not available");
+     uint64_t offset = (uint64_t)get_int64_value(env, _args[2]);
+     fn(pass, buffer, offset);
+@@ -744,7 +664,7 @@ napi_value doe_render_pass_draw_indexed_indirect(napi_env env, napi_callback_inf
+     NAPI_ASSERT_ARGC(env, info, 3);
+     WGPURenderPassEncoder pass = unwrap_ptr(env, _args[0]);
+     WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
+-    FnWgpuRenderPassEncoderDrawIndexedIndirect fn = resolve_wgpu_render_pass_draw_indexed_indirect();
++    FnWgpuRenderPassEncoderDrawIndexedIndirect fn = pfn_wgpuRenderPassEncoderDrawIndexedIndirect;
+     if (!pass || !buffer || !fn) NAPI_THROW(env, "renderPassDrawIndexedIndirect not available");
+     uint64_t offset = (uint64_t)get_int64_value(env, _args[2]);
+     fn(pass, buffer, offset);
+@@ -755,7 +675,7 @@ napi_value doe_render_bundle_encoder_draw_indirect(napi_env env, napi_callback_i
+     NAPI_ASSERT_ARGC(env, info, 3);
+     void* enc = unwrap_ptr(env, _args[0]);
+     WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
+-    FnWgpuRenderBundleEncoderDrawIndirect fn = resolve_wgpu_render_bundle_encoder_draw_indirect();
++    FnWgpuRenderBundleEncoderDrawIndirect fn = pfn_wgpuRenderBundleEncoderDrawIndirect;
+     if (!enc || !buffer || !fn) NAPI_THROW(env, "renderBundleEncoderDrawIndirect not available");
+     uint64_t offset = (uint64_t)get_int64_value(env, _args[2]);
+     fn(enc, buffer, offset);
+@@ -766,7 +686,7 @@ napi_value doe_render_bundle_encoder_draw_indexed_indirect(napi_env env, napi_ca
+     NAPI_ASSERT_ARGC(env, info, 3);
+     void* enc = unwrap_ptr(env, _args[0]);
+     WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
+-    FnWgpuRenderBundleEncoderDrawIndexedIndirect fn = resolve_wgpu_render_bundle_encoder_draw_indexed_indirect();
++    FnWgpuRenderBundleEncoderDrawIndexedIndirect fn = pfn_wgpuRenderBundleEncoderDrawIndexedIndirect;
+     if (!enc || !buffer || !fn) NAPI_THROW(env, "renderBundleEncoderDrawIndexedIndirect not available");
+     uint64_t offset = (uint64_t)get_int64_value(env, _args[2]);
+     fn(enc, buffer, offset);
+diff --git a/runtime/zig/README.md b/runtime/zig/README.md
+index b2d729509..20815d158 100644
+--- a/runtime/zig/README.md
++++ b/runtime/zig/README.md
+@@ -74,6 +74,13 @@ Build, execution, and retained-library reproduction commands are in the
+ Package qualification separately verifies ordinary command ownership across
+ the JavaScript/native boundary.
+ 
++[`tests/native_async_pipeline.c`](tests/native_async_pipeline.c) exercises the
++public async render-pipeline callback, immediate caller release, and eventual
++device cleanup on Linux Vulkan. Link it against the retained package library
++with the same C build recipe. The Zig suite also injects snapshot allocation and
++worker-start failures, compares exact request identities, and verifies callback
++leases for compute and rendering.
++
+ ## Build edit measurements
+ 
+ Run `python3 runtime/zig/tools/capture_build_measurements.py` from the repository
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 2792ab6ac..ba1bb8e37 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -2914,7 +2914,7 @@
+       },
+       "src/core/abi/procs/wgpu_async_procs.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "57500cb686aef7bacf5d79f01408760f88342bb2bea1fc9528908b4668005574",
++        "moduleSha256": "c1d4d943f5e713f0b0fee74b92d356fb62b75607ba91d3bc7ace7e72f6e2d952",
+         "reason": "Keep: reachable core implementation shared by 5 production consumers with no conflicting ownership signal.",
+         "reviewer": "codex-recomposition-review/2026-08-08"
+       },
+@@ -3202,19 +3202,19 @@
+       },
+       "src/dropin/wgpu_dropin_ext_a_core.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "16b53f94691a402bd5d4617fc88fc9ced0b6730d4cf3fca25574eac97181e044",
++        "moduleSha256": "9b19086cd4daa72596d84b6302c1e581303693ec060f51f7cca6209c7aa74564",
+         "reason": "Keep: reachable dropin implementation shared by 3 production consumers with no conflicting ownership signal.",
+         "reviewer": "codex-vulkan-adapter-provenance/2026-08-10"
+       },
+       "src/dropin/wgpu_dropin_ext_a_exports.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "ecfc1aa0884f05f6915eeed4f993c53271d67ab235251c8d88a4b025c48f94b7",
++        "moduleSha256": "16db811baa8cfb49bd490e2afffd5f28c39db06809cd28751b3813deec4df22c",
+         "reason": "Keep: WebGPU reference-count adapters now retain real render-bundle and encoder references rather than accepting ineffective calls.",
+         "reviewer": "codex-render-ownership/2026-09-06"
+       },
+       "src/dropin/wgpu_dropin_ext_a_pipeline.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "b84c628824678a8e1247a1f2f3987173d6255f5518181472fe98f448347df3af",
++        "moduleSha256": "c15eddc7a4f540455d8a916d0c382a7475d2499dac5e462bc12f99457fac982e",
+         "reason": "Keep: reachable dropin implementation shared by 3 production consumers with no conflicting ownership signal.",
+         "reviewer": "codex-recomposition-review/2026-08-08"
+       },
+@@ -3952,7 +3952,7 @@
+       },
+       "src/runtime/device/multi_adapter.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "3a5b6f8e1fa577ee8e71fab2c72beee4393b83f6be2c753cb6c408147386c43c",
++        "moduleSha256": "18830ff68888047c2e08f0cd273db2f5b50ee0e1f77b0d23050f0160fe83fbc5",
+         "reason": "Keep: reachable runtime implementation shared by 2 production consumers with no conflicting ownership signal.",
+         "reviewer": "codex-recomposition-review/2026-08-08"
+       },
+@@ -4058,15 +4058,9 @@
+         "reason": "Keep: reachable runtime implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
+         "reviewer": "codex-hexagonal-migration/2026-08-22"
+       },
+-      "src/runtime/pipeline_cache_integration.zig": {
+-        "decision": "Keep",
+-        "moduleSha256": "ddeab4398e719bed70bbefe09e4470a499de744b804b1de00e93e8ae2f6ce0c1",
+-        "reason": "Keep: reachable runtime implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
+-      },
+       "src/runtime/pipeline_singleflight.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "4c403847d649b46f438537d20fbd01b2a62c47d70962bcb6b4b2c7d047f6ad44",
++        "moduleSha256": "e2f1d463e102b2c2ee61415b604f0879d5d05615eb6b1cb0de257d472cf8c38e",
+         "reason": "Keep: reachable runtime implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
+         "reviewer": "codex-recomposition-review/2026-08-08"
+       },
+@@ -4108,7 +4102,7 @@
+       },
+       "src/runtime/task_pool.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "7ef8cd366782b5a1fe68ddea70e8c48b463810d463bdb3555b4cf27955f240fc",
++        "moduleSha256": "6bd85d0f0355aa50a52ba15a429eca4d83be6314d01bde24cca45c74c2ad3539",
+         "reason": "Keep: reachable runtime implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
+         "reviewer": "codex-recomposition-review/2026-08-08"
+       },
+diff --git a/runtime/zig/src/core/abi/procs/wgpu_async_procs.zig b/runtime/zig/src/core/abi/procs/wgpu_async_procs.zig
+index d0ada5f28..63e156fcb 100644
+--- a/runtime/zig/src/core/abi/procs/wgpu_async_procs.zig
++++ b/runtime/zig/src/core/abi/procs/wgpu_async_procs.zig
+@@ -5,6 +5,8 @@ const abi_proc_aliases = @import("../wgpu_type_proc_aliases.zig");
+ const loader = @import("../wgpu_loader.zig");
+ 
+ pub const CREATE_PIPELINE_ASYNC_STATUS_SUCCESS: u32 = 1;
++pub const CREATE_PIPELINE_ASYNC_STATUS_VALIDATION_ERROR: u32 = 3;
++pub const CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR: u32 = 4;
+ pub const POP_ERROR_SCOPE_STATUS_SUCCESS: u32 = 1;
+ pub const COMPILATION_INFO_STATUS_SUCCESS: u32 = 1;
+ pub const COMPILATION_INFO_STATUS_CALLBACK_CANCELLED: u32 = 2;
+diff --git a/runtime/zig/src/dropin/wgpu_dropin_ext_a_core.zig b/runtime/zig/src/dropin/wgpu_dropin_ext_a_core.zig
+index 4f1a598e4..43be69641 100644
+--- a/runtime/zig/src/dropin/wgpu_dropin_ext_a_core.zig
++++ b/runtime/zig/src/dropin/wgpu_dropin_ext_a_core.zig
+@@ -42,7 +42,6 @@ pub const query_native = @import("../native/resource/doe_query_native.zig");
+ pub const error_scope = @import("../runtime/diagnostics/error_scope.zig");
+ pub const task_pool = @import("../runtime/task_pool.zig");
+ pub const singleflight = @import("../runtime/pipeline_singleflight.zig");
+-pub const pipeline_cache_integration = @import("../runtime/pipeline_cache_integration.zig");
+ 
+ pub extern fn wgpuGetProcAddress(name: abi_core.WGPUStringView) callconv(.c) p1cap.WGPUProc;
+ pub extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: abi_core.WGPUStringView) callconv(.c) noreturn;
+diff --git a/runtime/zig/src/dropin/wgpu_dropin_ext_a_exports.zig b/runtime/zig/src/dropin/wgpu_dropin_ext_a_exports.zig
+index 5369f369b..551c60ea7 100644
+--- a/runtime/zig/src/dropin/wgpu_dropin_ext_a_exports.zig
++++ b/runtime/zig/src/dropin/wgpu_dropin_ext_a_exports.zig
+@@ -155,10 +155,10 @@ pub export fn wgpuDeviceAddRef(a0: types.WGPUDevice) callconv(.c) void {
+ 
+ pub export fn wgpuDeviceCreateComputePipelineAsync(a0: types.WGPUDevice, a1: *const types.WGPUComputePipelineDescriptor, a2: p0.CreateComputePipelineAsyncCallbackInfo) callconv(.c) types.WGPUFuture {
+     const future = types.WGPUFuture{ .id = next_async_future_id() };
+-    const req = copy_compute_pipeline_request(a0, a1, a2) orelse {
++    const req = copy_compute_pipeline_request(a0, a1, a2) catch |err| {
+         if (a2.callback) |cb| {
+-            const msg = "async request allocation failed";
+-            cb(2, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
++            const msg = @errorName(err);
++            cb(if (err == error.OutOfMemory) async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR else async_procs.CREATE_PIPELINE_ASYNC_STATUS_VALIDATION_ERROR, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
+         }
+         return future;
+     };
+@@ -166,7 +166,7 @@ pub export fn wgpuDeviceCreateComputePipelineAsync(a0: types.WGPUDevice, a1: *co
+         free_compute_pipeline_request(req);
+         if (a2.callback) |cb| {
+             const msg = "async pipeline single-flight allocation failed";
+-            cb(2, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
++            cb(async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
+         }
+         return future;
+     };
+@@ -175,12 +175,7 @@ pub export fn wgpuDeviceCreateComputePipelineAsync(a0: types.WGPUDevice, a1: *co
+             .run = run_compute_pipeline_async,
+             .ctx = joined.entry,
+         }) catch {
+-            _ = pipeline.g_compute_inflight.take(joined.entry);
+-            free_compute_pipeline_request(req);
+-            if (a2.callback) |cb| {
+-                const msg = "async pipeline worker submit failed";
+-                cb(2, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
+-            }
++            pipeline.fail_compute_pipeline_async(joined.entry, "async pipeline worker submit failed");
+         };
+     }
+     return future;
+@@ -192,10 +187,10 @@ pub export fn wgpuDeviceCreateRenderBundleEncoder(a0: types.WGPUDevice, a1: *con
+ 
+ pub export fn wgpuDeviceCreateRenderPipelineAsync(a0: types.WGPUDevice, a1: *const anyopaque, a2: async_procs.CreateRenderPipelineAsyncCallbackInfo) callconv(.c) types.WGPUFuture {
+     const future = types.WGPUFuture{ .id = next_async_future_id() };
+-    const req = copy_render_pipeline_request(a0, a1, a2) orelse {
++    const req = copy_render_pipeline_request(a0, a1, a2) catch |err| {
+         if (a2.callback) |cb| {
+-            const msg = "async render request allocation failed";
+-            cb(2, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
++            const msg = @errorName(err);
++            cb(if (err == error.OutOfMemory) async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR else async_procs.CREATE_PIPELINE_ASYNC_STATUS_VALIDATION_ERROR, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
+         }
+         return future;
+     };
+@@ -203,7 +198,7 @@ pub export fn wgpuDeviceCreateRenderPipelineAsync(a0: types.WGPUDevice, a1: *con
+         free_render_pipeline_request(req);
+         if (a2.callback) |cb| {
+             const msg = "async render single-flight allocation failed";
+-            cb(2, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
++            cb(async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
+         }
+         return future;
+     };
+@@ -212,12 +207,7 @@ pub export fn wgpuDeviceCreateRenderPipelineAsync(a0: types.WGPUDevice, a1: *con
+             .run = run_render_pipeline_async,
+             .ctx = joined.entry,
+         }) catch {
+-            _ = pipeline.g_render_inflight.take(joined.entry);
+-            free_render_pipeline_request(req);
+-            if (a2.callback) |cb| {
+-                const msg = "async render worker submit failed";
+-                cb(2, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
+-            }
++            pipeline.fail_render_pipeline_async(joined.entry, "async render worker submit failed");
+         };
+     }
+     return future;
+diff --git a/runtime/zig/src/dropin/wgpu_dropin_ext_a_pipeline.zig b/runtime/zig/src/dropin/wgpu_dropin_ext_a_pipeline.zig
+index aef1b5c9e..f45796ad5 100644
+--- a/runtime/zig/src/dropin/wgpu_dropin_ext_a_pipeline.zig
++++ b/runtime/zig/src/dropin/wgpu_dropin_ext_a_pipeline.zig
+@@ -6,7 +6,8 @@ const p0 = core.p0;
+ const async_procs = core.async_procs;
+ const native = core.native;
+ const singleflight = core.singleflight;
+-const pipeline_cache_integration = core.pipeline_cache_integration;
++
++pub const SnapshotError = error{ OutOfMemory, InvalidDescriptor, UnsupportedDescriptor };
+ 
+ pub const string_view_slice = core.string_view_slice;
+ pub const dup_string_view = core.dup_string_view;
+@@ -130,8 +131,7 @@ pub fn next_async_future_id() u64 {
+ }
+ 
+ pub fn render_string_view_slice(view: RenderStringView) []const u8 {
+-    const data = view.data orelse return "";
+-    return data[0..view.length];
++    return string_view_slice(.{ .data = view.data, .length = view.length });
+ }
+ 
+ pub fn dup_render_string_view(view: RenderStringView) ?[]u8 {
+@@ -196,6 +196,8 @@ pub fn render_pipeline_request_key(req: *const RenderPipelineAsyncRequest) u64 {
+ }
+ 
+ pub const ComputePipelineAsyncRequest = struct {
++    pub const matches = same_compute_request;
++    allocator: std.mem.Allocator = std.heap.c_allocator,
+     next: ?*ComputePipelineAsyncRequest = null,
+     device: types.WGPUDevice,
+     descriptor: types.WGPUComputePipelineDescriptor,
+@@ -203,15 +205,16 @@ pub const ComputePipelineAsyncRequest = struct {
+     label_bytes: ?[]u8 = null,
+     entry_point_bytes: ?[]u8 = null,
+     constants: ?[]types.WGPUConstantEntry = null,
+-    constant_key_bytes: ?[]?[]u8 = null,
+     pipeline: types.WGPUComputePipeline = null,
+     status: u32 = p0.CREATE_COMPUTE_PIPELINE_ASYNC_STATUS_SUCCESS,
+-    message_bytes: ?[]u8 = null,
++    message: []const u8 = "",
+ };
+ 
+ pub const ComputeInflightEntry = singleflight.Registry(ComputePipelineAsyncRequest).Entry;
+ 
+ pub const RenderPipelineAsyncRequest = struct {
++    pub const matches = same_render_request;
++    allocator: std.mem.Allocator = std.heap.c_allocator,
+     next: ?*RenderPipelineAsyncRequest = null,
+     device: types.WGPUDevice,
+     descriptor: RenderPipelineDesc,
+@@ -223,227 +226,313 @@ pub const RenderPipelineAsyncRequest = struct {
+     vertex_attributes: ?[]RenderVertexAttribute = null,
+     fragment_state: ?*RenderFragmentState = null,
+     fragment_targets: ?[]RenderColorTargetState = null,
++    fragment_blends: ?[]RenderBlendState = null,
++    vertex_constants: ?[]types.WGPUConstantEntry = null,
++    fragment_constants: ?[]types.WGPUConstantEntry = null,
+     depth_stencil: ?*RenderDepthStencilDesc = null,
+     pipeline: types.WGPURenderPipeline = null,
+     status: u32 = async_procs.CREATE_PIPELINE_ASYNC_STATUS_SUCCESS,
+-    message_bytes: ?[]u8 = null,
++    message: []const u8 = "",
+ };
+ 
+ pub const RenderInflightEntry = singleflight.Registry(RenderPipelineAsyncRequest).Entry;
+ 
+-pub fn free_compute_pipeline_request(req: *ComputePipelineAsyncRequest) void {
+-    if (req.label_bytes) |bytes| std.heap.c_allocator.free(bytes);
+-    if (req.entry_point_bytes) |bytes| std.heap.c_allocator.free(bytes);
+-    if (req.constant_key_bytes) |all_keys| {
+-        for (all_keys) |maybe_key| {
+-            if (maybe_key) |key| std.heap.c_allocator.free(key);
++fn same_constants(left: ?[]types.WGPUConstantEntry, right: ?[]types.WGPUConstantEntry) bool {
++    const a = left orelse &.{};
++    const b = right orelse &.{};
++    if (a.len != b.len) return false;
++    for (a, b) |x, y| {
++        if (@as(u64, @bitCast(x.value)) != @as(u64, @bitCast(y.value)) or
++            !std.mem.eql(u8, string_view_slice(x.key), string_view_slice(y.key))) return false;
++    }
++    return true;
++}
++
++fn same_compute_request(left: *const ComputePipelineAsyncRequest, right: *const ComputePipelineAsyncRequest) bool {
++    return left.device == right.device and left.descriptor.layout == right.descriptor.layout and
++        left.descriptor.compute.module == right.descriptor.compute.module and
++        std.mem.eql(u8, string_view_slice(left.descriptor.label), string_view_slice(right.descriptor.label)) and
++        std.mem.eql(u8, string_view_slice(left.descriptor.compute.entryPoint), string_view_slice(right.descriptor.compute.entryPoint)) and
++        same_constants(left.constants, right.constants);
++}
++
++fn same_render_request(left: *const RenderPipelineAsyncRequest, right: *const RenderPipelineAsyncRequest) bool {
++    const a = &left.descriptor;
++    const b = &right.descriptor;
++    if (left.device != right.device or a.layout != b.layout or a.vertex.module != b.vertex.module or
++        !std.mem.eql(u8, render_string_view_slice(a.label), render_string_view_slice(b.label)) or
++        !std.mem.eql(u8, render_string_view_slice(a.vertex.entryPoint), render_string_view_slice(b.vertex.entryPoint)) or
++        !std.meta.eql(a.primitive, b.primitive) or !std.meta.eql(a.multisample, b.multisample) or
++        !same_constants(left.vertex_constants, right.vertex_constants) or
++        !same_constants(left.fragment_constants, right.fragment_constants)) return false;
++    const ab = left.vertex_buffers orelse &.{};
++    const bb = right.vertex_buffers orelse &.{};
++    if (ab.len != bb.len) return false;
++    for (ab, bb) |x, y| {
++        if (x.arrayStride != y.arrayStride or x.stepMode != y.stepMode or x.attributeCount != y.attributeCount) return false;
++        if (x.attributeCount != 0) {
++            for (x.attributes.?[0..x.attributeCount], y.attributes.?[0..y.attributeCount]) |xa, ya| {
++                if (!std.meta.eql(xa, ya)) return false;
++            }
++        }
++    }
++    if ((a.fragment == null) != (b.fragment == null)) return false;
++    if (a.fragment) |af| {
++        const bf = b.fragment.?;
++        if (af.module != bf.module or
++            !std.mem.eql(u8, render_string_view_slice(af.entryPoint), render_string_view_slice(bf.entryPoint))) return false;
++        const at = left.fragment_targets orelse &.{};
++        const bt = right.fragment_targets orelse &.{};
++        if (at.len != bt.len) return false;
++        for (at, bt) |x, y| {
++            if (x.format != y.format or x.writeMask != y.writeMask or (x.blend == null) != (y.blend == null)) return false;
++            if (x.blend) |blend| {
++                if (!std.meta.eql(blend.*, y.blend.?.*)) return false;
++            }
+         }
+-        std.heap.c_allocator.free(all_keys);
+     }
+-    if (req.constants) |constants| std.heap.c_allocator.free(constants);
+-    if (req.message_bytes) |bytes| std.heap.c_allocator.free(bytes);
++    if ((left.depth_stencil == null) != (right.depth_stencil == null)) return false;
++    if (left.depth_stencil) |ad| {
++        const bd = right.depth_stencil.?;
++        if (!std.meta.eql(ad.*, bd.*) or
++            @as(u32, @bitCast(ad.depthBiasSlopeScale)) != @as(u32, @bitCast(bd.depthBiasSlopeScale)) or
++            @as(u32, @bitCast(ad.depthBiasClamp)) != @as(u32, @bitCast(bd.depthBiasClamp))) return false;
++    }
++    return true;
++}
++
++fn copy_string(allocator: std.mem.Allocator, bytes: []const u8) std.mem.Allocator.Error!?[]u8 {
++    return if (bytes.len == 0) null else try allocator.dupe(u8, bytes);
++}
++
++fn free_constants(allocator: std.mem.Allocator, constants: ?[]types.WGPUConstantEntry) void {
++    if (constants) |entries| {
++        for (entries) |entry| {
++            const key = string_view_slice(entry.key);
++            if (key.len != 0) allocator.free(key);
++        }
++        allocator.free(entries);
++    }
++}
++
++fn copy_constants(allocator: std.mem.Allocator, source: []const types.WGPUConstantEntry) SnapshotError!?[]types.WGPUConstantEntry {
++    if (source.len == 0) return null;
++    const entries = try allocator.alloc(types.WGPUConstantEntry, source.len);
++    @memset(entries, std.mem.zeroes(types.WGPUConstantEntry));
++    errdefer free_constants(allocator, entries);
++    for (entries, source) |*entry, original| {
++        if (original.nextInChain != null) return error.UnsupportedDescriptor;
++        entry.value = original.value;
++        entry.key = make_string_view(try copy_string(allocator, string_view_slice(original.key)));
++    }
++    return entries;
++}
++
++pub fn free_compute_pipeline_request(req: *ComputePipelineAsyncRequest) void {
++    const allocator = req.allocator;
++    if (req.label_bytes) |bytes| allocator.free(bytes);
++    if (req.entry_point_bytes) |bytes| allocator.free(bytes);
++    free_constants(allocator, req.constants);
+     if (req.descriptor.layout != null) native.doeNativePipelineLayoutRelease(req.descriptor.layout);
+     if (req.descriptor.compute.module != null) native.doeNativeShaderModuleRelease(req.descriptor.compute.module);
+     native.doeNativeDeviceRelease(req.device);
+-    std.heap.c_allocator.destroy(req);
++    allocator.destroy(req);
+ }
+ 
+ pub fn copy_compute_pipeline_request(
+     device: types.WGPUDevice,
+     desc: *const types.WGPUComputePipelineDescriptor,
+     callback_info: p0.CreateComputePipelineAsyncCallbackInfo,
+-) ?*ComputePipelineAsyncRequest {
+-    const req = std.heap.c_allocator.create(ComputePipelineAsyncRequest) catch return null;
+-    errdefer std.heap.c_allocator.destroy(req);
+-
+-    req.* = .{
+-        .device = device,
+-        .descriptor = desc.*,
+-        .callback_info = callback_info,
+-    };
++) SnapshotError!*ComputePipelineAsyncRequest {
++    return copy_compute_request(std.heap.c_allocator, device, desc, callback_info);
++}
+ 
++fn copy_compute_request(
++    allocator: std.mem.Allocator,
++    device: types.WGPUDevice,
++    desc: *const types.WGPUComputePipelineDescriptor,
++    callback_info: p0.CreateComputePipelineAsyncCallbackInfo,
++) SnapshotError!*ComputePipelineAsyncRequest {
++    if (desc.nextInChain != null or desc.compute.nextInChain != null) return error.UnsupportedDescriptor;
++    if (desc.compute.constantCount > 0 and desc.compute.constants == null) return error.InvalidDescriptor;
++    const req = try allocator.create(ComputePipelineAsyncRequest);
++    req.* = .{ .allocator = allocator, .device = device, .descriptor = desc.*, .callback_info = callback_info };
+     native.doeNativeDeviceAddRef(device);
+     if (desc.compute.module != null) native.object_add_ref(native.DoeShaderModule, desc.compute.module);
+     if (desc.layout != null) native.object_add_ref(native.DoePipelineLayout, desc.layout);
+-
+-    req.label_bytes = dup_string_view(desc.label);
++    errdefer free_compute_pipeline_request(req);
++    req.label_bytes = try copy_string(allocator, string_view_slice(desc.label));
+     req.descriptor.label = make_string_view(req.label_bytes);
+-
+-    req.entry_point_bytes = dup_string_view(desc.compute.entryPoint);
++    req.entry_point_bytes = try copy_string(allocator, string_view_slice(desc.compute.entryPoint));
+     req.descriptor.compute.entryPoint = make_string_view(req.entry_point_bytes);
+-
+     if (desc.compute.constantCount > 0 and desc.compute.constants != null) {
+-        const count = desc.compute.constantCount;
+-        const constants = std.heap.c_allocator.alloc(types.WGPUConstantEntry, count) catch {
+-            free_compute_pipeline_request(req);
+-            return null;
+-        };
+-        const key_bytes = std.heap.c_allocator.alloc(?[]u8, count) catch {
+-            std.heap.c_allocator.free(constants);
+-            free_compute_pipeline_request(req);
+-            return null;
+-        };
+-        @memset(key_bytes, null);
+-        for (constants, 0..) |*entry, index| {
+-            entry.* = desc.compute.constants.?[index];
+-            key_bytes[index] = dup_string_view(entry.key);
+-            entry.key = make_string_view(key_bytes[index]);
+-        }
+-        req.constants = constants;
+-        req.constant_key_bytes = key_bytes;
+-        req.descriptor.compute.constants = constants.ptr;
+-        req.descriptor.compute.constantCount = count;
+-    } else {
+-        req.descriptor.compute.constants = null;
+-        req.descriptor.compute.constantCount = 0;
++        req.constants = try copy_constants(allocator, desc.compute.constants[0..desc.compute.constantCount]);
+     }
+-
++    req.descriptor.compute.constants = if (req.constants) |entries| entries.ptr else null;
++    req.descriptor.compute.constantCount = if (req.constants) |entries| entries.len else 0;
+     return req;
+ }
+ 
+-pub fn set_compute_pipeline_request_error(req: *ComputePipelineAsyncRequest, message: []const u8) void {
+-    req.status = 2;
+-    req.message_bytes = std.heap.c_allocator.dupe(u8, message) catch null;
++pub fn set_compute_pipeline_request_error(req: *ComputePipelineAsyncRequest, comptime message: []const u8) void {
++    req.status = async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR;
++    req.message = message;
+ }
+ 
+ pub fn copy_render_pipeline_request(
+     device: types.WGPUDevice,
+     desc_raw: *const anyopaque,
+     callback_info: async_procs.CreateRenderPipelineAsyncCallbackInfo,
+-) ?*RenderPipelineAsyncRequest {
+-    const src: *const RenderPipelineDesc = @ptrCast(@alignCast(desc_raw));
+-    const req = std.heap.c_allocator.create(RenderPipelineAsyncRequest) catch return null;
+-    errdefer std.heap.c_allocator.destroy(req);
+-
+-    req.* = .{
+-        .device = device,
+-        .descriptor = src.*,
+-        .callback_info = callback_info,
+-    };
++) SnapshotError!*RenderPipelineAsyncRequest {
++    return copy_render_request(std.heap.c_allocator, device, @ptrCast(@alignCast(desc_raw)), callback_info);
++}
+ 
++fn copy_render_request(
++    allocator: std.mem.Allocator,
++    device: types.WGPUDevice,
++    src: *const RenderPipelineDesc,
++    callback_info: async_procs.CreateRenderPipelineAsyncCallbackInfo,
++) SnapshotError!*RenderPipelineAsyncRequest {
++    if (src.nextInChain != null or src.vertex.nextInChain != null or src.primitive.nextInChain != null or src.multisample.nextInChain != null) return error.UnsupportedDescriptor;
++    if ((src.vertex.constantCount > 0 and src.vertex.constants == null) or
++        (src.vertex.bufferCount > 0 and src.vertex.buffers == null)) return error.InvalidDescriptor;
++    if (src.fragment) |fragment| {
++        if (fragment.nextInChain != null) return error.UnsupportedDescriptor;
++        if ((fragment.constantCount > 0 and fragment.constants == null) or
++            (fragment.targetCount > 0 and fragment.targets == null)) return error.InvalidDescriptor;
++    }
++    const req = try allocator.create(RenderPipelineAsyncRequest);
++    req.* = .{ .allocator = allocator, .device = device, .descriptor = src.*, .callback_info = callback_info };
+     native.doeNativeDeviceAddRef(device);
+     if (src.layout != null) native.object_add_ref(native.DoePipelineLayout, src.layout);
+     if (src.vertex.module != null) native.object_add_ref(native.DoeShaderModule, src.vertex.module);
+     if (src.fragment) |frag| {
+         if (frag.module != null) native.object_add_ref(native.DoeShaderModule, frag.module);
+     }
+-
+-    req.label_bytes = dup_render_string_view(src.label);
++    errdefer free_render_pipeline_request(req);
++    req.label_bytes = try copy_string(allocator, render_string_view_slice(src.label));
+     req.descriptor.label = make_render_string_view(req.label_bytes);
+-    req.vertex_entry_bytes = dup_render_string_view(src.vertex.entryPoint);
++    req.vertex_entry_bytes = try copy_string(allocator, render_string_view_slice(src.vertex.entryPoint));
+     req.descriptor.vertex.entryPoint = make_render_string_view(req.vertex_entry_bytes);
+-
++    if (src.vertex.constantCount > 0 and src.vertex.constants != null) {
++        const entries: [*]const types.WGPUConstantEntry = @ptrCast(@alignCast(src.vertex.constants.?));
++        req.vertex_constants = try copy_constants(allocator, entries[0..src.vertex.constantCount]);
++    }
++    req.descriptor.vertex.constants = if (req.vertex_constants) |entries| @ptrCast(entries.ptr) else null;
++    req.descriptor.vertex.constantCount = if (req.vertex_constants) |entries| entries.len else 0;
+     if (src.vertex.bufferCount > 0 and src.vertex.buffers != null) {
+         const src_bufs = @as([*]const RenderVertexBufferLayout, @ptrCast(@alignCast(src.vertex.buffers)))[0..src.vertex.bufferCount];
+-        const dst_bufs = std.heap.c_allocator.alloc(RenderVertexBufferLayout, src_bufs.len) catch {
+-            free_render_pipeline_request(req);
+-            return null;
+-        };
+-        var attr_total: usize = 0;
+-        for (src_bufs) |buf| attr_total += buf.attributeCount;
+-        const dst_attrs = if (attr_total > 0)
+-            std.heap.c_allocator.alloc(RenderVertexAttribute, attr_total) catch {
+-                std.heap.c_allocator.free(dst_bufs);
+-                free_render_pipeline_request(req);
+-                return null;
+-            }
+-        else
+-            null;
++        const dst_bufs = try allocator.dupe(RenderVertexBufferLayout, src_bufs);
+         req.vertex_buffers = dst_bufs;
++        var attr_total: usize = 0;
++        for (src_bufs) |buf| {
++            if (buf.nextInChain != null) return error.UnsupportedDescriptor;
++            if (buf.attributeCount > 0 and buf.attributes == null) return error.InvalidDescriptor;
++            attr_total = std.math.add(usize, attr_total, buf.attributeCount) catch return error.InvalidDescriptor;
++        }
++        const dst_attrs = if (attr_total > 0) try allocator.alloc(RenderVertexAttribute, attr_total) else null;
+         req.vertex_attributes = dst_attrs;
+         req.descriptor.vertex.buffers = @ptrCast(dst_bufs.ptr);
+         req.descriptor.vertex.bufferCount = dst_bufs.len;
+-
+         var attr_index: usize = 0;
+-        for (src_bufs, 0..) |src_buf, index| {
+-            dst_bufs[index] = src_buf;
+-            dst_bufs[index].nextInChain = null;
+-            if (src_buf.attributeCount > 0 and src_buf.attributes != null and dst_attrs != null) {
+-                const src_attrs = src_buf.attributes.?[0..src_buf.attributeCount];
+-                const dst_slice = dst_attrs.?[attr_index .. attr_index + src_buf.attributeCount];
+-                for (src_attrs, 0..) |src_attr, attr_offset| {
+-                    dst_slice[attr_offset] = src_attr;
+-                    dst_slice[attr_offset].nextInChain = null;
++        for (dst_bufs, src_bufs) |*dst, original| {
++            dst.nextInChain = null;
++            if (original.attributeCount > 0 and original.attributes != null and dst_attrs != null) {
++                const copied = dst_attrs.?[attr_index .. attr_index + original.attributeCount];
++                @memcpy(copied, original.attributes.?[0..original.attributeCount]);
++                for (copied) |attribute| {
++                    if (attribute.nextInChain != null) return error.UnsupportedDescriptor;
+                 }
+-                dst_bufs[index].attributes = dst_slice.ptr;
+-                attr_index += src_buf.attributeCount;
++                dst.attributes = copied.ptr;
++                attr_index += original.attributeCount;
+             } else {
+-                dst_bufs[index].attributes = null;
+-                dst_bufs[index].attributeCount = 0;
++                dst.attributes = null;
++                dst.attributeCount = 0;
+             }
+         }
+     } else {
+         req.descriptor.vertex.buffers = null;
+         req.descriptor.vertex.bufferCount = 0;
+     }
+-
+     if (src.fragment) |frag| {
+-        const frag_copy = std.heap.c_allocator.create(RenderFragmentState) catch {
+-            free_render_pipeline_request(req);
+-            return null;
+-        };
+-        frag_copy.* = frag.*;
+-        req.fragment_state = frag_copy;
+-        req.fragment_entry_bytes = dup_render_string_view(frag.entryPoint);
+-        frag_copy.entryPoint = make_render_string_view(req.fragment_entry_bytes);
++        const copied = try allocator.create(RenderFragmentState);
++        copied.* = frag.*;
++        req.fragment_state = copied;
++        req.descriptor.fragment = copied;
++        req.fragment_entry_bytes = try copy_string(allocator, render_string_view_slice(frag.entryPoint));
++        copied.entryPoint = make_render_string_view(req.fragment_entry_bytes);
++        if (frag.constantCount > 0 and frag.constants != null) {
++            const entries: [*]const types.WGPUConstantEntry = @ptrCast(@alignCast(frag.constants.?));
++            req.fragment_constants = try copy_constants(allocator, entries[0..frag.constantCount]);
++        }
++        copied.constants = if (req.fragment_constants) |entries| @ptrCast(entries.ptr) else null;
++        copied.constantCount = if (req.fragment_constants) |entries| entries.len else 0;
+         if (frag.targetCount > 0 and frag.targets != null) {
+-            const targets = std.heap.c_allocator.alloc(RenderColorTargetState, frag.targetCount) catch {
+-                free_render_pipeline_request(req);
+-                return null;
+-            };
+-            @memcpy(targets, frag.targets.?[0..frag.targetCount]);
+-            for (targets) |*target| target.nextInChain = null;
++            const targets = try allocator.dupe(RenderColorTargetState, frag.targets.?[0..frag.targetCount]);
+             req.fragment_targets = targets;
+-            frag_copy.targets = targets.ptr;
+-            frag_copy.targetCount = targets.len;
++            const blends = try allocator.alloc(RenderBlendState, targets.len);
++            req.fragment_blends = blends;
++            for (targets, blends) |*target, *blend| {
++                if (target.nextInChain != null) return error.UnsupportedDescriptor;
++                if (target.blend) |original| {
++                    blend.* = original.*;
++                    target.blend = blend;
++                }
++            }
++            copied.targets = targets.ptr;
++            copied.targetCount = targets.len;
+         } else {
+-            frag_copy.targets = null;
+-            frag_copy.targetCount = 0;
++            copied.targets = null;
++            copied.targetCount = 0;
+         }
+-        req.descriptor.fragment = frag_copy;
+-    } else {
+-        req.descriptor.fragment = null;
+     }
+-
+     if (src.depthStencil) |depth_raw| {
+-        const src_depth: *const RenderDepthStencilDesc = @ptrCast(@alignCast(depth_raw));
+-        const depth_copy = std.heap.c_allocator.create(RenderDepthStencilDesc) catch {
+-            free_render_pipeline_request(req);
+-            return null;
+-        };
+-        depth_copy.* = src_depth.*;
+-        depth_copy.nextInChain = null;
+-        req.depth_stencil = depth_copy;
+-        req.descriptor.depthStencil = @ptrCast(depth_copy);
+-    } else {
+-        req.descriptor.depthStencil = null;
++        const original: *const RenderDepthStencilDesc = @ptrCast(@alignCast(depth_raw));
++        if (original.nextInChain != null) return error.UnsupportedDescriptor;
++        const copied = try allocator.create(RenderDepthStencilDesc);
++        copied.* = original.*;
++        copied.nextInChain = null;
++        req.depth_stencil = copied;
++        req.descriptor.depthStencil = @ptrCast(copied);
+     }
+-
+     return req;
+ }
+ 
+ pub fn free_render_pipeline_request(req: *RenderPipelineAsyncRequest) void {
+-    if (req.label_bytes) |bytes| std.heap.c_allocator.free(bytes);
+-    if (req.vertex_entry_bytes) |bytes| std.heap.c_allocator.free(bytes);
+-    if (req.fragment_entry_bytes) |bytes| std.heap.c_allocator.free(bytes);
+-    if (req.vertex_buffers) |bufs| std.heap.c_allocator.free(bufs);
+-    if (req.vertex_attributes) |attrs| std.heap.c_allocator.free(attrs);
+-    if (req.fragment_targets) |targets| std.heap.c_allocator.free(targets);
+-    if (req.fragment_state) |frag| std.heap.c_allocator.destroy(frag);
+-    if (req.depth_stencil) |depth| std.heap.c_allocator.destroy(depth);
+-    if (req.message_bytes) |bytes| std.heap.c_allocator.free(bytes);
+     if (req.descriptor.layout != null) native.doeNativePipelineLayoutRelease(req.descriptor.layout);
+     if (req.descriptor.vertex.module != null) native.doeNativeShaderModuleRelease(req.descriptor.vertex.module);
+     if (req.descriptor.fragment) |frag| {
+         if (frag.module != null) native.doeNativeShaderModuleRelease(frag.module);
+     }
++    if (req.label_bytes) |bytes| req.allocator.free(bytes);
++    if (req.vertex_entry_bytes) |bytes| req.allocator.free(bytes);
++    if (req.fragment_entry_bytes) |bytes| req.allocator.free(bytes);
++    if (req.vertex_buffers) |bufs| req.allocator.free(bufs);
++    if (req.vertex_attributes) |attrs| req.allocator.free(attrs);
++    free_constants(req.allocator, req.vertex_constants);
++    free_constants(req.allocator, req.fragment_constants);
++    if (req.fragment_blends) |blends| req.allocator.free(blends);
++    if (req.fragment_targets) |targets| req.allocator.free(targets);
++    if (req.fragment_state) |frag| req.allocator.destroy(frag);
++    if (req.depth_stencil) |depth| req.allocator.destroy(depth);
+     native.doeNativeDeviceRelease(req.device);
+-    std.heap.c_allocator.destroy(req);
++    req.allocator.destroy(req);
++}
++
++pub fn set_render_pipeline_request_error(req: *RenderPipelineAsyncRequest, comptime message: []const u8) void {
++    req.status = async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR;
++    req.message = message;
+ }
+ 
+-pub fn set_render_pipeline_request_error(req: *RenderPipelineAsyncRequest, message: []const u8) void {
+-    req.status = 2;
+-    req.message_bytes = std.heap.c_allocator.dupe(u8, message) catch null;
++pub fn fail_compute_pipeline_async(entry: *ComputeInflightEntry, comptime message: []const u8) void {
++    const head = g_compute_inflight.take(entry) orelse return;
++    set_compute_pipeline_request_error(head, message);
++    deliver_pipeline_requests(ComputePipelineAsyncRequest, native.DoeComputePipeline, native.doeNativeComputePipelineRelease, free_compute_pipeline_request, head);
++}
++
++pub fn fail_render_pipeline_async(entry: *RenderInflightEntry, comptime message: []const u8) void {
++    const head = g_render_inflight.take(entry) orelse return;
++    set_render_pipeline_request_error(head, message);
++    deliver_pipeline_requests(RenderPipelineAsyncRequest, native.DoeRenderPipeline, native.doeNativeRenderPipelineRelease, free_render_pipeline_request, head);
+ }
+ 
+ pub fn run_compute_pipeline_async(ctx_raw: ?*anyopaque) void {
+@@ -451,28 +540,10 @@ pub fn run_compute_pipeline_async(ctx_raw: ?*anyopaque) void {
+     const head = g_compute_inflight.take(entry) orelse return;
+     const lead = head;
+     lead.pipeline = @ptrCast(native.doeNativeDeviceCreateComputePipeline(lead.device, &lead.descriptor));
+-    pipeline_cache_integration.recordComputePipelineCreation(if (lead.entry_point_bytes) |ep| ep else null);
+     if (lead.pipeline == null) {
+         set_compute_pipeline_request_error(lead, "pipeline creation failed");
+     }
+-    var req: ?*ComputePipelineAsyncRequest = head;
+-    var first = true;
+-    while (req) |current| {
+-        const next = current.next;
+-        current.status = lead.status;
+-        if (lead.pipeline != null) {
+-            current.pipeline = lead.pipeline;
+-            if (!first) native.object_add_ref(native.DoeComputePipeline, current.pipeline);
+-        } else if (current != lead) {
+-            set_compute_pipeline_request_error(current, "pipeline creation failed");
+-        }
+-        if (current.callback_info.callback) |cb| {
+-            cb(current.status, current.pipeline, make_string_view(current.message_bytes), current.callback_info.userdata1, current.callback_info.userdata2);
+-        }
+-        free_compute_pipeline_request(current);
+-        first = false;
+-        req = next;
+-    }
++    deliver_pipeline_requests(ComputePipelineAsyncRequest, native.DoeComputePipeline, native.doeNativeComputePipelineRelease, free_compute_pipeline_request, head);
+ }
+ 
+ pub fn run_render_pipeline_async(ctx_raw: ?*anyopaque) void {
+@@ -480,26 +551,183 @@ pub fn run_render_pipeline_async(ctx_raw: ?*anyopaque) void {
+     const head = g_render_inflight.take(entry) orelse return;
+     const lead = head;
+     lead.pipeline = @ptrCast(native.doeNativeDeviceCreateRenderPipeline(lead.device, @ptrCast(&lead.descriptor)));
+-    pipeline_cache_integration.recordRenderPipelineCreation();
+     if (lead.pipeline == null) {
+         set_render_pipeline_request_error(lead, "render pipeline creation failed");
+     }
+-    var req: ?*RenderPipelineAsyncRequest = head;
+-    var first = true;
++    deliver_pipeline_requests(RenderPipelineAsyncRequest, native.DoeRenderPipeline, native.doeNativeRenderPipelineRelease, free_render_pipeline_request, head);
++}
++
++fn deliver_pipeline_requests(
++    comptime Request: type,
++    comptime Pipeline: type,
++    comptime release_pipeline: fn (?*anyopaque) callconv(.c) void,
++    comptime free_request: fn (*Request) void,
++    head: *Request,
++) void {
++    defer free_request(head);
++    defer if (head.pipeline != null) release_pipeline(head.pipeline);
++    var req: ?*Request = head;
+     while (req) |current| {
+         const next = current.next;
+-        current.status = lead.status;
+-        if (lead.pipeline != null) {
+-            current.pipeline = lead.pipeline;
+-            if (!first) native.object_add_ref(native.DoeRenderPipeline, current.pipeline);
+-        } else if (current != lead) {
+-            set_render_pipeline_request_error(current, "render pipeline creation failed");
+-        }
+         if (current.callback_info.callback) |cb| {
+-            cb(current.status, current.pipeline, make_string_view(current.message_bytes), current.callback_info.userdata1, current.callback_info.userdata2);
++            // Each callback receives its own lease; earlier callbacks may release or reenter.
++            if (head.pipeline != null) native.object_add_ref(Pipeline, head.pipeline);
++            cb(head.status, head.pipeline, .{ .data = head.message.ptr, .length = head.message.len }, current.callback_info.userdata1, current.callback_info.userdata2);
+         }
+-        free_render_pipeline_request(current);
+-        first = false;
++        if (current != head) free_request(current);
+         req = next;
+     }
+ }
++
++test "async render cleanup releases shader leases before owned fragment storage" {
++    var device = native.DoeDevice{};
++    var shader = native.DoeShaderModule{};
++    var descriptor = std.mem.zeroes(RenderPipelineDesc);
++    var fragment = std.mem.zeroes(RenderFragmentState);
++    fragment.module = native.toOpaque(&shader);
++    descriptor.vertex.module = native.toOpaque(&shader);
++    descriptor.fragment = &fragment;
++    const request = try copy_render_pipeline_request(@ptrCast(&device), &descriptor, std.mem.zeroes(async_procs.CreateRenderPipelineAsyncCallbackInfo));
++    try std.testing.expectEqual(@as(u32, 3), shader.ref_count);
++    try std.testing.expectEqual(@as(u32, 2), device.ref_count);
++    free_render_pipeline_request(request);
++    try std.testing.expectEqual(@as(u32, 1), shader.ref_count);
++    try std.testing.expectEqual(@as(u32, 1), device.ref_count);
++}
++
++fn test_callback_leases(comptime Pipeline: type, comptime release: fn (?*anyopaque) callconv(.c) void) !void {
++    const Node = struct {
++        const Self = @This();
++        next: ?*@This() = null,
++        pipeline: ?*anyopaque,
++        status: u32,
++        message_bytes: ?[]u8 = null,
++        message: []const u8 = "",
++        callback_info: struct {
++            callback: ?*const fn (u32, ?*anyopaque, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void = null,
++            userdata1: ?*anyopaque = null,
++            userdata2: ?*anyopaque = null,
++        },
++
++        const State = struct { count: usize = 0, failed: bool = false, expected_status: u32 };
++        fn callback(status: u32, pipeline: ?*anyopaque, message: types.WGPUStringView, data: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
++            const state: *State = @ptrCast(@alignCast(data.?));
++            state.failed = state.failed or status != state.expected_status or
++                !std.mem.eql(u8, string_view_slice(message), "original cause");
++            if (pipeline != null) release(pipeline);
++            state.count += 1;
++        }
++        fn free(self: *Self) void {
++            if (self.message_bytes) |bytes| std.testing.allocator.free(bytes);
++            std.testing.allocator.destroy(self);
++        }
++    };
++    for ([_]bool{ false, true }) |failed| {
++        var pipeline = Pipeline{ .ref_count = 2 };
++        var state = Node.State{ .expected_status = if (failed) 2 else 1 };
++        var callback: @FieldType(Node, "callback_info") = .{};
++        callback.callback = Node.callback;
++        callback.userdata1 = &state;
++        const head = try std.testing.allocator.create(Node);
++        head.* = .{ .pipeline = if (failed) null else &pipeline, .status = state.expected_status, .callback_info = callback };
++        head.message_bytes = try std.testing.allocator.dupe(u8, "original cause");
++        head.message = head.message_bytes.?;
++        const follower = try std.testing.allocator.create(Node);
++        follower.* = .{ .pipeline = null, .status = 0, .callback_info = callback };
++        head.next = follower;
++        const unobserved = try std.testing.allocator.create(Node);
++        unobserved.* = .{ .pipeline = null, .status = 0, .callback_info = .{} };
++        follower.next = unobserved;
++        deliver_pipeline_requests(Node, Pipeline, release, Node.free, head);
++        try std.testing.expectEqual(@as(usize, 2), state.count);
++        try std.testing.expect(!state.failed);
++        try std.testing.expectEqual(@as(u32, if (failed) 2 else 1), pipeline.ref_count);
++    }
++}
++
++test "async pipeline callbacks may release results before later waiters receive them" {
++    try test_callback_leases(native.DoeComputePipeline, native.doeNativeComputePipelineRelease);
++    try test_callback_leases(native.DoeRenderPipeline, native.doeNativeRenderPipelineRelease);
++}
++
++fn test_owned_snapshots(allocator: std.mem.Allocator) !void {
++    var device = native.DoeDevice{};
++    var shader = native.DoeShaderModule{};
++    defer std.debug.assert(device.ref_count == 1 and shader.ref_count == 1);
++    var key = [_]u8{'x'};
++    var constants = [_]types.WGPUConstantEntry{std.mem.zeroes(types.WGPUConstantEntry)};
++    constants[0].key = .{ .data = &key, .length = key.len };
++    constants[0].value = 2;
++    var compute = std.mem.zeroes(types.WGPUComputePipelineDescriptor);
++    compute.label = .{ .data = "compute", .length = core.abi_core.WGPU_STRLEN };
++    compute.compute.entryPoint = .{ .data = "main", .length = core.abi_core.WGPU_STRLEN };
++    compute.compute.module = @ptrCast(&shader);
++    compute.compute.constants = &constants;
++    compute.compute.constantCount = constants.len;
++    const first = try copy_compute_request(allocator, @ptrCast(&device), &compute, std.mem.zeroes(p0.CreateComputePipelineAsyncCallbackInfo));
++    defer free_compute_pipeline_request(first);
++    key[0] = 'y';
++    try std.testing.expectEqualStrings("x", string_view_slice(first.constants.?[0].key));
++    try std.testing.expectEqualStrings("main", string_view_slice(first.descriptor.compute.entryPoint));
++    const second = try copy_compute_request(allocator, @ptrCast(&device), &compute, std.mem.zeroes(p0.CreateComputePipelineAsyncCallbackInfo));
++    defer free_compute_pipeline_request(second);
++    try std.testing.expect(!same_compute_request(first, second));
++
++    var render = std.mem.zeroes(RenderPipelineDesc);
++    render.vertex.module = @ptrCast(&shader);
++    render.vertex.entryPoint = .{ .data = "vs", .length = core.abi_core.WGPU_STRLEN };
++    render.vertex.constants = &constants;
++    render.vertex.constantCount = constants.len;
++    var attributes = [_]RenderVertexAttribute{std.mem.zeroes(RenderVertexAttribute)};
++    var buffers = [_]RenderVertexBufferLayout{std.mem.zeroes(RenderVertexBufferLayout)};
++    buffers[0].attributes = &attributes;
++    buffers[0].attributeCount = attributes.len;
++    render.vertex.buffers = &buffers;
++    render.vertex.bufferCount = buffers.len;
++    var blend = std.mem.zeroes(RenderBlendState);
++    var target = [_]RenderColorTargetState{std.mem.zeroes(RenderColorTargetState)};
++    target[0].blend = &blend;
++    var fragment = std.mem.zeroes(RenderFragmentState);
++    fragment.module = @ptrCast(&shader);
++    fragment.entryPoint = .{ .data = "fs", .length = core.abi_core.WGPU_STRLEN };
++    fragment.targets = &target;
++    fragment.targetCount = target.len;
++    fragment.constants = &constants;
++    fragment.constantCount = constants.len;
++    render.fragment = &fragment;
++    var depth = std.mem.zeroes(RenderDepthStencilDesc);
++    render.depthStencil = &depth;
++    const a = try copy_render_request(allocator, @ptrCast(&device), &render, std.mem.zeroes(async_procs.CreateRenderPipelineAsyncCallbackInfo));
++    defer free_render_pipeline_request(a);
++    const b = try copy_render_request(allocator, @ptrCast(&device), &render, std.mem.zeroes(async_procs.CreateRenderPipelineAsyncCallbackInfo));
++    defer free_render_pipeline_request(b);
++    try std.testing.expect(same_render_request(a, b));
++    blend.color.srcFactor = 2;
++    attributes[0].offset = 16;
++    constants[0].value = 3;
++    key[0] = 'z';
++    try std.testing.expectEqual(@as(u32, 0), a.fragment_targets.?[0].blend.?.color.srcFactor);
++    try std.testing.expectEqual(@as(u64, 0), a.vertex_attributes.?[0].offset);
++    try std.testing.expectEqual(@as(f64, 2), a.fragment_constants.?[0].value);
++    try std.testing.expectEqualStrings("y", string_view_slice(a.vertex_constants.?[0].key));
++    var changed = b.*;
++    changed.descriptor.primitive.cullMode = 1;
++    try std.testing.expect(!same_render_request(a, &changed));
++    changed = b.*;
++    changed.vertex_buffers = &buffers;
++    try std.testing.expect(!same_render_request(a, &changed));
++    changed = b.*;
++    changed.fragment_targets = &target;
++    try std.testing.expect(!same_render_request(a, &changed));
++    changed = b.*;
++    changed.fragment_constants = &constants;
++    try std.testing.expect(!same_render_request(a, &changed));
++    changed = b.*;
++    changed.depth_stencil = &depth;
++    depth.depthBias = 1;
++    try std.testing.expect(!same_render_request(a, &changed));
++}
++
++test "async snapshots preserve nested declarations and roll back every allocation failure" {
++    try std.testing.checkAllAllocationFailures(std.testing.allocator, test_owned_snapshots, .{});
++}
+diff --git a/runtime/zig/src/runtime/device/multi_adapter.zig b/runtime/zig/src/runtime/device/multi_adapter.zig
+index 71810dd22..68ba83866 100644
+--- a/runtime/zig/src/runtime/device/multi_adapter.zig
++++ b/runtime/zig/src/runtime/device/multi_adapter.zig
+@@ -345,18 +345,23 @@ pub export fn doeNativeDeviceRegisterLostCallback(
+     callback: ?DeviceLostCallback,
+     userdata: ?*anyopaque,
+ ) callconv(.c) void {
+-    // Store callback per device.  In practice Doe devices are torn down explicitly;
+-    // we fire the callback immediately with reason=destroyed on doeNativeDeviceRelease.
+-    // For eGPU hot-unplug, doeNativeDeviceNotifyLost is called from the ObjC removal
+-    // notification observer registered in metal_multi_device.m.
+-    const allocator = process_roots.adapterAllocator();
+-    const reg = allocator.create(DeviceLostReg) catch return;
+-    reg.* = .{
+-        .dev = _dev,
+-        .callback = callback,
+-        .userdata = userdata,
+-    };
+-    device_lost_registry_insert(reg);
++    lost_reg_mutex.lock();
++    defer lost_reg_mutex.unlock();
++    if (device_lost_registry_take(_dev)) |reg| {
++        if (callback) |cb| {
++            reg.callback = cb;
++            reg.userdata = userdata;
++            reg.next = lost_reg_head;
++            lost_reg_head = reg;
++        } else {
++            process_roots.adapterAllocator().destroy(reg);
++        }
++        return;
++    }
++    const cb = callback orelse return;
++    const reg = process_roots.adapterAllocator().create(DeviceLostReg) catch return;
++    reg.* = .{ .dev = _dev, .callback = cb, .userdata = userdata, .next = lost_reg_head };
++    lost_reg_head = reg;
+ }
+ 
+ pub export fn doeNativeDeviceNotifyLost(
+@@ -373,35 +378,35 @@ pub export fn doeNativeDeviceNotifyLost(
+ 
+ const DeviceLostReg = struct {
+     dev: ?*anyopaque,
+-    callback: ?DeviceLostCallback,
++    callback: DeviceLostCallback,
+     userdata: ?*anyopaque,
+     next: ?*DeviceLostReg = null,
+ };
+ 
+ var lost_reg_head: ?*DeviceLostReg = null;
++var lost_reg_mutex: std.Thread.Mutex = .{};
+ 
+-fn device_lost_registry_insert(reg: *DeviceLostReg) void {
+-    reg.next = lost_reg_head;
+-    lost_reg_head = reg;
++// Caller holds lost_reg_mutex. Detach before invoking callbacks so they may reenter.
++fn device_lost_registry_take(dev: ?*anyopaque) ?*DeviceLostReg {
++    var link = &lost_reg_head;
++    while (link.*) |node| {
++        if (node.dev == dev) {
++            link.* = node.next;
++            node.next = null;
++            return node;
++        }
++        link = &node.next;
++    }
++    return null;
+ }
+ 
+ fn device_lost_fire_and_remove(dev: ?*anyopaque, reason: u32, msg_ptr: ?[*]const u8, msg_len: usize) void {
+-    var prev: ?*DeviceLostReg = null;
+-    var cur = lost_reg_head;
+-    while (cur) |node| {
+-        if (node.dev == dev) {
+-            if (node.callback) |cb| cb(reason, msg_ptr, msg_len, node.userdata);
+-            // Remove from list.
+-            if (prev) |p| {
+-                p.next = node.next;
+-            } else {
+-                lost_reg_head = node.next;
+-            }
+-            process_roots.adapterAllocator().destroy(node);
+-            return;
+-        }
+-        prev = node;
+-        cur = node.next;
++    lost_reg_mutex.lock();
++    const reg = device_lost_registry_take(dev);
++    lost_reg_mutex.unlock();
++    if (reg) |node| {
++        defer process_roots.adapterAllocator().destroy(node);
++        node.callback(reason, msg_ptr, msg_len, node.userdata);
+     }
+ }
+ 
+diff --git a/runtime/zig/src/runtime/pipeline_cache_integration.zig b/runtime/zig/src/runtime/pipeline_cache_integration.zig
+deleted file mode 100644
+index 58edd5625..000000000
+--- a/runtime/zig/src/runtime/pipeline_cache_integration.zig
++++ /dev/null
+@@ -1,172 +0,0 @@
+-// pipeline_cache_integration.zig — Phase 2 pipeline cache integration.
+-//
+-// Lazily initializes a global PipelineCache and exposes lookup/store helpers
+-// for compute and render pipelines.  Atomic counters track hit/miss/store
+-// telemetry for warmup-policy decisions.
+-
+-const std = @import("std");
+-const pipeline_cache = @import("cache/pipeline_cache.zig");
+-
+-const PipelineCache = pipeline_cache.PipelineCache;
+-const PipelineCacheKey = pipeline_cache.PipelineCacheKey;
+-const PipelineKind = PipelineCacheKey.PipelineKind;
+-
+-// ============================================================
+-// Telemetry counters (lock-free)
+-
+-var cache_hits = std.atomic.Value(u64).init(0);
+-var cache_misses = std.atomic.Value(u64).init(0);
+-var cache_stores = std.atomic.Value(u64).init(0);
+-
+-pub const Telemetry = struct {
+-    hits: u64,
+-    misses: u64,
+-    stores: u64,
+-};
+-
+-pub fn getTelemetry() Telemetry {
+-    return .{
+-        .hits = cache_hits.load(.monotonic),
+-        .misses = cache_misses.load(.monotonic),
+-        .stores = cache_stores.load(.monotonic),
+-    };
+-}
+-
+-// ============================================================
+-// Global cache singleton
+-
+-var global_cache: ?*PipelineCache = null;
+-var init_attempted: bool = false;
+-
+-pub fn ensureGlobalCache() ?*PipelineCache {
+-    if (global_cache) |c| return c;
+-    if (init_attempted) return null;
+-
+-    init_attempted = true;
+-    global_cache = PipelineCache.init(std.heap.c_allocator, null) catch null;
+-    return global_cache;
+-}
+-
+-// ============================================================
+-// Compute pipeline helpers
+-
+-pub fn lookupComputePipeline(wgsl_source: ?[]const u8) ?[]const u8 {
+-    const cache = ensureGlobalCache() orelse return null;
+-    const key = buildComputeKey(wgsl_source);
+-    if (cache.lookup(&key)) |data| {
+-        _ = cache_hits.fetchAdd(1, .monotonic);
+-        return data;
+-    }
+-    _ = cache_misses.fetchAdd(1, .monotonic);
+-    return null;
+-}
+-
+-pub fn storeComputePipeline(wgsl_source: ?[]const u8, data: []const u8) void {
+-    const cache = ensureGlobalCache() orelse return;
+-    const key = buildComputeKey(wgsl_source);
+-    cache.store(&key, data);
+-    _ = cache_stores.fetchAdd(1, .monotonic);
+-}
+-
+-pub fn recordComputePipelineCreation(wgsl_source: ?[]const u8) void {
+-    const cache = ensureGlobalCache() orelse return;
+-    const key = buildComputeKey(wgsl_source);
+-    if (cache.lookup(&key) != null) {
+-        _ = cache_hits.fetchAdd(1, .monotonic);
+-        return;
+-    }
+-    _ = cache_misses.fetchAdd(1, .monotonic);
+-    const marker = "compute-creation-recorded";
+-    cache.store(&key, marker);
+-    _ = cache_stores.fetchAdd(1, .monotonic);
+-}
+-
+-fn buildComputeKey(wgsl_source: ?[]const u8) PipelineCacheKey {
+-    const wgsl_hash = if (wgsl_source) |src|
+-        pipeline_cache.hash_wgsl(src)
+-    else
+-        std.mem.zeroes([32]u8);
+-
+-    return .{
+-        .wgsl_hash = wgsl_hash,
+-        .kind = .compute,
+-        .pixel_format = 0,
+-        .vertex_entry_hash = 0,
+-        .fragment_entry_hash = 0,
+-        .sample_count = 1,
+-        .color_attachment_count = 0,
+-    };
+-}
+-
+-// ============================================================
+-// Render pipeline helpers
+-
+-pub fn lookupRenderPipeline(
+-    wgsl_source: ?[]const u8,
+-    pixel_format: u32,
+-    vertex_entry: ?[]const u8,
+-    fragment_entry: ?[]const u8,
+-    sample_count: u32,
+-    color_attachment_count: u32,
+-) ?[]const u8 {
+-    const cache = ensureGlobalCache() orelse return null;
+-    const key = buildRenderKey(wgsl_source, pixel_format, vertex_entry, fragment_entry, sample_count, color_attachment_count);
+-    if (cache.lookup(&key)) |data| {
+-        _ = cache_hits.fetchAdd(1, .monotonic);
+-        return data;
+-    }
+-    _ = cache_misses.fetchAdd(1, .monotonic);
+-    return null;
+-}
+-
+-pub fn storeRenderPipeline(
+-    wgsl_source: ?[]const u8,
+-    pixel_format: u32,
+-    vertex_entry: ?[]const u8,
+-    fragment_entry: ?[]const u8,
+-    sample_count: u32,
+-    color_attachment_count: u32,
+-    data: []const u8,
+-) void {
+-    const cache = ensureGlobalCache() orelse return;
+-    const key = buildRenderKey(wgsl_source, pixel_format, vertex_entry, fragment_entry, sample_count, color_attachment_count);
+-    cache.store(&key, data);
+-    _ = cache_stores.fetchAdd(1, .monotonic);
+-}
+-
+-pub fn recordRenderPipelineCreation() void {
+-    const cache = ensureGlobalCache() orelse return;
+-    const key = buildRenderKey(null, 0, null, null, 1, 0);
+-    if (cache.lookup(&key) != null) {
+-        _ = cache_hits.fetchAdd(1, .monotonic);
+-        return;
+-    }
+-    _ = cache_misses.fetchAdd(1, .monotonic);
+-    const marker = "render-creation-recorded";
+-    cache.store(&key, marker);
+-    _ = cache_stores.fetchAdd(1, .monotonic);
+-}
+-
+-fn buildRenderKey(
+-    wgsl_source: ?[]const u8,
+-    pixel_format: u32,
+-    vertex_entry: ?[]const u8,
+-    fragment_entry: ?[]const u8,
+-    sample_count: u32,
+-    color_attachment_count: u32,
+-) PipelineCacheKey {
+-    const wgsl_hash = if (wgsl_source) |src|
+-        pipeline_cache.hash_wgsl(src)
+-    else
+-        std.mem.zeroes([32]u8);
+-
+-    return .{
+-        .wgsl_hash = wgsl_hash,
+-        .kind = .render,
+-        .pixel_format = pixel_format,
+-        .vertex_entry_hash = if (vertex_entry) |e| pipeline_cache.hash_string_u64(e) else 0,
+-        .fragment_entry_hash = if (fragment_entry) |e| pipeline_cache.hash_string_u64(e) else 0,
+-        .sample_count = sample_count,
+-        .color_attachment_count = color_attachment_count,
+-    };
+-}
+diff --git a/runtime/zig/src/runtime/pipeline_singleflight.zig b/runtime/zig/src/runtime/pipeline_singleflight.zig
+index cdb1c90ec..c0f70f203 100644
+--- a/runtime/zig/src/runtime/pipeline_singleflight.zig
++++ b/runtime/zig/src/runtime/pipeline_singleflight.zig
+@@ -64,7 +64,7 @@ pub fn Registry(comptime Node: type) type {
+             try self.ensureEntryStorage();
+ 
+             for (self.entries) |*entry| {
+-                if (!entry.in_use or entry.key != key) continue;
++                if (!entry.in_use or entry.key != key or !Node.matches(entry.head.?, node)) continue;
+                 appendWaiter(entry, node);
+                 return .{ .entry = entry, .leader = false };
+             }
+@@ -99,6 +99,11 @@ pub fn Registry(comptime Node: type) type {
+ const TestNode = struct {
+     next: ?*TestNode = null,
+     id: u32,
++    identity: u32 = 0,
++
++    fn matches(left: *const TestNode, right: *const TestNode) bool {
++        return left.identity == right.identity;
++    }
+ };
+ 
+ test "singleflight registry can join take deinit and recreate" {
+@@ -128,3 +133,16 @@ test "singleflight registry can join take deinit and recreate" {
+     try testing.expect(recreated.leader);
+     try testing.expectEqual(@as(u32, 3), registry.take(recreated.entry).?.id);
+ }
++
++test "singleflight hash collisions require matching request identity" {
++    var registry = Registry(TestNode).init(std.testing.allocator);
++    defer registry.deinit();
++    var first = TestNode{ .id = 1, .identity = 1 };
++    var second = TestNode{ .id = 2, .identity = 2 };
++    const left = try registry.join_or_create(7, &first);
++    const right = try registry.join_or_create(7, &second);
++    try std.testing.expect(left.leader and right.leader);
++    try std.testing.expect(left.entry != right.entry);
++    try std.testing.expectEqual(&first, registry.take(left.entry).?);
++    try std.testing.expectEqual(&second, registry.take(right.entry).?);
++}
+diff --git a/runtime/zig/src/runtime/task_pool.zig b/runtime/zig/src/runtime/task_pool.zig
+index a37c6325b..9efd69a89 100644
+--- a/runtime/zig/src/runtime/task_pool.zig
++++ b/runtime/zig/src/runtime/task_pool.zig
+@@ -23,6 +23,7 @@ const State = struct {
+ 
+ var g_init_lock: std.Thread.Mutex = .{};
+ var g_state = State{};
++var g_started = std.atomic.Value(bool).init(false);
+ 
+ fn queueTail(state: *const State) usize {
+     if (state.jobs.len == 0) return 0;
+@@ -80,7 +81,15 @@ fn growQueueLocked(state: *State, allocator: std.mem.Allocator) !void {
+ }
+ 
+ pub fn ensureStartedWithAllocator(allocator: std.mem.Allocator) !void {
+-    if (g_state.started) return;
++    return ensureStarted(allocator, spawnWorker);
++}
++
++fn spawnWorker(index: usize) std.Thread.SpawnError!std.Thread {
++    return std.Thread.spawn(.{}, workerMain, .{index});
++}
++
++fn ensureStarted(allocator: std.mem.Allocator, comptime spawn: fn (usize) std.Thread.SpawnError!std.Thread) !void {
++    if (g_started.load(.acquire)) return;
+ 
+     g_init_lock.lock();
+     defer g_init_lock.unlock();
+@@ -88,17 +97,31 @@ pub fn ensureStartedWithAllocator(allocator: std.mem.Allocator) !void {
+     if (g_state.started) return;
+ 
+     try growQueueLocked(&g_state, allocator);
++    errdefer {
++        allocator.free(g_state.jobs);
++        g_state.jobs = &.{};
++    }
+     const count = workerCount();
+     const threads = try allocator.alloc(std.Thread, count);
+     errdefer allocator.free(threads);
+-
++    var started_count: usize = 0;
++    errdefer {
++        g_state.mutex.lock();
++        g_state.stop = true;
++        g_state.cond.broadcast();
++        g_state.mutex.unlock();
++        for (threads[0..started_count]) |thread| thread.join();
++        g_state.stop = false;
++    }
+     for (threads, 0..) |*slot, index| {
+-        slot.* = try std.Thread.spawn(.{}, workerMain, .{index});
++        slot.* = try spawn(index);
++        started_count += 1;
+     }
+ 
+     g_state.allocator = allocator;
+     g_state.threads = threads;
+     g_state.started = true;
++    g_started.store(true, .release);
+ }
+ 
+ pub fn submitWithAllocator(allocator: std.mem.Allocator, job: Job) !void {
+@@ -136,6 +159,7 @@ pub fn shutdown() void {
+     allocator.free(g_state.threads);
+     allocator.free(g_state.jobs);
+     g_state = .{};
++    g_started.store(false, .release);
+ }
+ 
+ test "task pool ring queue stores jobs without per-job nodes" {
+@@ -174,3 +198,29 @@ test "task pool can shutdown and restart with the same allocator owner" {
+     try submitWithAllocator(testing.allocator, .{ .run = runCounterJob, .ctx = &counter });
+     try waitForCounter(&counter, 2);
+ }
++
++fn testInitializationAllocationFailures(allocator: std.mem.Allocator) !void {
++    defer shutdown();
++    try ensureStartedWithAllocator(allocator);
++}
++
++test "task pool initialization releases allocations and permits retry" {
++    try std.testing.checkAllAllocationFailures(std.testing.allocator, testInitializationAllocationFailures, .{});
++    try std.testing.expect(g_state.jobs.len == 0 and g_state.threads.len == 0);
++    try std.testing.expect(!g_started.load(.acquire));
++}
++
++test "task pool joins already started workers after a later spawn fails" {
++    if (workerCount() < 2) return error.SkipZigTest;
++    const Failing = struct {
++        fn spawn(index: usize) std.Thread.SpawnError!std.Thread {
++            if (index == 1) return error.ThreadQuotaExceeded;
++            return spawnWorker(index);
++        }
++    };
++    try std.testing.expectError(error.ThreadQuotaExceeded, ensureStarted(std.testing.allocator, Failing.spawn));
++    try std.testing.expect(g_state.jobs.len == 0 and g_state.threads.len == 0);
++    try std.testing.expect(!g_started.load(.acquire));
++    defer shutdown();
++    try ensureStartedWithAllocator(std.testing.allocator);
++}
+diff --git a/runtime/zig/test_suite.zig b/runtime/zig/test_suite.zig
+index 3be26f4c0..43b00e287 100644
+--- a/runtime/zig/test_suite.zig
++++ b/runtime/zig/test_suite.zig
+@@ -70,6 +70,7 @@ const test_tests_dropin_dropin_router_test_zig_0064399f = @import("tests/dropin/
+ const test_tests_dropin_dropin_symbol_ownership_test_zig_35113036 = @import("tests/dropin/dropin_symbol_ownership_test.zig");
+ const test_src_backend_vulkan_vk_timestamp_zig_23d04f12 = if (builtin.os.tag == .linux) @import("src/backend/vulkan/vk_timestamp.zig") else struct {};
+ const test_tests_core_quirk_registry_build_test_zig_997279fd = @import("tests/core/quirk_registry_build_test.zig");
++const test_src_dropin_wgpu_dropin_ext_a_pipeline_zig_66355213 = @import("src/dropin/wgpu_dropin_ext_a_pipeline.zig");
+ 
+ comptime {
+     _ = test_tests_metal_metal_mod_integration_test_zig_6f53b3ec;
+@@ -141,4 +142,5 @@ comptime {
+     _ = test_tests_dropin_dropin_symbol_ownership_test_zig_35113036;
+     _ = test_src_backend_vulkan_vk_timestamp_zig_23d04f12;
+     _ = test_tests_core_quirk_registry_build_test_zig_997279fd;
++    _ = test_src_dropin_wgpu_dropin_ext_a_pipeline_zig_66355213;
+ }
+diff --git a/runtime/zig/tests/core/multi_adapter_test.zig b/runtime/zig/tests/core/multi_adapter_test.zig
+index f40786fb1..a6b47929d 100644
+--- a/runtime/zig/tests/core/multi_adapter_test.zig
++++ b/runtime/zig/tests/core/multi_adapter_test.zig
+@@ -392,3 +392,65 @@ fn make_adapter(adapter_type: AdapterType, is_low_power: bool, is_removable: boo
+         .mtl_device = null,
+     };
+ }
++
++const LostCounter = struct {
++    calls: usize = 0,
++    fn callback(_: u32, _: ?[*]const u8, _: usize, userdata: ?*anyopaque) callconv(.c) void {
++        const counter: *LostCounter = @ptrCast(@alignCast(userdata.?));
++        counter.calls += 1;
++    }
++};
++
++test "device lost callback replacement and removal leave no stale registrations" {
++    var device: u8 = 0;
++    var old = LostCounter{};
++    var next = LostCounter{};
++    multi_adapter.doeNativeDeviceRegisterLostCallback(&device, LostCounter.callback, &old);
++    multi_adapter.doeNativeDeviceRegisterLostCallback(&device, LostCounter.callback, &next);
++    multi_adapter.doeNativeDeviceNotifyLost(&device, 1, null, 0);
++    multi_adapter.doeNativeDeviceNotifyLost(&device, 1, null, 0);
++    try std.testing.expectEqual(0, old.calls);
++    try std.testing.expectEqual(1, next.calls);
++    multi_adapter.doeNativeDeviceRegisterLostCallback(&device, LostCounter.callback, &old);
++    multi_adapter.doeNativeDeviceRegisterLostCallback(&device, null, null);
++    multi_adapter.doeNativeDeviceNotifyLost(&device, 1, null, 0);
++    try std.testing.expectEqual(0, old.calls);
++}
++
++test "independent device callback registration and notification are concurrent" {
++    const Worker = struct {
++        const iterations = 128;
++        counter: LostCounter = .{},
++        fn run(self: *@This()) void {
++            for (0..iterations) |_| {
++                multi_adapter.doeNativeDeviceRegisterLostCallback(self, LostCounter.callback, &self.counter);
++                multi_adapter.doeNativeDeviceNotifyLost(self, 1, null, 0);
++            }
++        }
++    };
++    var workers = [_]Worker{.{}} ** 4;
++    var threads: [workers.len]std.Thread = undefined;
++    var started: usize = 0;
++    errdefer for (threads[0..started]) |thread| thread.join();
++    for (&workers, &threads) |*worker, *thread| {
++        thread.* = try std.Thread.spawn(.{}, Worker.run, .{worker});
++        started += 1;
++    }
++    for (threads) |thread| thread.join();
++    for (workers) |worker| try std.testing.expectEqual(Worker.iterations, worker.counter.calls);
++}
++
++test "device lost callbacks may register another notification" {
++    const State = struct {
++        counter: LostCounter = .{},
++        fn callback(_: u32, _: ?[*]const u8, _: usize, userdata: ?*anyopaque) callconv(.c) void {
++            const state: *@This() = @ptrCast(@alignCast(userdata.?));
++            multi_adapter.doeNativeDeviceRegisterLostCallback(state, LostCounter.callback, &state.counter);
++        }
++    };
++    var state = State{};
++    multi_adapter.doeNativeDeviceRegisterLostCallback(&state, State.callback, &state);
++    multi_adapter.doeNativeDeviceNotifyLost(&state, 1, null, 0);
++    multi_adapter.doeNativeDeviceNotifyLost(&state, 1, null, 0);
++    try std.testing.expectEqual(1, state.counter.calls);
++}
+diff --git a/runtime/zig/tests/native_async_pipeline.c b/runtime/zig/tests/native_async_pipeline.c
+new file mode 100644
+index 000000000..23f9addc8
+--- /dev/null
++++ b/runtime/zig/tests/native_async_pipeline.c
+@@ -0,0 +1,152 @@
++#define _POSIX_C_SOURCE 200809L
++#include "webgpu.h"
++#include <assert.h>
++#include <dirent.h>
++#include <stdatomic.h>
++#include <stdio.h>
++#include <string.h>
++#include <time.h>
++
++enum {
++    PIPELINE_REQUESTS = 32,
++    VALIDATION_REQUESTS = 2,
++    CALLBACK_DEADLINE_POLLS = 1000,
++    CLEANUP_DEADLINE_POLLS = 100,
++    POLL_NS = 10000000,
++};
++static atomic_int finished;
++static atomic_int rejected;
++
++static void adapter_ready(WGPURequestAdapterStatus status, WGPUAdapter adapter,
++    WGPUStringView message, void* out, void* unused) {
++    (void)message;
++    (void)unused;
++    assert(status == WGPURequestAdapterStatus_Success);
++    *(WGPUAdapter*)out = adapter;
++}
++
++static void device_ready(WGPURequestDeviceStatus status, WGPUDevice device,
++    WGPUStringView message, void* out, void* unused) {
++    (void)message;
++    (void)unused;
++    assert(status == WGPURequestDeviceStatus_Success);
++    *(WGPUDevice*)out = device;
++}
++
++static void pipeline_ready(WGPUCreatePipelineAsyncStatus status, WGPURenderPipeline pipeline,
++    WGPUStringView message, void* unused1, void* unused2) {
++    (void)unused1;
++    (void)unused2;
++    if (status != WGPUCreatePipelineAsyncStatus_Success) {
++        fprintf(stderr, "pipeline failure: status=%u message=%.*s\n",
++            status, (int)message.length, message.data);
++    }
++    assert(status == WGPUCreatePipelineAsyncStatus_Success && pipeline);
++    wgpuRenderPipelineRelease(pipeline);
++    atomic_fetch_add(&finished, 1);
++}
++
++static void pipeline_rejected(WGPUCreatePipelineAsyncStatus status, WGPURenderPipeline pipeline,
++    WGPUStringView message, void* unused1, void* unused2) {
++    (void)unused1;
++    (void)unused2;
++    assert(status == WGPUCreatePipelineAsyncStatus_ValidationError && !pipeline);
++    assert(message.data && message.length);
++    atomic_fetch_add(&rejected, 1);
++}
++
++static unsigned drm_descriptors(void) {
++    DIR* fds = opendir("/proc/self/fdinfo");
++    assert(fds);
++    struct dirent* entry;
++    char path[512], line[512];
++    unsigned drm = 0;
++    while ((entry = readdir(fds))) {
++        snprintf(path, sizeof(path), "/proc/self/fdinfo/%s", entry->d_name);
++        FILE* file = fopen(path, "r");
++        if (!file) continue;
++        while (fgets(line, sizeof(line), file)) {
++            if (strstr(line, "drm-client-id:")) drm++;
++        }
++        fclose(file);
++    }
++    closedir(fds);
++    return drm;
++}
++
++int main(void) {
++    const unsigned initial_drm = drm_descriptors();
++    const struct timespec pause = { .tv_nsec = POLL_NS };
++    WGPUInstance instance = wgpuCreateInstance(NULL);
++    WGPUAdapter adapter = NULL;
++    WGPUDevice device = NULL;
++    WGPURequestAdapterOptions options = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
++    options.backendType = WGPUBackendType_Vulkan;
++    WGPURequestAdapterCallbackInfo ac = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
++    ac.mode = WGPUCallbackMode_AllowSpontaneous;
++    ac.callback = adapter_ready;
++    ac.userdata1 = &adapter;
++    wgpuInstanceRequestAdapter(instance, &options, ac);
++    wgpuInstanceProcessEvents(instance);
++    assert(adapter);
++    WGPURequestDeviceCallbackInfo dc = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
++    dc.mode = WGPUCallbackMode_AllowSpontaneous;
++    dc.callback = device_ready;
++    dc.userdata1 = &device;
++    wgpuAdapterRequestDevice(adapter, NULL, dc);
++    wgpuInstanceProcessEvents(instance);
++    assert(device);
++    WGPUShaderSourceWGSL source = WGPU_SHADER_SOURCE_WGSL_INIT;
++    source.code = (WGPUStringView){
++        "@vertex fn vs(@builtin(vertex_index) v:u32)->@builtin(position) vec4f {"
++        "return vec4f(f32(v),0.0,0.0,1.0); }"
++        "@fragment fn fs()->@location(0) vec4f { return vec4f(1.0); }", WGPU_STRLEN,
++    };
++    WGPUShaderModuleDescriptor sd = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
++    sd.nextInChain = &source.chain;
++    WGPUShaderModule shader = wgpuDeviceCreateShaderModule(device, &sd);
++    assert(shader);
++    WGPUColorTargetState color = WGPU_COLOR_TARGET_STATE_INIT;
++    color.format = WGPUTextureFormat_RGBA8Unorm;
++    WGPUFragmentState fragment = WGPU_FRAGMENT_STATE_INIT;
++    fragment.module = shader;
++    fragment.entryPoint = (WGPUStringView){ "fs", WGPU_STRLEN };
++    fragment.targetCount = 1;
++    fragment.targets = &color;
++    WGPURenderPipelineDescriptor desc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
++    desc.vertex.module = shader;
++    desc.vertex.entryPoint = (WGPUStringView){ "vs", WGPU_STRLEN };
++    desc.fragment = &fragment;
++    WGPUCreateRenderPipelineAsyncCallbackInfo cb = WGPU_CREATE_RENDER_PIPELINE_ASYNC_CALLBACK_INFO_INIT;
++    cb.mode = WGPUCallbackMode_AllowSpontaneous;
++    cb.callback = pipeline_rejected;
++    desc.vertex.constantCount = 1;
++    wgpuDeviceCreateRenderPipelineAsync(device, &desc, cb);
++    desc.vertex.constantCount = 0;
++    WGPUChainedStruct unsupported = { .sType = WGPUSType_Force32 };
++    desc.nextInChain = &unsupported;
++    wgpuDeviceCreateRenderPipelineAsync(device, &desc, cb);
++    desc.nextInChain = NULL;
++    cb.callback = pipeline_ready;
++    for (unsigned request = 0; request < PIPELINE_REQUESTS; request++) {
++        wgpuDeviceCreateRenderPipelineAsync(device, &desc, cb);
++    }
++    wgpuShaderModuleRelease(shader);
++    wgpuDeviceRelease(device);
++    wgpuAdapterRelease(adapter);
++    for (unsigned poll = 0; poll < CALLBACK_DEADLINE_POLLS; poll++) {
++        wgpuInstanceProcessEvents(instance);
++        if (atomic_load(&finished) == PIPELINE_REQUESTS &&
++            atomic_load(&rejected) == VALIDATION_REQUESTS) break;
++        nanosleep(&pause, NULL);
++    }
++    assert(atomic_load(&finished) == PIPELINE_REQUESTS);
++    assert(atomic_load(&rejected) == VALIDATION_REQUESTS);
++    wgpuInstanceRelease(instance);
++    for (unsigned poll = 0; poll < CLEANUP_DEADLINE_POLLS; poll++) {
++        if (drm_descriptors() == initial_drm) break;
++        nanosleep(&pause, NULL);
++    }
++    assert(drm_descriptors() == initial_drm);
++    puts("PASS: async validation, immediate callback release, shared requests, caller teardown, DRM cleanup");
++}

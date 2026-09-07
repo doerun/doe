@@ -74,6 +74,13 @@ Build, execution, and retained-library reproduction commands are in the
 Package qualification separately verifies ordinary command ownership across
 the JavaScript/native boundary.
 
+[`tests/native_async_pipeline.c`](tests/native_async_pipeline.c) exercises the
+public async render-pipeline callback, immediate caller release, and eventual
+device cleanup on Linux Vulkan. Link it against the retained package library
+with the same C build recipe. The Zig suite also injects snapshot allocation and
+worker-start failures, compares exact request identities, and verifies callback
+leases for compute and rendering.
+
 ## Build edit measurements
 
 Run `python3 runtime/zig/tools/capture_build_measurements.py` from the repository

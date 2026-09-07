@@ -215,6 +215,16 @@ classified and cannot be promoted by benchmark results.
   resource references must keep required backend cleanup valid.
   Linux retained-package qualification executes the DRM regression in every
   controlled host, covering timestamp scratch allocations and labeled queues.
+- Async pipeline requests own all deferred descriptor data and native resources.
+  Allocation and worker-start failures must unwind without losing joined callbacks.
+  Hash collisions require exact descriptor comparison; callback results receive
+  independent leases. The public C async fixture checks validation, release during
+  callbacks, caller teardown, and eventual device cleanup against the retained
+  library. Linux package qualification also checks isolated Node workers through
+  ordinary, recorded, and native-direct execution, including environment recreation
+  while a parent device remains usable. Native symbols stay bound to one loaded
+  library per addon; JavaScript references and callback lists belong to their N-API
+  environment. These repairs preserve existing public fields and receipt schemas.
 - Native command lifetime tests release caller-owned compute state and copy
   resources before deferred use. Recording must preserve those references
   through finish and submission, release abandoned state, and unwind failed

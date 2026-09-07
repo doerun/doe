@@ -2914,7 +2914,7 @@
       },
       "src/core/abi/procs/wgpu_async_procs.zig": {
         "decision": "Keep",
-        "moduleSha256": "57500cb686aef7bacf5d79f01408760f88342bb2bea1fc9528908b4668005574",
+        "moduleSha256": "c1d4d943f5e713f0b0fee74b92d356fb62b75607ba91d3bc7ace7e72f6e2d952",
         "reason": "Keep: reachable core implementation shared by 5 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -3202,19 +3202,19 @@
       },
       "src/dropin/wgpu_dropin_ext_a_core.zig": {
         "decision": "Keep",
-        "moduleSha256": "16b53f94691a402bd5d4617fc88fc9ced0b6730d4cf3fca25574eac97181e044",
+        "moduleSha256": "9b19086cd4daa72596d84b6302c1e581303693ec060f51f7cca6209c7aa74564",
         "reason": "Keep: reachable dropin implementation shared by 3 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-vulkan-adapter-provenance/2026-08-10"
       },
       "src/dropin/wgpu_dropin_ext_a_exports.zig": {
         "decision": "Keep",
-        "moduleSha256": "ecfc1aa0884f05f6915eeed4f993c53271d67ab235251c8d88a4b025c48f94b7",
+        "moduleSha256": "16db811baa8cfb49bd490e2afffd5f28c39db06809cd28751b3813deec4df22c",
         "reason": "Keep: WebGPU reference-count adapters now retain real render-bundle and encoder references rather than accepting ineffective calls.",
         "reviewer": "codex-render-ownership/2026-09-06"
       },
       "src/dropin/wgpu_dropin_ext_a_pipeline.zig": {
         "decision": "Keep",
-        "moduleSha256": "b84c628824678a8e1247a1f2f3987173d6255f5518181472fe98f448347df3af",
+        "moduleSha256": "c15eddc7a4f540455d8a916d0c382a7475d2499dac5e462bc12f99457fac982e",
         "reason": "Keep: reachable dropin implementation shared by 3 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -3952,7 +3952,7 @@
       },
       "src/runtime/device/multi_adapter.zig": {
         "decision": "Keep",
-        "moduleSha256": "3a5b6f8e1fa577ee8e71fab2c72beee4393b83f6be2c753cb6c408147386c43c",
+        "moduleSha256": "18830ff68888047c2e08f0cd273db2f5b50ee0e1f77b0d23050f0160fe83fbc5",
         "reason": "Keep: reachable runtime implementation shared by 2 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -4058,15 +4058,9 @@
         "reason": "Keep: reachable runtime implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-hexagonal-migration/2026-08-22"
       },
-      "src/runtime/pipeline_cache_integration.zig": {
-        "decision": "Keep",
-        "moduleSha256": "ddeab4398e719bed70bbefe09e4470a499de744b804b1de00e93e8ae2f6ce0c1",
-        "reason": "Keep: reachable runtime implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
-      },
       "src/runtime/pipeline_singleflight.zig": {
         "decision": "Keep",
-        "moduleSha256": "4c403847d649b46f438537d20fbd01b2a62c47d70962bcb6b4b2c7d047f6ad44",
+        "moduleSha256": "e2f1d463e102b2c2ee61415b604f0879d5d05615eb6b1cb0de257d472cf8c38e",
         "reason": "Keep: reachable runtime implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -4108,7 +4102,7 @@
       },
       "src/runtime/task_pool.zig": {
         "decision": "Keep",
-        "moduleSha256": "7ef8cd366782b5a1fe68ddea70e8c48b463810d463bdb3555b4cf27955f240fc",
+        "moduleSha256": "6bd85d0f0355aa50a52ba15a429eca4d83be6314d01bde24cca45c74c2ad3539",
         "reason": "Keep: reachable runtime implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },

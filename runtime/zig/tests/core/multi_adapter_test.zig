@@ -392,3 +392,65 @@ fn make_adapter(adapter_type: AdapterType, is_low_power: bool, is_removable: boo
         .mtl_device = null,
     };
 }
+
+const LostCounter = struct {
+    calls: usize = 0,
+    fn callback(_: u32, _: ?[*]const u8, _: usize, userdata: ?*anyopaque) callconv(.c) void {
+        const counter: *LostCounter = @ptrCast(@alignCast(userdata.?));
+        counter.calls += 1;
+    }
+};
+
+test "device lost callback replacement and removal leave no stale registrations" {
+    var device: u8 = 0;
+    var old = LostCounter{};
+    var next = LostCounter{};
+    multi_adapter.doeNativeDeviceRegisterLostCallback(&device, LostCounter.callback, &old);
+    multi_adapter.doeNativeDeviceRegisterLostCallback(&device, LostCounter.callback, &next);
+    multi_adapter.doeNativeDeviceNotifyLost(&device, 1, null, 0);
+    multi_adapter.doeNativeDeviceNotifyLost(&device, 1, null, 0);
+    try std.testing.expectEqual(0, old.calls);
+    try std.testing.expectEqual(1, next.calls);
+    multi_adapter.doeNativeDeviceRegisterLostCallback(&device, LostCounter.callback, &old);
+    multi_adapter.doeNativeDeviceRegisterLostCallback(&device, null, null);
+    multi_adapter.doeNativeDeviceNotifyLost(&device, 1, null, 0);
+    try std.testing.expectEqual(0, old.calls);
+}
+
+test "independent device callback registration and notification are concurrent" {
+    const Worker = struct {
+        const iterations = 128;
+        counter: LostCounter = .{},
+        fn run(self: *@This()) void {
+            for (0..iterations) |_| {
+                multi_adapter.doeNativeDeviceRegisterLostCallback(self, LostCounter.callback, &self.counter);
+                multi_adapter.doeNativeDeviceNotifyLost(self, 1, null, 0);
+            }
+        }
+    };
+    var workers = [_]Worker{.{}} ** 4;
+    var threads: [workers.len]std.Thread = undefined;
+    var started: usize = 0;
+    errdefer for (threads[0..started]) |thread| thread.join();
+    for (&workers, &threads) |*worker, *thread| {
+        thread.* = try std.Thread.spawn(.{}, Worker.run, .{worker});
+        started += 1;
+    }
+    for (threads) |thread| thread.join();
+    for (workers) |worker| try std.testing.expectEqual(Worker.iterations, worker.counter.calls);
+}
+
+test "device lost callbacks may register another notification" {
+    const State = struct {
+        counter: LostCounter = .{},
+        fn callback(_: u32, _: ?[*]const u8, _: usize, userdata: ?*anyopaque) callconv(.c) void {
+            const state: *@This() = @ptrCast(@alignCast(userdata.?));
+            multi_adapter.doeNativeDeviceRegisterLostCallback(state, LostCounter.callback, &state.counter);
+        }
+    };
+    var state = State{};
+    multi_adapter.doeNativeDeviceRegisterLostCallback(&state, State.callback, &state);
+    multi_adapter.doeNativeDeviceNotifyLost(&state, 1, null, 0);
+    multi_adapter.doeNativeDeviceNotifyLost(&state, 1, null, 0);
+    try std.testing.expectEqual(1, state.counter.calls);
+}
