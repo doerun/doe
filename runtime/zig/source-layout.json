@@ -3496,9 +3496,9 @@
       },
       "src/native/command/doe_immediates_external_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "89755976915d62036776b1f5f16b7a02ee283d9f07e9ab99576395643fae3b85",
-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
-        "reviewer": "codex-pass-lifecycle/2026-09-06"
+        "moduleSha256": "336a3c8a133995cf62efa48fe003d167de0c9672957ec27ebd0a338541f16b77",
+        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
+        "reviewer": "codex-immediate-admission/2026-09-06"
       },
       "src/native/compute/doe_compute_bind_groups.zig": {
         "decision": "Keep",
@@ -3616,9 +3616,9 @@
       },
       "src/native/render/doe_bundle_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "d87b6efc508220eaa950bcbe03c49c7adf06be3c892ab9ec66e99cfd9cfca1e4",
-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
-        "reviewer": "codex-pass-lifecycle/2026-09-06"
+        "moduleSha256": "fb857f70f2bda8fb4ffde88d4106e16297541c13a1517a0d70c814779363ef5e",
+        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
+        "reviewer": "codex-immediate-admission/2026-09-06"
       },
       "src/native/render/doe_render_native.zig": {
         "decision": "Keep",
@@ -3646,9 +3646,9 @@
       },
       "src/native/resource/doe_bind_group_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "6cc77edf1e84218fdc9eac39e325f185883fa164bce9aab418481d45c437453b",
-        "reason": "Keep: reachable native implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-resource-lifetime/2026-09-06"
+        "moduleSha256": "8749528060a5e3dea2544378761c3a6e7cd74ea5fcabd5fd36714804d86c9f2e",
+        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
+        "reviewer": "codex-immediate-admission/2026-09-06"
       },
       "src/native/resource/doe_buffer_ops_native.zig": {
         "decision": "Keep",
@@ -3958,9 +3958,9 @@
       },
       "src/runtime/diagnostics/error_scope.zig": {
         "decision": "Keep",
-        "moduleSha256": "7042f0ee95f0bf0425cb147ce584ec6f9ba5f6a695dfcbfb7ad696d5c5c803a5",
-        "reason": "Keep: reachable runtime implementation shared by 8 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "a74dfbd5f615b5c79c5c6e29d518f11ca55c40cefbc83b03332a6b089f644b18",
+        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
+        "reviewer": "codex-immediate-admission/2026-09-06"
       },
       "src/runtime/env_flags.zig": {
         "decision": "Keep",
@@ -4306,15 +4306,15 @@
       },
       "src/contracts/command_recording.zig": {
         "decision": "Keep",
-        "moduleSha256": "25f33482d0f54cd275c39b05aa47405c8953fdd68b00668a5d4f8b8a183d642e",
-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
-        "reviewer": "codex-pass-lifecycle/2026-09-06"
+        "moduleSha256": "a136a4160e8a7cd8fa3c241be2eaf52ca797a7fe1b2eeecbd6cb4111aa222a0f",
+        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
+        "reviewer": "codex-immediate-admission/2026-09-06"
       },
       "src/native/command/doe_command_recording.zig": {
         "decision": "Keep",
-        "moduleSha256": "0b7a6468a8366506d01d5a1d722f62390f35d1068606f46060752323d0e5658b",
-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
-        "reviewer": "codex-pass-lifecycle/2026-09-06"
+        "moduleSha256": "eb6d1594bc2202c94a659d06bc05549f21eb8f669d2f15e45f5e4551e5cf4869",
+        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
+        "reviewer": "codex-immediate-admission/2026-09-06"
       }
     },
     "linePolicy": {

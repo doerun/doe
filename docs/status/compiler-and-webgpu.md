@@ -3,6 +3,20 @@
 This is the live status front door for the non-TSIR WGSL compiler and WebGPU
 runtime path. Artifacts and executable tests own pass/fail state.
 
+## Immediate-data admission
+
+Native immediate-data calls now reject unsupported shader-visible payloads
+through device validation scopes and invalidate their command or bundle
+recording. Non-zero immediate-data layouts fail before allocation or binding
+retention. Zero-byte calls at the empty layout's origin remain harmless.
+Payload execution is unsupported; former proc-surface diagnostics did not
+establish shader-visible behavior. The capability inventory, spec index, and
+generated reports reflect that distinction.
+
+Tests, the pre-fix C-boundary failure, and retained-package qualification are
+indexed at `bench/out/compute-program/20260906-immediate-admission/README.md`.
+No backend gains immediate-data execution through this correction.
+
 ## Active pass ownership
 
 The encoder's recording state now identifies its active pass. End unlocks the

@@ -5,11 +5,7 @@ const contract = @import("../../contracts/command_recording.zig");
 
 pub fn fail(encoder: *objects.DoeCommandEncoder, cause: contract.Failure) void {
     if (encoder.state.fail(cause))
-        encoder.dev.error_scopes.deliver(errors.zig_error_to_type(cause), switch (cause) {
-            error.OutOfMemory => "command recording could not allocate owned storage",
-            error.InvalidState => "command recording requires an open encoder",
-            error.InvalidArgument => "command recording received an invalid dependency",
-        });
+        encoder.dev.error_scopes.deliver(errors.zig_error_to_type(cause), contract.message(cause));
 }
 
 pub fn requireOpen(encoder: *objects.DoeCommandEncoder) bool {

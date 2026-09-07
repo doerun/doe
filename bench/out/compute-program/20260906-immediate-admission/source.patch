@@ -1,0 +1,666 @@
+diff --git a/config/generated/webgpu-surface-chromium.json b/config/generated/webgpu-surface-chromium.json
+index e96a33c4a..8c7e3019c 100644
+--- a/config/generated/webgpu-surface-chromium.json
++++ b/config/generated/webgpu-surface-chromium.json
+@@ -2,7 +2,7 @@
+   "schemaVersion": 1,
+   "reportKind": "webgpu-surface-report",
+   "surfaceId": "doe-chromium",
+-  "generatedAt": "2026-07-19T17:42:48.828746+00:00",
++  "generatedAt": "2026-09-07T02:51:43.561620+00:00",
+   "derivedFrom": {
+     "commandCoverage": "config/webgpu-command-coverage-full.json",
+     "capabilityInventory": "config/webgpu-capability-inventory.json",
+@@ -23,7 +23,8 @@
+   "capabilityInventory": {
+     "entryCount": 101,
+     "statusSummary": {
+-      "implemented": 101
++      "implemented": 100,
++      "partial": 1
+     }
+   },
+   "integrationOverlay": {
+diff --git a/config/generated/webgpu-surface-compute.json b/config/generated/webgpu-surface-compute.json
+index 7f77b0220..e6196ee2c 100644
+--- a/config/generated/webgpu-surface-compute.json
++++ b/config/generated/webgpu-surface-compute.json
+@@ -2,7 +2,7 @@
+   "schemaVersion": 1,
+   "reportKind": "webgpu-surface-report",
+   "surfaceId": "doe-compute",
+-  "generatedAt": "2026-07-19T17:42:48.827141+00:00",
++  "generatedAt": "2026-09-07T02:51:43.560785+00:00",
+   "derivedFrom": {
+     "commandCoverage": "config/webgpu-command-coverage-core.json",
+     "capabilityInventory": "config/webgpu-capability-inventory.json",
+@@ -123,7 +123,8 @@
+   "capabilityInventory": {
+     "entryCount": 83,
+     "statusSummary": {
+-      "implemented": 83
++      "implemented": 82,
++      "partial": 1
+     },
+     "entries": [
+       {
+@@ -174,11 +175,11 @@
+       {
+         "capabilityId": "p1_resource_table_immediates_surface",
+         "domain": "resource-table",
+-        "status": "implemented",
++        "status": "partial",
+         "priority": "p1",
+         "owner": "runtime-core",
+         "contract": "runtime/zig/src/core/abi/procs/wgpu_p1_resource_table_procs.zig + runtime/zig/src/full/lifecycle/wgpu_async_diagnostics_command.zig",
+-        "notes": "ResourceTable create/update/remove/destroy/release and pass/bundle/compute set-resource-table + set-immediates APIs are implemented behind explicit feature gating; unsupported adapters return deterministic unsupported status."
++        "notes": "ABI wrappers expose the resource-table and immediate-data entrypoints. Native immediate-data payloads and non-zero immediateSize layouts reject with explicit unsupported validation; proc-surface diagnostics do not execute shader-visible payloads. Provider-backed feature-gated wrappers retain their separate admission contract."
+       },
+       {
+         "capabilityId": "p2_lifecycle_addref_surface",
+@@ -950,17 +951,19 @@
+   "specIndexSummary": {
+     "note": "The spec index is backend-oriented rather than tier-oriented; these are global implementation counts for native backends.",
+     "metal": {
+-      "implemented": 846,
+-      "out_of_scope": 41
++      "implemented": 841,
++      "out_of_scope": 41,
++      "partial": 5
+     },
+     "vulkan": {
+-      "implemented": 871,
+-      "out_of_scope": 16
++      "implemented": 866,
++      "out_of_scope": 16,
++      "partial": 5
+     },
+     "d3d12": {
+       "blocked": 46,
+-      "implemented": 834,
+-      "partial": 7
++      "implemented": 829,
++      "partial": 12
+     }
+   }
+ }
+diff --git a/config/generated/webgpu-surface-headless.json b/config/generated/webgpu-surface-headless.json
+index 235b459df..2979dd33b 100644
+--- a/config/generated/webgpu-surface-headless.json
++++ b/config/generated/webgpu-surface-headless.json
+@@ -2,7 +2,7 @@
+   "schemaVersion": 1,
+   "reportKind": "webgpu-surface-report",
+   "surfaceId": "doe-headless",
+-  "generatedAt": "2026-07-19T17:42:48.828143+00:00",
++  "generatedAt": "2026-09-07T02:51:43.561261+00:00",
+   "derivedFrom": {
+     "commandCoverage": "config/webgpu-command-coverage-full.json",
+     "capabilityInventory": "config/webgpu-capability-inventory.json",
+@@ -177,7 +177,8 @@
+   "capabilityInventory": {
+     "entryCount": 101,
+     "statusSummary": {
+-      "implemented": 101
++      "implemented": 100,
++      "partial": 1
+     },
+     "entries": [
+       {
+@@ -301,11 +302,11 @@
+       {
+         "capabilityId": "p1_resource_table_immediates_surface",
+         "domain": "resource-table",
+-        "status": "implemented",
++        "status": "partial",
+         "priority": "p1",
+         "owner": "runtime-core",
+         "contract": "runtime/zig/src/core/abi/procs/wgpu_p1_resource_table_procs.zig + runtime/zig/src/full/lifecycle/wgpu_async_diagnostics_command.zig",
+-        "notes": "ResourceTable create/update/remove/destroy/release and pass/bundle/compute set-resource-table + set-immediates APIs are implemented behind explicit feature gating; unsupported adapters return deterministic unsupported status."
++        "notes": "ABI wrappers expose the resource-table and immediate-data entrypoints. Native immediate-data payloads and non-zero immediateSize layouts reject with explicit unsupported validation; proc-surface diagnostics do not execute shader-visible payloads. Provider-backed feature-gated wrappers retain their separate admission contract."
+       },
+       {
+         "capabilityId": "p2_lifecycle_addref_surface",
+@@ -1175,17 +1176,19 @@
+   "specIndexSummary": {
+     "note": "The spec index is backend-oriented rather than tier-oriented; these are global implementation counts for native backends.",
+     "metal": {
+-      "implemented": 846,
+-      "out_of_scope": 41
++      "implemented": 841,
++      "out_of_scope": 41,
++      "partial": 5
+     },
+     "vulkan": {
+-      "implemented": 871,
+-      "out_of_scope": 16
++      "implemented": 866,
++      "out_of_scope": 16,
++      "partial": 5
+     },
+     "d3d12": {
+       "blocked": 46,
+-      "implemented": 834,
+-      "partial": 7
++      "implemented": 829,
++      "partial": 12
+     }
+   }
+ }
+diff --git a/config/webgpu-capability-inventory.json b/config/webgpu-capability-inventory.json
+index 4e973d662..e51097988 100644
+--- a/config/webgpu-capability-inventory.json
++++ b/config/webgpu-capability-inventory.json
+@@ -133,11 +133,11 @@
+     {
+       "capabilityId": "p1_resource_table_immediates_surface",
+       "domain": "resource-table",
+-      "status": "implemented",
++      "status": "partial",
+       "priority": "p1",
+       "owner": "runtime-core",
+       "contract": "runtime/zig/src/core/abi/procs/wgpu_p1_resource_table_procs.zig + runtime/zig/src/full/lifecycle/wgpu_async_diagnostics_command.zig",
+-      "notes": "ResourceTable create/update/remove/destroy/release and pass/bundle/compute set-resource-table + set-immediates APIs are implemented behind explicit feature gating; unsupported adapters return deterministic unsupported status."
++      "notes": "ABI wrappers expose the resource-table and immediate-data entrypoints. Native immediate-data payloads and non-zero immediateSize layouts reject with explicit unsupported validation; proc-surface diagnostics do not execute shader-visible payloads. Provider-backed feature-gated wrappers retain their separate admission contract."
+     },
+     {
+       "capabilityId": "p2_lifecycle_addref_surface",
+diff --git a/config/webgpu-spec-index.jsonl b/config/webgpu-spec-index.jsonl
+index 401fcdca1..057f0fa4f 100644
+--- a/config/webgpu-spec-index.jsonl
++++ b/config/webgpu-spec-index.jsonl
+@@ -40,7 +40,7 @@
+ {"kind": "member", "parent": "GPUBindGroupLayoutEntry", "name": "visibility", "memberKind": "property", "metal": {"impl": "implemented"}, "d3d12": {"impl": "implemented", "notes": ["Consumed by D3D12 bind-group-layout normalization and descriptor-table layout creation."]}, "vulkan": {"impl": "implemented"}}
+ {"kind": "interface", "name": "GPUBindingCommandsMixin", "interfaceKind": "mixin", "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBindingCommandsMixin.html", "memberCount": 2, "metal": {"impl": "implemented", "notes": ["Auto-promoted: 1/2 members implemented."]}, "vulkan": {"impl": "implemented", "notes": ["Abstract mixin is satisfied by the concrete Vulkan compute/render pass and render-bundle encoder binding-command entry points."]}, "d3d12": {"impl": "implemented", "notes": ["Binding commands supported through command recording."]}}
+ {"kind": "member", "parent": "GPUBindingCommandsMixin", "name": "setBindGroup", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Implemented on render/compute pass encoders"]}, "d3d12": {"impl": "implemented", "notes": ["Binding commands supported through command recording."]}, "vulkan": {"impl": "implemented", "notes": ["Abstract mixin member is satisfied by the concrete Vulkan compute/render pass and render-bundle encoder setBindGroup entry points."]}}
+-{"kind": "member", "parent": "GPUBindingCommandsMixin", "name": "setImmediates", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Abstract mixin member is satisfied by the concrete Metal compute/render pass encoder setImmediates entry points."]}, "d3d12": {"impl": "implemented", "notes": ["Binding commands supported through command recording."]}, "vulkan": {"impl": "implemented", "notes": ["Abstract mixin member is satisfied by the concrete Vulkan compute/render pass and render-bundle encoder setImmediates entry points. Current Doe-native Vulkan coverage is explicit proc-surface emulation for resource_table_immediates diagnostics, not shader-visible push-constant semantics."]}}
++{"kind": "member", "parent": "GPUBindingCommandsMixin", "name": "setImmediates", "memberKind": "method", "metal": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}, "d3d12": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}, "vulkan": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}}
+ {"kind": "interface", "name": "GPUBlendComponent", "interfaceKind": "dictionary", "specUrl": "https://gpuweb.github.io/types/interfaces/GPUBlendComponent.html", "memberCount": 3, "browser": {"impl": "implemented", "correct": "integration", "perf": "diagnostic", "notes": ["Verified via Playwright browser smoke and layered bench.", "Playwright smoke passes on the package-browser path; layered bench runs diagnostically with residual required failures.", "Browser bench runs are diagnostic, not claimable."]}, "metal": {"impl": "implemented", "notes": ["All 3 members implemented"]}, "vulkan": {"impl": "implemented"}, "d3d12": {"impl": "implemented", "notes": ["Consumed in D3D12 render pipeline blend state."]}}
+ {"kind": "member", "parent": "GPUBlendComponent", "name": "dstFactor", "memberKind": "property", "metal": {"impl": "implemented", "notes": ["Blend factors consumed in render pipeline creation; not all values mapped"]}, "d3d12": {"impl": "implemented", "notes": ["Consumed in D3D12 render pipeline blend state."]}, "vulkan": {"impl": "implemented"}}
+ {"kind": "member", "parent": "GPUBlendComponent", "name": "operation", "memberKind": "property", "metal": {"impl": "implemented", "notes": ["Blend operation consumed in render pipeline creation"]}, "d3d12": {"impl": "implemented", "notes": ["Consumed in D3D12 render pipeline blend state."]}, "vulkan": {"impl": "implemented"}}
+@@ -152,7 +152,7 @@
+ {"kind": "member", "parent": "GPUComputePassEncoder", "name": "popDebugGroup", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Implemented on GPURenderPassEncoder via Metal debug API; not wired on command/compute pass encoders"]}, "d3d12": {"impl": "implemented", "notes": ["Debug marker commands forwarded through command recording."]}, "browser": {"impl": "partial", "notes": ["Runtime supports; browser test not yet exercised."]}, "vulkan": {"impl": "implemented", "notes": "Compute-pass debug groups are now wired through the package surface into Doe instrumentation hooks on Vulkan."}}
+ {"kind": "member", "parent": "GPUComputePassEncoder", "name": "pushDebugGroup", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Implemented on GPURenderPassEncoder via Metal debug API; not wired on command/compute pass encoders"]}, "d3d12": {"impl": "implemented", "notes": ["Debug marker commands forwarded through command recording."]}, "browser": {"impl": "partial", "notes": ["Runtime supports; browser test not yet exercised."]}, "vulkan": {"impl": "implemented", "notes": "Compute-pass debug groups are now wired through the package surface into Doe instrumentation hooks on Vulkan."}}
+ {"kind": "member", "parent": "GPUComputePassEncoder", "name": "setBindGroup", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Implemented on render/compute pass encoders"]}, "vulkan": {"impl": "implemented", "correct": "unit"}, "d3d12": {"impl": "implemented", "correct": "unit"}, "browser": {"impl": "implemented", "correct": "integration", "perf": "diagnostic"}}
+-{"kind": "member", "parent": "GPUComputePassEncoder", "name": "setImmediates", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Forwarded through Doe native exports and package surfaces to wgpuComputePassEncoderSetImmediates."]}, "d3d12": {"impl": "implemented", "notes": ["Binding commands supported through command recording."]}, "vulkan": {"impl": "implemented", "notes": ["Forwarded through Doe native exports and package surfaces to wgpuComputePassEncoderSetImmediates. Current Vulkan coverage is explicit proc-surface emulation used by resource_table_immediates diagnostics, not shader-visible push-constant semantics."]}}
++{"kind": "member", "parent": "GPUComputePassEncoder", "name": "setImmediates", "memberKind": "method", "metal": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}, "d3d12": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}, "vulkan": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}}
+ {"kind": "member", "parent": "GPUComputePassEncoder", "name": "setPipeline", "memberKind": "method", "metal": {"impl": "implemented", "correct": "integration", "perf": "diagnostic"}, "vulkan": {"impl": "implemented", "correct": "governed", "perf": "diagnostic"}, "d3d12": {"impl": "implemented", "correct": "unit"}, "browser": {"impl": "implemented", "correct": "integration", "perf": "diagnostic"}}
+ {"kind": "member", "parent": "GPUComputePassEncoder", "name": "label", "memberKind": "property", "metal": {"impl": "implemented", "notes": ["JS-side label storage on wrapper object"]}, "d3d12": {"impl": "implemented", "notes": ["Label storage supported via shared label infrastructure."]}, "browser": {"impl": "implemented", "correct": "integration", "perf": "diagnostic"}, "vulkan": {"impl": "implemented"}}
+ {"kind": "interface", "name": "GPUComputePassTimestampWrites", "interfaceKind": "dictionary", "specUrl": "https://gpuweb.github.io/types/interfaces/GPUComputePassTimestampWrites.html", "memberCount": 3, "metal": {"impl": "implemented", "notes": ["All 3 members implemented: querySet, beginningOfPassWriteIndex, endOfPassWriteIndex"]}, "vulkan": {"impl": "implemented"}, "d3d12": {"impl": "implemented", "notes": ["GPU timestamp queries supported on D3D12."]}}
+@@ -290,7 +290,7 @@
+ {"kind": "member", "parent": "GPUPipelineLayout", "name": "label", "memberKind": "property", "metal": {"impl": "implemented", "notes": ["JS-side label storage on wrapper object"]}, "d3d12": {"impl": "implemented", "notes": ["Label storage supported via shared label infrastructure."]}, "vulkan": {"impl": "implemented"}}
+ {"kind": "interface", "name": "GPUPipelineLayoutDescriptor", "interfaceKind": "dictionary", "specUrl": "https://gpuweb.github.io/types/interfaces/GPUPipelineLayoutDescriptor.html", "memberCount": 3, "extends": ["GPUObjectDescriptorBase"], "metal": {"impl": "implemented", "notes": ["Auto-promoted: 2/3 members implemented."]}, "browser": {"impl": "partial", "correct": "integration", "notes": ["Runtime implements but browser test coverage is incomplete."]}, "vulkan": {"impl": "implemented", "notes": ["bindGroupLayouts, label, and immediateSize are wired on Vulkan package surfaces; Doe pipeline-layout handles now retain immediateSize as the bound immediate-data budget."]}, "d3d12": {"impl": "implemented", "notes": ["Consumed in D3D12 pipeline layout creation."]}}
+ {"kind": "member", "parent": "GPUPipelineLayoutDescriptor", "name": "bindGroupLayouts", "memberKind": "property", "metal": {"impl": "implemented", "notes": ["Consumed in createPipelineLayout"]}, "d3d12": {"impl": "implemented", "notes": ["Consumed in D3D12 pipeline layout creation."]}, "vulkan": {"impl": "implemented", "notes": ["Bind-group layouts are consumed by Vulkan pipeline-layout creation."]}}
+-{"kind": "member", "parent": "GPUPipelineLayoutDescriptor", "name": "immediateSize", "memberKind": "property", "metal": {"impl": "implemented", "notes": ["Pipeline layout descriptor forwarding now preserves immediateSize on Node, Bun, and native-direct surfaces."]}, "d3d12": {"impl": "implemented", "notes": ["Consumed in D3D12 pipeline layout creation."]}, "vulkan": {"impl": "implemented", "notes": ["Pipeline-layout creation stores immediateSize on Doe Vulkan handles, and compute/render setImmediates rejects writes that exceed that bound budget."]}}
++{"kind": "member", "parent": "GPUPipelineLayoutDescriptor", "name": "immediateSize", "memberKind": "property", "metal": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}, "d3d12": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}, "vulkan": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}}
+ {"kind": "member", "parent": "GPUPipelineLayoutDescriptor", "name": "label", "memberKind": "property", "metal": {"impl": "implemented", "notes": ["Descriptor label consumed by all createXxx calls"]}, "d3d12": {"impl": "implemented", "notes": ["Consumed in D3D12 pipeline layout creation."]}, "vulkan": {"impl": "implemented", "notes": ["Descriptor labels are preserved on Vulkan package surfaces via wrapper-side label handling."]}}
+ {"kind": "interface", "name": "GPUPrimitiveState", "interfaceKind": "dictionary", "specUrl": "https://gpuweb.github.io/types/interfaces/GPUPrimitiveState.html", "memberCount": 5, "metal": {"impl": "implemented", "notes": ["Auto-promoted: 3/5 members implemented."]}, "browser": {"impl": "implemented", "correct": "integration", "perf": "diagnostic", "notes": ["Verified via Playwright browser smoke and layered bench.", "Playwright smoke passes on the package-browser path; layered bench runs diagnostically with residual required failures.", "Browser bench runs are diagnostic, not claimable."]}, "vulkan": {"impl": "implemented", "notes": ["Primitive-state surface is consumed by Vulkan render pipeline creation."]}, "d3d12": {"impl": "implemented", "notes": ["D3D12 primitive-state fields feed real graphics PSO creation; stripIndexFormat and unclippedDepth remain statused separately."]}}
+ {"kind": "member", "parent": "GPUPrimitiveState", "name": "cullMode", "memberKind": "property", "metal": {"impl": "implemented", "notes": ["Consumed in render pipeline creation"]}, "d3d12": {"impl": "implemented", "notes": ["Consumed by D3D12 graphics PSO rasterizer-state creation."]}, "vulkan": {"impl": "implemented", "notes": ["Primitive-state field is consumed by Vulkan render pipeline creation."]}}
+@@ -330,7 +330,7 @@
+ {"kind": "member", "parent": "GPURenderBundleEncoder", "name": "popDebugGroup", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Implemented on GPURenderPassEncoder via Metal debug API; not wired on command/compute pass encoders"]}, "vulkan": {"impl": "implemented", "notes": "Render-bundle debug groups are now wired through the package surface into Doe instrumentation hooks on Vulkan."}, "d3d12": {"impl": "implemented", "notes": ["Debug marker commands forwarded through command recording."]}, "browser": {"impl": "partial", "notes": ["Runtime supports; browser test not yet exercised."]}}
+ {"kind": "member", "parent": "GPURenderBundleEncoder", "name": "pushDebugGroup", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Implemented on GPURenderPassEncoder via Metal debug API; not wired on command/compute pass encoders"]}, "vulkan": {"impl": "implemented", "notes": "Render-bundle debug groups are now wired through the package surface into Doe instrumentation hooks on Vulkan."}, "d3d12": {"impl": "implemented", "notes": ["Debug marker commands forwarded through command recording."]}, "browser": {"impl": "partial", "notes": ["Runtime supports; browser test not yet exercised."]}}
+ {"kind": "member", "parent": "GPURenderBundleEncoder", "name": "setBindGroup", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Implemented on render/compute pass encoders"]}, "vulkan": {"impl": "implemented"}, "d3d12": {"impl": "implemented", "notes": ["Recorded by the D3D12 bundle encoder and replayed into flattened bind-buffer state for executeBundles."]}, "browser": {"impl": "partial", "notes": ["Runtime supports; browser test not yet exercised."]}}
+-{"kind": "member", "parent": "GPURenderBundleEncoder", "name": "setImmediates", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Forwarded through Doe native exports and package surfaces to wgpuRenderBundleEncoderSetImmediates. Current Doe-native coverage is explicit proc-surface emulation used by resource_table_immediates diagnostics."]}, "vulkan": {"impl": "implemented", "notes": ["Forwarded through Doe native exports and package surfaces to wgpuRenderBundleEncoderSetImmediates. Current Vulkan coverage is explicit proc-surface emulation used by resource_table_immediates diagnostics, not shader-visible push-constant semantics."]}, "d3d12": {"impl": "implemented", "notes": ["Binding commands supported through command recording."]}}
++{"kind": "member", "parent": "GPURenderBundleEncoder", "name": "setImmediates", "memberKind": "method", "metal": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}, "vulkan": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}, "d3d12": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}}
+ {"kind": "member", "parent": "GPURenderBundleEncoder", "name": "setIndexBuffer", "memberKind": "method", "metal": {"impl": "implemented"}, "vulkan": {"impl": "implemented"}, "d3d12": {"impl": "implemented", "notes": ["Recorded by the D3D12 bundle encoder and replayed with index-buffer state through executeBundles."]}, "browser": {"impl": "partial", "notes": ["Runtime supports; browser test not yet exercised."]}}
+ {"kind": "member", "parent": "GPURenderBundleEncoder", "name": "setPipeline", "memberKind": "method", "metal": {"impl": "implemented"}, "vulkan": {"impl": "implemented"}, "d3d12": {"impl": "implemented", "notes": ["Recorded by the D3D12 bundle encoder and replayed with PSO state through executeBundles."]}, "browser": {"impl": "implemented", "correct": "integration", "perf": "diagnostic"}}
+ {"kind": "member", "parent": "GPURenderBundleEncoder", "name": "setVertexBuffer", "memberKind": "method", "metal": {"impl": "implemented"}, "vulkan": {"impl": "implemented"}, "d3d12": {"impl": "implemented", "notes": ["Recorded by the D3D12 bundle encoder and replayed with vertex-buffer state through executeBundles."]}, "browser": {"impl": "partial", "notes": ["Runtime supports; browser test not yet exercised."]}}
+@@ -388,7 +388,7 @@
+ {"kind": "member", "parent": "GPURenderPassEncoder", "name": "pushDebugGroup", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Implemented on GPURenderPassEncoder via Metal debug API"]}, "d3d12": {"impl": "implemented", "notes": ["Debug marker commands forwarded through command recording."]}, "browser": {"impl": "partial", "notes": ["Runtime supports; browser test not yet exercised."]}, "vulkan": {"impl": "implemented"}}
+ {"kind": "member", "parent": "GPURenderPassEncoder", "name": "setBindGroup", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Implemented on render/compute pass encoders"]}, "vulkan": {"impl": "implemented", "correct": "unit"}, "d3d12": {"impl": "implemented", "correct": "unit"}, "browser": {"impl": "implemented", "correct": "integration", "perf": "diagnostic"}}
+ {"kind": "member", "parent": "GPURenderPassEncoder", "name": "setBlendConstant", "memberKind": "method", "metal": {"impl": "implemented"}, "vulkan": {"impl": "implemented", "notes": "Doe render-pass state now persists blend constants on non-macOS and forwards them into Vulkan render draws."}, "d3d12": {"impl": "implemented", "notes": ["D3D12 render-pass state now persists blend constants and forwards them into OMSetBlendFactor."]}, "browser": {"impl": "partial", "notes": ["Runtime supports; browser test not yet exercised."]}}
+-{"kind": "member", "parent": "GPURenderPassEncoder", "name": "setImmediates", "memberKind": "method", "metal": {"impl": "implemented", "notes": ["Forwarded through Doe native exports and package surfaces to wgpuRenderPassEncoderSetImmediates. Current Doe-native coverage is explicit proc-surface emulation used by resource_table_immediates diagnostics."]}, "d3d12": {"impl": "implemented", "notes": ["Binding commands supported through command recording."]}, "vulkan": {"impl": "implemented", "notes": ["Forwarded through Doe native exports and package surfaces to wgpuRenderPassEncoderSetImmediates. Current Vulkan coverage is explicit proc-surface emulation used by resource_table_immediates diagnostics, not shader-visible push-constant semantics."]}}
++{"kind": "member", "parent": "GPURenderPassEncoder", "name": "setImmediates", "memberKind": "method", "metal": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}, "d3d12": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}, "vulkan": {"impl": "partial", "notes": ["Native immediate-data entrypoints preserve object lifetime and reject non-empty shader-visible payloads explicitly. Non-zero immediateSize layouts fail before allocation. Shader-visible immediate-data execution is unsupported; a proc address does not establish it."]}}
+ {"kind": "member", "parent": "GPURenderPassEncoder", "name": "setIndexBuffer", "memberKind": "method", "metal": {"impl": "implemented"}, "vulkan": {"impl": "implemented", "correct": "unit"}, "d3d12": {"impl": "implemented", "correct": "unit"}, "browser": {"impl": "partial", "notes": ["Runtime supports; browser test not yet exercised."]}}
+ {"kind": "member", "parent": "GPURenderPassEncoder", "name": "setPipeline", "memberKind": "method", "metal": {"impl": "implemented"}, "vulkan": {"impl": "implemented", "correct": "governed", "notes": ["Focused March 20, 2026 strict comparable AMD Vulkan evidence now covers native render-pass pipeline binding across render draw, indexed draw, and render-bundle replay workloads on this host."]}, "d3d12": {"impl": "implemented", "correct": "unit"}, "browser": {"impl": "implemented", "correct": "integration", "perf": "diagnostic"}}
+ {"kind": "member", "parent": "GPURenderPassEncoder", "name": "setScissorRect", "memberKind": "method", "metal": {"impl": "implemented"}, "vulkan": {"impl": "implemented", "correct": "unit", "notes": ["Linux Vulkan render-pass and draw support now exists, but broader render evidence is still in progress."]}, "d3d12": {"impl": "implemented", "correct": "unit", "notes": ["D3D12 render pass/draw support is implemented; some member-level evidence is still thin."]}, "browser": {"impl": "implemented", "correct": "integration", "perf": "diagnostic"}}
+diff --git a/docs/process.md b/docs/process.md
+index 90e0c8f33..b21bbfb05 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -229,6 +229,13 @@ classified and cannot be promoted by benchmark results.
+   and native C-boundary tests must check rejected recording and submission, then
+   execute valid work on the same device. Debug and immediate-data entrypoints
+   must validate pass lifetime before reading its retained state.
++  Native shader-visible immediate data is unsupported. Non-empty payloads must
++  report `ImmediateDataUnsupported` through validation scopes and invalidate
++  command/bundle recording; non-zero `immediateSize` layouts fail before
++  allocation or binding retention. Empty calls at offset zero perform no work.
++  This replaces validation-only acceptance that never delivered bytes to
++  shaders. Signatures and field schemas remain stable, and source capability
++  records plus generated reports must distinguish proc wiring from execution.
+   Native-direct package tests also reject duplicate and consumed submissions,
+   verify writable mapping copy-back and read-only mapping isolation, and require
+   mapped-range detachment on unmap. Run the same test in every qualified host.
+diff --git a/docs/status/compiler-and-webgpu.md b/docs/status/compiler-and-webgpu.md
+index df1b087c0..1db30b3eb 100644
+--- a/docs/status/compiler-and-webgpu.md
++++ b/docs/status/compiler-and-webgpu.md
+@@ -3,6 +3,20 @@
+ This is the live status front door for the non-TSIR WGSL compiler and WebGPU
+ runtime path. Artifacts and executable tests own pass/fail state.
+ 
++## Immediate-data admission
++
++Native immediate-data calls now reject unsupported shader-visible payloads
++through device validation scopes and invalidate their command or bundle
++recording. Non-zero immediate-data layouts fail before allocation or binding
++retention. Zero-byte calls at the empty layout's origin remain harmless.
++Payload execution is unsupported; former proc-surface diagnostics did not
++establish shader-visible behavior. The capability inventory, spec index, and
++generated reports reflect that distinction.
++
++Tests, the pre-fix C-boundary failure, and retained-package qualification are
++indexed at `bench/out/compute-program/20260906-immediate-admission/README.md`.
++No backend gains immediate-data execution through this correction.
++
+ ## Active pass ownership
+ 
+ The encoder's recording state now identifies its active pass. End unlocks the
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index e3693d16d..c0c2f50f0 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -3496,9 +3496,9 @@
+       },
+       "src/native/command/doe_immediates_external_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "89755976915d62036776b1f5f16b7a02ee283d9f07e9ab99576395643fae3b85",
+-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
+-        "reviewer": "codex-pass-lifecycle/2026-09-06"
++        "moduleSha256": "336a3c8a133995cf62efa48fe003d167de0c9672957ec27ebd0a338541f16b77",
++        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
++        "reviewer": "codex-immediate-admission/2026-09-06"
+       },
+       "src/native/compute/doe_compute_bind_groups.zig": {
+         "decision": "Keep",
+@@ -3616,9 +3616,9 @@
+       },
+       "src/native/render/doe_bundle_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "d87b6efc508220eaa950bcbe03c49c7adf06be3c892ab9ec66e99cfd9cfca1e4",
+-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
+-        "reviewer": "codex-pass-lifecycle/2026-09-06"
++        "moduleSha256": "fb857f70f2bda8fb4ffde88d4106e16297541c13a1517a0d70c814779363ef5e",
++        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
++        "reviewer": "codex-immediate-admission/2026-09-06"
+       },
+       "src/native/render/doe_render_native.zig": {
+         "decision": "Keep",
+@@ -3646,9 +3646,9 @@
+       },
+       "src/native/resource/doe_bind_group_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "6cc77edf1e84218fdc9eac39e325f185883fa164bce9aab418481d45c437453b",
+-        "reason": "Keep: reachable native implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-resource-lifetime/2026-09-06"
++        "moduleSha256": "8749528060a5e3dea2544378761c3a6e7cd74ea5fcabd5fd36714804d86c9f2e",
++        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
++        "reviewer": "codex-immediate-admission/2026-09-06"
+       },
+       "src/native/resource/doe_buffer_ops_native.zig": {
+         "decision": "Keep",
+@@ -3958,9 +3958,9 @@
+       },
+       "src/runtime/diagnostics/error_scope.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "7042f0ee95f0bf0425cb147ce584ec6f9ba5f6a695dfcbfb7ad696d5c5c803a5",
+-        "reason": "Keep: reachable runtime implementation shared by 8 production consumers with no conflicting ownership signal.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
++        "moduleSha256": "a74dfbd5f615b5c79c5c6e29d518f11ca55c40cefbc83b03332a6b089f644b18",
++        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
++        "reviewer": "codex-immediate-admission/2026-09-06"
+       },
+       "src/runtime/env_flags.zig": {
+         "decision": "Keep",
+@@ -4306,15 +4306,15 @@
+       },
+       "src/contracts/command_recording.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "25f33482d0f54cd275c39b05aa47405c8953fdd68b00668a5d4f8b8a183d642e",
+-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
+-        "reviewer": "codex-pass-lifecycle/2026-09-06"
++        "moduleSha256": "a136a4160e8a7cd8fa3c241be2eaf52ca797a7fe1b2eeecbd6cb4111aa222a0f",
++        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
++        "reviewer": "codex-immediate-admission/2026-09-06"
+       },
+       "src/native/command/doe_command_recording.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "0b7a6468a8366506d01d5a1d722f62390f35d1068606f46060752323d0e5658b",
+-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
+-        "reviewer": "codex-pass-lifecycle/2026-09-06"
++        "moduleSha256": "eb6d1594bc2202c94a659d06bc05549f21eb8f669d2f15e45f5e4551e5cf4869",
++        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
++        "reviewer": "codex-immediate-admission/2026-09-06"
+       }
+     },
+     "linePolicy": {
+diff --git a/runtime/zig/src/contracts/command_recording.zig b/runtime/zig/src/contracts/command_recording.zig
+index 904689dd7..6e38cc1cb 100644
+--- a/runtime/zig/src/contracts/command_recording.zig
++++ b/runtime/zig/src/contracts/command_recording.zig
+@@ -1,4 +1,13 @@
+-pub const Failure = error{ OutOfMemory, InvalidState, InvalidArgument };
++pub const Failure = error{ OutOfMemory, InvalidState, InvalidArgument, ImmediateDataUnsupported };
++
++pub fn message(cause: Failure) []const u8 {
++    return switch (cause) {
++        error.OutOfMemory => "GPU command recording could not allocate owned storage",
++        error.InvalidState => "GPU command recording requires an open encoder or its active pass",
++        error.InvalidArgument => "GPU command recording received an invalid dependency or payload",
++        error.ImmediateDataUnsupported => "setImmediates: shader-visible immediate data is unsupported; use buffer bindings",
++    };
++}
+ 
+ pub const State = union(enum) {
+     open,
+diff --git a/runtime/zig/src/native/command/doe_command_recording.zig b/runtime/zig/src/native/command/doe_command_recording.zig
+index 86d28c95b..d4635a051 100644
+--- a/runtime/zig/src/native/command/doe_command_recording.zig
++++ b/runtime/zig/src/native/command/doe_command_recording.zig
+@@ -5,11 +5,7 @@ const contract = @import("../../contracts/command_recording.zig");
+ 
+ pub fn fail(encoder: *objects.DoeCommandEncoder, cause: contract.Failure) void {
+     if (encoder.state.fail(cause))
+-        encoder.dev.error_scopes.deliver(errors.zig_error_to_type(cause), switch (cause) {
+-            error.OutOfMemory => "command recording could not allocate owned storage",
+-            error.InvalidState => "command recording requires an open encoder",
+-            error.InvalidArgument => "command recording received an invalid dependency",
+-        });
++        encoder.dev.error_scopes.deliver(errors.zig_error_to_type(cause), contract.message(cause));
+ }
+ 
+ pub fn requireOpen(encoder: *objects.DoeCommandEncoder) bool {
+diff --git a/runtime/zig/src/native/command/doe_immediates_external_native.zig b/runtime/zig/src/native/command/doe_immediates_external_native.zig
+index bb99cd42a..54938a23a 100644
+--- a/runtime/zig/src/native/command/doe_immediates_external_native.zig
++++ b/runtime/zig/src/native/command/doe_immediates_external_native.zig
+@@ -1,65 +1,18 @@
+-// doe_immediates_external_native.zig — immediate-data forwarding and external-texture stubs.
+-// Sharded from doe_wgpu_native.zig; groups newer WebGPU APIs that are not part of
+-// the core command/resource path modules.
++// Native immediate-data admission. Shader-visible payload execution is unsupported.
+ 
+ const std = @import("std");
+ const recording = @import("doe_command_recording.zig");
+ const native_types = @import("../support/doe_native_object_types.zig");
+ const native_helpers = @import("../support/doe_native_object_helpers.zig");
+ const render_bundle = @import("../../runtime/render/render_bundle.zig");
++const bundle_native = @import("../render/doe_bundle_native.zig");
++const contract = @import("../../contracts/command_recording.zig");
+ 
+-const DoePipelineLayout = native_types.DoePipelineLayout;
+-
+-fn validate_immediate_data(data_ptr: ?[*]const u8, data_len: usize) bool {
+-    if (data_len == 0) return true;
+-    return data_ptr != null;
+-}
+-
+-fn immediate_budget(layout: ?*DoePipelineLayout) u32 {
+-    return if (layout) |l| l.immediate_size else 0;
+-}
+-
+-fn within_immediate_budget(layout: ?*DoePipelineLayout, index: u32, data_len: usize) bool {
+-    const budget = immediate_budget(layout);
+-    if (budget == 0) return data_len == 0 and index == 0;
+-    return @as(u64, index) + @as(u64, @intCast(data_len)) <= @as(u64, budget);
+-}
+-
+-// Shared payload validation + structured error logging for the
+-// compute/render pass setImmediates entry points. The render-bundle
+-// variant does not carry pipeline layout context and validates payload
+-// presence only; it therefore does not route through this helper.
+-fn log_immediate_validation(
+-    label: []const u8,
+-    layout: ?*DoePipelineLayout,
+-    index: u32,
+-    data_ptr: ?[*]const u8,
+-    data_len: usize,
+-) void {
+-    if (!validate_immediate_data(data_ptr, data_len)) {
+-        std.log.err("doe: {s} setImmediates rejected null data pointer for non-zero size", .{label});
+-        return;
+-    }
+-    if (!within_immediate_budget(layout, index, data_len)) {
+-        std.log.err("doe: {s} setImmediates exceeds pipeline layout immediateSize (index={} size={} budget={})", .{
+-            label,
+-            index,
+-            data_len,
+-            immediate_budget(layout),
+-        });
+-    }
++fn validate_payload(index: u32, data_ptr: ?[*]const u8, data_len: usize) contract.Failure!void {
++    if (data_len != 0 and data_ptr == null) return error.InvalidArgument;
++    if (index != 0 or data_len != 0) return error.ImmediateDataUnsupported;
+ }
+ 
+-// ============================================================
+-// setImmediates — push constants / immediate data upload
+-// ============================================================
+-
+-// setImmediates is the WebGPU immediate-data surface. There is no generic
+-// proc for the abstract binding-commands mixin, so the concrete compute/render
+-// pass entry points are forwarded directly to the provider WebGPU symbols below.
+-// The mixin export remains an explicit unsupported entry because it has no
+-// standalone runtime object or generic proc target.
+-
+ pub export fn doeNativeBindingCommandsSetImmediates(
+     encoder_raw: ?*anyopaque,
+     index: u32,
+@@ -83,8 +36,7 @@ pub export fn doeNativeComputePassSetImmediates(
+ ) callconv(.c) void {
+     const encoder = native_helpers.cast(native_types.DoeComputePass, encoder_raw) orelse return;
+     if (!recording.requirePass(encoder.enc, @intFromPtr(encoder))) return;
+-    const layout = if (encoder.pipeline) |pipeline| pipeline.layout else null;
+-    log_immediate_validation("compute", layout, index, data_ptr, data_len);
++    validate_payload(index, data_ptr, data_len) catch |err| recording.fail(encoder.enc, err);
+ }
+ 
+ pub export fn doeNativeRenderPassSetImmediates(
+@@ -95,8 +47,7 @@ pub export fn doeNativeRenderPassSetImmediates(
+ ) callconv(.c) void {
+     const encoder = native_helpers.cast(native_types.DoeRenderPass, encoder_raw) orelse return;
+     if (!recording.requirePass(encoder.enc, @intFromPtr(encoder))) return;
+-    const layout = if (encoder.pipeline) |pipeline| pipeline.layout else null;
+-    log_immediate_validation("render pass", layout, index, data_ptr, data_len);
++    validate_payload(index, data_ptr, data_len) catch |err| recording.fail(encoder.enc, err);
+ }
+ 
+ pub export fn doeNativeRenderBundleEncoderSetImmediates(
+@@ -105,12 +56,77 @@ pub export fn doeNativeRenderBundleEncoderSetImmediates(
+     data_ptr: ?[*]const u8,
+     data_len: usize,
+ ) callconv(.c) void {
+-    _ = index;
+     const encoder = render_bundle.cast_bundle_encoder(encoder_raw) orelse return;
+-    _ = encoder;
+-    if (!validate_immediate_data(data_ptr, data_len)) {
+-        std.log.err("doe: render bundle setImmediates rejected null data pointer for non-zero size", .{});
++    if (!bundle_native.requireBundleOpen(encoder)) return;
++    validate_payload(index, data_ptr, data_len) catch |err| bundle_native.failBundle(encoder, err);
++}
++
++test "immediate payload rejection invalidates compute render and bundle recording" {
++    const encoders = @import("doe_encoder_native.zig");
++    const compute = @import("../compute/doe_compute_ext_native.zig");
++    const render = @import("../render/doe_render_native.zig");
++    const errors = @import("../../runtime/diagnostics/error_scope.zig");
++    const Capture = struct {
++        rejected: bool = false,
++        fn receive(kind: u32, message: @import("../../core/abi/wgpu_handle_types.zig").WGPUStringView, raw: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
++            const self: *@This() = @ptrCast(@alignCast(raw.?));
++            self.rejected = kind == errors.ERROR_TYPE_VALIDATION and message.data != null and
++                std.mem.indexOf(u8, message.data[0..message.length], "shader-visible immediate data is unsupported") != null;
++        }
++    };
++    var device = native_types.DoeDevice{};
++    const bytes = [_]u8{ 1, 2, 3, 4 };
++    for ([_]bool{ false, true }) |render_pass| {
++        const encoder = try encoders.createEncoder(std.testing.allocator, &device);
++        defer encoders.doeNativeCommandEncoderRelease(encoder);
++        const pass = if (render_pass)
++            render.doeNativeCommandEncoderBeginRenderPass(encoder, null).?
++        else
++            encoders.doeNativeCommandEncoderBeginComputePass(encoder, null).?;
++        defer if (render_pass) render.doeNativeRenderPassRelease(pass) else compute.doeNativeComputePassRelease(pass);
++        device.error_scopes.push(errors.FILTER_VALIDATION);
++        if (render_pass) {
++            doeNativeRenderPassSetImmediates(pass, 0, null, 0);
++            try std.testing.expect(encoder.state == .pass);
++            doeNativeRenderPassSetImmediates(pass, 0, &bytes, bytes.len);
++        } else {
++            doeNativeComputePassSetImmediates(pass, 0, null, 0);
++            try std.testing.expect(encoder.state == .pass);
++            doeNativeComputePassSetImmediates(pass, 0, &bytes, bytes.len);
++        }
++        try std.testing.expectEqual(error.ImmediateDataUnsupported, encoder.state.failed);
++        var capture = Capture{};
++        try std.testing.expect(device.error_scopes.pop(.{ .callback = Capture.receive, .userdata1 = &capture }));
++        try std.testing.expect(capture.rejected);
++        const commands = encoders.doeNativeCommandEncoderFinish(encoder, null).?;
++        defer encoders.doeNativeCommandBufferRelease(commands);
++        try std.testing.expect(native_helpers.cast(native_types.DoeCommandBuffer, commands).?.error_object);
+     }
++    var descriptor = std.mem.zeroes(@import("../../full/render/wgpu_render_types.zig").RenderBundleEncoderDescriptor);
++    descriptor.sampleCount = 1;
++    const encoder = bundle_native.doeNativeDeviceCreateRenderBundleEncoder(&device, &descriptor).?;
++    defer bundle_native.doeNativeRenderBundleEncoderRelease(encoder);
++    doeNativeRenderBundleEncoderSetImmediates(encoder, 0, null, 0);
++    try std.testing.expect(render_bundle.cast_bundle_encoder(encoder).?.state == .open);
++    doeNativeRenderBundleEncoderSetImmediates(encoder, 0, &bytes, bytes.len);
++    try std.testing.expectEqual(error.ImmediateDataUnsupported, render_bundle.cast_bundle_encoder(encoder).?.state.failed);
++    const bundle = bundle_native.doeNativeRenderBundleEncoderFinish(encoder, null).?;
++    defer bundle_native.doeNativeRenderBundleRelease(bundle);
++    try std.testing.expect(render_bundle.cast_bundle(bundle).?.error_object);
+ }
+ 
+-// importExternalTexture / createExternalTexture moved to doe_external_texture_native.zig.
++test "immediate layouts reject unsupported state before retaining bindings" {
++    const bindings = @import("../resource/doe_bind_group_native.zig");
++    const abi = @import("../../core/abi/wgpu_pipeline_descriptor_types.zig");
++    var device = native_types.DoeDevice{};
++    var group = native_types.DoeBindGroupLayout{};
++    try std.testing.expect(bindings.doeNativeDeviceCreatePipelineLayoutOne(&device, &group, 4) == null);
++    var descriptor = std.mem.zeroes(abi.WGPUPipelineLayoutDescriptor);
++    descriptor.immediateSize = 4;
++    try std.testing.expect(bindings.doeNativeDeviceCreatePipelineLayout(&device, &descriptor) == null);
++    try std.testing.expectEqual(@as(u32, 1), group.ref_count);
++    const layout = bindings.doeNativeDeviceCreatePipelineLayoutOne(&device, &group, 0).?;
++    bindings.doeNativePipelineLayoutRelease(layout);
++    try std.testing.expectEqual(@as(u32, 1), group.ref_count);
++    try std.testing.expectError(error.InvalidArgument, validate_payload(0, null, 4));
++}
+diff --git a/runtime/zig/src/native/render/doe_bundle_native.zig b/runtime/zig/src/native/render/doe_bundle_native.zig
+index 6b3a8ed02..d593448ff 100644
+--- a/runtime/zig/src/native/render/doe_bundle_native.zig
++++ b/runtime/zig/src/native/render/doe_bundle_native.zig
+@@ -72,19 +72,15 @@ pub export fn doeNativeRenderBundleEncoderRelease(raw: ?*anyopaque) callconv(.c)
+     a.destroy(enc);
+ }
+ 
+-fn failBundle(encoder: *bundle.DoeBundleEncoder, cause: recording_contract.Failure) void {
++pub fn failBundle(encoder: *bundle.DoeBundleEncoder, cause: recording_contract.Failure) void {
+     _ = encoder.state.fail(cause);
+     if (encoder.device_lease) |lease| {
+         const device = cast(DoeDevice, lease.handle) orelse return;
+-        device.error_scopes.deliver(error_scope.zig_error_to_type(cause), switch (cause) {
+-            error.OutOfMemory => "render bundle recording could not allocate owned storage",
+-            error.InvalidState => "render bundle recording requires an open encoder",
+-            error.InvalidArgument => "render bundle recording received an invalid dependency",
+-        });
++        device.error_scopes.deliver(error_scope.zig_error_to_type(cause), recording_contract.message(cause));
+     }
+ }
+ 
+-fn requireBundleOpen(encoder: *bundle.DoeBundleEncoder) bool {
++pub fn requireBundleOpen(encoder: *bundle.DoeBundleEncoder) bool {
+     if (encoder.state == .open) return true;
+     if (encoder.state == .finished) failBundle(encoder, error.InvalidState);
+     return false;
+diff --git a/runtime/zig/src/native/resource/doe_bind_group_native.zig b/runtime/zig/src/native/resource/doe_bind_group_native.zig
+index 2caec1d31..5ffba55a4 100644
+--- a/runtime/zig/src/native/resource/doe_bind_group_native.zig
++++ b/runtime/zig/src/native/resource/doe_bind_group_native.zig
+@@ -516,8 +516,20 @@ pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
+     }
+ }
+ 
++fn rejectImmediateLayout(device_raw: ?*anyopaque, immediate_size: u32) bool {
++    if (immediate_size == 0) return false;
++    if (cast(DoeDevice, device_raw)) |device| {
++        const cause = error.ImmediateDataUnsupported;
++        device.error_scopes.deliver(
++            @import("../../runtime/diagnostics/error_scope.zig").zig_error_to_type(cause),
++            @import("../../contracts/command_recording.zig").message(cause),
++        );
++    }
++    return true;
++}
++
+ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUPipelineLayoutDescriptor) callconv(.c) ?*anyopaque {
+-    _ = dev_raw;
++    if (desc) |pd| if (rejectImmediateLayout(dev_raw, pd.immediateSize)) return null;
+     const pl = make(DoePipelineLayout) orelse return null;
+     pl.* = .{};
+     const pl_result = toOpaque(pl);
+@@ -542,7 +554,7 @@ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*
+ }
+ 
+ pub export fn doeNativeDeviceCreatePipelineLayoutOne(dev_raw: ?*anyopaque, layout_raw: ?*anyopaque, immediate_size: u32) callconv(.c) ?*anyopaque {
+-    _ = dev_raw;
++    if (rejectImmediateLayout(dev_raw, immediate_size)) return null;
+     const layout = cast(DoeBindGroupLayout, layout_raw) orelse return null;
+     const pl = make(DoePipelineLayout) orelse return null;
+     pl.* = .{
+diff --git a/runtime/zig/src/runtime/diagnostics/error_scope.zig b/runtime/zig/src/runtime/diagnostics/error_scope.zig
+index 338d5d53b..42645d9a2 100644
+--- a/runtime/zig/src/runtime/diagnostics/error_scope.zig
++++ b/runtime/zig/src/runtime/diagnostics/error_scope.zig
+@@ -232,6 +232,7 @@ pub fn zig_error_to_type(err: anyerror) u32 {
+         error.OutOfMemory => ERROR_TYPE_OUT_OF_MEMORY,
+         error.InvalidArgument,
+         error.InvalidState,
++        error.ImmediateDataUnsupported,
+         error.ShaderCompileFailed,
+         error.ShaderToolchainUnavailable,
+         => ERROR_TYPE_VALIDATION,
+diff --git a/runtime/zig/tests/native_recorded_compute.c b/runtime/zig/tests/native_recorded_compute.c
+index 197abeb46..6afbc98b0 100644
+--- a/runtime/zig/tests/native_recorded_compute.c
++++ b/runtime/zig/tests/native_recorded_compute.c
+@@ -47,7 +47,7 @@ static bool pop_validation(WGPUInstance instance, WGPUDevice device) {
+ }
+ 
+ static bool invalid_pass_lifetimes(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
+-    enum { FINISH_OPEN, END_TWICE, STALE_PASS, NESTED_PASS, PASS_CASE_COUNT };
++    enum { FINISH_OPEN, END_TWICE, STALE_PASS, NESTED_PASS, IMMEDIATE_PAYLOAD, PASS_CASE_COUNT };
+     for (unsigned scenario = 0; scenario < PASS_CASE_COUNT; ++scenario) {
+         WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
+         if (!encoder) return false;
+@@ -64,6 +64,10 @@ static bool invalid_pass_lifetimes(WGPUInstance instance, WGPUDevice device, WGP
+             wgpuComputePassEncoderInsertDebugMarker(pass, (WGPUStringView){"stale", 5});
+         } else if (scenario == NESTED_PASS) {
+             next = wgpuCommandEncoderBeginComputePass(encoder, NULL);
++        } else if (scenario == IMMEDIATE_PAYLOAD) {
++            const uint32_t value = 7;
++            wgpuComputePassEncoderSetImmediates(pass, 0, &value, sizeof(value));
++            wgpuComputePassEncoderEnd(pass);
+         }
+         WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
+         const bool rejected_recording = pop_validation(instance, device);
+@@ -83,7 +87,14 @@ static bool invalid_pass_lifetimes(WGPUInstance instance, WGPUDevice device, WGP
+             return false;
+         }
+     }
+-    printf("passed: open, ended, stale, and nested passes reject recording and submission\n");
++    WGPUPipelineLayoutDescriptor layout_desc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
++    layout_desc.immediateSize = sizeof(uint32_t);
++    wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++    WGPUPipelineLayout layout = wgpuDeviceCreatePipelineLayout(device, &layout_desc);
++    const bool rejected_layout = pop_validation(instance, device);
++    if (layout) wgpuPipelineLayoutRelease(layout);
++    if (layout || !rejected_layout) return false;
++    printf("passed: invalid pass lifetimes and unsupported immediate payloads/layouts reject before execution\n");
+     return true;
+ }
+ 

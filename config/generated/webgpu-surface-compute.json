@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "reportKind": "webgpu-surface-report",
   "surfaceId": "doe-compute",
-  "generatedAt": "2026-07-19T17:42:48.827141+00:00",
+  "generatedAt": "2026-09-07T02:51:43.560785+00:00",
   "derivedFrom": {
     "commandCoverage": "config/webgpu-command-coverage-core.json",
     "capabilityInventory": "config/webgpu-capability-inventory.json",
@@ -123,7 +123,8 @@
   "capabilityInventory": {
     "entryCount": 83,
     "statusSummary": {
-      "implemented": 83
+      "implemented": 82,
+      "partial": 1
     },
     "entries": [
       {
@@ -174,11 +175,11 @@
       {
         "capabilityId": "p1_resource_table_immediates_surface",
         "domain": "resource-table",
-        "status": "implemented",
+        "status": "partial",
         "priority": "p1",
         "owner": "runtime-core",
         "contract": "runtime/zig/src/core/abi/procs/wgpu_p1_resource_table_procs.zig + runtime/zig/src/full/lifecycle/wgpu_async_diagnostics_command.zig",
-        "notes": "ResourceTable create/update/remove/destroy/release and pass/bundle/compute set-resource-table + set-immediates APIs are implemented behind explicit feature gating; unsupported adapters return deterministic unsupported status."
+        "notes": "ABI wrappers expose the resource-table and immediate-data entrypoints. Native immediate-data payloads and non-zero immediateSize layouts reject with explicit unsupported validation; proc-surface diagnostics do not execute shader-visible payloads. Provider-backed feature-gated wrappers retain their separate admission contract."
       },
       {
         "capabilityId": "p2_lifecycle_addref_surface",
@@ -950,17 +951,19 @@
   "specIndexSummary": {
     "note": "The spec index is backend-oriented rather than tier-oriented; these are global implementation counts for native backends.",
     "metal": {
-      "implemented": 846,
-      "out_of_scope": 41
+      "implemented": 841,
+      "out_of_scope": 41,
+      "partial": 5
     },
     "vulkan": {
-      "implemented": 871,
-      "out_of_scope": 16
+      "implemented": 866,
+      "out_of_scope": 16,
+      "partial": 5
     },
     "d3d12": {
       "blocked": 46,
-      "implemented": 834,
-      "partial": 7
+      "implemented": 829,
+      "partial": 12
     }
   }
 }

@@ -72,19 +72,15 @@ pub export fn doeNativeRenderBundleEncoderRelease(raw: ?*anyopaque) callconv(.c)
     a.destroy(enc);
 }
 
-fn failBundle(encoder: *bundle.DoeBundleEncoder, cause: recording_contract.Failure) void {
+pub fn failBundle(encoder: *bundle.DoeBundleEncoder, cause: recording_contract.Failure) void {
     _ = encoder.state.fail(cause);
     if (encoder.device_lease) |lease| {
         const device = cast(DoeDevice, lease.handle) orelse return;
-        device.error_scopes.deliver(error_scope.zig_error_to_type(cause), switch (cause) {
-            error.OutOfMemory => "render bundle recording could not allocate owned storage",
-            error.InvalidState => "render bundle recording requires an open encoder",
-            error.InvalidArgument => "render bundle recording received an invalid dependency",
-        });
+        device.error_scopes.deliver(error_scope.zig_error_to_type(cause), recording_contract.message(cause));
     }
 }
 
-fn requireBundleOpen(encoder: *bundle.DoeBundleEncoder) bool {
+pub fn requireBundleOpen(encoder: *bundle.DoeBundleEncoder) bool {
     if (encoder.state == .open) return true;
     if (encoder.state == .finished) failBundle(encoder, error.InvalidState);
     return false;

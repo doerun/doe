@@ -516,8 +516,20 @@ pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
     }
 }
 
+fn rejectImmediateLayout(device_raw: ?*anyopaque, immediate_size: u32) bool {
+    if (immediate_size == 0) return false;
+    if (cast(DoeDevice, device_raw)) |device| {
+        const cause = error.ImmediateDataUnsupported;
+        device.error_scopes.deliver(
+            @import("../../runtime/diagnostics/error_scope.zig").zig_error_to_type(cause),
+            @import("../../contracts/command_recording.zig").message(cause),
+        );
+    }
+    return true;
+}
+
 pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUPipelineLayoutDescriptor) callconv(.c) ?*anyopaque {
-    _ = dev_raw;
+    if (desc) |pd| if (rejectImmediateLayout(dev_raw, pd.immediateSize)) return null;
     const pl = make(DoePipelineLayout) orelse return null;
     pl.* = .{};
     const pl_result = toOpaque(pl);
@@ -542,7 +554,7 @@ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*
 }
 
 pub export fn doeNativeDeviceCreatePipelineLayoutOne(dev_raw: ?*anyopaque, layout_raw: ?*anyopaque, immediate_size: u32) callconv(.c) ?*anyopaque {
-    _ = dev_raw;
+    if (rejectImmediateLayout(dev_raw, immediate_size)) return null;
     const layout = cast(DoeBindGroupLayout, layout_raw) orelse return null;
     const pl = make(DoePipelineLayout) orelse return null;
     pl.* = .{

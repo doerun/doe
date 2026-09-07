@@ -229,6 +229,13 @@ classified and cannot be promoted by benchmark results.
   and native C-boundary tests must check rejected recording and submission, then
   execute valid work on the same device. Debug and immediate-data entrypoints
   must validate pass lifetime before reading its retained state.
+  Native shader-visible immediate data is unsupported. Non-empty payloads must
+  report `ImmediateDataUnsupported` through validation scopes and invalidate
+  command/bundle recording; non-zero `immediateSize` layouts fail before
+  allocation or binding retention. Empty calls at offset zero perform no work.
+  This replaces validation-only acceptance that never delivered bytes to
+  shaders. Signatures and field schemas remain stable, and source capability
+  records plus generated reports must distinguish proc wiring from execution.
   Native-direct package tests also reject duplicate and consumed submissions,
   verify writable mapping copy-back and read-only mapping isolation, and require
   mapped-range detachment on unmap. Run the same test in every qualified host.

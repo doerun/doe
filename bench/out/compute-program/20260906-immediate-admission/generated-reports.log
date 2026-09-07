@@ -1,0 +1,1 @@
+PASS: fresh generated WebGPU surface reports match config/generated with only generatedAt timestamps excluded

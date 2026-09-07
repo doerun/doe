@@ -47,7 +47,7 @@ static bool pop_validation(WGPUInstance instance, WGPUDevice device) {
 }
 
 static bool invalid_pass_lifetimes(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
-    enum { FINISH_OPEN, END_TWICE, STALE_PASS, NESTED_PASS, PASS_CASE_COUNT };
+    enum { FINISH_OPEN, END_TWICE, STALE_PASS, NESTED_PASS, IMMEDIATE_PAYLOAD, PASS_CASE_COUNT };
     for (unsigned scenario = 0; scenario < PASS_CASE_COUNT; ++scenario) {
         WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
         if (!encoder) return false;
@@ -64,6 +64,10 @@ static bool invalid_pass_lifetimes(WGPUInstance instance, WGPUDevice device, WGP
             wgpuComputePassEncoderInsertDebugMarker(pass, (WGPUStringView){"stale", 5});
         } else if (scenario == NESTED_PASS) {
             next = wgpuCommandEncoderBeginComputePass(encoder, NULL);
+        } else if (scenario == IMMEDIATE_PAYLOAD) {
+            const uint32_t value = 7;
+            wgpuComputePassEncoderSetImmediates(pass, 0, &value, sizeof(value));
+            wgpuComputePassEncoderEnd(pass);
         }
         WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
         const bool rejected_recording = pop_validation(instance, device);
@@ -83,7 +87,14 @@ static bool invalid_pass_lifetimes(WGPUInstance instance, WGPUDevice device, WGP
             return false;
         }
     }
-    printf("passed: open, ended, stale, and nested passes reject recording and submission\n");
+    WGPUPipelineLayoutDescriptor layout_desc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
+    layout_desc.immediateSize = sizeof(uint32_t);
+    wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+    WGPUPipelineLayout layout = wgpuDeviceCreatePipelineLayout(device, &layout_desc);
+    const bool rejected_layout = pop_validation(instance, device);
+    if (layout) wgpuPipelineLayoutRelease(layout);
+    if (layout || !rejected_layout) return false;
+    printf("passed: invalid pass lifetimes and unsupported immediate payloads/layouts reject before execution\n");
     return true;
 }
 
