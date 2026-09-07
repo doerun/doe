@@ -1408,6 +1408,10 @@
     {
       "schema": "config/vulkan-compute-pipeline-policy.schema.json",
       "data": "config/vulkan-compute-pipeline-policy.json"
+    },
+    {
+      "schema": "config/native-command-storage-policy.schema.json",
+      "data": "config/native-command-storage-policy.json"
     }
   ],
   "globTargets": [

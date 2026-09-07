@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Native command storage retention policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "maxRetainedBytes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "maxRetainedBytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295,
+      "description": "Maximum bytes in one empty command array retained by each native device. Zero disables retention. Live command arrays remain owned by encoders or command buffers and are outside this idle-storage bound."
+    }
+  }
+}

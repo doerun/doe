@@ -2,9 +2,9 @@
 
 ## Ordinary command preparation
 
-Vulkan binding collection fills caller-owned storage; merge checks borrow command
-payloads. Qualification, native CPU measurements, and mixed application results:
-`bench/out/compute-program/20260907-binding-storage/README.md`.
+Native devices retain bounded empty command-array capacity after resource release.
+Policy, ownership checks, qualification, and complete application comparisons:
+`bench/out/compute-program/20260907-command-storage/README.md`.
 
 ## Concurrent native ownership
 
@@ -207,19 +207,19 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
 - [x] Bounded cancellation, explicit device destruction, closing, and reopening.
 - [x] Recheck reflection failure propagation, compilation-owned diagnostics, and
   state-reset approval against implementation and retained-package regressions.
-- [ ] Run the frozen application comparisons with equivalent inputs, correctness,
+- [x] Run the frozen application comparisons with equivalent inputs, correctness,
   caches, transfers, and completion. Record preparation, complete-operation
   latency, CPU use, memory, and long-session behavior; optimize the largest
   demonstrated bottleneck and rerun affected acceptance checks.
 
-Serial session, allocation, cancellation, and reopening evidence is indexed at
-`bench/out/compute-program/20260907-linux-completion/README.md`; independent-device
-and worker recreation evidence is at
-`bench/out/compute-program/20260907-async-pipeline-ownership/README.md`.
+The bounded implementation checklist is complete. Current package, model,
+comparison, and prolonged checks are indexed at
+`bench/out/compute-program/20260907-command-storage/README.md`; earlier resource
+and worker evidence remains linked from that correction record.
 Peak residency, physical driver failure, shared-device mutation, and arbitrary
 worker termination are unqualified and outside this bounded milestone.
 Canonical model acceptance uses the retained package and explicit P0 control at
-`bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/result.json`.
+`bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/result.json`.
 
 Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
 Large Deno ratios remain suspicious host-path observations until audited;

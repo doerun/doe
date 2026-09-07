@@ -1,0 +1,22 @@
+image_edges 0 previous accepted
+image_edges 0 candidate accepted
+image_edges 1 candidate accepted
+image_edges 1 previous accepted
+image_edges 2 previous accepted
+Traceback (most recent call last):
+  File "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/steady/compare-previous.py", line 35, in <module>
+    report = run_child('doe-webgpu', application, 'measure', output, policy_path,
+                       policy, 'vulkan', '/usr/bin/node', '', None, package, qualification)
+  File "/home/x/deco/doe/bench/runners/run_compute_program_evidence.py", line 81, in run_child
+    report = validate_run(output, ROOT, policy)
+  File "/home/x/deco/doe/bench/gates/compute_program_gate.py", line 77, in validate_run
+    validate_activity(path, root, policy, report)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/x/deco/doe/bench/lib/compute_program_gpu_activity.py", line 233, in validate_activity
+    reject_activity(record["snapshots"], record["target"]["pciDevice"])
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/x/deco/doe/bench/lib/compute_program_gpu_activity.py", line 155, in reject_activity
+    raise ValueError(
+        f"Unrelated GPU activity: DRM client {client_id}/{engine} advanced {delta} ns"
+    )
+ValueError: Unrelated GPU activity: DRM client 30873/gfx advanced 777599 ns

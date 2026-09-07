@@ -1,0 +1,28 @@
+[
+  {
+    "command": [
+      "strace",
+      "-f",
+      "-c",
+      "-e",
+      "trace=mmap,mremap,munmap,mprotect,brk",
+      "-o",
+      "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/previous-memory-syscalls.txt",
+      "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/native-record-cost-validated/record-cost"
+    ],
+    "LD_LIBRARY_PATH": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/native-record-cost-validated/previous"
+  },
+  {
+    "command": [
+      "strace",
+      "-f",
+      "-c",
+      "-e",
+      "trace=mmap,mremap,munmap,mprotect,brk",
+      "-o",
+      "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/candidate-memory-syscalls.txt",
+      "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/native-record-cost-validated/record-cost"
+    ],
+    "LD_LIBRARY_PATH": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/native-record-cost-validated/candidate"
+  }
+]

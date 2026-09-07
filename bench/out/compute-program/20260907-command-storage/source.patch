@@ -1,0 +1,545 @@
+diff --git a/bench/runners/run_compute_program_evidence.py b/bench/runners/run_compute_program_evidence.py
+index a0d767c70..1097c0e2d 100644
+--- a/bench/runners/run_compute_program_evidence.py
++++ b/bench/runners/run_compute_program_evidence.py
+@@ -199,6 +199,8 @@ def main() -> int:
+                     ROOT / 'bench/lib/compute_program_fixture.py', original_policy,
+                     ROOT / 'config/benchmark-methodology-thresholds.json',
+                     ROOT / 'config/vulkan-buffer-memory-policy.json',
++                    ROOT / 'config/native-command-storage-policy.json',
++                    ROOT / 'config/native-command-storage-policy.schema.json',
+                     ROOT / 'config/vulkan-timestamp-policy.json',
+                     ROOT / 'config/spirv-compute-arithmetic-policy.json',
+                     ROOT / 'config/spirv-compute-arithmetic-policy.schema.json',
+diff --git a/config/native-command-storage-policy.json b/config/native-command-storage-policy.json
+new file mode 100644
+index 000000000..f6b21e632
+--- /dev/null
++++ b/config/native-command-storage-policy.json
+@@ -0,0 +1,4 @@
++{
++  "schemaVersion": 1,
++  "maxRetainedBytes": 1048576
++}
+diff --git a/config/native-command-storage-policy.schema.json b/config/native-command-storage-policy.schema.json
+new file mode 100644
+index 000000000..f50069897
+--- /dev/null
++++ b/config/native-command-storage-policy.schema.json
+@@ -0,0 +1,21 @@
++{
++  "$schema": "https://json-schema.org/draft/2020-12/schema",
++  "title": "Native command storage retention policy",
++  "type": "object",
++  "additionalProperties": false,
++  "required": [
++    "schemaVersion",
++    "maxRetainedBytes"
++  ],
++  "properties": {
++    "schemaVersion": {
++      "const": 1
++    },
++    "maxRetainedBytes": {
++      "type": "integer",
++      "minimum": 0,
++      "maximum": 4294967295,
++      "description": "Maximum bytes in one empty command array retained by each native device. Zero disables retention. Live command arrays remain owned by encoders or command buffers and are outside this idle-storage bound."
++    }
++  }
++}
+diff --git a/config/schema-targets.json b/config/schema-targets.json
+index 333fbc964..05c028814 100644
+--- a/config/schema-targets.json
++++ b/config/schema-targets.json
+@@ -1408,6 +1408,10 @@
+     {
+       "schema": "config/vulkan-compute-pipeline-policy.schema.json",
+       "data": "config/vulkan-compute-pipeline-policy.json"
++    },
++    {
++      "schema": "config/native-command-storage-policy.schema.json",
++      "data": "config/native-command-storage-policy.json"
+     }
+   ],
+   "globTargets": [
+diff --git a/docs/config-schema-enforcement.md b/docs/config-schema-enforcement.md
+index 2a722cce8..897f9b429 100644
+--- a/docs/config-schema-enforcement.md
++++ b/docs/config-schema-enforcement.md
+@@ -29,3 +29,15 @@ The existing compute-program final-summary glob now routes matrices and package
+ qualification separately. Its scope is unchanged, preserving historical
+ observations rather than rewriting them to satisfy a different report contract.
+ Current accepted package and application summaries are registered explicitly.
++
++## Native command storage policy migration
++
++`native-command-storage-policy.json` introduces a build-time bound on an empty
++host command array retained by each native device. `maxRetainedBytes` excludes
++live encoder and command-buffer storage; zero restores release-on-close behavior.
++Only storage allocated by the same allocator is reusable. Completed ownership
++releases all resource leases before returning capacity, and final device release
++frees retained capacity. No command, resource, prepared recording, public ABI, or
++execution receipt is cached or changed by this policy. Rebuild the native binary
++after changing the policy; compare complete operations and process memory before
++adopting another bound.
+diff --git a/docs/process.md b/docs/process.md
+index 712807ced..b62662ee4 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -332,6 +332,11 @@ classified and cannot be promoted by benchmark results.
+   coherence and supported memory-type requirements remain mandatory. Validate
+   the selection regression and physical ordinary/prepared application controls
+   before interpreting an allocation-policy change as an improvement.
++- Native host command storage uses `config/native-command-storage-policy.json`.
++  Validate exclusive loans, allocator identity, idle byte bounds, reference release,
++  concurrent access, and final device cleanup. Retain the policy with application
++  evidence; compare ordinary operation latency and process memory against the
++  previous qualified binary before interpreting removed allocations as a gain.
+ - Native coverage matrix version 2 requires artifact hashes and real execution
+   provenance. Schema examples, renamed examples without an execution chain,
+   wrong backends, failed/skipped native work, changed binaries, and missing or
+diff --git a/docs/status/reusable-compute-programs.md b/docs/status/reusable-compute-programs.md
+index cc65b445c..2b12a49d2 100644
+--- a/docs/status/reusable-compute-programs.md
++++ b/docs/status/reusable-compute-programs.md
+@@ -2,9 +2,9 @@
+ 
+ ## Ordinary command preparation
+ 
+-Vulkan binding collection fills caller-owned storage; merge checks borrow command
+-payloads. Qualification, native CPU measurements, and mixed application results:
+-`bench/out/compute-program/20260907-binding-storage/README.md`.
++Native devices retain bounded empty command-array capacity after resource release.
++Policy, ownership checks, qualification, and complete application comparisons:
++`bench/out/compute-program/20260907-command-storage/README.md`.
+ 
+ ## Concurrent native ownership
+ 
+@@ -207,19 +207,19 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
+ - [x] Bounded cancellation, explicit device destruction, closing, and reopening.
+ - [x] Recheck reflection failure propagation, compilation-owned diagnostics, and
+   state-reset approval against implementation and retained-package regressions.
+-- [ ] Run the frozen application comparisons with equivalent inputs, correctness,
++- [x] Run the frozen application comparisons with equivalent inputs, correctness,
+   caches, transfers, and completion. Record preparation, complete-operation
+   latency, CPU use, memory, and long-session behavior; optimize the largest
+   demonstrated bottleneck and rerun affected acceptance checks.
+ 
+-Serial session, allocation, cancellation, and reopening evidence is indexed at
+-`bench/out/compute-program/20260907-linux-completion/README.md`; independent-device
+-and worker recreation evidence is at
+-`bench/out/compute-program/20260907-async-pipeline-ownership/README.md`.
++The bounded implementation checklist is complete. Current package, model,
++comparison, and prolonged checks are indexed at
++`bench/out/compute-program/20260907-command-storage/README.md`; earlier resource
++and worker evidence remains linked from that correction record.
+ Peak residency, physical driver failure, shared-device mutation, and arbitrary
+ worker termination are unqualified and outside this bounded milestone.
+ Canonical model acceptance uses the retained package and explicit P0 control at
+-`bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/result.json`.
++`bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/result.json`.
+ 
+ Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
+ Large Deno ratios remain suspicious host-path observations until audited;
+diff --git a/runtime/zig/build.zig b/runtime/zig/build.zig
+index 437d93062..8c66a32d3 100644
+--- a/runtime/zig/build.zig
++++ b/runtime/zig/build.zig
+@@ -332,6 +332,16 @@ fn addCompilerArithmeticPolicy(options: *std.Build.Step.Options, allocator: std.
+     options.addOption(bool, "spirv_compute_preserve_multi_dot_loops", policy.value.multiDotLoops == .preserve);
+ }
+ 
++fn addNativeCommandStoragePolicy(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
++    const bytes = std.fs.cwd().readFileAlloc(allocator, "../../config/native-command-storage-policy.json", 64 * 1024) catch
++        @panic("failed to read native-command-storage-policy.json");
++    const Policy = struct { schemaVersion: u32, maxRetainedBytes: u32 };
++    const policy = std.json.parseFromSlice(Policy, allocator, bytes, .{}) catch
++        @panic("invalid native command storage policy");
++    if (policy.value.schemaVersion != 1) @panic("unsupported native command storage policy version");
++    options.addOption(usize, "native_command_storage_max_retained_bytes", policy.value.maxRetainedBytes);
++}
++
+ fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
+     const file = std.fs.cwd().openFile("../../config/compute-program.schema.json", .{}) catch
+         @panic("config/compute-program.schema.json not found");
+@@ -419,6 +429,7 @@ pub fn build(b: *std.Build) void {
+     const lean_verified = b.option(bool, "lean-verified", "Embed Lean proof artifact and validate at comptime") orelse false;
+     const build_options = b.addOptions();
+     addComputeProgramContract(build_options, b.allocator);
++    addNativeCommandStoragePolicy(build_options, b.allocator);
+     addCompilerArithmeticPolicy(build_options, b.allocator);
+     build_options.addOption(bool, "lean_verified", lean_verified);
+     build_options.addOption(BuildTier, "build_tier", build_tier);
+@@ -1273,6 +1284,7 @@ pub fn build(b: *std.Build) void {
+     // These named steps override tier for convenience.
+     const compute_build_options = b.addOptions();
+     addComputeProgramContract(compute_build_options, b.allocator);
++    addNativeCommandStoragePolicy(compute_build_options, b.allocator);
+     addCompilerArithmeticPolicy(compute_build_options, b.allocator);
+     compute_build_options.addOption(bool, "lean_verified", lean_verified);
+     compute_build_options.addOption(BuildTier, "build_tier", .compute);
+@@ -1345,6 +1357,7 @@ pub fn build(b: *std.Build) void {
+     // Full Dawn drop-in variant (tier=full).
+     const full_build_options = b.addOptions();
+     addComputeProgramContract(full_build_options, b.allocator);
++    addNativeCommandStoragePolicy(full_build_options, b.allocator);
+     addCompilerArithmeticPolicy(full_build_options, b.allocator);
+     full_build_options.addOption(bool, "lean_verified", lean_verified);
+     full_build_options.addOption(BuildTier, "build_tier", .full);
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 6f7f23dcb..cfe927379 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -3490,9 +3490,9 @@
+       },
+       "src/native/command/doe_encoder_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "f21da0b0abd6023947c4312e62b4e19b6d061ea0072375a8d9464799c39102b2",
+-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+-        "reviewer": "codex-texture-copy-regions/2026-09-07"
++        "moduleSha256": "d5ace200583ebfa55b5e96ca6e6817c3a6dd4b59d987d027e4665d0312c2593e",
++        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
++        "reviewer": "codex-command-storage/2026-09-07"
+       },
+       "src/native/command/doe_immediates_external_native.zig": {
+         "decision": "Keep",
+@@ -3556,9 +3556,9 @@
+       },
+       "src/native/lifecycle/doe_instance_device_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "26fbe0b79e09fd6331893012fd1fe2f502501fcfcd015fbf2b07e5bdcda6229c",
+-        "reason": "Keep: retain the existing resource owner and backend boundary while recorded commands and concurrent shader creation use explicit, atomic lifetime operations.",
+-        "reviewer": "codex-native-ownership/2026-09-06"
++        "moduleSha256": "1d54b204820da95c6eb61852b0159fad2cb711158598d8cde4db13ffd6a4a3df",
++        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
++        "reviewer": "codex-command-storage/2026-09-07"
+       },
+       "src/native/mod.zig": {
+         "decision": "Keep",
+@@ -3754,9 +3754,9 @@
+       },
+       "src/native/support/doe_native_object_types.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "5f000f463d4cfeca221b8d6d9d2593fcf00fef4ab226ab3234a09753386e21ef",
+-        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+-        "reviewer": "codex-submit-availability/2026-09-07"
++        "moduleSha256": "0c498ef8d47b30888411cc41a98645b59df94374265b79d0e1214845cd7d5107",
++        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
++        "reviewer": "codex-command-storage/2026-09-07"
+       },
+       "src/native/support/doe_native_runtime_helpers.zig": {
+         "decision": "Keep",
+@@ -4339,6 +4339,12 @@
+         "moduleSha256": "c5f0ebbbaed095c6aee7928d869eeff7c63d0303af835db5f46cc1da0fedf301",
+         "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+         "reviewer": "codex-texture-copy-regions/2026-09-07"
++      },
++      "src/native/command/doe_command_storage.zig": {
++        "decision": "Keep",
++        "moduleSha256": "fc9de24b922dc2ddfa08ce128669b9db8a2aeee4d1b6bf877210f2694730fbd9",
++        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
++        "reviewer": "codex-command-storage/2026-09-07"
+       }
+     },
+     "linePolicy": {
+diff --git a/runtime/zig/src/native/command/doe_command_storage.zig b/runtime/zig/src/native/command/doe_command_storage.zig
+new file mode 100644
+index 000000000..7ec9acbb3
+--- /dev/null
++++ b/runtime/zig/src/native/command/doe_command_storage.zig
+@@ -0,0 +1,118 @@
++const std = @import("std");
++const RecordedCmd = @import("../support/doe_native_command_types.zig").RecordedCmd;
++const Commands = std.ArrayListUnmanaged(RecordedCmd);
++
++pub const Pool = struct {
++    allocator: std.mem.Allocator,
++    max_retained_bytes: usize,
++    mutex: std.Thread.Mutex = .{},
++    available: Commands = .{},
++
++    pub fn init(allocator: std.mem.Allocator, max_retained_bytes: usize) Pool {
++        return .{ .allocator = allocator, .max_retained_bytes = max_retained_bytes };
++    }
++
++    fn ownsAllocator(self: *const Pool, allocator: std.mem.Allocator) bool {
++        return self.allocator.ptr == allocator.ptr and self.allocator.vtable == allocator.vtable;
++    }
++
++    pub fn take(self: *Pool, allocator: std.mem.Allocator) Commands {
++        if (!self.ownsAllocator(allocator) or self.max_retained_bytes == 0) return .{};
++        self.mutex.lock();
++        defer self.mutex.unlock();
++        const commands = self.available;
++        self.available = .{};
++        return commands;
++    }
++
++    pub fn recycle(self: *Pool, allocator: std.mem.Allocator, commands: *Commands) void {
++        const storage = commands.*;
++        commands.* = .{};
++        if (storage.capacity == 0) return;
++        if (self.ownsAllocator(allocator) and storage.capacity <= self.max_retained_bytes / @sizeOf(RecordedCmd)) {
++            self.mutex.lock();
++            if (self.available.capacity == 0) {
++                self.available = storage;
++                self.available.clearRetainingCapacity();
++                self.mutex.unlock();
++                return;
++            }
++            self.mutex.unlock();
++        }
++        allocator.free(storage.allocatedSlice());
++    }
++
++    // Device references held by encoders and command buffers outlive every loan.
++    pub fn deinit(self: *Pool) void {
++        self.available.deinit(self.allocator);
++        self.available = .{};
++    }
++};
++
++test "command storage loans are exclusive and retain only bounded empty capacity" {
++    const allocator = std.testing.allocator;
++    var pool = Pool.init(allocator, @sizeOf(RecordedCmd));
++    defer pool.deinit();
++    var first = try Commands.initCapacity(allocator, 1);
++    first.appendAssumeCapacity(.{ .clear_buffer = .{ .buffer = null, .offset = 0, .size = 4 } });
++    const address = first.items.ptr;
++    pool.recycle(allocator, &first);
++    try std.testing.expectEqual(@as(usize, 0), first.capacity);
++    var loan = pool.take(allocator);
++    try std.testing.expectEqual(address, loan.items.ptr);
++    try std.testing.expectEqual(@as(usize, 0), loan.items.len);
++    try std.testing.expectEqual(@as(usize, 0), pool.take(allocator).capacity);
++    var another = try Commands.initCapacity(allocator, 1);
++    const other_address = another.items.ptr;
++    pool.recycle(allocator, &another);
++    pool.recycle(allocator, &loan);
++    try std.testing.expectEqual(other_address, pool.available.items.ptr);
++    var oversized = try Commands.initCapacity(allocator, 2);
++    pool.recycle(allocator, &oversized);
++    try std.testing.expectEqual(other_address, pool.available.items.ptr);
++}
++
++test "command storage does not mix allocator identities or devices" {
++    const allocator = std.testing.allocator;
++    var tracked = std.testing.FailingAllocator.init(allocator, .{});
++    var pool = Pool.init(allocator, @sizeOf(RecordedCmd));
++    defer pool.deinit();
++    var other = Pool.init(allocator, @sizeOf(RecordedCmd));
++    defer other.deinit();
++    var storage = try Commands.initCapacity(allocator, 1);
++    pool.recycle(allocator, &storage);
++    try std.testing.expectEqual(@as(usize, 0), other.take(allocator).capacity);
++    try std.testing.expectEqual(@as(usize, 0), pool.take(tracked.allocator()).capacity);
++    var foreign = try Commands.initCapacity(tracked.allocator(), 1);
++    pool.recycle(tracked.allocator(), &foreign);
++    try std.testing.expectEqual(tracked.allocated_bytes, tracked.freed_bytes);
++    var disabled = Pool.init(allocator, 0);
++    defer disabled.deinit();
++    var loan = pool.take(allocator);
++    disabled.recycle(allocator, &loan);
++    try std.testing.expectEqual(@as(usize, 0), disabled.take(allocator).capacity);
++}
++
++test "concurrent command storage loans preserve each recording" {
++    const Worker = struct {
++        fn run(pool: *Pool, value: u64) void {
++            for (0..64) |_| {
++                var commands = pool.take(std.testing.allocator);
++                defer pool.recycle(std.testing.allocator, &commands);
++                std.testing.expectEqual(@as(usize, 0), commands.items.len) catch @panic("recycled commands are not empty");
++                commands.append(std.testing.allocator, .{ .clear_buffer = .{ .buffer = null, .offset = value, .size = 4 } }) catch @panic("command allocation failed");
++                std.Thread.yield() catch {};
++                std.testing.expectEqual(value, commands.items[0].clear_buffer.offset) catch @panic("command storage aliases another loan");
++            }
++        }
++    };
++    var pool = Pool.init(std.testing.allocator, 8 * @sizeOf(RecordedCmd));
++    defer pool.deinit();
++    var threads: [4]std.Thread = undefined;
++    var spawned: usize = 0;
++    defer for (threads[0..spawned]) |thread| thread.join();
++    for (&threads, 0..) |*thread, index| {
++        thread.* = try std.Thread.spawn(.{}, Worker.run, .{ &pool, index });
++        spawned += 1;
++    }
++}
+diff --git a/runtime/zig/src/native/command/doe_encoder_native.zig b/runtime/zig/src/native/command/doe_encoder_native.zig
+index d1bff2195..48cdad373 100644
+--- a/runtime/zig/src/native/command/doe_encoder_native.zig
++++ b/runtime/zig/src/native/command/doe_encoder_native.zig
+@@ -7,6 +7,8 @@ const buffer_abi = @import("../../core/abi/wgpu_core_base_types.zig");
+ 
+ const std = @import("std");
+ const abi_pipeline = @import("../../core/abi/wgpu_pipeline_descriptor_types.zig");
++const command_types = @import("../support/doe_native_command_types.zig");
++const command_storage = @import("doe_command_storage.zig");
+ const native_types = @import("../support/doe_native_object_types.zig");
+ const native_shared = @import("../support/doe_native_shared_types.zig");
+ const native_helpers = @import("../support/doe_native_object_helpers.zig");
+@@ -47,15 +49,26 @@ pub fn createEncoder(allocator: std.mem.Allocator, device: *DoeDevice) !*DoeComm
+     const encoder = try native_helpers.create(DoeCommandEncoder, allocator);
+     native_helpers.object_add_ref(DoeDevice, toOpaque(device));
+     encoder.* = .{ .allocator = allocator, .dev = device, .device_ref = device };
++    if (device.command_storage) |*pool| encoder.cmds = pool.take(allocator);
+     return encoder;
+ }
+ 
++fn releaseCommandStorage(allocator: std.mem.Allocator, device: ?*DoeDevice, commands: *std.ArrayListUnmanaged(command_types.RecordedCmd)) void {
++    if (device) |owner| {
++        if (owner.command_storage) |*pool| {
++            pool.recycle(allocator, commands);
++            return;
++        }
++    }
++    commands.deinit(allocator);
++}
++
+ pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void {
+     if (cast(DoeCommandEncoder, raw)) |e| {
+         if (!native_helpers.object_should_destroy(e)) return;
+         label_store.remove(raw);
+-        e.cmds.deinit(e.allocator);
+         @import("../../contracts/resource_lease.zig").releaseAll(e.allocator, &e.references);
++        releaseCommandStorage(e.allocator, e.device_ref, &e.cmds);
+         if (e.device_ref) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
+         const allocator = e.allocator;
+         allocator.destroy(e);
+@@ -200,8 +213,8 @@ pub export fn doeNativeCommandBufferRelease(raw: ?*anyopaque) callconv(.c) void
+     if (cast(DoeCommandBuffer, raw)) |cb| {
+         if (!native_helpers.object_should_destroy(cb)) return;
+         label_store.remove(raw);
+-        cb.cmds.deinit(cb.allocator);
+         @import("../../contracts/resource_lease.zig").releaseAll(cb.allocator, &cb.references);
++        releaseCommandStorage(cb.allocator, cb.device_ref, &cb.cmds);
+         if (cb.device_ref) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
+         const allocator = cb.allocator;
+         allocator.destroy(cb);
+@@ -255,6 +268,35 @@ test "recorded copies transfer resource ownership to command buffers" {
+     try std.testing.expectEqual(@as(u32, 1), device.ref_count);
+ }
+ 
++test "command storage returns after leases release and cannot alias live commands" {
++    const allocator = std.testing.allocator;
++    var device = DoeDevice{ .command_storage = command_storage.Pool.init(allocator, std.math.maxInt(usize)) };
++    defer device.command_storage.?.deinit();
++    var source = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
++    var destination = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
++    const encoder = try createEncoder(allocator, &device);
++    doeNativeCopyBufferToBuffer(toOpaque(encoder), toOpaque(&source), 0, toOpaque(&destination), 0, 16);
++    const address = encoder.cmds.items.ptr;
++    const commands = doeNativeCommandEncoderFinish(toOpaque(encoder), null).?;
++    doeNativeCommandEncoderRelease(toOpaque(encoder));
++    const concurrent = try createEncoder(allocator, &device);
++    try std.testing.expectEqual(@as(usize, 0), concurrent.cmds.capacity);
++    doeNativeCommandEncoderRelease(toOpaque(concurrent));
++    try std.testing.expectEqual(@as(u32, 2), source.ref_count);
++    doeNativeCommandBufferRelease(commands);
++    try std.testing.expectEqual(@as(u32, 1), source.ref_count);
++    try std.testing.expectEqual(@as(u32, 1), destination.ref_count);
++    const reused = try createEncoder(allocator, &device);
++    try std.testing.expectEqual(address, reused.cmds.items.ptr);
++    try std.testing.expectEqual(@as(usize, 0), reused.cmds.items.len);
++    try std.testing.expectEqual(@as(usize, 0), reused.references.items.len);
++    doeNativeCopyBufferToBuffer(toOpaque(reused), toOpaque(&source), 0, toOpaque(&destination), 0, 4);
++    try std.testing.expectEqual(@as(u64, 4), reused.cmds.items[0].copy_buf.size);
++    doeNativeCommandEncoderRelease(toOpaque(reused));
++    try std.testing.expectEqual(@as(u32, 1), source.ref_count);
++    try std.testing.expectEqual(@as(u32, 1), device.ref_count);
++}
++
+ test "abandoned encoder releases resources without finishing" {
+     var device = DoeDevice{};
+     var source = DoeBuffer{ .dev = &device, .size = 16, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
+@@ -357,10 +399,17 @@ test "render recording retains caller-released state until command buffer releas
+ 
+ const RecordingFixture = enum { compute, render, copy, query };
+ 
+-fn recordingAllocationScenario(allocator: std.mem.Allocator, fixture: RecordingFixture) !void {
++fn recordingAllocationScenario(allocator: std.mem.Allocator, fixture: RecordingFixture, reuse: bool) !void {
+     const compute = @import("../compute/doe_compute_ext_native.zig");
+     const render = @import("../render/doe_render_native.zig");
+     var device = DoeDevice{};
++    if (reuse) device.command_storage = command_storage.Pool.init(allocator, std.math.maxInt(usize));
++    defer if (device.command_storage) |*pool| pool.deinit();
++    if (reuse) {
++        const warmup = try createEncoder(allocator, &device);
++        defer doeNativeCommandEncoderRelease(toOpaque(warmup));
++        try warmup.cmds.ensureTotalCapacity(allocator, 8);
++    }
+     var pipeline = native_types.DoeComputePipeline{};
+     var render_pipeline = native_types.DoeRenderPipeline{};
+     var group = DoeBindGroup{};
+@@ -423,8 +472,10 @@ fn recordingAllocationScenario(allocator: std.mem.Allocator, fixture: RecordingF
+ }
+ 
+ test "ordinary command recording cleans up every allocation failure across command families" {
+-    for (std.enums.values(RecordingFixture)) |fixture|
+-        try std.testing.checkAllAllocationFailures(std.testing.allocator, recordingAllocationScenario, .{fixture});
++    for (std.enums.values(RecordingFixture)) |fixture| {
++        for ([_]bool{ false, true }) |reuse|
++            try std.testing.checkAllAllocationFailures(std.testing.allocator, recordingAllocationScenario, .{ fixture, reuse });
++    }
+ }
+ 
+ test "failed recording finishes as an error object and cannot submit or resume" {
+diff --git a/runtime/zig/src/native/lifecycle/doe_instance_device_native.zig b/runtime/zig/src/native/lifecycle/doe_instance_device_native.zig
+index 43b61af28..fdba389f9 100644
+--- a/runtime/zig/src/native/lifecycle/doe_instance_device_native.zig
++++ b/runtime/zig/src/native/lifecycle/doe_instance_device_native.zig
+@@ -17,6 +17,8 @@ const native_types = @import("../support/doe_native_object_types.zig");
+ const native_helpers = @import("../support/doe_native_object_helpers.zig");
+ const package_metal_pipeline_cache = @import("../cache/doe_package_metal_pipeline_cache.zig");
+ const device_caps = @import("../support/doe_device_caps.zig");
++const command_storage = @import("../command/doe_command_storage.zig");
++const build_options = @import("build_options");
+ const future_ids = @import("../support/doe_future_ids.zig");
+ 
+ const alloc = native_helpers.alloc;
+@@ -370,6 +372,7 @@ fn create_device_for_adapter(
+                 .adapter = adapter,
+                 .vk_runtime = @ptrCast(rt),
+                 .enabled_features = enabled_features,
++                .command_storage = command_storage.Pool.init(alloc, build_options.native_command_storage_max_retained_bytes),
+             };
+             const feature_caps: vk_feature_caps.VulkanFeatureCaps = blk: {
+                 if (vulkan_feature_cache.get_adapter(adapter_raw)) |cached| break :blk cached;
+@@ -412,6 +415,7 @@ fn create_device_for_adapter(
+             .mtl_queue = rt.queue,
+             .d3d12_runtime = @ptrCast(rt),
+             .enabled_features = enabled_features,
++            .command_storage = command_storage.Pool.init(alloc, build_options.native_command_storage_max_retained_bytes),
+         };
+         return dev;
+     }
+@@ -429,6 +433,7 @@ fn create_device_for_adapter(
+         .mtl_queue = queue,
+         .metal_libraries = .{ .ops = .{ .retain = backend_lifecycle.metal_bridge_retain, .release = backend_lifecycle.metal_bridge_release } },
+         .enabled_features = enabled_features,
++        .command_storage = command_storage.Pool.init(alloc, build_options.native_command_storage_max_retained_bytes),
+     };
+     return dev;
+ }
+@@ -636,6 +641,7 @@ pub export fn doeNativeDeviceRelease(raw: ?*anyopaque) callconv(.c) void {
+     if (cast(DoeDevice, raw)) |d| {
+         if (!native_helpers.object_should_destroy(d)) return;
+         label_store.remove(raw);
++        if (d.command_storage) |*pool| pool.deinit();
+         if (d.metal_libraries) |*cache| cache.deinit(alloc);
+         // Fire the device-lost callback with reason "destroyed" before teardown.
+         const multi_adapter = @import("../../runtime/device/multi_adapter.zig");
+diff --git a/runtime/zig/src/native/support/doe_native_object_types.zig b/runtime/zig/src/native/support/doe_native_object_types.zig
+index 39d2420ca..7c0bd3fbf 100644
+--- a/runtime/zig/src/native/support/doe_native_object_types.zig
++++ b/runtime/zig/src/native/support/doe_native_object_types.zig
+@@ -60,6 +60,7 @@ pub const DoeDevice = struct {
+     pub const TYPE_MAGIC = MAGIC_DEVICE;
+     metal_libraries: ?@import("../cache/doe_metal_library_cache.zig").Cache = null,
+     metal_pipeline_cache: ?*anyopaque = null,
++    command_storage: ?@import("../command/doe_command_storage.zig").Pool = null,
+     magic: u32 = TYPE_MAGIC,
+     ref_count: u32 = 1,
+     adapter: ?*DoeAdapter = null,

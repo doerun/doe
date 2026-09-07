@@ -1,0 +1,91 @@
+application	backend	comparator	metric	quantile	doe	incumbent	incumbent_over_doe	status	caveat
+image_edges	vulkan	dawn	wallMs	p50Ms	0.5609369999999956	0.5354779999999835	0.9546134414381431	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	wallMs	p95Ms	0.7139050000000111	0.7098469999999963	0.9943157703055523	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	wallMs	p99Ms	0.8895749999999794	3.343847000000011	3.7589264536436935	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	cpuMs	p50Ms	0.466	0.534	1.145922746781116	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	cpuMs	p95Ms	0.631	1.174	1.86053882725832	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	cpuMs	p99Ms	0.809	10.881	13.449938195302842	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	encode	p50Ms	0.03164999999998486	0.03704999999999359	1.1706161137444333	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	encode	p95Ms	0.06606500000000892	0.04315200000002051	0.6531749035043469	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	encode	p99Ms	0.10228200000000243	0.05739899999997533	0.5611837860031479	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	submitWait	p50Ms	0.16719499999999243	0.12615800000000377	0.7545560572984209	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	submitWait	p95Ms	0.2671929999999918	0.23249699999999507	0.8701462987428645	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	submitWait	p99Ms	0.3010569999999859	2.9337150000000065	9.744716116881998	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	readback	p50Ms	0.05922100000000796	0.05707799999998997	0.9638135120984498	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	readback	p95Ms	0.07576200000002586	0.07052299999998013	0.9308492384038971	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	dawn	readback	p99Ms	0.11850300000000402	0.35013899999998443	2.954684691526565	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+image_edges	vulkan	wgpu	wallMs	p50Ms	0.5609369999999956	11.923845000000028	21.25701281962167	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	wallMs	p95Ms	0.7139050000000111	12.370797000000039	17.328351811515322	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	wallMs	p99Ms	0.8895749999999794	12.493918000000008	14.044816906950283	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	cpuMs	p50Ms	0.466	0.78	1.6738197424892705	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	cpuMs	p95Ms	0.631	1.099	1.7416798732171157	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	cpuMs	p99Ms	0.809	1.182	1.4610630407911	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	encode	p50Ms	0.03164999999998486	0.032882000000029166	1.0389257503963634	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	encode	p95Ms	0.06606500000000892	0.07013200000000097	1.0615605842729356	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	encode	p99Ms	0.10228200000000243	0.11100899999996727	1.0853229307206023	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	submitWait	p50Ms	0.16719499999999243	11.36122499999999	67.95194234277642	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	submitWait	p95Ms	0.2671929999999918	11.455614000000025	42.87393008050502	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	submitWait	p99Ms	0.3010569999999859	11.605345	38.54866354212173	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	readback	p50Ms	0.05922100000000796	0.1323099999999613	2.2341736883866115	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	readback	p95Ms	0.07576200000002586	0.24882900000000063	3.2843509939008433	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+image_edges	vulkan	wgpu	readback	p99Ms	0.11850300000000402	0.287480999999957	2.4259385838328758	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	dawn	wallMs	p50Ms	0.6076339999999902	0.5877769999999884	0.9673207885009691	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	wallMs	p95Ms	0.9461420000000089	0.7147060000000067	0.7553897829289895	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	wallMs	p99Ms	1.2724170000000186	0.8041949999999929	0.6320215778317809	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	cpuMs	p50Ms	0.476	0.59	1.2394957983193278	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	cpuMs	p95Ms	1.545	0.729	0.47184466019417476	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	cpuMs	p99Ms	2.223	1.15	0.51731893837157	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	encode	p50Ms	0.07581199999998489	0.07926899999998227	1.0455996412177238	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	encode	p95Ms	0.15176600000000917	0.08489000000000146	0.5593479435446433	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	encode	p99Ms	0.45660999999998353	0.12372299999998404	0.270959900133568	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	submitWait	p50Ms	0.22477399999999648	0.1810609999999997	0.8055246603254937	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	submitWait	p95Ms	0.3132500000000107	0.27750199999999836	0.8858802873104195	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	submitWait	p99Ms	0.38257999999999015	0.32477099999999837	0.8488969627267675	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	readback	p50Ms	0.029696000000001277	0.02458599999999933	0.8279229525861488	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	readback	p95Ms	0.05836000000002173	0.08722399999999197	1.4945853324187715	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	dawn	readback	p99Ms	0.09348600000001284	0.1410359999999855	1.5086323085806017	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+heat_diffusion	vulkan	wgpu	wallMs	p50Ms	0.6076339999999902	12.195727000000034	20.07084363284515	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	wallMs	p95Ms	0.9461420000000089	12.671933999999965	13.393268663688797	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	wallMs	p99Ms	1.2724170000000186	12.79553599999997	10.056086958913456	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	cpuMs	p50Ms	0.476	0.756	1.5882352941176472	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	cpuMs	p95Ms	1.545	1.299	0.8407766990291262	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	cpuMs	p99Ms	2.223	2.631	1.1835357624831309	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	encode	p50Ms	0.07581199999998489	0.05359099999998307	0.7068933678044867	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	encode	p95Ms	0.15176600000000917	0.13682799999997997	0.9015721571364581	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	encode	p99Ms	0.45660999999998353	0.18631100000004608	0.40803092354537307	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	submitWait	p50Ms	0.22477399999999648	11.571972000000017	51.48269817683628	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	submitWait	p95Ms	0.3132500000000107	11.706045000000017	37.36965682362209	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	submitWait	p99Ms	0.38257999999999015	11.837232000000029	30.940540540541413	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	readback	p50Ms	0.029696000000001277	0.09702299999992192	3.2672077047386097	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	readback	p95Ms	0.05836000000002173	0.24486099999995758	4.195699108976464	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+heat_diffusion	vulkan	wgpu	readback	p99Ms	0.09348600000001284	0.30188799999996263	3.2292321844973704	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	dawn	wallMs	p50Ms	0.8539780000000121	0.9079490000000021	1.0631995203623386	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	wallMs	p95Ms	1.2219709999999964	1.5895640000000242	1.3008197412213784	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	wallMs	p99Ms	1.470640000000003	3.7904179999999883	2.5773935157482324	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	cpuMs	p50Ms	0.68	0.906	1.3323529411764705	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	cpuMs	p95Ms	1.099	1.916	1.743403093721565	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	cpuMs	p99Ms	1.431	11.069	7.735150244584207	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	encode	p50Ms	0.046748000000008005	0.05192800000000375	1.1108068794385826	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	encode	p95Ms	0.09464900000000398	0.07482099999998582	0.7905102008471582	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	encode	p99Ms	0.12665900000001784	0.178685999999999	1.4107643357359039	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	submitWait	p50Ms	0.22014400000000478	0.17561000000000604	0.7977051384548397	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	submitWait	p95Ms	0.42566099999999096	0.5762049999999874	1.3536711138676074	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	submitWait	p99Ms	0.44718199999999797	3.0680169999999976	6.860779280024714	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	readback	p50Ms	0.03783100000001127	0.04725899999999683	1.249213607887255	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	readback	p95Ms	0.11856299999999464	0.11497700000001032	0.9697544765231608	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	dawn	readback	p99Ms	0.1380500000000211	0.644834000000003	4.671017747192354	diagnostic	complete invocation; persistent resources; preparation and cold costs remain in raw process reports
+holoscript_lif	vulkan	wgpu	wallMs	p50Ms	0.8539780000000121	12.611459999999965	14.76789800205601	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	wallMs	p95Ms	1.2219709999999964	13.016651999999908	10.652177506667464	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	wallMs	p99Ms	1.470640000000003	13.199828000000025	8.975567100038077	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	cpuMs	p50Ms	0.68	1.177	1.7308823529411763	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	cpuMs	p95Ms	1.099	1.659	1.5095541401273886	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	cpuMs	p99Ms	1.431	19.101	13.348008385744233	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	encode	p50Ms	0.046748000000008005	0.03285199999999122	0.7027466415672455	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	encode	p95Ms	0.09464900000000398	0.043731999999977234	0.46204397299470035	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	encode	p99Ms	0.12665900000001784	0.11261200000001281	0.8890959189634922	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	submitWait	p50Ms	0.22014400000000478	11.544750999999962	52.44181535721942	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	submitWait	p95Ms	0.42566099999999096	11.667642	27.41064368123988	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	submitWait	p99Ms	0.44718199999999797	11.798027999999931	26.383056563099554	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	readback	p50Ms	0.03783100000001127	0.37569699999994555	9.930929660855742	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	readback	p95Ms	0.11856299999999464	0.4751850000000104	4.0078692340783535	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim
+holoscript_lif	vulkan	wgpu	readback	p99Ms	0.1380500000000211	0.5968540000000075	4.323462513581429	diagnostic	Deno host/polling asymmetry; suspicious ratios; no leadership claim

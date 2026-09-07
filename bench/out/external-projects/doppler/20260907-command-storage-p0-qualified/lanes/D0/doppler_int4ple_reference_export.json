@@ -1,0 +1,665 @@
+{
+  "artifactKind": "doppler_int4ple_reference_export",
+  "checkpointDigests": [
+    {
+      "digest": "sha256:720a8d52eb91ba2d16dd6df3d705b9867f0a6467532eceef19f18053c9bf5d89",
+      "phase": "prefill",
+      "recordCount": 1,
+      "stage": "embedding",
+      "stepIndex": 0
+    },
+    {
+      "digest": "sha256:febfc8e36032d033c04df2b2928ed38b65338a6a72b5b47d4dfa916f18ed985e",
+      "phase": "prefill",
+      "recordCount": 56,
+      "stage": "rmsnorm",
+      "stepIndex": 0
+    },
+    {
+      "digest": "sha256:3a392b9c7138f67b720523bc85d2e16311c14e950bef7594687c334c5ce5e69b",
+      "phase": "prefill",
+      "recordCount": 54,
+      "stage": "qkv",
+      "stepIndex": 0
+    },
+    {
+      "digest": "sha256:b0cd05c37893c7692bb8c4ea4053fa6725b2b9b1ea4f63bddaf3aa4202fda5c2",
+      "phase": "prefill",
+      "recordCount": 36,
+      "stage": "rope",
+      "stepIndex": 0
+    },
+    {
+      "digest": "sha256:499fa4a23cabe4ae6e7a409281d31806ede8a57d0fdb2af2300819b4073e2f86",
+      "phase": "prefill",
+      "recordCount": 36,
+      "stage": "attention",
+      "stepIndex": 0
+    },
+    {
+      "digest": "sha256:10572ba9516b1e9c8ba3e8cb38c36051459efce3fb6ec926ea27b83879a070cb",
+      "phase": "prefill",
+      "recordCount": 90,
+      "stage": "mlp",
+      "stepIndex": 0
+    },
+    {
+      "digest": "sha256:b03e0fe1f8bbbf568eafd5f20efba73264737bc027d40374ccee527c0c86ff0c",
+      "phase": "prefill",
+      "recordCount": 1,
+      "stage": "logits",
+      "stepIndex": 0
+    },
+    {
+      "digest": "sha256:225f9adc3bf86d4f65be798531a04142e783294c0252af78dfb74e6e4a5885b2",
+      "phase": "decode",
+      "recordCount": 1,
+      "stage": "embedding",
+      "stepIndex": 1
+    },
+    {
+      "digest": "sha256:2ea31ad9204fc7ba4e5731e08049cfcc74b1fd6d7272e7e912cce7c4369f1cca",
+      "phase": "decode",
+      "recordCount": 56,
+      "stage": "rmsnorm",
+      "stepIndex": 1
+    },
+    {
+      "digest": "sha256:aac33052121e4cb2704293d684c154014126e1723e84a75486c29da7855a3b8a",
+      "phase": "decode",
+      "recordCount": 54,
+      "stage": "qkv",
+      "stepIndex": 1
+    },
+    {
+      "digest": "sha256:febe4693fc3a6b919a74e4a9e96a80e28d30e8cedb1e41f3fe83db7e64b62acb",
+      "phase": "decode",
+      "recordCount": 36,
+      "stage": "rope",
+      "stepIndex": 1
+    },
+    {
+      "digest": "sha256:2fa8f73d17a4a73fe2d97eef6f49a6fb847218f9890cbd61af8279e23a35a9a9",
+      "phase": "decode",
+      "recordCount": 36,
+      "stage": "attention",
+      "stepIndex": 1
+    },
+    {
+      "digest": "sha256:7319caf93b720d21a0bd2c392bfb7c54601c493352863416573ebec682558001",
+      "phase": "decode",
+      "recordCount": 54,
+      "stage": "mlp",
+      "stepIndex": 1
+    },
+    {
+      "digest": "sha256:fb236e6d603a2ed539a925ef626c170ea5699bb2f3d90ac6166200bd6a0c9387",
+      "phase": "decode",
+      "recordCount": 1,
+      "stage": "logits",
+      "stepIndex": 1
+    },
+    {
+      "digest": "sha256:e57219adb96fb02a18fb174029240d2664893b11f59a2cd6ad37671089d25f9d",
+      "phase": "decode",
+      "recordCount": 1,
+      "stage": "embedding",
+      "stepIndex": 2
+    },
+    {
+      "digest": "sha256:0876f570bcd7c2ed7446d464ba9a29df2c8930e6ab4976dbf456bb5d6163e8a9",
+      "phase": "decode",
+      "recordCount": 56,
+      "stage": "rmsnorm",
+      "stepIndex": 2
+    },
+    {
+      "digest": "sha256:c39721f170c202ef0819543826ba15ff82acc86d28ed4ec0af6a39a196395376",
+      "phase": "decode",
+      "recordCount": 54,
+      "stage": "qkv",
+      "stepIndex": 2
+    },
+    {
+      "digest": "sha256:ef907340f9b1c9cd8c2677ec7f32c994bc312ff3e4c58fe14d101f9622a27015",
+      "phase": "decode",
+      "recordCount": 36,
+      "stage": "rope",
+      "stepIndex": 2
+    },
+    {
+      "digest": "sha256:7df7ae48ce6ba3f996c26688090b4e4b3192bc502ffbd9a3b5c350f1f89d28fa",
+      "phase": "decode",
+      "recordCount": 36,
+      "stage": "attention",
+      "stepIndex": 2
+    },
+    {
+      "digest": "sha256:ae6f95c4de065c49458e9b2a66aac394d93516a7c6f5a3abdea69a60895b3331",
+      "phase": "decode",
+      "recordCount": 54,
+      "stage": "mlp",
+      "stepIndex": 2
+    },
+    {
+      "digest": "sha256:a0d5db78430e8a059b1355bfc9faa45a256fa30e1cbb817d3e3c1d7e75f98764",
+      "phase": "decode",
+      "recordCount": 1,
+      "stage": "logits",
+      "stepIndex": 2
+    },
+    {
+      "digest": "sha256:5ba4b82e49a80742ab40ee7748febf1e992b33339bdba721421dfd3985d2ab90",
+      "phase": "decode",
+      "recordCount": 1,
+      "stage": "embedding",
+      "stepIndex": 3
+    },
+    {
+      "digest": "sha256:9496a2090783f0bc9d1044d990752c3ec366fa514697862d179b00cb19a5136d",
+      "phase": "decode",
+      "recordCount": 56,
+      "stage": "rmsnorm",
+      "stepIndex": 3
+    },
+    {
+      "digest": "sha256:3d44213d677d7cd6120032dd0857d995f6b19144f98ec9d1630c0e8c65869622",
+      "phase": "decode",
+      "recordCount": 54,
+      "stage": "qkv",
+      "stepIndex": 3
+    },
+    {
+      "digest": "sha256:81adab71c29d4760031baa6b1c629dbbeceea14861703b6ca32b9fa2e70a8b0c",
+      "phase": "decode",
+      "recordCount": 36,
+      "stage": "rope",
+      "stepIndex": 3
+    },
+    {
+      "digest": "sha256:7cd211a1fb203c88c22c837e55b216bd48562368240874e03d048fc635907039",
+      "phase": "decode",
+      "recordCount": 36,
+      "stage": "attention",
+      "stepIndex": 3
+    },
+    {
+      "digest": "sha256:5783fe6f476be0c97a76112ed26f64f7420c12ae3778df580a63b331afc8752e",
+      "phase": "decode",
+      "recordCount": 54,
+      "stage": "mlp",
+      "stepIndex": 3
+    },
+    {
+      "digest": "sha256:85c5df47c2c88e328bcef3a3029a5023435f64fb2f8eafda203a29486690a35f",
+      "phase": "decode",
+      "recordCount": 1,
+      "stage": "logits",
+      "stepIndex": 3
+    },
+    {
+      "digest": "sha256:ecd23684294fd8dd21e64ce9ffaf9496b7ab3746d0b7f38fe3b53e014c9bfa2c",
+      "phase": "decode",
+      "recordCount": 18,
+      "stage": "kv",
+      "stepIndex": 3
+    }
+  ],
+  "claimBoundary": {
+    "blockedUntil": [
+      "Doe CSL simfabric bounded prefill+decode transcript for the same source program",
+      "Doe CSL reference parity gate promotion criteria pass",
+      "Cerebras hardware receipt binds the same reference receipt"
+    ],
+    "claimable": false,
+    "scope": "Production Doppler INT4 PLE RDRR WebGPU prefill+decode transcript reference. It becomes Cerebras evidence only after Doe CSL simfabric and hardware receipts bind the same manifest, graph, weights, input set, per-step logits, and token IDs."
+  },
+  "decodeTranscript": {
+    "actualDecodeSteps": 4,
+    "decodeStepsProduced": 4,
+    "decodeStepsRequested": 4,
+    "generatedTokenIds": {
+      "dtype": "uint32",
+      "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/generated_tokens.u32",
+      "preview": [
+        236769,
+        236776,
+        236768,
+        236743
+      ],
+      "sha256": "880a8319ff3b076b1d7013636126cb97876d5738d9dc9d9fbcc5ce0305586335",
+      "tokenCount": 4
+    },
+    "logitsDigests": [
+      {
+        "byteLength": 1048576,
+        "contextTokenCount": 12,
+        "dtype": "float32",
+        "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/final_logits.f32",
+        "phase": "prefill",
+        "preview": [
+          -13.470998764038086,
+          0.17288491129875183,
+          -4.957363605499268,
+          -16.030086517333984,
+          0.2939576506614685,
+          -11.705913543701172,
+          -6.79110860824585,
+          -12.864226341247559
+        ],
+        "selectedText": "(",
+        "selectedTokenId": 236769,
+        "sha256": "4f961414d7ef3eca43fdb9707f4e1f7210d98328567134f6bdcfa003144bac66",
+        "shape": [
+          262144
+        ],
+        "stepIndex": 0
+      },
+      {
+        "byteLength": 1048576,
+        "contextTokenCount": 13,
+        "dtype": "float32",
+        "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/logits_step_001.f32",
+        "phase": "decode",
+        "preview": [
+          -22.77747344970703,
+          -8.065091133117676,
+          -14.684905052185059,
+          -25.607023239135742,
+          0.5737497210502625,
+          -18.107450485229492,
+          -14.484949111938477,
+          -20.67599105834961
+        ],
+        "selectedText": "A",
+        "selectedTokenId": 236776,
+        "sha256": "43216ab6213d0a1861177480159ce90601d4b74601c2a42204af163fb7c46715",
+        "shape": [
+          262144
+        ],
+        "stepIndex": 1
+      },
+      {
+        "byteLength": 1048576,
+        "contextTokenCount": 14,
+        "dtype": "float32",
+        "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/logits_step_002.f32",
+        "phase": "decode",
+        "preview": [
+          -19.333961486816406,
+          0.4430869221687317,
+          6.405319690704346,
+          -19.33545684814453,
+          2.6217448711395264,
+          -16.15111541748047,
+          -12.863984107971191,
+          -18.286108016967773
+        ],
+        "selectedText": ")",
+        "selectedTokenId": 236768,
+        "sha256": "211380fe24100d679ca1903e73302adaa694ebe2f3382c9b041207a9fa6f4bc5",
+        "shape": [
+          262144
+        ],
+        "stepIndex": 2
+      },
+      {
+        "byteLength": 1048576,
+        "contextTokenCount": 15,
+        "dtype": "float32",
+        "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/logits_step_003.f32",
+        "phase": "decode",
+        "preview": [
+          -15.599133491516113,
+          -0.5833778381347656,
+          -0.8412688970565796,
+          -13.877585411071777,
+          2.211071491241455,
+          -9.579731941223145,
+          -4.326421737670898,
+          -7.45993185043335
+        ],
+        "selectedText": " ",
+        "selectedTokenId": 236743,
+        "sha256": "3b71b1312cb046f97691d3d264a6bf581a9c5244e9afa115b39b4e44dda4d4dc",
+        "shape": [
+          262144
+        ],
+        "stepIndex": 3
+      }
+    ],
+    "requestedDecodeSteps": 4,
+    "sampling": {
+      "padTokenId": 0,
+      "repetitionPenalty": 1,
+      "seed": 0,
+      "temperature": 0,
+      "topK": 1,
+      "topP": 1
+    },
+    "status": "output_ready",
+    "stopReason": "decode_steps_exhausted",
+    "transcript": {
+      "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/decode_transcript.json",
+      "sha256": "ce5076fa219321e3552e8793828eab8f25497020fb1fb29c4f2c9ed478c3b1f4",
+      "source": "prefill_decode_logit_steps"
+    }
+  },
+  "executionGraph": {
+    "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/execution_graph.json",
+    "sha256": "7ee28f72675261fdcf3261f125189a26291c16740daef79bcb2bae0bc66c26c3",
+    "source": "manifest.inference.execution"
+  },
+  "executionGraphSha256": "7ee28f72675261fdcf3261f125189a26291c16740daef79bcb2bae0bc66c26c3",
+  "exportStatus": "output_ready",
+  "inputSetComponents": {
+    "decodeSteps": 4,
+    "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+    "promptSha256": "6bb1d580b99f0f1893b64f3b11d7c12c66ef869b64b6aeb2517ee30a776f56bf",
+    "runtimeProfile": "profiles/production",
+    "samplingSha256": "301e7eb7d0232b7a8cb219bdac2118d3738a5fae3b7b681fb2cd9483fb6466a5",
+    "tokenCount": 12,
+    "tokenizedPromptSha256": "31c6139220151b4e3b42657ce5f85147ce9709a3e725afb634a17376c6755ef3",
+    "useChatTemplate": false
+  },
+  "inputSetSha256": "2d0b391fe246ea27fb4fe31dba1ddf6ab554ad77ee58d018fa65abebded59c9b",
+  "inputsSynthetic": false,
+  "kvCacheEvidence": {
+    "blocker": "",
+    "byteDigest": "sha256:ecd23684294fd8dd21e64ce9ffaf9496b7ab3746d0b7f38fe3b53e014c9bfa2c",
+    "byteDigests": [
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:edab43aea792bb6535a3a58219d138f4ff028cc509a70beeb4e498abd3f376b1",
+        "layer": 0,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:01917e8bdd4ffb219361042374e58f82d3b950119535a0b78c8b6ae75c30c911"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:f327bfee6ef3d8a8ddf38176d0ea40c23a737ffec78ab89e01d10c4818e81743",
+        "layer": 1,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:26319ff7b78fd48eafbaa46836c6411224babfb1446419d1d70a229ffc4f1a1c"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:7e41b3b24d06af3d3931ecd0dc4d5a085dd4ea838b865ff2a0f5159ac0413bb7",
+        "layer": 2,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:4ab1c5f2e9c21edaac1a8e0aacd19f033004bcb8410dbfea0270ea41ca6ac2cf"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:1f1fcbde9b85ab3aad69c71d1ac8450766aa63d7b5b7ba9a38faf3af319ebb04",
+        "layer": 3,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:e12c41b7b8b3f30df6954f4a27fbccc380f2d9e0711084a08c5a3b6382e04968"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:95f42d19191596b7acec155475c9da32b0f6169ef6b260a0aff5cf0309880aa7",
+        "layer": 4,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:12984f484ba2dcf1fa09abb6fa91707a84811fc877f5181b1fd69dbe7b23d8c3"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:61920996b117441fc7bf32f57e203f5fa060c10ad16ab944ae142d8837818df4",
+        "layer": 5,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:6fe1ec00a9035488e1e12347502ea6f9a9e37405ff0fcdec6b5db419696e2eb5"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:a2981b974510d166d8ab3bbb0759411cf89d7a535d0fc2e6d20f6fd5318048ca",
+        "layer": 6,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:4f7f8d48b169cf61b7d9b2183ddbc5aad966aa22198e4ceb3731f0db55834bae"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:e4b8fb92f92fdcdd039c8aec80454fd3a2e70c201fa4165ddc7ca9b1791c2bb2",
+        "layer": 7,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:7d31afbd2b5ba32543eed5ca04587ef62cbf3626c28912b2e456c191b72ed78c"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:fa5df297e513c9cf80aadd25dadac3e87e4c36579a31c21cfb82ebf48cf78b4f",
+        "layer": 8,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:4ec5c87353b237a2365674b11d02a0ed93cfb13f719756ff5c7d0bcca227d1ad"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:06039842f18556423a179f31f7bfe500477270df9217f40afe1ed0827a280470",
+        "layer": 9,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:a800357138db261b987784cd94f181ed3da8ce91df9eda192382b412ef1039d9"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:0ef77e845eb21ef9fe87309169d61bbdb4c9bbbd87c6a3910db7e49b9bbfb61a",
+        "layer": 10,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:7acb2ee40b474870169d8547acef585979d1c32ea619c60c9a15b3f20abe5c00"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:449ef6216c2aec6f31ec987dbe8161bc7d782b6de1ec7a23eb2a3f7f2334584a",
+        "layer": 11,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:0581b1c362220251bd4d8f435d3f6f1e0f6a65fb2d496fc3324ead55fada0bd1"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:51420749cbe8e917ba1e02608fe3761cbfab5c24969ca3c4c7e75b99b9442d1a",
+        "layer": 12,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:09692aa7f9d1a77fbc5a640178cb8ce307cc5a85342dc97b6c6279bfd03d6475"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:f909e177df1f7d04453d3578c21d3b35566217e997463988ba236aa93eac30e3",
+        "layer": 13,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:d4053f7216916e956e2eb69a807f1cd59d52ac0cf8d081b30597c1cf9ddbd80a"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:b83c97843b8c68b6101282a4799d2cb859f86acb92fd2c938ada3aa8bb6bc7a1",
+        "layer": 14,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:4c02d22f768a963724c4b4adb3601b506ff34bfdb6e4a4b3573ddb22193685a5"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:75fa3b1156fd6602266df5384fbab3b76792943aa363fb6ae49ff42bbfc68416",
+        "layer": 15,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:d1776bd0279032e07cf794fa465be763c818d55d9d81e097f30e9c0869ede806"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:856240b75f2031c8c4422233430fab6bccfae92f5de750ebddf1e3288684919a",
+        "layer": 16,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:9bbe9d13f8fc7131d5b4282081273c50c6ff3231d940eda13b68d86323901f9d"
+      },
+      {
+        "keyBytes": 7680,
+        "keyDigest": "sha256:d16a39440afe78f42f4d2d4b1cdca9a19af8c95e56d6687327f99dda90652adc",
+        "layer": 17,
+        "seqLen": 15,
+        "valueBytes": 7680,
+        "valueDigest": "sha256:9853e5ed84208fe95f91a707d0a559d354ce3aaddb8c9028418054983e7371e9"
+      }
+    ],
+    "kvDtype": "f16",
+    "layerDigestCount": 18,
+    "layout": "contiguous",
+    "mode": "sha256-layer-kv-bytes",
+    "realKvCache": true,
+    "seqLen": 15,
+    "status": "output_ready"
+  },
+  "manifestPath": "/home/x/deco/doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32/manifest.json",
+  "manifestSha256": "230104df762ff394095326d8e9fa4dc144d431bbd61ad5139e1030e66836ab78",
+  "modelCheckpointEvidence": {
+    "capturedStages": [
+      "attention",
+      "embedding",
+      "kv",
+      "logits",
+      "mlp",
+      "qkv",
+      "rmsnorm",
+      "rope"
+    ],
+    "decodeStepCount": 3,
+    "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/model_checkpoints.json",
+    "sha256": "d22bf0c9b13f27be906ac4e9b2f3cca158e0850e35cbce5957b1f90b8ccbb447",
+    "status": "complete",
+    "stepCount": 4,
+    "values": {
+      "byteLength": 18354688,
+      "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/model_checkpoint_values.f32",
+      "recordCount": 988,
+      "sha256": "155f6963deb410bbf6d4a5a3a89755b69ac2b093219adde0bda38d91962c0aad"
+    }
+  },
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "producer": {
+    "dopplerRoot": "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+    "electronVersion": "43.4.0",
+    "emittedAt": "2026-09-07T20:14:57.427Z",
+    "kernelPathId": "gemma-3-270m-it-q4k-ehf16-af32-execution-inline",
+    "kernelPathSource": "none",
+    "nodeVersion": "v24.18.1",
+    "runtime": "doppler_electron_main_process_webgpu",
+    "runtimeProfile": "profiles/production",
+    "toolPath": "bench/tools/export_doppler_int4ple_reference.mjs",
+    "webgpuProvider": "/home/x/deco/doe/bench/external-projects/doppler/provider-doe.mjs"
+  },
+  "prompt": {
+    "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/prompt.txt",
+    "sha256": "6bb1d580b99f0f1893b64f3b11d7c12c66ef869b64b6aeb2517ee30a776f56bf",
+    "source": "fixed_text_prompt"
+  },
+  "referenceKind": "prefill_decode_transcript",
+  "schemaVersion": 1,
+  "shardIdentities": [
+    {
+      "filename": "shard_00000.bin",
+      "identitySource": "manifest_declared",
+      "index": 0,
+      "offsetBytes": 0,
+      "sha256": "93d8ad2033e7ec42376dafb41c1e89753d0ca40896835c6f012efe47dbdda6d1",
+      "sizeBytes": 67108864
+    },
+    {
+      "filename": "shard_00001.bin",
+      "identitySource": "manifest_declared",
+      "index": 1,
+      "offsetBytes": 67108864,
+      "sha256": "7896aa344a3da4539cdb76bdbfec3a5f665da5e23d15d15ef9a3b0536ebcf3c5",
+      "sizeBytes": 67108864
+    },
+    {
+      "filename": "shard_00002.bin",
+      "identitySource": "manifest_declared",
+      "index": 2,
+      "offsetBytes": 134217728,
+      "sha256": "ff2fc36d9b0008d734f0a82923d47db2383e5a5bae055172630e8ad93ad23ca5",
+      "sizeBytes": 67108864
+    },
+    {
+      "filename": "shard_00003.bin",
+      "identitySource": "manifest_declared",
+      "index": 3,
+      "offsetBytes": 201326592,
+      "sha256": "6170b5f1376dbfe33a58de2603987abde826c0eb7318d6c0a1baa78cdf42f77b",
+      "sizeBytes": 67108864
+    },
+    {
+      "filename": "shard_00004.bin",
+      "identitySource": "manifest_declared",
+      "index": 4,
+      "offsetBytes": 268435456,
+      "sha256": "5c8767e71c920596247b7ea3d0d55b45d6af4255757758dda6aedd907cfa3e2c",
+      "sizeBytes": 67108864
+    },
+    {
+      "filename": "shard_00005.bin",
+      "identitySource": "manifest_declared",
+      "index": 5,
+      "offsetBytes": 335544320,
+      "sha256": "81ff27711b246ec27e3396871547e77f5e4d5d3d029357a66a8f547b6f32c015",
+      "sizeBytes": 63812864
+    }
+  ],
+  "tensorDigest": {
+    "byteLength": 1048576,
+    "dtype": "float32",
+    "name": "final_logits",
+    "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/final_logits.f32",
+    "preview": [
+      -13.470998764038086,
+      0.17288491129875183,
+      -4.957363605499268,
+      -16.030086517333984,
+      0.2939576506614685,
+      -11.705913543701172,
+      -6.79110860824585,
+      -12.864226341247559
+    ],
+    "sha256": "4f961414d7ef3eca43fdb9707f4e1f7210d98328567134f6bdcfa003144bac66",
+    "shape": [
+      262144
+    ],
+    "status": "output_ready"
+  },
+  "tokenizedPrompt": {
+    "dtype": "uint32",
+    "path": "bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/lanes/D0/tokenized_prompt.u32",
+    "preview": [
+      2,
+      818,
+      2258,
+      529,
+      506,
+      7217,
+      580,
+      496
+    ],
+    "sha256": "31c6139220151b4e3b42657ce5f85147ce9709a3e725afb634a17376c6755ef3",
+    "tokenCount": 12
+  },
+  "tolerancePolicy": {
+    "atol": 0.001,
+    "comparison": "max_abs",
+    "notes": "Exact sha256 identity is preferred when Doe CSL reproduces Doppler bit-for-bit; max_abs is the promotion tolerance when platform f32 reduction order differs.",
+    "rtol": 0
+  },
+  "weightSetId": "gemma-3-270m-it-q4k-ehf16-af32-wp-catalog-v1",
+  "weightSetSha256": "853f3c57f4cc77d7d4bd489eb504237c6376b383c443cd1303b5320df186f079",
+  "weightsSynthetic": false
+}

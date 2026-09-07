@@ -1,0 +1,2 @@
+native_async_pipeline PASS: active validation layer; no validation errors or synchronization hazards
+native_recorded_compute PASS: active validation layer; no validation errors or synchronization hazards

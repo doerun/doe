@@ -332,6 +332,11 @@ classified and cannot be promoted by benchmark results.
   coherence and supported memory-type requirements remain mandatory. Validate
   the selection regression and physical ordinary/prepared application controls
   before interpreting an allocation-policy change as an improvement.
+- Native host command storage uses `config/native-command-storage-policy.json`.
+  Validate exclusive loans, allocator identity, idle byte bounds, reference release,
+  concurrent access, and final device cleanup. Retain the policy with application
+  evidence; compare ordinary operation latency and process memory against the
+  previous qualified binary before interpreting removed allocations as a gain.
 - Native coverage matrix version 2 requires artifact hashes and real execution
   provenance. Schema examples, renamed examples without an execution chain,
   wrong backends, failed/skipped native work, changed binaries, and missing or

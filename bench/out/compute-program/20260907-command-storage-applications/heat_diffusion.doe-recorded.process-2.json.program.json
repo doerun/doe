@@ -1,0 +1,616 @@
+{
+  "schemaVersion": 1,
+  "id": "heat_diffusion",
+  "buffers": [
+    {
+      "id": "input",
+      "size": 262144,
+      "role": "input",
+      "type": "storage"
+    },
+    {
+      "id": "ping",
+      "size": 262144,
+      "role": "scratch",
+      "type": "storage"
+    },
+    {
+      "id": "pong",
+      "size": 262144,
+      "role": "scratch",
+      "type": "storage"
+    },
+    {
+      "id": "output",
+      "size": 262144,
+      "role": "output",
+      "type": "storage"
+    }
+  ],
+  "shaders": [
+    {
+      "id": "diffuse",
+      "entryPoint": "main",
+      "code": "\n@group(0) @binding(0) var<storage, read> input: array<f32>;\n@group(0) @binding(1) var<storage, read_write> output: array<f32>;\nconst width: u32 = 256u;\nconst height: u32 = 256u;\nfn sample(x: i32, y: i32) -> f32 {\n  let xx = u32(clamp(x, 0, i32(width) - 1));\n  let yy = u32(clamp(y, 0, i32(height) - 1));\n  return input[yy * width + xx];\n}\n@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) gid: vec3<u32>) {\n  let index = gid.x;\n  if (index >= width * height) { return; }\n  let x = i32(index % width);\n  let y = i32(index / width);\n  let center = sample(x, y);\n      let neighbors = sample(x - 1, y) + sample(x + 1, y) + sample(x, y - 1) + sample(x, y + 1);\n      output[index] = center + 0.125 * (neighbors - 4.0 * center);\n}"
+    }
+  ],
+  "steps": [
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "input"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "pong"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "pong"
+        },
+        {
+          "binding": 1,
+          "buffer": "ping"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "diffuse",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "ping"
+        },
+        {
+          "binding": 1,
+          "buffer": "output"
+        }
+      ],
+      "workgroups": [
+        1024,
+        1,
+        1
+      ]
+    }
+  ],
+  "output": "output"
+}

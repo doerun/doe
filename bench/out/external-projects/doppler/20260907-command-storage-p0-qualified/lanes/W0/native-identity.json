@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "providerId": "dawn-node-webgpu",
+  "library": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-model-attention-repro/p0-provider/dist/linux-x64.dawn.node",
+    "sha256": "98359dec2b4778a82b61a4d6a643953bdd3995ab162e5ddfcc5d51df335479f9"
+  },
+  "loaded": true
+}

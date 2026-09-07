@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "providerId": "doe-gpu",
+  "library": {
+    "path": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-command-storage-p0-qualified/package-admission/installed-package/node_modules/doe-gpu-linux-x64/bin/libwebgpu_doe.so",
+    "sha256": "03b11c987fb8e40dca58e00ba1d270467934bb1c17fd933079ff5ec17a085ede"
+  },
+  "loaded": true
+}

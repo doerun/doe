@@ -1,0 +1,18 @@
+[
+  "cc",
+  "-std=c11",
+  "-O2",
+  "-Wall",
+  "-Wextra",
+  "-Werror",
+  "-I",
+  "runtime/zig/vendor/webgpu-headers",
+  "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/record-cost.c",
+  "-L",
+  "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/native-record-cost-validated/previous",
+  "-Wl,-rpath,/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/native-record-cost-validated/previous",
+  "-lwebgpu_doe",
+  "-ldl",
+  "-o",
+  "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage/native-record-cost-validated/record-cost"
+]

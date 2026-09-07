@@ -3490,9 +3490,9 @@
       },
       "src/native/command/doe_encoder_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "f21da0b0abd6023947c4312e62b4e19b6d061ea0072375a8d9464799c39102b2",
-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
-        "reviewer": "codex-texture-copy-regions/2026-09-07"
+        "moduleSha256": "d5ace200583ebfa55b5e96ca6e6817c3a6dd4b59d987d027e4665d0312c2593e",
+        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
+        "reviewer": "codex-command-storage/2026-09-07"
       },
       "src/native/command/doe_immediates_external_native.zig": {
         "decision": "Keep",
@@ -3556,9 +3556,9 @@
       },
       "src/native/lifecycle/doe_instance_device_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "26fbe0b79e09fd6331893012fd1fe2f502501fcfcd015fbf2b07e5bdcda6229c",
-        "reason": "Keep: retain the existing resource owner and backend boundary while recorded commands and concurrent shader creation use explicit, atomic lifetime operations.",
-        "reviewer": "codex-native-ownership/2026-09-06"
+        "moduleSha256": "1d54b204820da95c6eb61852b0159fad2cb711158598d8cde4db13ffd6a4a3df",
+        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
+        "reviewer": "codex-command-storage/2026-09-07"
       },
       "src/native/mod.zig": {
         "decision": "Keep",
@@ -3754,9 +3754,9 @@
       },
       "src/native/support/doe_native_object_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "5f000f463d4cfeca221b8d6d9d2593fcf00fef4ab226ab3234a09753386e21ef",
-        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
-        "reviewer": "codex-submit-availability/2026-09-07"
+        "moduleSha256": "0c498ef8d47b30888411cc41a98645b59df94374265b79d0e1214845cd7d5107",
+        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
+        "reviewer": "codex-command-storage/2026-09-07"
       },
       "src/native/support/doe_native_runtime_helpers.zig": {
         "decision": "Keep",
@@ -4339,6 +4339,12 @@
         "moduleSha256": "c5f0ebbbaed095c6aee7928d869eeff7c63d0303af835db5f46cc1da0fedf301",
         "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
         "reviewer": "codex-texture-copy-regions/2026-09-07"
+      },
+      "src/native/command/doe_command_storage.zig": {
+        "decision": "Keep",
+        "moduleSha256": "fc9de24b922dc2ddfa08ce128669b9db8a2aeee4d1b6bf877210f2694730fbd9",
+        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
+        "reviewer": "codex-command-storage/2026-09-07"
       }
     },
     "linePolicy": {

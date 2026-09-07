@@ -1,0 +1,1 @@
+PASS: async validation, immediate callback release, shared requests, caller teardown, DRM cleanup

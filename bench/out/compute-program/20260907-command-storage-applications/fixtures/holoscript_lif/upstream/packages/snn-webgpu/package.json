@@ -1,0 +1,82 @@
+{
+  "name": "@holoscript/snn-webgpu",
+  "version": "8.0.6",
+  "description": "WebGPU compute library for Spiking Neural Network simulation. LIF neurons, synaptic weight matrices, spike encoding/decoding at 10K+ neurons per frame at 60Hz.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "benchmark:automate": "node scripts/run-benchmark.mjs",
+    "benchmark:automate:ci": "cross-env BENCH_HEADLESS=1 BENCH_TIMEOUT_MS=180000 BENCH_REQUIRE_COMPLETED=1 node scripts/run-benchmark.mjs",
+    "benchmark:automate:local": "cross-env BENCH_HEADLESS=0 BENCH_REQUIRE_COMPLETED=0 node scripts/run-benchmark.mjs",
+    "test:playwright": "playwright test",
+    "test:playwright:ci": "cross-env BENCH_HEADLESS=1 BENCH_TIMEOUT_MS=120000 playwright test",
+    "test:playwright:local": "cross-env BENCH_HEADLESS=0 playwright test"
+  },
+  "keywords": [
+    "holoscript",
+    "webgpu",
+    "snn",
+    "spiking-neural-network",
+    "compute-shader",
+    "wgsl",
+    "lif-neuron",
+    "neuromorphic",
+    "spatial-computing",
+    "gpu-compute"
+  ],
+  "author": "Brian X Base Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brianonbased-dev/HoloScript.git",
+    "directory": "packages/snn-webgpu"
+  },
+  "devDependencies": {
+    "@holoscript/core": "workspace:*",
+    "@playwright/test": "^1.58.2",
+    "@vitest/coverage-v8": "^4.1.5",
+    "@webgpu/types": ">=0.1.40",
+    "cross-env": "^7.0.3",
+    "playwright": "^1.58.2",
+    "tsup": "^8.0.1",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.5",
+    "webgpu": "^0.3.8"
+  },
+  "peerDependencies": {
+    "@holoscript/core": "workspace:^",
+    "@webgpu/types": ">=0.1.40"
+  },
+  "peerDependenciesMeta": {
+    "@holoscript/core": {
+      "optional": true
+    },
+    "@webgpu/types": {
+      "optional": true
+    }
+  },
+  "homepage": "https://github.com/brianonbased-dev/HoloScript#readme",
+  "bugs": {
+    "url": "https://github.com/brianonbased-dev/HoloScript/issues"
+  }
+}
