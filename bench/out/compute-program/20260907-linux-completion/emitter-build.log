@@ -1,0 +1,7 @@
+
+Build Summary: 4/4 steps succeeded
+emit-spirv success
++- install doe-emit-spirv success
+   +- compile exe doe-emit-spirv ReleaseFast native success 11s MaxRSS:372M
+      +- options cached
+

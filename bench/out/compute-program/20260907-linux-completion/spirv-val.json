@@ -1,0 +1,16 @@
+{
+  "gate": "spirv_val",
+  "spirvVal": "/usr/bin/spirv-val",
+  "totalFiles": 1058,
+  "passed": 1058,
+  "failed": 0,
+  "failures": [],
+  "discovered": {
+    "totalWgsl": 98,
+    "validated": 98,
+    "validationFailed": 0,
+    "emitSkipped": 0,
+    "subgroupValidated": 6,
+    "subgroupSkipped": 0
+  }
+}

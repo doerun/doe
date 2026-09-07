@@ -1,0 +1,12 @@
+ok: webgpu/off bounded program allocations and released device ownership
+sample: cycles=256 runsPerCycle=128 elapsedMs=8204.78404 sampledMaximumDrmAllocatedBytes=6049792 postCloseAllocatedBytes=5914624
+ok: webgpu/timestamp-query bounded program allocations and released device ownership
+sample: cycles=256 runsPerCycle=128 elapsedMs=9007.290382 sampledMaximumDrmAllocatedBytes=6070272 postCloseAllocatedBytes=5914624
+ok: native-recorded/off bounded program allocations and released device ownership
+sample: cycles=256 runsPerCycle=128 elapsedMs=7007.330124 sampledMaximumDrmAllocatedBytes=6049792 postCloseAllocatedBytes=5914624
+ok: native-recorded/timestamp-query bounded program allocations and released device ownership
+sample: cycles=256 runsPerCycle=128 elapsedMs=7609.703034000002 sampledMaximumDrmAllocatedBytes=6070272 postCloseAllocatedBytes=5914624
+ok: gpu-recorded/off bounded program allocations and released device ownership
+sample: cycles=256 runsPerCycle=128 elapsedMs=6857.588341999999 sampledMaximumDrmAllocatedBytes=5951488 postCloseAllocatedBytes=5718016
+ok: gpu-recorded/timestamp-query bounded program allocations and released device ownership
+sample: cycles=256 runsPerCycle=128 elapsedMs=7305.887566000005 sampledMaximumDrmAllocatedBytes=5971968 postCloseAllocatedBytes=5718016

@@ -1,0 +1,2 @@
+Error: W0 Electron execution failed; inspect /home/x/deco/doe/bench/out/compute-program/20260907-linux-completion/gemma270m/lanes/W0
+    at main (file:///home/x/deco/doe/bench/external-projects/doppler/run-gemma270m-electron.mjs:394:13)

@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 5,
+  "kind": "compute_program_evaluation",
+  "claimStatus": "diagnostic",
+  "packageQualification": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/package-inputs/summary.json",
+    "hash": "a92b452b34a01cd44880279d159179388d11c1af24d417ee6069a80a508674e1"
+  },
+  "packageRoot": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/installed-package/node_modules/doe-gpu",
+  "provider": "dawn",
+  "application": "holoscript_lif_resident",
+  "phase": "audit",
+  "backend": "vulkan",
+  "policyHash": "ae14e58ddfe33d0d89194d29f334aa3e53b22966c94ec024cd13ca57b1772875",
+  "programPath": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/holoscript_lif_resident.dawn.audit.json.program.json",
+  "inputPaths": {
+    "params": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/holoscript_lif_resident.dawn.audit.json.params.input.bin",
+    "membrane": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/holoscript_lif_resident.dawn.audit.json.membrane.input.bin",
+    "stimulus": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/holoscript_lif_resident.dawn.audit.json.stimulus.input.bin"
+  },
+  "fixturePath": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/fixtures/holoscript_lif_resident/fixture.json",
+  "runtime": {
+    "name": "node",
+    "version": "v22.22.1"
+  },
+  "status": "failed",
+  "error": "Error: Numerical oracle failed: {\"passed\":false,\"maxAbsoluteError\":0.00006866455078125,\"firstFailure\":1870}\n    at runOne (file:///home/x/deco/doe/bench/runners/run-compute-program.mjs:247:13)\n    at async file:///home/x/deco/doe/bench/runners/run-compute-program.mjs:256:64",
+  "samples": [],
+  "warmups": [],
+  "lifecycleRuns": [],
+  "cold": {
+    "wallMs": 2.7842819999999904,
+    "cpuMs": 2.739,
+    "oracle": {
+      "passed": true,
+      "maxAbsoluteError": 0.0000457763671875,
+      "firstFailure": null
+    },
+    "receipt": {
+      "schemaVersion": 5,
+      "programHash": "6e7d36445771af3592b37763f6ca6fe6728d3dfb5c2e8c77ecb7331cc68eaa35",
+      "programInstance": "727e5aa7-0607-49ba-9c52-99992b8729d3",
+      "execution": "webgpu",
+      "run": 1,
+      "inputHashes": {
+        "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+        "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+        "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+      },
+      "inputOrigins": {
+        "params": {
+          "kind": "host",
+          "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+        },
+        "membrane": {
+          "kind": "host",
+          "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+        },
+        "stimulus": {
+          "kind": "host",
+          "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        }
+      },
+      "residentStateBefore": {
+        "spikes": {
+          "kind": "zero"
+        },
+        "refractory": {
+          "kind": "zero"
+        },
+        "output": {
+          "kind": "zero"
+        }
+      },
+      "outputHash": "1c07206b5164a05bcec5f05f404f87392e6c60e9cc2db2c223278c2465233a3e",
+      "outputGeneration": 1,
+      "dispatchCount": 11,
+      "clearedBytes": 0,
+      "uploadedBytes": 524320,
+      "copiedInputBytes": 0,
+      "submissionCount": 1,
+      "readbackBytes": 524288,
+      "readbackPath": "mapAsync-copy-unmap",
+      "completionMode": "queue-and-map",
+      "allocatedBufferBytes": 2097184,
+      "gpuTiming": null,
+      "timingMs": {
+        "upload": 0.501164000000017,
+        "encode": 0.22890099999997915,
+        "submitWait": 0.3744850000000213,
+        "readback": 0.08862700000000245,
+        "total": 1.8193550000000016
+      }
+    },
+    "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/holoscript_lif_resident.dawn.audit.json.run-1.output.f32"
+  },
+  "failedRun": {
+    "wallMs": 0.9458110000000204,
+    "cpuMs": 1.94,
+    "oracle": {
+      "passed": false,
+      "maxAbsoluteError": 0.00006866455078125,
+      "firstFailure": 1870
+    },
+    "receipt": {
+      "schemaVersion": 5,
+      "programHash": "6e7d36445771af3592b37763f6ca6fe6728d3dfb5c2e8c77ecb7331cc68eaa35",
+      "programInstance": "727e5aa7-0607-49ba-9c52-99992b8729d3",
+      "execution": "webgpu",
+      "run": 2,
+      "inputHashes": {
+        "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+        "membrane": null,
+        "stimulus": null
+      },
+      "inputOrigins": {
+        "params": {
+          "kind": "host",
+          "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+        },
+        "membrane": {
+          "kind": "program-state",
+          "programHash": "6e7d36445771af3592b37763f6ca6fe6728d3dfb5c2e8c77ecb7331cc68eaa35",
+          "programInstance": "727e5aa7-0607-49ba-9c52-99992b8729d3",
+          "buffer": "membrane",
+          "generation": 1
+        },
+        "stimulus": {
+          "kind": "program-state",
+          "programHash": "6e7d36445771af3592b37763f6ca6fe6728d3dfb5c2e8c77ecb7331cc68eaa35",
+          "programInstance": "727e5aa7-0607-49ba-9c52-99992b8729d3",
+          "buffer": "stimulus",
+          "generation": 1
+        }
+      },
+      "residentStateBefore": {
+        "spikes": {
+          "kind": "program-state",
+          "programHash": "6e7d36445771af3592b37763f6ca6fe6728d3dfb5c2e8c77ecb7331cc68eaa35",
+          "programInstance": "727e5aa7-0607-49ba-9c52-99992b8729d3",
+          "buffer": "spikes",
+          "generation": 1
+        },
+        "refractory": {
+          "kind": "program-state",
+          "programHash": "6e7d36445771af3592b37763f6ca6fe6728d3dfb5c2e8c77ecb7331cc68eaa35",
+          "programInstance": "727e5aa7-0607-49ba-9c52-99992b8729d3",
+          "buffer": "refractory",
+          "generation": 1
+        },
+        "output": {
+          "kind": "program-state",
+          "programHash": "6e7d36445771af3592b37763f6ca6fe6728d3dfb5c2e8c77ecb7331cc68eaa35",
+          "programInstance": "727e5aa7-0607-49ba-9c52-99992b8729d3",
+          "buffer": "output",
+          "generation": 1
+        }
+      },
+      "outputHash": "b16f04fb8b66c85d98a210a8d38f0757395e49e913c48270a2e9b1e12f3f0a75",
+      "outputGeneration": 2,
+      "dispatchCount": 11,
+      "clearedBytes": 0,
+      "uploadedBytes": 0,
+      "copiedInputBytes": 0,
+      "submissionCount": 1,
+      "readbackBytes": 524288,
+      "readbackPath": "mapAsync-copy-unmap",
+      "completionMode": "queue-and-map",
+      "allocatedBufferBytes": 2097184,
+      "gpuTiming": null,
+      "timingMs": {
+        "upload": 0.0005309999999951742,
+        "encode": 0.09111100000001215,
+        "submitWait": 0.3625430000000165,
+        "readback": 0.053039999999981546,
+        "total": 0.8828919999999982
+      }
+    },
+    "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/holoscript_lif_resident.dawn.audit.json.run-2.output.f32"
+  },
+  "preparationMs": 7.750731999999999,
+  "deviceStartupMs": 48.21682999999999,
+  "adapter": {
+    "vendor": "amd",
+    "architecture": "rdna-3",
+    "device": "radeon-8060s-graphics-radv-strix-halo-",
+    "description": "radv: Mesa 26.0.3-1ubuntu1",
+    "isFallbackAdapter": false,
+    "vendorID": null,
+    "deviceID": null,
+    "driverVersion": null
+  },
+  "providerArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/dawn.fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1.provider.bin",
+    "hash": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1"
+  },
+  "allocatedBufferBytes": 2097184,
+  "peakProcessRssBytes": null,
+  "providerAddonArtifact": null,
+  "timestampCalibrationArtifact": null,
+  "lifecycle": null,
+  "observed": {
+    "dispatchesEncoded": 22,
+    "submissions": 3,
+    "maps": 2
+  },
+  "latencyStatsMs": null,
+  "cpuStatsMs": null,
+  "programHash": "6e7d36445771af3592b37763f6ca6fe6728d3dfb5c2e8c77ecb7331cc68eaa35",
+  "teardownMs": 0.6009209999999996,
+  "gpuStatsNs": null,
+  "expectedPath": "/home/x/deco/doe/bench/out/compute-program/20260907-texture-copy-applications/holoscript_lif_resident.dawn.audit.json.expected.f64",
+  "preparation": {
+    "reusedResources": 0,
+    "createdResources": 15
+  },
+  "measurementLimits": [
+    "GPU timestamps disabled by policy",
+    "Peak device memory unavailable; requested buffers and process RSS reported",
+    "Forced device loss is not an observed driver-loss recovery",
+    "Dawn and wgpu adapter APIs do not expose a numeric driver version"
+  ]
+}

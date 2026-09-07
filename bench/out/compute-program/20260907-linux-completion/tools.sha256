@@ -1,0 +1,4 @@
+8f49c1fb79c405212d044f2a476fac0ee74fc8a6b24c41dfb31252e937ed7e52  runtime/zig/zig-out/lib/libwebgpu_doe.so
+b4956a63ea465f9649524d7a978731f6d409c7d048cdb90f094aff457719cfa6  runtime/zig/zig-out/bin/doe-emit-spirv
+fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1  bench/out/external-projects/doppler/upstream/node_modules/webgpu/dist/linux-x64.dawn.node
+6853bb400e98582dcc104ca8b9e90f013cd2223575253731e0c429925981c733  bench/out/external-projects/doppler/upstream/node_modules/electron/dist/electron

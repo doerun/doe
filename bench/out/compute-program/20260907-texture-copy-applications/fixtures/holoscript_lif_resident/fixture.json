@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 2,
+  "kind": "compute_program_fixture",
+  "application": "holoscript_lif_resident",
+  "sourceRepo": "https://github.com/brianonbased-dev/HoloScript",
+  "sourceCommit": "337a39a869a552c814933c587fe65b34a0a2c95d",
+  "caseId": "large-65536x10",
+  "generatorRuntime": "v22.22.1; TypeScript 5.9.3",
+  "adaptation": "Unchanged lif_step WGSL and upstream CPU twin; declared ticks are batched, with an added packing pass preserving both membrane and spike readbacks on every provider. All buffers persist across invocations; inputs are uploaded only at initialization. The upstream CPU twin advances continuously and freezes every invocation oracle before GPU execution.",
+  "program": {
+    "path": "program.json",
+    "hash": "920e2b2cdb3f25108fa64afa47b570bbe1baf802af57e280aa121dc299286cfd"
+  },
+  "inputs": {
+    "params": {
+      "path": "inputs/params.bin",
+      "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+    },
+    "membrane": {
+      "path": "inputs/membrane.bin",
+      "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+    },
+    "stimulus": {
+      "path": "inputs/stimulus.bin",
+      "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+    }
+  },
+  "expected": {
+    "path": "expected.f64",
+    "hash": "fa14b41ac015b0fa0e7a66059034d94e3177d5845f4b217fd4b55119a16392b6"
+  },
+  "sources": [
+    {
+      "path": "upstream/packages/snn-webgpu/src/shaders/lif-neuron.wgsl",
+      "hash": "269f7201fb527f3e0a44e21fd382aa4878597f7de2e9c598fd5eb324183af89a"
+    },
+    {
+      "path": "upstream/packages/snn-webgpu/src/types.ts",
+      "hash": "187dad4150adba6cf3726cb5371bc1199b3fc77b132f2e624ecf7e5579b68881"
+    },
+    {
+      "path": "upstream/packages/snn-webgpu/src/poc/cpu-reference.ts",
+      "hash": "b1b1b1078702e702950d25b9edcce6ed5e8c482daaa9d84d8c68b304e2242f23"
+    },
+    {
+      "path": "upstream/LICENSE",
+      "hash": "44004175873df8faf3d8135e1d7f80a5820e7b4d562344d5ddfa76cc4b915564"
+    },
+    {
+      "path": "upstream/packages/snn-webgpu/package.json",
+      "hash": "cc3fe8e5f4be16eb0207416ec2de2d3a46c4b62714a93105323cb42831691f8b"
+    },
+    {
+      "path": "toolchain/typescript.cjs",
+      "hash": "3ae902c92cc44dace175c0e69e13a4b0899f6983c6121d76b9ab8dd5795e7675"
+    },
+    {
+      "path": "toolchain/typescript.LICENSE.txt",
+      "hash": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47"
+    },
+    {
+      "path": "contract/lif-determinism.harness.json",
+      "hash": "5e83770891f5a562753bd7e7128e3a48246a608f0574faa9435746f00ceb6955"
+    },
+    {
+      "path": "contract/lif-determinism.inputs.json",
+      "hash": "2b0b69c8e5dd14c2f85189fc2714c0f0e6cf8872d5852804784e101658f5d192"
+    },
+    {
+      "path": "contract/lif-determinism.oracle.md",
+      "hash": "a22e434b41fe7888a6a5b2b547e8bc0cdf60d88e9be208a6161fc5f6221a4bb9"
+    },
+    {
+      "path": "generator.mjs",
+      "hash": "cf4fa338b488fb36ab56f3739d1cc0bb7f27e816cb3df51986da4a457474d997"
+    },
+    {
+      "path": "oracle/types.js",
+      "hash": "1a637deba10f045ccb3166e6ddd6f4646f73034a6dd971089a24b1c415000dd8"
+    },
+    {
+      "path": "oracle/poc/cpu-reference.js",
+      "hash": "bbb408961fa98d692189f529c38601c11f1a9dd67de21eca27a6f2a689436e20"
+    },
+    {
+      "path": "oracle/package.json",
+      "hash": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae"
+    }
+  ],
+  "checks": [
+    {
+      "offset": 0,
+      "count": 65536,
+      "mode": "both",
+      "absoluteTolerance": 0.00005,
+      "relativeTolerance": 0.0001,
+      "relativeEpsilon": 0.000001
+    },
+    {
+      "offset": 65536,
+      "count": 65536,
+      "mode": "exact",
+      "absoluteTolerance": 0,
+      "relativeTolerance": 0,
+      "relativeEpsilon": 0
+    }
+  ],
+  "sequence": {
+    "inputs": "initialize-once",
+    "expected": [
+      {
+        "path": "expected.f64",
+        "hash": "fa14b41ac015b0fa0e7a66059034d94e3177d5845f4b217fd4b55119a16392b6"
+      },
+      {
+        "path": "sequence/run-2.expected.f64",
+        "hash": "e60cdefe4a7dd4e1a4211299aa4a8521a1589ddf6f63f0d2eb22b95ea1ef3172"
+      },
+      {
+        "path": "sequence/run-3.expected.f64",
+        "hash": "79ba01d6533817b3805b4ed8862600bf805b7ab090ffd9fd8ac8c29e2cc60b0d"
+      },
+      {
+        "path": "sequence/run-4.expected.f64",
+        "hash": "819a2461d97ab3997d2a80b4a25257ed961a24a755cb95057b1453c1dc7bfa9c"
+      },
+      {
+        "path": "sequence/run-5.expected.f64",
+        "hash": "3eef789b9a062801a828eb3e16af1649dfdf7ced1aa74753901cedc7000238eb"
+      },
+      {
+        "path": "sequence/run-6.expected.f64",
+        "hash": "bc10e1d48c721d76a92ddfba6531ec91165024b4bf4cc656176e182dc0de39f6"
+      },
+      {
+        "path": "sequence/run-7.expected.f64",
+        "hash": "f3ca6846d74751eda8ddfa86a5655919fd3106588cb1343f33acfe8f95d8a00b"
+      },
+      {
+        "path": "sequence/run-8.expected.f64",
+        "hash": "73c2cf33934597c47acb29d034231778377a1610dfcf49d430ef584eab143465"
+      },
+      {
+        "path": "sequence/run-9.expected.f64",
+        "hash": "97bcb4932b9593ea71c6b6107f2ef7a4edff36834513b4378bca1d22bde42806"
+      },
+      {
+        "path": "sequence/run-10.expected.f64",
+        "hash": "8a45acf4faa2313d9c67e4677fdeacb35ea943b37758652bc073425a23a966b7"
+      },
+      {
+        "path": "sequence/run-11.expected.f64",
+        "hash": "e510b526197a4b54d891a5fb8de6fcf1ed9acf50e968abb5ef6383473c11504e"
+      },
+      {
+        "path": "sequence/run-12.expected.f64",
+        "hash": "10c8c7b80b6ead10249c89f9aedb5186c60a44e30f90883e43d1db5802959159"
+      },
+      {
+        "path": "sequence/run-13.expected.f64",
+        "hash": "27a2bb0db9a6e0e8b3155a6ea8365e6c8a9dd1ac780d221bd4adc18ea69aefe9"
+      },
+      {
+        "path": "sequence/run-14.expected.f64",
+        "hash": "47d93084761c0a5a78e33dced4111deeae3933a888ef69b6dc8015d0be09ffc7"
+      },
+      {
+        "path": "sequence/run-15.expected.f64",
+        "hash": "fb87008f20d63137f305fa400b4bc7197ae13f4ca8e90a3cecab2b8573acb421"
+      },
+      {
+        "path": "sequence/run-16.expected.f64",
+        "hash": "877af0809ae490bc55ba3ace2772140234b770f8c62753c9fd91277a0dce32f4"
+      },
+      {
+        "path": "sequence/run-17.expected.f64",
+        "hash": "18a87b303ccad5bea235885d5869b919eb2f85e7b079e5eb5cbda24878a7ef01"
+      },
+      {
+        "path": "sequence/run-18.expected.f64",
+        "hash": "ba7bded4cc746249b21b933e1d89dec52081492f285650aa06b0cb9a0de1757b"
+      },
+      {
+        "path": "sequence/run-19.expected.f64",
+        "hash": "7bd255cda08e30674fb255093070c88e9e523bd3c1cd3d75e081e3dbbab79ec2"
+      },
+      {
+        "path": "sequence/run-20.expected.f64",
+        "hash": "d3a6c714821bc95d0a1ec9e86380b83e9e05021ce00816efc2bffa4e7c96ca81"
+      },
+      {
+        "path": "sequence/run-21.expected.f64",
+        "hash": "9fb0b27631e07bb1051ce94e43b53b39ff3b6f0270176e897c9533efd8e2d98e"
+      },
+      {
+        "path": "sequence/run-22.expected.f64",
+        "hash": "2438a13c0256f7611634c5cf90850103fa0d5eb4131d92516df22c1e519591f1"
+      },
+      {
+        "path": "sequence/run-23.expected.f64",
+        "hash": "348ae422ef8c03adbfc8dcdb0826937d89fbe4555565cc4e89ec4f62fbb90f00"
+      },
+      {
+        "path": "sequence/run-24.expected.f64",
+        "hash": "43175d28ab32e346936ead751b870a2dea5c919f726645336a9266b417d72f9e"
+      },
+      {
+        "path": "sequence/run-25.expected.f64",
+        "hash": "4cfe1c427f3d45d9f9bbaa0e2ee1969078ddcf4ae790439235e228f059784782"
+      },
+      {
+        "path": "sequence/run-26.expected.f64",
+        "hash": "e81e28bb00078c3356ef0488a99ec6c3906ebce437c3da8363e390126e34cce4"
+      },
+      {
+        "path": "sequence/run-27.expected.f64",
+        "hash": "222eb2e0f6cb27c9e75efe08b24ec145da5e5f4d96de550ce152c66f831b8805"
+      },
+      {
+        "path": "sequence/run-28.expected.f64",
+        "hash": "043f9c70ecd331187afbddefc2c4b5234f3ed046aa73f69802005cb00cc77166"
+      },
+      {
+        "path": "sequence/run-29.expected.f64",
+        "hash": "7d58b935807944293444c68c6273c38438ebe9a3f9bd7222084be51d91d7e51d"
+      },
+      {
+        "path": "sequence/run-30.expected.f64",
+        "hash": "44e27e5d1ebbf1e1925a948c8ccf30db82af0082ff81357ed823e68915033e30"
+      },
+      {
+        "path": "sequence/run-31.expected.f64",
+        "hash": "756fa4d21692c0fa88e76fdbbb83ba3d73a110224b7408fb7c3bed38680d3175"
+      },
+      {
+        "path": "sequence/run-32.expected.f64",
+        "hash": "cc0289c1d72957b00abb5b32c7fecc242b7b408e332025603c4b5f3946ef1c2c"
+      },
+      {
+        "path": "sequence/run-33.expected.f64",
+        "hash": "9eaa05087eefee7e03de8495488318564cee76ff2ff04ccd76b61cf236e3283d"
+      },
+      {
+        "path": "sequence/run-34.expected.f64",
+        "hash": "1bb120aa75c13ce54761e95d1cb9a316b9ab19f60b245d05db71ad720c2689d6"
+      },
+      {
+        "path": "sequence/run-35.expected.f64",
+        "hash": "1d418144f18a1c70eef9a50bbabdbbf103ed761523b945e29be40cc10cf7aac3"
+      },
+      {
+        "path": "sequence/run-36.expected.f64",
+        "hash": "cd9f6981b59b8ed3c32ea0a063f2971bbb0b375096b471d2b564d5cc695dd130"
+      },
+      {
+        "path": "sequence/run-37.expected.f64",
+        "hash": "ec1fb9d01f7caed3d406619d6619755c6ca81adf4b454007af43e36bcd1410e1"
+      },
+      {
+        "path": "sequence/run-38.expected.f64",
+        "hash": "f2d483ccc5d05ccbaa4f4d7b2478c74dd9af1d29ed4f0808c46bce90de7ff787"
+      }
+    ]
+  }
+}

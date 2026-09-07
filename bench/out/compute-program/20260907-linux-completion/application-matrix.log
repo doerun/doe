@@ -1,0 +1,15 @@
+audit passed: image_edges/doe-recorded
+audit passed: image_edges/doe-webgpu
+audit passed: image_edges/dawn
+audit passed: image_edges/wgpu
+audit passed: heat_diffusion/doe-recorded
+audit passed: heat_diffusion/doe-webgpu
+audit passed: heat_diffusion/dawn
+audit passed: heat_diffusion/wgpu
+audit passed: holoscript_lif/doe-recorded
+audit passed: holoscript_lif/doe-webgpu
+audit passed: holoscript_lif/dawn
+audit passed: holoscript_lif/wgpu
+measured: image_edges/doe-recorded/process-0
+measured: image_edges/doe-webgpu/process-0
+{"summary": "/home/x/deco/doe/bench/out/compute-program/20260907-linux-application-matrix/summary.json", "status": "failed", "error": "Unrelated GPU activity: DRM client 21503/gfx advanced 2108745 ns"}

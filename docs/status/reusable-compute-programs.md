@@ -182,20 +182,24 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
 
 ## Linux/Vulkan completion checklist
 
-- Verify retained package hashes and clean Node, Bun, and Electron main-process
+- [x] Verify retained package hashes and clean Node, Bun, and Electron main-process
   installation. Run public C-boundary copy regressions against the retained
   native binary, including origins, untouched pixels, dimensions, and aspects.
-- Close demonstrated downstream shader and model failures with independent
+- [ ] Close demonstrated downstream shader and model failures with independent
   accepted outputs; retain reproductions and cross-program regressions.
-- Measure prolonged sessions, native allocation retention, observed device
+- [ ] Measure prolonged sessions, native allocation retention, observed device
   memory, concurrency, and bounded cancellation/recovery. Distinguish sampled
   memory from peak residency and device destruction from physical driver loss.
-- Recheck reflection failure propagation, compilation-owned diagnostics, and
+- [x] Recheck reflection failure propagation, compilation-owned diagnostics, and
   state-reset approval against implementation and retained-package regressions.
-- Run the frozen application comparisons with equivalent inputs, correctness,
+- [ ] Run the frozen application comparisons with equivalent inputs, correctness,
   caches, transfers, and completion. Record preparation, complete-operation
   latency, CPU use, memory, and long-session behavior; optimize the largest
   demonstrated bottleneck and rerun affected acceptance checks.
+
+Completed checks and bounded prolonged-session evidence are indexed at
+`bench/out/compute-program/20260907-linux-completion/README.md`. Driver-loss,
+full residency peaks, model acceptance, and fair comparisons remain distinct.
 
 Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
 Large Deno ratios remain suspicious host-path observations until audited;

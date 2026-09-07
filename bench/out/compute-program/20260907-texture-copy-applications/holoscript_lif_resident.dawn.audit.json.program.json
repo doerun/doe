@@ -1,0 +1,385 @@
+{
+  "schemaVersion": 2,
+  "id": "holoscript_lif_resident",
+  "buffers": [
+    {
+      "id": "params",
+      "size": 32,
+      "type": "uniform",
+      "role": "input",
+      "lifetime": "program"
+    },
+    {
+      "id": "membrane",
+      "size": 262144,
+      "type": "storage",
+      "role": "input",
+      "lifetime": "program"
+    },
+    {
+      "id": "stimulus",
+      "size": 262144,
+      "type": "storage",
+      "role": "input",
+      "lifetime": "program"
+    },
+    {
+      "id": "spikes",
+      "size": 262144,
+      "type": "storage",
+      "role": "scratch",
+      "lifetime": "program"
+    },
+    {
+      "id": "refractory",
+      "size": 262144,
+      "type": "storage",
+      "role": "scratch",
+      "lifetime": "program"
+    },
+    {
+      "id": "output",
+      "size": 524288,
+      "type": "storage",
+      "role": "output",
+      "lifetime": "program"
+    }
+  ],
+  "shaders": [
+    {
+      "id": "lif",
+      "entryPoint": "lif_step",
+      "code": "// Leaky Integrate-and-Fire (LIF) Neuron Compute Shader\n// Processes membrane potential updates for N neurons per dispatch.\n//\n// Model:  V[t+1] = V[t] * decay + I_syn[t]\n//         if V[t+1] >= V_thresh => spike=1, V[t+1] = V_reset\n//         else spike=0\n//\n// decay = exp(-dt / tau)\n\nstruct LIFParams {\n    tau: f32,            // Membrane time constant (ms)\n    v_threshold: f32,    // Spike threshold voltage (mV)\n    v_reset: f32,        // Reset voltage after spike (mV)\n    v_rest: f32,         // Resting membrane potential (mV)\n    dt: f32,             // Timestep (ms)\n    neuron_count: u32,   // Total neuron count\n    _pad0: u32,\n    _pad1: u32,\n};\n\n@group(0) @binding(0) var<uniform> params: LIFParams;\n\n// Membrane potentials: read/write per neuron\n@group(0) @binding(1) var<storage, read_write> membrane_v: array<f32>;\n\n// Synaptic input currents (computed by weight shader): read-only\n@group(0) @binding(2) var<storage, read> synaptic_input: array<f32>;\n\n// Output spike flags: 1.0 = spiked, 0.0 = no spike\n@group(0) @binding(3) var<storage, read_write> spikes: array<f32>;\n\n// Refractory period counter (timesteps remaining)\n@group(0) @binding(4) var<storage, read_write> refractory: array<f32>;\n\nconst WORKGROUP_SIZE: u32 = 256u;\nconst REFRACTORY_PERIOD: f32 = 2.0; // ms\n\n@compute @workgroup_size(256)\nfn lif_step(@builtin(global_invocation_id) gid: vec3<u32>) {\n    let idx = gid.x;\n    if (idx >= params.neuron_count) {\n        return;\n    }\n\n    let i = idx;\n\n    // Read current state\n    var v = membrane_v[i];\n    let i_syn = synaptic_input[i];\n    var ref_timer = refractory[i];\n\n    // Compute exponential decay factor: exp(-dt/tau)\n    let decay = exp(-params.dt / params.tau);\n\n    // Check refractory period\n    if (ref_timer > 0.0) {\n        // Neuron is in refractory period - clamp to reset\n        ref_timer = ref_timer - params.dt;\n        refractory[i] = max(ref_timer, 0.0);\n        membrane_v[i] = params.v_reset;\n        spikes[i] = 0.0;\n        return;\n    }\n\n    // Leaky integration step\n    // V(t+1) = V_rest + (V(t) - V_rest) * decay + I_syn\n    v = params.v_rest + (v - params.v_rest) * decay + i_syn;\n\n    // Threshold check\n    if (v >= params.v_threshold) {\n        // Spike!\n        spikes[i] = 1.0;\n        membrane_v[i] = params.v_reset;\n        refractory[i] = REFRACTORY_PERIOD;\n    } else {\n        spikes[i] = 0.0;\n        membrane_v[i] = v;\n    }\n}\n\n// Variant: batch update for multiple timesteps within a single dispatch\n// Useful for offline simulation where latency matters less than throughput.\n@compute @workgroup_size(256)\nfn lif_step_batch(@builtin(global_invocation_id) gid: vec3<u32>) {\n    let idx = gid.x;\n    if (idx >= params.neuron_count) {\n        return;\n    }\n\n    let i = idx;\n    var v = membrane_v[i];\n    let i_syn = synaptic_input[i];\n    var ref_timer = refractory[i];\n    let decay = exp(-params.dt / params.tau);\n\n    // Process 4 sub-steps per dispatch for higher temporal resolution\n    for (var step = 0u; step < 4u; step = step + 1u) {\n        if (ref_timer > 0.0) {\n            ref_timer = ref_timer - params.dt;\n            v = params.v_reset;\n        } else {\n            v = params.v_rest + (v - params.v_rest) * decay + i_syn * 0.25;\n\n            if (v >= params.v_threshold) {\n                spikes[i] = 1.0;\n                v = params.v_reset;\n                ref_timer = REFRACTORY_PERIOD;\n            }\n        }\n    }\n\n    membrane_v[i] = v;\n    refractory[i] = max(ref_timer, 0.0);\n}\n"
+    },
+    {
+      "id": "pack",
+      "entryPoint": "main",
+      "code": "\n      @group(0) @binding(0) var<storage, read> membrane: array<f32>;\n      @group(0) @binding(1) var<storage, read> spikes: array<f32>;\n      @group(0) @binding(2) var<storage, read_write> output: array<f32>;\n      @compute @workgroup_size(256) fn main(@builtin(global_invocation_id) gid: vec3<u32>) {\n        let n = arrayLength(&membrane);\n        if (gid.x < n) { output[gid.x] = membrane[gid.x]; output[n + gid.x] = spikes[gid.x]; }\n      }"
+    }
+  ],
+  "steps": [
+    {
+      "shader": "lif",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "params"
+        },
+        {
+          "binding": 1,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 2,
+          "buffer": "stimulus"
+        },
+        {
+          "binding": 3,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 4,
+          "buffer": "refractory"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "lif",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "params"
+        },
+        {
+          "binding": 1,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 2,
+          "buffer": "stimulus"
+        },
+        {
+          "binding": 3,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 4,
+          "buffer": "refractory"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "lif",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "params"
+        },
+        {
+          "binding": 1,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 2,
+          "buffer": "stimulus"
+        },
+        {
+          "binding": 3,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 4,
+          "buffer": "refractory"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "lif",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "params"
+        },
+        {
+          "binding": 1,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 2,
+          "buffer": "stimulus"
+        },
+        {
+          "binding": 3,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 4,
+          "buffer": "refractory"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "lif",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "params"
+        },
+        {
+          "binding": 1,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 2,
+          "buffer": "stimulus"
+        },
+        {
+          "binding": 3,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 4,
+          "buffer": "refractory"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "lif",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "params"
+        },
+        {
+          "binding": 1,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 2,
+          "buffer": "stimulus"
+        },
+        {
+          "binding": 3,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 4,
+          "buffer": "refractory"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "lif",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "params"
+        },
+        {
+          "binding": 1,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 2,
+          "buffer": "stimulus"
+        },
+        {
+          "binding": 3,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 4,
+          "buffer": "refractory"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "lif",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "params"
+        },
+        {
+          "binding": 1,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 2,
+          "buffer": "stimulus"
+        },
+        {
+          "binding": 3,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 4,
+          "buffer": "refractory"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "lif",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "params"
+        },
+        {
+          "binding": 1,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 2,
+          "buffer": "stimulus"
+        },
+        {
+          "binding": 3,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 4,
+          "buffer": "refractory"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "lif",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "params"
+        },
+        {
+          "binding": 1,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 2,
+          "buffer": "stimulus"
+        },
+        {
+          "binding": 3,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 4,
+          "buffer": "refractory"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    },
+    {
+      "shader": "pack",
+      "bindings": [
+        {
+          "binding": 0,
+          "buffer": "membrane"
+        },
+        {
+          "binding": 1,
+          "buffer": "spikes"
+        },
+        {
+          "binding": 2,
+          "buffer": "output"
+        }
+      ],
+      "workgroups": [
+        256,
+        1,
+        1
+      ]
+    }
+  ],
+  "output": "output"
+}

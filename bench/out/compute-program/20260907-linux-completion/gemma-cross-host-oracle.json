@@ -1,0 +1,539 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe-gemma270m-electron-oracle-result",
+  "status": "failed",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "identity": {
+    "pass": false,
+    "checkCount": 22,
+    "failed": [
+      "W0.application"
+    ],
+    "checks": [
+      {
+        "id": "W0.model",
+        "pass": true
+      },
+      {
+        "id": "W0.manifest",
+        "pass": true
+      },
+      {
+        "id": "W0.prompt",
+        "pass": true
+      },
+      {
+        "id": "W0.tokenizer_mode",
+        "pass": true
+      },
+      {
+        "id": "W0.execution",
+        "pass": true
+      },
+      {
+        "id": "W0.sampling",
+        "pass": true
+      },
+      {
+        "id": "W0.tolerance",
+        "pass": true
+      },
+      {
+        "id": "W0.provider",
+        "pass": true
+      },
+      {
+        "id": "W0.application",
+        "pass": false
+      },
+      {
+        "id": "D0.model",
+        "pass": true
+      },
+      {
+        "id": "D0.manifest",
+        "pass": true
+      },
+      {
+        "id": "D0.prompt",
+        "pass": true
+      },
+      {
+        "id": "D0.tokenizer_mode",
+        "pass": true
+      },
+      {
+        "id": "D0.execution",
+        "pass": true
+      },
+      {
+        "id": "D0.sampling",
+        "pass": true
+      },
+      {
+        "id": "D0.tolerance",
+        "pass": true
+      },
+      {
+        "id": "D0.provider",
+        "pass": true
+      },
+      {
+        "id": "D0.application",
+        "pass": true
+      },
+      {
+        "id": "cross_lane.input_set",
+        "pass": true
+      },
+      {
+        "id": "cross_lane.tokenized_prompt",
+        "pass": true
+      },
+      {
+        "id": "cross_lane.execution_graph",
+        "pass": true
+      },
+      {
+        "id": "cross_lane.weight_set",
+        "pass": true
+      }
+    ]
+  },
+  "requestedDecodeSteps": 4,
+  "stepCountPass": true,
+  "logitsComparisons": [
+    {
+      "stepIndex": 0,
+      "selectedTokenIdW0": 236769,
+      "selectedTokenIdD0": 236769,
+      "tokenPass": true,
+      "pass": true,
+      "elementCount": 262144,
+      "maxAbs": 0,
+      "firstMismatch": null,
+      "reason": ""
+    },
+    {
+      "stepIndex": 1,
+      "selectedTokenIdW0": 236776,
+      "selectedTokenIdD0": 236776,
+      "tokenPass": true,
+      "pass": false,
+      "elementCount": 262144,
+      "maxAbs": 0.006382465362548828,
+      "firstMismatch": 0,
+      "reason": "abs-or-relative tolerance exceeded"
+    },
+    {
+      "stepIndex": 2,
+      "selectedTokenIdW0": 236768,
+      "selectedTokenIdD0": 236768,
+      "tokenPass": true,
+      "pass": false,
+      "elementCount": 262144,
+      "maxAbs": 0.006989955902099609,
+      "firstMismatch": 1,
+      "reason": "abs-or-relative tolerance exceeded"
+    },
+    {
+      "stepIndex": 3,
+      "selectedTokenIdW0": 236743,
+      "selectedTokenIdD0": 236743,
+      "tokenPass": true,
+      "pass": false,
+      "elementCount": 262144,
+      "maxAbs": 0.005321979522705078,
+      "firstMismatch": 1,
+      "reason": "abs-or-relative tolerance exceeded"
+    }
+  ],
+  "kv": {
+    "W0": true,
+    "D0": true
+  },
+  "checkpointCoverage": {
+    "W0": {
+      "pass": true,
+      "captured": [
+        "attention",
+        "embedding",
+        "kv",
+        "logits",
+        "mlp",
+        "qkv",
+        "rmsnorm",
+        "rope"
+      ],
+      "missing": []
+    },
+    "D0": {
+      "pass": true,
+      "captured": [
+        "attention",
+        "embedding",
+        "kv",
+        "logits",
+        "mlp",
+        "qkv",
+        "rmsnorm",
+        "rope"
+      ],
+      "missing": []
+    }
+  },
+  "modelCheckpoints": {
+    "pass": false,
+    "expectedComparisonCount": 28,
+    "comparisons": [
+      {
+        "stepIndex": 0,
+        "phase": "prefill",
+        "stage": "embedding",
+        "pass": true,
+        "reason": "",
+        "recordCount": 1,
+        "elementCount": 7680,
+        "maxAbs": 0,
+        "maxRel": 0
+      },
+      {
+        "stepIndex": 0,
+        "phase": "prefill",
+        "stage": "rmsnorm",
+        "pass": true,
+        "reason": "",
+        "recordCount": 56,
+        "elementCount": 430080,
+        "maxAbs": 0,
+        "maxRel": 0
+      },
+      {
+        "stepIndex": 0,
+        "phase": "prefill",
+        "stage": "qkv",
+        "pass": true,
+        "reason": "",
+        "recordCount": 54,
+        "elementCount": 331776,
+        "maxAbs": 0,
+        "maxRel": 0
+      },
+      {
+        "stepIndex": 0,
+        "phase": "prefill",
+        "stage": "rope",
+        "pass": true,
+        "reason": "",
+        "recordCount": 36,
+        "elementCount": 276480,
+        "maxAbs": 0,
+        "maxRel": 0
+      },
+      {
+        "stepIndex": 0,
+        "phase": "prefill",
+        "stage": "attention",
+        "pass": true,
+        "reason": "",
+        "recordCount": 36,
+        "elementCount": 359424,
+        "maxAbs": 0,
+        "maxRel": 0
+      },
+      {
+        "stepIndex": 0,
+        "phase": "prefill",
+        "stage": "mlp",
+        "pass": true,
+        "reason": "",
+        "recordCount": 90,
+        "elementCount": 1603584,
+        "maxAbs": 0,
+        "maxRel": 0
+      },
+      {
+        "stepIndex": 0,
+        "phase": "prefill",
+        "stage": "logits",
+        "pass": true,
+        "reason": "",
+        "recordCount": 1,
+        "elementCount": 262144,
+        "maxAbs": 0,
+        "maxRel": 0
+      },
+      {
+        "stepIndex": 1,
+        "phase": "decode",
+        "stage": "embedding",
+        "pass": true,
+        "reason": "",
+        "recordCount": 1,
+        "elementCount": 640,
+        "maxAbs": 0,
+        "maxRel": 0
+      },
+      {
+        "stepIndex": 1,
+        "phase": "decode",
+        "stage": "rmsnorm",
+        "pass": false,
+        "elementCount": 256,
+        "maxAbs": 0.0011348724365234375,
+        "maxRel": 0.018501192269835088,
+        "firstMismatch": 117,
+        "reason": "record 17 (layer.5.attn.k_norm): abs-or-relative tolerance exceeded",
+        "recordCount": 56,
+        "recordIndex": 17
+      },
+      {
+        "stepIndex": 1,
+        "phase": "decode",
+        "stage": "qkv",
+        "pass": false,
+        "elementCount": 1024,
+        "maxAbs": 0.0014886856079101562,
+        "maxRel": 0.1173505608405509,
+        "firstMismatch": 295,
+        "reason": "record 27 (layer.9.attn.q_proj): abs-or-relative tolerance exceeded",
+        "recordCount": 54,
+        "recordIndex": 27
+      },
+      {
+        "stepIndex": 1,
+        "phase": "decode",
+        "stage": "rope",
+        "pass": false,
+        "elementCount": 256,
+        "maxAbs": 0.0011348724365234375,
+        "maxRel": 0.02259009042680722,
+        "firstMismatch": 117,
+        "reason": "record 11 (layer.5.attn.k_rope): abs-or-relative tolerance exceeded",
+        "recordCount": 36,
+        "recordIndex": 11
+      },
+      {
+        "stepIndex": 1,
+        "phase": "decode",
+        "stage": "attention",
+        "pass": false,
+        "elementCount": 1024,
+        "maxAbs": 0.0024385452270507812,
+        "maxRel": 0.02531301254987525,
+        "firstMismatch": 21,
+        "reason": "record 16 (layer.8.attn.core_out): abs-or-relative tolerance exceeded",
+        "recordCount": 36,
+        "recordIndex": 16
+      },
+      {
+        "stepIndex": 1,
+        "phase": "decode",
+        "stage": "mlp",
+        "pass": true,
+        "reason": "",
+        "recordCount": 54,
+        "elementCount": 59904,
+        "maxAbs": 0.00040924549102783203,
+        "maxRel": 1.5396455223880596
+      },
+      {
+        "stepIndex": 1,
+        "phase": "decode",
+        "stage": "logits",
+        "pass": false,
+        "elementCount": 262144,
+        "maxAbs": 0.006382465362548828,
+        "maxRel": 1.826002490660025,
+        "firstMismatch": 0,
+        "reason": "record 0 (logits.out): abs-or-relative tolerance exceeded",
+        "recordCount": 1,
+        "recordIndex": 0
+      },
+      {
+        "stepIndex": 2,
+        "phase": "decode",
+        "stage": "embedding",
+        "pass": true,
+        "reason": "",
+        "recordCount": 1,
+        "elementCount": 640,
+        "maxAbs": 0,
+        "maxRel": 0
+      },
+      {
+        "stepIndex": 2,
+        "phase": "decode",
+        "stage": "rmsnorm",
+        "pass": false,
+        "elementCount": 256,
+        "maxAbs": 0.006305694580078125,
+        "maxRel": 0.006686608260340359,
+        "firstMismatch": 103,
+        "reason": "record 17 (layer.5.attn.k_norm): abs-or-relative tolerance exceeded",
+        "recordCount": 56,
+        "recordIndex": 17
+      },
+      {
+        "stepIndex": 2,
+        "phase": "decode",
+        "stage": "qkv",
+        "pass": false,
+        "elementCount": 256,
+        "maxAbs": 0.0010633468627929688,
+        "maxRel": 0.006703912013816095,
+        "firstMismatch": 117,
+        "reason": "record 16 (layer.5.attn.k_proj): abs-or-relative tolerance exceeded",
+        "recordCount": 54,
+        "recordIndex": 16
+      },
+      {
+        "stepIndex": 2,
+        "phase": "decode",
+        "stage": "rope",
+        "pass": false,
+        "elementCount": 256,
+        "maxAbs": 0.006305694580078125,
+        "maxRel": 0.01235003015714486,
+        "firstMismatch": 103,
+        "reason": "record 11 (layer.5.attn.k_rope): abs-or-relative tolerance exceeded",
+        "recordCount": 36,
+        "recordIndex": 11
+      },
+      {
+        "stepIndex": 2,
+        "phase": "decode",
+        "stage": "attention",
+        "pass": false,
+        "elementCount": 1024,
+        "maxAbs": 0.0012377500534057617,
+        "maxRel": 0.011174815679346778,
+        "firstMismatch": 398,
+        "reason": "record 8 (layer.4.attn.core_out): abs-or-relative tolerance exceeded",
+        "recordCount": 36,
+        "recordIndex": 8
+      },
+      {
+        "stepIndex": 2,
+        "phase": "decode",
+        "stage": "mlp",
+        "pass": true,
+        "reason": "",
+        "recordCount": 54,
+        "elementCount": 59904,
+        "maxAbs": 0.0006464123725891113,
+        "maxRel": 1.459904283633732
+      },
+      {
+        "stepIndex": 2,
+        "phase": "decode",
+        "stage": "logits",
+        "pass": false,
+        "elementCount": 262144,
+        "maxAbs": 0.006989955902099609,
+        "maxRel": 1.9799168975069252,
+        "firstMismatch": 1,
+        "reason": "record 0 (logits.out): abs-or-relative tolerance exceeded",
+        "recordCount": 1,
+        "recordIndex": 0
+      },
+      {
+        "stepIndex": 3,
+        "phase": "decode",
+        "stage": "embedding",
+        "pass": true,
+        "reason": "",
+        "recordCount": 1,
+        "elementCount": 640,
+        "maxAbs": 0,
+        "maxRel": 0
+      },
+      {
+        "stepIndex": 3,
+        "phase": "decode",
+        "stage": "rmsnorm",
+        "pass": false,
+        "elementCount": 256,
+        "maxAbs": 0.0030603408813476562,
+        "maxRel": 0.006049823906982414,
+        "firstMismatch": 103,
+        "reason": "record 17 (layer.5.attn.k_norm): abs-or-relative tolerance exceeded",
+        "recordCount": 56,
+        "recordIndex": 17
+      },
+      {
+        "stepIndex": 3,
+        "phase": "decode",
+        "stage": "qkv",
+        "pass": false,
+        "elementCount": 1024,
+        "maxAbs": 0.0010485649108886719,
+        "maxRel": 0.022813629720790707,
+        "firstMismatch": 514,
+        "reason": "record 18 (layer.6.attn.q_proj): abs-or-relative tolerance exceeded",
+        "recordCount": 54,
+        "recordIndex": 18
+      },
+      {
+        "stepIndex": 3,
+        "phase": "decode",
+        "stage": "rope",
+        "pass": false,
+        "elementCount": 256,
+        "maxAbs": 0.0030603408813476562,
+        "maxRel": 0.012232420850618063,
+        "firstMismatch": 103,
+        "reason": "record 11 (layer.5.attn.k_rope): abs-or-relative tolerance exceeded",
+        "recordCount": 36,
+        "recordIndex": 11
+      },
+      {
+        "stepIndex": 3,
+        "phase": "decode",
+        "stage": "attention",
+        "pass": false,
+        "elementCount": 1024,
+        "maxAbs": 0.0017285346984863281,
+        "maxRel": 0.11251993130110577,
+        "firstMismatch": 353,
+        "reason": "record 14 (layer.7.attn.core_out): abs-or-relative tolerance exceeded",
+        "recordCount": 36,
+        "recordIndex": 14
+      },
+      {
+        "stepIndex": 3,
+        "phase": "decode",
+        "stage": "mlp",
+        "pass": false,
+        "elementCount": 640,
+        "maxAbs": 0.0012226104736328125,
+        "maxRel": 0.02684121772987713,
+        "firstMismatch": 633,
+        "reason": "record 18 (layer.6.ffn.in): abs-or-relative tolerance exceeded",
+        "recordCount": 54,
+        "recordIndex": 18
+      },
+      {
+        "stepIndex": 3,
+        "phase": "decode",
+        "stage": "logits",
+        "pass": false,
+        "elementCount": 262144,
+        "maxAbs": 0.005321979522705078,
+        "maxRel": 1.9553052325581395,
+        "firstMismatch": 1,
+        "reason": "record 0 (logits.out): abs-or-relative tolerance exceeded",
+        "recordCount": 1,
+        "recordIndex": 0
+      }
+    ],
+    "kv": {
+      "pass": false,
+      "reason": "KV checkpoint mismatch at layer record 1"
+    },
+    "blockers": [
+      "KV checkpoint mismatch at layer record 1"
+    ]
+  },
+  "pass": false
+}

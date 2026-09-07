@@ -1,0 +1,315 @@
+{
+  "actorId": "doppler",
+  "artifactKind": "external-project-reproduction-plan",
+  "bootstrapCommands": [
+    [
+      "python3",
+      "bench/tools/bootstrap_zig.py"
+    ]
+  ],
+  "doeCommands": [
+    [
+      "../../.tooling/zig-0.15.2/zig",
+      "build",
+      "dropin",
+      "-Doptimize=ReleaseFast"
+    ],
+    [
+      "npm",
+      "run",
+      "build:addon"
+    ]
+  ],
+  "evidenceFiles": [
+    {
+      "id": "qualification-result",
+      "path": "result.json"
+    },
+    {
+      "id": "checkpoint-oracle",
+      "path": "oracle.json"
+    },
+    {
+      "id": "w0-transcript",
+      "path": "lanes/W0/doppler_int4ple_reference_export.json"
+    },
+    {
+      "id": "d0-transcript",
+      "path": "lanes/D0/doppler_int4ple_reference_export.json"
+    }
+  ],
+  "gateCommands": [
+    [
+      "python3",
+      "bench/gates/ecosystem_registry_gate.py"
+    ],
+    [
+      "python3",
+      "bench/gates/external_project_release_gate.py"
+    ]
+  ],
+  "hardwareProbe": [
+    "python3",
+    "-m",
+    "bench.runners.probe_vulkan_host_profile",
+    "--profile",
+    "linux_amd_vulkan"
+  ],
+  "harnessId": "gemma270m-electron",
+  "installSteps": [
+    {
+      "command": [
+        "npm",
+        "ci",
+        "--include=optional"
+      ],
+      "id": "doppler-dependencies",
+      "timeoutSeconds": 1800,
+      "workingDirectory": {
+        "path": ".",
+        "scope": "upstream"
+      }
+    },
+    {
+      "command": [
+        "npm",
+        "install",
+        "--no-save",
+        "--package-lock=false",
+        "electron@43.4.0"
+      ],
+      "id": "electron-runtime",
+      "timeoutSeconds": 1800,
+      "workingDirectory": {
+        "path": ".",
+        "scope": "upstream"
+      }
+    },
+    {
+      "command": [
+        "node",
+        "node_modules/electron/install.js"
+      ],
+      "id": "electron-binary",
+      "timeoutSeconds": 1800,
+      "workingDirectory": {
+        "path": ".",
+        "scope": "upstream"
+      }
+    }
+  ],
+  "offline": true,
+  "outputs": {
+    "evidence": [
+      {
+        "id": "qualification-result",
+        "path": "bench/out/external-projects/doppler/linux-completion-gemma/result.json"
+      },
+      {
+        "id": "checkpoint-oracle",
+        "path": "bench/out/external-projects/doppler/linux-completion-gemma/oracle.json"
+      },
+      {
+        "id": "w0-transcript",
+        "path": "bench/out/external-projects/doppler/linux-completion-gemma/lanes/W0/doppler_int4ple_reference_export.json"
+      },
+      {
+        "id": "d0-transcript",
+        "path": "bench/out/external-projects/doppler/linux-completion-gemma/lanes/D0/doppler_int4ple_reference_export.json"
+      }
+    ],
+    "preparationReceipt": "bench/out/external-projects/doppler/linux-completion-gemma/preparation.json",
+    "reproductionReceipt": "bench/out/external-projects/doppler/linux-completion-gemma/reproduction.json"
+  },
+  "resolvedContract": {
+    "modelContract": {
+      "application": {
+        "entrypoint": {
+          "path": "bench/external-projects/doppler/electron-app/main.mjs",
+          "sha256": "354b5921dcb928025250b50260559c8c6e86c251239ada16b67ec8951b3c4169"
+        },
+        "mode": "main-process-node-side",
+        "package": {
+          "path": "bench/external-projects/doppler/electron-app/package.json",
+          "sha256": "90055f8e8345cd547166e6f29671333b8951e229626d95adbb136af45cf75e96"
+        },
+        "runtime": "electron",
+        "version": "43.4.0"
+      },
+      "artifactSource": {
+        "origin": {
+          "path": "origin.json",
+          "sha256": "4e1d26c6502080a66c14169f5b289d43b67991bc3096d4f230e2aa82d44a1bcc"
+        },
+        "path": "models/local/gemma-3-270m-it-q4k-ehf16-af32",
+        "project": "doppler"
+      },
+      "execution": {
+        "checkpointStages": [
+          "embedding",
+          "rmsnorm",
+          "qkv",
+          "rope",
+          "attention",
+          "kv",
+          "mlp",
+          "logits"
+        ],
+        "decodeSteps": 4,
+        "kernelPathPolicy": {
+          "mode": "locked",
+          "onIncompatible": "error",
+          "sourceScope": [
+            "model",
+            "manifest",
+            "config"
+          ]
+        },
+        "runtimeProfile": "profiles/production",
+        "sampling": {
+          "repetitionPenalty": 1,
+          "seed": 0,
+          "temperature": 0,
+          "topK": 1,
+          "topP": 1
+        },
+        "tolerance": {
+          "atol": 0.001,
+          "metric": "abs-or-relative",
+          "rtol": 0
+        },
+        "useChatTemplate": false
+      },
+      "manifest": {
+        "path": "models/local/gemma-3-270m-it-q4k-ehf16-af32/manifest.json",
+        "sha256": "230104df762ff394095326d8e9fa4dc144d431bbd61ad5139e1030e66836ab78"
+      },
+      "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+      "prompt": {
+        "path": "bench/external-projects/doppler/prompt.txt",
+        "sha256": "6bb1d580b99f0f1893b64f3b11d7c12c66ef869b64b6aeb2517ee30a776f56bf"
+      },
+      "providerContract": {
+        "path": "packages/doe-gpu/src/node-webgpu.js",
+        "sha256": "171a4b0894f1f352dfabd9a230e873c5f90da64b54bc2b5aa3026e59bb17d85e"
+      },
+      "providers": {
+        "D0": {
+          "id": "doe-gpu",
+          "target": {
+            "path": "packages/doe-gpu/src/compute.js",
+            "sha256": "f0c7e4c93097a4960e91034f0a56f399ed702a250cf1bf38fb2afb5565b651a7"
+          },
+          "targetRoot": "repo",
+          "wrapper": {
+            "path": "bench/external-projects/doppler/provider-doe.mjs",
+            "sha256": "b0b32da0a28f612b7d17531dbe9ae1d5917fa8c7caeddd5a30ea66dfa4d3809f"
+          }
+        },
+        "W0": {
+          "id": "dawn-node-webgpu",
+          "target": {
+            "path": "node_modules/webgpu/index.js",
+            "sha256": "18a44f1e81cd3697156e7ddd3456e9f0d346a0afabb76588379b5b2f6dca50b4"
+          },
+          "targetRoot": "upstream",
+          "wrapper": {
+            "path": "bench/external-projects/doppler/provider-dawn.mjs",
+            "sha256": "61422ded8d5d3334dbe568be23a6ca3e41631a157ade8f4bf0132465c68a8d33"
+          }
+        }
+      },
+      "shaderIdentity": {
+        "sha256": "04e0e534f6d70514eb95678ee5df46f4f709c05c15df022ff398f6a7c99d9cb8",
+        "source": "manifest.inference.execution.kernels"
+      },
+      "tokenizer": {
+        "path": "models/local/gemma-3-270m-it-q4k-ehf16-af32/tokenizer.json",
+        "sha256": "be6955513a2509d69d18e82180c2a477ad99358d15212fb81d957566d8186075"
+      }
+    },
+    "providerSubstitution": {
+      "baselineProvider": "dawn-node-webgpu",
+      "comparisonProvider": "doe-gpu",
+      "patchPaths": [],
+      "seam": "The Electron main process sets Doppler's declared Node WebGPU provider module to a hash-bound W0 or D0 wrapper; Doppler model, application, prompt, tokenizer, manifest shader graph, synchronization, readback, and decode request remain unchanged."
+    },
+    "supportTargets": [
+      {
+        "adapter": "Radeon 8060S Graphics",
+        "arch": "x86_64",
+        "driver": "Mesa 26.0.3",
+        "id": "linux-x64-radeon-8060s-radv-26-0-3-electron-43-4-0",
+        "os": "linux",
+        "runtime": "electron-43.4.0",
+        "status": "validated"
+      }
+    ],
+    "upstream": {
+      "commit": "c27d1354b24f2ddfaaccd2742d1550a848db1931",
+      "license": {
+        "evidenceUrl": "https://github.com/clocksmith/doppler/blob/c27d1354b24f2ddfaaccd2742d1550a848db1931/LICENSE",
+        "identifier": "MIT"
+      },
+      "repositoryUrl": "https://github.com/clocksmith/doppler"
+    }
+  },
+  "runId": "linux-completion-gemma",
+  "runRoot": "bench/out/external-projects/doppler/linux-completion-gemma",
+  "schemaVersion": 1,
+  "sourceCommands": [
+    [
+      "git",
+      "-C",
+      "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+      "status",
+      "--porcelain"
+    ],
+    [
+      "git",
+      "-C",
+      "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+      "remote",
+      "get-url",
+      "origin"
+    ],
+    [
+      "git",
+      "-C",
+      "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+      "rev-parse",
+      "HEAD"
+    ]
+  ],
+  "upstreamRoot": "bench/out/external-projects/doppler/upstream",
+  "versionCommands": [
+    [
+      "git",
+      "--version"
+    ],
+    [
+      "node",
+      "--version"
+    ],
+    [
+      "npm",
+      "--version"
+    ],
+    [
+      ".tooling/zig-0.15.2/zig",
+      "version"
+    ]
+  ],
+  "workloadCommand": [
+    "node",
+    "bench/external-projects/doppler/run-gemma270m-electron.mjs",
+    "--run-id",
+    "linux-completion-gemma",
+    "--upstream-root",
+    "bench/out/external-projects/doppler/upstream",
+    "--preparation-receipt",
+    "bench/out/external-projects/doppler/linux-completion-gemma/preparation.json",
+    "--out",
+    "bench/out/external-projects/doppler/linux-completion-gemma/result.json"
+  ]
+}

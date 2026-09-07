@@ -432,6 +432,24 @@ in fresh directories, and exercise Node, Bun, and Electron. That harness runs
 the ordinary provider, repeated lifecycle, and plan regressions from the
 installed package. It grants neither registry publication nor release admission.
 
+The existing integration regressions accept `--prolonged` for sustained Linux
+resource reuse and live simulation checks:
+
+```sh
+node packages/doe-gpu/test/integration/test-integration-native-resource-retention.js --prolonged
+node packages/doe-gpu/test/integration/test-integration-live-simulation.js --prolonged
+```
+
+The resource fixture checks output on every invocation, post-close allocation
+stability while closed programs remain reachable, and complete device cleanup.
+The simulation checks each evolving frame against its independent heat reference
+and retains reset, edit, cancellation, and reopening checks. Its progress deadline
+restarts after each accepted frame. Logs distinguish sampled worker RSS and DRM
+allocation totals from peak device residency; neither establishes driver-loss
+recovery. For retained-package evidence, use the qualifier's import substitutions
+and validate the installed package against its retained archives before and after
+running these fixtures.
+
 Qualification artifact version 2 stores archive and evidence filenames relative
 to its own directory. Move that directory intact to reproduce elsewhere;
 recorded hashes do not change. The loader rejects escaping references and checks

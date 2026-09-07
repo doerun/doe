@@ -4,7 +4,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { requestAdapter } from '../../src/native.js';
 import { prepareComputeProgram } from '../../src/compute-program.js';
 
-const CYCLES = 8;
+const PROLONGED = process.argv.includes('--prolonged');
+const CYCLES = PROLONGED ? 256 : 8;
+const RUNS_PER_CYCLE = PROLONGED ? 128 : 2;
 const descriptor = {
   schemaVersion: 1, id: 'resource_retention',
   buffers: [{ id: 'output', size: 65536, type: 'storage', role: 'output' }],
@@ -59,15 +61,18 @@ if (process.platform !== 'linux') {
       });
       const closed = [];
       const totals = [];
+      let maximumAllocatedBytes = 0;
+      const started = performance.now();
       try {
         for (let cycle = 0; cycle < CYCLES; cycle += 1) {
           const program = await prepareComputeProgram(device, descriptor, { execution, gpuTiming });
           try {
-            for (let run = 0; run < 2; run += 1) {
+            for (let run = 0; run < RUNS_PER_CYCLE; run += 1) {
               const result = await program.run();
               const output = new Uint32Array(result.output.buffer, result.output.byteOffset, result.output.byteLength / 4);
               assert(output.every((value, index) => value === index + 1));
             }
+            maximumAllocatedBytes = Math.max(maximumAllocatedBytes, allocationTotal(drmClients(), before));
           } finally { await program.close(); }
           closed.push(program);
           totals.push(allocationTotal(drmClients(), before));
@@ -82,6 +87,7 @@ if (process.platform !== 'linux') {
       assert.deepEqual([...drmClients().keys()].sort(), [...before.keys()].sort(),
         `${execution}/${gpuTiming}: device teardown retained a DRM client`);
       console.log(`ok: ${execution}/${gpuTiming} bounded program allocations and released device ownership`);
+      console.log(`sample: cycles=${CYCLES} runsPerCycle=${RUNS_PER_CYCLE} elapsedMs=${performance.now() - started} sampledMaximumDrmAllocatedBytes=${maximumAllocatedBytes} postCloseAllocatedBytes=${totals[0]}`);
     }
   }
 }

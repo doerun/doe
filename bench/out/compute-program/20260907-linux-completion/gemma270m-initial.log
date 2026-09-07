@@ -1,0 +1,3 @@
+Error: preparation receipt source commit does not match the model contract
+    at validateContract (file:///home/x/deco/doe/bench/external-projects/doppler/run-gemma270m-electron.mjs:122:11)
+    at async main (file:///home/x/deco/doe/bench/external-projects/doppler/run-gemma270m-electron.mjs:317:28)

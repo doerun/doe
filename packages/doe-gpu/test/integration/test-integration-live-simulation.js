@@ -4,21 +4,28 @@ import { POLICY, DEFAULT_SHADER, STATE_FORMAT } from '../../examples/live-simula
 
 const backend = process.platform === 'darwin' ? 'metal' : 'vulkan';
 const execution = process.env.DOE_LIVE_EXECUTION ?? (backend === 'vulkan' ? 'gpu-recorded' : 'native-recorded');
+const PROLONGED_FRAMES = 4096;
+const SAMPLE_WINDOW_FRAMES = 256;
 
 function frames(session, count) {
   return new Promise((resolve, reject) => {
     const target = session.status.iteration + count;
-    const timer = setTimeout(() => finish(new Error('simulation did not advance within its configured deadline')), POLICY.requestTimeoutMs);
+    let timer;
+    function armDeadline() {
+      clearTimeout(timer);
+      timer = setTimeout(() => finish(new Error('simulation did not advance within its configured deadline')), POLICY.requestTimeoutMs);
+    }
     function finish(error) {
       clearTimeout(timer);
       session.events.off('frame', frame);
       session.events.off('failure', failure);
       if (error) reject(error); else resolve();
     }
-    function frame({ iteration }) { if (iteration >= target) finish(); }
+    function frame({ iteration }) { if (iteration >= target) finish(); else armDeadline(); }
     function failure({ message }) { finish(new Error(message)); }
     session.events.on('frame', frame);
     session.events.on('failure', failure);
+    armDeadline();
   });
 }
 
@@ -70,6 +77,26 @@ try {
   assert.equal(session.status.stateFormat, `${STATE_FORMAT}/new-interpretation`);
   await assert.rejects(session.decideReset(approved.editId, true), /stale/);
   console.log('ok: exact reset approval initializes and checks the replacement state');
+
+  if (process.argv.includes('--prolonged')) {
+    let count = 0;
+    let maximumError = 0;
+    let maximumResidentBytes = 0;
+    const started = performance.now();
+    const observe = (frame) => {
+      count += 1;
+      maximumError = Math.max(maximumError, frame.maximumError);
+      maximumResidentBytes = Math.max(maximumResidentBytes, frame.residentBytes);
+      if (count % SAMPLE_WINDOW_FRAMES === 0) {
+        console.log(`sample: frames=${count} elapsedMs=${performance.now() - started} workerRssBytes=${frame.residentBytes} maximumError=${maximumError}`);
+      }
+    };
+    session.events.on('frame', observe);
+    try { await frames(session, PROLONGED_FRAMES); }
+    finally { session.events.off('frame', observe); }
+    assert(count >= PROLONGED_FRAMES);
+    console.log(`ok: prolonged independently checked simulation frames=${count} sampledMaximumWorkerRssBytes=${maximumResidentBytes}`);
+  }
 
   const closingEdit = session.propose(valid);
   const closing = session.close();

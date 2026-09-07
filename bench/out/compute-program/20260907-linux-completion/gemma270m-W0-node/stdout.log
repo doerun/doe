@@ -1,0 +1,21 @@
+[351.4ms][TestHarness] Initializing WebGPU...
+[GPU] amd rdna-3, f16/subgroups, 4.0GB, submit probe: 0.7ms
+[386.6ms][TestHarness] GPU: hasF16=true, hasSubgroups=true
+[386.7ms][TestHarness] Fetching manifest...
+[392.5ms][TestHarness] Model: transformer
+[393.3ms][TestHarness] Creating pipeline...
+[Doppler] Log level set to: ERROR
+{
+  "ok": true,
+  "receipt": "bench/out/compute-program/20260907-linux-completion/gemma270m-W0-node/doppler_int4ple_reference_export.json",
+  "tensor": "bench/out/compute-program/20260907-linux-completion/gemma270m-W0-node/final_logits.f32",
+  "tensorSha256": "4f961414d7ef3eca43fdb9707f4e1f7210d98328567134f6bdcfa003144bac66",
+  "tokenCount": 12,
+  "logitsShape": [
+    262144
+  ],
+  "decodeStepsRequested": 4,
+  "decodeStepsProduced": 4
+}
+[Doppler] Log level set to: INFO
+[2396.5ms][Pipeline] Unloaded
