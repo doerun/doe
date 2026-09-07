@@ -250,6 +250,8 @@ pub const Emitter = struct {
         var state = try emit_spirv_fn.FunctionState(Emitter).init(self, function_index);
         defer state.deinit();
 
+        try state.declare_indexed_values();
+
         for (function.params.items, 0..) |param, param_index| {
             switch (self.module.types.get(param.ty)) {
                 .ref => {
@@ -490,6 +492,7 @@ pub const Emitter = struct {
             .composite => |values| {
                 const elem_ty = switch (self.module.types.get(ty)) {
                     .array => |array| array.elem,
+                    .vector => |vector| if (values.len == vector.len) vector.elem else return error.InvalidIr,
                     else => return error.InvalidIr,
                 };
                 var constituents = std.ArrayListUnmanaged(u32){};

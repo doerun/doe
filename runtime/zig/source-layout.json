@@ -2230,9 +2230,9 @@
       },
       "src/compiler/wgsl/emit/msl/emit_msl_ir.zig": {
         "decision": "Keep",
-        "moduleSha256": "3b3139b0f71cb314c5ef5d26ede6e6e4758047f114571a3fa388a691a2370ea4",
+        "moduleSha256": "2f82e39139e7f2877963fe28b3e49bd6030706f4791eb380cdb27dce87612e7c",
         "reason": "Keep: MSL target lowering context and IR traversal; builtins, textures, and stage-specific behavior already have named owners.",
-        "reviewer": "codex-doe-completion/2026-08-24"
+        "reviewer": "codex-constant-initializers/2026-09-07"
       },
       "src/compiler/wgsl/emit/msl/emit_msl_ir_builtins.zig": {
         "decision": "Keep",
@@ -2290,9 +2290,9 @@
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv.zig": {
         "decision": "Keep",
-        "moduleSha256": "2fcca833a49003e898b3d09d2cd94907714dc0387b736b76e9952b6be3ee7134",
+        "moduleSha256": "bc8667882895825e542279e3019210b715d3fdd9cf9a0d7c45d7ad0f44db5e55",
         "reason": "Keep: reachable compiler implementation shared by 5 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-doe-wgsl-vulkan-capabilities/2026-09-01"
+        "reviewer": "codex-constant-initializers/2026-09-07"
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig": {
         "decision": "Keep",
@@ -2302,9 +2302,9 @@
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
         "decision": "Keep",
-        "moduleSha256": "7ee378b924833877c1f0fcd4c4e69cf037cd7374aa46d914068a667168fd5514",
+        "moduleSha256": "45b28658724eb9de78eb2615c78d8d3d93a704c36e8aea7c8f484b26b1daa150",
         "reason": "Keep: SPIR-V function/control-flow lowering state machine; builtin, stage, texture, and serialization responsibilities are separate.",
-        "reviewer": "codex-gigi-compatibility/2026-08-15"
+        "reviewer": "codex-constant-initializers/2026-09-07"
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": {
         "decision": "Keep",
@@ -2398,9 +2398,9 @@
       },
       "src/compiler/wgsl/frontend/sema.zig": {
         "decision": "Keep",
-        "moduleSha256": "58d0796378c01963692352c15e774b527a7933d45d7c5cdc5cbcc14c8cd04097",
+        "moduleSha256": "5d5a3aa79f187975e9e36ebd94e450916f315a9c829b400552c1a9fa77e5e700",
         "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "reviewer": "codex-constant-initializers/2026-09-07"
       },
       "src/compiler/wgsl/frontend/sema_attrs.zig": {
         "decision": "Keep",
@@ -2458,15 +2458,15 @@
       },
       "src/compiler/wgsl/ir/ir_builder.zig": {
         "decision": "Keep",
-        "moduleSha256": "7db4de67efc3a0ff91b0b69ddbac956481845c176cdb28fa43e222da39971442",
+        "moduleSha256": "e93693161a485af2af7983b23dcd15d2057b2557aa4900219929e740bab90e9d",
         "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "reviewer": "codex-constant-initializers/2026-09-07"
       },
       "src/compiler/wgsl/ir/ir_const_eval.zig": {
         "decision": "Keep",
-        "moduleSha256": "ec6f37feb579eb30f70365e270ca3033c8c56cd72250b31dc78f790d3f1ca694",
+        "moduleSha256": "492dc87e2b6cb776a4c78a62c748e2dc940a76468601266d8e8834da549af148",
         "reason": "Keep: reachable compiler implementation shared by 5 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-world-labs-compatibility/2026-08-16"
+        "reviewer": "codex-constant-initializers/2026-09-07"
       },
       "src/compiler/wgsl/ir/ir_digest.zig": {
         "decision": "Keep",

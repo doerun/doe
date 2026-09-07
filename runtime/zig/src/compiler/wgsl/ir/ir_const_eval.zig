@@ -20,6 +20,14 @@ pub const FoldError = error{
     TypeMismatch,
 };
 
+pub fn fold_count_one_bits(value: *ir.ConstantValue) FoldError!void {
+    switch (value.*) {
+        .int => |bits| value.* = .{ .int = @popCount(@as(u32, @truncate(bits))) },
+        .composite => |elements| for (elements) |*element| try fold_count_one_bits(element),
+        else => return error.TypeMismatch,
+    }
+}
+
 /// Resolve `expr_id` to a concrete `u64` if it is (transitively) a WGSL
 /// integer constant. Returns null for expressions whose value depends on
 /// dynamic inputs (function params, locals that get reassigned, loaded

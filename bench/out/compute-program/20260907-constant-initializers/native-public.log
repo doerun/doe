@@ -1,0 +1,39 @@
+ok: native reflection rejects failures, preserves empty success, and keeps module diagnostics
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
++ [
++   {
++     length: 0,
++     lineNum: 0,
++     linePos: 0,
++     message: 'Vulkan WGSL→SPIR-V compilation failed: spirv_emit: InvalidIr: InvalidIr',
++     offset: 0,
++     type: 'error'
++   }
++ ]
+- []
+
+    at file:///home/x/deco/doe/packages/doe-gpu/test/integration/test-integration-native-reflection.js:39:12 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [
+    {
+      message: 'Vulkan WGSL→SPIR-V compilation failed: spirv_emit: InvalidIr: InvalidIr',
+      type: 'error',
+      lineNum: 0,
+      linePos: 0,
+      offset: 0,
+      length: 0
+    }
+  ],
+  expected: [],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.1

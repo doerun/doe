@@ -26,6 +26,7 @@ label below is not promotable when that generated view is partial or failing.
 | Struct types          | Full (flat)         | Nested structs parsed but not exercised in tests   |
 | var\<workgroup\>      | Full                | Workgroup-memory allocation emitted correctly      |
 | Override constants    | Full                | Emitted as pipeline-overridable specialization     |
+| Module initializers   | Explicit subset     | Literal, alias, constructor, supported scalar arithmetic, and scalar/vector `countOneBits` evaluation; unevaluated declared initializers fail with `UnsupportedConstruct` instead of becoming zero defaults |
 | Enable extensions     | Full (f16, subgrp)  | `enable f16` and `enable subgroups` pass through   |
 | Helper functions      | Full                | 702+ helpers in Doppler corpus, all passing        |
 | Builtins              | Full (compute set)  | subgroup ops, atomics, barriers, 45+ math (fract, mix, inverseSqrt, degrees, radians, atan2, ldexp, fma, smoothstep, etc.), pack/unpack (2x16float, 4x8snorm, 4x8unorm), bitcast, select, arrayLength |

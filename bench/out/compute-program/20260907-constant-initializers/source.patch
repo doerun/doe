@@ -1,0 +1,541 @@
+diff --git a/docs/process.md b/docs/process.md
+index 6e7b40f04..09f326656 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -154,6 +154,14 @@ classified and cannot be promoted by benchmark results.
+   is checked with allocation accounting when a module has multiple entry points
+   for the same stage; stage output is emitted once and transferred to the native
+   shader module without leaking the original allocation.
++  A declared module initializer must produce an evaluated constant or a typed
++  compilation failure. Missing initializers retain their permitted zero/default
++  semantics; an unsupported expression cannot be mistaken for an omitted one.
++  Constant bit-count builtins must preserve scalar and vector values, and failed
++  composite folding must release every partially evaluated operand. Canonical
++  allocation-failure tests and retained-package dispatch/readback regressions
++  cover this distinction. This corrects compilation behind existing WGSL and
++  WebGPU interfaces; descriptor and receipt schemas are unchanged.
+ - Native addon pass descriptors are checked against the runtime's pinned WebGPU
+   header by `packages/doe-gpu/scripts/build-addon.js`; an ABI layout mismatch
+   fails the build. Retained-package qualification exercises timestamp pass
+diff --git a/docs/status/compiler-and-webgpu.md b/docs/status/compiler-and-webgpu.md
+index 9cf912a13..d7562e2ab 100644
+--- a/docs/status/compiler-and-webgpu.md
++++ b/docs/status/compiler-and-webgpu.md
+@@ -144,16 +144,14 @@ empty interfaces, allocation failures, extraction capacity, source-context
+ retention, and concurrent compiler requests. The migration contract lives in
+ [shader compiler architecture](../shader-compiler-architecture.md).
+ 
+-Metal library cache ownership now resides on individual devices, with separate
+-shader leases and rollback of source and translation metadata. CPU reference
+-accounting does not qualify physical Metal behavior. Zig tests and retained-package
+-Vulkan regressions are indexed in
++Declared module initializers now evaluate or report a typed failure; unsupported
++expressions cannot silently become zero. Scalar/vector constant bit counts and
++partial-fold cleanup are covered by
++`bench/out/compute-program/20260907-constant-initializers/README.md`.
++
++Metal libraries have device owners and independent shader leases. CPU reference
++accounting and Vulkan qualification do not establish physical Metal behavior:
+ `bench/out/shader-ownership/20260906-owned-diagnostics/README.md`.
+-The same retained package passed Node, Bun, and Electron main-process qualification
+-in `bench/out/compute-program/20260906-shader-ownership-qualified/summary.json`;
+-independent image, heat, and simulation checks are retained in
+-`bench/out/compute-program/20260906-shader-ownership-audits/`.
+-Physical Metal validation is still required.
+ 
+ ## Scalar compute fusion and allocation failures
+ 
+diff --git a/docs/status/reusable-compute-programs.md b/docs/status/reusable-compute-programs.md
+index 985c3ba31..4e2887329 100644
+--- a/docs/status/reusable-compute-programs.md
++++ b/docs/status/reusable-compute-programs.md
+@@ -20,8 +20,8 @@ native journals, and reproduction commands are indexed by
+ These CPU-reference jobs remain diagnostic. They do not establish an incumbent
+ GPU-provider advantage, general acceleration of unfamiliar routines, complete
+ dependency isolation, peak GPU memory, or physical driver-loss recovery.
+-Physical Metal/D3D12, prolonged simulation resource behavior, and composed
+-program submission/copy measurements remain execution work.
++Prolonged Linux checks and remaining execution work are indexed in the
++Linux/Vulkan completion checklist below.
+ 
+ ## Live simulation editing
+ 
+@@ -37,8 +37,8 @@ application loop over the existing program contract, with policy outside Zig.
+ invalid and numerically wrong shaders, overlapping edits, unchanged state,
+ changed state interpretation, stale/declined/approved resets, cancellation, and
+ reopening. Package qualification runs the application on Node only. Physical
+-Metal, prolonged memory testing, and an application performance advantage
+-remain separate acceptance work. Commands and limits are in
++Metal and an application performance advantage remain separate acceptance work;
++prolonged Linux checks are indexed below. Commands and limits are in
+ [reusable compute programs](../reusable-compute-programs.md).
+ The same retained wrapper and native package pass controlled host qualification
+ at `bench/out/compute-program/20260906-live-simulation-qualified/summary.json`.
+@@ -200,6 +200,8 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
+ Completed checks and bounded prolonged-session evidence are indexed at
+ `bench/out/compute-program/20260907-linux-completion/README.md`. Driver-loss,
+ full residency peaks, model acceptance, and fair comparisons remain distinct.
++The initializer correction and subsequent package verification are retained at
++`bench/out/compute-program/20260907-constant-initializers/README.md`.
+ 
+ Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
+ Large Deno ratios remain suspicious host-path observations until audited;
+diff --git a/packages/doe-gpu/test/integration/test-integration-native-reflection.js b/packages/doe-gpu/test/integration/test-integration-native-reflection.js
+index 9c80979df..40e6bcb84 100644
+--- a/packages/doe-gpu/test/integration/test-integration-native-reflection.js
++++ b/packages/doe-gpu/test/integration/test-integration-native-reflection.js
+@@ -1,9 +1,12 @@
+ // Exercise native reflection failures across the actual addon boundary.
+ import assert from 'node:assert/strict';
+-import { requestAdapter } from '../../src/native.js';
++import { requestAdapter, globals } from '../../src/native.js';
+ import { loadNativeAddon } from './native-addon-test-helper.js';
+ 
+-const device = await (await requestAdapter({ backend: process.platform === 'darwin' ? 'metal' : 'vulkan' })).requestDevice();
++const { GPUBufferUsage: U, GPUMapMode: M } = globals;
++const RESULT_BYTES = 24;
++const adapter = await requestAdapter({ backend: process.platform === 'darwin' ? 'metal' : 'vulkan' });
++const device = await adapter.requestDevice();
+ const addon = await loadNativeAddon();
+ const valid = device.createShaderModule({ code: '@compute @workgroup_size(1) fn main() {}' });
+ const invalid = device.createShaderModule({ code: 'not WGSL' });
+@@ -17,8 +20,57 @@ try {
+   assert((await invalid.getCompilationInfo()).messages.some((message) => message.type === 'error'));
+   assert.deepEqual((await valid.getCompilationInfo()).messages, []);
+   console.log('ok: native reflection rejects failures, preserves empty success, and keeps module diagnostics');
++
++  const shader = device.createShaderModule({ code: `
++    const COUNT: u32 = countOneBits(3u);
++    const SIGNED: i32 = countOneBits(-1i);
++    const COUNTS: vec2<u32> = countOneBits(vec2<u32>(0u, 0x55555555u));
++    const ARRAY: array<u32, 3> = array<u32, 3>(5u, 7u, 11u);
++    @group(0) @binding(0) var<storage, read_write> output: array<u32>;
++    @compute @workgroup_size(1) fn main() {
++      output[0] = COUNT; output[1] = u32(SIGNED);
++      output[2] = COUNTS.x; output[3] = COUNTS.y;
++      output[4] = COUNTS[output[0] - 1u]; output[5] = ARRAY[2];
++    }` });
++  const buffer = device.createBuffer({ size: RESULT_BYTES, usage: U.STORAGE | U.COPY_SRC });
++  const readback = device.createBuffer({ size: RESULT_BYTES, usage: U.MAP_READ | U.COPY_DST });
++  let pipeline;
++  let group;
++  let layout;
++  try {
++    assert.deepEqual((await shader.getCompilationInfo()).messages, []);
++    pipeline = device.createComputePipeline({ layout: 'auto', compute: { module: shader, entryPoint: 'main' } });
++    layout = pipeline.getBindGroupLayout(0);
++    group = device.createBindGroup({ layout, entries: [{ binding: 0, resource: { buffer } }] });
++    const encoder = device.createCommandEncoder();
++    const pass = encoder.beginComputePass();
++    pass.setPipeline(pipeline);
++    pass.setBindGroup(0, group);
++    pass.dispatchWorkgroups(1);
++    pass.end();
++    encoder.copyBufferToBuffer(buffer, 0, readback, 0, RESULT_BYTES);
++    device.queue.submit([encoder.finish()]);
++    await readback.mapAsync(M.READ);
++    assert.deepEqual(Array.from(new Uint32Array(readback.getMappedRange())), [2, 32, 0, 16, 16, 11]);
++    readback.unmap();
++    console.log('ok: constant builtin initializers execute their computed scalar and vector values');
++  } finally {
++    group?.destroy?.();
++    layout?.destroy?.();
++    pipeline?.destroy?.();
++    shader.destroy?.();
++    buffer.destroy();
++    readback.destroy();
++  }
++  const unsupported = device.createShaderModule({ code: 'const VALUE: f32 = sin(1.0); @compute @workgroup_size(1) fn main() {}' });
++  try {
++    assert((await unsupported.getCompilationInfo()).messages.some((message) => message.type === 'error'));
++    assert.deepEqual((await valid.getCompilationInfo()).messages, []);
++    console.log('ok: unevaluated constant initializers report failure and preserve earlier shader diagnostics');
++  } finally { unsupported.destroy?.(); }
+ } finally {
+   valid.destroy?.();
+   invalid.destroy?.();
+   device.destroy();
++  adapter.destroy();
+ }
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 6b8e38a77..7cfa48c02 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -2230,9 +2230,9 @@
+       },
+       "src/compiler/wgsl/emit/msl/emit_msl_ir.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "3b3139b0f71cb314c5ef5d26ede6e6e4758047f114571a3fa388a691a2370ea4",
++        "moduleSha256": "2f82e39139e7f2877963fe28b3e49bd6030706f4791eb380cdb27dce87612e7c",
+         "reason": "Keep: MSL target lowering context and IR traversal; builtins, textures, and stage-specific behavior already have named owners.",
+-        "reviewer": "codex-doe-completion/2026-08-24"
++        "reviewer": "codex-constant-initializers/2026-09-07"
+       },
+       "src/compiler/wgsl/emit/msl/emit_msl_ir_builtins.zig": {
+         "decision": "Keep",
+@@ -2290,9 +2290,9 @@
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "2fcca833a49003e898b3d09d2cd94907714dc0387b736b76e9952b6be3ee7134",
++        "moduleSha256": "bc8667882895825e542279e3019210b715d3fdd9cf9a0d7c45d7ad0f44db5e55",
+         "reason": "Keep: reachable compiler implementation shared by 5 production consumers with no conflicting ownership signal.",
+-        "reviewer": "codex-doe-wgsl-vulkan-capabilities/2026-09-01"
++        "reviewer": "codex-constant-initializers/2026-09-07"
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig": {
+         "decision": "Keep",
+@@ -2302,9 +2302,9 @@
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "7ee378b924833877c1f0fcd4c4e69cf037cd7374aa46d914068a667168fd5514",
++        "moduleSha256": "45b28658724eb9de78eb2615c78d8d3d93a704c36e8aea7c8f484b26b1daa150",
+         "reason": "Keep: SPIR-V function/control-flow lowering state machine; builtin, stage, texture, and serialization responsibilities are separate.",
+-        "reviewer": "codex-gigi-compatibility/2026-08-15"
++        "reviewer": "codex-constant-initializers/2026-09-07"
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": {
+         "decision": "Keep",
+@@ -2398,9 +2398,9 @@
+       },
+       "src/compiler/wgsl/frontend/sema.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "58d0796378c01963692352c15e774b527a7933d45d7c5cdc5cbcc14c8cd04097",
++        "moduleSha256": "5d5a3aa79f187975e9e36ebd94e450916f315a9c829b400552c1a9fa77e5e700",
+         "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "reviewer": "codex-constant-initializers/2026-09-07"
+       },
+       "src/compiler/wgsl/frontend/sema_attrs.zig": {
+         "decision": "Keep",
+@@ -2458,15 +2458,15 @@
+       },
+       "src/compiler/wgsl/ir/ir_builder.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "7db4de67efc3a0ff91b0b69ddbac956481845c176cdb28fa43e222da39971442",
++        "moduleSha256": "e93693161a485af2af7983b23dcd15d2057b2557aa4900219929e740bab90e9d",
+         "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "reviewer": "codex-constant-initializers/2026-09-07"
+       },
+       "src/compiler/wgsl/ir/ir_const_eval.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "ec6f37feb579eb30f70365e270ca3033c8c56cd72250b31dc78f790d3f1ca694",
++        "moduleSha256": "492dc87e2b6cb776a4c78a62c748e2dc940a76468601266d8e8834da549af148",
+         "reason": "Keep: reachable compiler implementation shared by 5 production consumers with no conflicting ownership signal.",
+-        "reviewer": "codex-world-labs-compatibility/2026-08-16"
++        "reviewer": "codex-constant-initializers/2026-09-07"
+       },
+       "src/compiler/wgsl/ir/ir_digest.zig": {
+         "decision": "Keep",
+diff --git a/runtime/zig/src/compiler/wgsl/WGSL_SUPPORT.md b/runtime/zig/src/compiler/wgsl/WGSL_SUPPORT.md
+index bc16735fe..a2241734a 100644
+--- a/runtime/zig/src/compiler/wgsl/WGSL_SUPPORT.md
++++ b/runtime/zig/src/compiler/wgsl/WGSL_SUPPORT.md
+@@ -26,6 +26,7 @@ label below is not promotable when that generated view is partial or failing.
+ | Struct types          | Full (flat)         | Nested structs parsed but not exercised in tests   |
+ | var\<workgroup\>      | Full                | Workgroup-memory allocation emitted correctly      |
+ | Override constants    | Full                | Emitted as pipeline-overridable specialization     |
++| Module initializers   | Explicit subset     | Literal, alias, constructor, supported scalar arithmetic, and scalar/vector `countOneBits` evaluation; unevaluated declared initializers fail with `UnsupportedConstruct` instead of becoming zero defaults |
+ | Enable extensions     | Full (f16, subgrp)  | `enable f16` and `enable subgroups` pass through   |
+ | Helper functions      | Full                | 702+ helpers in Doppler corpus, all passing        |
+ | Builtins              | Full (compute set)  | subgroup ops, atomics, barriers, 45+ math (fract, mix, inverseSqrt, degrees, radians, atan2, ldexp, fma, smoothstep, etc.), pack/unpack (2x16float, 4x8snorm, 4x8unorm), bitcast, select, arrayLength |
+diff --git a/runtime/zig/src/compiler/wgsl/emit/msl/emit_msl_ir.zig b/runtime/zig/src/compiler/wgsl/emit/msl/emit_msl_ir.zig
+index 92ae1be88..bcca3b769 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/msl/emit_msl_ir.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/msl/emit_msl_ir.zig
+@@ -804,16 +804,19 @@ const Emitter = struct {
+             },
+             .float => |value| try self.write_float(value),
+             .composite => |values| {
++                const is_vector = self.module.types.get(ty) == .vector;
+                 const elem_ty = switch (self.module.types.get(ty)) {
+                     .array => |array| array.elem,
++                    .vector => |vector| if (values.len == vector.len) vector.elem else return error.InvalidIr,
+                     else => return error.InvalidIr,
+                 };
+-                try self.write("{");
++                if (is_vector) try self.emit_type(ty);
++                try self.write(if (is_vector) "(" else "{");
+                 for (values, 0..) |value, index| {
+                     if (index > 0) try self.write(", ");
+                     try self.emit_constant(value, elem_ty);
+                 }
+-                try self.write("}");
++                try self.write(if (is_vector) ")" else "}");
+             },
+         }
+     }
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig
+index dbe5f8cf8..eb65b0337 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig
+@@ -250,6 +250,8 @@ pub const Emitter = struct {
+         var state = try emit_spirv_fn.FunctionState(Emitter).init(self, function_index);
+         defer state.deinit();
+ 
++        try state.declare_indexed_values();
++
+         for (function.params.items, 0..) |param, param_index| {
+             switch (self.module.types.get(param.ty)) {
+                 .ref => {
+@@ -490,6 +492,7 @@ pub const Emitter = struct {
+             .composite => |values| {
+                 const elem_ty = switch (self.module.types.get(ty)) {
+                     .array => |array| array.elem,
++                    .vector => |vector| if (values.len == vector.len) vector.elem else return error.InvalidIr,
+                     else => return error.InvalidIr,
+                 };
+                 var constituents = std.ArrayListUnmanaged(u32){};
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
+index 5cc9a9420..50fd84249 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
+@@ -31,6 +31,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
+         param_value_ids: []u32,
+         local_ptr_ids: []u32,
+         local_value_ids: []u32,
++        indexed_values: std.ArrayListUnmanaged(struct { base: ir.ExprId, pointer: u32 }) = .{},
+         access_chain_cache: std.ArrayListUnmanaged(AccessChainEntry) = .{},
+         load_cache: std.ArrayListUnmanaged(LoadCacheEntry) = .{},
+         result_inst_cache: std.ArrayListUnmanaged(ResultInstEntry) = .{},
+@@ -62,6 +63,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
+         }
+ 
+         pub fn deinit(self: *@This()) void {
++            self.indexed_values.deinit(self.emitter.alloc);
+             for (self.access_chain_cache.items) |entry| self.emitter.alloc.free(entry.indices);
+             self.access_chain_cache.deinit(self.emitter.alloc);
+             self.load_cache.deinit(self.emitter.alloc);
+@@ -85,6 +87,28 @@ pub fn FunctionState(comptime EmitterT: type) type {
+             };
+         }
+ 
++        pub fn declare_indexed_values(self: *@This()) EmitError!void {
++            for (self.function.exprs.items) |expr| {
++                if (expr.category != .value or expr.data != .index) continue;
++                const index = expr.data.index;
++                const base_ty = self.function.exprs.items[index.base].ty;
++                switch (self.emitter.module.types.get(base_ty)) {
++                    .array, .matrix => {},
++                    else => continue,
++                }
++                if (ir_const_eval.resolve_constant_int(self.emitter.module, self.function, index.index) != null) continue;
++                if (self.indexed_value_pointer(index.base) != null) continue;
++                const ptr_type = try self.emitter.builder.type_pointer(spirv.StorageClass.Function, try self.emitter.lower_type(base_ty));
++                const pointer = try self.emitter.builder.variable_function(ptr_type);
++                try self.indexed_values.append(self.emitter.alloc, .{ .base = index.base, .pointer = pointer });
++            }
++        }
++
++        fn indexed_value_pointer(self: *@This(), base: ir.ExprId) ?u32 {
++            for (self.indexed_values.items) |entry| if (entry.base == base) return entry.pointer;
++            return null;
++        }
++
+         pub fn is_ssa_promotable_param(self: *@This(), param_index: u32) bool {
+             const param = self.function.params.items[param_index];
+             const type_ok = switch (self.emitter.module.types.get(param.ty)) {
+@@ -366,7 +390,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
+                 .index => |index| if (expr.category == .ref)
+                     return error.InvalidIr
+                 else
+-                    try self.emit_composite_extract(try self.emit_value_expr(index.base), expr.ty, try self.literal_index(index.index)),
++                    try self.emit_index_value(index.base, index.index, expr.ty),
+             };
+         }
+ 
+@@ -953,12 +977,24 @@ pub fn FunctionState(comptime EmitterT: type) type {
+             };
+         }
+ 
+-        fn literal_index(self: *@This(), expr_id: ir.ExprId) EmitError!u32 {
+-            const expr = self.function.exprs.items[expr_id];
+-            return switch (expr.data) {
+-                .int_lit => |value| @truncate(value),
+-                else => error.UnsupportedConstruct,
+-            };
++        fn emit_index_value(self: *@This(), base: ir.ExprId, index: ir.ExprId, result_ty: ir.TypeId) EmitError!u32 {
++            const composite_id = try self.emit_value_expr(base);
++            if (ir_const_eval.resolve_constant_int(self.emitter.module, self.function, index)) |value| {
++                return try self.emit_composite_extract(composite_id, result_ty, @truncate(value));
++            }
++            const base_ty = self.function.exprs.items[base].ty;
++            if (self.indexed_value_pointer(base)) |pointer| {
++                try self.emitter.emit_store(pointer, composite_id);
++                const ptr_type = try self.emitter.builder.type_pointer(spirv.StorageClass.Function, try self.emitter.lower_type(result_ty));
++                const element = try self.emit_result_inst(spirv.Opcode.AccessChain, ptr_type, &.{ pointer, try self.emit_value_expr(index) });
++                return try self.emitter.emit_function_load(try self.emitter.lower_type(result_ty), element);
++            }
++            if (self.emitter.module.types.get(base_ty) != .vector) return error.UnsupportedConstruct;
++            return try self.emit_result_inst(
++                spirv.Opcode.VectorExtractDynamic,
++                try self.emitter.lower_type(result_ty),
++                &.{ composite_id, try self.emit_value_expr(index) },
++            );
+         }
+ 
+         fn switch_selector_literal(self: *@This(), expr_id: ir.ExprId) EmitError!u32 {
+diff --git a/runtime/zig/src/compiler/wgsl/frontend/sema.zig b/runtime/zig/src/compiler/wgsl/frontend/sema.zig
+index 26126ee92..2bf9a4ab2 100644
+--- a/runtime/zig/src/compiler/wgsl/frontend/sema.zig
++++ b/runtime/zig/src/compiler/wgsl/frontend/sema.zig
+@@ -560,8 +560,9 @@ const Analyzer = struct {
+         out.symbol = symbol.?;
+         return switch (symbol.?) {
+             .global => |index| blk: {
+-                out.category = if (is_handle_type(self.module.types.get(self.module.globals.items[index].ty))) .value else .ref;
+-                break :blk self.module.globals.items[index].ty;
++                const global = self.module.globals.items[index];
++                out.category = if (global.class == .const_ or is_handle_type(self.module.types.get(global.ty))) .value else .ref;
++                break :blk global.ty;
+             },
+             .param => |index| blk: {
+                 out.category = .ref;
+diff --git a/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig b/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig
+index 29f50ab52..472ac3b4c 100644
+--- a/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig
++++ b/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig
+@@ -72,14 +72,14 @@ fn copy_globals(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Modu
+         switch (node.tag) {
+             .global_var => {
+                 const init_node = tree.extra_data.items[node.data.rhs + 3];
+-                if (init_node != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, init_node, 0);
++                if (init_node != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, init_node, 0) orelse return error.UnsupportedConstruct;
+             },
+             .const_decl => {
+-                if (node.data.rhs != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, node.data.rhs, 0);
++                if (node.data.rhs != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, node.data.rhs, 0) orelse return error.UnsupportedConstruct;
+             },
+             .override_decl => {
+                 const init_node = tree.extra_data.items[node.data.lhs + 2];
+-                if (init_node != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, init_node, 0);
++                if (init_node != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, init_node, 0) orelse return error.UnsupportedConstruct;
+             },
+             else => {},
+         }
+@@ -636,7 +636,8 @@ fn constant_from_node(
+         },
+         .unary_expr => switch (tree.tokens.items[node.main_token].tag) {
+             .@"-" => blk: {
+-                const inner = try constant_from_node(allocator, tree, semantic, failure, node.data.lhs, depth + 1) orelse return error.UnsupportedConstruct;
++                var inner = try constant_from_node(allocator, tree, semantic, failure, node.data.lhs, depth + 1) orelse return error.UnsupportedConstruct;
++                defer inner.deinit(allocator);
+                 switch (inner) {
+                     .int => |value| break :blk ir.ConstantValue{ .int = (~value) +% 1 },
+                     .float => |value| break :blk ir.ConstantValue{ .float = -value },
+@@ -646,10 +647,20 @@ fn constant_from_node(
+             else => error.UnsupportedConstruct,
+         },
+         .binary_expr => blk: {
+-            const lhs = try constant_from_node(allocator, tree, semantic, failure, node.data.lhs, depth + 1) orelse return error.UnsupportedConstruct;
+-            const rhs = try constant_from_node(allocator, tree, semantic, failure, node.data.rhs, depth + 1) orelse return error.UnsupportedConstruct;
++            var lhs = try constant_from_node(allocator, tree, semantic, failure, node.data.lhs, depth + 1) orelse return error.UnsupportedConstruct;
++            defer lhs.deinit(allocator);
++            var rhs = try constant_from_node(allocator, tree, semantic, failure, node.data.rhs, depth + 1) orelse return error.UnsupportedConstruct;
++            defer rhs.deinit(allocator);
+             break :blk try fold_scalar_binary(map_binary_op(tree.tokens.items[node.main_token].tag), lhs, rhs);
+         },
++        .call_expr => blk: {
++            const name = tree.tokenSlice(node.main_token);
++            if (!std.mem.eql(u8, name, "countOneBits") or node.data.rhs != 1) return error.UnsupportedConstruct;
++            var value = try constant_from_node(allocator, tree, semantic, failure, tree.extra_data.items[node.data.lhs], depth + 1) orelse return error.UnsupportedConstruct;
++            errdefer value.deinit(allocator);
++            ir_const_eval.fold_count_one_bits(&value) catch return error.UnsupportedConstruct;
++            break :blk value;
++        },
+         .construct_expr => blk: {
+             const span = sema_helpers.decode_packed_span(node.data.rhs);
+             if (span.len == 1) {
+diff --git a/runtime/zig/src/compiler/wgsl/ir/ir_const_eval.zig b/runtime/zig/src/compiler/wgsl/ir/ir_const_eval.zig
+index b8aed48b4..ea4fa3a2e 100644
+--- a/runtime/zig/src/compiler/wgsl/ir/ir_const_eval.zig
++++ b/runtime/zig/src/compiler/wgsl/ir/ir_const_eval.zig
+@@ -20,6 +20,14 @@ pub const FoldError = error{
+     TypeMismatch,
+ };
+ 
++pub fn fold_count_one_bits(value: *ir.ConstantValue) FoldError!void {
++    switch (value.*) {
++        .int => |bits| value.* = .{ .int = @popCount(@as(u32, @truncate(bits))) },
++        .composite => |elements| for (elements) |*element| try fold_count_one_bits(element),
++        else => return error.TypeMismatch,
++    }
++}
++
+ /// Resolve `expr_id` to a concrete `u64` if it is (transitively) a WGSL
+ /// integer constant. Returns null for expressions whose value depends on
+ /// dynamic inputs (function params, locals that get reassigned, loaded
+diff --git a/runtime/zig/tests/wgsl/coverage_type_decl_test.zig b/runtime/zig/tests/wgsl/coverage_type_decl_test.zig
+index bf7997d2c..c080aa8f7 100644
+--- a/runtime/zig/tests/wgsl/coverage_type_decl_test.zig
++++ b/runtime/zig/tests/wgsl/coverage_type_decl_test.zig
+@@ -162,6 +162,67 @@ test "declarations: module-scope const used in function body through MSL" {
+     try std.testing.expect(len > 0);
+ }
+ 
++const CONSTANT_BIT_COUNTS =
++    \\const SCALAR: u32 = countOneBits(3u);
++    \\const SIGNED: i32 = countOneBits(-1i);
++    \\const VECTOR: vec2<u32> = countOneBits(vec2<u32>(0u, 0x55555555u));
++    \\const ARRAY: array<u32, 3> = array<u32, 3>(5u, 7u, 11u);
++    \\@group(0) @binding(0) var<storage, read_write> output: array<u32>;
++    \\@compute @workgroup_size(1) fn main() {
++    \\    output[0] = SCALAR; output[1] = u32(SIGNED);
++    \\    output[2] = VECTOR.x; output[3] = VECTOR.y;
++    \\    output[4] = VECTOR[output[0] - 1u];
++    \\    output[5] = ARRAY[output[0]];
++    \\}
++;
++
++fn constantBitCounts(allocator: std.mem.Allocator) !void {
++    var module = try analyzeToIr(allocator, CONSTANT_BIT_COUNTS);
++    defer module.deinit();
++    try std.testing.expectEqual(@as(u64, 2), module.globals.items[0].initializer.?.int);
++    try std.testing.expectEqual(@as(u64, 32), module.globals.items[1].initializer.?.int);
++    const elements = module.globals.items[2].initializer.?.composite;
++    try std.testing.expectEqual(@as(usize, 2), elements.len);
++    try std.testing.expectEqual(@as(u64, 0), elements[0].int);
++    try std.testing.expectEqual(@as(u64, 16), elements[1].int);
++}
++
++fn emitConstantBitCounts(allocator: std.mem.Allocator) !void {
++    var spirv: [MAX_SPIRV_OUTPUT]u8 = undefined;
++    try std.testing.expect(try translateToSpirv(allocator, CONSTANT_BIT_COUNTS, &spirv) > 0);
++    var msl: [MAX_OUTPUT]u8 = undefined;
++    const len = try translateToMsl(allocator, CONSTANT_BIT_COUNTS, &msl);
++    try std.testing.expect(contains(msl[0..len], "uint2(0u, 16u)"));
++}
++
++test "declarations: constant bit counts publish exact values and own composite storage" {
++    try std.testing.checkAllAllocationFailures(std.testing.allocator, constantBitCounts, .{});
++    try std.testing.checkAllAllocationFailures(std.testing.allocator, emitConstantBitCounts, .{});
++}
++
++fn rejectedConstant(allocator: std.mem.Allocator, source: []const u8) !void {
++    var module = analyzeToIr(allocator, source) catch |err| {
++        if (err == error.OutOfMemory) return err;
++        try std.testing.expectEqual(error.UnsupportedConstruct, err);
++        return;
++    };
++    defer module.deinit();
++    return error.TestExpectedError;
++}
++
++test "declarations: unevaluated initializers reject and release partially folded operands" {
++    for ([_][]const u8{
++        "const VALUE: f32 = sin(1.0); @compute @workgroup_size(1) fn main() {}",
++        "var<private> VALUE: f32 = sin(1.0); @compute @workgroup_size(1) fn main() {}",
++        "override VALUE: f32 = sin(1.0); @compute @workgroup_size(1) fn main() {}",
++        "const VALUE: vec2<f32> = -vec2<f32>(1.0, 2.0); @compute @workgroup_size(1) fn main() {}",
++        "const VALUE: vec2<u32> = vec2<u32>(1u, 2u) + vec2<u32>(3u, 4u); @compute @workgroup_size(1) fn main() {}",
++    }) |source| try std.testing.checkAllAllocationFailures(std.testing.allocator, rejectedConstant, .{source});
++    var valid = try analyzeToIr(std.testing.allocator, "var<private> VALUE: u32; @compute @workgroup_size(1) fn main() {}");
++    defer valid.deinit();
++    try std.testing.expect(valid.globals.items[0].initializer == null);
++}
++
+ test "declarations: override constant with default through IR" {
+     const source =
+         \\override BLOCK_SIZE: u32 = 64u;

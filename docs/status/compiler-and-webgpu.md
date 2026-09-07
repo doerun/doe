@@ -144,16 +144,14 @@ empty interfaces, allocation failures, extraction capacity, source-context
 retention, and concurrent compiler requests. The migration contract lives in
 [shader compiler architecture](../shader-compiler-architecture.md).
 
-Metal library cache ownership now resides on individual devices, with separate
-shader leases and rollback of source and translation metadata. CPU reference
-accounting does not qualify physical Metal behavior. Zig tests and retained-package
-Vulkan regressions are indexed in
+Declared module initializers now evaluate or report a typed failure; unsupported
+expressions cannot silently become zero. Scalar/vector constant bit counts and
+partial-fold cleanup are covered by
+`bench/out/compute-program/20260907-constant-initializers/README.md`.
+
+Metal libraries have device owners and independent shader leases. CPU reference
+accounting and Vulkan qualification do not establish physical Metal behavior:
 `bench/out/shader-ownership/20260906-owned-diagnostics/README.md`.
-The same retained package passed Node, Bun, and Electron main-process qualification
-in `bench/out/compute-program/20260906-shader-ownership-qualified/summary.json`;
-independent image, heat, and simulation checks are retained in
-`bench/out/compute-program/20260906-shader-ownership-audits/`.
-Physical Metal validation is still required.
 
 ## Scalar compute fusion and allocation failures
 

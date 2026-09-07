@@ -1,0 +1,28 @@
+ok: native reflection rejects failures, preserves empty success, and keeps module diagnostics
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  [
+-   2,
+-   32,
+    0,
++   0,
++   0,
++   0
+-   16
+  ]
+
+    at file:///home/x/deco/doe/packages/doe-gpu/test/integration/test-integration-native-reflection.js:52:12 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [ 0, 0, 0, 0 ],
+  expected: [ 2, 32, 0, 16 ],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.1

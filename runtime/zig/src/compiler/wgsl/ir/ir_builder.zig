@@ -72,14 +72,14 @@ fn copy_globals(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Modu
         switch (node.tag) {
             .global_var => {
                 const init_node = tree.extra_data.items[node.data.rhs + 3];
-                if (init_node != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, init_node, 0);
+                if (init_node != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, init_node, 0) orelse return error.UnsupportedConstruct;
             },
             .const_decl => {
-                if (node.data.rhs != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, node.data.rhs, 0);
+                if (node.data.rhs != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, node.data.rhs, 0) orelse return error.UnsupportedConstruct;
             },
             .override_decl => {
                 const init_node = tree.extra_data.items[node.data.lhs + 2];
-                if (init_node != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, init_node, 0);
+                if (init_node != NULL_NODE) initializer = try constant_from_node(allocator, tree, semantic, failure, init_node, 0) orelse return error.UnsupportedConstruct;
             },
             else => {},
         }
@@ -636,7 +636,8 @@ fn constant_from_node(
         },
         .unary_expr => switch (tree.tokens.items[node.main_token].tag) {
             .@"-" => blk: {
-                const inner = try constant_from_node(allocator, tree, semantic, failure, node.data.lhs, depth + 1) orelse return error.UnsupportedConstruct;
+                var inner = try constant_from_node(allocator, tree, semantic, failure, node.data.lhs, depth + 1) orelse return error.UnsupportedConstruct;
+                defer inner.deinit(allocator);
                 switch (inner) {
                     .int => |value| break :blk ir.ConstantValue{ .int = (~value) +% 1 },
                     .float => |value| break :blk ir.ConstantValue{ .float = -value },
@@ -646,9 +647,19 @@ fn constant_from_node(
             else => error.UnsupportedConstruct,
         },
         .binary_expr => blk: {
-            const lhs = try constant_from_node(allocator, tree, semantic, failure, node.data.lhs, depth + 1) orelse return error.UnsupportedConstruct;
-            const rhs = try constant_from_node(allocator, tree, semantic, failure, node.data.rhs, depth + 1) orelse return error.UnsupportedConstruct;
+            var lhs = try constant_from_node(allocator, tree, semantic, failure, node.data.lhs, depth + 1) orelse return error.UnsupportedConstruct;
+            defer lhs.deinit(allocator);
+            var rhs = try constant_from_node(allocator, tree, semantic, failure, node.data.rhs, depth + 1) orelse return error.UnsupportedConstruct;
+            defer rhs.deinit(allocator);
             break :blk try fold_scalar_binary(map_binary_op(tree.tokens.items[node.main_token].tag), lhs, rhs);
+        },
+        .call_expr => blk: {
+            const name = tree.tokenSlice(node.main_token);
+            if (!std.mem.eql(u8, name, "countOneBits") or node.data.rhs != 1) return error.UnsupportedConstruct;
+            var value = try constant_from_node(allocator, tree, semantic, failure, tree.extra_data.items[node.data.lhs], depth + 1) orelse return error.UnsupportedConstruct;
+            errdefer value.deinit(allocator);
+            ir_const_eval.fold_count_one_bits(&value) catch return error.UnsupportedConstruct;
+            break :blk value;
         },
         .construct_expr => blk: {
             const span = sema_helpers.decode_packed_span(node.data.rhs);

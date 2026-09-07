@@ -1,0 +1,122 @@
+Zig source architecture review signals:
+src/backend/vulkan/native_runtime.zig: 1004 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_render.zig: 981 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_resources.zig: 1069 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_upload.zig: 843 lines exceeds advisory review signal 800
+src/backend/vulkan/vulkan_surface.zig: 808 lines exceeds advisory review signal 800
+src/compiler/tsir/digest.zig: 999 lines exceeds advisory review signal 800
+src/compiler/tsir/emit_kernel_body.zig: 895 lines exceeds advisory review signal 800
+src/compiler/tsir/frontend.zig: 885 lines exceeds advisory review signal 800
+src/compiler/tsir/reference_extended_ops.zig: 841 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_exec_v1.zig: 989 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_compile_source.zig: 895 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_runtime.zig: 837 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_ir_walk.zig: 888 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_layout.zig: 911 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/msl/emit_msl_ir.zig: 973 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig: 839 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig: 1011 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/parser_expr.zig: 851 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/sema.zig: 806 lines exceeds advisory review signal 800
+src/compiler/wgsl/ir/ir_transform_robustness.zig: 984 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_proof_match.zig: 890 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_uniform_bounds.zig: 878 lines exceeds advisory review signal 800
+src/dropin/dropin_browser_shared_memory.zig: 806 lines exceeds advisory review signal 800
+src/native/compute/doe_compute_fast.zig: 1062 lines exceeds advisory review signal 800
+src/native/queue/doe_queue_submit_metal.zig: 837 lines exceeds advisory review signal 800
+src/native/resource/doe_texture_sampler_native.zig: 829 lines exceeds advisory review signal 800
+src/native/shader/doe_shader_native.zig: 956 lines exceeds advisory review signal 800
+src/native/vulkan/vulkan_compute_native.zig: 1039 lines exceeds advisory review signal 800
+src/runtime/trace/trace.zig: 879 lines exceeds advisory review signal 800
+src/spatial/csl/csl_host_plan_tool.zig: 828 lines exceeds advisory review signal 800
+test
++- run test stderr
+[default] (warn): doe: createShaderModule failed: unsupported sType 0xffffffff
+[default] (warn): doe: createComputePipeline failed: shader module is null or invalid. Ensure createShaderModule succeeded (check stderr for WGSL translation errors).
+[default] (warn): doe: createShaderModule failed: MTLLibrary creation returned null
+[default] (warn): doe_compute_preconditions: storage dispatch precondition failed: requiredBytes=3072 boundBytes=2047 kind=flat_index_2d_dispatch_x group=0 binding=1
+[default] (warn): doe_compute_preconditions: storage dispatch precondition failed: buffer missing group=0 binding=0
+test-wgsl
++- run test 1114/1116 passed, 2 failed
+error: 'tests.wgsl.coverage_type_decl_test.test.declarations: constant bit counts publish exact values and own composite storage' failed: /home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig:493:29: 0x13f1eb5 in lower_constant (test_suite_wgsl.zig)
+                    else => return error.InvalidIr,
+                            ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig:147:41: 0x13dc2ec in emit_globals (test_suite_wgsl.zig)
+                    const constant_id = try self.lower_constant(initializer, global.ty);
+                                        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig:109:9: 0x13d7051 in emit_module_impl (test_suite_wgsl.zig)
+        try self.emit_globals();
+        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig:25:5: 0x13d4a59 in emitImpl (test_suite_wgsl.zig)
+    try emitter.emit_module_impl(stage_filter);
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig:13:5: 0x13d208d in emit (test_suite_wgsl.zig)
+    return emitImpl(module, null, out);
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig:37:9: 0x13d1505 in translateToSpirvWithDiagnostic (test_suite_wgsl.zig)
+        return kind;
+        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig:46:5: 0x13d0dc7 in translateToSpirv (test_suite_wgsl.zig)
+    return translateToSpirvWithDiagnostic(allocator, wgsl, out, analysis.compatibilityDiagnostic());
+    ^
+/home/x/deco/doe/runtime/zig/tests/wgsl/coverage_type_decl_test.zig:191:28: 0x157f004 in test.declarations: constant bit counts publish exact values and own composite storage (test_suite_wgsl.zig)
+    try std.testing.expect(try translateToSpirv(std.testing.allocator, CONSTANT_BIT_COUNTS, &spirv) > 0);
+                           ^
+error: 'tests.wgsl.coverage_type_decl_test.test.declarations: module constant arrays larger than inline sema storage through MSL and SPIR-V' failed: /home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig:962:68: 0x142e639 in emit_index_value (test_suite_wgsl.zig)
+            if (self.emitter.module.types.get(base_ty) != .vector) return error.UnsupportedConstruct;
+                                                                   ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig:369:21: 0x1414967 in emit_value_expr (test_suite_wgsl.zig)
+                    try self.emit_index_value(index.base, index.index, expr.ty),
+                    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig:129:36: 0x13fadee in emit_stmt (test_suite_wgsl.zig)
+                    var value_id = try self.emit_value_expr(assign.rhs);
+                                   ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig:105:29: 0x13fa5cb in emit_stmt (test_suite_wgsl.zig)
+                        if (try self.emit_stmt(self.function.stmt_children.items[range.start + i])) return true;
+                            ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig:296:28: 0x13e06e8 in emit_function (test_suite_wgsl.zig)
+        const terminated = try state.emit_stmt(function.root_stmt);
+                           ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig:113:13: 0x13d7190 in emit_module_impl (test_suite_wgsl.zig)
+            try self.emit_function(@intCast(function_index));
+            ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig:25:5: 0x13d4a59 in emitImpl (test_suite_wgsl.zig)
+    try emitter.emit_module_impl(stage_filter);
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig:13:5: 0x13d208d in emit (test_suite_wgsl.zig)
+    return emitImpl(module, null, out);
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig:37:9: 0x13d1505 in translateToSpirvWithDiagnostic (test_suite_wgsl.zig)
+        return kind;
+        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig:46:5: 0x13d0dc7 in translateToSpirv (test_suite_wgsl.zig)
+    return translateToSpirvWithDiagnostic(allocator, wgsl, out, analysis.compatibilityDiagnostic());
+    ^
+/home/x/deco/doe/runtime/zig/tests/wgsl/coverage_type_decl_test.zig:478:23: 0x15871b1 in test.declarations: module constant arrays larger than inline sema storage through MSL and SPIR-V (test_suite_wgsl.zig)
+    const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);
+                      ^
+error: while executing test 'src.contracts.artifact.test.artifact identity and hash are stable', the following test command failed:
+./.zig-cache/o/536970d0531555f2d91396e019c88bc7/test --cache-dir=./.zig-cache --seed=0xd5ea49d6 --listen=-
+
+Build Summary: 11/13 steps succeeded; 1 failed; 3268/3274 tests passed; 4 skipped; 2 failed
+test success
++- run python3 success 873ms MaxRSS:13M
++- run python3 success 479ms MaxRSS:28M
++- run python3 success 57ms MaxRSS:22M
++- run python3 success 55ms MaxRSS:19M
++- run python3 success 40ms MaxRSS:20M
++- run python3 success 116ms MaxRSS:11M
++- run test 2154 passed 4 skipped 1s MaxRSS:85M
+   +- compile test Debug native success 1s MaxRSS:297M
+      +- options success
+test-wgsl transitive failure
++- run python3 (reused)
++- run python3 (reused)
++- run python3 (reused)
++- run python3 (reused)
++- run test 1114/1116 passed, 2 failed
+   +- compile test Debug native success 1s MaxRSS:217M
+      +- options (reused)
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/733fbf42161afb46891734eb0a832a0e/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0xd5ea49d6 -Z8d11e32b158822d8 test test-wgsl --summary all

@@ -804,16 +804,19 @@ const Emitter = struct {
             },
             .float => |value| try self.write_float(value),
             .composite => |values| {
+                const is_vector = self.module.types.get(ty) == .vector;
                 const elem_ty = switch (self.module.types.get(ty)) {
                     .array => |array| array.elem,
+                    .vector => |vector| if (values.len == vector.len) vector.elem else return error.InvalidIr,
                     else => return error.InvalidIr,
                 };
-                try self.write("{");
+                if (is_vector) try self.emit_type(ty);
+                try self.write(if (is_vector) "(" else "{");
                 for (values, 0..) |value, index| {
                     if (index > 0) try self.write(", ");
                     try self.emit_constant(value, elem_ty);
                 }
-                try self.write("}");
+                try self.write(if (is_vector) ")" else "}");
             },
         }
     }

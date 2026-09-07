@@ -162,6 +162,67 @@ test "declarations: module-scope const used in function body through MSL" {
     try std.testing.expect(len > 0);
 }
 
+const CONSTANT_BIT_COUNTS =
+    \\const SCALAR: u32 = countOneBits(3u);
+    \\const SIGNED: i32 = countOneBits(-1i);
+    \\const VECTOR: vec2<u32> = countOneBits(vec2<u32>(0u, 0x55555555u));
+    \\const ARRAY: array<u32, 3> = array<u32, 3>(5u, 7u, 11u);
+    \\@group(0) @binding(0) var<storage, read_write> output: array<u32>;
+    \\@compute @workgroup_size(1) fn main() {
+    \\    output[0] = SCALAR; output[1] = u32(SIGNED);
+    \\    output[2] = VECTOR.x; output[3] = VECTOR.y;
+    \\    output[4] = VECTOR[output[0] - 1u];
+    \\    output[5] = ARRAY[output[0]];
+    \\}
+;
+
+fn constantBitCounts(allocator: std.mem.Allocator) !void {
+    var module = try analyzeToIr(allocator, CONSTANT_BIT_COUNTS);
+    defer module.deinit();
+    try std.testing.expectEqual(@as(u64, 2), module.globals.items[0].initializer.?.int);
+    try std.testing.expectEqual(@as(u64, 32), module.globals.items[1].initializer.?.int);
+    const elements = module.globals.items[2].initializer.?.composite;
+    try std.testing.expectEqual(@as(usize, 2), elements.len);
+    try std.testing.expectEqual(@as(u64, 0), elements[0].int);
+    try std.testing.expectEqual(@as(u64, 16), elements[1].int);
+}
+
+fn emitConstantBitCounts(allocator: std.mem.Allocator) !void {
+    var spirv: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    try std.testing.expect(try translateToSpirv(allocator, CONSTANT_BIT_COUNTS, &spirv) > 0);
+    var msl: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(allocator, CONSTANT_BIT_COUNTS, &msl);
+    try std.testing.expect(contains(msl[0..len], "uint2(0u, 16u)"));
+}
+
+test "declarations: constant bit counts publish exact values and own composite storage" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, constantBitCounts, .{});
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, emitConstantBitCounts, .{});
+}
+
+fn rejectedConstant(allocator: std.mem.Allocator, source: []const u8) !void {
+    var module = analyzeToIr(allocator, source) catch |err| {
+        if (err == error.OutOfMemory) return err;
+        try std.testing.expectEqual(error.UnsupportedConstruct, err);
+        return;
+    };
+    defer module.deinit();
+    return error.TestExpectedError;
+}
+
+test "declarations: unevaluated initializers reject and release partially folded operands" {
+    for ([_][]const u8{
+        "const VALUE: f32 = sin(1.0); @compute @workgroup_size(1) fn main() {}",
+        "var<private> VALUE: f32 = sin(1.0); @compute @workgroup_size(1) fn main() {}",
+        "override VALUE: f32 = sin(1.0); @compute @workgroup_size(1) fn main() {}",
+        "const VALUE: vec2<f32> = -vec2<f32>(1.0, 2.0); @compute @workgroup_size(1) fn main() {}",
+        "const VALUE: vec2<u32> = vec2<u32>(1u, 2u) + vec2<u32>(3u, 4u); @compute @workgroup_size(1) fn main() {}",
+    }) |source| try std.testing.checkAllAllocationFailures(std.testing.allocator, rejectedConstant, .{source});
+    var valid = try analyzeToIr(std.testing.allocator, "var<private> VALUE: u32; @compute @workgroup_size(1) fn main() {}");
+    defer valid.deinit();
+    try std.testing.expect(valid.globals.items[0].initializer == null);
+}
+
 test "declarations: override constant with default through IR" {
     const source =
         \\override BLOCK_SIZE: u32 = 64u;

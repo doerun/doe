@@ -1,0 +1,4 @@
+912afbb1bbaaf1d9e5a485f1685acfd3043dcfe70d27c076731cec3727e00a71  runtime/zig/zig-out/lib/libwebgpu_doe.so
+ffca32d33226c016e52b72ef117289b1dca328f1ed609a0a85aae250c9afe0c3  runtime/zig/zig-out/bin/doe-emit-spirv
+c98357cbc71f77fe58f7bf83e6207943815953662967fbc96d7e5ac60f320446  packages/doe-gpu/test/integration/test-integration-native-reflection.js
+4dc93530ae16c0a32bd2ba691053bee48ff2d3a78ad75b6a0caa4e1e3e24652f  runtime/zig/tests/wgsl/coverage_type_decl_test.zig

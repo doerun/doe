@@ -560,8 +560,9 @@ const Analyzer = struct {
         out.symbol = symbol.?;
         return switch (symbol.?) {
             .global => |index| blk: {
-                out.category = if (is_handle_type(self.module.types.get(self.module.globals.items[index].ty))) .value else .ref;
-                break :blk self.module.globals.items[index].ty;
+                const global = self.module.globals.items[index];
+                out.category = if (global.class == .const_ or is_handle_type(self.module.types.get(global.ty))) .value else .ref;
+                break :blk global.ty;
             },
             .param => |index| blk: {
                 out.category = .ref;

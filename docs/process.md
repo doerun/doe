@@ -154,6 +154,14 @@ classified and cannot be promoted by benchmark results.
   is checked with allocation accounting when a module has multiple entry points
   for the same stage; stage output is emitted once and transferred to the native
   shader module without leaking the original allocation.
+  A declared module initializer must produce an evaluated constant or a typed
+  compilation failure. Missing initializers retain their permitted zero/default
+  semantics; an unsupported expression cannot be mistaken for an omitted one.
+  Constant bit-count builtins must preserve scalar and vector values, and failed
+  composite folding must release every partially evaluated operand. Canonical
+  allocation-failure tests and retained-package dispatch/readback regressions
+  cover this distinction. This corrects compilation behind existing WGSL and
+  WebGPU interfaces; descriptor and receipt schemas are unchanged.
 - Native addon pass descriptors are checked against the runtime's pinned WebGPU
   header by `packages/doe-gpu/scripts/build-addon.js`; an ABI layout mismatch
   fails the build. Retained-package qualification exercises timestamp pass

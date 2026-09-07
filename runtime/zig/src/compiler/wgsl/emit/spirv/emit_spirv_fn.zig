@@ -31,6 +31,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
         param_value_ids: []u32,
         local_ptr_ids: []u32,
         local_value_ids: []u32,
+        indexed_values: std.ArrayListUnmanaged(struct { base: ir.ExprId, pointer: u32 }) = .{},
         access_chain_cache: std.ArrayListUnmanaged(AccessChainEntry) = .{},
         load_cache: std.ArrayListUnmanaged(LoadCacheEntry) = .{},
         result_inst_cache: std.ArrayListUnmanaged(ResultInstEntry) = .{},
@@ -62,6 +63,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
         }
 
         pub fn deinit(self: *@This()) void {
+            self.indexed_values.deinit(self.emitter.alloc);
             for (self.access_chain_cache.items) |entry| self.emitter.alloc.free(entry.indices);
             self.access_chain_cache.deinit(self.emitter.alloc);
             self.load_cache.deinit(self.emitter.alloc);
@@ -83,6 +85,28 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 .vector => true,
                 else => false,
             };
+        }
+
+        pub fn declare_indexed_values(self: *@This()) EmitError!void {
+            for (self.function.exprs.items) |expr| {
+                if (expr.category != .value or expr.data != .index) continue;
+                const index = expr.data.index;
+                const base_ty = self.function.exprs.items[index.base].ty;
+                switch (self.emitter.module.types.get(base_ty)) {
+                    .array, .matrix => {},
+                    else => continue,
+                }
+                if (ir_const_eval.resolve_constant_int(self.emitter.module, self.function, index.index) != null) continue;
+                if (self.indexed_value_pointer(index.base) != null) continue;
+                const ptr_type = try self.emitter.builder.type_pointer(spirv.StorageClass.Function, try self.emitter.lower_type(base_ty));
+                const pointer = try self.emitter.builder.variable_function(ptr_type);
+                try self.indexed_values.append(self.emitter.alloc, .{ .base = index.base, .pointer = pointer });
+            }
+        }
+
+        fn indexed_value_pointer(self: *@This(), base: ir.ExprId) ?u32 {
+            for (self.indexed_values.items) |entry| if (entry.base == base) return entry.pointer;
+            return null;
         }
 
         pub fn is_ssa_promotable_param(self: *@This(), param_index: u32) bool {
@@ -366,7 +390,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 .index => |index| if (expr.category == .ref)
                     return error.InvalidIr
                 else
-                    try self.emit_composite_extract(try self.emit_value_expr(index.base), expr.ty, try self.literal_index(index.index)),
+                    try self.emit_index_value(index.base, index.index, expr.ty),
             };
         }
 
@@ -953,12 +977,24 @@ pub fn FunctionState(comptime EmitterT: type) type {
             };
         }
 
-        fn literal_index(self: *@This(), expr_id: ir.ExprId) EmitError!u32 {
-            const expr = self.function.exprs.items[expr_id];
-            return switch (expr.data) {
-                .int_lit => |value| @truncate(value),
-                else => error.UnsupportedConstruct,
-            };
+        fn emit_index_value(self: *@This(), base: ir.ExprId, index: ir.ExprId, result_ty: ir.TypeId) EmitError!u32 {
+            const composite_id = try self.emit_value_expr(base);
+            if (ir_const_eval.resolve_constant_int(self.emitter.module, self.function, index)) |value| {
+                return try self.emit_composite_extract(composite_id, result_ty, @truncate(value));
+            }
+            const base_ty = self.function.exprs.items[base].ty;
+            if (self.indexed_value_pointer(base)) |pointer| {
+                try self.emitter.emit_store(pointer, composite_id);
+                const ptr_type = try self.emitter.builder.type_pointer(spirv.StorageClass.Function, try self.emitter.lower_type(result_ty));
+                const element = try self.emit_result_inst(spirv.Opcode.AccessChain, ptr_type, &.{ pointer, try self.emit_value_expr(index) });
+                return try self.emitter.emit_function_load(try self.emitter.lower_type(result_ty), element);
+            }
+            if (self.emitter.module.types.get(base_ty) != .vector) return error.UnsupportedConstruct;
+            return try self.emit_result_inst(
+                spirv.Opcode.VectorExtractDynamic,
+                try self.emitter.lower_type(result_ty),
+                &.{ composite_id, try self.emit_value_expr(index) },
+            );
         }
 
         fn switch_selector_literal(self: *@This(), expr_id: ir.ExprId) EmitError!u32 {

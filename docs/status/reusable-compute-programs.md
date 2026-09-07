@@ -20,8 +20,8 @@ native journals, and reproduction commands are indexed by
 These CPU-reference jobs remain diagnostic. They do not establish an incumbent
 GPU-provider advantage, general acceleration of unfamiliar routines, complete
 dependency isolation, peak GPU memory, or physical driver-loss recovery.
-Physical Metal/D3D12, prolonged simulation resource behavior, and composed
-program submission/copy measurements remain execution work.
+Prolonged Linux checks and remaining execution work are indexed in the
+Linux/Vulkan completion checklist below.
 
 ## Live simulation editing
 
@@ -37,8 +37,8 @@ application loop over the existing program contract, with policy outside Zig.
 invalid and numerically wrong shaders, overlapping edits, unchanged state,
 changed state interpretation, stale/declined/approved resets, cancellation, and
 reopening. Package qualification runs the application on Node only. Physical
-Metal, prolonged memory testing, and an application performance advantage
-remain separate acceptance work. Commands and limits are in
+Metal and an application performance advantage remain separate acceptance work;
+prolonged Linux checks are indexed below. Commands and limits are in
 [reusable compute programs](../reusable-compute-programs.md).
 The same retained wrapper and native package pass controlled host qualification
 at `bench/out/compute-program/20260906-live-simulation-qualified/summary.json`.
@@ -200,6 +200,8 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
 Completed checks and bounded prolonged-session evidence are indexed at
 `bench/out/compute-program/20260907-linux-completion/README.md`. Driver-loss,
 full residency peaks, model acceptance, and fair comparisons remain distinct.
+The initializer correction and subsequent package verification are retained at
+`bench/out/compute-program/20260907-constant-initializers/README.md`.
 
 Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
 Large Deno ratios remain suspicious host-path observations until audited;
