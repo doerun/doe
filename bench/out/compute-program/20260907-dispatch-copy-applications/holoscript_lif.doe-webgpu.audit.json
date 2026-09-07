@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 5,
+  "kind": "compute_program_evaluation",
+  "claimStatus": "diagnostic",
+  "packageQualification": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/package-inputs/summary.json",
+    "hash": "ea5a2f2691123e999b17487851840024b769c4f8d1161068115cb12614342ce6"
+  },
+  "packageRoot": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/installed-package/node_modules/doe-gpu",
+  "provider": "doe-webgpu",
+  "application": "holoscript_lif",
+  "phase": "audit",
+  "backend": "vulkan",
+  "policyHash": "d984a8740569cd0af7241a0ae1549664d6d7c5113663c314c05b5299b7b01ca3",
+  "programPath": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/holoscript_lif.doe-webgpu.audit.json.program.json",
+  "inputPaths": {
+    "params": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/holoscript_lif.doe-webgpu.audit.json.params.input.bin",
+    "membrane": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/holoscript_lif.doe-webgpu.audit.json.membrane.input.bin",
+    "stimulus": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/holoscript_lif.doe-webgpu.audit.json.stimulus.input.bin"
+  },
+  "fixturePath": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/fixtures/holoscript_lif/fixture.json",
+  "runtime": {
+    "name": "node",
+    "version": "v22.22.1"
+  },
+  "status": "passed",
+  "error": null,
+  "samples": [
+    {
+      "wallMs": 2.394459000000012,
+      "cpuMs": 3.035,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "f4751790-8773-40df-a926-6ace9e6f0e05",
+        "execution": "webgpu",
+        "run": 2,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 2,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1905235910445751",
+          "endTicks": "1905235910546182",
+          "elapsedNs": 100431
+        },
+        "timingMs": {
+          "upload": 0.4861850000000061,
+          "encode": 0.35093100000000277,
+          "submitWait": 0.5664470000000108,
+          "readback": 0.07021299999999542,
+          "total": 1.8344450000000165
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/holoscript_lif.doe-webgpu.audit.json.run-2.output.f32"
+    }
+  ],
+  "warmups": [],
+  "lifecycleRuns": [
+    {
+      "wallMs": 1.9217089999999928,
+      "cpuMs": 1.602,
+      "oracle": {
+        "passed": true,
+        "maxAbsoluteError": 0.000011444091796875,
+        "firstFailure": null
+      },
+      "receipt": {
+        "schemaVersion": 5,
+        "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+        "programInstance": "f4751790-8773-40df-a926-6ace9e6f0e05",
+        "execution": "webgpu",
+        "run": 3,
+        "inputHashes": {
+          "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+          "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+          "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        },
+        "inputOrigins": {
+          "params": {
+            "kind": "host",
+            "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+          },
+          "membrane": {
+            "kind": "host",
+            "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+          },
+          "stimulus": {
+            "kind": "host",
+            "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+          }
+        },
+        "residentStateBefore": {},
+        "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+        "outputGeneration": 3,
+        "dispatchCount": 11,
+        "clearedBytes": 1048576,
+        "uploadedBytes": 524320,
+        "copiedInputBytes": 0,
+        "submissionCount": 1,
+        "readbackBytes": 524304,
+        "readbackPath": "mapAsync-copy-unmap",
+        "completionMode": "queue-and-map",
+        "allocatedBufferBytes": 2097216,
+        "gpuTiming": {
+          "periodNs": 1,
+          "validBits": 64,
+          "source": "webgpu-nanoseconds",
+          "scope": "compute-pass",
+          "beginTicks": "1905235915100656",
+          "endTicks": "1905235915249619",
+          "elapsedNs": 148963
+        },
+        "timingMs": {
+          "upload": 0.1559440000000052,
+          "encode": 0.3306929999999966,
+          "submitWait": 0.6096180000000118,
+          "readback": 0.06443100000001323,
+          "total": 1.5078599999999938
+        }
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/holoscript_lif.doe-webgpu.audit.json.run-3.output.f32"
+    }
+  ],
+  "cold": {
+    "wallMs": 6.891529999999989,
+    "cpuMs": 6.6,
+    "oracle": {
+      "passed": true,
+      "maxAbsoluteError": 0.000011444091796875,
+      "firstFailure": null
+    },
+    "receipt": {
+      "schemaVersion": 5,
+      "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+      "programInstance": "f4751790-8773-40df-a926-6ace9e6f0e05",
+      "execution": "webgpu",
+      "run": 1,
+      "inputHashes": {
+        "params": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+        "membrane": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+        "stimulus": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+      },
+      "inputOrigins": {
+        "params": {
+          "kind": "host",
+          "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97"
+        },
+        "membrane": {
+          "kind": "host",
+          "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47"
+        },
+        "stimulus": {
+          "kind": "host",
+          "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef"
+        }
+      },
+      "residentStateBefore": {},
+      "outputHash": "f92400c19c134f948d4cd7c0a234f3874165201ddf2d168af8da5fd2cae7b13a",
+      "outputGeneration": 1,
+      "dispatchCount": 11,
+      "clearedBytes": 1048576,
+      "uploadedBytes": 524320,
+      "copiedInputBytes": 0,
+      "submissionCount": 1,
+      "readbackBytes": 524304,
+      "readbackPath": "mapAsync-copy-unmap",
+      "completionMode": "queue-and-map",
+      "allocatedBufferBytes": 2097216,
+      "gpuTiming": {
+        "periodNs": 1,
+        "validBits": 64,
+        "source": "webgpu-nanoseconds",
+        "scope": "compute-pass",
+        "beginTicks": "1905235891787290",
+        "endTicks": "1905235892957083",
+        "elapsedNs": 1169793
+      },
+      "timingMs": {
+        "upload": 0.3802559999999744,
+        "encode": 1.4296819999999855,
+        "submitWait": 3.0697820000000036,
+        "readback": 0.3629840000000115,
+        "total": 5.872299999999996
+      }
+    },
+    "outputPath": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/holoscript_lif.doe-webgpu.audit.json.run-1.output.f32"
+  },
+  "failedRun": null,
+  "preparationMs": 7.685745999999995,
+  "deviceStartupMs": 70.078987,
+  "adapter": {
+    "vendor": "AMD",
+    "architecture": "vulkan",
+    "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "isFallbackAdapter": false,
+    "vendorID": 4098,
+    "deviceID": 5510,
+    "driverVersion": 109051907
+  },
+  "providerArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/doe-webgpu.c553ea95ad580b99b147482aa1229f5044a4bd66826ec2328862c59275a29d23.provider.bin",
+    "hash": "c553ea95ad580b99b147482aa1229f5044a4bd66826ec2328862c59275a29d23"
+  },
+  "allocatedBufferBytes": 2097216,
+  "peakProcessRssBytes": 177512448,
+  "providerAddonArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/doe.4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66.addon.node",
+    "hash": "4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66"
+  },
+  "timestampCalibrationArtifact": {
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/hardware-profile.json",
+    "hash": "f8cacb066c323eaa3a12a6e54f28a18e451b3961b9888490de31297592156023"
+  },
+  "lifecycle": {
+    "cancellationRejected": true,
+    "reuseAfterCancellation": true
+  },
+  "observed": {
+    "dispatchesEncoded": 33,
+    "submissions": 3,
+    "maps": 3
+  },
+  "latencyStatsMs": {
+    "count": 1,
+    "mean": 2.394459000000012,
+    "min": 2.394459000000012,
+    "max": 2.394459000000012,
+    "median": 2.394459000000012,
+    "p95": 2.394459000000012,
+    "p99": 2.394459000000012
+  },
+  "cpuStatsMs": {
+    "count": 1,
+    "mean": 3.035,
+    "min": 3.035,
+    "max": 3.035,
+    "median": 3.035,
+    "p95": 3.035,
+    "p99": 3.035
+  },
+  "programHash": "df5fbeb0fa0c99bb64dbae8816735750c6e945b9eb24deea152e7bc01f318eca",
+  "teardownMs": 2.495429999999999,
+  "gpuStatsNs": {
+    "count": 1,
+    "mean": 100431,
+    "min": 100431,
+    "max": 100431,
+    "median": 100431,
+    "p95": 100431,
+    "p99": 100431
+  },
+  "expectedPath": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/holoscript_lif.doe-webgpu.audit.json.expected.f64",
+  "preparation": {
+    "reusedResources": 0,
+    "createdResources": 17
+  },
+  "measurementLimits": [
+    "GPU timestamps bracket compute only; useful-operation wall includes all runtime and readback work",
+    "Peak device memory unavailable; requested buffers and process RSS reported",
+    "Forced device loss is not an observed driver-loss recovery",
+    "Dawn and wgpu adapter APIs do not expose a numeric driver version"
+  ]
+}

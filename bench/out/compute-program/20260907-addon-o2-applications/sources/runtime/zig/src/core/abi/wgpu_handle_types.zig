@@ -1,0 +1,32 @@
+const std = @import("std");
+const upstream = @import("generated/webgpu_upstream.zig");
+
+pub const WGPUInstance = upstream.WGPUInstance;
+pub const WGPUAdapter = upstream.WGPUAdapter;
+pub const WGPUDevice = upstream.WGPUDevice;
+pub const WGPUQueue = upstream.WGPUQueue;
+pub const WGPUBuffer = upstream.WGPUBuffer;
+pub const WGPUTexture = upstream.WGPUTexture;
+pub const WGPUTextureView = upstream.WGPUTextureView;
+pub const WGPUExternalTexture = upstream.WGPUExternalTexture;
+pub const WGPUShaderModule = upstream.WGPUShaderModule;
+pub const WGPUSampler = upstream.WGPUSampler;
+pub const WGPUComputePipeline = upstream.WGPUComputePipeline;
+pub const WGPURenderPipeline = upstream.WGPURenderPipeline;
+pub const WGPUComputePassEncoder = upstream.WGPUComputePassEncoder;
+pub const WGPURenderPassEncoder = upstream.WGPURenderPassEncoder;
+pub const WGPUBindGroupLayout = upstream.WGPUBindGroupLayout;
+pub const WGPUBindGroup = upstream.WGPUBindGroup;
+pub const WGPUPipelineLayout = upstream.WGPUPipelineLayout;
+pub const WGPUCommandEncoder = upstream.WGPUCommandEncoder;
+pub const WGPUCommandBuffer = upstream.WGPUCommandBuffer;
+pub const WGPUQuerySet = upstream.WGPUQuerySet;
+pub const WGPUFuture = upstream.WGPUFuture;
+pub const WGPUStringView = upstream.WGPUStringView;
+pub const WGPUBool = upstream.WGPUBool;
+pub const WGPUStatus = upstream.WGPUStatus;
+
+pub const WGPU_STRLEN = std.math.maxInt(usize);
+pub const WGPU_FALSE: WGPUBool = 0;
+pub const WGPU_TRUE: WGPUBool = 1;
+pub const WGPUStatus_Success: WGPUStatus = 1;

@@ -1,0 +1,34 @@
+[
+  [
+    "cc",
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-I",
+    "runtime/zig/vendor/webgpu-headers",
+    "runtime/zig/tests/native_async_pipeline.c",
+    "-L",
+    "/home/x/deco/doe/bench/out/compute-program/20260907-binding-storage/final-validation/extracted-native",
+    "-Wl,-rpath,/home/x/deco/doe/bench/out/compute-program/20260907-binding-storage/final-validation/extracted-native",
+    "-lwebgpu_doe",
+    "-o",
+    "/home/x/deco/doe/bench/out/compute-program/20260907-binding-storage/final-validation/native_async_pipeline"
+  ],
+  [
+    "cc",
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-I",
+    "runtime/zig/vendor/webgpu-headers",
+    "runtime/zig/tests/native_recorded_compute.c",
+    "-L",
+    "/home/x/deco/doe/bench/out/compute-program/20260907-binding-storage/final-validation/extracted-native",
+    "-Wl,-rpath,/home/x/deco/doe/bench/out/compute-program/20260907-binding-storage/final-validation/extracted-native",
+    "-lwebgpu_doe",
+    "-o",
+    "/home/x/deco/doe/bench/out/compute-program/20260907-binding-storage/final-validation/native_recorded_compute"
+  ]
+]

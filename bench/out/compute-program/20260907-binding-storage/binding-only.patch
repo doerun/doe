@@ -1,0 +1,321 @@
+diff --git a/packages/doe-gpu/test/integration/test-integration-native-concurrent-devices.js b/packages/doe-gpu/test/integration/test-integration-native-concurrent-devices.js
+index 4fa054431..95ccdf0b1 100644
+--- a/packages/doe-gpu/test/integration/test-integration-native-concurrent-devices.js
++++ b/packages/doe-gpu/test/integration/test-integration-native-concurrent-devices.js
+@@ -4,6 +4,11 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
+ import { createNativeDirect, globals, requestAdapter } from '../../src/native.js';
+ import { prepareComputeProgram } from '../../src/compute-program.js';
+ 
++if (process.platform !== 'linux') {
++  console.log('skip: concurrent device regression requires Linux Vulkan');
++  process.exit(0);
++}
++
+ const WORKER_COUNT = 4;
+ const WORKER_GENERATIONS = 2;
+ const DEVICE_CYCLES = 8;
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index ba1bb8e37..f54e7ba25 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -3508,7 +3508,7 @@
+       },
+       "src/native/compute/doe_compute_ext_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "09cf00f185789bfc76fa0eded288229a0e56d75598e1c8713d867ebf1b737d6f",
++        "moduleSha256": "d702a908d2107894d9bc9b5f69dd8a7d1210d37fe081afab823c76aad33bb0b0",
+         "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
+         "reviewer": "codex-pass-lifecycle/2026-09-06"
+       },
+@@ -3520,7 +3520,7 @@
+       },
+       "src/native/compute/doe_compute_fast_vulkan.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "b31ccb53f1513093348045ce904c388e8ab4936d0482a212032e28898e1c10c4",
++        "moduleSha256": "3c1442dc4bc5fd8a49537c60b0bd330fd55d413dbd67d1357f6cb81e0e609fbd",
+         "reason": "Keep: explicit resource ownership and prepared execution preserve ordinary provider semantics; validated by program and queue-ordering regressions.",
+         "reviewer": "codex-gpu-program/2026-09-05"
+       },
+@@ -3784,7 +3784,7 @@
+       },
+       "src/native/vulkan/vulkan_compute_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "8e669501ae6d00ef595558d13af6b9e1faedbd0f9909e612e08f54ed79232ab6",
++        "moduleSha256": "7a40d85dfa69d4424d4504123f674d4c4ee510f3f04e3c1499adfc75243ee0f1",
+         "reason": "Native Vulkan binding preparation consumes one reflected buffer-type interpretation and propagates extraction failures before publishing a usable pipeline.",
+         "reviewer": "codex-shader-ownership/2026-09-06"
+       },
+diff --git a/runtime/zig/src/native/compute/doe_compute_ext_native.zig b/runtime/zig/src/native/compute/doe_compute_ext_native.zig
+index cdc973560..f0b824706 100644
+--- a/runtime/zig/src/native/compute/doe_compute_ext_native.zig
++++ b/runtime/zig/src/native/compute/doe_compute_ext_native.zig
+@@ -228,9 +228,10 @@ fn appendRecordedDispatch(pass: *DoeComputePass, pip: *DoeComputePipeline, x: u3
+         &cmd.dispatch.buf_sizes,
+     );
+     if (pip.spirv_data != null) {
+-        cmd.dispatch.vulkan_binding_state = vulkan_compute.vulkan_collect_recorded_bind_group_state(
++        vulkan_compute.vulkan_collect_recorded_bind_group_state(
+             pip,
+             pass.bind_groups[0..],
++            &cmd.dispatch.vulkan_binding_state,
+         );
+     }
+     if (native_cmds.tryMergeDispatchIntoLast(&pass.enc.cmds, &cmd)) {
+@@ -403,9 +404,10 @@ pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_ra
+         cmd.dispatch_indirect.bind_groups[index] = if (maybe_bg) |bg| toOpaque(bg) else null;
+     }
+     if (pip.spirv_data != null) {
+-        cmd.dispatch_indirect.vulkan_binding_state = vulkan_compute.vulkan_collect_recorded_bind_group_state(
++        vulkan_compute.vulkan_collect_recorded_bind_group_state(
+             pip,
+             pass.bind_groups[0..],
++            &cmd.dispatch_indirect.vulkan_binding_state,
+         );
+     }
+     if (!recording.reserve(pass.enc, 0, 1)) return;
+diff --git a/runtime/zig/src/native/compute/doe_compute_fast_vulkan.zig b/runtime/zig/src/native/compute/doe_compute_fast_vulkan.zig
+index d341ffb23..4c8678104 100644
+--- a/runtime/zig/src/native/compute/doe_compute_fast_vulkan.zig
++++ b/runtime/zig/src/native/compute/doe_compute_fast_vulkan.zig
+@@ -36,9 +36,10 @@ pub fn populateRecordedDispatchBindingState(
+     dispatch: anytype,
+ ) void {
+     if (pipe.spirv_data == null) return;
+-    dispatch.vulkan_binding_state = vulkan_compute.vulkan_collect_recorded_bind_group_state(
++    vulkan_compute.vulkan_collect_recorded_bind_group_state(
+         pipe,
+         bind_groups,
++        &dispatch.vulkan_binding_state,
+     );
+ }
+ 
+@@ -193,10 +194,12 @@ pub fn prewarmPreparedDispatchBindings(
+             &bind_groups,
+             bg_count,
+         );
+-        var state = if (cache_index) |cached_index|
+-            prepared_cache[cached_index].state
+-        else
+-            vulkan_compute.vulkan_collect_dispatch_binding_state(pipe, bind_groups[0..]);
++        var state: vulkan_compute.VulkanDispatchBindingState = undefined;
++        if (cache_index) |cached_index| {
++            state = prepared_cache[cached_index].state;
++        } else {
++            vulkan_compute.vulkan_collect_dispatch_binding_state(pipe, bind_groups[0..], &state);
++        }
+         var cache_slot = cache_index;
+         if (cache_slot == null) {
+             if (findPreparedBindingStateCache(
+@@ -282,10 +285,12 @@ pub fn dispatchBatchCopyFlush(
+                 &bind_groups,
+                 bg_count,
+             );
+-            var state = if (cache_index) |cached_index|
+-                prepared_cache[cached_index].state
+-            else
+-                vulkan_compute.vulkan_collect_dispatch_binding_state(pipe, bind_groups[0..]);
++            var state: vulkan_compute.VulkanDispatchBindingState = undefined;
++            if (cache_index) |cached_index| {
++                state = prepared_cache[cached_index].state;
++            } else {
++                vulkan_compute.vulkan_collect_dispatch_binding_state(pipe, bind_groups[0..], &state);
++            }
+             var cache_slot = cache_index;
+             if (cache_slot == null) {
+                 if (findPreparedBindingStateCache(
+diff --git a/runtime/zig/src/native/vulkan/vulkan_compute_native.zig b/runtime/zig/src/native/vulkan/vulkan_compute_native.zig
+index b7a35a32c..6cc653451 100644
+--- a/runtime/zig/src/native/vulkan/vulkan_compute_native.zig
++++ b/runtime/zig/src/native/vulkan/vulkan_compute_native.zig
+@@ -133,16 +133,17 @@ fn findPreparedBindingCacheSlot(
+ fn loadPreparedBindingCache(
+     pip: *const DoeComputePipeline,
+     bind_groups: []const ?*DoeBindGroup,
+-) ?VulkanDispatchBindingState {
++    bindings: *[MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding,
++) ?BindingCollection {
+     const key = bindGroupIdentityKey(bind_groups);
+     const slot = findPreparedBindingCacheSlot(pip, key, bind_groups) orelse return null;
+-    var state = VulkanDispatchBindingState{
++    const state = BindingCollection{
+         .count = pip.vk_prepared_binding_cache_counts[slot],
+         .flat_mask = pip.vk_prepared_binding_cache_flat_masks[slot],
+         .descriptor_hash = pip.vk_prepared_binding_cache_descriptor_hashes[slot],
+     };
+     const count: usize = @intCast(pip.vk_prepared_binding_cache_counts[slot]);
+-    @memcpy(state.bindings[0..count], pip.vk_prepared_binding_cache_bindings[slot][0..count]);
++    @memcpy(bindings[0..count], pip.vk_prepared_binding_cache_bindings[slot][0..count]);
+     return state;
+ }
+ 
+@@ -159,7 +160,8 @@ fn nextPreparedBindingCacheSlot(pip: *DoeComputePipeline) usize {
+ fn storePreparedBindingCache(
+     pip: *DoeComputePipeline,
+     bind_groups: []const ?*DoeBindGroup,
+-    state: *const VulkanDispatchBindingState,
++    state: BindingCollection,
++    bindings: *const [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding,
+ ) void {
+     if (state.count > MAX_KERNEL_BINDINGS) return;
+     const key = bindGroupIdentityKey(bind_groups);
+@@ -176,7 +178,7 @@ fn storePreparedBindingCache(
+     pip.vk_prepared_binding_cache_counts[slot] = @intCast(state.count);
+     pip.vk_prepared_binding_cache_flat_masks[slot] = state.flat_mask;
+     pip.vk_prepared_binding_cache_descriptor_hashes[slot] = state.descriptor_hash;
+-    @memcpy(pip.vk_prepared_binding_cache_bindings[slot][0..state.count], state.bindings[0..state.count]);
++    @memcpy(pip.vk_prepared_binding_cache_bindings[slot][0..state.count], bindings[0..state.count]);
+ }
+ 
+ test "prepared binding cache retains identity and reloads state" {
+@@ -206,19 +208,89 @@ test "prepared binding cache retains identity and reloads state" {
+         .buffer_size = TEST_BUFFER_SIZE,
+     };
+ 
+-    storePreparedBindingCache(&pip, bind_groups[0..], &state);
++    storePreparedBindingCache(&pip, bind_groups[0..], .{
++        .count = state.count,
++        .flat_mask = state.flat_mask,
++        .descriptor_hash = state.descriptor_hash,
++    }, &state.bindings);
+     try std.testing.expectEqual(@as(u32, 2), bg.ref_count);
+ 
+-    const cached = loadPreparedBindingCache(&pip, bind_groups[0..]) orelse return error.TestExpectedEqual;
++    var cached_bindings: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
++    const cached = loadPreparedBindingCache(&pip, bind_groups[0..], &cached_bindings) orelse return error.TestExpectedEqual;
+     try std.testing.expectEqual(state.count, cached.count);
+     try std.testing.expectEqual(state.flat_mask, cached.flat_mask);
+     try std.testing.expectEqual(state.descriptor_hash, cached.descriptor_hash);
+-    try std.testing.expectEqual(state.bindings[0], cached.bindings[0]);
++    try std.testing.expectEqual(state.bindings[0], cached_bindings[0]);
+ 
+     clearPipelinePreparedBindingCache(&pip);
+     try std.testing.expectEqual(@as(u32, 1), bg.ref_count);
+ }
+ 
++test "binding collection publishes only the active prefix on cache misses and hits" {
++    const SENTINEL_HANDLE: u64 = 999;
++    const RESOURCE_HANDLE: u64 = 77;
++    const BINDING_INDEX = 3;
++    const GROUP_INDEX = 2;
++    const BUFFER_OFFSET: u64 = 4;
++    const BUFFER_SIZE: u64 = 16;
++    const sentinel = model_compute_types.KernelBinding{
++        .binding = 0,
++        .resource_kind = .buffer,
++        .resource_handle = SENTINEL_HANDLE,
++    };
++    var buffer = DoeBuffer{ .vk_id = RESOURCE_HANDLE };
++    const group = native_helpers.make(DoeBindGroup) orelse return error.OutOfMemory;
++    group.* = .{};
++    group.count = BINDING_INDEX + 1;
++    group.buffers[BINDING_INDEX] = toOpaque(&buffer);
++    group.offsets[BINDING_INDEX] = BUFFER_OFFSET;
++    group.buffer_sizes[BINDING_INDEX] = BUFFER_SIZE;
++    var pipeline = DoeComputePipeline{};
++    defer {
++        clearPipelinePreparedBindingCache(&pipeline);
++        bind_group_native.doeNativeBindGroupRelease(toOpaque(group));
++    }
++    var groups = [_]?*DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
++    groups[GROUP_INDEX] = group;
++    var recorded = native_cmds.RecordedVulkanBindingState{
++        .bindings = [_]model_compute_types.KernelBinding{sentinel} ** MAX_KERNEL_BINDINGS,
++    };
++    vulkan_collect_recorded_bind_group_state(&pipeline, &groups, &recorded);
++    try std.testing.expect(recorded.valid);
++    try std.testing.expectEqual(@as(usize, 1), recorded.count);
++    try std.testing.expectEqual(GROUP_INDEX, recorded.bindings[0].group);
++    try std.testing.expectEqual(BINDING_INDEX, recorded.bindings[0].binding);
++    try std.testing.expectEqual(RESOURCE_HANDLE, recorded.bindings[0].resource_handle);
++    try std.testing.expectEqual(BUFFER_OFFSET, recorded.bindings[0].buffer_offset);
++    try std.testing.expectEqual(BUFFER_SIZE, recorded.bindings[0].buffer_size);
++    for (recorded.bindings[recorded.count..]) |binding| try std.testing.expectEqual(sentinel, binding);
++
++    var cached = VulkanDispatchBindingState{
++        .bindings = [_]model_compute_types.KernelBinding{sentinel} ** MAX_KERNEL_BINDINGS,
++    };
++    vulkan_collect_dispatch_binding_state(&pipeline, &groups, &cached);
++    try std.testing.expectEqual(recorded.count, cached.count);
++    try std.testing.expectEqual(recorded.flat_mask, cached.flat_mask);
++    try std.testing.expectEqual(recorded.descriptor_hash, cached.descriptor_hash);
++    try std.testing.expectEqual(recorded.bindings[0], cached.bindings[0]);
++    for (cached.bindings[cached.count..]) |binding| try std.testing.expectEqual(sentinel, binding);
++
++    const retained_binding = recorded.bindings[0];
++    vulkan_collect_recorded_bind_group_state(&pipeline, &.{}, &recorded);
++    try std.testing.expect(recorded.valid);
++    try std.testing.expectEqual(@as(usize, 0), recorded.count);
++    try std.testing.expectEqual(@as(u128, 0), recorded.flat_mask);
++    try std.testing.expectEqual(retained_binding, recorded.bindings[0]);
++    vulkan_collect_dispatch_binding_state(&pipeline, &.{}, &cached);
++    try std.testing.expectEqual(@as(usize, 0), cached.count);
++    try std.testing.expectEqual(recorded.descriptor_hash, cached.descriptor_hash);
++
++    vulkan_collect_recorded_bind_group_state(&pipeline, &groups, &recorded);
++    try std.testing.expectEqual(@as(usize, 1), recorded.count);
++    try std.testing.expectEqual(retained_binding, recorded.bindings[0]);
++    try std.testing.expectEqual(@as(u32, 2), group.ref_count);
++}
++
+ const shader_buffer_binding_type = shader_binding_reflection.shaderBufferBindingType;
+ 
+ fn populate_pipeline_buffer_binding_typesWithDiagnostic(pip: *DoeComputePipeline, shader_module: ?*DoeShaderModule, diagnostic: *wgsl_analysis.Diagnostic) wgsl_analysis.TranslateError!void {
+@@ -820,39 +892,42 @@ pub fn vulkan_prepare_dispatch_bind_groups(
+     return prepare_pipeline_bindings(rt, pip, spirv, binding_result, &binding_storage);
+ }
+ 
+-pub fn vulkan_collect_dispatch_binding_state(
++fn collectDispatchBindings(
+     pip: *DoeComputePipeline,
+     bind_groups: []const ?*DoeBindGroup,
+-) VulkanDispatchBindingState {
+-    if (loadPreparedBindingCache(pip, bind_groups)) |cached| return cached;
+-    var state = VulkanDispatchBindingState{};
++    bindings: *[MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding,
++) BindingCollection {
++    if (loadPreparedBindingCache(pip, bind_groups, bindings)) |cached| return cached;
+     const binding_result = compute_bindings.collectBindGroupBindings(
+         pip,
+         bind_groups,
+-        &state.bindings,
++        bindings,
+     );
++    storePreparedBindingCache(pip, bind_groups, binding_result, bindings);
++    return binding_result;
++}
++
++pub fn vulkan_collect_dispatch_binding_state(
++    pip: *DoeComputePipeline,
++    bind_groups: []const ?*DoeBindGroup,
++    state: *VulkanDispatchBindingState,
++) void {
++    const binding_result = collectDispatchBindings(pip, bind_groups, &state.bindings);
+     state.count = binding_result.count;
+     state.flat_mask = binding_result.flat_mask;
+     state.descriptor_hash = binding_result.descriptor_hash;
+-    storePreparedBindingCache(pip, bind_groups, &state);
+-    return state;
+ }
+ 
+ pub fn vulkan_collect_recorded_bind_group_state(
+     pip: *DoeComputePipeline,
+     bind_groups: []const ?*DoeBindGroup,
+-) native_cmds.RecordedVulkanBindingState {
+-    const collected = vulkan_collect_dispatch_binding_state(pip, bind_groups);
+-    var state = native_cmds.RecordedVulkanBindingState{};
+-    state.valid = true;
++    state: *native_cmds.RecordedVulkanBindingState,
++) void {
++    const collected = collectDispatchBindings(pip, bind_groups, &state.bindings);
+     state.count = collected.count;
+     state.flat_mask = collected.flat_mask;
+     state.descriptor_hash = collected.descriptor_hash;
+-    @memcpy(
+-        state.bindings[0..collected.count],
+-        collected.bindings[0..collected.count],
+-    );
+-    return state;
++    state.valid = true;
+ }
+ 
+ pub fn vulkan_prepare_dispatch_binding_state(

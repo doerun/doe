@@ -1,0 +1,9 @@
+image_edges doe-recorded samples=96 medians_us={'upload': 13.89, 'encode': 0.31, 'submitWait': 132.47, 'readback': 53.23, 'total': 313.27}
+image_edges doe-webgpu samples=96 medians_us={'upload': 14.8, 'encode': 82.73, 'submitWait': 167.05, 'readback': 50.0, 'total': 433.21}
+image_edges dawn samples=96 medians_us={'upload': 12.85, 'encode': 37.39, 'submitWait': 128.41, 'readback': 58.62, 'total': 356.99}
+heat_diffusion doe-recorded samples=96 medians_us={'upload': 12.5, 'encode': 0.26, 'submitWait': 169.22, 'readback': 29.07, 'total': 341.22}
+heat_diffusion doe-webgpu samples=96 medians_us={'upload': 14.78, 'encode': 174.1, 'submitWait': 227.29, 'readback': 32.79, 'total': 578.26}
+heat_diffusion dawn samples=96 medians_us={'upload': 12.76, 'encode': 79.49, 'submitWait': 184.64, 'readback': 29.66, 'total': 449.0}
+holoscript_lif doe-recorded samples=96 medians_us={'upload': 25.0, 'encode': 0.43, 'submitWait': 163.15, 'readback': 38.25, 'total': 461.08}
+holoscript_lif doe-webgpu samples=96 medians_us={'upload': 27.18, 'encode': 90.21, 'submitWait': 217.93, 'readback': 39.75, 'total': 630.21}
+holoscript_lif dawn samples=96 medians_us={'upload': 23.94, 'encode': 51.8, 'submitWait': 187.3, 'readback': 103.45, 'total': 658.66}

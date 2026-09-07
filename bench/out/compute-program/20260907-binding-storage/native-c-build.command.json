@@ -1,0 +1,16 @@
+[
+  "cc",
+  "-std=c11",
+  "-Wall",
+  "-Wextra",
+  "-Werror",
+  "-I",
+  "runtime/zig/vendor/webgpu-headers",
+  "runtime/zig/tests/native_async_pipeline.c",
+  "-L",
+  "/home/x/deco/doe/bench/out/compute-program/20260907-binding-storage/extracted-native",
+  "-Wl,-rpath,/home/x/deco/doe/bench/out/compute-program/20260907-binding-storage/extracted-native",
+  "-lwebgpu_doe",
+  "-o",
+  "/home/x/deco/doe/bench/out/compute-program/20260907-binding-storage/native-async-pipeline"
+]

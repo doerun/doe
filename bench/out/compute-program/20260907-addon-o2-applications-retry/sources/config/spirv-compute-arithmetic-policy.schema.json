@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SPIR-V compute arithmetic policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "offsetMultiplyAdd", "multiDotLoops"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 2},
+    "offsetMultiplyAdd": {
+      "type": "string",
+      "enum": ["source-order", "fuse-trailing-add"],
+      "description": "Build-time scalar f32 policy for compute-only SPIR-V modules. Fuse (a + b*c) + d as a + fma(b,c,d) while preserving operand evaluation order. Other emitters and mixed-stage modules retain their existing policy."
+    },
+    "multiDotLoops": {
+      "type": "string",
+      "enum": ["driver-default", "preserve"],
+      "description": "Build-time policy for compute-only SPIR-V modules. Preserve innermost loops containing multiple emitted OpDot instructions with DontUnroll to avoid driver unrolling changing accumulated rounding. Other loops and other targets retain their existing controls."
+    }
+  }
+}

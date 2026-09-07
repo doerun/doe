@@ -1,0 +1,504 @@
+{
+  "artifactKind": "doe-gemma270m-electron-oracle-result",
+  "checkpointCoverage": {
+    "D0": {
+      "captured": [
+        "attention",
+        "embedding",
+        "kv",
+        "logits",
+        "mlp",
+        "qkv",
+        "rmsnorm",
+        "rope"
+      ],
+      "missing": [],
+      "pass": true
+    },
+    "W0": {
+      "captured": [
+        "attention",
+        "embedding",
+        "kv",
+        "logits",
+        "mlp",
+        "qkv",
+        "rmsnorm",
+        "rope"
+      ],
+      "missing": [],
+      "pass": true
+    }
+  },
+  "identity": {
+    "checkCount": 22,
+    "checks": [
+      {
+        "id": "W0.model",
+        "pass": true
+      },
+      {
+        "id": "W0.manifest",
+        "pass": true
+      },
+      {
+        "id": "W0.prompt",
+        "pass": true
+      },
+      {
+        "id": "W0.tokenizer_mode",
+        "pass": true
+      },
+      {
+        "id": "W0.execution",
+        "pass": true
+      },
+      {
+        "id": "W0.sampling",
+        "pass": true
+      },
+      {
+        "id": "W0.tolerance",
+        "pass": true
+      },
+      {
+        "id": "W0.provider",
+        "pass": true
+      },
+      {
+        "id": "W0.application",
+        "pass": true
+      },
+      {
+        "id": "D0.model",
+        "pass": true
+      },
+      {
+        "id": "D0.manifest",
+        "pass": true
+      },
+      {
+        "id": "D0.prompt",
+        "pass": true
+      },
+      {
+        "id": "D0.tokenizer_mode",
+        "pass": true
+      },
+      {
+        "id": "D0.execution",
+        "pass": true
+      },
+      {
+        "id": "D0.sampling",
+        "pass": true
+      },
+      {
+        "id": "D0.tolerance",
+        "pass": true
+      },
+      {
+        "id": "D0.provider",
+        "pass": true
+      },
+      {
+        "id": "D0.application",
+        "pass": true
+      },
+      {
+        "id": "cross_lane.input_set",
+        "pass": true
+      },
+      {
+        "id": "cross_lane.tokenized_prompt",
+        "pass": true
+      },
+      {
+        "id": "cross_lane.execution_graph",
+        "pass": true
+      },
+      {
+        "id": "cross_lane.weight_set",
+        "pass": true
+      }
+    ],
+    "failed": [],
+    "pass": true
+  },
+  "kv": {
+    "D0": true,
+    "W0": true
+  },
+  "logitsComparisons": [
+    {
+      "elementCount": 262144,
+      "firstMismatch": null,
+      "maxAbs": 0,
+      "pass": true,
+      "reason": "",
+      "selectedTokenIdD0": 236769,
+      "selectedTokenIdW0": 236769,
+      "stepIndex": 0,
+      "tokenPass": true
+    },
+    {
+      "elementCount": 262144,
+      "firstMismatch": null,
+      "maxAbs": 0.00000762939453125,
+      "pass": true,
+      "reason": "",
+      "selectedTokenIdD0": 236776,
+      "selectedTokenIdW0": 236776,
+      "stepIndex": 1,
+      "tokenPass": true
+    },
+    {
+      "elementCount": 262144,
+      "firstMismatch": null,
+      "maxAbs": 0.0000095367431640625,
+      "pass": true,
+      "reason": "",
+      "selectedTokenIdD0": 236768,
+      "selectedTokenIdW0": 236768,
+      "stepIndex": 2,
+      "tokenPass": true
+    },
+    {
+      "elementCount": 262144,
+      "firstMismatch": null,
+      "maxAbs": 0.00000762939453125,
+      "pass": true,
+      "reason": "",
+      "selectedTokenIdD0": 236743,
+      "selectedTokenIdW0": 236743,
+      "stepIndex": 3,
+      "tokenPass": true
+    }
+  ],
+  "modelCheckpoints": {
+    "blockers": [],
+    "comparisons": [
+      {
+        "elementCount": 7680,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "prefill",
+        "reason": "",
+        "recordCount": 1,
+        "stage": "embedding",
+        "stepIndex": 0
+      },
+      {
+        "elementCount": 430080,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "prefill",
+        "reason": "",
+        "recordCount": 56,
+        "stage": "rmsnorm",
+        "stepIndex": 0
+      },
+      {
+        "elementCount": 331776,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "prefill",
+        "reason": "",
+        "recordCount": 54,
+        "stage": "qkv",
+        "stepIndex": 0
+      },
+      {
+        "elementCount": 276480,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "prefill",
+        "reason": "",
+        "recordCount": 36,
+        "stage": "rope",
+        "stepIndex": 0
+      },
+      {
+        "elementCount": 359424,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "prefill",
+        "reason": "",
+        "recordCount": 36,
+        "stage": "attention",
+        "stepIndex": 0
+      },
+      {
+        "elementCount": 1603584,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "prefill",
+        "reason": "",
+        "recordCount": 90,
+        "stage": "mlp",
+        "stepIndex": 0
+      },
+      {
+        "elementCount": 262144,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "prefill",
+        "reason": "",
+        "recordCount": 1,
+        "stage": "logits",
+        "stepIndex": 0
+      },
+      {
+        "elementCount": 640,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 1,
+        "stage": "embedding",
+        "stepIndex": 1
+      },
+      {
+        "elementCount": 35840,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 56,
+        "stage": "rmsnorm",
+        "stepIndex": 1
+      },
+      {
+        "elementCount": 27648,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 54,
+        "stage": "qkv",
+        "stepIndex": 1
+      },
+      {
+        "elementCount": 23040,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 36,
+        "stage": "rope",
+        "stepIndex": 1
+      },
+      {
+        "elementCount": 29952,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 36,
+        "stage": "attention",
+        "stepIndex": 1
+      },
+      {
+        "elementCount": 59904,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 54,
+        "stage": "mlp",
+        "stepIndex": 1
+      },
+      {
+        "elementCount": 262144,
+        "maxAbs": 0.00000762939453125,
+        "maxRel": 0.003333786909783644,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 1,
+        "stage": "logits",
+        "stepIndex": 1
+      },
+      {
+        "elementCount": 640,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 1,
+        "stage": "embedding",
+        "stepIndex": 2
+      },
+      {
+        "elementCount": 35840,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 56,
+        "stage": "rmsnorm",
+        "stepIndex": 2
+      },
+      {
+        "elementCount": 27648,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 54,
+        "stage": "qkv",
+        "stepIndex": 2
+      },
+      {
+        "elementCount": 23040,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 36,
+        "stage": "rope",
+        "stepIndex": 2
+      },
+      {
+        "elementCount": 29952,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 36,
+        "stage": "attention",
+        "stepIndex": 2
+      },
+      {
+        "elementCount": 59904,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 54,
+        "stage": "mlp",
+        "stepIndex": 2
+      },
+      {
+        "elementCount": 262144,
+        "maxAbs": 0.0000095367431640625,
+        "maxRel": 0.013422818791946308,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 1,
+        "stage": "logits",
+        "stepIndex": 2
+      },
+      {
+        "elementCount": 640,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 1,
+        "stage": "embedding",
+        "stepIndex": 3
+      },
+      {
+        "elementCount": 35840,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 56,
+        "stage": "rmsnorm",
+        "stepIndex": 3
+      },
+      {
+        "elementCount": 27648,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 54,
+        "stage": "qkv",
+        "stepIndex": 3
+      },
+      {
+        "elementCount": 23040,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 36,
+        "stage": "rope",
+        "stepIndex": 3
+      },
+      {
+        "elementCount": 29952,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 36,
+        "stage": "attention",
+        "stepIndex": 3
+      },
+      {
+        "elementCount": 59904,
+        "maxAbs": 0,
+        "maxRel": 0,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 54,
+        "stage": "mlp",
+        "stepIndex": 3
+      },
+      {
+        "elementCount": 262144,
+        "maxAbs": 0.00000762939453125,
+        "maxRel": 0.01263157894736842,
+        "pass": true,
+        "phase": "decode",
+        "reason": "",
+        "recordCount": 1,
+        "stage": "logits",
+        "stepIndex": 3
+      }
+    ],
+    "expectedComparisonCount": 28,
+    "kv": {
+      "layerCount": 18,
+      "pass": true,
+      "reason": ""
+    },
+    "pass": true
+  },
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "pass": true,
+  "requestedDecodeSteps": 4,
+  "schemaVersion": 1,
+  "status": "passed",
+  "stepCountPass": true
+}

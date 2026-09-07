@@ -1,0 +1,13 @@
+[
+  "node",
+  "bench/out/compute-program/20260907-addon-release-optimization/cpu-profile/run-profile.mjs",
+  "--provider=doe-webgpu",
+  "--application=heat_diffusion",
+  "--phase=measure",
+  "--backend=vulkan",
+  "--output=bench/out/compute-program/20260907-addon-release-optimization/cpu-profile/result.json",
+  "--policy=bench/out/compute-program/20260907-addon-release-optimization/cpu-profile/policy.json",
+  "--hardware=bench/out/compute-program/20260907-addon-release-optimization/cpu-profile/hardware-profile.json",
+  "--package-root=/home/x/deco/doe/bench/out/compute-program/20260907-concurrent-applications/installed-package/node_modules/doe-gpu",
+  "--package-qualification=/home/x/deco/doe/bench/out/compute-program/20260907-concurrent-applications/package-inputs/summary.json"
+]

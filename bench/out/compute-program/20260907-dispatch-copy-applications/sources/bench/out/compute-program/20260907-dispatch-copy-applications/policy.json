@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 5,
+  "width": 256,
+  "height": 256,
+  "heatIterations": 32,
+  "warmupRuns": 5,
+  "timedRuns": 32,
+  "processRuns": 3,
+  "absoluteTolerance": 1e-05,
+  "relativeTolerance": 1e-05,
+  "interactiveDeadlineMs": 16.666667,
+  "minimumCpuReductionRatio": 1.2,
+  "denoVersion": "2.9.6",
+  "applications": [
+    "image_edges",
+    "heat_diffusion",
+    "holoscript_lif"
+  ],
+  "providers": [
+    "doe-recorded",
+    "doe-webgpu",
+    "dawn",
+    "wgpu"
+  ],
+  "claimStatus": "diagnostic",
+  "processTimeoutMs": 120000,
+  "preparedExecution": "gpu-recorded",
+  "percentileMethod": "nearest-rank",
+  "fixtures": {
+    "holoscript_lif": {
+      "path": "/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/fixtures/holoscript_lif/fixture.json",
+      "hash": "6ff6a64583720ce2ccc7bb35be728ad2ba2a92c19a9bb140cb9159e3323c2e98"
+    }
+  },
+  "gpuTiming": "timestamp-query",
+  "dawnTimestampQuantization": "disabled",
+  "wgpuTimestampUnits": "vulkan-ticks",
+  "vulkanDeviceIndex": 0,
+  "timestampPeriodRelativeTolerance": 1e-05,
+  "timestampSources": [
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-source-audit/Cargo.lock",
+      "hash": "6c6af74640994cc41fcc7f46bb5204a50da679adc2dee96cb05aa97867baf7e1"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-source-audit/LICENSE.md",
+      "hash": "f62497fffecc0852960c8d3e6934b9db86d16396e9b604072e923892cae3a588"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-source-audit/SHA256SUMS",
+      "hash": "29305366cafc7735e7d73cfea7927b3c617d18313ecdeebc84d793c5b66ebc4e"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-source-audit/ext_webgpu_command_encoder.rs",
+      "hash": "2bb2b82bdbef147cc0b7b8680cd5b3b30faf2a75d6688f8681bded5a71bd04df"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-source-audit/ext_webgpu_queue.rs",
+      "hash": "9fab7a73690e5c8c9354007ad2dd46997166630531f8a8f5166fa51498b35a72"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/SHA256SUMS",
+      "hash": "ab2052225f5c52de17b0009a6aff8834177c58c9c755d0134316f812cd9ac58b"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-core-29.0.1.crate",
+      "hash": "1e80ac6cf1895df6342f87d975162108f9d98772a0d74bc404ab7304ac29469e"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-core_LICENSE.APACHE",
+      "hash": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-core_LICENSE.MIT",
+      "hash": "dc0d97139e8205818c703741c7be7cb3b96888bd5917b8d6fc6133731e403c21"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-core_src_command_query.rs",
+      "hash": "753bdd238bd88ca4f8ea5dff2f0796ab923b8cb0ba81c36a327fc5ca95116818"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-hal-29.0.3.crate",
+      "hash": "31f8e1a9e7a8512f276f7c62e018c7fa8d60954303fed2e5750114332049193f"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-hal_LICENSE.APACHE",
+      "hash": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-hal_LICENSE.MIT",
+      "hash": "dc0d97139e8205818c703741c7be7cb3b96888bd5917b8d6fc6133731e403c21"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-hal_src_vulkan_command.rs",
+      "hash": "65586beb28db45edf4d5169eceb77ffa42af1383be4498736c22bfd0df647ab0"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-types-29.0.1.crate",
+      "hash": "ec2675540fb1a5cfa5ef122d3d5f390e2c75711a0b946410f2d6ac3a0f77d1f6"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-types_LICENSE.APACHE",
+      "hash": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-types_LICENSE.MIT",
+      "hash": "dc0d97139e8205818c703741c7be7cb3b96888bd5917b8d6fc6133731e403c21"
+    },
+    {
+      "path": "bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-types_src_lib.rs",
+      "hash": "af153576bce090b101f05d3d4fc35523d82e8f7fd2f935bd60d12956af50cb3b"
+    }
+  ],
+  "gpuActivity": "reject-observed-linux-drm"
+}

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "providerId": "doe-gpu",
+  "library": {
+    "path": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-binding-storage-p0-qualified/package-admission/installed-package/node_modules/doe-gpu-linux-x64/bin/libwebgpu_doe.so",
+    "sha256": "d5c56cdb4fd9e011235a149eb55c4d07f05a0b97f1c819a8e55129a207854e92"
+  },
+  "loaded": true
+}

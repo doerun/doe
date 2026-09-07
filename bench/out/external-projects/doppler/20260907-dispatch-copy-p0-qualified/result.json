@@ -1,0 +1,224 @@
+{
+  "application": {
+    "entrypoint": {
+      "path": "bench/external-projects/doppler/electron-app/main.mjs",
+      "sha256": "6cefd4c5323c02f2656dba73be0db9d636dd43277d26544c47a4cdd97f14e418"
+    },
+    "executable": "/home/x/deco/doe/bench/out/external-projects/doppler/upstream/node_modules/electron/dist/electron",
+    "mode": "main-process-node-side",
+    "package": {
+      "path": "bench/external-projects/doppler/electron-app/package.json",
+      "sha256": "90055f8e8345cd547166e6f29671333b8951e229626d95adbb136af45cf75e96"
+    },
+    "runtime": "electron",
+    "version": "43.4.0"
+  },
+  "artifactKind": "doe-gemma270m-electron-qualification-result",
+  "comparisonBaseline": "P0",
+  "model": {
+    "manifest": {
+      "path": "models/local/gemma-3-270m-it-q4k-ehf16-af32/manifest.json",
+      "sha256": "230104df762ff394095326d8e9fa4dc144d431bbd61ad5139e1030e66836ab78"
+    },
+    "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+    "shaderIdentity": {
+      "sha256": "04e0e534f6d70514eb95678ee5df46f4f709c05c15df022ff398f6a7c99d9cb8",
+      "source": "manifest.inference.execution.kernels"
+    },
+    "tokenizer": {
+      "path": "models/local/gemma-3-270m-it-q4k-ehf16-af32/tokenizer.json",
+      "sha256": "be6955513a2509d69d18e82180c2a477ad99358d15212fb81d957566d8186075"
+    }
+  },
+  "oracle": {
+    "path": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/oracle.json",
+    "sha256": "d90b98b466bf7cdb8b5e422f61ca916b8b805df8e05a5b140acce6f7a9a88ef4",
+    "status": "passed"
+  },
+  "packageQualification": {
+    "path": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/package-admission/package-inputs/summary.json",
+    "sha256": "ea5a2f2691123e999b17487851840024b769c4f8d1161068115cb12614342ce6"
+  },
+  "pass": true,
+  "providers": {
+    "D0": {
+      "id": "doe-gpu",
+      "target": {
+        "path": "bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/package-admission/installed-package/node_modules/doe-gpu/src/compute.js",
+        "sha256": "f0c7e4c93097a4960e91034f0a56f399ed702a250cf1bf38fb2afb5565b651a7"
+      },
+      "targetRoot": "repo",
+      "wrapper": {
+        "path": "bench/external-projects/doppler/provider-doe.mjs",
+        "sha256": "b0b32da0a28f612b7d17531dbe9ae1d5917fa8c7caeddd5a30ea66dfa4d3809f"
+      }
+    },
+    "W0": {
+      "id": "dawn-node-webgpu",
+      "sourceBuild": {
+        "kind": "electron-owned-mappings-p0",
+        "library": {
+          "path": "bench/out/compute-program/20260907-model-attention-repro/p0-provider/dist/linux-x64.dawn.node",
+          "sha256": "98359dec2b4778a82b61a4d6a643953bdd3995ab162e5ddfcc5d51df335479f9"
+        },
+        "patch": {
+          "path": "bench/external-projects/holoscript-snn-webgpu/electron-node-webgpu-p0.patch",
+          "sha256": "818d603296f63c5a198db890eb9a88663492110c3e2659c9aceca4e423ee870d"
+        },
+        "provenance": {
+          "path": "bench/out/compute-program/20260907-model-attention-repro/p0-provider/provenance.txt",
+          "sha256": "8cbed8f557b5cc55fae6a61792cb2fa19bb9dbcadd6d753b51b44012ddd6012b"
+        },
+        "sourceRevision": "c5d549e250b9225744929ae860b369cb4304a767"
+      },
+      "target": {
+        "path": "bench/out/compute-program/20260907-model-attention-repro/p0-provider/index.js",
+        "sha256": "18a44f1e81cd3697156e7ddd3456e9f0d346a0afabb76588379b5b2f6dca50b4"
+      },
+      "targetRoot": "repo",
+      "wrapper": {
+        "path": "bench/external-projects/doppler/provider-dawn.mjs",
+        "sha256": "61422ded8d5d3334dbe568be23a6ca3e41631a157ade8f4bf0132465c68a8d33"
+      }
+    }
+  },
+  "runId": "20260907-dispatch-copy-p0-qualified",
+  "runs": {
+    "D0": {
+      "command": [
+        "--headless",
+        "--no-sandbox",
+        "--disable-gpu",
+        "/home/x/deco/doe/bench/external-projects/doppler/electron-app",
+        "--doppler-root",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+        "--model-dir",
+        "/home/x/deco/doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+        "--model-id",
+        "gemma-3-270m-it-q4k-ehf16-af32",
+        "--prompt",
+        "The color of the sky on a clear day is\n",
+        "--runtime-profile",
+        "profiles/production",
+        "--out-dir",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/lanes/D0",
+        "--decode-steps",
+        "4",
+        "--temperature",
+        "0",
+        "--top-k",
+        "1",
+        "--top-p",
+        "1",
+        "--repetition-penalty",
+        "1",
+        "--seed",
+        "0",
+        "--kernel-path-policy-mode",
+        "locked",
+        "--kernel-path-policy-on-incompatible",
+        "error",
+        "--kernel-path-policy-source-scope",
+        "model,manifest,config",
+        "--no-chat-template"
+      ],
+      "elapsedNs": 2350433929,
+      "exitCode": 0,
+      "lane": "D0",
+      "nativeIdentity": {
+        "path": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/lanes/D0/native-identity.json",
+        "sha256": "4590b69e856d2cf4aa4b0a5f07a9714c59384bfdc3eb6a162b8679611f4958ad"
+      },
+      "outputLimitExceeded": false,
+      "providerId": "doe-gpu",
+      "receiptPath": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/lanes/D0/doppler_int4ple_reference_export.json",
+      "receiptSha256": "ff355cf3977d16cbe6bd8ee00e9ff96d8500760b0c1d8feb4141c4a4e675e1e8",
+      "signal": null,
+      "stderrPath": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/lanes/D0/electron.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutPath": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/lanes/D0/electron.stdout.log",
+      "stdoutSha256": "b9054d7a5e98264ff60ad1dbf3856c7037157d33cebef9cdb5c7b2bd5c689b1f",
+      "targetPath": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/package-admission/installed-package/node_modules/doe-gpu/src/compute.js",
+      "targetSha256": "f0c7e4c93097a4960e91034f0a56f399ed702a250cf1bf38fb2afb5565b651a7",
+      "timedOut": false,
+      "wrapperPath": "/home/x/deco/doe/bench/external-projects/doppler/provider-doe.mjs",
+      "wrapperSha256": "b0b32da0a28f612b7d17531dbe9ae1d5917fa8c7caeddd5a30ea66dfa4d3809f"
+    },
+    "W0": {
+      "command": [
+        "--headless",
+        "--no-sandbox",
+        "--disable-gpu",
+        "/home/x/deco/doe/bench/external-projects/doppler/electron-app",
+        "--doppler-root",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/upstream",
+        "--model-dir",
+        "/home/x/deco/doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+        "--model-id",
+        "gemma-3-270m-it-q4k-ehf16-af32",
+        "--prompt",
+        "The color of the sky on a clear day is\n",
+        "--runtime-profile",
+        "profiles/production",
+        "--out-dir",
+        "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/lanes/W0",
+        "--decode-steps",
+        "4",
+        "--temperature",
+        "0",
+        "--top-k",
+        "1",
+        "--top-p",
+        "1",
+        "--repetition-penalty",
+        "1",
+        "--seed",
+        "0",
+        "--kernel-path-policy-mode",
+        "locked",
+        "--kernel-path-policy-on-incompatible",
+        "error",
+        "--kernel-path-policy-source-scope",
+        "model,manifest,config",
+        "--no-chat-template"
+      ],
+      "elapsedNs": 2190963230,
+      "exitCode": 0,
+      "lane": "W0",
+      "nativeIdentity": {
+        "path": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/lanes/W0/native-identity.json",
+        "sha256": "6013e4755e8863ca0cdf7a77bdbc7a8034566ac690183feb0f41e6af50f686cd"
+      },
+      "outputLimitExceeded": false,
+      "providerId": "dawn-node-webgpu",
+      "receiptPath": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/lanes/W0/doppler_int4ple_reference_export.json",
+      "receiptSha256": "058079832fb8a6023f48a30fdab319ea621d02ae7e496ee362836a7386670e5e",
+      "signal": null,
+      "stderrPath": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/lanes/W0/electron.stderr.log",
+      "stderrSha256": "dff03ffb976b09056b30ff197406138b8e89cda55effc9a9077193a46867f29c",
+      "stdoutPath": "/home/x/deco/doe/bench/out/external-projects/doppler/20260907-dispatch-copy-p0-qualified/lanes/W0/electron.stdout.log",
+      "stdoutSha256": "764f97ed4ee190d59765cb06e102eb76a396b120721dd6ad0512d036987b0cf1",
+      "targetPath": "/home/x/deco/doe/bench/out/compute-program/20260907-model-attention-repro/p0-provider/index.js",
+      "targetSha256": "18a44f1e81cd3697156e7ddd3456e9f0d346a0afabb76588379b5b2f6dca50b4",
+      "timedOut": false,
+      "wrapperPath": "/home/x/deco/doe/bench/external-projects/doppler/provider-dawn.mjs",
+      "wrapperSha256": "61422ded8d5d3334dbe568be23a6ca3e41631a157ade8f4bf0132465c68a8d33"
+    }
+  },
+  "schemaVersion": 2,
+  "source": {
+    "clean": true,
+    "commit": "c27d1354b24f2ddfaaccd2742d1550a848db1931",
+    "repositoryUrl": "https://github.com/clocksmith/doppler"
+  },
+  "status": "passed",
+  "supportTarget": {
+    "adapter": "Radeon 8060S Graphics",
+    "arch": "x86_64",
+    "driver": "Mesa 26.0.3",
+    "id": "linux-x64-radeon-8060s-radv-26-0-3-electron-43-4-0",
+    "os": "linux",
+    "runtime": "electron-43.4.0",
+    "status": "validated"
+  }
+}

@@ -3508,7 +3508,7 @@
       },
       "src/native/compute/doe_compute_ext_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "09cf00f185789bfc76fa0eded288229a0e56d75598e1c8713d867ebf1b737d6f",
+        "moduleSha256": "d702a908d2107894d9bc9b5f69dd8a7d1210d37fe081afab823c76aad33bb0b0",
         "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
         "reviewer": "codex-pass-lifecycle/2026-09-06"
       },
@@ -3520,7 +3520,7 @@
       },
       "src/native/compute/doe_compute_fast_vulkan.zig": {
         "decision": "Keep",
-        "moduleSha256": "b31ccb53f1513093348045ce904c388e8ab4936d0482a212032e28898e1c10c4",
+        "moduleSha256": "3c1442dc4bc5fd8a49537c60b0bd330fd55d413dbd67d1357f6cb81e0e609fbd",
         "reason": "Keep: explicit resource ownership and prepared execution preserve ordinary provider semantics; validated by program and queue-ordering regressions.",
         "reviewer": "codex-gpu-program/2026-09-05"
       },
@@ -3736,7 +3736,7 @@
       },
       "src/native/support/doe_native_command_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "7cc119606bc8add932ffe289ea4a3db2db3c90ee5d0193af662d8d11ba549f77",
+        "moduleSha256": "973612ca269ab09d8a57f2ce94f32e0735d48d37e971da36ab38ef84f1ebdb56",
         "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
         "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
@@ -3784,7 +3784,7 @@
       },
       "src/native/vulkan/vulkan_compute_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "8e669501ae6d00ef595558d13af6b9e1faedbd0f9909e612e08f54ed79232ab6",
+        "moduleSha256": "7a40d85dfa69d4424d4504123f674d4c4ee510f3f04e3c1499adfc75243ee0f1",
         "reason": "Native Vulkan binding preparation consumes one reflected buffer-type interpretation and propagates extraction failures before publishing a usable pipeline.",
         "reviewer": "codex-shader-ownership/2026-09-06"
       },

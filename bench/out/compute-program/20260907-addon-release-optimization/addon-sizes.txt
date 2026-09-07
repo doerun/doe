@@ -1,0 +1,7 @@
+baseline: sha256=4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66 fileBytes=424080
+   text	   data	    bss	    dec	    hex	filename
+ 371740	   6152	   1616	 379508	  5ca74	bench/out/compute-program/20260907-addon-release-optimization/retained-addons/baseline.node
+
+optimized: sha256=efe65cc71dc40ed482d54947f7cffc46f8f7afe52a7f567a9d12913928688dff fileBytes=350544
+   text	   data	    bss	    dec	    hex	filename
+ 298547	   6160	   1616	 306323	  4ac93	bench/out/compute-program/20260907-addon-release-optimization/retained-addons/optimized.node

@@ -1,0 +1,24 @@
+audit passed: image_edges/doe-recorded
+audit passed: image_edges/doe-webgpu
+audit passed: image_edges/dawn
+audit passed: image_edges/wgpu
+audit passed: heat_diffusion/doe-recorded
+audit passed: heat_diffusion/doe-webgpu
+audit passed: heat_diffusion/dawn
+audit passed: heat_diffusion/wgpu
+audit passed: holoscript_lif/doe-recorded
+audit passed: holoscript_lif/doe-webgpu
+audit passed: holoscript_lif/dawn
+audit passed: holoscript_lif/wgpu
+measured: image_edges/doe-recorded/process-0
+measured: image_edges/doe-webgpu/process-0
+measured: image_edges/dawn/process-0
+measured: image_edges/wgpu/process-0
+measured: heat_diffusion/doe-recorded/process-0
+measured: heat_diffusion/doe-webgpu/process-0
+measured: heat_diffusion/dawn/process-0
+measured: heat_diffusion/wgpu/process-0
+measured: holoscript_lif/doe-recorded/process-0
+measured: holoscript_lif/doe-webgpu/process-0
+measured: holoscript_lif/dawn/process-0
+{"summary": "/home/x/deco/doe/bench/out/compute-program/20260907-addon-o2-applications/summary.json", "status": "failed", "error": "Unrelated GPU activity: DRM client 27156/gfx advanced 3352431 ns"}

@@ -1,0 +1,1 @@
+{"output":"/home/x/deco/doe/bench/out/compute-program/20260907-dispatch-copy-applications/heat_diffusion.wgpu.audit.json","status":"passed","error":null,"latency":{"count":1,"mean":12.467782,"min":12.467782,"max":12.467782,"median":12.467782,"p95":12.467782,"p99":12.467782},"cpu":{"count":1,"mean":2.202,"min":2.202,"max":2.202,"median":2.202,"p95":2.202,"p99":2.202}}

@@ -4,6 +4,11 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { createNativeDirect, globals, requestAdapter } from '../../src/native.js';
 import { prepareComputeProgram } from '../../src/compute-program.js';
 
+if (process.platform !== 'linux') {
+  console.log('skip: concurrent device regression requires Linux Vulkan');
+  process.exit(0);
+}
+
 const WORKER_COUNT = 4;
 const WORKER_GENERATIONS = 2;
 const DEVICE_CYCLES = 8;

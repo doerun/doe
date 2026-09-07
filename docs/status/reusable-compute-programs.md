@@ -1,5 +1,11 @@
 # Reusable compute programs
 
+## Ordinary command preparation
+
+Vulkan binding collection fills caller-owned storage; merge checks borrow command
+payloads. Qualification, native CPU measurements, and mixed application results:
+`bench/out/compute-program/20260907-binding-storage/README.md`.
+
 ## Concurrent native ownership
 
 Independent Node workers now have isolated addon state and a stable native
@@ -195,9 +201,10 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
   native binary, including origins, untouched pixels, dimensions, and aspects.
 - [x] Close demonstrated downstream shader and model failures with independent
   accepted outputs; retain reproductions and cross-program regressions.
-- [ ] Measure prolonged sessions, native allocation retention, observed device
-  memory, concurrency, and bounded cancellation/recovery. Distinguish sampled
-  memory from peak residency and device destruction from physical driver loss.
+- [x] Prolonged ordinary and prepared sessions with independently checked output.
+- [x] Stable sampled post-close allocations while closed programs remain reachable.
+- [x] Independent device objects, recreated Node workers, and a surviving parent.
+- [x] Bounded cancellation, explicit device destruction, closing, and reopening.
 - [x] Recheck reflection failure propagation, compilation-owned diagnostics, and
   state-reset approval against implementation and retained-package regressions.
 - [ ] Run the frozen application comparisons with equivalent inputs, correctness,
@@ -205,14 +212,14 @@ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
   latency, CPU use, memory, and long-session behavior; optimize the largest
   demonstrated bottleneck and rerun affected acceptance checks.
 
-Completed checks and bounded prolonged-session evidence are indexed at
-`bench/out/compute-program/20260907-linux-completion/README.md`. Driver-loss,
-full residency peaks, and fair comparisons remain distinct.
-The initializer correction and subsequent package verification are retained at
-`bench/out/compute-program/20260907-constant-initializers/README.md`.
-The dot-loop correction and explicitly selected source-built Electron control
-pass canonical model qualification with the retained package and loaded-library
-identity checks: `bench/out/external-projects/doppler/20260907-multi-dot-p0-qualified/README.md`.
+Serial session, allocation, cancellation, and reopening evidence is indexed at
+`bench/out/compute-program/20260907-linux-completion/README.md`; independent-device
+and worker recreation evidence is at
+`bench/out/compute-program/20260907-async-pipeline-ownership/README.md`.
+Peak residency, physical driver failure, shared-device mutation, and arbitrary
+worker termination are unqualified and outside this bounded milestone.
+Canonical model acceptance uses the retained package and explicit P0 control at
+`bench/out/external-projects/doppler/20260907-concurrent-p0-qualified/result.json`.
 
 Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
 Large Deno ratios remain suspicious host-path observations until audited;

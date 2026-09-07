@@ -1,0 +1,1431 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Compute program execution and evaluation artifacts",
+  "type": "object",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/receipt"
+    },
+    {
+      "$ref": "#/$defs/evaluation"
+    }
+  ],
+  "$defs": {
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "programHash",
+        "execution",
+        "run",
+        "inputHashes",
+        "outputHash",
+        "dispatchCount",
+        "clearedBytes",
+        "uploadedBytes",
+        "readbackBytes",
+        "readbackPath",
+        "allocatedBufferBytes",
+        "timingMs"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "programHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "execution": {
+          "type": "string",
+          "enum": [
+            "gpu-recorded",
+            "native-recorded",
+            "webgpu"
+          ]
+        },
+        "run": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inputHashes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "description": "Hashes of bytes known at invocation start; null means GPU state is identified by inputOrigins rather than observed content."
+        },
+        "outputHash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "dispatchCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clearedBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "uploadedBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "readbackBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "readbackPath": {
+          "type": "string",
+          "enum": [
+            "mapAsync-copy-unmap",
+            "none"
+          ]
+        },
+        "allocatedBufferBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timingMs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "upload",
+            "encode",
+            "submitWait",
+            "readback",
+            "total"
+          ],
+          "properties": {
+            "upload": {
+              "type": "number",
+              "minimum": 0
+            },
+            "encode": {
+              "type": "number",
+              "minimum": 0
+            },
+            "submitWait": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Submission through completion. In receipt versions 1-4 this ends after queue completion; version 5 also includes concurrent readback mapping when present."
+            },
+            "readback": {
+              "type": "number",
+              "minimum": 0,
+              "description": "In receipt versions 1-4 this includes mapping, copying, and unmapping. Version 5 mapping is included in submitWait; readback measures copying, timestamp decoding, and unmapping."
+            },
+            "total": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "gpuTiming": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/gpuTiming"
+            }
+          ]
+        },
+        "programInstance": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "inputOrigins": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/programOrigin"
+          }
+        },
+        "residentStateBefore": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/programOrigin"
+          }
+        },
+        "outputGeneration": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "copiedInputBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "submissionCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "completionMode": {
+          "type": "string",
+          "enum": [
+            "queue-and-map",
+            "queue-only"
+          ],
+          "description": "Version 5 requests queue completion and readback mapping together, waits for both, then copies and unmaps. No-readback execution waits for the queue only."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "minimum": 2
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "gpuTiming"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "gpuTiming"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "minimum": 4
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "programInstance",
+              "inputOrigins",
+              "residentStateBefore",
+              "outputGeneration",
+              "copiedInputBytes",
+              "submissionCount"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "programInstance"
+                  ]
+                },
+                {
+                  "required": [
+                    "inputOrigins"
+                  ]
+                },
+                {
+                  "required": [
+                    "residentStateBefore"
+                  ]
+                },
+                {
+                  "required": [
+                    "outputGeneration"
+                  ]
+                },
+                {
+                  "required": [
+                    "copiedInputBytes"
+                  ]
+                },
+                {
+                  "required": [
+                    "submissionCount"
+                  ]
+                }
+              ]
+            },
+            "properties": {
+              "inputHashes": {
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "outputHash": {
+                "type": "string"
+              },
+              "readbackPath": {
+                "const": "mapAsync-copy-unmap"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "readbackPath": {
+                "const": "none"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "readbackBytes": {
+                "const": 0
+              },
+              "outputHash": {
+                "type": "null"
+              },
+              "gpuTiming": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "minimum": 5
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "completionMode"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "readbackPath": {
+                      "const": "none"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "completionMode": {
+                      "const": "queue-only"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "completionMode": {
+                      "const": "queue-and-map"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "completionMode"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "claimStatus",
+        "provider",
+        "application",
+        "phase",
+        "backend",
+        "policyHash",
+        "programPath",
+        "runtime",
+        "status",
+        "error",
+        "samples",
+        "cold",
+        "preparationMs",
+        "deviceStartupMs",
+        "adapter",
+        "providerArtifact",
+        "allocatedBufferBytes",
+        "peakProcessRssBytes",
+        "lifecycle",
+        "observed",
+        "latencyStatsMs",
+        "cpuStatsMs",
+        "programHash",
+        "expectedPath",
+        "teardownMs",
+        "preparation",
+        "measurementLimits"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "const": "compute_program_evaluation"
+        },
+        "claimStatus": {
+          "type": "string",
+          "const": "diagnostic"
+        },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "doe-recorded",
+            "doe-webgpu",
+            "dawn",
+            "wgpu"
+          ]
+        },
+        "application": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "phase": {
+          "type": "string",
+          "enum": [
+            "audit",
+            "measure"
+          ]
+        },
+        "backend": {
+          "type": "string",
+          "enum": [
+            "vulkan",
+            "metal"
+          ]
+        },
+        "policyHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "programPath": {
+          "type": "string"
+        },
+        "inputPath": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "version"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "node",
+                "bun",
+                "deno"
+              ]
+            },
+            "version": {
+              "type": "string"
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "running",
+            "passed",
+            "failed"
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "samples": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sample"
+          }
+        },
+        "cold": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sample"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preparationMs": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deviceStartupMs": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "adapter": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "vendor",
+                "architecture",
+                "device",
+                "description",
+                "isFallbackAdapter",
+                "vendorID",
+                "deviceID",
+                "driverVersion"
+              ],
+              "properties": {
+                "vendor": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "architecture": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "device": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "isFallbackAdapter": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "vendorID": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "deviceID": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "driverVersion": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "providerArtifact": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "hash"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allocatedBufferBytes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "peakProcessRssBytes": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lifecycle": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "cancellationRejected",
+                "reuseAfterCancellation"
+              ],
+              "properties": {
+                "cancellationRejected": {
+                  "type": "boolean"
+                },
+                "reuseAfterCancellation": {
+                  "type": "boolean"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "dispatchesEncoded",
+            "submissions",
+            "maps"
+          ],
+          "properties": {
+            "dispatchesEncoded": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "submissions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "maps": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "latencyStatsMs": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "count",
+                "mean",
+                "min",
+                "max",
+                "median",
+                "p95",
+                "p99"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "mean": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "median": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "p95": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "p99": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cpuStatsMs": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "count",
+                "mean",
+                "min",
+                "max",
+                "median",
+                "p95",
+                "p99"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "mean": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "median": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "p95": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "p99": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "programHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expectedPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "teardownMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "preparation": {
+          "anyOf": [
+            {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "title": "Compute program preparation resource accounting",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "reusedResources",
+                "createdResources"
+              ],
+              "properties": {
+                "reusedResources": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "createdResources": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "measurementLimits": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "inputPaths": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "fixturePath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gpuStatsNs": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "count",
+                "mean",
+                "min",
+                "max",
+                "median",
+                "p95",
+                "p99"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "mean": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "median": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "p95": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "p99": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "providerAddonArtifact": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "hash"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "timestampCalibrationArtifact": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "hash"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "warmups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sample"
+          }
+        },
+        "lifecycleRuns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sample"
+          }
+        },
+        "failedRun": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sample"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "packageQualification": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "hash"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "packageRoot": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "const": 1
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "inputPath"
+            ]
+          },
+          "else": {
+            "required": [
+              "inputPaths",
+              "fixturePath"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "minimum": 3
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "gpuStatsNs",
+              "providerAddonArtifact",
+              "timestampCalibrationArtifact"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "minimum": 4
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "warmups",
+              "lifecycleRuns",
+              "failedRun"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "warmups"
+                  ]
+                },
+                {
+                  "required": [
+                    "lifecycleRuns"
+                  ]
+                },
+                {
+                  "required": [
+                    "failedRun"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "minimum": 5
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "packageQualification",
+              "packageRoot"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "packageQualification"
+                  ]
+                },
+                {
+                  "required": [
+                    "packageRoot"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "packageQualification"
+            ],
+            "properties": {
+              "packageQualification": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "packageRoot": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "packageQualification"
+            ],
+            "properties": {
+              "packageQualification": {
+                "type": "object"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "packageRoot": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "gpuTiming": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "scope",
+        "beginTicks",
+        "endTicks",
+        "periodNs",
+        "validBits",
+        "elapsedNs"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "vulkan-query-ticks",
+            "webgpu-nanoseconds",
+            "wgpu-vulkan-query-ticks"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "const": "compute-pass"
+        },
+        "beginTicks": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "endTicks": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "periodNs": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "validBits": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "elapsedNs": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "programOrigin": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "hash"
+          ],
+          "properties": {
+            "kind": {
+              "const": "host"
+            },
+            "hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "zero"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "programHash",
+            "programInstance",
+            "buffer",
+            "generation"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "program-output",
+                "program-state"
+              ]
+            },
+            "programHash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "programInstance": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "buffer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        }
+      ]
+    },
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wallMs",
+        "cpuMs",
+        "oracle",
+        "receipt",
+        "outputPath"
+      ],
+      "properties": {
+        "wallMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cpuMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "oracle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "passed",
+            "maxAbsoluteError",
+            "firstFailure"
+          ],
+          "properties": {
+            "passed": {
+              "type": "boolean"
+            },
+            "maxAbsoluteError": {
+              "type": "number",
+              "minimum": 0
+            },
+            "firstFailure": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "receipt": {
+          "$ref": "#/$defs/receipt"
+        },
+        "outputPath": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "required": [
+    "schemaVersion"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "adapter": {},
+    "allocatedBufferBytes": {},
+    "application": {},
+    "backend": {},
+    "claimStatus": {},
+    "clearedBytes": {},
+    "cold": {},
+    "cpuStatsMs": {},
+    "deviceStartupMs": {},
+    "dispatchCount": {},
+    "error": {},
+    "execution": {},
+    "expectedPath": {},
+    "inputHashes": {},
+    "inputPath": {},
+    "kind": {},
+    "latencyStatsMs": {},
+    "lifecycle": {},
+    "measurementLimits": {},
+    "observed": {},
+    "outputHash": {},
+    "peakProcessRssBytes": {},
+    "phase": {},
+    "policyHash": {},
+    "preparation": {},
+    "preparationMs": {},
+    "programHash": {},
+    "programPath": {},
+    "provider": {},
+    "providerArtifact": {},
+    "readbackBytes": {},
+    "readbackPath": {},
+    "run": {},
+    "runtime": {},
+    "samples": {},
+    "schemaVersion": {},
+    "status": {},
+    "teardownMs": {},
+    "timingMs": {},
+    "uploadedBytes": {},
+    "inputPaths": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "fixturePath": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "gpuTiming": {},
+    "gpuStatsNs": {},
+    "providerAddonArtifact": {},
+    "timestampCalibrationArtifact": {},
+    "programInstance": {},
+    "inputOrigins": {},
+    "residentStateBefore": {},
+    "outputGeneration": {},
+    "copiedInputBytes": {},
+    "submissionCount": {},
+    "warmups": {},
+    "lifecycleRuns": {},
+    "failedRun": {},
+    "completionMode": {},
+    "packageQualification": {},
+    "packageRoot": {}
+  }
+}

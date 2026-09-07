@@ -1,0 +1,181 @@
+const std = @import("std");
+const ast_mod = @import("ast.zig");
+const ir = @import("../ir/ir.zig");
+const sema_type_syntax = @import("sema_type_syntax.zig");
+const sema_helpers = @import("sema_helpers.zig");
+const sema_types = @import("sema_types.zig");
+
+const Node = ast_mod.Node;
+const AnalyzeError = sema_types.AnalyzeError;
+
+const parse_access = sema_helpers.parse_access;
+const parse_address_space = sema_helpers.parse_address_space;
+const parse_matrix_shape = sema_type_syntax.parseMatrixShape;
+const parse_wgsl_int_literal = sema_helpers.parse_wgsl_int_literal;
+const parse_storage_texture_format = sema_helpers.parse_storage_texture_format;
+
+pub fn resolve_type_parameterized(self: anytype, node: Node) !ir.TypeId {
+    const name = self.module.tree.tokenSlice(node.main_token);
+    const params_start = node.data.lhs;
+    const params_len = node.data.rhs;
+    if (std.mem.eql(u8, name, "vec2") or std.mem.eql(u8, name, "vec3") or std.mem.eql(u8, name, "vec4")) {
+        if (params_len != 1) return error.InvalidType;
+        const elem = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]);
+        const len: u8 = if (std.mem.eql(u8, name, "vec2")) 2 else if (std.mem.eql(u8, name, "vec3")) 3 else 4;
+        return try self.module.types.intern(.{ .vector = .{ .elem = elem, .len = len } });
+    }
+    if (parse_matrix_shape(name)) |shape| {
+        if (params_len != 1) return error.InvalidType;
+        const elem = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]);
+        return try self.module.types.intern(.{ .matrix = .{ .elem = elem, .columns = shape.columns, .rows = shape.rows } });
+    }
+    if (std.mem.eql(u8, name, "array")) {
+        if (params_len < 1 or params_len > 2) return error.InvalidType;
+        const elem = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]);
+        var len: ?u32 = null;
+        if (params_len == 2) {
+            len = try resolve_array_length_expr(self, self.module.tree.extra_data.items[params_start + 1], 0);
+        }
+        return try self.module.types.intern(.{ .array = .{ .elem = elem, .len = len } });
+    }
+    if (std.mem.eql(u8, name, "atomic")) {
+        if (params_len != 1) return error.InvalidType;
+        return try self.module.types.intern(.{ .atomic = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
+    }
+    if (std.mem.eql(u8, name, "texture_1d")) {
+        if (params_len != 1) return error.InvalidType;
+        return try self.module.types.intern(.{ .texture_1d = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
+    }
+    if (std.mem.eql(u8, name, "texture_2d")) {
+        if (params_len != 1) return error.InvalidType;
+        return try self.module.types.intern(.{ .texture_2d = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
+    }
+    if (std.mem.eql(u8, name, "texture_3d")) {
+        if (params_len != 1) return error.InvalidType;
+        return try self.module.types.intern(.{ .texture_3d = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
+    }
+    if (std.mem.eql(u8, name, "texture_cube")) {
+        if (params_len != 1) return error.InvalidType;
+        return try self.module.types.intern(.{ .texture_cube = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
+    }
+    if (std.mem.eql(u8, name, "texture_2d_array")) {
+        if (params_len != 1) return error.InvalidType;
+        return try self.module.types.intern(.{ .texture_2d_array = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
+    }
+    if (std.mem.eql(u8, name, "texture_external")) {
+        if (params_len != 0) return error.InvalidType;
+        return try self.module.types.intern(.{ .texture_2d = self.module.f32_type });
+    }
+    if (std.mem.eql(u8, name, "texture_storage_2d")) {
+        if (params_len != 2) return error.InvalidType;
+        const format_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start]];
+        if (format_node.tag != .type_name) return error.InvalidType;
+        const access_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start + 1]];
+        if (access_node.tag != .type_name) return error.InvalidType;
+        const access = try parse_access(self.module.tree.tokenSlice(access_node.main_token));
+        return try self.module.types.intern(.{ .storage_texture_2d = .{
+            .format = try parse_storage_texture_format(self.module.tree.tokenSlice(format_node.main_token)),
+            .access = access,
+        } });
+    }
+    if (std.mem.eql(u8, name, "ptr")) {
+        if (params_len < 2 or params_len > 3) return error.InvalidType;
+        const addr_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start]];
+        if (addr_node.tag != .type_name) return error.InvalidType;
+        const addr_space = try parse_address_space(self.module.tree.tokenSlice(addr_node.main_token));
+        const elem = try self.resolve_type_node(self.module.tree.extra_data.items[params_start + 1]);
+        const access = if (params_len == 3) blk: {
+            const access_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start + 2]];
+            if (access_node.tag != .type_name) return error.InvalidType;
+            break :blk try parse_access(self.module.tree.tokenSlice(access_node.main_token));
+        } else .read_write;
+        return try self.module.types.intern(.{ .ref = .{ .elem = elem, .addr_space = addr_space, .access = access } });
+    }
+    return error.UnknownType;
+}
+
+const MAX_ARRAY_LENGTH_CONST_DEPTH: u8 = 32;
+
+fn resolve_array_length_expr(self: anytype, node_idx: u32, depth: u8) AnalyzeError!u32 {
+    if (depth >= MAX_ARRAY_LENGTH_CONST_DEPTH) return error.InvalidType;
+    const tree = self.module.tree;
+    const node = tree.nodes.items[node_idx];
+    return switch (node.tag) {
+        .int_literal => parse_wgsl_int_literal(u32, tree.tokenSlice(node.main_token)) catch error.InvalidType,
+        .ident_expr, .type_name => resolve_named_array_length_const(self, tree.tokenSlice(node.main_token), depth + 1),
+        .binary_expr => resolve_array_length_binary(self, node, depth + 1),
+        .construct_expr => resolve_array_length_constructor(self, node, depth + 1),
+        else => error.InvalidType,
+    };
+}
+
+fn resolve_array_length_constructor(self: anytype, node: Node, depth: u8) AnalyzeError!u32 {
+    const tree = self.module.tree;
+    const type_node = tree.nodes.items[node.data.lhs];
+    if (type_node.tag != .type_name) return error.InvalidType;
+    const type_tag = tree.tokens.items[type_node.main_token].tag;
+    if (type_tag != .kw_i32 and type_tag != .kw_u32) return error.InvalidType;
+
+    const args_start = node.data.rhs & 0xFFFF;
+    const args_len = node.data.rhs >> 16;
+    if (args_len != 1) return error.InvalidType;
+    const value = try resolve_array_length_expr(self, tree.extra_data.items[args_start], depth);
+    if (type_tag == .kw_i32 and value > std.math.maxInt(i32)) return error.InvalidType;
+    return value;
+}
+
+fn resolve_named_array_length_const(self: anytype, name: []const u8, depth: u8) AnalyzeError!u32 {
+    const global_index = self.module.global_map.get(name) orelse return error.InvalidType;
+    const global_info = self.module.globals.items[global_index];
+    if (global_info.class != .const_ and global_info.class != .override_) return error.InvalidType;
+    if (global_info.class == .override_) {
+        if (try resolve_override_u32(self, global_info)) |value| return value;
+    }
+    const global_node = self.module.tree.nodes.items[global_info.node_idx];
+    const init_node = switch (global_node.tag) {
+        .const_decl => global_node.data.rhs,
+        .override_decl => self.module.tree.extra_data.items[global_node.data.lhs + 2],
+        else => ast_mod.NULL_NODE,
+    };
+    if (init_node == ast_mod.NULL_NODE) return error.InvalidType;
+    return resolve_array_length_expr(self, init_node, depth);
+}
+
+fn resolve_override_u32(self: anytype, global_info: sema_types.GlobalInfo) AnalyzeError!?u32 {
+    for (self.overrides) |entry| {
+        const numeric_id = std.fmt.parseInt(u32, entry.key, 10) catch null;
+        const matches = if (numeric_id) |id|
+            global_info.override_id != null and global_info.override_id.? == id
+        else
+            std.mem.eql(u8, global_info.name, entry.key);
+        if (!matches) continue;
+        if (!std.math.isFinite(entry.value) or
+            entry.value < 1.0 or
+            entry.value > @as(f64, @floatFromInt(std.math.maxInt(u32))) or
+            @floor(entry.value) != entry.value)
+        {
+            return error.InvalidType;
+        }
+        return @as(u32, @intFromFloat(entry.value));
+    }
+    return null;
+}
+
+fn resolve_array_length_binary(self: anytype, node: Node, depth: u8) AnalyzeError!u32 {
+    const lhs = try resolve_array_length_expr(self, node.data.lhs, depth);
+    const rhs = try resolve_array_length_expr(self, node.data.rhs, depth);
+    const op = self.module.tree.tokens.items[node.main_token].tag;
+    return switch (op) {
+        .@"+" => std.math.add(u32, lhs, rhs) catch error.InvalidType,
+        .@"-" => std.math.sub(u32, lhs, rhs) catch error.InvalidType,
+        .@"*" => std.math.mul(u32, lhs, rhs) catch error.InvalidType,
+        .@"/" => if (rhs == 0) error.InvalidType else @divTrunc(lhs, rhs),
+        .@"%" => if (rhs == 0) error.InvalidType else @mod(lhs, rhs),
+        .shift_left => if (rhs >= @bitSizeOf(u32)) error.InvalidType else lhs << @as(std.math.Log2Int(u32), @intCast(rhs)),
+        .shift_right => if (rhs >= @bitSizeOf(u32)) error.InvalidType else lhs >> @as(std.math.Log2Int(u32), @intCast(rhs)),
+        .@"&" => lhs & rhs,
+        .@"|" => lhs | rhs,
+        .@"^" => lhs ^ rhs,
+        else => error.InvalidType,
+    };
+}

@@ -1,0 +1,33 @@
+const abi_base = @import("../../core/abi/wgpu_handle_types.zig");
+const abi_pipeline = @import("../../core/abi/wgpu_pipeline_descriptor_types.zig");
+const loader = @import("../../core/abi/wgpu_loader.zig");
+const render_types_mod = @import("wgpu_render_types.zig");
+
+pub fn createPipelineLayoutWithPixelLocalStorage(
+    self: anytype,
+    bind_group_layouts: []const abi_base.WGPUBindGroupLayout,
+    total_size_bytes: u64,
+    storage_attachments: []const render_types_mod.PipelineLayoutStorageAttachment,
+) !abi_base.WGPUPipelineLayout {
+    if (storage_attachments.len == 0 or total_size_bytes == 0) return error.PipelineLayoutCreationFailed;
+    const procs = self.core.procs orelse return error.ProceduralNotReady;
+    var pls_chain = render_types_mod.PipelineLayoutPixelLocalStorage{
+        .chain = .{
+            .next = null,
+            .sType = render_types_mod.WGPUSType_PipelineLayoutPixelLocalStorage,
+        },
+        .totalPixelLocalStorageSize = total_size_bytes,
+        .storageAttachmentCount = storage_attachments.len,
+        .storageAttachments = storage_attachments.ptr,
+    };
+    const descriptor = abi_pipeline.WGPUPipelineLayoutDescriptor{
+        .nextInChain = @ptrCast(&pls_chain.chain),
+        .label = loader.emptyStringView(),
+        .bindGroupLayoutCount = bind_group_layouts.len,
+        .bindGroupLayouts = bind_group_layouts.ptr,
+        .immediateSize = 0,
+    };
+    const layout = procs.wgpuDeviceCreatePipelineLayout(self.core.device.?, &descriptor);
+    if (layout == null) return error.PipelineLayoutCreationFailed;
+    return layout;
+}

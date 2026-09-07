@@ -1,0 +1,24 @@
+ok: invalid shader leaves the running state usable
+ok: independent acceptance rejects compiling but incorrect edits
+ok: obsolete edits cancel while the simulation advances during preflight
+ok: stale and declined reset decisions preserve the previous state
+ok: exact reset approval initializes and checks the replacement state
+sample: frames=256 elapsedMs=5351.608271 workerRssBytes=149024768 maximumError=2.8085196390748024e-9
+sample: frames=512 elapsedMs=10691.580675 workerRssBytes=144715776 maximumError=2.8085196390748024e-9
+sample: frames=768 elapsedMs=16050.484328999999 workerRssBytes=145764352 maximumError=2.8085196390748024e-9
+sample: frames=1024 elapsedMs=21404.71636 workerRssBytes=146026496 maximumError=2.8085196390748024e-9
+sample: frames=1280 elapsedMs=26756.144538 workerRssBytes=146046976 maximumError=2.8085196390748024e-9
+sample: frames=1536 elapsedMs=32101.624860999997 workerRssBytes=147095552 maximumError=2.8085196390748024e-9
+sample: frames=1792 elapsedMs=37414.123055000004 workerRssBytes=147619840 maximumError=2.8085196390748024e-9
+sample: frames=2048 elapsedMs=42772.303665 workerRssBytes=147619840 maximumError=2.8085196390748024e-9
+sample: frames=2304 elapsedMs=48103.103679 workerRssBytes=148627456 maximumError=2.8085196390748024e-9
+sample: frames=2560 elapsedMs=53454.753988 workerRssBytes=148627456 maximumError=2.8085196390748024e-9
+sample: frames=2816 elapsedMs=58830.712973 workerRssBytes=148627456 maximumError=2.8085196390748024e-9
+sample: frames=3072 elapsedMs=64151.153588 workerRssBytes=149151744 maximumError=2.8085196390748024e-9
+sample: frames=3328 elapsedMs=69480.305986 workerRssBytes=149938176 maximumError=2.8085196390748024e-9
+sample: frames=3584 elapsedMs=74828.24397 workerRssBytes=149938176 maximumError=4.506916629828939e-9
+sample: frames=3840 elapsedMs=80153.727192 workerRssBytes=149938176 maximumError=8.090832796488548e-9
+sample: frames=4096 elapsedMs=85436.620622 workerRssBytes=149938176 maximumError=1.3539063925321546e-8
+ok: prolonged independently checked simulation frames=4096 sampledMaximumWorkerRssBytes=150073344
+ok: closing cancels candidate work and releases the live worker
+ok: a closed workspace reopens with independently checked initial state
