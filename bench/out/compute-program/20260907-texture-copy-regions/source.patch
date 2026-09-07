@@ -1,0 +1,1697 @@
+diff --git a/docs/process.md b/docs/process.md
+index 0d91a0f15..6e7b40f04 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -253,6 +253,20 @@ classified and cannot be promoted by benchmark results.
+   Copy-only textures and WebGPU views retain metadata without allocating Vulkan
+   image views. Physical transfer acceptance also checks Vulkan synchronization
+   validation, including explicit view creation and release.
++  Standard WebGPU buffer/image copy descriptors preserve origin and aspect through
++  recording and backend execution. One neutral layout contract owns range,
++  format footprint, selected plane, stride, and last-accessed-byte decisions.
++  The C bridge enforces WebGPU row alignment and omitted-stride rules; the existing
++  flattened native entrypoints retain their compact-layout contract. Invalid
++  device identity, usage, region, or aspect poisons the encoder before allocation
++  or resource retention. Empty copies still undergo descriptor validation.
++  Buffer/image recording on unsupported backends fails explicitly. This migrates
++  internal command metadata and private Metal bridge arguments; public C exports,
++  descriptors, config schemas, traces, and receipts keep their existing shape.
++  Regression acceptance covers nonzero origins in array and volume mips, padded
++  strides, copyable depth/stencil planes, invalid descriptors, allocation failure,
++  and successful work after rejection. Backend plumbing alone is not physical
++  platform qualification.
+   Native regressions must reject an abandoned-copy side effect, check layered
+   readback and resident restore followed by a dependent dispatch, and release
+   caller references before submission. Copy completion remains part of the
+diff --git a/docs/status/compiler-and-webgpu.md b/docs/status/compiler-and-webgpu.md
+index 0e95c6bd8..9cf912a13 100644
+--- a/docs/status/compiler-and-webgpu.md
++++ b/docs/status/compiler-and-webgpu.md
+@@ -52,11 +52,11 @@ dependent dispatch; mapped readback receives explicit transfer visibility.
+ Abandoned recordings do not execute, and padding remains untouched. Copy-only
+ textures and their WebGPU views allocate no Vulkan image views; the physical
+ fixture also runs with synchronization validation enabled.
+-The layered-copy and resident-restore regressions retain their pre-fix failures
+-and physical AMD Vulkan results at
+-`bench/out/compute-program/20260907-texture-transfers/README.md`.
+-These checks do not establish texture-origin/aspect conformance, concurrent queue
+-safety, physical Metal/D3D12 behavior, or a performance advantage.
++The WebGPU C bridge preserves origins and aspects; shared admission rejects
++invalid descriptors before retention. Array, volume, and depth/stencil evidence:
++`bench/out/compute-program/20260907-texture-copy-regions/README.md`.
++This does not establish full conformance, concurrent queue safety, physical
++Metal/D3D12 behavior, or a performance advantage.
+ 
+ ## Transactional fused command construction
+ 
+diff --git a/docs/status/reusable-compute-programs.md b/docs/status/reusable-compute-programs.md
+index 90fcf7725..6bb9eaf35 100644
+--- a/docs/status/reusable-compute-programs.md
++++ b/docs/status/reusable-compute-programs.md
+@@ -180,25 +180,33 @@ These are repeated physical tests on the same AMD host, not independent
+ reproduction or registry publication. The matrix retains raw outputs, native
+ journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
+ 
+-## Open acceptance requirements
+-
+-- Independently reproduce the simulation correction and establish a useful
+-  application benefit with preparation, correct output, and complete operation
+-  timing included. Dawn and wgpu still fail the resident oracle; their resident
+-  timings cannot enter an equivalent-work speed comparison. Large Deno ratios
+-  remain suspicious host-path observations. Correct invocation-local workloads
+-  still include incumbent tail losses.
+-- Reproduce the useful mechanism on physical Apple Metal. GPU recording is
+-  unsupported there, and the known Mac host is unreachable from this workspace.
+-  Windows needs an approved physical D3D12 lane. AMD package evidence does not
+-  qualify either platform or Electron renderer execution.
+-- Measure native and peak device memory, application-level concurrency and
+-  resource retention, real driver loss, hangs, and recovery. Explicit device
+-  destruction and requested buffer totals do not satisfy those requirements.
+-- Complete external portfolio transfer, release admission, authorized
+-  publication, and independent repeat use. Broader shader, conformance, and
+-  model-transcript gaps remain in [compiler and WebGPU](compiler-and-webgpu.md).
+-  Fawn remains an experimental distribution surface.
++## Linux/Vulkan completion checklist
++
++- Verify retained package hashes and clean Node, Bun, and Electron main-process
++  installation. Run public C-boundary copy regressions against the retained
++  native binary, including origins, untouched pixels, dimensions, and aspects.
++- Close demonstrated downstream shader and model failures with independent
++  accepted outputs; retain reproductions and cross-program regressions.
++- Measure prolonged sessions, native allocation retention, observed device
++  memory, concurrency, and bounded cancellation/recovery. Distinguish sampled
++  memory from peak residency and device destruction from physical driver loss.
++- Recheck reflection failure propagation, compilation-owned diagnostics, and
++  state-reset approval against implementation and retained-package regressions.
++- Run the frozen application comparisons with equivalent inputs, correctness,
++  caches, transfers, and completion. Record preparation, complete-operation
++  latency, CPU use, memory, and long-session behavior; optimize the largest
++  demonstrated bottleneck and rerun affected acceptance checks.
++
++Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
++Large Deno ratios remain suspicious host-path observations until audited;
++correct invocation-local workloads still include incumbent tail losses. Passing
++implementation checks does not establish a performance advantage.
++
++Physical Metal and D3D12 testing are excluded from this milestone; AMD evidence
++does not qualify them or Electron renderer execution. Independent adoption is a
++separate product outcome. Release admission and authorized publication retain
++their own requirements. Broader shader, conformance, and model-transcript scope
++lives in [compiler and WebGPU](compiler-and-webgpu.md); Fawn remains experimental.
+ 
+ ## Ground truth
+ 
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 64e41fd48..6b8e38a77 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -994,9 +994,9 @@
+       },
+       "src/backend/metal/metal_bridge_decls.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "c21eafbcf392bd8525f63bd88fc3ca62cdd3904ed63d237dcfab075bda29e5a6",
+-        "reason": "Keep: reachable backend implementation shared by 25 production consumers with no conflicting ownership signal.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
++        "moduleSha256": "943ff6853fa58a9fecc71e6583ffc68ed43a53c26e43c2f4b6a276b3a1fd5a4a",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       },
+       "src/backend/metal/metal_buffer_pool.zig": {
+         "decision": "Keep",
+@@ -1312,9 +1312,9 @@
+       },
+       "src/backend/vulkan/vk_formats.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "83b0f0358d827552ee0b1d40ca9505e16e5017c8347d531c5cfb87df8b4e4a90",
+-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
+-        "reviewer": "codex-recording-ownership/2026-09-06"
++        "moduleSha256": "176c11d02d77eabef4690a93c19a12b990348d399ccd94afb735ec1ed1129a2b",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       },
+       "src/backend/vulkan/vk_functions.zig": {
+         "decision": "Keep",
+@@ -1408,9 +1408,9 @@
+       },
+       "src/backend/vulkan/vk_texture_commands.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "a3f6f3edfcdb2ba8f7e485ceba1cc1acfae9a84798ec662636d2dee7a5e01b96",
+-        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
+-        "reviewer": "codex-texture-transfer/2026-09-07"
++        "moduleSha256": "82b32dc3e8f756a9cd9c3c7db5b37dbbba0c62b093e6c7b0fb2845d6667561e0",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       },
+       "src/backend/vulkan/vk_upload.zig": {
+         "decision": "Keep",
+@@ -3220,9 +3220,9 @@
+       },
+       "src/dropin/wgpu_dropin_ext_b.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "f3209f7448e98acd031d3025d418aafb603ebb2d7118a9c2225b6d08f4dc3c12",
+-        "reason": "Keep: reachable dropin implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
++        "moduleSha256": "51e38894c683faa1785f5b884ea4697419bc998887a8945235f22413f5c3e87e",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       },
+       "src/dropin/wgpu_dropin_ext_c.zig": {
+         "decision": "Keep",
+@@ -3490,9 +3490,9 @@
+       },
+       "src/native/command/doe_encoder_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "16bc7a7d596a7ec4a35adf52a6dd5bcad96d3a1dded5685c037cc88f9661c42d",
+-        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+-        "reviewer": "codex-submit-availability/2026-09-07"
++        "moduleSha256": "f21da0b0abd6023947c4312e62b4e19b6d061ea0072375a8d9464799c39102b2",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       },
+       "src/native/command/doe_immediates_external_native.zig": {
+         "decision": "Keep",
+@@ -3592,9 +3592,9 @@
+       },
+       "src/native/queue/doe_queue_submit_metal.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "0a6db901c77d1769a61cf2db7c9f7c8c76323f2ea1a6d8724fb7a51a6c48998f",
+-        "reason": "Keep: snapshot Vulkan draw inputs at recording and execute them in submission order, retaining native resources and matching attachment dimensions.",
+-        "reviewer": "codex-render-submission/2026-09-06"
++        "moduleSha256": "aa25ffeeb029d6f7ea2463c617481c8d95248151c00ffac50fc27d6373179392",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       },
+       "src/native/queue/doe_queue_submit_native.zig": {
+         "decision": "Keep",
+@@ -3610,9 +3610,9 @@
+       },
+       "src/native/queue/doe_queue_submit_vulkan.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "cb42554031bb767392ecda4925109ae8866e8988f56b6b4478179b2185d94171",
+-        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
+-        "reviewer": "codex-texture-transfer/2026-09-07"
++        "moduleSha256": "4aabc5fa7cbc48c1470ef3f423deeee997e01d161ead176eed79b79e05a40bee",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       },
+       "src/native/render/doe_bundle_native.zig": {
+         "decision": "Keep",
+@@ -3736,9 +3736,9 @@
+       },
+       "src/native/support/doe_native_command_types.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "349ec7e55fefcdd5f4fb574018d9d297821c6fe1b59a4e803e66a4a80efa95bc",
+-        "reviewer": "codex-render-submission/2026-09-06",
+-        "reason": "Keep: shared vertex-format identity is checked against the pinned WebGPU header; native backend conversion and recorded execution remain owned by their existing components."
++        "moduleSha256": "7cc119606bc8add932ffe289ea4a3db2db3c90ee5d0193af662d8d11ba549f77",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       },
+       "src/native/support/doe_native_exports.zig": {
+         "decision": "Keep",
+@@ -3958,9 +3958,9 @@
+       },
+       "src/runtime/diagnostics/error_scope.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "0459ef562c9564db0f2b5059d1ee65770de28a5dbdcfa80a7fd3da20e0f1fa54",
+-        "reason": "Keep: shared typed buffer-copy admission validates device, usage, range, alignment and the declared alias policy before retaining resources.",
+-        "reviewer": "codex-copy-admission/2026-09-07"
++        "moduleSha256": "7622fef89dc9d1689780089d5098189d859ddf0d4f9b2bb701b428c24e5848ca",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       },
+       "src/runtime/env_flags.zig": {
+         "decision": "Keep",
+@@ -4306,9 +4306,9 @@
+       },
+       "src/contracts/command_recording.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "cbc3b137cae4d510cf3d765870fd4d56d189d29334b9efb7ebca0999734167a0",
+-        "reason": "Keep: shared typed buffer-copy admission validates device, usage, range, alignment and the declared alias policy before retaining resources.",
+-        "reviewer": "codex-copy-admission/2026-09-07"
++        "moduleSha256": "e5f4db7f8b6a500c8637717d5eafaf738cb98540c3865cdf7a19754b24e91d4b",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       },
+       "src/native/command/doe_command_recording.zig": {
+         "decision": "Keep",
+@@ -4327,6 +4327,24 @@
+         "moduleSha256": "acda1d9a23e62cbe03043688372e6561363c4d1ee6ed114c5c94874a98c62098",
+         "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
+         "reviewer": "codex-submit-availability/2026-09-07"
++      },
++      "src/contracts/texture_copy.zig": {
++        "decision": "Keep",
++        "moduleSha256": "4a7b01380cb0000a1f7c8d587b7c2b157f6fd9f384444427fc968cdeb92e8c81",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
++      },
++      "src/contracts/texture_format_layout.zig": {
++        "decision": "Keep",
++        "moduleSha256": "2c93a5ec273e29d5b88e7c4a4214d0c3f5430e2a1a49d213458316fd4e3e30b4",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
++      },
++      "src/native/command/doe_buffer_texture_copy.zig": {
++        "decision": "Keep",
++        "moduleSha256": "c5f0ebbbaed095c6aee7928d869eeff7c63d0303af835db5f46cc1da0fedf301",
++        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
++        "reviewer": "codex-texture-copy-regions/2026-09-07"
+       }
+     },
+     "linePolicy": {
+diff --git a/runtime/zig/src/backend/metal/metal_bridge.h b/runtime/zig/src/backend/metal/metal_bridge.h
+index aacfd970b..0f0008d86 100644
+--- a/runtime/zig/src/backend/metal/metal_bridge.h
++++ b/runtime/zig/src/backend/metal/metal_bridge.h
+@@ -126,7 +126,7 @@ void metal_bridge_blit_encoder_copy_buffer_to_texture(
+     uint32_t    dst_mip_level,
+     uint32_t    width,
+     uint32_t    height,
+-    uint32_t    depth_or_array_layers);
++    uint32_t    depth_or_array_layers, uint32_t origin_x, uint32_t origin_y, uint32_t origin_z, uint32_t aspect);
+ void metal_bridge_blit_encoder_copy_texture_to_buffer(
+     MetalHandle encoder,
+     MetalHandle src_texture,
+@@ -137,7 +137,7 @@ void metal_bridge_blit_encoder_copy_texture_to_buffer(
+     uint32_t    dst_rows_per_image,
+     uint32_t    width,
+     uint32_t    height,
+-    uint32_t    depth_or_array_layers);
++    uint32_t    depth_or_array_layers, uint32_t origin_x, uint32_t origin_y, uint32_t origin_z, uint32_t aspect);
+ void metal_bridge_blit_encoder_copy_texture_to_texture(
+     MetalHandle encoder,
+     MetalHandle src_texture,
+diff --git a/runtime/zig/src/backend/metal/metal_bridge.m b/runtime/zig/src/backend/metal/metal_bridge.m
+index 31f5bc5b7..389e12cff 100644
+--- a/runtime/zig/src/backend/metal/metal_bridge.m
++++ b/runtime/zig/src/backend/metal/metal_bridge.m
+@@ -667,67 +667,56 @@ void metal_bridge_blit_encoder_copy_region(
+                        size:(NSUInteger)size];
+ }
+ 
++static MTLBlitOption buffer_texture_copy_options(id<MTLTexture> texture, uint32_t aspect) {
++    if (texture.pixelFormat != MTLPixelFormatDepth32Float_Stencil8 &&
++        texture.pixelFormat != MTLPixelFormatDepth24Unorm_Stencil8) return MTLBlitOptionNone;
++    return aspect == WGPUTextureAspect_StencilOnly ? MTLBlitOptionStencilFromDepthStencil : MTLBlitOptionDepthFromDepthStencil;
++}
++
+ void metal_bridge_blit_encoder_copy_buffer_to_texture(
+-    MetalHandle encoder_h,
+-    MetalHandle src_h,
+-    uint64_t    src_offset,
+-    uint32_t    src_bytes_per_row,
+-    uint32_t    src_rows_per_image,
+-    MetalHandle dst_texture_h,
+-    uint32_t    dst_mip_level,
+-    uint32_t    width,
+-    uint32_t    height,
+-    uint32_t    depth_or_array_layers)
++    MetalHandle encoder_h, MetalHandle src_h, uint64_t src_offset,
++    uint32_t src_bytes_per_row, uint32_t src_rows_per_image,
++    MetalHandle dst_texture_h, uint32_t dst_mip_level,
++    uint32_t width, uint32_t height, uint32_t depth_or_array_layers,
++    uint32_t origin_x, uint32_t origin_y, uint32_t origin_z, uint32_t aspect)
+ {
+     id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
+     id<MTLBuffer> src = (__bridge id<MTLBuffer>)src_h;
+     id<MTLTexture> dst = (__bridge id<MTLTexture>)dst_texture_h;
+-    MTLSize copy_size = MTLSizeMake(width, height, depth_or_array_layers);
+-    SEL copy_sel = @selector(copyFromBuffer:sourceOffset:sourceBytesPerRow:sourceBytesPerImage:sourceSize:toTexture:destinationSlice:destinationLevel:destinationOrigin:);
+-    typedef void (*CopyBufferToTextureFn)(id, SEL, id<MTLBuffer>, NSUInteger, NSUInteger, NSUInteger, MTLSize, id<MTLTexture>, NSUInteger, NSUInteger, MTLOrigin);
+-    static CopyBufferToTextureFn copy_fn = NULL;
+-    if (copy_fn == NULL) {
+-        copy_fn = (CopyBufferToTextureFn)(IMP)[(id)encoder methodForSelector:copy_sel];
++    const BOOL volume = dst.textureType == MTLTextureType3D;
++    const NSUInteger stride = (NSUInteger)src_rows_per_image * src_bytes_per_row;
++    const MTLSize size = MTLSizeMake(MIN(width, MAX(dst.width >> dst_mip_level, 1) - origin_x), MIN(height, MAX(dst.height >> dst_mip_level, 1) - origin_y), volume ? depth_or_array_layers : 1);
++    const MTLOrigin origin = MTLOriginMake(origin_x, origin_y, volume ? origin_z : 0);
++    for (NSUInteger layer = 0; layer < (volume ? 1 : depth_or_array_layers); ++layer) {
++        [encoder copyFromBuffer:src sourceOffset:(NSUInteger)src_offset + layer * stride
++             sourceBytesPerRow:src_bytes_per_row sourceBytesPerImage:stride sourceSize:size
++                     toTexture:dst destinationSlice:volume ? 0 : origin_z + layer
++              destinationLevel:dst_mip_level destinationOrigin:origin
++                       options:buffer_texture_copy_options(dst, aspect)];
+     }
+-    copy_fn(
+-        encoder,
+-        copy_sel,
+-        src,
+-        (NSUInteger)src_offset,
+-        (NSUInteger)src_bytes_per_row,
+-        (NSUInteger)src_rows_per_image * (NSUInteger)src_bytes_per_row,
+-        copy_size,
+-        dst,
+-        0,
+-        (NSUInteger)dst_mip_level,
+-        MTLOriginMake(0, 0, 0));
+ }
+ 
+ void metal_bridge_blit_encoder_copy_texture_to_buffer(
+-    MetalHandle encoder_h,
+-    MetalHandle src_texture_h,
+-    uint32_t    src_mip_level,
+-    MetalHandle dst_h,
+-    uint64_t    dst_offset,
+-    uint32_t    dst_bytes_per_row,
+-    uint32_t    dst_rows_per_image,
+-    uint32_t    width,
+-    uint32_t    height,
+-    uint32_t    depth_or_array_layers)
++    MetalHandle encoder_h, MetalHandle src_texture_h, uint32_t src_mip_level,
++    MetalHandle dst_h, uint64_t dst_offset, uint32_t dst_bytes_per_row,
++    uint32_t dst_rows_per_image, uint32_t width, uint32_t height,
++    uint32_t depth_or_array_layers, uint32_t origin_x, uint32_t origin_y,
++    uint32_t origin_z, uint32_t aspect)
+ {
+     id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
+     id<MTLTexture> src = (__bridge id<MTLTexture>)src_texture_h;
+     id<MTLBuffer> dst = (__bridge id<MTLBuffer>)dst_h;
+-    MTLSize copy_size = MTLSizeMake(width, height, depth_or_array_layers);
+-    [encoder copyFromTexture:src
+-                 sourceSlice:0
+-                 sourceLevel:(NSUInteger)src_mip_level
+-                sourceOrigin:MTLOriginMake(0, 0, 0)
+-                  sourceSize:copy_size
+-                    toBuffer:dst
+-           destinationOffset:(NSUInteger)dst_offset
+-      destinationBytesPerRow:(NSUInteger)dst_bytes_per_row
+-    destinationBytesPerImage:(NSUInteger)dst_rows_per_image * (NSUInteger)dst_bytes_per_row];
++    const BOOL volume = src.textureType == MTLTextureType3D;
++    const NSUInteger stride = (NSUInteger)dst_rows_per_image * dst_bytes_per_row;
++    const MTLSize size = MTLSizeMake(MIN(width, MAX(src.width >> src_mip_level, 1) - origin_x), MIN(height, MAX(src.height >> src_mip_level, 1) - origin_y), volume ? depth_or_array_layers : 1);
++    const MTLOrigin origin = MTLOriginMake(origin_x, origin_y, volume ? origin_z : 0);
++    for (NSUInteger layer = 0; layer < (volume ? 1 : depth_or_array_layers); ++layer) {
++        [encoder copyFromTexture:src sourceSlice:volume ? 0 : origin_z + layer
++                    sourceLevel:src_mip_level sourceOrigin:origin sourceSize:size
++                       toBuffer:dst destinationOffset:(NSUInteger)dst_offset + layer * stride
++         destinationBytesPerRow:dst_bytes_per_row destinationBytesPerImage:stride
++                        options:buffer_texture_copy_options(src, aspect)];
++    }
+ }
+ 
+ void metal_bridge_blit_encoder_copy_texture_to_texture(
+diff --git a/runtime/zig/src/backend/metal/metal_bridge_decls.zig b/runtime/zig/src/backend/metal/metal_bridge_decls.zig
+index 8bd5cb03c..5f604ff6c 100644
+--- a/runtime/zig/src/backend/metal/metal_bridge_decls.zig
++++ b/runtime/zig/src/backend/metal/metal_bridge_decls.zig
+@@ -93,8 +93,8 @@ pub extern fn metal_bridge_encode_icb_render_pass(queue: ?*anyopaque, pipeline:
+ pub extern fn metal_bridge_cmd_buf_encode_blit_copy(cmd_buf: ?*anyopaque, src: ?*anyopaque, src_off: u64, dst: ?*anyopaque, dst_off: u64, size: u64) callconv(.c) void;
+ pub extern fn metal_bridge_compute_dispatch_copy_signal_commit(queue: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32, copy_src: ?*anyopaque, copy_src_off: u64, copy_dst: ?*anyopaque, copy_dst_off: u64, copy_size: u64, event: ?*anyopaque, event_value: u64) callconv(.c) ?*anyopaque;
+ pub extern fn metal_bridge_blit_encoder_copy_region(encoder: ?*anyopaque, src: ?*anyopaque, src_offset: u64, dst: ?*anyopaque, dst_offset: u64, size: u64) callconv(.c) void;
+-pub extern fn metal_bridge_blit_encoder_copy_buffer_to_texture(encoder: ?*anyopaque, src: ?*anyopaque, src_offset: u64, src_bytes_per_row: u32, src_rows_per_image: u32, dst_texture: ?*anyopaque, dst_mip_level: u32, width: u32, height: u32, depth_or_array_layers: u32) callconv(.c) void;
+-pub extern fn metal_bridge_blit_encoder_copy_texture_to_buffer(encoder: ?*anyopaque, src_texture: ?*anyopaque, src_mip_level: u32, dst: ?*anyopaque, dst_offset: u64, dst_bytes_per_row: u32, dst_rows_per_image: u32, width: u32, height: u32, depth_or_array_layers: u32) callconv(.c) void;
++pub extern fn metal_bridge_blit_encoder_copy_buffer_to_texture(encoder: ?*anyopaque, src: ?*anyopaque, src_offset: u64, src_bytes_per_row: u32, src_rows_per_image: u32, dst_texture: ?*anyopaque, dst_mip_level: u32, width: u32, height: u32, depth_or_array_layers: u32, origin_x: u32, origin_y: u32, origin_z: u32, aspect: u32) callconv(.c) void;
++pub extern fn metal_bridge_blit_encoder_copy_texture_to_buffer(encoder: ?*anyopaque, src_texture: ?*anyopaque, src_mip_level: u32, dst: ?*anyopaque, dst_offset: u64, dst_bytes_per_row: u32, dst_rows_per_image: u32, width: u32, height: u32, depth_or_array_layers: u32, origin_x: u32, origin_y: u32, origin_z: u32, aspect: u32) callconv(.c) void;
+ pub extern fn metal_bridge_blit_encoder_copy_texture_to_texture(encoder: ?*anyopaque, src_texture: ?*anyopaque, src_mip_level: u32, dst_texture: ?*anyopaque, dst_mip_level: u32, width: u32, height: u32, depth_or_array_layers: u32) callconv(.c) void;
+ pub extern fn metal_bridge_create_surface_host(layer_out: *?*anyopaque) callconv(.c) ?*anyopaque;
+ pub extern fn metal_bridge_configure_surface_host(host: ?*anyopaque, width: u32, height: u32) callconv(.c) void;
+diff --git a/runtime/zig/src/backend/metal/metal_bridge_stubs.c b/runtime/zig/src/backend/metal/metal_bridge_stubs.c
+index a545ec079..6b5c01e96 100644
+--- a/runtime/zig/src/backend/metal/metal_bridge_stubs.c
++++ b/runtime/zig/src/backend/metal/metal_bridge_stubs.c
+@@ -97,7 +97,7 @@ void metal_bridge_blit_encoder_copy_region(MetalHandle encoder, MetalHandle src,
+     (void)dst_offset;
+     (void)size;
+ }
+-void metal_bridge_blit_encoder_copy_buffer_to_texture(MetalHandle encoder, MetalHandle src, uint64_t src_offset, uint32_t src_bytes_per_row, uint32_t src_rows_per_image, MetalHandle dst_texture, uint32_t dst_mip_level, uint32_t width, uint32_t height, uint32_t depth_or_array_layers) {
++void metal_bridge_blit_encoder_copy_buffer_to_texture(MetalHandle encoder, MetalHandle src, uint64_t src_offset, uint32_t src_bytes_per_row, uint32_t src_rows_per_image, MetalHandle dst_texture, uint32_t dst_mip_level, uint32_t width, uint32_t height, uint32_t depth_or_array_layers, uint32_t origin_x, uint32_t origin_y, uint32_t origin_z, uint32_t aspect) {
+     (void)encoder;
+     (void)src;
+     (void)src_offset;
+@@ -108,8 +108,9 @@ void metal_bridge_blit_encoder_copy_buffer_to_texture(MetalHandle encoder, Metal
+     (void)width;
+     (void)height;
+     (void)depth_or_array_layers;
++    (void)origin_x; (void)origin_y; (void)origin_z; (void)aspect;
+ }
+-void metal_bridge_blit_encoder_copy_texture_to_buffer(MetalHandle encoder, MetalHandle src_texture, uint32_t src_mip_level, MetalHandle dst, uint64_t dst_offset, uint32_t dst_bytes_per_row, uint32_t dst_rows_per_image, uint32_t width, uint32_t height, uint32_t depth_or_array_layers) {
++void metal_bridge_blit_encoder_copy_texture_to_buffer(MetalHandle encoder, MetalHandle src_texture, uint32_t src_mip_level, MetalHandle dst, uint64_t dst_offset, uint32_t dst_bytes_per_row, uint32_t dst_rows_per_image, uint32_t width, uint32_t height, uint32_t depth_or_array_layers, uint32_t origin_x, uint32_t origin_y, uint32_t origin_z, uint32_t aspect) {
+     (void)encoder;
+     (void)src_texture;
+     (void)src_mip_level;
+@@ -120,6 +121,7 @@ void metal_bridge_blit_encoder_copy_texture_to_buffer(MetalHandle encoder, Metal
+     (void)width;
+     (void)height;
+     (void)depth_or_array_layers;
++    (void)origin_x; (void)origin_y; (void)origin_z; (void)aspect;
+ }
+ void metal_bridge_blit_encoder_copy_texture_to_texture(MetalHandle encoder, MetalHandle src_texture, uint32_t src_mip_level, MetalHandle dst_texture, uint32_t dst_mip_level, uint32_t width, uint32_t height, uint32_t depth_or_array_layers) {
+     (void)encoder;
+diff --git a/runtime/zig/src/backend/vulkan/vk_formats.zig b/runtime/zig/src/backend/vulkan/vk_formats.zig
+index 19d3697fd..69fac8591 100644
+--- a/runtime/zig/src/backend/vulkan/vk_formats.zig
++++ b/runtime/zig/src/backend/vulkan/vk_formats.zig
+@@ -278,154 +278,8 @@ pub fn wgpu_format_to_vk_format(format: model_gpu_types.WGPUTextureFormat) !u32
+ 
+ /// Returns the number of bytes per pixel for a given WebGPU texture format.
+ /// Depth/stencil formats return the total byte footprint per texel.
+-pub fn bytes_per_pixel(format: model_gpu_types.WGPUTextureFormat) !u32 {
+-    return switch (format) {
+-        // 1 byte per pixel
+-        model_gpu_types.WGPUTextureFormat_R8Unorm,
+-        model_gpu_types.WGPUTextureFormat_R8Snorm,
+-        model_gpu_types.WGPUTextureFormat_R8Uint,
+-        model_gpu_types.WGPUTextureFormat_R8Sint,
+-        model_gpu_types.WGPUTextureFormat_Stencil8,
+-        => 1,
+-
+-        // 2 bytes per pixel
+-        model_gpu_types.WGPUTextureFormat_R16Unorm,
+-        model_gpu_types.WGPUTextureFormat_R16Snorm,
+-        model_gpu_types.WGPUTextureFormat_R16Uint,
+-        model_gpu_types.WGPUTextureFormat_R16Sint,
+-        model_gpu_types.WGPUTextureFormat_R16Float,
+-        model_gpu_types.WGPUTextureFormat_RG8Unorm,
+-        model_gpu_types.WGPUTextureFormat_RG8Snorm,
+-        model_gpu_types.WGPUTextureFormat_RG8Uint,
+-        model_gpu_types.WGPUTextureFormat_RG8Sint,
+-        model_gpu_types.WGPUTextureFormat_Depth16Unorm,
+-        => 2,
+-
+-        // 4 bytes per pixel
+-        model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
+-        model_gpu_types.WGPUTextureFormat_RGBA8UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_RGBA8Snorm,
+-        model_gpu_types.WGPUTextureFormat_RGBA8Uint,
+-        model_gpu_types.WGPUTextureFormat_RGBA8Sint,
+-        model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
+-        model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_RGB10A2Uint,
+-        model_gpu_types.WGPUTextureFormat_RGB10A2Unorm,
+-        model_gpu_types.WGPUTextureFormat_RG11B10Ufloat,
+-        model_gpu_types.WGPUTextureFormat_RGB9E5Ufloat,
+-        model_gpu_types.WGPUTextureFormat_RG16Unorm,
+-        model_gpu_types.WGPUTextureFormat_RG16Snorm,
+-        model_gpu_types.WGPUTextureFormat_RG16Uint,
+-        model_gpu_types.WGPUTextureFormat_RG16Sint,
+-        model_gpu_types.WGPUTextureFormat_RG16Float,
+-        model_gpu_types.WGPUTextureFormat_R32Uint,
+-        model_gpu_types.WGPUTextureFormat_R32Sint,
+-        model_gpu_types.WGPUTextureFormat_R32Float,
+-        model_gpu_types.WGPUTextureFormat_Depth32Float,
+-        model_gpu_types.WGPUTextureFormat_Depth24Plus,
+-        model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8,
+-        => 4,
+-
+-        // 8 bytes per pixel
+-        model_gpu_types.WGPUTextureFormat_RGBA16Unorm,
+-        model_gpu_types.WGPUTextureFormat_RGBA16Snorm,
+-        model_gpu_types.WGPUTextureFormat_RGBA16Uint,
+-        model_gpu_types.WGPUTextureFormat_RGBA16Sint,
+-        model_gpu_types.WGPUTextureFormat_RGBA16Float,
+-        model_gpu_types.WGPUTextureFormat_RG32Uint,
+-        model_gpu_types.WGPUTextureFormat_RG32Sint,
+-        model_gpu_types.WGPUTextureFormat_RG32Float,
+-        model_gpu_types.WGPUTextureFormat_Depth32FloatStencil8,
+-        => 8,
+-
+-        // 8 bytes per block
+-        model_gpu_types.WGPUTextureFormat_BC1RGBAUnorm,
+-        model_gpu_types.WGPUTextureFormat_BC1RGBAUnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_BC4RUnorm,
+-        model_gpu_types.WGPUTextureFormat_BC4RSnorm,
+-        model_gpu_types.WGPUTextureFormat_ETC2RGB8Unorm,
+-        model_gpu_types.WGPUTextureFormat_ETC2RGB8UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ETC2RGB8A1Unorm,
+-        model_gpu_types.WGPUTextureFormat_ETC2RGB8A1UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_EACR11Unorm,
+-        model_gpu_types.WGPUTextureFormat_EACR11Snorm,
+-        => 8,
+-
+-        // 16 bytes per block
+-        model_gpu_types.WGPUTextureFormat_BC2RGBAUnorm,
+-        model_gpu_types.WGPUTextureFormat_BC2RGBAUnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_BC3RGBAUnorm,
+-        model_gpu_types.WGPUTextureFormat_BC3RGBAUnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_BC5RGUnorm,
+-        model_gpu_types.WGPUTextureFormat_BC5RGSnorm,
+-        model_gpu_types.WGPUTextureFormat_BC6HRGBUfloat,
+-        model_gpu_types.WGPUTextureFormat_BC6HRGBFloat,
+-        model_gpu_types.WGPUTextureFormat_BC7RGBAUnorm,
+-        model_gpu_types.WGPUTextureFormat_BC7RGBAUnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ETC2RGBA8Unorm,
+-        model_gpu_types.WGPUTextureFormat_ETC2RGBA8UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_EACRG11Unorm,
+-        model_gpu_types.WGPUTextureFormat_EACRG11Snorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC4x4Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC4x4UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC5x4Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC5x4UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC5x5Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC5x5UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC6x5Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC6x5UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC6x6Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC6x6UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC8x5Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC8x5UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC8x6Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC8x6UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC8x8Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC8x8UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC10x5Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC10x5UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC10x6Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC10x6UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC10x8Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC10x8UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC10x10Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC10x10UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC12x10Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC12x10UnormSrgb,
+-        model_gpu_types.WGPUTextureFormat_ASTC12x12Unorm,
+-        model_gpu_types.WGPUTextureFormat_ASTC12x12UnormSrgb,
+-        => 16,
+-
+-        // 16 bytes per pixel
+-        model_gpu_types.WGPUTextureFormat_RGBA32Uint,
+-        model_gpu_types.WGPUTextureFormat_RGBA32Sint,
+-        model_gpu_types.WGPUTextureFormat_RGBA32Float,
+-        => 16,
+-
+-        else => error.UnsupportedFeature,
+-    };
+-}
+-
+-pub fn copy_block_extent(format: model_gpu_types.WGPUTextureFormat) [2]u32 {
+-    return switch (format) {
+-        model_gpu_types.WGPUTextureFormat_BC1RGBAUnorm...model_gpu_types.WGPUTextureFormat_EACRG11Snorm => .{ 4, 4 },
+-        model_gpu_types.WGPUTextureFormat_ASTC4x4Unorm, model_gpu_types.WGPUTextureFormat_ASTC4x4UnormSrgb => .{ 4, 4 },
+-        model_gpu_types.WGPUTextureFormat_ASTC5x4Unorm, model_gpu_types.WGPUTextureFormat_ASTC5x4UnormSrgb => .{ 5, 4 },
+-        model_gpu_types.WGPUTextureFormat_ASTC5x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC5x5UnormSrgb => .{ 5, 5 },
+-        model_gpu_types.WGPUTextureFormat_ASTC6x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC6x5UnormSrgb => .{ 6, 5 },
+-        model_gpu_types.WGPUTextureFormat_ASTC6x6Unorm, model_gpu_types.WGPUTextureFormat_ASTC6x6UnormSrgb => .{ 6, 6 },
+-        model_gpu_types.WGPUTextureFormat_ASTC8x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC8x5UnormSrgb => .{ 8, 5 },
+-        model_gpu_types.WGPUTextureFormat_ASTC8x6Unorm, model_gpu_types.WGPUTextureFormat_ASTC8x6UnormSrgb => .{ 8, 6 },
+-        model_gpu_types.WGPUTextureFormat_ASTC8x8Unorm, model_gpu_types.WGPUTextureFormat_ASTC8x8UnormSrgb => .{ 8, 8 },
+-        model_gpu_types.WGPUTextureFormat_ASTC10x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x5UnormSrgb => .{ 10, 5 },
+-        model_gpu_types.WGPUTextureFormat_ASTC10x6Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x6UnormSrgb => .{ 10, 6 },
+-        model_gpu_types.WGPUTextureFormat_ASTC10x8Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x8UnormSrgb => .{ 10, 8 },
+-        model_gpu_types.WGPUTextureFormat_ASTC10x10Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x10UnormSrgb => .{ 10, 10 },
+-        model_gpu_types.WGPUTextureFormat_ASTC12x10Unorm, model_gpu_types.WGPUTextureFormat_ASTC12x10UnormSrgb => .{ 12, 10 },
+-        model_gpu_types.WGPUTextureFormat_ASTC12x12Unorm, model_gpu_types.WGPUTextureFormat_ASTC12x12UnormSrgb => .{ 12, 12 },
+-        else => .{ 1, 1 },
+-    };
+-}
++pub const bytes_per_pixel = @import("../../contracts/texture_format_layout.zig").bytes_per_pixel;
++pub const copy_block_extent = @import("../../contracts/texture_format_layout.zig").copy_block_extent;
+ 
+ /// Returns the Vulkan image aspect mask for a WebGPU texture format.
+ /// Color formats use COLOR_BIT; depth and depth-stencil formats use the
+diff --git a/runtime/zig/src/backend/vulkan/vk_texture_commands.zig b/runtime/zig/src/backend/vulkan/vk_texture_commands.zig
+index bc47c893a..815897c32 100644
+--- a/runtime/zig/src/backend/vulkan/vk_texture_commands.zig
++++ b/runtime/zig/src/backend/vulkan/vk_texture_commands.zig
+@@ -13,63 +13,36 @@ const vk_resources = @import("vk_resources.zig");
+ const vk_formats = @import("vk_formats.zig");
+ const vk_compute_sync = @import("vk_compute_sync.zig");
+ 
+-pub const BufferCopy = struct {
+-    offset: u64,
+-    bytes_per_row: u32,
+-    rows_per_image: u32,
+-    mip: u32,
+-    width: u32,
+-    height: u32,
+-    depth_or_layers: u32,
+-};
++const copy_contract = @import("../../contracts/texture_copy.zig");
++pub const BufferCopy = copy_contract.Copy;
+ 
+-pub fn buffer_copy_region(buffer_size: u64, texture: vk_resources.TextureResource, copy: BufferCopy) !c.VkBufferImageCopy {
+-    if (copy.mip >= texture.mip_levels or copy.mip >= @bitSizeOf(u32) or texture.sample_count != 1)
+-        return error.InvalidArgument;
+-    if (texture.format == model_gpu_types.WGPUTextureFormat_Depth24Plus or
+-        texture.format == model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8 or
+-        texture.format == model_gpu_types.WGPUTextureFormat_Depth32FloatStencil8)
+-        return error.UnsupportedFeature;
+-    const shift: u5 = @intCast(copy.mip);
+-    const mip_width = @max(texture.width >> shift, 1);
+-    const mip_height = @max(texture.height >> shift, 1);
++pub fn buffer_copy_region(buffer_size: u64, texture: vk_resources.TextureResource, copy: BufferCopy, direction: copy_contract.Direction) !c.VkBufferImageCopy {
++    const region = try copy_contract.validate(buffer_size, .{
++        .width = texture.width,
++        .height = texture.height,
++        .layers = texture.depth_or_array_layers,
++        .mip_levels = texture.mip_levels,
++        .samples = texture.sample_count,
++        .dimension = texture.dimension,
++        .format = texture.format,
++    }, copy, direction, .native);
+     const is_3d = texture.dimension == model_gpu_types.WGPUTextureDimension_3D;
+-    const layers = if (is_3d) @max(texture.depth_or_array_layers >> shift, 1) else texture.depth_or_array_layers;
+-    if (copy.width > mip_width or copy.height > mip_height or copy.depth_or_layers > layers)
+-        return error.InvalidArgument;
+-    const block = vk_formats.copy_block_extent(texture.format);
+-    const bytes = try vk_formats.bytes_per_pixel(texture.format);
+-    if ((copy.width % block[0] != 0 and copy.width != mip_width) or
+-        (copy.height % block[1] != 0 and copy.height != mip_height) or copy.offset % bytes != 0)
+-        return error.InvalidArgument;
+-    const columns = std.math.divCeil(u64, copy.width, block[0]) catch unreachable;
+-    const rows = std.math.divCeil(u64, copy.height, block[1]) catch unreachable;
+-    const row_bytes = columns * bytes;
+-    const pitch = if (copy.bytes_per_row == 0) row_bytes else copy.bytes_per_row;
+-    const image_rows = if (copy.rows_per_image == 0) rows else copy.rows_per_image;
+-    if (pitch < row_bytes or pitch % bytes != 0 or image_rows < rows) return error.InvalidArgument;
+-    var required: u64 = 0;
+-    if (copy.width != 0 and copy.height != 0 and copy.depth_or_layers != 0) {
+-        const image_stride = try std.math.mul(u64, pitch, image_rows);
+-        required = try std.math.mul(u64, image_stride, copy.depth_or_layers - 1);
+-        required = try std.math.add(u64, required, try std.math.mul(u64, pitch, rows - 1));
+-        required = try std.math.add(u64, required, row_bytes);
+-    }
+-    if (copy.offset > buffer_size or required > buffer_size - copy.offset) return error.InvalidArgument;
+-    const row_length = std.math.cast(u32, (pitch / bytes) * block[0]) orelse return error.InvalidArgument;
+-    const image_height = std.math.cast(u32, image_rows * block[1]) orelse return error.InvalidArgument;
+     return .{
+         .bufferOffset = copy.offset,
+-        .bufferRowLength = row_length,
+-        .bufferImageHeight = image_height,
++        .bufferRowLength = region.row_length,
++        .bufferImageHeight = region.image_height,
+         .imageSubresource = .{
+-            .aspectMask = vk_formats.aspect_mask_for_format(texture.format),
++            .aspectMask = switch (region.aspect) {
++                .color => c.VK_IMAGE_ASPECT_COLOR_BIT,
++                .depth => vk_formats.VK_IMAGE_ASPECT_DEPTH_BIT,
++                .stencil => vk_formats.VK_IMAGE_ASPECT_STENCIL_BIT,
++            },
+             .mipLevel = copy.mip,
+-            .baseArrayLayer = 0,
++            .baseArrayLayer = if (is_3d) 0 else copy.origin[2],
+             .layerCount = if (is_3d) 1 else copy.depth_or_layers,
+         },
+-        .imageOffset = .{ .x = 0, .y = 0, .z = 0 },
+-        .imageExtent = .{ .width = copy.width, .height = copy.height, .depth = if (is_3d) copy.depth_or_layers else 1 },
++        .imageOffset = .{ .x = @intCast(copy.origin[0]), .y = @intCast(copy.origin[1]), .z = if (is_3d) @intCast(copy.origin[2]) else 0 },
++        .imageExtent = .{ .width = @min(copy.width, @max(texture.width >> @intCast(copy.mip), 1) -| copy.origin[0]), .height = @min(copy.height, @max(texture.height >> @intCast(copy.mip), 1) -| copy.origin[1]), .depth = if (is_3d) copy.depth_or_layers else 1 },
+     };
+ }
+ 
+@@ -81,10 +54,10 @@ pub fn record_texture_to_buffer(self: anytype, texture: *vk_resources.TextureRes
+     return record_buffer_image_copy(.texture_to_buffer, self, destination, texture, copy);
+ }
+ 
+-const CopyDirection = enum { buffer_to_texture, texture_to_buffer };
++const CopyDirection = copy_contract.Direction;
+ 
+ fn record_buffer_image_copy(comptime direction: CopyDirection, self: anytype, buffer: vk_resources.ComputeBuffer, texture: *vk_resources.TextureResource, copy: BufferCopy) !bool {
+-    const region = try buffer_copy_region(buffer.size, texture.*, copy);
++    const region = try buffer_copy_region(buffer.size, texture.*, copy, direction);
+     if (copy.width == 0 or copy.height == 0 or copy.depth_or_layers == 0) return false;
+     const command_buffer = try self.begin_prepared_dispatch_replay();
+     const barrier = c.VkMemoryBarrier{
+@@ -121,22 +94,22 @@ test "buffer image copy validates the last accessed byte and mip-relative layers
+     texture.format = model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
+     var copy = BufferCopy{ .offset = 16, .bytes_per_row = 256, .rows_per_image = 3, .mip = 1, .width = 4, .height = 2, .depth_or_layers = 2 };
+     const minimum_source_size = 16 + 256 * 3 + 256 + 16;
+-    const region = try buffer_copy_region(minimum_source_size, texture, copy);
++    const region = try buffer_copy_region(minimum_source_size, texture, copy, .texture_to_buffer);
+     try std.testing.expectEqual(@as(u32, 4), region.imageExtent.width);
+     try std.testing.expectEqual(@as(u32, 2), region.imageSubresource.layerCount);
+     try std.testing.expectEqual(@as(u32, 1), region.imageExtent.depth);
+-    try std.testing.expectError(error.InvalidArgument, buffer_copy_region(minimum_source_size - 1, texture, copy));
++    try std.testing.expectError(error.TextureCopyRange, buffer_copy_region(minimum_source_size - 1, texture, copy, .texture_to_buffer));
+     copy.width = 5;
+-    try std.testing.expectError(error.InvalidArgument, buffer_copy_region(minimum_source_size, texture, copy));
++    try std.testing.expectError(error.TextureCopyRange, buffer_copy_region(minimum_source_size, texture, copy, .texture_to_buffer));
+     copy.width = 4;
+     texture.dimension = model_gpu_types.WGPUTextureDimension_3D;
+-    try std.testing.expectError(error.InvalidArgument, buffer_copy_region(minimum_source_size, texture, copy));
++    try std.testing.expectError(error.TextureCopyRange, buffer_copy_region(minimum_source_size, texture, copy, .texture_to_buffer));
+     texture.depth_or_array_layers = 4;
+-    const volume = try buffer_copy_region(minimum_source_size, texture, copy);
++    const volume = try buffer_copy_region(minimum_source_size, texture, copy, .texture_to_buffer);
+     try std.testing.expectEqual(@as(u32, 1), volume.imageSubresource.layerCount);
+     try std.testing.expectEqual(@as(u32, 2), volume.imageExtent.depth);
+     copy.offset = std.math.maxInt(u64) - 3;
+-    try std.testing.expectError(error.InvalidArgument, buffer_copy_region(std.math.maxInt(u64), texture, copy));
++    try std.testing.expectError(error.TextureCopyRange, buffer_copy_region(std.math.maxInt(u64), texture, copy, .texture_to_buffer));
+ }
+ 
+ test "compressed buffer copy converts block rows to Vulkan texels" {
+@@ -149,11 +122,11 @@ test "compressed buffer copy converts block rows to Vulkan texels" {
+     texture.dimension = model_gpu_types.WGPUTextureDimension_2D;
+     texture.format = model_gpu_types.WGPUTextureFormat_ASTC5x4Unorm;
+     const copy = BufferCopy{ .offset = 0, .bytes_per_row = 256, .rows_per_image = 3, .mip = 0, .width = 10, .height = 12, .depth_or_layers = 1 };
+-    const region = try buffer_copy_region(256 * 2 + 32, texture, copy);
++    const region = try buffer_copy_region(256 * 2 + 32, texture, copy, .texture_to_buffer);
+     try std.testing.expectEqual(@as(u32, 80), region.bufferRowLength);
+     try std.testing.expectEqual(@as(u32, 12), region.bufferImageHeight);
+     texture.format = model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8;
+-    try std.testing.expectError(error.UnsupportedFeature, buffer_copy_region(1024, texture, copy));
++    try std.testing.expectError(error.TextureCopyAspect, buffer_copy_region(1024, texture, copy, .texture_to_buffer));
+ }
+ 
+ pub fn texture_write(self: anytype, cmd_arg: model_texture_types.TextureWriteCommand) !void {
+diff --git a/runtime/zig/src/contracts/command_recording.zig b/runtime/zig/src/contracts/command_recording.zig
+index 744c7ee55..6117b80a7 100644
+--- a/runtime/zig/src/contracts/command_recording.zig
++++ b/runtime/zig/src/contracts/command_recording.zig
+@@ -7,7 +7,7 @@ pub const BufferCopyError = error{
+     BufferCopyAliasing,
+ };
+ 
+-pub const Failure = BufferCopyError || error{ OutOfMemory, InvalidState, ImmediateDataUnsupported };
++pub const Failure = BufferCopyError || @import("texture_copy.zig").Error || error{ OutOfMemory, InvalidState, ImmediateDataUnsupported, TextureCopyDeviceMismatch, TextureCopyUsageMissing };
+ 
+ pub fn message(cause: Failure) []const u8 {
+     return switch (cause) {
+@@ -19,6 +19,12 @@ pub fn message(cause: Failure) []const u8 {
+         error.BufferCopyUnaligned => "buffer copy offsets and size must be multiples of four bytes",
+         error.BufferCopyOutOfBounds => "buffer copy range exceeds the source or destination size",
+         error.BufferCopyAliasing => "buffer copy source and destination alias outside the permitted copy contract",
++        error.TextureCopyRange => "texture copy mip, origin, extent or buffer range exceeds the resource",
++        error.TextureCopyLayout => "texture copy requires aligned offsets and sufficient row/image strides",
++        error.TextureCopyAspect => "texture copy requires one valid, copyable format aspect",
++        error.TextureCopyUnsupported => "texture copy format or execution backend is unsupported",
++        error.TextureCopyDeviceMismatch => "texture copy resources must belong to the encoder's device",
++        error.TextureCopyUsageMissing => "texture copy requires COPY_SRC on source and COPY_DST on destination",
+         error.ImmediateDataUnsupported => "setImmediates: shader-visible immediate data is unsupported; use buffer bindings",
+     };
+ }
+diff --git a/runtime/zig/src/contracts/texture_copy.zig b/runtime/zig/src/contracts/texture_copy.zig
+new file mode 100644
+index 000000000..5be1cffc7
+--- /dev/null
++++ b/runtime/zig/src/contracts/texture_copy.zig
+@@ -0,0 +1,162 @@
++const std = @import("std");
++const values = @import("model/model_texture_value_types.zig");
++const formats = @import("texture_format.zig");
++const layout = @import("texture_format_layout.zig");
++const texture_contract = @import("texture.zig");
++
++pub const Direction = enum { buffer_to_texture, texture_to_buffer };
++pub const Alignment = enum { webgpu, native };
++pub const Aspect = enum { color, depth, stencil };
++pub const ROW_ALIGNMENT: u32 = 256;
++pub const DEPTH_STENCIL_OFFSET_ALIGNMENT: u32 = 4;
++pub const STRIDE_UNDEFINED: u32 = std.math.maxInt(u32);
++pub const Error = error{ TextureCopyRange, TextureCopyLayout, TextureCopyAspect, TextureCopyUnsupported };
++
++pub const Texture = struct {
++    width: u32,
++    height: u32,
++    layers: u32,
++    mip_levels: u32,
++    samples: u32,
++    dimension: u32,
++    format: u32,
++};
++
++pub const Copy = struct {
++    offset: u64,
++    bytes_per_row: u32,
++    rows_per_image: u32,
++    mip: u32,
++    width: u32,
++    height: u32,
++    depth_or_layers: u32,
++    origin: [3]u32 = .{ 0, 0, 0 },
++    aspect: u32 = values.WGPUTextureAspect_All,
++};
++
++pub const Region = struct {
++    aspect: Aspect,
++    pitch: u32,
++    image_rows: u32,
++    row_length: u32,
++    image_height: u32,
++};
++
++pub fn validate(buffer_size: u64, texture: Texture, copy: Copy, direction: Direction, alignment: Alignment) Error!Region {
++    if (copy.mip >= texture.mip_levels or copy.mip >= @bitSizeOf(u32) or texture.samples != 1)
++        return error.TextureCopyRange;
++    const shift: u5 = @intCast(copy.mip);
++    const is_3d = texture.dimension == values.WGPUTextureDimension_3D;
++    const block = layout.copy_block_extent(texture.format);
++    var extent = [3]u32{ @max(texture.width >> shift, 1), @max(texture.height >> shift, 1), if (is_3d) @max(texture.layers >> shift, 1) else texture.layers };
++    const virtual_extent = extent;
++    extent[0] = std.math.cast(u32, (std.math.divCeil(u64, extent[0], block[0]) catch unreachable) * block[0]) orelse return error.TextureCopyRange;
++    extent[1] = std.math.cast(u32, (std.math.divCeil(u64, extent[1], block[1]) catch unreachable) * block[1]) orelse return error.TextureCopyRange;
++    const size = [3]u32{ copy.width, copy.height, copy.depth_or_layers };
++    for (copy.origin, size, extent) |origin, count, bound| {
++        if (origin > bound or count > bound - origin or origin > std.math.maxInt(i32)) return error.TextureCopyRange;
++    }
++    const aspect = try resolveAspect(texture.format, copy.aspect, direction);
++    const bytes = if (aspect == .stencil) 1 else if (aspect == .depth and texture.format == values.WGPUTextureFormat_Depth32FloatStencil8) 4 else layout.bytes_per_pixel(texture.format) catch return error.TextureCopyUnsupported;
++    const depth_stencil = formats.isDepthStencilFormat(texture.format);
++    if (depth_stencil and (copy.width != extent[0] or copy.height != extent[1])) return error.TextureCopyRange;
++    const offset_alignment = if (depth_stencil) DEPTH_STENCIL_OFFSET_ALIGNMENT else bytes;
++    if (copy.origin[0] % block[0] != 0 or copy.origin[1] % block[1] != 0 or
++        (copy.width % block[0] != 0 and (alignment == .webgpu or copy.width != virtual_extent[0] -| copy.origin[0])) or
++        (copy.height % block[1] != 0 and (alignment == .webgpu or copy.height != virtual_extent[1] -| copy.origin[1])) or
++        copy.offset % offset_alignment != 0) return error.TextureCopyLayout;
++    const columns = std.math.divCeil(u64, copy.width, block[0]) catch unreachable;
++    const rows = std.math.divCeil(u64, copy.height, block[1]) catch unreachable;
++    const row_bytes = columns * bytes;
++    const pitch_missing = copy.bytes_per_row == STRIDE_UNDEFINED or (alignment == .native and copy.bytes_per_row == 0);
++    const image_rows_missing = copy.rows_per_image == STRIDE_UNDEFINED or (alignment == .native and copy.rows_per_image == 0);
++    if (alignment == .webgpu) {
++        if (pitch_missing and (rows > 1 or copy.depth_or_layers > 1)) return error.TextureCopyLayout;
++        if (image_rows_missing and copy.depth_or_layers > 1) return error.TextureCopyLayout;
++        if (!pitch_missing and copy.bytes_per_row % ROW_ALIGNMENT != 0) return error.TextureCopyLayout;
++    }
++    const pitch = if (pitch_missing) row_bytes else copy.bytes_per_row;
++    const image_rows = if (image_rows_missing) rows else copy.rows_per_image;
++    if (pitch < row_bytes or pitch % bytes != 0 or image_rows < rows) return error.TextureCopyLayout;
++    var required: u64 = 0;
++    if (copy.depth_or_layers != 0) {
++        const image_stride = std.math.mul(u64, pitch, image_rows) catch return error.TextureCopyRange;
++        required = std.math.mul(u64, image_stride, copy.depth_or_layers - 1) catch return error.TextureCopyRange;
++        if (rows != 0) {
++            required = std.math.add(u64, required, std.math.mul(u64, pitch, rows - 1) catch return error.TextureCopyRange) catch return error.TextureCopyRange;
++            required = std.math.add(u64, required, row_bytes) catch return error.TextureCopyRange;
++        }
++    }
++    if (copy.offset > buffer_size or required > buffer_size - copy.offset) return error.TextureCopyRange;
++    return .{
++        .aspect = aspect,
++        .pitch = std.math.cast(u32, pitch) orelse return error.TextureCopyRange,
++        .image_rows = std.math.cast(u32, image_rows) orelse return error.TextureCopyRange,
++        .row_length = std.math.cast(u32, (pitch / bytes) * block[0]) orelse return error.TextureCopyRange,
++        .image_height = std.math.cast(u32, image_rows * block[1]) orelse return error.TextureCopyRange,
++    };
++}
++
++fn resolveAspect(format: u32, requested: u32, direction: Direction) Error!Aspect {
++    const aspect = if (requested == values.WGPUTextureAspect_Undefined) values.WGPUTextureAspect_All else requested;
++    if (!texture_contract.aspectMatches(format, aspect)) return error.TextureCopyAspect;
++    if (!formats.isDepthStencilFormat(format)) return .color;
++    const combined = format == values.WGPUTextureFormat_Depth24PlusStencil8 or format == values.WGPUTextureFormat_Depth32FloatStencil8;
++    if (combined and aspect == values.WGPUTextureAspect_All) return error.TextureCopyAspect;
++    if (aspect == values.WGPUTextureAspect_StencilOnly or format == values.WGPUTextureFormat_Stencil8) return .stencil;
++    if (format == values.WGPUTextureFormat_Depth24Plus or format == values.WGPUTextureFormat_Depth24PlusStencil8) return error.TextureCopyUnsupported;
++    if (direction == .buffer_to_texture and (format == values.WGPUTextureFormat_Depth32Float or format == values.WGPUTextureFormat_Depth32FloatStencil8)) return error.TextureCopyAspect;
++    return .depth;
++}
++
++test "copy regions preserve array and volume origins and reject bounds before arithmetic" {
++    var texture = Texture{ .width = 8, .height = 8, .layers = 4, .mip_levels = 3, .samples = 1, .dimension = values.WGPUTextureDimension_2D, .format = values.WGPUTextureFormat_RGBA8Unorm };
++    var copy = Copy{ .offset = 16, .bytes_per_row = 256, .rows_per_image = 2, .mip = 1, .width = 2, .height = 2, .depth_or_layers = 2, .origin = .{ 2, 1, 2 } };
++    const required = 16 + 512 + 256 + 8;
++    const region = try validate(required, texture, copy, .buffer_to_texture, .webgpu);
++    try std.testing.expectEqual(@as(u32, 64), region.row_length);
++    try std.testing.expectError(error.TextureCopyRange, validate(required - 1, texture, copy, .buffer_to_texture, .webgpu));
++    texture.dimension = values.WGPUTextureDimension_3D;
++    try std.testing.expectError(error.TextureCopyRange, validate(required, texture, copy, .buffer_to_texture, .webgpu));
++    copy.origin[2] = 0;
++    _ = try validate(required, texture, copy, .texture_to_buffer, .webgpu);
++    copy.origin[0] = std.math.maxInt(u32);
++    try std.testing.expectError(error.TextureCopyRange, validate(required, texture, copy, .texture_to_buffer, .webgpu));
++}
++
++test "depth stencil copies select exactly one legal plane with its own footprint" {
++    var texture = Texture{ .width = 4, .height = 1, .layers = 1, .mip_levels = 1, .samples = 1, .dimension = values.WGPUTextureDimension_2D, .format = values.WGPUTextureFormat_Depth32FloatStencil8 };
++    var copy = Copy{ .offset = 0, .bytes_per_row = STRIDE_UNDEFINED, .rows_per_image = STRIDE_UNDEFINED, .mip = 0, .width = 4, .height = 1, .depth_or_layers = 1 };
++    try std.testing.expectError(error.TextureCopyAspect, validate(16, texture, copy, .texture_to_buffer, .webgpu));
++    copy.aspect = values.WGPUTextureAspect_StencilOnly;
++    try std.testing.expectEqual(Aspect.stencil, (try validate(4, texture, copy, .buffer_to_texture, .webgpu)).aspect);
++    copy.aspect = values.WGPUTextureAspect_DepthOnly;
++    try std.testing.expectEqual(@as(u32, 16), (try validate(16, texture, copy, .texture_to_buffer, .webgpu)).pitch);
++    try std.testing.expectError(error.TextureCopyAspect, validate(16, texture, copy, .buffer_to_texture, .webgpu));
++    texture.format = values.WGPUTextureFormat_RGBA8Unorm;
++    try std.testing.expectError(error.TextureCopyAspect, validate(16, texture, copy, .texture_to_buffer, .webgpu));
++}
++
++test "strict compressed copies use physical mip bounds and empty copies retain stride validation" {
++    var texture = Texture{ .width = 8, .height = 8, .layers = 2, .mip_levels = 4, .samples = 1, .dimension = values.WGPUTextureDimension_2D, .format = values.WGPUTextureFormat_BC1RGBAUnorm };
++    var copy = Copy{ .offset = 0, .bytes_per_row = STRIDE_UNDEFINED, .rows_per_image = STRIDE_UNDEFINED, .mip = 2, .width = 4, .height = 4, .depth_or_layers = 1 };
++    _ = try validate(8, texture, copy, .texture_to_buffer, .webgpu);
++    copy.width = 2;
++    try std.testing.expectError(error.TextureCopyLayout, validate(8, texture, copy, .texture_to_buffer, .webgpu));
++    copy.width = 4;
++    copy.height = 8;
++    try std.testing.expectError(error.TextureCopyRange, validate(16, texture, copy, .texture_to_buffer, .webgpu));
++    texture.format = values.WGPUTextureFormat_R32Uint;
++    copy.mip = 0;
++    copy.width = 0;
++    copy.height = 2;
++    copy.depth_or_layers = 2;
++    copy.bytes_per_row = 256;
++    copy.rows_per_image = 3;
++    try std.testing.expectError(error.TextureCopyRange, validate(1023, texture, copy, .texture_to_buffer, .webgpu));
++    _ = try validate(1024, texture, copy, .texture_to_buffer, .webgpu);
++    copy.bytes_per_row = 64;
++    try std.testing.expectError(error.TextureCopyLayout, validate(1024, texture, copy, .texture_to_buffer, .webgpu));
++    copy.bytes_per_row = STRIDE_UNDEFINED;
++    try std.testing.expectError(error.TextureCopyLayout, validate(1024, texture, copy, .texture_to_buffer, .webgpu));
++}
+diff --git a/runtime/zig/src/contracts/texture_format_layout.zig b/runtime/zig/src/contracts/texture_format_layout.zig
+new file mode 100644
+index 000000000..84341faac
+--- /dev/null
++++ b/runtime/zig/src/contracts/texture_format_layout.zig
+@@ -0,0 +1,151 @@
++//! Backend-independent texel and block storage footprints.
++const model_gpu_types = @import("model/model_texture_value_types.zig");
++
++pub fn bytes_per_pixel(format: model_gpu_types.WGPUTextureFormat) !u32 {
++    return switch (format) {
++        // 1 byte per pixel
++        model_gpu_types.WGPUTextureFormat_R8Unorm,
++        model_gpu_types.WGPUTextureFormat_R8Snorm,
++        model_gpu_types.WGPUTextureFormat_R8Uint,
++        model_gpu_types.WGPUTextureFormat_R8Sint,
++        model_gpu_types.WGPUTextureFormat_Stencil8,
++        => 1,
++
++        // 2 bytes per pixel
++        model_gpu_types.WGPUTextureFormat_R16Unorm,
++        model_gpu_types.WGPUTextureFormat_R16Snorm,
++        model_gpu_types.WGPUTextureFormat_R16Uint,
++        model_gpu_types.WGPUTextureFormat_R16Sint,
++        model_gpu_types.WGPUTextureFormat_R16Float,
++        model_gpu_types.WGPUTextureFormat_RG8Unorm,
++        model_gpu_types.WGPUTextureFormat_RG8Snorm,
++        model_gpu_types.WGPUTextureFormat_RG8Uint,
++        model_gpu_types.WGPUTextureFormat_RG8Sint,
++        model_gpu_types.WGPUTextureFormat_Depth16Unorm,
++        => 2,
++
++        // 4 bytes per pixel
++        model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
++        model_gpu_types.WGPUTextureFormat_RGBA8UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_RGBA8Snorm,
++        model_gpu_types.WGPUTextureFormat_RGBA8Uint,
++        model_gpu_types.WGPUTextureFormat_RGBA8Sint,
++        model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
++        model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_RGB10A2Uint,
++        model_gpu_types.WGPUTextureFormat_RGB10A2Unorm,
++        model_gpu_types.WGPUTextureFormat_RG11B10Ufloat,
++        model_gpu_types.WGPUTextureFormat_RGB9E5Ufloat,
++        model_gpu_types.WGPUTextureFormat_RG16Unorm,
++        model_gpu_types.WGPUTextureFormat_RG16Snorm,
++        model_gpu_types.WGPUTextureFormat_RG16Uint,
++        model_gpu_types.WGPUTextureFormat_RG16Sint,
++        model_gpu_types.WGPUTextureFormat_RG16Float,
++        model_gpu_types.WGPUTextureFormat_R32Uint,
++        model_gpu_types.WGPUTextureFormat_R32Sint,
++        model_gpu_types.WGPUTextureFormat_R32Float,
++        model_gpu_types.WGPUTextureFormat_Depth32Float,
++        model_gpu_types.WGPUTextureFormat_Depth24Plus,
++        model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8,
++        => 4,
++
++        // 8 bytes per pixel
++        model_gpu_types.WGPUTextureFormat_RGBA16Unorm,
++        model_gpu_types.WGPUTextureFormat_RGBA16Snorm,
++        model_gpu_types.WGPUTextureFormat_RGBA16Uint,
++        model_gpu_types.WGPUTextureFormat_RGBA16Sint,
++        model_gpu_types.WGPUTextureFormat_RGBA16Float,
++        model_gpu_types.WGPUTextureFormat_RG32Uint,
++        model_gpu_types.WGPUTextureFormat_RG32Sint,
++        model_gpu_types.WGPUTextureFormat_RG32Float,
++        model_gpu_types.WGPUTextureFormat_Depth32FloatStencil8,
++        => 8,
++
++        // 8 bytes per block
++        model_gpu_types.WGPUTextureFormat_BC1RGBAUnorm,
++        model_gpu_types.WGPUTextureFormat_BC1RGBAUnormSrgb,
++        model_gpu_types.WGPUTextureFormat_BC4RUnorm,
++        model_gpu_types.WGPUTextureFormat_BC4RSnorm,
++        model_gpu_types.WGPUTextureFormat_ETC2RGB8Unorm,
++        model_gpu_types.WGPUTextureFormat_ETC2RGB8UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ETC2RGB8A1Unorm,
++        model_gpu_types.WGPUTextureFormat_ETC2RGB8A1UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_EACR11Unorm,
++        model_gpu_types.WGPUTextureFormat_EACR11Snorm,
++        => 8,
++
++        // 16 bytes per block
++        model_gpu_types.WGPUTextureFormat_BC2RGBAUnorm,
++        model_gpu_types.WGPUTextureFormat_BC2RGBAUnormSrgb,
++        model_gpu_types.WGPUTextureFormat_BC3RGBAUnorm,
++        model_gpu_types.WGPUTextureFormat_BC3RGBAUnormSrgb,
++        model_gpu_types.WGPUTextureFormat_BC5RGUnorm,
++        model_gpu_types.WGPUTextureFormat_BC5RGSnorm,
++        model_gpu_types.WGPUTextureFormat_BC6HRGBUfloat,
++        model_gpu_types.WGPUTextureFormat_BC6HRGBFloat,
++        model_gpu_types.WGPUTextureFormat_BC7RGBAUnorm,
++        model_gpu_types.WGPUTextureFormat_BC7RGBAUnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ETC2RGBA8Unorm,
++        model_gpu_types.WGPUTextureFormat_ETC2RGBA8UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_EACRG11Unorm,
++        model_gpu_types.WGPUTextureFormat_EACRG11Snorm,
++        model_gpu_types.WGPUTextureFormat_ASTC4x4Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC4x4UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC5x4Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC5x4UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC5x5Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC5x5UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC6x5Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC6x5UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC6x6Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC6x6UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC8x5Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC8x5UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC8x6Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC8x6UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC8x8Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC8x8UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC10x5Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC10x5UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC10x6Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC10x6UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC10x8Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC10x8UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC10x10Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC10x10UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC12x10Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC12x10UnormSrgb,
++        model_gpu_types.WGPUTextureFormat_ASTC12x12Unorm,
++        model_gpu_types.WGPUTextureFormat_ASTC12x12UnormSrgb,
++        => 16,
++
++        // 16 bytes per pixel
++        model_gpu_types.WGPUTextureFormat_RGBA32Uint,
++        model_gpu_types.WGPUTextureFormat_RGBA32Sint,
++        model_gpu_types.WGPUTextureFormat_RGBA32Float,
++        => 16,
++
++        else => error.UnsupportedFeature,
++    };
++}
++
++pub fn copy_block_extent(format: model_gpu_types.WGPUTextureFormat) [2]u32 {
++    return switch (format) {
++        model_gpu_types.WGPUTextureFormat_BC1RGBAUnorm...model_gpu_types.WGPUTextureFormat_EACRG11Snorm => .{ 4, 4 },
++        model_gpu_types.WGPUTextureFormat_ASTC4x4Unorm, model_gpu_types.WGPUTextureFormat_ASTC4x4UnormSrgb => .{ 4, 4 },
++        model_gpu_types.WGPUTextureFormat_ASTC5x4Unorm, model_gpu_types.WGPUTextureFormat_ASTC5x4UnormSrgb => .{ 5, 4 },
++        model_gpu_types.WGPUTextureFormat_ASTC5x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC5x5UnormSrgb => .{ 5, 5 },
++        model_gpu_types.WGPUTextureFormat_ASTC6x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC6x5UnormSrgb => .{ 6, 5 },
++        model_gpu_types.WGPUTextureFormat_ASTC6x6Unorm, model_gpu_types.WGPUTextureFormat_ASTC6x6UnormSrgb => .{ 6, 6 },
++        model_gpu_types.WGPUTextureFormat_ASTC8x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC8x5UnormSrgb => .{ 8, 5 },
++        model_gpu_types.WGPUTextureFormat_ASTC8x6Unorm, model_gpu_types.WGPUTextureFormat_ASTC8x6UnormSrgb => .{ 8, 6 },
++        model_gpu_types.WGPUTextureFormat_ASTC8x8Unorm, model_gpu_types.WGPUTextureFormat_ASTC8x8UnormSrgb => .{ 8, 8 },
++        model_gpu_types.WGPUTextureFormat_ASTC10x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x5UnormSrgb => .{ 10, 5 },
++        model_gpu_types.WGPUTextureFormat_ASTC10x6Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x6UnormSrgb => .{ 10, 6 },
++        model_gpu_types.WGPUTextureFormat_ASTC10x8Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x8UnormSrgb => .{ 10, 8 },
++        model_gpu_types.WGPUTextureFormat_ASTC10x10Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x10UnormSrgb => .{ 10, 10 },
++        model_gpu_types.WGPUTextureFormat_ASTC12x10Unorm, model_gpu_types.WGPUTextureFormat_ASTC12x10UnormSrgb => .{ 12, 10 },
++        model_gpu_types.WGPUTextureFormat_ASTC12x12Unorm, model_gpu_types.WGPUTextureFormat_ASTC12x12UnormSrgb => .{ 12, 12 },
++        else => .{ 1, 1 },
++    };
++}
+diff --git a/runtime/zig/src/dropin/wgpu_dropin_ext_b.zig b/runtime/zig/src/dropin/wgpu_dropin_ext_b.zig
+index 8db1fdb88..a1bb3aaf7 100644
+--- a/runtime/zig/src/dropin/wgpu_dropin_ext_b.zig
++++ b/runtime/zig/src/dropin/wgpu_dropin_ext_b.zig
+@@ -398,19 +398,15 @@ pub fn doeAbiBridgeCopyTextureToBuffer(
+     destination: *const abi_copy.WGPUTexelCopyBufferInfo,
+     copy_size: *const abi_copy.WGPUExtent3D,
+ ) callconv(.c) void {
+-    const encoder_native = @import("../native/command/doe_encoder_native.zig");
+-    encoder_native.doeNativeCommandEncoderCopyTextureToBuffer(
+-        encoder,
+-        source.texture,
+-        source.mipLevel,
+-        destination.buffer,
+-        destination.layout.offset,
+-        destination.layout.bytesPerRow,
+-        destination.layout.rowsPerImage,
+-        copy_size.width,
+-        copy_size.height,
+-        copy_size.depthOrArrayLayers,
+-    );
++    const objects = @import("../native/support/doe_native_object_types.zig");
++    const helpers = @import("../native/support/doe_native_object_helpers.zig");
++    const enc = helpers.cast(objects.DoeCommandEncoder, encoder) orelse return;
++    @import("../native/command/doe_buffer_texture_copy.zig").record(enc, .texture_to_buffer, .{
++        .buffer = helpers.cast(objects.DoeBuffer, destination.buffer),
++        .texture = helpers.cast(objects.DoeTexture, source.texture),
++        .alignment = .webgpu,
++        .copy = .{ .offset = destination.layout.offset, .bytes_per_row = destination.layout.bytesPerRow, .rows_per_image = destination.layout.rowsPerImage, .mip = source.mipLevel, .origin = .{ source.origin.x, source.origin.y, source.origin.z }, .aspect = source.aspect, .width = copy_size.width, .height = copy_size.height, .depth_or_layers = copy_size.depthOrArrayLayers },
++    });
+ }
+ 
+ pub fn doeAbiBridgeCopyBufferToTexture(
+@@ -419,19 +415,15 @@ pub fn doeAbiBridgeCopyBufferToTexture(
+     destination: *const abi_copy.WGPUTexelCopyTextureInfo,
+     copy_size: *const abi_copy.WGPUExtent3D,
+ ) callconv(.c) void {
+-    const encoder_native = @import("../native/command/doe_encoder_native.zig");
+-    encoder_native.doeNativeCommandEncoderCopyBufferToTexture(
+-        encoder,
+-        source.buffer,
+-        source.layout.offset,
+-        source.layout.bytesPerRow,
+-        source.layout.rowsPerImage,
+-        destination.texture,
+-        destination.mipLevel,
+-        copy_size.width,
+-        copy_size.height,
+-        copy_size.depthOrArrayLayers,
+-    );
++    const objects = @import("../native/support/doe_native_object_types.zig");
++    const helpers = @import("../native/support/doe_native_object_helpers.zig");
++    const enc = helpers.cast(objects.DoeCommandEncoder, encoder) orelse return;
++    @import("../native/command/doe_buffer_texture_copy.zig").record(enc, .buffer_to_texture, .{
++        .buffer = helpers.cast(objects.DoeBuffer, source.buffer),
++        .texture = helpers.cast(objects.DoeTexture, destination.texture),
++        .alignment = .webgpu,
++        .copy = .{ .offset = source.layout.offset, .bytes_per_row = source.layout.bytesPerRow, .rows_per_image = source.layout.rowsPerImage, .mip = destination.mipLevel, .origin = .{ destination.origin.x, destination.origin.y, destination.origin.z }, .aspect = destination.aspect, .width = copy_size.width, .height = copy_size.height, .depth_or_layers = copy_size.depthOrArrayLayers },
++    });
+ }
+ 
+ pub fn doeAbiBridgeCopyTextureToTexture(
+diff --git a/runtime/zig/src/native/command/doe_buffer_texture_copy.zig b/runtime/zig/src/native/command/doe_buffer_texture_copy.zig
+new file mode 100644
+index 000000000..5a8903218
+--- /dev/null
++++ b/runtime/zig/src/native/command/doe_buffer_texture_copy.zig
+@@ -0,0 +1,105 @@
++const std = @import("std");
++const contract = @import("../../contracts/texture_copy.zig");
++const objects = @import("../support/doe_native_object_types.zig");
++const helpers = @import("../support/doe_native_object_helpers.zig");
++const recording = @import("doe_command_recording.zig");
++const references = @import("doe_command_references.zig");
++const abi = @import("../../core/abi/wgpu_core_base_types.zig");
++const texture_abi = @import("../../core/abi/wgpu_texture_base_types.zig");
++
++pub const Request = struct {
++    buffer: ?*objects.DoeBuffer,
++    texture: ?*objects.DoeTexture,
++    copy: contract.Copy,
++    alignment: contract.Alignment = .native,
++};
++
++pub fn record(enc: *objects.DoeCommandEncoder, direction: contract.Direction, request: Request) void {
++    if (!recording.requireOpen(enc)) return;
++    const region = validate(enc.dev, direction, request) catch |err| {
++        recording.fail(enc, err);
++        return;
++    };
++    const copy = request.copy;
++    if (copy.width == 0 or copy.height == 0 or copy.depth_or_layers == 0) return;
++    if (!recording.reserve(enc, 1, 2)) return;
++    const buffer = request.buffer.?;
++    const texture = request.texture.?;
++    references.retainBufferAssumeCapacity(&enc.references, buffer);
++    references.retainTextureAssumeCapacity(&enc.references, texture);
++    const raw_buffer = if (enc.dev.backend == .vulkan) helpers.toOpaque(buffer) else buffer.mtl;
++    const raw_texture = if (enc.dev.backend == .vulkan) helpers.toOpaque(texture) else texture.mtl;
++    switch (direction) {
++        .buffer_to_texture => enc.cmds.appendAssumeCapacity(.{ .copy_buffer_to_texture = .{
++            .src_buffer = raw_buffer,
++            .src_offset = copy.offset,
++            .src_bytes_per_row = region.pitch,
++            .src_rows_per_image = region.image_rows,
++            .dst_texture = raw_texture,
++            .dst_mip_level = copy.mip,
++            .width = copy.width,
++            .height = copy.height,
++            .depth_or_array_layers = copy.depth_or_layers,
++            .origin = copy.origin,
++            .aspect = copy.aspect,
++        } }),
++        .texture_to_buffer => enc.cmds.appendAssumeCapacity(.{ .copy_texture_to_buffer = .{
++            .dst_buffer = raw_buffer,
++            .dst_offset = copy.offset,
++            .dst_bytes_per_row = region.pitch,
++            .dst_rows_per_image = region.image_rows,
++            .src_texture = raw_texture,
++            .src_mip_level = copy.mip,
++            .width = copy.width,
++            .height = copy.height,
++            .depth_or_array_layers = copy.depth_or_layers,
++            .origin = copy.origin,
++            .aspect = copy.aspect,
++        } }),
++    }
++}
++
++fn validate(device: *objects.DoeDevice, direction: contract.Direction, request: Request) @import("../../contracts/command_recording.zig").Failure!contract.Region {
++    const buffer = request.buffer orelse return error.InvalidArgument;
++    const texture = request.texture orelse return error.InvalidArgument;
++    if (buffer.error_object or texture.error_object) return error.InvalidArgument;
++    if (buffer.dev != device or texture.device_ref != device) return error.TextureCopyDeviceMismatch;
++    const buffer_usage = if (direction == .buffer_to_texture) abi.WGPUBufferUsage_CopySrc else abi.WGPUBufferUsage_CopyDst;
++    const texture_usage = if (direction == .buffer_to_texture) texture_abi.WGPUTextureUsage_CopyDst else texture_abi.WGPUTextureUsage_CopySrc;
++    if (buffer.usage & buffer_usage == 0 or texture.usage & texture_usage == 0) return error.TextureCopyUsageMissing;
++    if (device.backend == .d3d12) return error.TextureCopyUnsupported;
++    return contract.validate(buffer.size, .{
++        .width = texture.width,
++        .height = texture.height,
++        .layers = texture.depth_or_array_layers,
++        .mip_levels = texture.mip_level_count,
++        .samples = texture.sample_count,
++        .dimension = texture.dimension,
++        .format = texture.format,
++    }, request.copy, direction, request.alignment);
++}
++
++test "invalid texture copies fail before allocation and retain no partial ownership" {
++    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
++    var device: objects.DoeDevice = .{ .backend = .vulkan };
++    var buffer: objects.DoeBuffer = .{ .dev = &device, .usage = abi.WGPUBufferUsage_CopySrc, .size = 16 };
++    var texture: objects.DoeTexture = .{
++        .device_ref = &device,
++        .usage = texture_abi.WGPUTextureUsage_CopyDst,
++        .width = 4,
++        .height = 1,
++        .format = texture_abi.WGPUTextureFormat_RGBA8Unorm,
++    };
++    var encoder: objects.DoeCommandEncoder = .{ .dev = &device, .allocator = failing.allocator() };
++    var request = Request{ .buffer = &buffer, .texture = &texture, .copy = .{ .offset = 0, .bytes_per_row = 0, .rows_per_image = 0, .mip = 0, .width = 4, .height = 1, .depth_or_layers = 1, .origin = .{ 1, 0, 0 } } };
++    record(&encoder, .buffer_to_texture, request);
++    try std.testing.expectEqual(error.TextureCopyRange, encoder.state.failed);
++    try std.testing.expectEqual(@as(usize, 0), failing.alloc_index);
++    try std.testing.expectEqual(@as(u32, 1), buffer.ref_count);
++    try std.testing.expectEqual(@as(u32, 1), texture.ref_count);
++    encoder.state = .open;
++    request.copy.origin[0] = 0;
++    record(&encoder, .buffer_to_texture, request);
++    try std.testing.expectEqual(error.OutOfMemory, encoder.state.failed);
++    try std.testing.expectEqual(@as(usize, 0), encoder.references.items.len);
++}
+diff --git a/runtime/zig/src/native/command/doe_encoder_native.zig b/runtime/zig/src/native/command/doe_encoder_native.zig
+index 22ee83c7e..d1bff2195 100644
+--- a/runtime/zig/src/native/command/doe_encoder_native.zig
++++ b/runtime/zig/src/native/command/doe_encoder_native.zig
+@@ -145,26 +145,11 @@ pub export fn doeNativeCommandEncoderCopyBufferToTexture(
+     depth_or_array_layers: u32,
+ ) callconv(.c) void {
+     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
+-    if (!recording.requireOpen(enc)) return;
+-    const src_buffer = cast(DoeBuffer, src_buffer_raw) orelse return;
+-    const dst_texture = cast(DoeTexture, dst_texture_raw) orelse return;
+-    if (src_buffer.error_object or src_buffer.destroyed or dst_texture.error_object) return;
+-    if (!recording.reserve(enc, 0, 1)) return;
+-    references.retainBufferAssumeCapacity(&enc.references, src_buffer);
+-    if (!recording.reserve(enc, 0, 1)) return;
+-    references.retainTextureAssumeCapacity(&enc.references, dst_texture);
+-    const vulkan = enc.dev.backend == .vulkan;
+-    if (!recording.append(enc, .{ .copy_buffer_to_texture = .{
+-        .src_buffer = if (vulkan) toOpaque(src_buffer) else src_buffer.mtl,
+-        .src_offset = src_offset,
+-        .src_bytes_per_row = src_bytes_per_row,
+-        .src_rows_per_image = src_rows_per_image,
+-        .dst_texture = if (vulkan) toOpaque(dst_texture) else dst_texture.mtl,
+-        .dst_mip_level = dst_mip_level,
+-        .width = width,
+-        .height = height,
+-        .depth_or_array_layers = depth_or_array_layers,
+-    } })) return;
++    @import("doe_buffer_texture_copy.zig").record(enc, .buffer_to_texture, .{
++        .buffer = cast(DoeBuffer, src_buffer_raw),
++        .texture = cast(DoeTexture, dst_texture_raw),
++        .copy = .{ .offset = src_offset, .bytes_per_row = src_bytes_per_row, .rows_per_image = src_rows_per_image, .mip = dst_mip_level, .width = width, .height = height, .depth_or_layers = depth_or_array_layers },
++    });
+ }
+ 
+ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
+@@ -180,26 +165,11 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
+     depth_or_array_layers: u32,
+ ) callconv(.c) void {
+     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
+-    if (!recording.requireOpen(enc)) return;
+-    const src_texture = cast(DoeTexture, src_texture_raw) orelse return;
+-    const dst_buffer = cast(DoeBuffer, dst_buffer_raw) orelse return;
+-    if (src_texture.error_object or dst_buffer.error_object or dst_buffer.destroyed) return;
+-    if (!recording.reserve(enc, 0, 1)) return;
+-    references.retainTextureAssumeCapacity(&enc.references, src_texture);
+-    if (!recording.reserve(enc, 0, 1)) return;
+-    references.retainBufferAssumeCapacity(&enc.references, dst_buffer);
+-    const vulkan = enc.dev.backend == .vulkan;
+-    if (!recording.append(enc, .{ .copy_texture_to_buffer = .{
+-        .src_texture = if (vulkan) @ptrCast(src_texture) else src_texture.mtl,
+-        .src_mip_level = src_mip_level,
+-        .dst_buffer = if (vulkan) @ptrCast(dst_buffer) else dst_buffer.mtl,
+-        .dst_offset = dst_offset,
+-        .dst_bytes_per_row = dst_bytes_per_row,
+-        .dst_rows_per_image = dst_rows_per_image,
+-        .width = width,
+-        .height = height,
+-        .depth_or_array_layers = depth_or_array_layers,
+-    } })) return;
++    @import("doe_buffer_texture_copy.zig").record(enc, .texture_to_buffer, .{
++        .buffer = cast(DoeBuffer, dst_buffer_raw),
++        .texture = cast(DoeTexture, src_texture_raw),
++        .copy = .{ .offset = dst_offset, .bytes_per_row = dst_bytes_per_row, .rows_per_image = dst_rows_per_image, .mip = src_mip_level, .width = width, .height = height, .depth_or_layers = depth_or_array_layers },
++    });
+ }
+ 
+ pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque {
+@@ -394,9 +364,10 @@ fn recordingAllocationScenario(allocator: std.mem.Allocator, fixture: RecordingF
+     var pipeline = native_types.DoeComputePipeline{};
+     var render_pipeline = native_types.DoeRenderPipeline{};
+     var group = DoeBindGroup{};
+-    var buffer = DoeBuffer{ .dev = &device, .size = 512, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
++    var buffer = DoeBuffer{ .dev = &device, .size = 512, .usage = buffer_abi.WGPUBufferUsage_CopySrc | buffer_abi.WGPUBufferUsage_CopyDst };
+     var destination = DoeBuffer{ .dev = &device, .size = 512, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
+-    var texture = DoeTexture{};
++    const texture_abi = @import("../../core/abi/wgpu_texture_base_types.zig");
++    var texture = DoeTexture{ .device_ref = &device, .width = 1, .height = 1, .format = texture_abi.WGPUTextureFormat_RGBA8Unorm, .usage = texture_abi.WGPUTextureUsage_CopySrc | texture_abi.WGPUTextureUsage_CopyDst };
+     var view = native_types.DoeTextureView{ .tex = &texture };
+     var query = query_native.DoeQuerySet{ .count = 2 };
+     defer {
+diff --git a/runtime/zig/src/native/queue/doe_queue_submit_metal.zig b/runtime/zig/src/native/queue/doe_queue_submit_metal.zig
+index c06f9f6e4..0c36102e3 100644
+--- a/runtime/zig/src/native/queue/doe_queue_submit_metal.zig
++++ b/runtime/zig/src/native/queue/doe_queue_submit_metal.zig
+@@ -505,6 +505,10 @@ pub fn submit_metal_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*an
+                         c.width,
+                         c.height,
+                         c.depth_or_array_layers,
++                        c.origin[0],
++                        c.origin[1],
++                        c.origin[2],
++                        c.aspect,
+                     );
+                     bridge.metal_bridge_end_blit_encoding(blit);
+                     has_gpu_work = true;
+@@ -523,6 +527,10 @@ pub fn submit_metal_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*an
+                         c.width,
+                         c.height,
+                         c.depth_or_array_layers,
++                        c.origin[0],
++                        c.origin[1],
++                        c.origin[2],
++                        c.aspect,
+                     );
+                     bridge.metal_bridge_end_blit_encoding(blit);
+                     has_gpu_work = true;
+diff --git a/runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig b/runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig
+index 46febfcc7..b9fc0c411 100644
+--- a/runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig
++++ b/runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig
+@@ -192,6 +192,8 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
+                         .bytes_per_row = copy_cmd.dst_bytes_per_row,
+                         .rows_per_image = copy_cmd.dst_rows_per_image,
+                         .mip = copy_cmd.src_mip_level,
++                        .origin = copy_cmd.origin,
++                        .aspect = copy_cmd.aspect,
+                         .width = copy_cmd.width,
+                         .height = copy_cmd.height,
+                         .depth_or_layers = copy_cmd.depth_or_array_layers,
+@@ -270,6 +272,8 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
+                         .bytes_per_row = copy.src_bytes_per_row,
+                         .rows_per_image = copy.src_rows_per_image,
+                         .mip = copy.dst_mip_level,
++                        .origin = copy.origin,
++                        .aspect = copy.aspect,
+                         .width = copy.width,
+                         .height = copy.height,
+                         .depth_or_layers = copy.depth_or_array_layers,
+diff --git a/runtime/zig/src/native/support/doe_native_command_types.zig b/runtime/zig/src/native/support/doe_native_command_types.zig
+index bb3b28a9e..a835ae9a4 100644
+--- a/runtime/zig/src/native/support/doe_native_command_types.zig
++++ b/runtime/zig/src/native/support/doe_native_command_types.zig
+@@ -105,6 +105,8 @@ pub const RecordedCmd = union(CmdTag) {
+         width: u32,
+         height: u32,
+         depth_or_array_layers: u32,
++        origin: [3]u32 = .{ 0, 0, 0 },
++        aspect: u32 = @import("../../contracts/model/model_texture_value_types.zig").WGPUTextureAspect_All,
+     },
+     copy_texture_to_buffer: struct {
+         src_texture: ?*anyopaque,
+@@ -116,6 +118,8 @@ pub const RecordedCmd = union(CmdTag) {
+         width: u32,
+         height: u32,
+         depth_or_array_layers: u32,
++        origin: [3]u32 = .{ 0, 0, 0 },
++        aspect: u32 = @import("../../contracts/model/model_texture_value_types.zig").WGPUTextureAspect_All,
+     },
+     clear_buffer: struct {
+         buffer: ?*anyopaque,
+diff --git a/runtime/zig/src/runtime/diagnostics/error_scope.zig b/runtime/zig/src/runtime/diagnostics/error_scope.zig
+index b376fa210..20de724eb 100644
+--- a/runtime/zig/src/runtime/diagnostics/error_scope.zig
++++ b/runtime/zig/src/runtime/diagnostics/error_scope.zig
+@@ -236,6 +236,12 @@ pub fn zig_error_to_type(err: anyerror) u32 {
+         error.BufferCopyUnaligned,
+         error.BufferCopyOutOfBounds,
+         error.BufferCopyAliasing,
++        error.TextureCopyRange,
++        error.TextureCopyLayout,
++        error.TextureCopyAspect,
++        error.TextureCopyUnsupported,
++        error.TextureCopyDeviceMismatch,
++        error.TextureCopyUsageMissing,
+         error.InvalidState,
+         error.ImmediateDataUnsupported,
+         error.ShaderCompileFailed,
+diff --git a/runtime/zig/tests/native_recorded_compute.c b/runtime/zig/tests/native_recorded_compute.c
+index 5f063619b..0e19bfa16 100644
+--- a/runtime/zig/tests/native_recorded_compute.c
++++ b/runtime/zig/tests/native_recorded_compute.c
+@@ -319,6 +319,231 @@ static bool texture_submission_lifetime(WGPUInstance instance, WGPUDevice device
+     return true;
+ }
+ 
++static bool texture_region_copies(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
++    enum { MIP_WIDTH = 4, MIP_HEIGHT = 4, LAYERS = 4, STORAGE_BYTES = TEXTURE_ROW_BYTES * MIP_HEIGHT * LAYERS,
++           PATCH_OFFSET = 16, PATCH_ROWS = 3, PATCH_WIDTH = 2, PATCH_HEIGHT = 2 };
++    const uint32_t initial = 0x24681357u;
++    for (unsigned volume = 0; volume < 2; ++volume) {
++        WGPUTextureDescriptor desc = WGPU_TEXTURE_DESCRIPTOR_INIT;
++        desc.usage = WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
++        desc.dimension = volume ? WGPUTextureDimension_3D : WGPUTextureDimension_2D;
++        desc.size = (WGPUExtent3D){MIP_WIDTH * 2, MIP_HEIGHT * 2, LAYERS};
++        desc.mipLevelCount = 2;
++        desc.format = WGPUTextureFormat_R32Uint;
++        WGPUTexture texture = wgpuDeviceCreateTexture(device, &desc);
++        WGPUBufferDescriptor bd = WGPU_BUFFER_DESCRIPTOR_INIT;
++        bd.size = STORAGE_BYTES;
++        bd.usage = WGPUBufferUsage_CopySrc;
++        bd.mappedAtCreation = WGPU_TRUE;
++        WGPUBuffer input = wgpuDeviceCreateBuffer(device, &bd);
++        WGPUBuffer patch = wgpuDeviceCreateBuffer(device, &bd);
++        bd.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
++        bd.mappedAtCreation = WGPU_FALSE;
++        bd.size = STORAGE_BYTES * 2;
++        WGPUBuffer output = wgpuDeviceCreateBuffer(device, &bd);
++        if (!texture || !input || !patch || !output) return false;
++        uint32_t* initial_data = wgpuBufferGetMappedRange(input, 0, STORAGE_BYTES);
++        uint32_t* patch_data = wgpuBufferGetMappedRange(patch, 0, STORAGE_BYTES);
++        if (!initial_data || !patch_data) return false;
++        for (size_t i = 0; i < STORAGE_BYTES / sizeof(uint32_t); ++i) {
++            initial_data[i] = initial;
++            patch_data[i] = PADDING_SENTINEL;
++        }
++        const unsigned patch_layers = volume ? 1 : 2;
++        for (unsigned z = 0; z < patch_layers; ++z)
++            for (unsigned y = 0; y < PATCH_HEIGHT; ++y)
++                for (unsigned x = 0; x < PATCH_WIDTH; ++x)
++                    patch_data[(PATCH_OFFSET + (z * PATCH_ROWS + y) * TEXTURE_ROW_BYTES) / sizeof(uint32_t) + x] =
++                        0x10100000u + z * 100 + y * 10 + x;
++        wgpuBufferUnmap(input);
++        wgpuBufferUnmap(patch);
++        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
++        if (!encoder) return false;
++        WGPUTexelCopyTextureInfo tc = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
++        tc.texture = texture;
++        tc.mipLevel = 1;
++        WGPUTexelCopyBufferInfo bc = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
++        bc.buffer = input;
++        bc.layout.bytesPerRow = TEXTURE_ROW_BYTES;
++        bc.layout.rowsPerImage = MIP_HEIGHT;
++        WGPUExtent3D full = {MIP_WIDTH, MIP_HEIGHT, volume ? LAYERS / 2 : LAYERS};
++        wgpuCommandEncoderCopyBufferToTexture(encoder, &bc, &tc, &full);
++        bc.buffer = patch;
++        bc.layout.offset = PATCH_OFFSET;
++        bc.layout.rowsPerImage = PATCH_ROWS;
++        tc.origin = (WGPUOrigin3D){1, 2, 1};
++        WGPUExtent3D patch_size = {PATCH_WIDTH, PATCH_HEIGHT, patch_layers};
++        wgpuCommandEncoderCopyBufferToTexture(encoder, &bc, &tc, &patch_size);
++        tc.origin = (WGPUOrigin3D){0, 0, 0};
++        bc.buffer = output;
++        bc.layout.offset = 0;
++        bc.layout.rowsPerImage = MIP_HEIGHT;
++        wgpuCommandEncoderCopyTextureToBuffer(encoder, &tc, &bc, &full);
++        tc.origin = (WGPUOrigin3D){1, 2, 1};
++        bc.layout.offset = STORAGE_BYTES;
++        bc.layout.rowsPerImage = PATCH_ROWS;
++        wgpuCommandEncoderCopyTextureToBuffer(encoder, &tc, &bc, &patch_size);
++        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
++        wgpuCommandEncoderRelease(encoder);
++        if (!commands) return false;
++        wgpuTextureRelease(texture);
++        wgpuBufferRelease(input);
++        wgpuBufferRelease(patch);
++        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++        wgpuQueueSubmit(queue, 1, &commands);
++        const bool rejected = pop_validation(instance, device);
++        bool mapped = false;
++        WGPUBufferMapCallbackInfo callback = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
++        callback.mode = WGPUCallbackMode_AllowSpontaneous;
++        callback.callback = map_ready;
++        callback.userdata1 = &mapped;
++        wgpuBufferMapAsync(output, WGPUMapMode_Read, 0, STORAGE_BYTES * 2, callback);
++        wgpuInstanceProcessEvents(instance);
++        const uint32_t* actual = mapped ? wgpuBufferGetConstMappedRange(output, 0, STORAGE_BYTES * 2) : NULL;
++        bool success = !rejected && actual;
++        for (unsigned z = 0; success && z < full.depthOrArrayLayers; ++z)
++            for (unsigned y = 0; success && y < MIP_HEIGHT; ++y)
++                for (unsigned x = 0; success && x < MIP_WIDTH; ++x) {
++                    const bool inside = z >= 1 && z < 1 + patch_layers && y >= 2 && x >= 1 && x < 3;
++                    const uint32_t expected = inside ? 0x10100000u + (z - 1) * 100 + (y - 2) * 10 + x - 1 : initial;
++                    const uint32_t value = actual[(z * MIP_HEIGHT + y) * TEXTURE_ROW_BYTES / sizeof(uint32_t) + x];
++                    if (value != expected) {
++                        fprintf(stderr, "texture origin mismatch: volume=%u xyz=%u,%u,%u got=%u expected=%u\n", volume, x, y, z, value, expected);
++                        success = false;
++                    }
++                }
++        for (unsigned z = 0; success && z < patch_layers; ++z)
++            for (unsigned y = 0; success && y < PATCH_HEIGHT; ++y)
++                for (unsigned x = 0; success && x < PATCH_WIDTH; ++x) {
++                    const uint32_t value = actual[(STORAGE_BYTES + (z * PATCH_ROWS + y) * TEXTURE_ROW_BYTES) / sizeof(uint32_t) + x];
++                    success = value == 0x10100000u + z * 100 + y * 10 + x;
++                }
++        if (mapped) wgpuBufferUnmap(output);
++        wgpuCommandBufferRelease(commands);
++        wgpuBufferRelease(output);
++        if (!success) return false;
++    }
++    printf("passed: texture copies preserve mip-relative array and volume origins, patch strides and untouched pixels\n");
++    return true;
++}
++
++static bool texture_aspect_copies(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
++    const WGPUTextureFormat formats[] = {WGPUTextureFormat_Stencil8, WGPUTextureFormat_Depth16Unorm,
++                                         WGPUTextureFormat_Depth32FloatStencil8};
++    for (size_t index = 0; index < sizeof(formats) / sizeof(formats[0]); ++index) {
++        WGPUTextureDescriptor desc = WGPU_TEXTURE_DESCRIPTOR_INIT;
++        desc.usage = WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
++        desc.dimension = WGPUTextureDimension_2D;
++        desc.size = (WGPUExtent3D){ELEMENT_COUNT, 1, 1};
++        desc.format = formats[index];
++        const bool depth = desc.format == WGPUTextureFormat_Depth16Unorm;
++        const size_t bytes = ELEMENT_COUNT * (depth ? sizeof(uint16_t) : sizeof(uint8_t));
++        WGPUTexture texture = wgpuDeviceCreateTexture(device, &desc);
++        WGPUBufferDescriptor bd = WGPU_BUFFER_DESCRIPTOR_INIT;
++        bd.size = bytes;
++        bd.usage = WGPUBufferUsage_CopySrc;
++        bd.mappedAtCreation = WGPU_TRUE;
++        WGPUBuffer input = wgpuDeviceCreateBuffer(device, &bd);
++        bd.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
++        bd.mappedAtCreation = WGPU_FALSE;
++        WGPUBuffer output = wgpuDeviceCreateBuffer(device, &bd);
++        if (!texture || !input || !output) return false;
++        uint8_t* data = wgpuBufferGetMappedRange(input, 0, bytes);
++        if (!data) return false;
++        for (size_t byte = 0; byte < bytes; ++byte) data[byte] = (uint8_t)(17 + byte * 23);
++        wgpuBufferUnmap(input);
++        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
++        if (!encoder) return false;
++        WGPUTexelCopyTextureInfo tc = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
++        tc.texture = texture;
++        tc.aspect = depth ? WGPUTextureAspect_DepthOnly : WGPUTextureAspect_StencilOnly;
++        WGPUTexelCopyBufferInfo bc = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
++        bc.buffer = input;
++        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++        wgpuCommandEncoderCopyBufferToTexture(encoder, &bc, &tc, &desc.size);
++        bc.buffer = output;
++        wgpuCommandEncoderCopyTextureToBuffer(encoder, &tc, &bc, &desc.size);
++        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
++        wgpuCommandEncoderRelease(encoder);
++        if (!commands || pop_validation(instance, device)) return false;
++        wgpuTextureRelease(texture);
++        wgpuBufferRelease(input);
++        wgpuQueueSubmit(queue, 1, &commands);
++        bool mapped = false;
++        WGPUBufferMapCallbackInfo callback = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
++        callback.mode = WGPUCallbackMode_AllowSpontaneous;
++        callback.callback = map_ready;
++        callback.userdata1 = &mapped;
++        wgpuBufferMapAsync(output, WGPUMapMode_Read, 0, bytes, callback);
++        wgpuInstanceProcessEvents(instance);
++        const uint8_t* actual = mapped ? wgpuBufferGetConstMappedRange(output, 0, bytes) : NULL;
++        bool success = actual != NULL;
++        for (size_t byte = 0; success && byte < bytes; ++byte) success = actual[byte] == (uint8_t)(17 + byte * 23);
++        if (mapped) wgpuBufferUnmap(output);
++        wgpuCommandBufferRelease(commands);
++        wgpuBufferRelease(output);
++        if (!success) { fprintf(stderr, "texture aspect mismatch: format=%u\n", desc.format); return false; }
++    }
++    printf("passed: explicit stencil, depth16 and combined depth-stencil plane copies with omitted single-row strides\n");
++    return true;
++}
++
++static bool invalid_texture_regions(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
++    enum { ORIGIN_X, ORIGIN_Z, MIP, ROW_ALIGNMENT, ROW_MISSING, IMAGE_MISSING,
++           ASPECT, TEXTURE_USAGE, BUFFER_USAGE, REGION_CASE_COUNT };
++    WGPUTextureDescriptor td = WGPU_TEXTURE_DESCRIPTOR_INIT;
++    td.usage = WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
++    td.dimension = WGPUTextureDimension_2D;
++    td.size = (WGPUExtent3D){4, 2, 2};
++    td.format = WGPUTextureFormat_R32Uint;
++    WGPUTexture texture = wgpuDeviceCreateTexture(device, &td);
++    td.usage = WGPUTextureUsage_CopySrc;
++    WGPUTexture wrong_texture = wgpuDeviceCreateTexture(device, &td);
++    WGPUBufferDescriptor bd = WGPU_BUFFER_DESCRIPTOR_INIT;
++    bd.size = 1024;
++    bd.usage = WGPUBufferUsage_CopySrc;
++    WGPUBuffer buffer = wgpuDeviceCreateBuffer(device, &bd);
++    bd.usage = WGPUBufferUsage_Storage;
++    WGPUBuffer wrong_buffer = wgpuDeviceCreateBuffer(device, &bd);
++    bool success = texture && wrong_texture && buffer && wrong_buffer;
++    for (unsigned scenario = 0; success && scenario < REGION_CASE_COUNT; ++scenario) {
++        WGPUTexelCopyTextureInfo tc = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
++        tc.texture = scenario == TEXTURE_USAGE ? wrong_texture : texture;
++        tc.origin.x = scenario == ORIGIN_X ? 3 : 0;
++        tc.origin.z = scenario == ORIGIN_Z ? 2 : 0;
++        tc.mipLevel = scenario == MIP ? 1 : 0;
++        tc.aspect = scenario == ASPECT ? WGPUTextureAspect_DepthOnly : WGPUTextureAspect_All;
++        WGPUTexelCopyBufferInfo bc = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
++        bc.buffer = scenario == BUFFER_USAGE ? wrong_buffer : buffer;
++        bc.layout.bytesPerRow = scenario == ROW_MISSING ? WGPU_COPY_STRIDE_UNDEFINED :
++            scenario == ROW_ALIGNMENT ? 64 : TEXTURE_ROW_BYTES;
++        bc.layout.rowsPerImage = scenario == IMAGE_MISSING ? WGPU_COPY_STRIDE_UNDEFINED : 2;
++        WGPUExtent3D extent = {2, 2, scenario == IMAGE_MISSING ? 2 : 1};
++        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
++        if (!encoder) { success = false; break; }
++        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++        wgpuCommandEncoderCopyBufferToTexture(encoder, &bc, &tc, &extent);
++        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
++        wgpuCommandEncoderRelease(encoder);
++        const bool recording_rejected = pop_validation(instance, device);
++        bool submission_rejected = false;
++        if (commands && recording_rejected) {
++            wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
++            wgpuQueueSubmit(queue, 1, &commands);
++            submission_rejected = pop_validation(instance, device);
++        }
++        if (commands) wgpuCommandBufferRelease(commands);
++        success = recording_rejected && submission_rejected;
++        if (!success) fprintf(stderr, "invalid texture region admitted: case=%u\n", scenario);
++    }
++    if (texture) wgpuTextureRelease(texture);
++    if (wrong_texture) wgpuTextureRelease(wrong_texture);
++    if (buffer) wgpuBufferRelease(buffer);
++    if (wrong_buffer) wgpuBufferRelease(wrong_buffer);
++    if (success) printf("passed: invalid texture origins, mips, strides, aspects and usages reject recording and submission\n");
++    return success;
++}
++
+ static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue,
+                     bool batch, bool via_texture, bool resident_roundtrip) {
+     bool success = false, mapped = false;
+@@ -528,13 +753,20 @@ int main(void) {
+     device_callback.mode = WGPUCallbackMode_AllowSpontaneous;
+     device_callback.callback = device_ready;
+     device_callback.userdata1 = &device;
+-    wgpuAdapterRequestDevice(adapter, NULL, device_callback);
++    const WGPUFeatureName required_features[] = {WGPUFeatureName_Depth32FloatStencil8};
++    WGPUDeviceDescriptor device_desc = WGPU_DEVICE_DESCRIPTOR_INIT;
++    device_desc.requiredFeatureCount = sizeof(required_features) / sizeof(required_features[0]);
++    device_desc.requiredFeatures = required_features;
++    wgpuAdapterRequestDevice(adapter, &device_desc, device_callback);
+     wgpuInstanceProcessEvents(instance);
+     if (!device) goto cleanup;
+     queue = wgpuDeviceGetQueue(device);
+     if (queue && invalid_pass_lifetimes(instance, device, queue) && invalid_buffer_copies(instance, device, queue) &&
+         unavailable_copy_resources(instance, device, queue) &&
+         texture_submission_lifetime(instance, device, queue) &&
++        texture_region_copies(instance, device, queue) &&
++        texture_aspect_copies(instance, device, queue) &&
++        invalid_texture_regions(instance, device, queue) &&
+         execute(instance, device, queue, false, false, false) &&
+         execute(instance, device, queue, true, false, false)) {
+         const bool layered_readback = execute(instance, device, queue, false, true, false);

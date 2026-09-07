@@ -180,25 +180,33 @@ These are repeated physical tests on the same AMD host, not independent
 reproduction or registry publication. The matrix retains raw outputs, native
 journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
 
-## Open acceptance requirements
+## Linux/Vulkan completion checklist
 
-- Independently reproduce the simulation correction and establish a useful
-  application benefit with preparation, correct output, and complete operation
-  timing included. Dawn and wgpu still fail the resident oracle; their resident
-  timings cannot enter an equivalent-work speed comparison. Large Deno ratios
-  remain suspicious host-path observations. Correct invocation-local workloads
-  still include incumbent tail losses.
-- Reproduce the useful mechanism on physical Apple Metal. GPU recording is
-  unsupported there, and the known Mac host is unreachable from this workspace.
-  Windows needs an approved physical D3D12 lane. AMD package evidence does not
-  qualify either platform or Electron renderer execution.
-- Measure native and peak device memory, application-level concurrency and
-  resource retention, real driver loss, hangs, and recovery. Explicit device
-  destruction and requested buffer totals do not satisfy those requirements.
-- Complete external portfolio transfer, release admission, authorized
-  publication, and independent repeat use. Broader shader, conformance, and
-  model-transcript gaps remain in [compiler and WebGPU](compiler-and-webgpu.md).
-  Fawn remains an experimental distribution surface.
+- Verify retained package hashes and clean Node, Bun, and Electron main-process
+  installation. Run public C-boundary copy regressions against the retained
+  native binary, including origins, untouched pixels, dimensions, and aspects.
+- Close demonstrated downstream shader and model failures with independent
+  accepted outputs; retain reproductions and cross-program regressions.
+- Measure prolonged sessions, native allocation retention, observed device
+  memory, concurrency, and bounded cancellation/recovery. Distinguish sampled
+  memory from peak residency and device destruction from physical driver loss.
+- Recheck reflection failure propagation, compilation-owned diagnostics, and
+  state-reset approval against implementation and retained-package regressions.
+- Run the frozen application comparisons with equivalent inputs, correctness,
+  caches, transfers, and completion. Record preparation, complete-operation
+  latency, CPU use, memory, and long-session behavior; optimize the largest
+  demonstrated bottleneck and rerun affected acceptance checks.
+
+Dawn and wgpu resident-oracle failures cannot supply equivalent-work timings.
+Large Deno ratios remain suspicious host-path observations until audited;
+correct invocation-local workloads still include incumbent tail losses. Passing
+implementation checks does not establish a performance advantage.
+
+Physical Metal and D3D12 testing are excluded from this milestone; AMD evidence
+does not qualify them or Electron renderer execution. Independent adoption is a
+separate product outcome. Release admission and authorized publication retain
+their own requirements. Broader shader, conformance, and model-transcript scope
+lives in [compiler and WebGPU](compiler-and-webgpu.md); Fawn remains experimental.
 
 ## Ground truth
 

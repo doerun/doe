@@ -398,19 +398,15 @@ pub fn doeAbiBridgeCopyTextureToBuffer(
     destination: *const abi_copy.WGPUTexelCopyBufferInfo,
     copy_size: *const abi_copy.WGPUExtent3D,
 ) callconv(.c) void {
-    const encoder_native = @import("../native/command/doe_encoder_native.zig");
-    encoder_native.doeNativeCommandEncoderCopyTextureToBuffer(
-        encoder,
-        source.texture,
-        source.mipLevel,
-        destination.buffer,
-        destination.layout.offset,
-        destination.layout.bytesPerRow,
-        destination.layout.rowsPerImage,
-        copy_size.width,
-        copy_size.height,
-        copy_size.depthOrArrayLayers,
-    );
+    const objects = @import("../native/support/doe_native_object_types.zig");
+    const helpers = @import("../native/support/doe_native_object_helpers.zig");
+    const enc = helpers.cast(objects.DoeCommandEncoder, encoder) orelse return;
+    @import("../native/command/doe_buffer_texture_copy.zig").record(enc, .texture_to_buffer, .{
+        .buffer = helpers.cast(objects.DoeBuffer, destination.buffer),
+        .texture = helpers.cast(objects.DoeTexture, source.texture),
+        .alignment = .webgpu,
+        .copy = .{ .offset = destination.layout.offset, .bytes_per_row = destination.layout.bytesPerRow, .rows_per_image = destination.layout.rowsPerImage, .mip = source.mipLevel, .origin = .{ source.origin.x, source.origin.y, source.origin.z }, .aspect = source.aspect, .width = copy_size.width, .height = copy_size.height, .depth_or_layers = copy_size.depthOrArrayLayers },
+    });
 }
 
 pub fn doeAbiBridgeCopyBufferToTexture(
@@ -419,19 +415,15 @@ pub fn doeAbiBridgeCopyBufferToTexture(
     destination: *const abi_copy.WGPUTexelCopyTextureInfo,
     copy_size: *const abi_copy.WGPUExtent3D,
 ) callconv(.c) void {
-    const encoder_native = @import("../native/command/doe_encoder_native.zig");
-    encoder_native.doeNativeCommandEncoderCopyBufferToTexture(
-        encoder,
-        source.buffer,
-        source.layout.offset,
-        source.layout.bytesPerRow,
-        source.layout.rowsPerImage,
-        destination.texture,
-        destination.mipLevel,
-        copy_size.width,
-        copy_size.height,
-        copy_size.depthOrArrayLayers,
-    );
+    const objects = @import("../native/support/doe_native_object_types.zig");
+    const helpers = @import("../native/support/doe_native_object_helpers.zig");
+    const enc = helpers.cast(objects.DoeCommandEncoder, encoder) orelse return;
+    @import("../native/command/doe_buffer_texture_copy.zig").record(enc, .buffer_to_texture, .{
+        .buffer = helpers.cast(objects.DoeBuffer, source.buffer),
+        .texture = helpers.cast(objects.DoeTexture, destination.texture),
+        .alignment = .webgpu,
+        .copy = .{ .offset = source.layout.offset, .bytes_per_row = source.layout.bytesPerRow, .rows_per_image = source.layout.rowsPerImage, .mip = destination.mipLevel, .origin = .{ destination.origin.x, destination.origin.y, destination.origin.z }, .aspect = destination.aspect, .width = copy_size.width, .height = copy_size.height, .depth_or_layers = copy_size.depthOrArrayLayers },
+    });
 }
 
 pub fn doeAbiBridgeCopyTextureToTexture(

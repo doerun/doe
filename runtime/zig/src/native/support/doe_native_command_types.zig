@@ -105,6 +105,8 @@ pub const RecordedCmd = union(CmdTag) {
         width: u32,
         height: u32,
         depth_or_array_layers: u32,
+        origin: [3]u32 = .{ 0, 0, 0 },
+        aspect: u32 = @import("../../contracts/model/model_texture_value_types.zig").WGPUTextureAspect_All,
     },
     copy_texture_to_buffer: struct {
         src_texture: ?*anyopaque,
@@ -116,6 +118,8 @@ pub const RecordedCmd = union(CmdTag) {
         width: u32,
         height: u32,
         depth_or_array_layers: u32,
+        origin: [3]u32 = .{ 0, 0, 0 },
+        aspect: u32 = @import("../../contracts/model/model_texture_value_types.zig").WGPUTextureAspect_All,
     },
     clear_buffer: struct {
         buffer: ?*anyopaque,

@@ -319,6 +319,231 @@ static bool texture_submission_lifetime(WGPUInstance instance, WGPUDevice device
     return true;
 }
 
+static bool texture_region_copies(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
+    enum { MIP_WIDTH = 4, MIP_HEIGHT = 4, LAYERS = 4, STORAGE_BYTES = TEXTURE_ROW_BYTES * MIP_HEIGHT * LAYERS,
+           PATCH_OFFSET = 16, PATCH_ROWS = 3, PATCH_WIDTH = 2, PATCH_HEIGHT = 2 };
+    const uint32_t initial = 0x24681357u;
+    for (unsigned volume = 0; volume < 2; ++volume) {
+        WGPUTextureDescriptor desc = WGPU_TEXTURE_DESCRIPTOR_INIT;
+        desc.usage = WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
+        desc.dimension = volume ? WGPUTextureDimension_3D : WGPUTextureDimension_2D;
+        desc.size = (WGPUExtent3D){MIP_WIDTH * 2, MIP_HEIGHT * 2, LAYERS};
+        desc.mipLevelCount = 2;
+        desc.format = WGPUTextureFormat_R32Uint;
+        WGPUTexture texture = wgpuDeviceCreateTexture(device, &desc);
+        WGPUBufferDescriptor bd = WGPU_BUFFER_DESCRIPTOR_INIT;
+        bd.size = STORAGE_BYTES;
+        bd.usage = WGPUBufferUsage_CopySrc;
+        bd.mappedAtCreation = WGPU_TRUE;
+        WGPUBuffer input = wgpuDeviceCreateBuffer(device, &bd);
+        WGPUBuffer patch = wgpuDeviceCreateBuffer(device, &bd);
+        bd.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        bd.mappedAtCreation = WGPU_FALSE;
+        bd.size = STORAGE_BYTES * 2;
+        WGPUBuffer output = wgpuDeviceCreateBuffer(device, &bd);
+        if (!texture || !input || !patch || !output) return false;
+        uint32_t* initial_data = wgpuBufferGetMappedRange(input, 0, STORAGE_BYTES);
+        uint32_t* patch_data = wgpuBufferGetMappedRange(patch, 0, STORAGE_BYTES);
+        if (!initial_data || !patch_data) return false;
+        for (size_t i = 0; i < STORAGE_BYTES / sizeof(uint32_t); ++i) {
+            initial_data[i] = initial;
+            patch_data[i] = PADDING_SENTINEL;
+        }
+        const unsigned patch_layers = volume ? 1 : 2;
+        for (unsigned z = 0; z < patch_layers; ++z)
+            for (unsigned y = 0; y < PATCH_HEIGHT; ++y)
+                for (unsigned x = 0; x < PATCH_WIDTH; ++x)
+                    patch_data[(PATCH_OFFSET + (z * PATCH_ROWS + y) * TEXTURE_ROW_BYTES) / sizeof(uint32_t) + x] =
+                        0x10100000u + z * 100 + y * 10 + x;
+        wgpuBufferUnmap(input);
+        wgpuBufferUnmap(patch);
+        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
+        if (!encoder) return false;
+        WGPUTexelCopyTextureInfo tc = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+        tc.texture = texture;
+        tc.mipLevel = 1;
+        WGPUTexelCopyBufferInfo bc = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
+        bc.buffer = input;
+        bc.layout.bytesPerRow = TEXTURE_ROW_BYTES;
+        bc.layout.rowsPerImage = MIP_HEIGHT;
+        WGPUExtent3D full = {MIP_WIDTH, MIP_HEIGHT, volume ? LAYERS / 2 : LAYERS};
+        wgpuCommandEncoderCopyBufferToTexture(encoder, &bc, &tc, &full);
+        bc.buffer = patch;
+        bc.layout.offset = PATCH_OFFSET;
+        bc.layout.rowsPerImage = PATCH_ROWS;
+        tc.origin = (WGPUOrigin3D){1, 2, 1};
+        WGPUExtent3D patch_size = {PATCH_WIDTH, PATCH_HEIGHT, patch_layers};
+        wgpuCommandEncoderCopyBufferToTexture(encoder, &bc, &tc, &patch_size);
+        tc.origin = (WGPUOrigin3D){0, 0, 0};
+        bc.buffer = output;
+        bc.layout.offset = 0;
+        bc.layout.rowsPerImage = MIP_HEIGHT;
+        wgpuCommandEncoderCopyTextureToBuffer(encoder, &tc, &bc, &full);
+        tc.origin = (WGPUOrigin3D){1, 2, 1};
+        bc.layout.offset = STORAGE_BYTES;
+        bc.layout.rowsPerImage = PATCH_ROWS;
+        wgpuCommandEncoderCopyTextureToBuffer(encoder, &tc, &bc, &patch_size);
+        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
+        wgpuCommandEncoderRelease(encoder);
+        if (!commands) return false;
+        wgpuTextureRelease(texture);
+        wgpuBufferRelease(input);
+        wgpuBufferRelease(patch);
+        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+        wgpuQueueSubmit(queue, 1, &commands);
+        const bool rejected = pop_validation(instance, device);
+        bool mapped = false;
+        WGPUBufferMapCallbackInfo callback = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
+        callback.mode = WGPUCallbackMode_AllowSpontaneous;
+        callback.callback = map_ready;
+        callback.userdata1 = &mapped;
+        wgpuBufferMapAsync(output, WGPUMapMode_Read, 0, STORAGE_BYTES * 2, callback);
+        wgpuInstanceProcessEvents(instance);
+        const uint32_t* actual = mapped ? wgpuBufferGetConstMappedRange(output, 0, STORAGE_BYTES * 2) : NULL;
+        bool success = !rejected && actual;
+        for (unsigned z = 0; success && z < full.depthOrArrayLayers; ++z)
+            for (unsigned y = 0; success && y < MIP_HEIGHT; ++y)
+                for (unsigned x = 0; success && x < MIP_WIDTH; ++x) {
+                    const bool inside = z >= 1 && z < 1 + patch_layers && y >= 2 && x >= 1 && x < 3;
+                    const uint32_t expected = inside ? 0x10100000u + (z - 1) * 100 + (y - 2) * 10 + x - 1 : initial;
+                    const uint32_t value = actual[(z * MIP_HEIGHT + y) * TEXTURE_ROW_BYTES / sizeof(uint32_t) + x];
+                    if (value != expected) {
+                        fprintf(stderr, "texture origin mismatch: volume=%u xyz=%u,%u,%u got=%u expected=%u\n", volume, x, y, z, value, expected);
+                        success = false;
+                    }
+                }
+        for (unsigned z = 0; success && z < patch_layers; ++z)
+            for (unsigned y = 0; success && y < PATCH_HEIGHT; ++y)
+                for (unsigned x = 0; success && x < PATCH_WIDTH; ++x) {
+                    const uint32_t value = actual[(STORAGE_BYTES + (z * PATCH_ROWS + y) * TEXTURE_ROW_BYTES) / sizeof(uint32_t) + x];
+                    success = value == 0x10100000u + z * 100 + y * 10 + x;
+                }
+        if (mapped) wgpuBufferUnmap(output);
+        wgpuCommandBufferRelease(commands);
+        wgpuBufferRelease(output);
+        if (!success) return false;
+    }
+    printf("passed: texture copies preserve mip-relative array and volume origins, patch strides and untouched pixels\n");
+    return true;
+}
+
+static bool texture_aspect_copies(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
+    const WGPUTextureFormat formats[] = {WGPUTextureFormat_Stencil8, WGPUTextureFormat_Depth16Unorm,
+                                         WGPUTextureFormat_Depth32FloatStencil8};
+    for (size_t index = 0; index < sizeof(formats) / sizeof(formats[0]); ++index) {
+        WGPUTextureDescriptor desc = WGPU_TEXTURE_DESCRIPTOR_INIT;
+        desc.usage = WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
+        desc.dimension = WGPUTextureDimension_2D;
+        desc.size = (WGPUExtent3D){ELEMENT_COUNT, 1, 1};
+        desc.format = formats[index];
+        const bool depth = desc.format == WGPUTextureFormat_Depth16Unorm;
+        const size_t bytes = ELEMENT_COUNT * (depth ? sizeof(uint16_t) : sizeof(uint8_t));
+        WGPUTexture texture = wgpuDeviceCreateTexture(device, &desc);
+        WGPUBufferDescriptor bd = WGPU_BUFFER_DESCRIPTOR_INIT;
+        bd.size = bytes;
+        bd.usage = WGPUBufferUsage_CopySrc;
+        bd.mappedAtCreation = WGPU_TRUE;
+        WGPUBuffer input = wgpuDeviceCreateBuffer(device, &bd);
+        bd.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        bd.mappedAtCreation = WGPU_FALSE;
+        WGPUBuffer output = wgpuDeviceCreateBuffer(device, &bd);
+        if (!texture || !input || !output) return false;
+        uint8_t* data = wgpuBufferGetMappedRange(input, 0, bytes);
+        if (!data) return false;
+        for (size_t byte = 0; byte < bytes; ++byte) data[byte] = (uint8_t)(17 + byte * 23);
+        wgpuBufferUnmap(input);
+        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
+        if (!encoder) return false;
+        WGPUTexelCopyTextureInfo tc = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+        tc.texture = texture;
+        tc.aspect = depth ? WGPUTextureAspect_DepthOnly : WGPUTextureAspect_StencilOnly;
+        WGPUTexelCopyBufferInfo bc = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
+        bc.buffer = input;
+        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+        wgpuCommandEncoderCopyBufferToTexture(encoder, &bc, &tc, &desc.size);
+        bc.buffer = output;
+        wgpuCommandEncoderCopyTextureToBuffer(encoder, &tc, &bc, &desc.size);
+        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
+        wgpuCommandEncoderRelease(encoder);
+        if (!commands || pop_validation(instance, device)) return false;
+        wgpuTextureRelease(texture);
+        wgpuBufferRelease(input);
+        wgpuQueueSubmit(queue, 1, &commands);
+        bool mapped = false;
+        WGPUBufferMapCallbackInfo callback = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
+        callback.mode = WGPUCallbackMode_AllowSpontaneous;
+        callback.callback = map_ready;
+        callback.userdata1 = &mapped;
+        wgpuBufferMapAsync(output, WGPUMapMode_Read, 0, bytes, callback);
+        wgpuInstanceProcessEvents(instance);
+        const uint8_t* actual = mapped ? wgpuBufferGetConstMappedRange(output, 0, bytes) : NULL;
+        bool success = actual != NULL;
+        for (size_t byte = 0; success && byte < bytes; ++byte) success = actual[byte] == (uint8_t)(17 + byte * 23);
+        if (mapped) wgpuBufferUnmap(output);
+        wgpuCommandBufferRelease(commands);
+        wgpuBufferRelease(output);
+        if (!success) { fprintf(stderr, "texture aspect mismatch: format=%u\n", desc.format); return false; }
+    }
+    printf("passed: explicit stencil, depth16 and combined depth-stencil plane copies with omitted single-row strides\n");
+    return true;
+}
+
+static bool invalid_texture_regions(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
+    enum { ORIGIN_X, ORIGIN_Z, MIP, ROW_ALIGNMENT, ROW_MISSING, IMAGE_MISSING,
+           ASPECT, TEXTURE_USAGE, BUFFER_USAGE, REGION_CASE_COUNT };
+    WGPUTextureDescriptor td = WGPU_TEXTURE_DESCRIPTOR_INIT;
+    td.usage = WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
+    td.dimension = WGPUTextureDimension_2D;
+    td.size = (WGPUExtent3D){4, 2, 2};
+    td.format = WGPUTextureFormat_R32Uint;
+    WGPUTexture texture = wgpuDeviceCreateTexture(device, &td);
+    td.usage = WGPUTextureUsage_CopySrc;
+    WGPUTexture wrong_texture = wgpuDeviceCreateTexture(device, &td);
+    WGPUBufferDescriptor bd = WGPU_BUFFER_DESCRIPTOR_INIT;
+    bd.size = 1024;
+    bd.usage = WGPUBufferUsage_CopySrc;
+    WGPUBuffer buffer = wgpuDeviceCreateBuffer(device, &bd);
+    bd.usage = WGPUBufferUsage_Storage;
+    WGPUBuffer wrong_buffer = wgpuDeviceCreateBuffer(device, &bd);
+    bool success = texture && wrong_texture && buffer && wrong_buffer;
+    for (unsigned scenario = 0; success && scenario < REGION_CASE_COUNT; ++scenario) {
+        WGPUTexelCopyTextureInfo tc = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+        tc.texture = scenario == TEXTURE_USAGE ? wrong_texture : texture;
+        tc.origin.x = scenario == ORIGIN_X ? 3 : 0;
+        tc.origin.z = scenario == ORIGIN_Z ? 2 : 0;
+        tc.mipLevel = scenario == MIP ? 1 : 0;
+        tc.aspect = scenario == ASPECT ? WGPUTextureAspect_DepthOnly : WGPUTextureAspect_All;
+        WGPUTexelCopyBufferInfo bc = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
+        bc.buffer = scenario == BUFFER_USAGE ? wrong_buffer : buffer;
+        bc.layout.bytesPerRow = scenario == ROW_MISSING ? WGPU_COPY_STRIDE_UNDEFINED :
+            scenario == ROW_ALIGNMENT ? 64 : TEXTURE_ROW_BYTES;
+        bc.layout.rowsPerImage = scenario == IMAGE_MISSING ? WGPU_COPY_STRIDE_UNDEFINED : 2;
+        WGPUExtent3D extent = {2, 2, scenario == IMAGE_MISSING ? 2 : 1};
+        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
+        if (!encoder) { success = false; break; }
+        wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+        wgpuCommandEncoderCopyBufferToTexture(encoder, &bc, &tc, &extent);
+        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
+        wgpuCommandEncoderRelease(encoder);
+        const bool recording_rejected = pop_validation(instance, device);
+        bool submission_rejected = false;
+        if (commands && recording_rejected) {
+            wgpuDevicePushErrorScope(device, WGPUErrorFilter_Validation);
+            wgpuQueueSubmit(queue, 1, &commands);
+            submission_rejected = pop_validation(instance, device);
+        }
+        if (commands) wgpuCommandBufferRelease(commands);
+        success = recording_rejected && submission_rejected;
+        if (!success) fprintf(stderr, "invalid texture region admitted: case=%u\n", scenario);
+    }
+    if (texture) wgpuTextureRelease(texture);
+    if (wrong_texture) wgpuTextureRelease(wrong_texture);
+    if (buffer) wgpuBufferRelease(buffer);
+    if (wrong_buffer) wgpuBufferRelease(wrong_buffer);
+    if (success) printf("passed: invalid texture origins, mips, strides, aspects and usages reject recording and submission\n");
+    return success;
+}
+
 static bool execute(WGPUInstance instance, WGPUDevice device, WGPUQueue queue,
                     bool batch, bool via_texture, bool resident_roundtrip) {
     bool success = false, mapped = false;
@@ -528,13 +753,20 @@ int main(void) {
     device_callback.mode = WGPUCallbackMode_AllowSpontaneous;
     device_callback.callback = device_ready;
     device_callback.userdata1 = &device;
-    wgpuAdapterRequestDevice(adapter, NULL, device_callback);
+    const WGPUFeatureName required_features[] = {WGPUFeatureName_Depth32FloatStencil8};
+    WGPUDeviceDescriptor device_desc = WGPU_DEVICE_DESCRIPTOR_INIT;
+    device_desc.requiredFeatureCount = sizeof(required_features) / sizeof(required_features[0]);
+    device_desc.requiredFeatures = required_features;
+    wgpuAdapterRequestDevice(adapter, &device_desc, device_callback);
     wgpuInstanceProcessEvents(instance);
     if (!device) goto cleanup;
     queue = wgpuDeviceGetQueue(device);
     if (queue && invalid_pass_lifetimes(instance, device, queue) && invalid_buffer_copies(instance, device, queue) &&
         unavailable_copy_resources(instance, device, queue) &&
         texture_submission_lifetime(instance, device, queue) &&
+        texture_region_copies(instance, device, queue) &&
+        texture_aspect_copies(instance, device, queue) &&
+        invalid_texture_regions(instance, device, queue) &&
         execute(instance, device, queue, false, false, false) &&
         execute(instance, device, queue, true, false, false)) {
         const bool layered_readback = execute(instance, device, queue, false, true, false);

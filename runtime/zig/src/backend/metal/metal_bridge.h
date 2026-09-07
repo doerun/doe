@@ -126,7 +126,7 @@ void metal_bridge_blit_encoder_copy_buffer_to_texture(
     uint32_t    dst_mip_level,
     uint32_t    width,
     uint32_t    height,
-    uint32_t    depth_or_array_layers);
+    uint32_t    depth_or_array_layers, uint32_t origin_x, uint32_t origin_y, uint32_t origin_z, uint32_t aspect);
 void metal_bridge_blit_encoder_copy_texture_to_buffer(
     MetalHandle encoder,
     MetalHandle src_texture,
@@ -137,7 +137,7 @@ void metal_bridge_blit_encoder_copy_texture_to_buffer(
     uint32_t    dst_rows_per_image,
     uint32_t    width,
     uint32_t    height,
-    uint32_t    depth_or_array_layers);
+    uint32_t    depth_or_array_layers, uint32_t origin_x, uint32_t origin_y, uint32_t origin_z, uint32_t aspect);
 void metal_bridge_blit_encoder_copy_texture_to_texture(
     MetalHandle encoder,
     MetalHandle src_texture,

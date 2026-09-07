@@ -667,67 +667,56 @@ void metal_bridge_blit_encoder_copy_region(
                        size:(NSUInteger)size];
 }
 
+static MTLBlitOption buffer_texture_copy_options(id<MTLTexture> texture, uint32_t aspect) {
+    if (texture.pixelFormat != MTLPixelFormatDepth32Float_Stencil8 &&
+        texture.pixelFormat != MTLPixelFormatDepth24Unorm_Stencil8) return MTLBlitOptionNone;
+    return aspect == WGPUTextureAspect_StencilOnly ? MTLBlitOptionStencilFromDepthStencil : MTLBlitOptionDepthFromDepthStencil;
+}
+
 void metal_bridge_blit_encoder_copy_buffer_to_texture(
-    MetalHandle encoder_h,
-    MetalHandle src_h,
-    uint64_t    src_offset,
-    uint32_t    src_bytes_per_row,
-    uint32_t    src_rows_per_image,
-    MetalHandle dst_texture_h,
-    uint32_t    dst_mip_level,
-    uint32_t    width,
-    uint32_t    height,
-    uint32_t    depth_or_array_layers)
+    MetalHandle encoder_h, MetalHandle src_h, uint64_t src_offset,
+    uint32_t src_bytes_per_row, uint32_t src_rows_per_image,
+    MetalHandle dst_texture_h, uint32_t dst_mip_level,
+    uint32_t width, uint32_t height, uint32_t depth_or_array_layers,
+    uint32_t origin_x, uint32_t origin_y, uint32_t origin_z, uint32_t aspect)
 {
     id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
     id<MTLBuffer> src = (__bridge id<MTLBuffer>)src_h;
     id<MTLTexture> dst = (__bridge id<MTLTexture>)dst_texture_h;
-    MTLSize copy_size = MTLSizeMake(width, height, depth_or_array_layers);
-    SEL copy_sel = @selector(copyFromBuffer:sourceOffset:sourceBytesPerRow:sourceBytesPerImage:sourceSize:toTexture:destinationSlice:destinationLevel:destinationOrigin:);
-    typedef void (*CopyBufferToTextureFn)(id, SEL, id<MTLBuffer>, NSUInteger, NSUInteger, NSUInteger, MTLSize, id<MTLTexture>, NSUInteger, NSUInteger, MTLOrigin);
-    static CopyBufferToTextureFn copy_fn = NULL;
-    if (copy_fn == NULL) {
-        copy_fn = (CopyBufferToTextureFn)(IMP)[(id)encoder methodForSelector:copy_sel];
+    const BOOL volume = dst.textureType == MTLTextureType3D;
+    const NSUInteger stride = (NSUInteger)src_rows_per_image * src_bytes_per_row;
+    const MTLSize size = MTLSizeMake(MIN(width, MAX(dst.width >> dst_mip_level, 1) - origin_x), MIN(height, MAX(dst.height >> dst_mip_level, 1) - origin_y), volume ? depth_or_array_layers : 1);
+    const MTLOrigin origin = MTLOriginMake(origin_x, origin_y, volume ? origin_z : 0);
+    for (NSUInteger layer = 0; layer < (volume ? 1 : depth_or_array_layers); ++layer) {
+        [encoder copyFromBuffer:src sourceOffset:(NSUInteger)src_offset + layer * stride
+             sourceBytesPerRow:src_bytes_per_row sourceBytesPerImage:stride sourceSize:size
+                     toTexture:dst destinationSlice:volume ? 0 : origin_z + layer
+              destinationLevel:dst_mip_level destinationOrigin:origin
+                       options:buffer_texture_copy_options(dst, aspect)];
     }
-    copy_fn(
-        encoder,
-        copy_sel,
-        src,
-        (NSUInteger)src_offset,
-        (NSUInteger)src_bytes_per_row,
-        (NSUInteger)src_rows_per_image * (NSUInteger)src_bytes_per_row,
-        copy_size,
-        dst,
-        0,
-        (NSUInteger)dst_mip_level,
-        MTLOriginMake(0, 0, 0));
 }
 
 void metal_bridge_blit_encoder_copy_texture_to_buffer(
-    MetalHandle encoder_h,
-    MetalHandle src_texture_h,
-    uint32_t    src_mip_level,
-    MetalHandle dst_h,
-    uint64_t    dst_offset,
-    uint32_t    dst_bytes_per_row,
-    uint32_t    dst_rows_per_image,
-    uint32_t    width,
-    uint32_t    height,
-    uint32_t    depth_or_array_layers)
+    MetalHandle encoder_h, MetalHandle src_texture_h, uint32_t src_mip_level,
+    MetalHandle dst_h, uint64_t dst_offset, uint32_t dst_bytes_per_row,
+    uint32_t dst_rows_per_image, uint32_t width, uint32_t height,
+    uint32_t depth_or_array_layers, uint32_t origin_x, uint32_t origin_y,
+    uint32_t origin_z, uint32_t aspect)
 {
     id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
     id<MTLTexture> src = (__bridge id<MTLTexture>)src_texture_h;
     id<MTLBuffer> dst = (__bridge id<MTLBuffer>)dst_h;
-    MTLSize copy_size = MTLSizeMake(width, height, depth_or_array_layers);
-    [encoder copyFromTexture:src
-                 sourceSlice:0
-                 sourceLevel:(NSUInteger)src_mip_level
-                sourceOrigin:MTLOriginMake(0, 0, 0)
-                  sourceSize:copy_size
-                    toBuffer:dst
-           destinationOffset:(NSUInteger)dst_offset
-      destinationBytesPerRow:(NSUInteger)dst_bytes_per_row
-    destinationBytesPerImage:(NSUInteger)dst_rows_per_image * (NSUInteger)dst_bytes_per_row];
+    const BOOL volume = src.textureType == MTLTextureType3D;
+    const NSUInteger stride = (NSUInteger)dst_rows_per_image * dst_bytes_per_row;
+    const MTLSize size = MTLSizeMake(MIN(width, MAX(src.width >> src_mip_level, 1) - origin_x), MIN(height, MAX(src.height >> src_mip_level, 1) - origin_y), volume ? depth_or_array_layers : 1);
+    const MTLOrigin origin = MTLOriginMake(origin_x, origin_y, volume ? origin_z : 0);
+    for (NSUInteger layer = 0; layer < (volume ? 1 : depth_or_array_layers); ++layer) {
+        [encoder copyFromTexture:src sourceSlice:volume ? 0 : origin_z + layer
+                    sourceLevel:src_mip_level sourceOrigin:origin sourceSize:size
+                       toBuffer:dst destinationOffset:(NSUInteger)dst_offset + layer * stride
+         destinationBytesPerRow:dst_bytes_per_row destinationBytesPerImage:stride
+                        options:buffer_texture_copy_options(src, aspect)];
+    }
 }
 
 void metal_bridge_blit_encoder_copy_texture_to_texture(

@@ -994,9 +994,9 @@
       },
       "src/backend/metal/metal_bridge_decls.zig": {
         "decision": "Keep",
-        "moduleSha256": "c21eafbcf392bd8525f63bd88fc3ca62cdd3904ed63d237dcfab075bda29e5a6",
-        "reason": "Keep: reachable backend implementation shared by 25 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "943ff6853fa58a9fecc71e6583ffc68ed43a53c26e43c2f4b6a276b3a1fd5a4a",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
       "src/backend/metal/metal_buffer_pool.zig": {
         "decision": "Keep",
@@ -1312,9 +1312,9 @@
       },
       "src/backend/vulkan/vk_formats.zig": {
         "decision": "Keep",
-        "moduleSha256": "83b0f0358d827552ee0b1d40ca9505e16e5017c8347d531c5cfb87df8b4e4a90",
-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
-        "reviewer": "codex-recording-ownership/2026-09-06"
+        "moduleSha256": "176c11d02d77eabef4690a93c19a12b990348d399ccd94afb735ec1ed1129a2b",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
       "src/backend/vulkan/vk_functions.zig": {
         "decision": "Keep",
@@ -1408,9 +1408,9 @@
       },
       "src/backend/vulkan/vk_texture_commands.zig": {
         "decision": "Keep",
-        "moduleSha256": "a3f6f3edfcdb2ba8f7e485ceba1cc1acfae9a84798ec662636d2dee7a5e01b96",
-        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
-        "reviewer": "codex-texture-transfer/2026-09-07"
+        "moduleSha256": "82b32dc3e8f756a9cd9c3c7db5b37dbbba0c62b093e6c7b0fb2845d6667561e0",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
       "src/backend/vulkan/vk_upload.zig": {
         "decision": "Keep",
@@ -3220,9 +3220,9 @@
       },
       "src/dropin/wgpu_dropin_ext_b.zig": {
         "decision": "Keep",
-        "moduleSha256": "f3209f7448e98acd031d3025d418aafb603ebb2d7118a9c2225b6d08f4dc3c12",
-        "reason": "Keep: reachable dropin implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "51e38894c683faa1785f5b884ea4697419bc998887a8945235f22413f5c3e87e",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
       "src/dropin/wgpu_dropin_ext_c.zig": {
         "decision": "Keep",
@@ -3490,9 +3490,9 @@
       },
       "src/native/command/doe_encoder_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "16bc7a7d596a7ec4a35adf52a6dd5bcad96d3a1dded5685c037cc88f9661c42d",
-        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
-        "reviewer": "codex-submit-availability/2026-09-07"
+        "moduleSha256": "f21da0b0abd6023947c4312e62b4e19b6d061ea0072375a8d9464799c39102b2",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
       "src/native/command/doe_immediates_external_native.zig": {
         "decision": "Keep",
@@ -3592,9 +3592,9 @@
       },
       "src/native/queue/doe_queue_submit_metal.zig": {
         "decision": "Keep",
-        "moduleSha256": "0a6db901c77d1769a61cf2db7c9f7c8c76323f2ea1a6d8724fb7a51a6c48998f",
-        "reason": "Keep: snapshot Vulkan draw inputs at recording and execute them in submission order, retaining native resources and matching attachment dimensions.",
-        "reviewer": "codex-render-submission/2026-09-06"
+        "moduleSha256": "aa25ffeeb029d6f7ea2463c617481c8d95248151c00ffac50fc27d6373179392",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
       "src/native/queue/doe_queue_submit_native.zig": {
         "decision": "Keep",
@@ -3610,9 +3610,9 @@
       },
       "src/native/queue/doe_queue_submit_vulkan.zig": {
         "decision": "Keep",
-        "moduleSha256": "cb42554031bb767392ecda4925109ae8866e8988f56b6b4478179b2185d94171",
-        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
-        "reviewer": "codex-texture-transfer/2026-09-07"
+        "moduleSha256": "4aabc5fa7cbc48c1470ef3f423deeee997e01d161ead176eed79b79e05a40bee",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
       "src/native/render/doe_bundle_native.zig": {
         "decision": "Keep",
@@ -3736,9 +3736,9 @@
       },
       "src/native/support/doe_native_command_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "349ec7e55fefcdd5f4fb574018d9d297821c6fe1b59a4e803e66a4a80efa95bc",
-        "reviewer": "codex-render-submission/2026-09-06",
-        "reason": "Keep: shared vertex-format identity is checked against the pinned WebGPU header; native backend conversion and recorded execution remain owned by their existing components."
+        "moduleSha256": "7cc119606bc8add932ffe289ea4a3db2db3c90ee5d0193af662d8d11ba549f77",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
       "src/native/support/doe_native_exports.zig": {
         "decision": "Keep",
@@ -3958,9 +3958,9 @@
       },
       "src/runtime/diagnostics/error_scope.zig": {
         "decision": "Keep",
-        "moduleSha256": "0459ef562c9564db0f2b5059d1ee65770de28a5dbdcfa80a7fd3da20e0f1fa54",
-        "reason": "Keep: shared typed buffer-copy admission validates device, usage, range, alignment and the declared alias policy before retaining resources.",
-        "reviewer": "codex-copy-admission/2026-09-07"
+        "moduleSha256": "7622fef89dc9d1689780089d5098189d859ddf0d4f9b2bb701b428c24e5848ca",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
       "src/runtime/env_flags.zig": {
         "decision": "Keep",
@@ -4306,9 +4306,9 @@
       },
       "src/contracts/command_recording.zig": {
         "decision": "Keep",
-        "moduleSha256": "cbc3b137cae4d510cf3d765870fd4d56d189d29334b9efb7ebca0999734167a0",
-        "reason": "Keep: shared typed buffer-copy admission validates device, usage, range, alignment and the declared alias policy before retaining resources.",
-        "reviewer": "codex-copy-admission/2026-09-07"
+        "moduleSha256": "e5f4db7f8b6a500c8637717d5eafaf738cb98540c3865cdf7a19754b24e91d4b",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
       "src/native/command/doe_command_recording.zig": {
         "decision": "Keep",
@@ -4327,6 +4327,24 @@
         "moduleSha256": "acda1d9a23e62cbe03043688372e6561363c4d1ee6ed114c5c94874a98c62098",
         "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
         "reviewer": "codex-submit-availability/2026-09-07"
+      },
+      "src/contracts/texture_copy.zig": {
+        "decision": "Keep",
+        "moduleSha256": "4a7b01380cb0000a1f7c8d587b7c2b157f6fd9f384444427fc968cdeb92e8c81",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
+      },
+      "src/contracts/texture_format_layout.zig": {
+        "decision": "Keep",
+        "moduleSha256": "2c93a5ec273e29d5b88e7c4a4214d0c3f5430e2a1a49d213458316fd4e3e30b4",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
+      },
+      "src/native/command/doe_buffer_texture_copy.zig": {
+        "decision": "Keep",
+        "moduleSha256": "c5f0ebbbaed095c6aee7928d869eeff7c63d0303af835db5f46cc1da0fedf301",
+        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+        "reviewer": "codex-texture-copy-regions/2026-09-07"
       }
     },
     "linePolicy": {

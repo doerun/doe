@@ -145,26 +145,11 @@ pub export fn doeNativeCommandEncoderCopyBufferToTexture(
     depth_or_array_layers: u32,
 ) callconv(.c) void {
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
-    if (!recording.requireOpen(enc)) return;
-    const src_buffer = cast(DoeBuffer, src_buffer_raw) orelse return;
-    const dst_texture = cast(DoeTexture, dst_texture_raw) orelse return;
-    if (src_buffer.error_object or src_buffer.destroyed or dst_texture.error_object) return;
-    if (!recording.reserve(enc, 0, 1)) return;
-    references.retainBufferAssumeCapacity(&enc.references, src_buffer);
-    if (!recording.reserve(enc, 0, 1)) return;
-    references.retainTextureAssumeCapacity(&enc.references, dst_texture);
-    const vulkan = enc.dev.backend == .vulkan;
-    if (!recording.append(enc, .{ .copy_buffer_to_texture = .{
-        .src_buffer = if (vulkan) toOpaque(src_buffer) else src_buffer.mtl,
-        .src_offset = src_offset,
-        .src_bytes_per_row = src_bytes_per_row,
-        .src_rows_per_image = src_rows_per_image,
-        .dst_texture = if (vulkan) toOpaque(dst_texture) else dst_texture.mtl,
-        .dst_mip_level = dst_mip_level,
-        .width = width,
-        .height = height,
-        .depth_or_array_layers = depth_or_array_layers,
-    } })) return;
+    @import("doe_buffer_texture_copy.zig").record(enc, .buffer_to_texture, .{
+        .buffer = cast(DoeBuffer, src_buffer_raw),
+        .texture = cast(DoeTexture, dst_texture_raw),
+        .copy = .{ .offset = src_offset, .bytes_per_row = src_bytes_per_row, .rows_per_image = src_rows_per_image, .mip = dst_mip_level, .width = width, .height = height, .depth_or_layers = depth_or_array_layers },
+    });
 }
 
 pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
@@ -180,26 +165,11 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
     depth_or_array_layers: u32,
 ) callconv(.c) void {
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
-    if (!recording.requireOpen(enc)) return;
-    const src_texture = cast(DoeTexture, src_texture_raw) orelse return;
-    const dst_buffer = cast(DoeBuffer, dst_buffer_raw) orelse return;
-    if (src_texture.error_object or dst_buffer.error_object or dst_buffer.destroyed) return;
-    if (!recording.reserve(enc, 0, 1)) return;
-    references.retainTextureAssumeCapacity(&enc.references, src_texture);
-    if (!recording.reserve(enc, 0, 1)) return;
-    references.retainBufferAssumeCapacity(&enc.references, dst_buffer);
-    const vulkan = enc.dev.backend == .vulkan;
-    if (!recording.append(enc, .{ .copy_texture_to_buffer = .{
-        .src_texture = if (vulkan) @ptrCast(src_texture) else src_texture.mtl,
-        .src_mip_level = src_mip_level,
-        .dst_buffer = if (vulkan) @ptrCast(dst_buffer) else dst_buffer.mtl,
-        .dst_offset = dst_offset,
-        .dst_bytes_per_row = dst_bytes_per_row,
-        .dst_rows_per_image = dst_rows_per_image,
-        .width = width,
-        .height = height,
-        .depth_or_array_layers = depth_or_array_layers,
-    } })) return;
+    @import("doe_buffer_texture_copy.zig").record(enc, .texture_to_buffer, .{
+        .buffer = cast(DoeBuffer, dst_buffer_raw),
+        .texture = cast(DoeTexture, src_texture_raw),
+        .copy = .{ .offset = dst_offset, .bytes_per_row = dst_bytes_per_row, .rows_per_image = dst_rows_per_image, .mip = src_mip_level, .width = width, .height = height, .depth_or_layers = depth_or_array_layers },
+    });
 }
 
 pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque {
@@ -394,9 +364,10 @@ fn recordingAllocationScenario(allocator: std.mem.Allocator, fixture: RecordingF
     var pipeline = native_types.DoeComputePipeline{};
     var render_pipeline = native_types.DoeRenderPipeline{};
     var group = DoeBindGroup{};
-    var buffer = DoeBuffer{ .dev = &device, .size = 512, .usage = buffer_abi.WGPUBufferUsage_CopySrc };
+    var buffer = DoeBuffer{ .dev = &device, .size = 512, .usage = buffer_abi.WGPUBufferUsage_CopySrc | buffer_abi.WGPUBufferUsage_CopyDst };
     var destination = DoeBuffer{ .dev = &device, .size = 512, .usage = buffer_abi.WGPUBufferUsage_CopyDst };
-    var texture = DoeTexture{};
+    const texture_abi = @import("../../core/abi/wgpu_texture_base_types.zig");
+    var texture = DoeTexture{ .device_ref = &device, .width = 1, .height = 1, .format = texture_abi.WGPUTextureFormat_RGBA8Unorm, .usage = texture_abi.WGPUTextureUsage_CopySrc | texture_abi.WGPUTextureUsage_CopyDst };
     var view = native_types.DoeTextureView{ .tex = &texture };
     var query = query_native.DoeQuerySet{ .count = 2 };
     defer {

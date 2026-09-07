@@ -97,7 +97,7 @@ void metal_bridge_blit_encoder_copy_region(MetalHandle encoder, MetalHandle src,
     (void)dst_offset;
     (void)size;
 }
-void metal_bridge_blit_encoder_copy_buffer_to_texture(MetalHandle encoder, MetalHandle src, uint64_t src_offset, uint32_t src_bytes_per_row, uint32_t src_rows_per_image, MetalHandle dst_texture, uint32_t dst_mip_level, uint32_t width, uint32_t height, uint32_t depth_or_array_layers) {
+void metal_bridge_blit_encoder_copy_buffer_to_texture(MetalHandle encoder, MetalHandle src, uint64_t src_offset, uint32_t src_bytes_per_row, uint32_t src_rows_per_image, MetalHandle dst_texture, uint32_t dst_mip_level, uint32_t width, uint32_t height, uint32_t depth_or_array_layers, uint32_t origin_x, uint32_t origin_y, uint32_t origin_z, uint32_t aspect) {
     (void)encoder;
     (void)src;
     (void)src_offset;
@@ -108,8 +108,9 @@ void metal_bridge_blit_encoder_copy_buffer_to_texture(MetalHandle encoder, Metal
     (void)width;
     (void)height;
     (void)depth_or_array_layers;
+    (void)origin_x; (void)origin_y; (void)origin_z; (void)aspect;
 }
-void metal_bridge_blit_encoder_copy_texture_to_buffer(MetalHandle encoder, MetalHandle src_texture, uint32_t src_mip_level, MetalHandle dst, uint64_t dst_offset, uint32_t dst_bytes_per_row, uint32_t dst_rows_per_image, uint32_t width, uint32_t height, uint32_t depth_or_array_layers) {
+void metal_bridge_blit_encoder_copy_texture_to_buffer(MetalHandle encoder, MetalHandle src_texture, uint32_t src_mip_level, MetalHandle dst, uint64_t dst_offset, uint32_t dst_bytes_per_row, uint32_t dst_rows_per_image, uint32_t width, uint32_t height, uint32_t depth_or_array_layers, uint32_t origin_x, uint32_t origin_y, uint32_t origin_z, uint32_t aspect) {
     (void)encoder;
     (void)src_texture;
     (void)src_mip_level;
@@ -120,6 +121,7 @@ void metal_bridge_blit_encoder_copy_texture_to_buffer(MetalHandle encoder, Metal
     (void)width;
     (void)height;
     (void)depth_or_array_layers;
+    (void)origin_x; (void)origin_y; (void)origin_z; (void)aspect;
 }
 void metal_bridge_blit_encoder_copy_texture_to_texture(MetalHandle encoder, MetalHandle src_texture, uint32_t src_mip_level, MetalHandle dst_texture, uint32_t dst_mip_level, uint32_t width, uint32_t height, uint32_t depth_or_array_layers) {
     (void)encoder;

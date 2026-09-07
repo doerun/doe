@@ -505,6 +505,10 @@ pub fn submit_metal_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*an
                         c.width,
                         c.height,
                         c.depth_or_array_layers,
+                        c.origin[0],
+                        c.origin[1],
+                        c.origin[2],
+                        c.aspect,
                     );
                     bridge.metal_bridge_end_blit_encoding(blit);
                     has_gpu_work = true;
@@ -523,6 +527,10 @@ pub fn submit_metal_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*an
                         c.width,
                         c.height,
                         c.depth_or_array_layers,
+                        c.origin[0],
+                        c.origin[1],
+                        c.origin[2],
+                        c.aspect,
                     );
                     bridge.metal_bridge_end_blit_encoding(blit);
                     has_gpu_work = true;

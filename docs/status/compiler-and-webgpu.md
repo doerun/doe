@@ -52,11 +52,11 @@ dependent dispatch; mapped readback receives explicit transfer visibility.
 Abandoned recordings do not execute, and padding remains untouched. Copy-only
 textures and their WebGPU views allocate no Vulkan image views; the physical
 fixture also runs with synchronization validation enabled.
-The layered-copy and resident-restore regressions retain their pre-fix failures
-and physical AMD Vulkan results at
-`bench/out/compute-program/20260907-texture-transfers/README.md`.
-These checks do not establish texture-origin/aspect conformance, concurrent queue
-safety, physical Metal/D3D12 behavior, or a performance advantage.
+The WebGPU C bridge preserves origins and aspects; shared admission rejects
+invalid descriptors before retention. Array, volume, and depth/stencil evidence:
+`bench/out/compute-program/20260907-texture-copy-regions/README.md`.
+This does not establish full conformance, concurrent queue safety, physical
+Metal/D3D12 behavior, or a performance advantage.
 
 ## Transactional fused command construction
 

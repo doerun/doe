@@ -1,0 +1,12 @@
+backend=6 adapter=4 vendor=4098 device=5510 GPU=Radeon 8060S Graphics (RADV STRIX_HALO) description=Radeon 8060S Graphics (RADV STRIX_HALO)
+passed: invalid pass lifetimes and unsupported immediate payloads/layouts reject before execution
+passed: buffer copy alignment, range, identity, usage and empty-copy validation
+passed: submission rejects mapped/destroyed buffers; unmap and caller release preserve valid copies
+passed: texture caller release preserves copies; explicit destruction rejects submission and writes
+passed: texture copies preserve mip-relative array and volume origins, patch strides and untouched pixels
+passed: explicit stencil, depth16 and combined depth-stencil plane copies with omitted single-row strides
+passed: invalid texture origins, mips, strides, aspects and usages reject recording and submission
+passed: single native constructor, failed construction, caller release, dispatch/copy/readback
+passed: batch native constructor, failed construction, caller release, dispatch/copy/readback
+passed: abandoned texture copy, caller release, ordered GPU dispatch/layered texture copy/readback
+passed: layered texture restore into resident storage, dependent dispatch, caller release/readback

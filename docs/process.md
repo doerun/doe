@@ -253,6 +253,20 @@ classified and cannot be promoted by benchmark results.
   Copy-only textures and WebGPU views retain metadata without allocating Vulkan
   image views. Physical transfer acceptance also checks Vulkan synchronization
   validation, including explicit view creation and release.
+  Standard WebGPU buffer/image copy descriptors preserve origin and aspect through
+  recording and backend execution. One neutral layout contract owns range,
+  format footprint, selected plane, stride, and last-accessed-byte decisions.
+  The C bridge enforces WebGPU row alignment and omitted-stride rules; the existing
+  flattened native entrypoints retain their compact-layout contract. Invalid
+  device identity, usage, region, or aspect poisons the encoder before allocation
+  or resource retention. Empty copies still undergo descriptor validation.
+  Buffer/image recording on unsupported backends fails explicitly. This migrates
+  internal command metadata and private Metal bridge arguments; public C exports,
+  descriptors, config schemas, traces, and receipts keep their existing shape.
+  Regression acceptance covers nonzero origins in array and volume mips, padded
+  strides, copyable depth/stencil planes, invalid descriptors, allocation failure,
+  and successful work after rejection. Backend plumbing alone is not physical
+  platform qualification.
   Native regressions must reject an abandoned-copy side effect, check layered
   readback and resident restore followed by a dependent dispatch, and release
   caller references before submission. Copy completion remains part of the
