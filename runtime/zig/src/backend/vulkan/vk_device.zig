@@ -42,13 +42,18 @@ pub fn create_instance(self: anytype) !void {
     const surface_exts = vulkan_surface.required_instance_extensions();
     var enabled_exts: [4][*:0]const u8 = undefined;
     var enabled_ext_count: usize = 0;
-    const surface_extension_available = detect_instance_extension(vulkan_surface.INSTANCE_SURFACE_EXTENSION);
+    var instance_extensions: [MAX_INSTANCE_EXTENSIONS]c.VkExtensionProperties = undefined;
+    const available_extensions = enumerate_instance_extensions(
+        c.vkEnumerateInstanceExtensionProperties,
+        &instance_extensions,
+    );
+    const surface_extension_available = has_extension(available_extensions, vulkan_surface.INSTANCE_SURFACE_EXTENSION);
     if (surface_extension_available) {
         enabled_exts[enabled_ext_count] = vulkan_surface.INSTANCE_SURFACE_EXTENSION;
         enabled_ext_count += 1;
         for (surface_exts) |ext| {
             if (std.mem.eql(u8, std.mem.span(ext), std.mem.span(vulkan_surface.INSTANCE_SURFACE_EXTENSION))) continue;
-            if (!detect_instance_extension(ext)) continue;
+            if (!has_extension(available_extensions, ext)) continue;
             enabled_exts[enabled_ext_count] = ext;
             enabled_ext_count += 1;
         }
@@ -375,24 +380,25 @@ pub fn ensure_timestamp_query_pool(self: anytype) !void {
 const MAX_DEVICE_EXTENSIONS: u32 = 512;
 const MAX_INSTANCE_EXTENSIONS: u32 = 512;
 
-fn detect_instance_extension(target_name: [*:0]const u8) bool {
+pub fn enumerate_instance_extensions(
+    comptime enumerate: anytype,
+    storage: []c.VkExtensionProperties,
+) []const c.VkExtensionProperties {
     var count: u32 = 0;
-    const count_result = c.vkEnumerateInstanceExtensionProperties(null, &count, null);
-    if (count_result != c.VK_SUCCESS or count == 0) return false;
-    if (count > MAX_INSTANCE_EXTENSIONS) count = MAX_INSTANCE_EXTENSIONS;
+    const count_result = enumerate(null, &count, null);
+    if (count_result != c.VK_SUCCESS or count == 0 or storage.len == 0) return &.{};
+    count = @intCast(@min(count, storage.len));
+    const enum_result = enumerate(null, &count, storage.ptr);
+    if (enum_result != c.VK_SUCCESS or count > storage.len) return &.{};
+    return storage[0..count];
+}
 
-    var props: [MAX_INSTANCE_EXTENSIONS]c.VkExtensionProperties = undefined;
-    const enum_result = c.vkEnumerateInstanceExtensionProperties(null, &count, &props);
-    if (enum_result != c.VK_SUCCESS) return false;
-
-    const target_len = std.mem.len(target_name);
-    var i: u32 = 0;
-    while (i < count) : (i += 1) {
-        const name_bytes = &props[i].extensionName;
+pub fn has_extension(properties: []const c.VkExtensionProperties, target_name: [*:0]const u8) bool {
+    const target = std.mem.span(target_name);
+    for (properties) |*property| {
+        const name_bytes = &property.extensionName;
         const ext_len = std.mem.indexOfScalar(u8, name_bytes, 0) orelse name_bytes.len;
-        if (ext_len == target_len and std.mem.eql(u8, name_bytes[0..ext_len], target_name[0..target_len])) {
-            return true;
-        }
+        if (std.mem.eql(u8, name_bytes[0..ext_len], target)) return true;
     }
     return false;
 }
@@ -408,14 +414,5 @@ fn detect_device_extension(physical_device: VkPhysicalDevice, target_name: [*:0]
     const enum_result = c.vkEnumerateDeviceExtensionProperties(physical_device, null, &count, &props);
     if (enum_result != c.VK_SUCCESS) return false;
 
-    const target_len = std.mem.len(target_name);
-    var i: u32 = 0;
-    while (i < count) : (i += 1) {
-        const name_bytes = &props[i].extensionName;
-        const ext_len = std.mem.indexOfScalar(u8, name_bytes, 0) orelse name_bytes.len;
-        if (ext_len == target_len and std.mem.eql(u8, name_bytes[0..ext_len], target_name[0..target_len])) {
-            return true;
-        }
-    }
-    return false;
+    return has_extension(props[0..count], target_name);
 }

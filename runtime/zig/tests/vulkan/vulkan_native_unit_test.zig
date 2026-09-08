@@ -681,3 +681,89 @@ test "vulkan: DispatchMetrics stores gpu timestamp fields" {
     try std.testing.expect(m.gpu_timestamp_attempted);
     try std.testing.expect(m.gpu_timestamp_valid);
 }
+
+const InstanceExtensionFixture = struct {
+    const incomplete: vk_constants.VkResult = 5;
+    const host_memory_failure: vk_constants.VkResult = -1;
+    const names = [_][*:0]const u8{ "VK_KHR_surface", "VK_KHR_wayland_surface", "VK_EXT_debug_utils" };
+    var count_calls: usize = 0;
+    var value_calls: usize = 0;
+    var advertised_count: u32 = names.len;
+    var count_result: vk_constants.VkResult = vk_constants.VK_SUCCESS;
+    var values_result: vk_constants.VkResult = vk_constants.VK_SUCCESS;
+    var supplied_capacity: u32 = 0;
+
+    fn reset() void {
+        count_calls = 0;
+        value_calls = 0;
+        advertised_count = names.len;
+        count_result = vk_constants.VK_SUCCESS;
+        values_result = vk_constants.VK_SUCCESS;
+        supplied_capacity = 0;
+    }
+
+    fn enumerate(layer: ?[*:0]const u8, count: *u32, properties: ?[*]vk_constants.VkExtensionProperties) vk_constants.VkResult {
+        std.debug.assert(layer == null);
+        if (properties) |output| {
+            value_calls += 1;
+            supplied_capacity = count.*;
+            const returned = @min(count.*, names.len);
+            for (names[0..returned], 0..) |name, index| {
+                output[index] = std.mem.zeroes(vk_constants.VkExtensionProperties);
+                const bytes = std.mem.span(name);
+                @memcpy(output[index].extensionName[0..bytes.len], bytes);
+            }
+            count.* = returned;
+            return values_result;
+        }
+        count_calls += 1;
+        count.* = advertised_count;
+        return count_result;
+    }
+};
+
+test "vulkan: instance extension snapshot answers exact names without repeated enumeration" {
+    InstanceExtensionFixture.reset();
+    var storage: [8]vk_constants.VkExtensionProperties = undefined;
+    const extensions = vk_device.enumerate_instance_extensions(InstanceExtensionFixture.enumerate, &storage);
+    for (InstanceExtensionFixture.names) |name| try std.testing.expect(vk_device.has_extension(extensions, name));
+    try std.testing.expect(!vk_device.has_extension(extensions, "VK_KHR_surfac"));
+    try std.testing.expect(!vk_device.has_extension(extensions, "VK_KHR_surface_extra"));
+    try std.testing.expect(!vk_device.has_extension(extensions, "VK_KHR_xcb_surface"));
+    try std.testing.expectEqual(@as(usize, 1), InstanceExtensionFixture.count_calls);
+    try std.testing.expectEqual(@as(usize, 1), InstanceExtensionFixture.value_calls);
+    try std.testing.expectEqual(@as(usize, 3), extensions.len);
+}
+
+test "vulkan: instance extension enumeration preserves bounded capacity and rejects incomplete lists" {
+    InstanceExtensionFixture.reset();
+    InstanceExtensionFixture.advertised_count = std.math.maxInt(u32);
+    InstanceExtensionFixture.values_result = InstanceExtensionFixture.incomplete;
+    var storage: [2]vk_constants.VkExtensionProperties = undefined;
+    const incomplete = vk_device.enumerate_instance_extensions(InstanceExtensionFixture.enumerate, &storage);
+    try std.testing.expectEqual(@as(u32, storage.len), InstanceExtensionFixture.supplied_capacity);
+    try std.testing.expectEqual(@as(usize, 0), incomplete.len);
+    InstanceExtensionFixture.reset();
+    InstanceExtensionFixture.advertised_count = 8;
+    var larger: [8]vk_constants.VkExtensionProperties = undefined;
+    const shrunk = vk_device.enumerate_instance_extensions(InstanceExtensionFixture.enumerate, &larger);
+    try std.testing.expectEqual(@as(usize, 3), shrunk.len);
+}
+
+test "vulkan: instance extension enumeration failures never expose uninitialized storage" {
+    var storage: [8]vk_constants.VkExtensionProperties = undefined;
+    InstanceExtensionFixture.reset();
+    InstanceExtensionFixture.count_result = InstanceExtensionFixture.host_memory_failure;
+    try std.testing.expectEqual(@as(usize, 0), vk_device.enumerate_instance_extensions(InstanceExtensionFixture.enumerate, &storage).len);
+    try std.testing.expectEqual(@as(usize, 0), InstanceExtensionFixture.value_calls);
+    InstanceExtensionFixture.reset();
+    InstanceExtensionFixture.advertised_count = 0;
+    try std.testing.expectEqual(@as(usize, 0), vk_device.enumerate_instance_extensions(InstanceExtensionFixture.enumerate, &storage).len);
+    try std.testing.expectEqual(@as(usize, 0), InstanceExtensionFixture.value_calls);
+    InstanceExtensionFixture.reset();
+    InstanceExtensionFixture.values_result = InstanceExtensionFixture.host_memory_failure;
+    try std.testing.expectEqual(@as(usize, 0), vk_device.enumerate_instance_extensions(InstanceExtensionFixture.enumerate, &storage).len);
+    InstanceExtensionFixture.reset();
+    try std.testing.expectEqual(@as(usize, 0), vk_device.enumerate_instance_extensions(InstanceExtensionFixture.enumerate, &.{}).len);
+    try std.testing.expectEqual(@as(usize, 0), InstanceExtensionFixture.value_calls);
+}

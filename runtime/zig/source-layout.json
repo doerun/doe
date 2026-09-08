@@ -1276,9 +1276,9 @@
       },
       "src/backend/vulkan/vk_device.zig": {
         "decision": "Keep",
-        "moduleSha256": "8dfbaa6a473dc53d0a5c6f03b4d04be5f67b84068f1dcd833586ff053fccf561",
-        "reason": "Keep: physical device selection owns timestamp calibration; uninitialized runtime state cannot imply a nanosecond clock.",
-        "reviewer": "codex-gpu-program/2026-09-05"
+        "moduleSha256": "339b4ba2531c1176140b47100e4a15e1a38d3fe70b1db3d63c5a9a47d29b74d7",
+        "reason": "Keep: per-instance extension discovery reuses a bounded snapshot; physical device selection retains timestamp calibration and explicit capability failure.",
+        "reviewer": "codex-startup-enumeration/2026-09-08"
       },
       "src/backend/vulkan/vk_device_caps.zig": {
         "decision": "Keep",
