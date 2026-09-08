@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { PassThrough } from 'node:stream';
 import { createLiveSimulation } from '../../examples/live-simulation/session.js';
+import { runLiveTerminal } from '../../examples/live-simulation/terminal.js';
 import { POLICY, DEFAULT_SHADER, STATE_FORMAT } from '../../examples/live-simulation/program.js';
 
 const backend = process.platform === 'darwin' ? 'metal' : 'vulkan';
@@ -36,6 +38,11 @@ session.events.on('checked', (value) => checks.push(value));
 session.events.on('activated', (value) => activations.push(value));
 try {
   await frames(session, 3);
+  const snapshot = session.output;
+  assert(snapshot instanceof Uint8Array);
+  const firstByte = snapshot[0];
+  snapshot[0] ^= 0xff;
+  assert.equal(session.output[0], firstByte);
   const originalIteration = session.status.iteration;
   assert.equal((await session.propose('invalid WGSL')).status, 'rejected');
   await frames(session, 2);
@@ -108,8 +115,52 @@ try {
   await session.close();
 }
 
-const reopened = await createLiveSimulation({ backend, execution });
+const reopenedFormat = `${STATE_FORMAT}/reopened`;
+const reopened = await createLiveSimulation({ backend, execution, rate: POLICY.maximumRate, stateFormat: reopenedFormat });
 try {
   await frames(reopened, 3);
+  assert.equal(reopened.status.rate, POLICY.maximumRate);
+  assert.equal(reopened.status.stateFormat, reopenedFormat);
+  assert.equal(reopened.status.lastFrame.rate, POLICY.maximumRate);
   console.log('ok: a closed workspace reopens with independently checked initial state');
 } finally { await reopened.close(); }
+
+const input = new PassThrough();
+const output = new PassThrough();
+let transcript = '';
+output.on('data', (chunk) => { transcript += chunk; });
+const terminalSessions = [];
+const terminal = await runLiveTerminal({ backend, execution, input, output,
+  async createSession(options) {
+    const active = await createLiveSimulation(options);
+    terminalSessions.push(active);
+    return active;
+  },
+});
+try {
+  await frames(terminalSessions[0], 3);
+  await terminal.execute('view');
+  assert.match(transcript, /Checked GPU output; relative scale/);
+  assert.match(transcript, /preparation [\d.]+ms/);
+  await terminal.execute(`rate ${POLICY.maximumRate}`);
+  await terminal.execute('cancel');
+  const reset = await terminal.execute(`format ${reopenedFormat}`);
+  assert.equal(reset.status, 'reset-required');
+  await terminal.execute(`approve ${reset.editId}`);
+  await frames(terminalSessions[0], 3);
+  assert.match(transcript, /activation pause [\d.]+ms; state reset/);
+  await terminal.execute('close');
+  await terminal.execute('reopen');
+  await frames(terminalSessions[1], 3);
+  assert.equal(terminalSessions[1].status.rate, POLICY.maximumRate);
+  assert.equal(terminalSessions[1].status.stateFormat, reopenedFormat);
+  await terminal.execute('quit');
+  await terminal.closed;
+  assert(terminalSessions.every((active) => active.status.closed));
+  assert(terminalSessions.every((active) => active.events.listenerCount('event') === 0));
+  console.log('ok: terminal renders checked GPU output, reports preparation, routes reset approval, and reopens after cleanup');
+} finally {
+  await terminal.close();
+  input.destroy();
+  output.destroy();
+}

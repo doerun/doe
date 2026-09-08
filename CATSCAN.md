@@ -4,12 +4,11 @@ Parent: none
 
 ## Target
 
-Make useful GPU programs safely reusable and earn repeat voluntary DoeRuntime
-adoption through measured application advantage on a declared hardware matrix.
-Compatibility and explicitly declared program integration are distinct entry
-points. DoeProof evaluates providers impartially; browser distribution is optional.
-Ordinary provider substitution earns the first application advantage; declared
-reuse and agent-assisted acceleration follow without becoming prerequisites.
+Earn voluntary DoeRuntime adoption through measured application advantage on
+qualified hardware. Prove ordinary provider substitution first, then safe reuse
+and agent-assisted acceleration. Keep compatibility and declared-program
+treatments distinct. DoeProof evaluates providers impartially; browser
+distribution is optional.
 
 ## Authority
 

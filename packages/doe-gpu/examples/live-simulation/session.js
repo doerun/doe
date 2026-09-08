@@ -6,13 +6,16 @@ import { createWorker } from './process.js';
 import { POLICY, DEFAULT_SHADER, STATE_FORMAT, descriptor, parameters } from './program.js';
 import { initialState, advanceReference, compareState } from './reference.js';
 
-async function createLiveSimulation({ backend, execution, code = DEFAULT_SHADER }) {
+async function createLiveSimulation({ backend, execution, code = DEFAULT_SHADER,
+  stateFormat: initialStateFormat = STATE_FORMAT, rate: initialRate = POLICY.rate }) {
+  validateComputeProgram(descriptor(code, initialStateFormat));
+  parameters(initialRate);
   const events = new EventEmitter();
   const worker = createWorker();
   let candidate;
   let currentCode = code;
-  let stateFormat = STATE_FORMAT;
-  let rate = POLICY.rate;
+  let stateFormat = initialStateFormat;
+  let rate = initialRate;
   let expected = Float64Array.from(initialState());
   let initial = initialState();
   let iteration = 0;
@@ -26,6 +29,7 @@ async function createLiveSimulation({ backend, execution, code = DEFAULT_SHADER 
   let frameWork = Promise.resolve();
   let control = Promise.resolve();
   let lastFrame;
+  let lastOutput;
   const initialization = await worker.call('initialize', { backend, execution, code, stateFormat }).catch(async (error) => {
     await worker.close(); throw error;
   });
@@ -41,6 +45,7 @@ async function createLiveSimulation({ backend, execution, code = DEFAULT_SHADER 
     frameWork = worker.call('step', { rate: inputRate, initial }).then((result) => {
       const next = advanceReference(expected, inputRate);
       const maximumError = compareState(result.output, next);
+      lastOutput = result.output;
       expected = next;
       initial = null;
       iteration += 1;
@@ -77,6 +82,8 @@ async function createLiveSimulation({ backend, execution, code = DEFAULT_SHADER 
     if (result.reset) {
       initial = initialState();
       expected = Float64Array.from(initial);
+      lastOutput = null;
+      lastFrame = null;
     }
     const response = { editId: edit.id, ...result,
       shaderSha256: createHash('sha256').update(currentCode).digest('hex') };
@@ -91,6 +98,7 @@ async function createLiveSimulation({ backend, execution, code = DEFAULT_SHADER 
     const preflight = createWorker();
     candidate = preflight;
     const firstIteration = iteration;
+    const preflightStarted = performance.now();
     emit('preparing', { editId: id });
     try {
       await atBoundary(async () => {
@@ -115,7 +123,8 @@ async function createLiveSimulation({ backend, execution, code = DEFAULT_SHADER 
         if (id !== editId) return { status: 'cancelled', editId: id };
         const assessment = await worker.call('assess', { editId: id, code: nextCode, stateFormat: nextFormat });
         const edit = { id, code: nextCode, stateFormat: nextFormat, assessment };
-        emit('checked', { editId: id, framesDuringPreflight: iteration - firstIteration });
+        emit('checked', { editId: id, framesDuringPreflight: iteration - firstIteration,
+          preflightMs: performance.now() - preflightStarted });
         if (assessment.requiresReset) {
           pendingReset = edit;
           emit('reset-required', { editId: id, assessment });
@@ -139,7 +148,9 @@ async function createLiveSimulation({ backend, execution, code = DEFAULT_SHADER 
   return {
     events, initialization, propose,
     get shaderSource() { return currentCode; },
-    get status() { return { iteration, paused, closed, failed: failure?.message ?? null,
+    // Copy only on presentation demand; callers cannot mutate the accepted snapshot.
+    get output() { return lastOutput?.slice() ?? null; },
+    get status() { return { iteration, rate, paused, closed, failed: failure?.message ?? null,
       pendingEditId: pendingReset?.id ?? null, stateFormat, lastFrame }; },
     setRate(nextRate) { assertOpen(); parameters(nextRate); rate = nextRate; },
     async decideReset(id, approve) {

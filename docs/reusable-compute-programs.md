@@ -136,16 +136,22 @@ then start the workspace with `--backend vulkan --execution gpu-recorded`.
 Enter `edit heat.wgsl` after changing the file, or `rate 0.1` to change the next
 iteration's parameter. `format new-format` proposes an explicitly different
 state interpretation; `approve id` and `decline id` resolve its reset decision.
-`cancel`, `save path.wgsl`, `status`, and `quit` manage the workspace.
+`view` displays a snapshot of the checked GPU result with a relative intensity
+scale, not the CPU oracle. `cancel`, `save path.wgsl`, and `status` manage edits.
+`close` waits for worker cleanup; `reopen` explicitly initializes fresh state
+using the last accepted shader, format, and rate. It is not completed-result
+replay or unfinished-computation recovery. `quit` closes the terminal.
 
 Candidates run in a separate bounded process against the unchanged independent
 heat reference and configured adversarial inputs while the old simulation
 continues. The active process pauses at an iteration boundary for assessment
 and activation; destructive edits stay paused for the exact reset decision.
 Activation prepares the replacement on the original device and reports its
-pause. The compiler is not made asynchronous by this example. Numerical failure
-in an active frame stops the workspace because already modified GPU state is
-not assumed recoverable. Cancellation closes candidate processes or waits for
+pause and replacement preparation duration; initial preparation is also visible.
+The compiler is not made asynchronous by this example. Numerical failure in an
+active frame stops simulation and remains visible in the terminal, where the
+operator can close and explicitly reopen. Already modified GPU state is not
+assumed recoverable. Cancellation closes candidate processes or waits for
 bounded active submissions; it does not preempt a kernel.
 
 Migration: this is an additive Node example using the existing program API.

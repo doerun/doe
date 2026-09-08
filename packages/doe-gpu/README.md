@@ -84,10 +84,15 @@ The Node terminal example `examples/live-simulation.js` keeps a heat field
 resident while checking edited shaders in a separate process. Generate a shader
 with `node examples/live-simulation.js --write-shader heat.wgsl`, then start with
 `node examples/live-simulation.js --backend vulkan --execution gpu-recorded`.
-Enter `edit heat.wgsl` after editing, `rate 0.1` to change parameters, or `quit`
-to close. `format new-format` proposes a state reset requiring `approve id` or
+Enter `view` for a heat-field snapshot of the checked GPU output (with its
+relative intensity scale), `edit heat.wgsl` after editing, or `rate 0.1` to change
+parameters. `close` releases the worker; `reopen` explicitly initializes fresh
+state with the last accepted shader, format, and rate. It does not resume GPU
+state or recover a failed computation. `quit` closes the terminal and its worker.
+`format new-format` proposes a state reset requiring `approve id` or
 `decline id`. Candidate tests and every active frame use an independent CPU
-reference. Activation pauses at an iteration boundary and reports that pause;
+reference. Initial and replacement preparation durations are visible. Activation
+pauses at an iteration boundary and reports that pause;
 candidate process cancellation does not preempt a GPU kernel. This application
 example is qualified separately from provider support on other hosts.
 

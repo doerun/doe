@@ -51,6 +51,40 @@ reproduction on the same machine. Independent operation, ordinary application
 advantage, research acceleration, equipment integration, and broader physical
 hardware qualification remain open under the existing journey prerequisites.
 
+## Current demonstration priority
+
+The [target journeys](../thesis.md#prioritized-target-journeys) put unchanged
+ordinary Node provider substitution before interactive reuse and agent-assisted
+acceleration. Existing live-simulation and candidate-runner records below remain
+bounded implementation evidence, not proof that these target outcomes are met.
+The ordinary application advantage and independent reproduction remain open;
+the retained tail experiment must not be relabeled as a win. Additional hosts,
+equipment integrations, and chip-platform evaluations receive no inherited
+support or customer status from this priority change.
+
+## Ordinary comparison and terminal integration follow-up
+
+The [ordinary Node recheck](../../bench/out/compute-program/20260908-ordinary-node-recheck/README.md)
+keeps the accepted archives and compares ordinary WebGPU with pinned Dawn.
+It excludes prepared execution and the unresolved Deno host/polling lane.
+The first attempt exposed an order-dependent adapter-identity matcher; the
+general matcher now handles name-only and numeric identities in either order,
+while rejecting conflicting numeric IDs, missing labels, and fallback adapters.
+Adversarial gate tests cover that correction. The separate corrected attempt
+passed numerical audits but was rejected for unrelated observed GPU activity.
+No timing advantage or new runtime optimization is accepted from these attempts.
+
+The [terminal integration record](../../bench/out/compute-program/20260908-live-terminal/README.md)
+extends the existing application with a checked GPU heat-field view, preparation
+and preflight reporting, and explicit close/reopen controls. Reopening initializes
+fresh state using the last accepted shader, format, and rate; it is not execution
+resume or driver-loss recovery. Package qualification is retained
+[separately](../../bench/out/compute-program/20260908-live-terminal-qualified/summary.json),
+including the physical Node terminal regression. The native platform archive and
+loaded library remain identical to the accepted baseline. Presentation stays
+outside Zig. Independent operator reproduction and a measured interaction benefit
+remain open; this is an application slice, not closure of the interactive journey.
+
 ## Focused tail experiment
 
 The [completion record](../../bench/out/compute-program/20260908-tail-experiment/README.md)

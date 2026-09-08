@@ -354,8 +354,23 @@ class ComputeProgramGateTests(unittest.TestCase):
         doe = {'isFallbackAdapter': False, 'vendor': 'AMD', 'device': 'Radeon Fixture GPU', 'vendorID': 4098, 'deviceID': 7}
         dawn = {'isFallbackAdapter': False, 'vendor': 'amd', 'device': 'radeon-fixture-gpu-', 'vendorID': None, 'deviceID': None}
         self.assertTrue(same_adapter(doe, dawn))
+        self.assertTrue(same_adapter(dawn, doe))
         self.assertFalse(same_adapter(doe, {**dawn, 'device': 'different-gpu'}))
         self.assertFalse(same_adapter(doe, {**dawn, 'isFallbackAdapter': True}))
+        for other in [
+            {**doe, 'deviceID': 8},
+            {**dawn, 'device': 'different-gpu'},
+            {**dawn, 'device': None},
+            {**dawn, 'isFallbackAdapter': True},
+        ]:
+            self.assertFalse(same_adapter(doe, other))
+            self.assertFalse(same_adapter(other, doe))
+        numeric_labels = {**dawn, 'vendor': '4098', 'device': '7'}
+        self.assertTrue(same_adapter(doe, numeric_labels))
+        self.assertTrue(same_adapter(numeric_labels, doe))
+        for device in [None, '', '---']:
+            incomplete = {**dawn, 'device': device}
+            self.assertFalse(same_adapter(incomplete, incomplete))
 
     def test_gpu_replay_requires_one_preparation_and_matching_submissions(self) -> None:
         self.test_native_dispatch_geometry_and_backend_bytes_are_bound()
