@@ -335,7 +335,9 @@
       "outcome": "First prove a repeatable ordinary Node provider-substitution advantage with pinned installation, unchanged application/WGSL/inputs/tests, complete-operation accounting and immediate rollback; other hosts earn separate qualification without gating that first result.",
       "requiredEvidence": [
         "retained package hashes",
-        "same package across runtime hosts",
+        "unchanged Node application, WGSL, inputs and acceptance tests",
+        "repeatable ordinary-execution advantage against strongest eligible control",
+        "immediate rollback and subsequent application reuse",
         "native library and backend identity",
         "physical GPU and driver identity",
         "shader and numerical output",

@@ -29,13 +29,23 @@ ROOT = Path(__file__).resolve().parents[2]
 def same_adapter(candidate: dict[str, Any], control: dict[str, Any]) -> bool:
     if candidate['isFallbackAdapter'] is not False or control['isFallbackAdapter'] is not False:
         return False
-    if control['vendorID'] is not None and control['deviceID'] is not None:
-        return (candidate['vendorID'], candidate['deviceID']) == (control['vendorID'], control['deviceID'])
-    if str(control['vendor']).isdigit() and str(control['device']).isdigit():
-        return (candidate['vendorID'], candidate['deviceID']) == (int(control['vendor']), int(control['device']))
+
+    def numeric_identity(adapter: dict[str, Any]) -> tuple[int, int] | None:
+        if adapter['vendorID'] is not None and adapter['deviceID'] is not None:
+            return adapter['vendorID'], adapter['deviceID']
+        if str(adapter['vendor']).isdigit() and str(adapter['device']).isdigit():
+            return int(adapter['vendor']), int(adapter['device'])
+        return None
+
+    candidate_ids, control_ids = numeric_identity(candidate), numeric_identity(control)
+    if candidate_ids is not None and control_ids is not None:
+        return candidate_ids == control_ids
+    if any(not isinstance(adapter[key], str) or not adapter[key].strip()
+           for adapter in (candidate, control) for key in ('vendor', 'device')):
+        return False
     normalize = lambda value: re.sub(r'[^a-z0-9]', '', str(value).lower())
-    return (normalize(candidate['vendor']) == normalize(control['vendor'])
-            and normalize(candidate['device']) == normalize(control['device']))
+    return all(normalize(candidate[key]) and normalize(candidate[key]) == normalize(control[key])
+               for key in ('vendor', 'device'))
 
 
 def run_child(
