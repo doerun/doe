@@ -1,7 +1,7 @@
 {
   "$schema": "doe-product-strategy.schema.json",
   "schemaVersion": 4,
-  "strategyVersion": "3.0.0",
+  "strategyVersion": "3.1.0",
   "artifactKind": "doe-product-strategy",
   "authority": {
     "goals": "GOALS.md",
@@ -332,7 +332,7 @@
     {
       "order": 1,
       "id": "provider-qualification-v1",
-      "outcome": "One retained package qualifies explicit provider selection, compilation, execution, readback, teardown and recovery in controlled Node, Bun, Electron and native hosts.",
+      "outcome": "First prove a repeatable ordinary Node provider-substitution advantage with pinned installation, unchanged application/WGSL/inputs/tests, complete-operation accounting and immediate rollback; other hosts earn separate qualification without gating that first result.",
       "requiredEvidence": [
         "retained package hashes",
         "same package across runtime hosts",
@@ -351,7 +351,7 @@
     {
       "order": 2,
       "id": "prepared-doeplan-v1",
-      "outcome": "Declared fixed-shape programs progressively retain safe compiler and execution state, with explicit invalidation and an ordinary WebGPU control.",
+      "outcome": "After ordinary-execution value, demonstrate interactive editing or simulation with retained compatible state, checked shader activation, explicit reset approval, cancellation, bounded memory, cleanup and reopening against an ordinary WebGPU control.",
       "requiredEvidence": [
         "versioned program contract",
         "persistent allocations and pipelines",
@@ -370,7 +370,7 @@
     {
       "order": 3,
       "id": "external-application-qualification-v1",
-      "outcome": "Frozen non-Doppler external applications demonstrate a transferred useful-operation advantage against the strongest incumbent.",
+      "outcome": "Demonstrate agent-assisted acceleration of unfamiliar numerical work against fixed independent reference tests and resource limits, then transfer useful-operation advantages across frozen non-Doppler applications against the strongest eligible incumbent.",
       "requiredEvidence": [
         "pinned upstream applications and WGSL",
         "incumbent, ordinary Doe and prepared Doe lanes",
@@ -451,7 +451,7 @@
     "adoptionBoundary": "Repository demonstrations do not establish external voluntary adoption or retention."
   },
   "executionOwnership": {
-    "operatingObjective": "Take unchanged WebGPU workloads through Doe and earn more execution ownership through measured preparation, execution and repetition advantages.",
+    "operatingObjective": "Prove ordinary compiler/runtime value in unchanged applications first, interactive reuse second, and agent-assisted numerical acceleration third; framework, equipment and chip-platform integrations distribute and improve the same runtime.",
     "allocationPercent": {
       "runtimeCompilerAndPlans": 60,
       "externalWorkloadQualification": 25,

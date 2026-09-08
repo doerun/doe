@@ -42,20 +42,30 @@ or application value.
 7. **Bounded expansion.** Extend into browsers, accelerators, and formal
    verification only through separately admitted workloads and evidence.
 
-## Immediate operating objective: safe reuse and application transfer
+## Immediate operating objective: ordinary execution, then safe reuse
 
-Run one execution-ownership program. Qualify the same retained package across
-controlled hosts, build declared DoePlan execution, qualify frozen external
-applications, turn failures into permanent corrections, and expand distribution
-only after transferred wins. The operating allocation and external portfolio
-bounds live in `config/doe-product-strategy.json`.
+Run one execution-ownership program. First demonstrate that a developer can
+replace a Node application's WebGPU provider with a pinned `doe-gpu` package,
+preserve its WGSL, inputs, tests, and application logic, gain a repeatable useful
+improvement, and immediately revert. Ordinary compiler/runtime value must not
+depend on a declared-program interface or bespoke application optimization.
+The operating allocation and external portfolio bounds live in
+`config/doe-product-strategy.json`.
 
-Demonstrate explicitly declared, fixed-shape multistage computation in a
-non-Doppler scientific or image-processing application on AMD Vulkan, then
-reproduce the mechanism on Apple Metal and in another application. Freeze the
-independent numerical oracle, inputs, strongest persistent Dawn and wgpu
-controls, preparation accounting, memory, lifecycle, and material application
-outcome before optimization. A passing internal demonstration is not adoption.
+Next demonstrate interactive editing/simulation with checked activation,
+explicit state-reset approval, cancellation, cleanup, and reopening. Then
+demonstrate agent-assisted acceleration of an unfamiliar numerical routine
+against a researcher's fixed independent tests and resource limits. These
+direct demonstrations share the same compiler/runtime. Freeze numerical
+requirements, inputs, strongest eligible controls, complete-operation costs,
+memory, lifecycle, and material application outcomes before optimization.
+A passing internal demonstration is not adoption.
+
+Framework maintainers, equipment manufacturers, and chip-platform teams are
+subsequent distribution and improvement paths, not separate products. The
+ordered target journeys are in `docs/thesis.md`; none declares an existing
+customer or completed support. Hardware, operating systems, ARM packaging,
+energy behavior, and non-GPU accelerators require separate qualification.
 
 Compatibility through controlled Node, Bun, Electron, and native provider seams
 remains the entry point. An optional reusable-program interface may replace

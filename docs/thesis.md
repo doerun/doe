@@ -10,13 +10,14 @@ supplies impartial evaluation. Neither Doppler adoption nor a new browser is a
 prerequisite. This document owns strategy; component charters constrain
 implementation and artifacts establish current results.
 
-Run this as one execution-ownership program. First qualify the same retained
-`doe-gpu` artifact in Node, Bun, and Electron, with explicit provider selection,
-shader and output identity, physical adapter and driver identity, fallback state,
-and lifecycle. Native embedding uses the same runtime and earns its own host
-evidence. Next grow declared DoePlan execution, then qualify frozen external
-applications, promote transferable corrections, and expand embedding channels
-only after application wins. Resource allocation and portfolio bounds live in
+Run this as one execution-ownership program. First prove ordinary provider
+replacement in an unchanged Node application using a retained `doe-gpu` package,
+fixed tests, explicit identities, complete-operation accounting, and immediate
+rollback. Then demonstrate interactive reuse and agent-assisted acceleration.
+Bun, Electron, native embedding, and additional hardware earn their own host
+evidence; qualifying every host is not a prerequisite to the first Node result.
+Promote transferable corrections and expand embedding channels only after
+application wins. Resource allocation and portfolio bounds live in
 [`doe-product-strategy.json`](../config/doe-product-strategy.json).
 
 ## Own the executable program
@@ -29,8 +30,9 @@ state and rebuild only affected assumptions.
 
 Safe reuse is the central invention to earn. Shape, binding, shader, driver, or
 device changes must invalidate affected state. Removing a check without proving
-its precondition is a correctness bug. Begin with explicitly declared fixed-shape
-compute, retain deterministic Zig guards, and eliminate work through Lean only
+its precondition is a correctness bug. After the ordinary-execution demonstration,
+begin reuse with explicitly declared fixed-shape compute, retain deterministic
+Zig guards, and eliminate work through Lean only
 when current proof artifacts discharge the actual preconditions. Keep ordinary
 execution available where reuse is unsuitable.
 
@@ -93,9 +95,10 @@ and implementation knowledge through useful results.
 
 ## Demonstrate a newly practical application
 
-Start with a non-Doppler scientific or image-processing application that repeats
-multistage computation on physical AMD Vulkan. Reproduce the mechanism on Apple
-Metal and apply it to another application.
+Start with unchanged ordinary WebGPU in a non-Doppler application on physical
+AMD Vulkan. Prepared image-processing and scientific computations follow as
+separate treatments. Reproduce useful mechanisms on another application and
+qualify Apple Metal independently rather than transferring support claims.
 
 Before tuning, freeze source, inputs, independent numerical requirements,
 hardware and driver, fallback policy, lifecycle obligations, timing scopes,
@@ -163,83 +166,87 @@ A/B/C/D and K0 browser laws retain their meaning; browser construction is not a
 dependency. Accelerator work retains separate hardware admission and cannot
 broaden the initial matrix through simulator evidence.
 
-## Proposed user journeys
+## Prioritized target journeys
 
-These journeys describe intended user outcomes, not current support or release
-commitments. Begin with provider compatibility, repeated computation, and
-transferable corrections. Broader integrations follow demonstrated application
-wins and earn separate physical qualification under the existing strategy
-contract.
+These are target outcomes, not completed support, release commitments, or existing
+customers. Build the first three as direct demonstrations; the remaining four
+distribute and improve the same compiler/runtime. AMD and Qualcomm are prospective
+technical users only. Each additional hardware/operating-system tuple requires
+its own qualification.
 
-### Replace a WebGPU provider without rewriting the application
+### 1. Independent developer: improve an application without rewriting it
 
-A developer selects `doe-gpu` in Node, Bun, or Electron while retaining the
-application and WGSL. Compare clean installation, startup, memory, complete
-operation latency, and resource release using the same retained package.
-Success requires correct output, unchanged validation, explicit capabilities,
-and no hidden fallback. A declared program rejects unsupported requirements
-before execution. Ordinary WebGPU calls reject unsupported operations before
-their dependent GPU work; provider substitution cannot predict future
-JavaScript calls. Electron main and renderer integrations qualify separately.
+Replace a Node application's current WebGPU provider with pinned `doe-gpu`,
+retaining WGSL, inputs, tests, and application logic. Compare complete operation
+latency, startup, CPU overhead, memory, and slow executions without weakening
+validation or changing accepted results. Unsupported operations produce useful
+errors; rollback is immediate. Reuse in a subsequent application establishes
+repeat value. Ordinary execution must earn this result before a special
+interface or application-specific optimization is required.
 
-### Keep repeated computation fast and interactive
+### 2. Small application team: keep editing and simulation interactive
 
-A photographer adjusts filters or a researcher advances a simulation while
-Doe retains buffers and prepared commands. Input changes preserve unaffected
-resources, and simulation steps preserve declared state. Cancellation,
-transactional updates, cleanup, and reopening have predictable outcomes.
-Success means useful responsiveness or faster accepted iterations against
-independent numerical checks, with stable memory over prolonged sessions.
-Account for initial preparation and final cleanup as well as repetition.
+An Electron editing or simulation application prepares repeated computation,
+retains compatible state, and updates parameters during use. Check shader edits
+before activation; incompatible state changes require explicit approval, and
+failed edits preserve the working program. Measure preview responsiveness,
+bounded memory, cancellation, reopening, preparation, and final cleanup during
+prolonged use. Transfer corrections into the shared runtime, not a product fork.
+Electron renderer and main-process evidence remain separate.
 
-### Fix shader and driver failures once
+### 3. Research laboratory: accelerate unfamiliar numerical work
 
-A contributor reproduces a failing shader on the affected device and follows
-source diagnostics through compiler transformations and backend execution.
-A narrowly scoped correction or workaround must repair the original program,
-preserve unrelated regressions, and transfer to other programs. Keep allocation
-failure and cleanup ownership explicit, and avoid unnecessary work on unaffected
-devices. Device-specific conditions remain attached to their qualification.
+A researcher supplies a slow routine, representative inputs, and frozen
+independent reference tests. An agent proposes WGSL and evaluates candidates
+using Doe diagnostics under explicit process and memory budgets. Retain the
+accepted program, supported-device record, and a reproducible collaborator
+package. Numerical requirements never change to admit a candidate. New
+algorithms and changed drivers require fresh checks; this is bounded application
+development, not a general agent framework.
 
-### Ship local AI across desktop hardware
+### 4. AI framework maintainer: improve execution beneath applications
 
-An application team embeds the same runtime through WebGPU, its C interface,
-or a separately qualified ONNX Runtime integration for offline search, image
-inspection, or inference. Qualify Linux, macOS, and Windows independently.
-Success combines acceptable output quality, a smaller deployment burden,
-predictable resources, explicit unsupported operations, and reproducible
-upgrades without a separate user-installed shader toolchain. A proposed
-integration does not expand the current support matrix.
+Evaluate the same runtime beneath an existing WebGPU path or a separately
+implemented provider integration. Preserve model interfaces and supported
+semantics; include loading, small dispatches, concurrency, and output transfers
+in inference comparisons across models. Framework distribution must demonstrate
+dependable upgrades and explicit unsupported operations. Doe does not acquire
+conversion, tokenization, or application-policy ownership.
+[ONNX Runtime's provider interface](https://onnxruntime.ai/docs/execution-providers/)
+is an integration reference, not evidence of a Doe provider.
 
-### Coordinate competing workloads across workstation GPUs
+### 5. Equipment manufacturer: ship dependable offline inspection
 
-A scientist uses an agent to run independent jobs across integrated and
-discrete GPUs while retaining interactive responsiveness. This conditional
-extension schedules bounded submissions, enforces declared budgets, and
-accounts for every required transfer. It must improve accepted batch completion
-or responsiveness over the strongest eligible single-device control after
-scheduling and copying costs. It assumes neither shared memory nor kernel
-preemption nor authority over unrelated applications.
+Embed the pinned runtime in an inspection workstation with fixed camera and
+measurement workloads, independent numerical checks, resource budgets, and a
+qualified hardware matrix. Installation requires no technician-managed shader
+toolchain or cloud image transfer. Include camera transfer and synchronization,
+processing deadlines, prolonged memory behavior, fault reports, and recoverable
+updates. Reuse the integration in another product. Machinery control and safety
+remain separately designed and validated application responsibilities.
 
-### Accelerate existing browsers and application engines
+### 6. AMD: improve real applications on Radeon
 
-A browser or Flutter engine maintainer integrates Doe beneath an existing
-rendering or WebGPU boundary. Users manipulate diagrams, preview video, or run
-local analysis within that host. Success means fewer missed frames, fewer
-transfers, or lower complete operation cost while preserving visual output,
-isolation, external textures, color handling, and surface lifecycle. Each
-host integration requires its own artifact and physical evidence; it distributes
-the same runtime after the initial application proof.
+A prospective compiler or developer-tools evaluation runs unchanged application
+corpora through Doe and strong incumbent implementations, inspects generated
+programs and submissions, and contributes transferable compiler/runtime fixes.
+Require reproducible complete-application benefit across workloads and separately
+qualified GPU generations. Driver workarounds remain precisely scoped and
+removable; vendor-specific work stays beneath independently usable interfaces.
+[AMD's graphics developer resources](https://www.amd.com/en/developer/browse-by-product-type/graphics-resources.html)
+provide technical context, not evidence of a relationship or accepted result.
 
-### Turn new algorithms into optimized GPU programs
+### 7. Qualcomm: sustain GPU features within power limits
 
-A researcher supplies an algorithm and independent reference tests. A coding
-agent proposes GPU implementations and hardware optimizations, measures and
-checks each candidate before adoption, and retains prior versions. Success
-means useful acceleration of unfamiliar work across supported hardware without
-handwritten backend code. Changed drivers trigger revalidation, and accepted
-improvements must transfer beyond their original benchmark. This extends the
-existing correction loop rather than creating a general agent framework.
+A prospective platform/application integration targets Adreno through a
+separately qualified Vulkan or D3D12 configuration. Exercise camera processing,
+effects, and inference over prolonged sessions; measure energy per accepted
+result, temperature, responsiveness, and memory against the strongest practical
+alternative. Portable WGSL remains above architecture-specific optimization.
+ARM packaging and each operating system/device integration require work.
+GPU capability does not imply Hexagon NPU support.
+[Qualcomm's Vulkan memory discussion](https://www.qualcomm.com/developer/blog/2026/05/high-performance-memory-extension-optimize-memory)
+is technical context, not Doe qualification.
 
 ## Acquisition hypothesis
 

@@ -8,7 +8,12 @@ the first demonstration. Schema history remains readable through its original
 receipts; the current schema requires the reusable-program contract and
 demonstration gate. Milestones now follow provider qualification, declared plans,
 external applications, transferable corrections, and subsequent embedding
-expansion. The execution-ownership allocation is configuration, not independent
+expansion. The current priority requires an ordinary Node provider-substitution
+advantage before the declared-program demonstration. Interactive reuse and
+agent-assisted acceleration are the next direct demonstrations; framework,
+equipment, and chip-platform integrations extend the same runtime afterward.
+Named platform examples are prospective evaluations, not existing customers or
+support claims. The execution-ownership allocation is configuration, not independent
 browser, compiler, proof, and accelerator roadmaps. This change grants no
 evidence promotion.
 
