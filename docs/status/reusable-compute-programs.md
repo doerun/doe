@@ -1,15 +1,22 @@
 # Reusable compute programs
 
-## Vulkan startup experiment
+## Rejected startup correction and reproducible handoff
 
-The [instance-extension experiment](../../bench/out/compute-program/20260908-startup-enumeration/README.md)
-is isolated from the accepted native package. Repeated extension queries motivate
-a bounded snapshot within instance creation. Native tests and retained-package
-qualification passed. The [current record](../../bench/out/compute-program/20260908-startup-enumeration/completion.md)
-confirms removed duplicate calls and preserves the failed timing attempt.
-Observed browser GPU activity prevents performance admission; the frozen
-uninstrumented comparison remains pending. No startup, ordinary-provider, or
-broader hardware advantage is accepted, and the native candidate is unpromoted.
+The [startup experiment](../../bench/out/compute-program/20260908-startup-enumeration/completion.md)
+completed its frozen uninstrumented application comparison after unrelated GPU
+work stopped. Native tests, retained-package qualification, numerical outputs,
+execution identity, and observed-GPU admission passed. Lower startup medians do
+not outweigh the development application's preparation and cold-tail regressions
+or the simulation's warm-tail regressions. The native candidate is rejected;
+the accepted runtime remains unchanged. Earlier failed attempts stay intact.
+
+The [reproduction bundle](../../bench/out/compute-program/20260908-startup-enumeration/reproduction-bundle.tar.gz)
+retains exact packages, workloads, oracles, gates, policies, and declared host
+prerequisites. Its offline relocation audit passed with the workspace absent.
+This is local reproduction by the producing operator on the same machine,
+not independent operator reproduction or a performance result. Ordinary-provider
+advantage, independent operation, research acceleration, equipment integration,
+and additional physical hardware qualification remain open.
 
 ## Corrected startup measurement
 
