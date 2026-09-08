@@ -86,6 +86,14 @@ class ComputeProgramGateTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             self.validate()
 
+    def test_comparison_rejects_mixed_startup_scopes(self) -> None:
+        current = self.report | {'schemaVersion': 6,
+                                 'deviceStartupTimingScope': 'provider-import-through-device-ready',
+                                 'providerEvidenceMs': 1}
+        with self.assertRaisesRegex(ValueError, 'startup timing scopes'):
+            comparison_rows([(self.path, self.report), (self.path, current)],
+                            self.policy | {'applications': ['image_edges']})
+
     def test_completion_receipt_migration_and_timing_scope_parity(self) -> None:
         receipt = copy.deepcopy(self.report['cold']['receipt'])
         receipt.update(schemaVersion=5, gpuTiming=None, completionMode='queue-and-map',
@@ -320,6 +328,17 @@ class ComputeProgramGateTests(unittest.TestCase):
         schema = json.loads((ROOT / 'config/compute-program-run.schema.json').read_text())
         validator = jsonschema.Draft202012Validator(schema)
         validator.validate(report)
+        current = report | {'schemaVersion': 6,
+                            'deviceStartupTimingScope': 'provider-import-through-device-ready',
+                            'providerEvidenceMs': 1}
+        validator.validate(current)
+        for mutation in ({'schemaVersion': 5}, {'deviceStartupTimingScope': 'including-file-retention'},
+                         {'providerEvidenceMs': -1}):
+            with self.assertRaises(jsonschema.ValidationError):
+                validator.validate(current | mutation)
+        del current['providerEvidenceMs']
+        with self.assertRaises(jsonschema.ValidationError):
+            validator.validate(current)
         for mutation in [
             {'schemaVersion': 4},
             {'packageRoot': '/unexpected-install'},

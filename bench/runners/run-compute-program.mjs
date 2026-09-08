@@ -93,7 +93,8 @@ const inputPaths = Object.fromEntries(Object.entries(inputs).map(([id, value]) =
 }));
 writeFileSync(`${args.output}.expected.f64`, new Uint8Array(Float64Array.from(expected).buffer));
 const report = {
-  schemaVersion: 5, kind: 'compute_program_evaluation', claimStatus: 'diagnostic',
+  schemaVersion: 6, kind: 'compute_program_evaluation', claimStatus: 'diagnostic',
+  deviceStartupTimingScope: 'provider-import-through-device-ready', providerEvidenceMs: null,
   packageQualification: qualification ? { path: resolve(args['package-qualification']), hash: hash(qualificationBytes) } : null,
   packageRoot: qualification ? packageRoot : null,
   provider: args.provider, application: args.application, phase: args.phase, backend: args.backend,
@@ -120,10 +121,16 @@ let providerOwner;
 let diagnostics;
 try {
   const startup = performance.now();
+  let evidenceStart;
+  const deviceReady = () => {
+    evidenceStart = performance.now();
+    report.deviceStartupMs = evidenceStart - startup;
+  };
   if (args.provider.startsWith('doe-')) {
     const native = await import(packageModule('src/native.js'));
     const adapter = await native.requestAdapter({ backend: args.backend });
     device = await adapter.requestDevice(deviceDescriptor);
+    deviceReady();
     const provider = native.providerInfo();
     report.providerArtifact = { path: provider.doeLibraryPath, hash: hash(readFileSync(provider.doeLibraryPath)) };
     if (qualification) {
@@ -154,6 +161,7 @@ try {
     providerOwner = dawn.create([`backend=${args.backend}`, ...features]);
     const adapter = await providerOwner.requestAdapter({ powerPreference: 'high-performance' });
     device = await adapter.requestDevice(deviceDescriptor);
+    deviceReady();
     report.adapter = adapter.info;
     const filename = process.platform === 'darwin' ? 'darwin-universal' : `${process.platform}-${process.arch}`;
     const artifactPath = resolve(`bench/node_modules/webgpu/dist/${filename}.dawn.node`);
@@ -165,16 +173,17 @@ try {
     const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) throw new Error('wgpu physical adapter unavailable');
     device = await adapter.requestDevice(deviceDescriptor);
+    deviceReady();
     report.adapter = adapter.info;
     report.providerArtifact = { path: Deno.execPath(), hash: hash(readFileSync(Deno.execPath())) };
   }
-  report.deviceStartupMs = performance.now() - startup;
   const retainedProviderPath = resolve(dirname(args.output), `${args.provider}.${report.providerArtifact.hash}.provider.bin`);
   if (!existsSync(retainedProviderPath)) {
     writeFileSync(retainedProviderPath, readFileSync(report.providerArtifact.path), { flag: 'wx' });
   }
   if (hash(readFileSync(retainedProviderPath)) !== report.providerArtifact.hash) throw new Error('Retained provider bytes changed');
   report.providerArtifact.path = retainedProviderPath;
+  report.providerEvidenceMs = performance.now() - evidenceStart;
   const info = report.adapter ?? device._adapterInfo ?? device.adapterInfo;
   report.adapter = Object.fromEntries(['vendor', 'architecture', 'device', 'description',
     'isFallbackAdapter', 'vendorID', 'deviceID', 'driverVersion'].map((key) => [key, info?.[key] ?? null]));

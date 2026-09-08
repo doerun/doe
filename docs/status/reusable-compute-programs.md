@@ -1,5 +1,16 @@
 # Reusable compute programs
 
+## Corrected startup measurement
+
+The [startup diagnosis](../../bench/out/compute-program/20260908-startup-scope/README.md)
+reproduces provider-specific evidence work inside the old device-startup timer.
+Current evaluation reports separate device readiness from identity collection
+and file retention, and comparison guards reject incompatible startup scopes.
+Original observations remain intact. The
+[uninstrumented ordinary checks](../../bench/out/compute-program/20260908-startup-scope/validation/outcome.json)
+pass numerical and native audits but do not establish an accepted application
+advantage. No native change is accepted from this measurement correction.
+
 ## Restricted candidate execution
 
 The [isolation and cancellation record](../../bench/out/compute-program/20260908-candidate-isolation/README.md)

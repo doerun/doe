@@ -11,7 +11,7 @@ from typing import Any
 
 import jsonschema
 
-from bench.gates.compute_program_gate import digest
+from bench.gates.compute_program_gate import digest, startup_scope
 from bench.lib.compute_program_package import (
     install_qualification, load_qualification, validate_package_root,
 )
@@ -27,6 +27,8 @@ COSTS = ('deviceStartupMs', 'preparationMs', 'teardownMs',
 
 def assert_control_identity(control: dict[str, Any], report: dict[str, Any]) -> None:
     """Reject changed work, host, or completion scope before interpreting latency."""
+    if startup_scope(control) != startup_scope(report):
+        raise ValueError('Package controls differ in startup timing scopes')
     if (report['programHash'] != control['programHash']
             or report['runtime'] != control['runtime']
             or report['backend'] != control['backend']
@@ -66,6 +68,8 @@ def summarize(
         groups.setdefault((application, variant), []).append(report)
         costs.append({'application': application, 'variant': variant,
                       'process': process_index, **{k: report[k] for k in COSTS},
+                      'deviceStartupTimingScope': startup_scope(report),
+                      'providerEvidenceMs': report.get('providerEvidenceMs'),
                       'coldWallMs': report['cold']['wallMs']})
         for sample in report['samples']:
             receipt = sample['receipt']
@@ -81,6 +85,9 @@ def summarize(
                 'allocatedBufferBytes': receipt['allocatedBufferBytes'],
             })
     for application in sorted({key[0] for key in groups}):
+        if len({startup_scope(report) for (app, _), reports in groups.items()
+                if app == application for report in reports}) != 1:
+            raise ValueError(f'{application}: mixed startup timing scopes')
         variants = sorted(variant for app, variant in groups if app == application)
         left, right = ('baseline', 'candidate') if 'candidate' in variants else ('previous', 'baseline')
         metrics: dict[str, dict[str, dict[str, float]]] = {}

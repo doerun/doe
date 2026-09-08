@@ -23,6 +23,23 @@ HoloScript LIF fixture preserves an external shader and CPU twin while adapting
 orchestration to a prepared program. These diagnostic cases do not complete the
 external-application portfolio or general WebGPU conformance requirements.
 
+## Application startup evidence
+
+Evaluation report version `6` defines `deviceStartupMs` from provider import
+through a resolved device request, before benchmark evidence collection.
+`deviceStartupTimingScope` names that boundary. `providerEvidenceMs` separately
+records provider identity collection, hashing, and binary retention; it is not
+runtime startup or an optimization acceptance cost. Application invocation
+measurements and public runtime behavior are unchanged.
+
+Earlier reports include provider-specific evidence work inside startup timing.
+Their values and verdicts remain historical. New comparisons reject mixed
+startup scopes, including legacy startup measurements from different provider
+families. A shorter measurement after this correction is not a runtime speedup.
+The [retained diagnosis](../bench/out/compute-program/20260908-startup-scope/README.md)
+and [uninstrumented validation](../bench/out/compute-program/20260908-startup-scope/validation/outcome.json)
+keep the original observations and corrected scope separate.
+
 ## Bounded candidate jobs
 
 `python3 bench/cli.py program candidate --help` is the repository front door

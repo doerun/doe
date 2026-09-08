@@ -13,7 +13,7 @@ from typing import Any
 
 import jsonschema
 
-from bench.gates.compute_program_gate import completion_mode, digest, validate_run
+from bench.gates.compute_program_gate import completion_mode, digest, startup_scope, validate_run
 from bench.lib.compute_program_fixture import fixture_references, load_fixture
 from bench.lib.compute_program_gpu_activity import capture_activity
 from bench.lib.compute_program_package import (
@@ -94,6 +94,9 @@ def comparison_rows(reports: list[tuple[Path, dict[str, Any]]], policy: dict[str
     rows = []
     reliability = json.loads((ROOT / 'config/benchmark-methodology-thresholds.json').read_text())['reliability']
     for application in policy["applications"]:
+        if len({startup_scope(report) for _, report in reports
+                if report['application'] == application}) > 1:
+            raise ValueError(f'{application}: mixed startup timing scopes')
         completion_modes = {
             completion_mode(sample['receipt'])
             for _, report in reports if report['application'] == application

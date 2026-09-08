@@ -54,6 +54,18 @@ class TailIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing execution timing phase'):
             assert_control_identity(self.control, report)
 
+    def test_startup_scope_mismatch_is_rejected(self) -> None:
+        report = copy.deepcopy(self.control)
+        report.update(schemaVersion=6, deviceStartupTimingScope='provider-import-through-device-ready')
+        with self.assertRaisesRegex(ValueError, 'startup timing scopes'):
+            assert_control_identity(self.control, report)
+
+    def test_legacy_provider_specific_startup_work_is_not_comparable(self) -> None:
+        control = self.control | {'provider': 'dawn'}
+        report = self.control | {'provider': 'doe-webgpu'}
+        with self.assertRaisesRegex(ValueError, 'startup timing scopes'):
+            assert_control_identity(control, report)
+
 
 class TailCpuAcceptanceTests(unittest.TestCase):
     def decision(self, candidate_cpu: list[float]) -> dict[str, str]:

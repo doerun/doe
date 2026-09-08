@@ -25,6 +25,15 @@ def completion_mode(receipt: dict[str, Any]) -> str:
     return receipt['completionMode'] if receipt['schemaVersion'] >= 5 else 'queue-then-map'
 
 
+def startup_scope(report: dict[str, Any]) -> str:
+    """Historical startup included provider-specific evidence collection."""
+    if report.get('schemaVersion', 1) >= 6:
+        return report['deviceStartupTimingScope']
+    provider = report.get('provider', 'unrecorded')
+    family = 'doe' if provider.startswith('doe-') else provider
+    return f'legacy-startup-with-{family}-evidence'
+
+
 def validate_gpu_timing(receipt: dict[str, Any], provider: str, policy: dict[str, Any],
                         calibration: dict[str, Any] | None = None) -> bool:
     timing = receipt.get('gpuTiming')
@@ -72,6 +81,10 @@ def validate_run(path: Path, root: Path, policy: dict[str, Any]) -> dict[str, An
         raise ValueError(f"{path}: provider failed: {report['error']}")
     if report['error'] is not None or report['provider'] not in policy['providers'] or report['application'] not in policy['applications']:
         raise ValueError(f'{path}: run is outside the frozen evaluation policy')
+    if report['schemaVersion'] >= 6 and any(
+            report[key] is None or report[key] <= 0
+            for key in ('deviceStartupMs', 'providerEvidenceMs')):
+        raise ValueError(f'{path}: startup and provider evidence require separate positive timings')
     if report['adapter']['isFallbackAdapter'] is not False:
         raise ValueError(f'{path}: fallback state is not explicitly physical')
     validate_activity(path, root, policy, report)

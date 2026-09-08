@@ -426,7 +426,11 @@ Node/Bun/Electron qualification. Archive hashes, installed files, loaded native
 library identity, and common executor source are blocking checks. A workspace
 library run cannot substitute for that installation evidence. Evaluation
 artifact migration is documented in
-[`reusable-compute-programs.md`](reusable-compute-programs.md).
+[`reusable-compute-programs.md`](reusable-compute-programs.md). Device startup
+ends at the resolved device request; identity hashing and binary retention are
+reported separately. Comparisons reject changed startup timing scopes and
+legacy provider-specific evidence costs. Moving evidence outside that interval
+cannot be presented as a runtime improvement.
 Electron model qualification also checks the libraries actually loaded by both
 providers. Source-built controls require explicit selection and retained patch,
 binary, and source provenance; their identity cannot inherit unmodified npm
