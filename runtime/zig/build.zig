@@ -342,6 +342,18 @@ fn addNativeCommandStoragePolicy(options: *std.Build.Step.Options, allocator: st
     options.addOption(usize, "native_command_storage_max_retained_bytes", policy.value.maxRetainedBytes);
 }
 
+fn addVulkanSyncPolicy(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
+    const bytes = std.fs.cwd().readFileAlloc(allocator, "../../config/vulkan-sync-policy.json", 64 * 1024) catch
+        @panic("failed to read vulkan-sync-policy.json");
+    defer allocator.free(bytes);
+    const Policy = struct { schemaVersion: u32, immediateCompletionPollSpins: u16 };
+    const policy = std.json.parseFromSlice(Policy, allocator, bytes, .{}) catch
+        @panic("invalid Vulkan synchronization policy");
+    defer policy.deinit();
+    if (policy.value.schemaVersion != 1) @panic("unsupported Vulkan synchronization policy version");
+    options.addOption(usize, "vulkan_immediate_completion_poll_spins", policy.value.immediateCompletionPollSpins);
+}
+
 fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
     const file = std.fs.cwd().openFile("../../config/compute-program.schema.json", .{}) catch
         @panic("config/compute-program.schema.json not found");
@@ -430,6 +442,7 @@ pub fn build(b: *std.Build) void {
     const build_options = b.addOptions();
     addComputeProgramContract(build_options, b.allocator);
     addNativeCommandStoragePolicy(build_options, b.allocator);
+    addVulkanSyncPolicy(build_options, b.allocator);
     addCompilerArithmeticPolicy(build_options, b.allocator);
     build_options.addOption(bool, "lean_verified", lean_verified);
     build_options.addOption(BuildTier, "build_tier", build_tier);
@@ -1285,6 +1298,7 @@ pub fn build(b: *std.Build) void {
     const compute_build_options = b.addOptions();
     addComputeProgramContract(compute_build_options, b.allocator);
     addNativeCommandStoragePolicy(compute_build_options, b.allocator);
+    addVulkanSyncPolicy(compute_build_options, b.allocator);
     addCompilerArithmeticPolicy(compute_build_options, b.allocator);
     compute_build_options.addOption(bool, "lean_verified", lean_verified);
     compute_build_options.addOption(BuildTier, "build_tier", .compute);
@@ -1358,6 +1372,7 @@ pub fn build(b: *std.Build) void {
     const full_build_options = b.addOptions();
     addComputeProgramContract(full_build_options, b.allocator);
     addNativeCommandStoragePolicy(full_build_options, b.allocator);
+    addVulkanSyncPolicy(full_build_options, b.allocator);
     addCompilerArithmeticPolicy(full_build_options, b.allocator);
     full_build_options.addOption(bool, "lean_verified", lean_verified);
     full_build_options.addOption(BuildTier, "build_tier", .full);

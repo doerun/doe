@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vulkan immediate completion polling policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "immediateCompletionPollSpins"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "immediateCompletionPollSpins": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535,
+      "description": "Build-time bound on immediate fence or timeline completion polls before the existing blocking wait. Zero disables polling. A timeline wait still executes after polling observes its target."
+    }
+  }
+}

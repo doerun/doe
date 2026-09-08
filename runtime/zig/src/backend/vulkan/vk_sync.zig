@@ -8,6 +8,7 @@
 //   - Timeline semaphore detection exposes VK_KHR_timeline_semaphore when available
 
 const std = @import("std");
+const build_options = @import("build_options");
 const c = @import("vk_constants.zig");
 const common_errors = @import("../../contracts/execution.zig");
 
@@ -19,7 +20,7 @@ pub const FENCE_POOL_CAPACITY: usize = 128;
 
 /// Timeout for per-fence waits (nanoseconds). Matches vk_upload.WAIT_TIMEOUT_NS.
 pub const FENCE_WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
-pub const IMMEDIATE_FENCE_POLL_SPINS: usize = 2048;
+pub const IMMEDIATE_FENCE_POLL_SPINS: usize = build_options.vulkan_immediate_completion_poll_spins;
 
 pub fn wait_for_fence_fast(device: c.VkDevice, fence: c.VkFence) common_errors.BackendNativeError!void {
     var spin: usize = 0;
@@ -263,6 +264,13 @@ pub const TimelineSemaphore = struct {
     /// Wait on the CPU until the timeline reaches `value`.
     pub fn wait(self: *const TimelineSemaphore, device: c.VkDevice, value: u64) common_errors.BackendNativeError!void {
         if (!self.available) return error.UnsupportedFeature;
+        var spin: usize = 0;
+        while (spin < build_options.vulkan_immediate_completion_poll_spins) : (spin += 1) {
+            if (try self.query(device) >= value) break;
+            std.atomic.spinLoopHint();
+        }
+        // Counter observation is only a scheduling hint. Retain the semaphore
+        // wait operation and its synchronization even after observing completion.
         var wait_info = VkSemaphoreWaitInfo{
             .semaphoreCount = 1,
             .pSemaphores = @ptrCast(&self.semaphore),

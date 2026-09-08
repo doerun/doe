@@ -2,6 +2,10 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/vulkan-sync-policy.schema.json",
+      "data": "config/vulkan-sync-policy.json"
+    },
+    {
       "schema": "config/compute-program-tail-experiment.schema.json",
       "data": "config/compute-program-tail-experiment.json"
     },

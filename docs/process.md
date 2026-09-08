@@ -135,6 +135,12 @@ classified and cannot be promoted by benchmark results.
   it does not assert that runs without the layer received Vulkan validation.
   These regressions do not qualify untested attachment, query, or driver-loss
   behavior.
+- Vulkan completion polling is bounded by the build-time
+  `config/vulkan-sync-policy.json` contract. Timeline counter observation never
+  replaces the semaphore wait or advances the completion target. Native device
+  errors remain explicit. Changes require retained-package completion/readback,
+  concurrent-device and lifecycle regressions before uninstrumented application
+  comparisons can assess latency and process-cost effects.
 - Strict resident-state updates require an instance- and revision-bound reset
   assessment before replacement allocation. Regressions must cover declined,
   approved, stale and forged approvals, identical-size format changes, version
@@ -343,6 +349,11 @@ classified and cannot be promoted by benchmark results.
   Optional bounded diagnostics write after measurement and cannot establish a
   performance benefit. Confirm corrections with diagnostics disabled, alternate
   exact packages across fresh processes, and test transfer without retuning.
+  Cost acceptance applies the frozen `maximumCostRegression` to invocation CPU
+  p50 and p95 as well as startup, preparation, teardown, cold invocation, and
+  memory observations. Reporting CPU cost without enforcing that limit cannot
+  admit a polling or allocation tradeoff. Preserve prior verdicts when repairing
+  an admission gap; record the stricter assessment separately.
   A failed acceptance decision permits no runtime change. Bundle reproducibility
   and an independent operator's reproduction are separate evidence states.
 - Native coverage matrix version 2 requires artifact hashes and real execution

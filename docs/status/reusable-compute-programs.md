@@ -1,5 +1,29 @@
 # Reusable compute programs
 
+## Vulkan completion experiment
+
+The tail acceptance runner now enforces its existing cost threshold on
+invocation CPU median and slow-tail observations. The prior runner reported
+those observations but omitted them from cost acceptance; adversarial regression
+fixtures reproduce and repair that gap. Historical verdicts are preserved;
+new assessments use the same frozen threshold. No report schema changed.
+
+The [ordinary comparison continuation](../../bench/out/compute-program/20260908-ordinary-node-resume/README.md)
+retains a completed diagnostic cohort whose application acceptance failed.
+Invocation-linked native observations motivate the isolated
+[bounded timeline polling candidate](../../bench/out/compute-program/20260908-timeline-poll-experiment/README.md).
+Its build-time policy moves the existing fence poll bound into
+`config/vulkan-sync-policy.json` and applies that bound before timeline waits;
+the actual semaphore wait and target remain unchanged. This new policy is a
+candidate-only configuration addition, with no descriptor or receipt migration.
+Package qualification passed, but repeated application acceptance failed the
+frozen preparation and CPU cost limits. The candidate is rejected; no runtime
+optimization or broader hardware support is promoted. This isolated worktree
+retains the candidate for review; the main checkout retains its accepted runtime.
+
+The [relocatable simulation bundle](../../bench/out/compute-program/20260908-live-handoff/README.md)
+has local offline verification. Independent operation remains outstanding.
+
 ## Current demonstration priority
 
 The [target journeys](../thesis.md#prioritized-target-journeys) put unchanged

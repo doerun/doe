@@ -1402,9 +1402,9 @@
       },
       "src/backend/vulkan/vk_sync.zig": {
         "decision": "Keep",
-        "moduleSha256": "2969d40280ebbdb377caf330621a9bef990b0f3cb02189135a8189749b1ebc71",
-        "reason": "Keep: reachable backend implementation shared by 5 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "a69979c2aa1d0e9a22695c8cff87120e72977fce1ba7d8e7b5492ab7a057a684",
+        "reason": "Keep: Vulkan synchronization owns bounded completion polling and the retained semaphore wait; submission targets, resource ownership, and native error propagation remain unchanged.",
+        "reviewer": "codex-timeline-poll-experiment/2026-09-08"
       },
       "src/backend/vulkan/vk_texture_commands.zig": {
         "decision": "Keep",
