@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Compute program startup experiment policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "tailExperimentPolicy",
+    "deviceStartupTimingScope",
+    "minimumStartupMedianReduction",
+    "startupQuantiles",
+    "warmLatencyQuantiles",
+    "claimStatus"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "tailExperimentPolicy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "deviceStartupTimingScope": {
+      "const": "provider-import-through-device-ready"
+    },
+    "minimumStartupMedianReduction": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "startupQuantiles": {
+      "const": [
+        "p50Ms",
+        "p95Ms",
+        "p99Ms"
+      ]
+    },
+    "warmLatencyQuantiles": {
+      "const": [
+        "p50Ms",
+        "p95Ms",
+        "p99Ms"
+      ]
+    },
+    "claimStatus": {
+      "const": "diagnostic"
+    }
+  }
+}

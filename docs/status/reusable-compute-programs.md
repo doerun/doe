@@ -1,5 +1,16 @@
 # Reusable compute programs
 
+## Vulkan startup experiment
+
+The [instance-extension experiment](../../bench/out/compute-program/20260908-startup-enumeration/README.md)
+is isolated from the accepted native package. Repeated extension queries motivate
+a bounded snapshot within instance creation. Native tests and retained-package
+qualification passed. The [current record](../../bench/out/compute-program/20260908-startup-enumeration/completion.md)
+confirms removed duplicate calls and preserves the failed timing attempt.
+Observed browser GPU activity prevents performance admission; the frozen
+uninstrumented comparison remains pending. No startup, ordinary-provider, or
+broader hardware advantage is accepted, and the native candidate is unpromoted.
+
 ## Corrected startup measurement
 
 The [startup diagnosis](../../bench/out/compute-program/20260908-startup-scope/README.md)

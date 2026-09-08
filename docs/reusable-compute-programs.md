@@ -25,6 +25,15 @@ external-application portfolio or general WebGPU conformance requirements.
 
 ## Application startup evidence
 
+The isolated startup experiment uses
+[`compute-program-startup-experiment.json`](../config/compute-program-startup-experiment.json)
+and its schema. This additive repository-only contract inherits frozen workload,
+sampling, and regression limits from the existing tail policy. It assesses
+device readiness separately from warm execution and preserves original tail
+comparisons. A passing startup experiment alone is not an ordinary-provider
+advantage over Dawn. Run its assessment with
+`python3 -m bench.runners.assess_compute_program_startup --input <cohort> --output <new-assessment> --policy config/compute-program-startup-experiment.json`.
+
 Evaluation report version `6` defines `deviceStartupMs` from provider import
 through a resolved device request, before benchmark evidence collection.
 `deviceStartupTimingScope` names that boundary. `providerEvidenceMs` separately

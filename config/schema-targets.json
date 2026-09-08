@@ -2,6 +2,10 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/compute-program-startup-experiment.schema.json",
+      "data": "config/compute-program-startup-experiment.json"
+    },
+    {
       "schema": "config/program-candidate-isolation.schema.json",
       "data": "config/program-candidate-isolation.json"
     },

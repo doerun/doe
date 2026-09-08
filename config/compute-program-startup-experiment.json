@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "tailExperimentPolicy": "config/compute-program-tail-experiment.json",
+  "deviceStartupTimingScope": "provider-import-through-device-ready",
+  "minimumStartupMedianReduction": 0.05,
+  "startupQuantiles": [
+    "p50Ms",
+    "p95Ms",
+    "p99Ms"
+  ],
+  "warmLatencyQuantiles": [
+    "p50Ms",
+    "p95Ms",
+    "p99Ms"
+  ],
+  "claimStatus": "diagnostic"
+}

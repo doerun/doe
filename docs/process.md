@@ -350,6 +350,13 @@ classified and cannot be promoted by benchmark results.
   an admission gap; record the stricter assessment separately.
   A failed acceptance decision permits no runtime change. Bundle reproducibility
   and an independent operator's reproduction are separate evidence states.
+- Startup experiments use `config/compute-program-startup-experiment.json`, an
+  additive repository-only contract validated through the schema target registry.
+  It inherits frozen workload and regression limits while testing provider import
+  through device readiness. Require complete alternating cohorts and independent
+  cold, warm, preparation, cleanup, invocation CPU, and memory checks. Preserve
+  historical tail acceptance. A startup pass cannot promote a Dawn comparison or
+  bypass schema, correctness, trace, or verification release gates.
 - Native coverage matrix version 2 requires artifact hashes and real execution
   provenance. Schema examples, renamed examples without an execution chain,
   wrong backends, failed/skipped native work, changed binaries, and missing or
