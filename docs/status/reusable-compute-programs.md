@@ -1,5 +1,28 @@
 # Reusable compute programs
 
+## Ordinary comparison, rejected polling, and offline handoff
+
+The [ordinary Node continuation](../../bench/out/compute-program/20260908-ordinary-node-resume/README.md)
+completed under the existing numerical, execution, identity, and observed-GPU
+admission rules. It does not establish application advantage over Dawn.
+Connected invocation diagnostics motivated the
+[bounded completion-polling experiment](../../bench/out/compute-program/20260908-timeline-poll-experiment/README.md).
+That candidate improved measured latency but failed the frozen cost limits;
+its runtime change is rejected and the accepted main-checkout binaries remain
+unchanged. Exact candidate sources, archives, and unfavorable evidence are retained.
+
+The tail runner now applies its existing cost threshold to invocation CPU median
+and slow-tail observations. Regression tests reproduce the earlier omission.
+Historical comparisons remain intact; the experiment retains a separate stricter
+assessment. Report schemas and application acceptance inputs are unchanged.
+
+The [simulation handoff bundle](../../bench/out/compute-program/20260908-live-handoff/README.md)
+passed installation, prolonged correctness, cleanup, reset, cancellation, and
+reopening with networking disabled and the workspace absent. This is local
+reproduction on the same machine. Independent operation, ordinary application
+advantage, research acceleration, equipment integration, and broader physical
+hardware qualification remain open under the existing journey prerequisites.
+
 ## Focused tail experiment
 
 The [completion record](../../bench/out/compute-program/20260908-tail-experiment/README.md)

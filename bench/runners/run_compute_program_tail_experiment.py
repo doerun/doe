@@ -48,8 +48,11 @@ def write_tsv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
-def summarize(output: Path, policy: dict[str, Any]) -> None:
+def summarize(
+    output: Path, policy: dict[str, Any], *, summary_output: Path | None = None,
+) -> None:
     """Keep invocation identity, full timings, and process costs alongside quantiles."""
+    destination = output if summary_output is None else summary_output
     invocations, costs, comparisons, decisions = [], [], [], []
     groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for path in sorted(output.glob('*.process-*.json')):
@@ -100,7 +103,12 @@ def summarize(output: Path, policy: dict[str, Any]) -> None:
             after['latencyStatsMs']['median'] < before['latencyStatsMs']['median']
             for before, after in zip(groups[(application, left)], groups[(application, right)], strict=True)
         ) / len(groups[(application, left)])
-        costs_pass = True
+        costs_pass = all(
+            metrics['cpuMs'][right][quantile]
+            <= metrics['cpuMs'][left][quantile]
+            * (1 + policy['maximumCostRegression'])
+            for quantile in ('p50Ms', 'p95Ms')
+        )
         for metric in (*COSTS, 'coldWallMs'):
             values = {
                 variant: format_stats([row[metric] for row in costs
@@ -117,12 +125,12 @@ def summarize(output: Path, policy: dict[str, Any]) -> None:
                           'acceptancePassed': median_reduction > threshold and tails_pass and costs_pass
                           and paired_improved >= policy['minimumImprovedProcessFraction'],
                           'claimStatus': 'diagnostic'})
-    write_tsv(output / 'invocations.tsv', invocations)
-    write_tsv(output / 'process-costs.tsv', costs)
-    write_tsv(output / 'comparison.tsv', comparisons)
-    write_tsv(output / 'acceptance.tsv', decisions)
+    write_tsv(destination / 'invocations.tsv', invocations)
+    write_tsv(destination / 'process-costs.tsv', costs)
+    write_tsv(destination / 'comparison.tsv', comparisons)
+    write_tsv(destination / 'acceptance.tsv', decisions)
     slow = sorted(invocations, key=lambda row: row['wallMs'], reverse=True)[:policy['slowInvocationCount']]
-    write_tsv(output / 'slow-invocations.tsv', slow)
+    write_tsv(destination / 'slow-invocations.tsv', slow)
 
 
 def main() -> int:
