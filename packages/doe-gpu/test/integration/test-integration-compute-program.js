@@ -137,6 +137,46 @@ try {
     } finally { await program.close(); }
   }
   console.log('ok: paired dot-product search matches independent exact sums across execution modes');
+  const multiStepProgram = {
+    schemaVersion: 1, id: 'multi_step_pipeline',
+    buffers: [
+      { id: 'input', size: 16, type: 'storage', role: 'input' },
+      { id: 'scratch', size: 16, type: 'storage', role: 'scratch' },
+      { id: 'output', size: 16, type: 'storage', role: 'output' },
+    ],
+    shaders: [
+      { id: 'add_const', entryPoint: 'main', code: `
+        @group(0) @binding(0) var<storage, read> input: array<u32>;
+        @group(0) @binding(1) var<storage, read_write> scratch: array<u32>;
+        @compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+          scratch[id.x] = input[id.x] + 10u;
+        }` },
+      { id: 'mul_const', entryPoint: 'main', code: `
+        @group(0) @binding(0) var<storage, read> scratch: array<u32>;
+        @group(0) @binding(1) var<storage, read_write> output: array<u32>;
+        @compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+          output[id.x] = scratch[id.x] * 3u;
+        }` },
+    ],
+    steps: [
+      { shader: 'add_const', bindings: [{ binding: 0, buffer: 'input' }, { binding: 1, buffer: 'scratch' }], workgroups: [4, 1, 1] },
+      { shader: 'mul_const', bindings: [{ binding: 0, buffer: 'scratch' }, { binding: 1, buffer: 'output' }], workgroups: [4, 1, 1] },
+    ],
+    output: 'output',
+  };
+  for (const execution of ['webgpu', 'native-recorded', ...(process.platform === 'linux' ? ['gpu-recorded'] : [])]) {
+    const program = await prepareComputeProgram(device, multiStepProgram, { execution });
+    try {
+      const firstResult = await program.run({ input: new Uint32Array([1, 2, 3, 4]) });
+      assert.deepEqual([...new Uint32Array(firstResult.output.buffer)], [33, 36, 39, 42]);
+      assert.equal(firstResult.receipt.dispatchCount, 2);
+      assert.equal(firstResult.receipt.clearedBytes, 32);
+      const secondResult = await program.run({ input: new Uint32Array([5, 6, 7, 8]) });
+      assert.deepEqual([...new Uint32Array(secondResult.output.buffer)], [45, 48, 51, 54]);
+      assert.equal(secondResult.receipt.dispatchCount, 2);
+    } finally { await program.close(); }
+  }
+  console.log('ok: multi-step compute pipeline with scratch buffers passes across execution modes');
   for (const [code, kind] of [
     ['// source line one\nnot valid WGSL', 'UnexpectedToken'],
     ['@compute @workgroup_size(1) fn main() {\n let value: u32 = missing_value;\n}', 'UnknownIdentifier'],

@@ -366,3 +366,79 @@ unevidenced; explicit device destruction is a separate lifecycle test.
   `bench/out/external-projects/` for UMAP, HoloScript LIF, and EA MNIST, using
   run label `execution-ownership-20260905-external-reuse`.
 - Blocking requirements: [`process.md`](../../process.md).
+
+## Resolved details before ordinary-execution follow-ups
+
+## Native recorded command ownership
+
+The native lifetime audit reproduced a lost copy and a crash when callers
+released resources before deferred submission. Compute and copy recording now
+retain native dependencies through encoder-to-command-buffer transfer; pass and
+device ownership protect cleanup, including abandoned and failed construction.
+The original failing probes, repaired output, runtime checks, and package
+qualification are indexed under
+`bench/out/compute-program/20260906-command-ownership/README.md`.
+Public declaration and receipt schemas are unchanged. Rendering dependency
+ownership, general object garbage collection, and physical driver loss remain
+outside this acceptance evidence.
+Qualification exposed unreleased finished encoder handles and an Electron crash
+from unchecked external ArrayBuffer creation. Consumed command handles now
+release; native-direct mapping uses host-owned storage with writable copy-back
+and range detachment. The same retained-package regression exercises those
+paths across the controlled hosts. Earlier native-direct mapping timings do not
+measure the same host-copy work.
+The exact-package application oracles and native SPIR-V checks are retained in
+`bench/out/compute-program/20260906-command-ownership-audits/`.
+
+## Evidence schema routing
+
+The schema gate now distinguishes package qualification from application
+matrices using the report's declared kind. This repairs the final-summary
+directory-name collision without changing retained observations. The accepted
+package and application summaries are explicit schema targets; unknown report
+kinds and malformed bodies still fail. The migration is in
+[schema enforcement](../../config-schema-enforcement.md#schema-target-registry-migration).
+
+## Resource lifetime correction
+
+The physical retained-package image probe exposed buffer and descriptor
+retention across program close, plus an unreleased queue reference at device
+teardown. The correction releases program-owned native handles, destroys buffer
+backing storage after queued work completes, and retires only affected Vulkan
+descriptors. Native resources retain their cleanup device. Original failures,
+intermediate diagnoses, and raw DRM checkpoint records are preserved under
+`bench/out/compute-program/20260906-resource-retention-diagnostic/`.
+The accepted package qualification, including DRM retention checks on each
+controlled host, is
+`bench/out/compute-program/20260906-resource-lifetime-qualified/summary.json`.
+The image probe's raw timed/untimed checkpoints and CSV are under
+`bench/out/compute-program/20260906-resource-lifetime-scratch/`.
+The corresponding guarded application comparisons remain diagnostic in
+`bench/out/compute-program/20260906-resource-lifetime-qualified-applications/summary.json`.
+Continuous simulation audits and independent SPIR-V checks are retained in
+`bench/out/compute-program/20260906-resource-lifetime-resident/`.
+Reproduction commands, checksums, and intermediate failures are indexed in
+`bench/out/compute-program/20260906-resource-lifetime-correction/README.md`.
+This work does not establish peak GPU memory, arbitrary-object garbage
+collection, physical driver-loss recovery, or another platform's behavior.
+
+## Earlier portable reproduction records
+
+The portable package record is
+`bench/out/compute-program/20260905-portable-package/summary.json`.
+The matrix using a relocated copy is
+`bench/out/compute-program/20260905-portable-package-matrix/summary.json`.
+Earlier full-sequence installed-package reports remain under
+`bench/out/compute-program/20260905-installed-package-resident/`.
+The portable reproduction input archive is
+`bench/out/compute-program/doe-amd-vulkan-reproduction-c2c349d0f.tar.gz`;
+its checksum sidecar and the recipe under
+`bench/out/compute-program/20260905-independent-reproduction/` bind the package,
+frozen fixtures, controls, and source revision. Extracted-input runs from a
+separate clean checkout are retained under that directory in
+`clean-checkout-results/`. Tail stalls and observed unrelated GPU clients keep
+the application measurements diagnostic.
+
+These are repeated physical tests on the same AMD host, not independent
+reproduction or registry publication. The matrix retains raw outputs, native
+journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.

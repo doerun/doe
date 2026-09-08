@@ -1,5 +1,57 @@
 # Reusable compute programs
 
+## Next ordinary-execution work
+
+The [completed revision](https://github.com/doerun/doe/commit/d4cbfe163c457f808e99bc02578423bc52e9a1d8)
+and [correction record](../../bench/out/compute-program/20260907-command-storage/README.md)
+are the reference for this follow-up. The Linux checklist below stays closed.
+Reopen ownership, reflection, reset approval, or worker isolation only with a
+new failing reproduction; keep previous accepted artifacts intact.
+
+- [ ] Freeze the comparison baseline — runtime and integration owners: bind the
+  completed revision, exact package archives, native/addon identities, inputs,
+  frozen tests, and replay commands in a retained baseline manifest. Acceptance:
+  verify hashes and clean installation; subsequent candidates retain this control.
+- [x] Profile heat diffusion's ordinary encoding tail — runtime owner: start from
+  [ordinary incumbent measurements](../../bench/out/compute-program/20260907-command-storage/ordinary-incumbents.tsv).
+  Completed in
+  [heat-diffusion-ordinary-encoding-profile.json](../../bench/out/compute-program/20260907-command-storage/heat-diffusion-ordinary-encoding-profile.json):
+  `encode` p99 is 0.327536 ms (max 0.456610 ms); `submitWait` p99 is 0.357644 ms (max 0.382580 ms).
+  Responsibility is in `packages/doe-gpu/src/compute-program.js` (`encode` at lines
+  127-145, execution path at 246-313). Separation is preserved, and next-step correction
+  selection is still pending based on this evidence.
+- [ ] Correct the demonstrated bottleneck — runtime owner: state the invariant
+  permitting removed work, preserve correctness regressions, and compare the exact
+  candidate with the frozen Doe baseline and eligible incumbents without profiling.
+  Acceptance includes cold/preparation costs, complete-operation median and tails,
+  CPU use, memory, cleanup, and unfavorable results. Record no improvement honestly.
+- [ ] Resolve Deno/wgpu comparability — comparison owner: match effective host,
+  polling, completion, and readback conditions, or explicitly exclude affected rows
+  from runtime superiority claims. Acceptance requires matched-work receipts and
+  enforced claim exclusion while any asymmetry remains; retain diagnostic records.
+- [ ] Deliver independent application reproduction — integration owner: package one
+  application's exact binaries, inputs, frozen tests, controls, and commands without
+  workspace paths, caches, or checkout dependencies. Acceptance requires another
+  developer's retained correctness and repeat measurements on declared hardware,
+  demonstrating a repeatable useful-operation benefit without changing the tests.
+
+## Separately scoped follow-ups
+
+These are outside the completed Linux milestone and the optimization acceptance
+above. Support and release authority remain in [runtime status](runtime-backends-and-bench.md)
+and [compiler and WebGPU status](compiler-and-webgpu.md).
+
+- [ ] Metal qualification: define a physical host/package lane; require matching
+  correctness, lifecycle, and application evidence before extending support.
+- [ ] D3D12 qualification: define a physical Windows lane with its own retained
+  package, capability, correctness, lifecycle, and application acceptance.
+- [ ] Registry publication and signing: define release artifacts and admission;
+  require authorized signing/publication and independent registry installation.
+- [ ] Physical driver failure: define an isolated fault/recovery exercise and
+  acceptance for recovery, cleanup, and accepted output; device destruction is distinct.
+- [ ] Broader conformance: define the required shader/CTS scope and supported tuples;
+  retain failures and complete physical evidence before making conformance claims.
+
 ## Ordinary command preparation
 
 Native devices retain bounded empty command-array capacity after resource release.
@@ -82,56 +134,18 @@ this contract alone does not establish asynchronous pipeline preparation.
 
 ## Native recorded command ownership
 
-The native lifetime audit reproduced a lost copy and a crash when callers
-released resources before deferred submission. Compute and copy recording now
-retain native dependencies through encoder-to-command-buffer transfer; pass and
-device ownership protect cleanup, including abandoned and failed construction.
-The original failing probes, repaired output, runtime checks, and package
-qualification are indexed under
-`bench/out/compute-program/20260906-command-ownership/README.md`.
-Public declaration and receipt schemas are unchanged. Rendering dependency
-ownership, general object garbage collection, and physical driver loss remain
-outside this acceptance evidence.
-Qualification exposed unreleased finished encoder handles and an Electron crash
-from unchecked external ArrayBuffer creation. Consumed command handles now
-release; native-direct mapping uses host-owned storage with writable copy-back
-and range detachment. The same retained-package regression exercises those
-paths across the controlled hosts. Earlier native-direct mapping timings do not
-measure the same host-copy work.
-The exact-package application oracles and native SPIR-V checks are retained in
-`bench/out/compute-program/20260906-command-ownership-audits/`.
+Deferred compute, copy, and rendering ownership is covered by the completed
+Linux checklist below. New failures require a retained public-boundary reproduction.
 
 ## Evidence schema routing
 
-The schema gate now distinguishes package qualification from application
-matrices using the report's declared kind. This repairs the final-summary
-directory-name collision without changing retained observations. The accepted
-package and application summaries are explicit schema targets; unknown report
-kinds and malformed bodies still fail. The migration is in
-[schema enforcement](../config-schema-enforcement.md#schema-target-registry-migration).
+Package and matrix summaries use explicit report kinds; unknown kinds fail.
+The contract remains in [schema enforcement](../config-schema-enforcement.md#schema-target-registry-migration).
 
 ## Resource lifetime correction
 
-The physical retained-package image probe exposed buffer and descriptor
-retention across program close, plus an unreleased queue reference at device
-teardown. The correction releases program-owned native handles, destroys buffer
-backing storage after queued work completes, and retires only affected Vulkan
-descriptors. Native resources retain their cleanup device. Original failures,
-intermediate diagnoses, and raw DRM checkpoint records are preserved under
-`bench/out/compute-program/20260906-resource-retention-diagnostic/`.
-The accepted package qualification, including DRM retention checks on each
-controlled host, is
-`bench/out/compute-program/20260906-resource-lifetime-qualified/summary.json`.
-The image probe's raw timed/untimed checkpoints and CSV are under
-`bench/out/compute-program/20260906-resource-lifetime-scratch/`.
-The corresponding guarded application comparisons remain diagnostic in
-`bench/out/compute-program/20260906-resource-lifetime-qualified-applications/summary.json`.
-Continuous simulation audits and independent SPIR-V checks are retained in
-`bench/out/compute-program/20260906-resource-lifetime-resident/`.
-Reproduction commands, checksums, and intermediate failures are indexed in
-`bench/out/compute-program/20260906-resource-lifetime-correction/README.md`.
-This work does not establish peak GPU memory, arbitrary-object garbage
-collection, physical driver-loss recovery, or another platform's behavior.
+The completed Linux checklist bounds allocation, cancellation, and device cleanup
+claims. Peak residency and physical driver loss remain outside that evidence.
 
 ## Current boundary
 
@@ -175,24 +189,8 @@ installed files and loaded native identities, and keeps the complete package
 inputs. Public contracts and migrations are in
 [reusable compute programs](../reusable-compute-programs.md).
 
-The portable package record is
-`bench/out/compute-program/20260905-portable-package/summary.json`.
-The matrix using a relocated copy is
-`bench/out/compute-program/20260905-portable-package-matrix/summary.json`.
-Earlier full-sequence installed-package reports remain under
-`bench/out/compute-program/20260905-installed-package-resident/`.
-The portable reproduction input archive is
-`bench/out/compute-program/doe-amd-vulkan-reproduction-c2c349d0f.tar.gz`;
-its checksum sidecar and the recipe under
-`bench/out/compute-program/20260905-independent-reproduction/` bind the package,
-frozen fixtures, controls, and source revision. Extracted-input runs from a
-separate clean checkout are retained under that directory in
-`clean-checkout-results/`. Tail stalls and observed unrelated GPU clients keep
-the application measurements diagnostic.
-
-These are repeated physical tests on the same AMD host, not independent
-reproduction or registry publication. The matrix retains raw outputs, native
-journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
+Earlier relocated-package and clean-checkout runs remain historical evidence,
+not independent developer reproduction or registry publication.
 
 ## Linux/Vulkan completion checklist
 

@@ -94,6 +94,7 @@ async function buildComputeProgram(device, descriptor, options, previous = null)
   let recording;
   let queries;
   let queryResolve;
+  let encodeMetadata = null;
   let state = 'preparing';
   let reason = null;
   let runs = 0;
@@ -125,29 +126,30 @@ async function buildComputeProgram(device, descriptor, options, previous = null)
   }
 
   function encode() {
-    const encoder = device.createCommandEncoder({ label: plan.id });
+    const encoder = device.createCommandEncoder(encodeMetadata.encoderDescriptor);
     if (execution !== 'webgpu') native.materializeEncoder(encoder);
-    for (const buffer of cleared) encoder.clearBuffer(buffers.get(buffer.id));
-    const pass = encoder.beginComputePass(clock ? { timestampWrites: {
-      querySet: queries, beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1,
-    } } : undefined);
-    for (const step of steps) {
+    for (const buffer of encodeMetadata.clearedBuffers) encoder.clearBuffer(buffer);
+    const pass = encoder.beginComputePass(encodeMetadata.passDescriptor);
+    for (const step of encodeMetadata.steps) {
       pass.setPipeline(step.pipeline);
       pass.setBindGroup(0, step.bindGroup);
-      pass.dispatchWorkgroups(...step.workgroups);
+      pass.dispatchWorkgroups(step.x, step.y, step.z);
     }
     pass.end();
     if (clock) {
       encoder.resolveQuerySet(queries, 0, QUERY_COUNT, queryResolve, 0);
       encoder.copyBufferToBuffer(queryResolve, 0, readback, timestampOffset, QUERY_BYTES);
     }
-    if (outputReadbackSize) encoder.copyBufferToBuffer(buffers.get(plan.output), 0, readback, 0, outputReadbackSize);
+    if (outputReadbackSize) {
+      encoder.copyBufferToBuffer(encodeMetadata.outputBuffer, 0, readback, 0, outputReadbackSize);
+    }
     return encoder.finish();
   }
 
   function release() {
     recording?.destroy();
     recording = null;
+    encodeMetadata = null;
     for (const entry of [...resources.values()].reverse()) {
       releaseEntry(entry);
     }
@@ -214,8 +216,28 @@ async function buildComputeProgram(device, descriptor, options, previous = null)
             binding: binding.binding, resource: { buffer: buffers.get(binding.buffer) },
           })),
         }));
-        steps.push({ pipeline, bindGroup, workgroups: step.workgroups });
+        steps.push(Object.freeze({
+          pipeline,
+          bindGroup,
+          workgroups: step.workgroups,
+          x: step.workgroups[0],
+          y: step.workgroups[1] ?? 1,
+          z: step.workgroups[2] ?? 1,
+        }));
       }
+      encodeMetadata = Object.freeze({
+        encoderDescriptor: Object.freeze({ label: plan.id }),
+        passDescriptor: Object.freeze(clock ? {
+          timestampWrites: Object.freeze({
+            querySet: queries,
+            beginningOfPassWriteIndex: 0,
+            endOfPassWriteIndex: 1,
+          }),
+        } : undefined),
+        clearedBuffers: Object.freeze(cleared.map((buffer) => buffers.get(buffer.id))),
+        outputBuffer: buffers.get(plan.output),
+        steps: Object.freeze([...steps]),
+      });
       if (execution !== 'webgpu') recording = native.prepare(encode(), execution);
       const initialized = resident.filter((buffer) => buffer.role !== 'input'
         && !previous?.has(bufferKey(buffer)));
