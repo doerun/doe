@@ -1,5 +1,22 @@
 # Reusable compute programs
 
+## Restricted candidate execution
+
+The [isolation and cancellation record](../../bench/out/compute-program/20260908-candidate-isolation/README.md)
+closes the reproduced host-access and CLI-cancellation gaps in the existing
+candidate evaluator. Current Linux evaluation requires explicit render-device
+access, read-only acceptance inputs, network isolation, and verified cgroup
+limits. Missing isolation fails explicitly. The command wrapper now transfers
+its process to the executor so cancellation reaches its resource owner.
+
+Installed-package GPU execution, rejection, cleanup, and adversarial host checks
+are retained alongside the initial native-sidecar and cancellation failures.
+Frozen performance rejections remain visible. Versioned evidence preserves
+historical semantics; earlier reports receive no retroactive isolation claims.
+The accepted native runtime and public package are unchanged. Ordinary
+application advantage, unfamiliar research acceleration, independent operation,
+equipment integration, and additional physical hardware remain open.
+
 ## Ordinary comparison, rejected polling, and offline handoff
 
 The [ordinary Node continuation](../../bench/out/compute-program/20260908-ordinary-node-resume/README.md)

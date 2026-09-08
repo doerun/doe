@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Candidate isolation invocation and kernel admission",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "policyHash",
+    "tools",
+    "unit",
+    "command",
+    "returnCode",
+    "effectiveLimits",
+    "cleanupConfirmed"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "policyHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bwrap",
+        "systemd-run",
+        "systemctl"
+      ],
+      "properties": {
+        "bwrap": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "hash"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "systemd-run": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "hash"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "systemctl": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "hash"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "unit": {
+      "type": "string",
+      "pattern": "^doe-candidate-[a-f0-9]{32}\\.service$"
+    },
+    "command": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "returnCode": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "effectiveLimits": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "memory.max",
+            "memory.swap.max",
+            "pids.max"
+          ],
+          "properties": {
+            "memory.max": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            },
+            "memory.swap.max": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            },
+            "pids.max": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            }
+          }
+        }
+      ]
+    },
+    "cleanupConfirmed": {
+      "type": "boolean"
+    }
+  }
+}

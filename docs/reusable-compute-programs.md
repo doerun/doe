@@ -47,11 +47,23 @@ python3 bench/cli.py program candidate \
   --candidate bench/fixtures/program-candidate/batched-distance.wgsl \
   --package-qualification <retained-package-summary.json> \
   --output bench/out/compute-program/<new-run> \
-  --node /usr/bin/node --backend vulkan --execution gpu-recorded
+  --node /usr/bin/node --backend vulkan --execution gpu-recorded \
+  --render-node /dev/dri/renderD128
 ```
 
 The runner installs the exact qualified packages, snapshots acceptance inputs,
-and runs the trusted reference and candidate in separate processes. It retains
+and runs the trusted reference and candidate in separate processes inside one
+Linux namespace and cgroup. `--render-node` explicitly selects the only exposed
+GPU character device. The default
+[`isolation policy`](../config/program-candidate-isolation.json) bounds charged
+host memory, tasks, temporary storage, and individual output files. A different
+`--isolation-policy` must satisfy the same schema; there is no unrestricted mode.
+Bubblewrap and a working user systemd manager with cgroup v2 enforcement are
+required. Missing isolation fails before candidate execution. The namespace has
+no host networking, home directory, desktop sockets, or workspace mount. System
+libraries and declared inputs are read-only; only numerical outputs, native
+journals/SPIR-V, retained provider binaries, and the execution report are writable.
+The kernel limits are checked before entering the namespace. It retains
 every first, warmup, and timed output. Independent verification recomputes
 numerical acceptance and timing summaries, then checks native shader identities,
 dispatch geometry, submissions, and SPIR-V. Worker timing includes input cloning
@@ -68,23 +80,34 @@ promotion.
 
 Use `--previous <summary.json>` to check environment changes. It verifies prior
 artifact hashes and compares adapter/driver identity, OS/kernel, Node binary,
-and file-backed loaded runtime/driver hashes. Kernel-provided virtual objects
+file-backed loaded runtime/driver hashes, and isolation policy/tool/implementation
+identities. Kernel-provided virtual objects
 are identified separately. Every invocation reruns acceptance regardless of
 whether the environment changed; previous acceptance never substitutes for
 fresh execution. Raw outputs, sources, inputs, package archives, and manifests
 are retained under the output directory.
 
-Migration: the job, execution, and report schemas are additive repository-only
-contracts. Public compute-program semantics and `run()` completion are unchanged.
-The initial candidate executor accepts fixed invocation-lifetime buffer programs
-on Vulkan and explicitly selected execution modes. Resident jobs, texture jobs,
-Metal/D3D12 qualification, and automatic candidate generation are outside this
-executor. References are trusted code; declared dependency hashes do not create
-an OS sandbox or prove complete dependency closure. Heap and requested-buffer
-limits do not measure or cap peak native/GPU memory. Deadlines terminate the
-declared process scope but cannot preempt a GPU kernel or establish driver-loss
-recovery. Independent external applications and physical platform acceptance
-remain necessary before broader claims.
+Migration: job inputs remain at their recorded version; acceptance rules and
+fixture hashes are unchanged. Execution version `2` declares `nativeTracePath`
+under the dedicated writable native directory. Report version `2` binds the
+isolation invocation and checked kernel limits. The schemas still validate
+historical version `1` evidence, which does not acquire isolation retroactively.
+The current command requires an explicit render device and always uses the
+versioned isolation policy. Public compute-program semantics and `run()`
+completion are unchanged.
+
+The executor accepts fixed invocation-lifetime buffer programs on Linux/Vulkan
+and explicitly selected execution modes. Resident jobs, texture jobs, other
+physical platforms, and automatic candidate generation remain outside this
+executor. References remain trusted acceptance code. Host library mounts do not
+establish complete dependency closure. The cgroup caps memory charged by the
+kernel, including native host allocations; it does not guarantee a cap on all
+GPU/driver allocations. Output-file limits are per file, not a total disk quota.
+Deadlines and cancellation terminate the owned service and detached descendants;
+they cannot preempt a GPU kernel or establish driver-loss recovery. The exposed
+GPU still shares the host kernel and driver, so this boundary is not a guarantee
+against hostile shader or driver exploits. Independent external applications
+and physical platform acceptance remain necessary before broader claims.
 
 ## Execution and lifetime
 

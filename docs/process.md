@@ -468,8 +468,14 @@ numerical oracle, native execution identities, and completed cleanup. Timings
 cannot rescue a failed oracle. Candidate acceptance applies only to the frozen
 job's criteria and remains diagnostic; promotion still follows the normal
 blocking gates and physical backend requirements. An environment change forces
-fresh execution; unchanged identity also reruns acceptance. Additive job and
-receipt contracts and migration are documented in
+fresh execution; unchanged identity also reruns acceptance. Current Linux runs
+require namespace isolation and verified cgroup limits before loading candidate
+code. Frozen inputs stay read-only; only declared evidence directories/files and
+private temporary storage permit writes. Program CLI dispatch replaces its own
+process so cancellation reaches the executor that owns cleanup and evidence.
+Missing isolation, cancelled work, resource exhaustion, and missing native
+sidecars remain rejection evidence.
+Versioned job and receipt contracts and migration are documented in
 [`reusable-compute-programs.md`](reusable-compute-programs.md#bounded-candidate-jobs).
 
 ## Refactor law

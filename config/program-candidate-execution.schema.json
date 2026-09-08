@@ -22,7 +22,10 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": 1
+      "enum": [
+        1,
+        2
+      ]
     },
     "kind": {
       "const": "program_candidate"
@@ -636,6 +639,32 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "nativeTracePath": {
+      "const": "native/native.jsonl"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "nativeTracePath"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "nativeTracePath"
+          ]
+        }
+      }
+    }
+  ]
 }

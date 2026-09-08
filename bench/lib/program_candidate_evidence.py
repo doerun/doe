@@ -22,16 +22,21 @@ def validate_execution(output: Path, job: dict[str, Any],
                        repository: Path) -> dict[str, Any]:
     """Validate every retained result; timing cannot rescue failed correctness."""
     execution = json.loads((output / 'execution.json').read_text(encoding='utf-8'))
-    schema = json.loads((repository / 'config/program-candidate-execution.schema.json').read_text(encoding='utf-8'))
-    receipt_schema = json.loads((repository / 'config/compute-program-run.schema.json').read_text(encoding='utf-8'))
-    registry = Registry().with_resource('compute-program-run.schema.json', Resource.from_contents(receipt_schema))
+    schema = json.loads(
+        (repository / 'config/program-candidate-execution.schema.json').read_text(encoding='utf-8'))
+    receipt_schema = json.loads(
+        (repository / 'config/compute-program-run.schema.json').read_text(encoding='utf-8'))
+    registry = Registry().with_resource('compute-program-run.schema.json',
+                                        Resource.from_contents(receipt_schema))
     jsonschema.Draft202012Validator(schema, registry=registry).validate(execution)
+    native_path = output / (execution['nativeTracePath']
+                            if execution['schemaVersion'] >= 2 else 'native.jsonl')
     if (execution['jobHash'] != file_sha256(output / 'job.json')
             or execution['candidateHash'] != file_sha256(output / 'candidate.wgsl')):
         raise ValueError('Execution is not bound to the retained job and candidate')
     descriptor = json.loads((output / 'program.json').read_text(encoding='utf-8'))
     program_hash = hashlib.sha256(json.dumps(descriptor, sort_keys=True,
-        separators=(',', ':'), ensure_ascii=False).encode()).hexdigest()
+                                             separators=(',', ':'), ensure_ascii=False).encode()).hexdigest()
     fixtures = {case['id']: case for case in job['cases']}
     if len({case['id'] for case in execution['cases']}) != len(execution['cases']):
         raise ValueError('Duplicate observed case')
@@ -121,22 +126,24 @@ def validate_execution(output: Path, job: dict[str, Any],
     if len(program_hashes) > 1:
         raise ValueError('Candidate changed program identity between invocations')
     if candidate_count:
-        native = build_validation(output / 'native.jsonl')
+        native = build_validation(native_path)
         write_json(output / 'native-validation.json', native)
         if native['verdict']['status'] != 'passed':
             raise ValueError('Native execution identity validation failed')
         if native['counts']['submissions'] != candidate_count:
             raise ValueError('Native submissions differ from accepted invocation work')
-        rows = [json.loads(line) for line in (output / 'native.jsonl').read_text(encoding='utf-8').splitlines() if line]
+        rows = [json.loads(line) for line in native_path.read_text(
+            encoding='utf-8').splitlines() if line]
         shaders = {shader['id']: shader for shader in descriptor['shaders']}
         expected_dispatches = Counter((hashlib.sha256(shaders[step['shader']]['code'].encode()).hexdigest(),
-            shaders[step['shader']]['entryPoint'], tuple(step['workgroups']), len(step['bindings']))
-            for step in descriptor['steps'])
+                                       shaders[step['shader']]['entryPoint'], tuple(step['workgroups']), len(step['bindings']))
+                                      for step in descriptor['steps'])
         actual_dispatches = Counter((row['wgslSha256'], row['entryPoint'],
-            tuple(row['workgroups']), row['bindingCount']) for row in rows if row['event'] == 'dispatch_encoded')
+                                     tuple(row['workgroups']), row['bindingCount']) for row in rows if row['event'] == 'dispatch_encoded')
         repeat = 1 if execution['execution'] == 'gpu-recorded' else candidate_count
         if actual_dispatches != Counter({key: count * repeat for key, count in expected_dispatches.items()}):
-            raise ValueError('Native shader identity or dispatch geometry differs from the frozen program')
+            raise ValueError(
+                'Native shader identity or dispatch geometry differs from the frozen program')
     if execution['status'] == 'accepted':
         if set(fixtures) != {case['id'] for case in execution['cases']}:
             raise ValueError('Accepted execution omitted frozen acceptance cases')

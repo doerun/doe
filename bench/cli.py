@@ -18,7 +18,6 @@ import argparse
 import json
 import os
 import shlex
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -718,11 +717,8 @@ def main() -> int:
         program_subparsers.add_parser(name, help=description, add_help=False)
     if len(argv) >= 2 and argv[0] == "program" and argv[1] in PROGRAM_COMMANDS:
         command, _ = PROGRAM_COMMANDS[argv[1]]
-        return subprocess.run(
-            [*command, *argv[2:]],
-            cwd=REPO_ROOT,
-            check=False,
-        ).returncode
+        os.chdir(REPO_ROOT)
+        os.execvpe(command[0], [*command, *argv[2:]], os.environ)
 
     if argv and argv[0] == "compare":
         compare_parser = argparse.ArgumentParser(

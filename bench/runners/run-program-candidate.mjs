@@ -18,14 +18,15 @@ const qualification = JSON.parse(readFileSync(resolve(output, 'package-inputs/su
 const hash = (data) => createHash('sha256').update(data).digest('hex');
 const save = (name, data) => writeFileSync(resolve(output, name), `${JSON.stringify(data, null, 2)}\n`);
 const workers = new Map();
-const report = { schemaVersion: 1, kind: 'program_candidate', claimStatus: 'diagnostic',
+const report = { schemaVersion: 2, kind: 'program_candidate', claimStatus: 'diagnostic',
+  nativeTracePath: 'native/native.jsonl',
   status: 'running', error: null, jobHash: hash(readFileSync(resolve(output, 'job.json'))),
   candidateHash: hash(readFileSync(resolve(output, 'candidate.wgsl'))), backend, execution,
   preparation: {}, teardown: {}, environment: null, cases: [],
   timingScope: 'worker-input-clone-through-float32-result-including-gpu-readback',
   limits: [
-    'Trusted reference module and declared dependencies are hash-bound; this is not an OS sandbox or a complete dependency closure',
-    'Heap limit covers JavaScript; declared buffers and sampled process RSS are not peak GPU memory',
+    'Trusted reference module and declared dependencies are hash-bound; Linux isolation restricts host access but does not establish a complete dependency closure',
+    'Heap limit covers JavaScript; the job cgroup caps charged host memory; declared buffers and sampled process RSS are not peak GPU memory',
     'CPU reference comparison is not a Dawn/wgpu comparison or production promotion',
     'Process deadlines cannot preempt GPU kernels or prove recovery from a hung driver',
     'Initialization, preparation, first invocation per case, and teardown are separate; the prepared program survives between cases',
@@ -71,7 +72,7 @@ async function sample(worker, mode, caseId, phase, index, inputs, expected) {
 }
 
 try {
-  mkdirSync(resolve(output, 'outputs'));
+  mkdirSync(resolve(output, 'outputs'), { recursive: true });
   const referenceStart = performance.now();
   const reference = child('reference');
   report.preparation.reference = await reference.call('initialize', { mode: 'reference',
@@ -79,16 +80,16 @@ try {
   report.preparation.reference.processPreparationMs = performance.now() - referenceStart;
   const candidateStart = performance.now();
   const candidate = child('candidate');
-  writeFileSync(resolve(output, 'native.jsonl'), '');
+  writeFileSync(resolve(output, report.nativeTracePath), '');
   report.preparation.candidate = await candidate.call('initialize', { mode: 'candidate',
-    descriptor, packageRoot: packagePath, backend, execution, tracePath: resolve(output, 'native.jsonl') });
+    descriptor, packageRoot: packagePath, backend, execution, tracePath: resolve(output, report.nativeTracePath) });
   report.preparation.candidate.processPreparationMs = performance.now() - candidateStart;
   report.environment = await candidate.call('environment');
   const libraryHashes = new Set(qualification.hosts.map((host) => host.libraryHash));
   if (libraryHashes.size !== 1 || !report.environment.loadedObjects.some((entry) => libraryHashes.has(entry.hash))) {
     throw new Error('Loaded native library differs from the exact qualified archives');
   }
-  mkdirSync(resolve(output, 'provider-binaries'));
+  mkdirSync(resolve(output, 'provider-binaries'), { recursive: true });
   for (const entry of report.environment.loadedObjects) {
     if (libraryHashes.has(entry.hash) || entry.path.endsWith('/doe_napi.node')) {
       const target = resolve(output, 'provider-binaries', `${entry.hash}-${basename(entry.path)}`);

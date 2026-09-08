@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "mode": "linux-bwrap-cgroup-v2",
+  "maximumHostMemoryBytes": 2147483648,
+  "maximumTasks": 256,
+  "maximumTemporaryBytes": 134217728,
+  "maximumFileBytes": 67108864
+}
