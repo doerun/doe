@@ -43,6 +43,7 @@ def run_child(
     policy_path: Path, policy: dict[str, Any], backend: str,
     node: str, deno: str, native_library: Path | None,
     package_root: Path | None = None, package_qualification: Path | None = None,
+    diagnostics: Path | None = None,
 ) -> dict[str, Any]:
     command = [node]
     environment = dict(os.environ)
@@ -69,6 +70,8 @@ def run_child(
     ]
     if package_root is not None:
         command += [f'--package-root={package_root}', f'--package-qualification={package_qualification}']
+    if diagnostics is not None:
+        command.append(f'--diagnostics={diagnostics}')
     if policy.get('gpuTiming', 'off') != 'off' and backend == 'vulkan':
         command.append(f'--hardware={output.parent / "hardware-profile.json"}')
     with capture_activity(output, policy, digest(policy_path), backend, phase):

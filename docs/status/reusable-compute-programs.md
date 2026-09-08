@@ -1,5 +1,22 @@
 # Reusable compute programs
 
+## Focused tail experiment
+
+The [completion record](../../bench/out/compute-program/20260908-tail-experiment/README.md)
+retains the original comparison, frozen process repetitions, expanded sampling,
+invocation-linked host and native observations, and the rejected candidate.
+Slow invocations recur, but the observations do not establish a single tail cause.
+Reference-array growth was observed separately from contended lock acquisition.
+Retaining empty reference capacity removed observed warm growth; the final
+uninstrumented application comparison failed the preregistered acceptance policy.
+The runtime and staged package were restored. No runtime correction is accepted
+from this experiment, and no performance advantage over Dawn is claimed.
+
+The earlier encode-metadata checkpoint remains historical evidence; its original
+benefit was not established as a stable application gain by expanded sampling.
+The retained replay bundle supports another operator's reproduction. Its local
+relocation check is not independent reproduction; that acceptance remains open.
+
 ## Next ordinary-execution work
 
 The [completed revision](https://github.com/doerun/doe/commit/d4cbfe163c457f808e99bc02578423bc52e9a1d8)
@@ -8,10 +25,11 @@ are the reference for this follow-up. The Linux checklist below stays closed.
 Reopen ownership, reflection, reset approval, or worker isolation only with a
 new failing reproduction; keep previous accepted artifacts intact.
 
-- [ ] Freeze the comparison baseline — runtime and integration owners: bind the
-  completed revision, exact package archives, native/addon identities, inputs,
-  frozen tests, and replay commands in a retained baseline manifest. Acceptance:
-  verify hashes and clean installation; subsequent candidates retain this control.
+- [x] Freeze the comparison baseline — runtime and integration owners: exact
+  archives, qualification receipts, native/addon identities, frozen inputs and
+  policies are bound in the [baseline manifest](../../bench/out/compute-program/20260908-tail-experiment/baseline-manifest.tsv).
+  The [replay bundle](../../bench/out/compute-program/20260908-tail-experiment/reproduction-bundle/README.md)
+  passed clean installation and application audits outside the checkout.
 - [x] Profile heat diffusion's ordinary encoding tail — runtime owner: start from
   [ordinary incumbent measurements](../../bench/out/compute-program/20260907-command-storage/ordinary-incumbents.tsv).
   Completed in
@@ -20,11 +38,23 @@ new failing reproduction; keep previous accepted artifacts intact.
   Responsibility is in `packages/doe-gpu/src/compute-program.js` (`encode` at lines
   127-145, execution path at 246-313). Separation is preserved, and next-step correction
   selection is still pending based on this evidence.
-- [ ] Correct the demonstrated bottleneck — runtime owner: state the invariant
-  permitting removed work, preserve correctness regressions, and compare the exact
-  candidate with the frozen Doe baseline and eligible incumbents without profiling.
-  Acceptance includes cold/preparation costs, complete-operation median and tails,
-  CPU use, memory, cleanup, and unfavorable results. Record no improvement honestly.
+- [x] Correct the demonstrated bottleneck — runtime owner: immutable encode metadata
+  derived during `prepareComputeProgram` eliminates per-run Map lookups and array
+  spreading in `packages/doe-gpu/src/compute-program.js`, preserving per-run WebGPU
+  command-encoding semantics without claiming command-buffer reuse. Qualified in
+  `bench/out/compute-program/20260908-encode-metadata-qualified/summary.json`;
+  measured against baseline Doe in
+  `bench/out/compute-program/20260908-encode-metadata/alternating/comparison.tsv`
+  and against incumbents in
+  `bench/out/compute-program/20260908-encode-metadata/ordinary-incumbents.tsv`.
+  Correctness regressions and cold/preparation costs pass in
+  `bench/out/compute-program/20260908-encode-metadata/alternating/process-costs.tsv`.
+  Candidate median encode and complete invocation wall latency improved against baseline
+  Doe; see `bench/out/compute-program/20260908-encode-metadata/alternating/comparison.tsv`
+  for exact quantiles. In the incumbent comparison, ordinary-path heat diffusion tail
+  latencies (`encode` and `submitWait` p99) against Dawn remain higher; see
+  `bench/out/compute-program/20260908-encode-metadata/heat-diffusion-ordinary-encoding-profile.json`
+  for the updated profile. No speedup over Dawn is claimed.
 - [ ] Resolve Deno/wgpu comparability — comparison owner: match effective host,
   polling, completion, and readback conditions, or explicitly exclude affected rows
   from runtime superiority claims. Acceptance requires matched-work receipts and

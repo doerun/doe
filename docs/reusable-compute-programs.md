@@ -384,6 +384,60 @@ New run artifacts retain the loaded native addon and physical clock profile.
 Preparation break-even uses mean preparation cost and median
 invocation savings; no break-even is asserted when invocation does not improve.
 
+### Tail experiment and diagnostic sidecars
+
+`config/compute-program-tail-experiment.json` freezes the retained package
+controls, original comparison, development and transfer applications, sampling,
+acceptance thresholds, and diagnostic bounds before tuning. Run
+`python3 -m bench.runners.run_compute_program_tail_experiment --help` for the
+focused alternating-package experiment. Frozen sampling preserves the original
+invocation policy; expanded sampling changes only process and timed-run counts.
+The original comparison remains retained alongside both. Acceptance requires
+the declared application median improvement, permitted slow-tail and process-cost
+regressions, and repeated process improvement. Transfer uses the same correction
+without application-specific retuning. These decisions remain diagnostic.
+
+The additive, repo-only `--diagnostics=<experiment-policy.json>` option on
+`bench/runners/run-compute-program.mjs` buffers host events and writes them after
+measurement. It preserves the run/receipt schemas and adds an explicit
+instrumentation limitation to `measurementLimits`. Instrumented runs cannot
+confirm an application performance benefit. Invocation identity is the existing
+`programInstance:run` pair; no public program option or receipt field is added.
+
+Diagnostic TSV sidecar contract version 1:
+
+- `events.tsv`: event name, invocation ordinal, monotonic `startMs`/`endMs`,
+  and kind. Method kinds are synchronous return, fulfilled settlement, and
+  rejected settlement, encoded as `0`, `1`, and `2`. GC kinds retain Node's
+  observed GC classification; GC intervals join by time, not callback delivery.
+- `invocations.tsv`: ordinal, invocation identity, start/end, live heap before
+  and after, and voluntary/involuntary process context-switch deltas. Heap
+  deltas are not allocation counts; process switches do not identify a thread.
+- `limits.txt`: schema version, configured event bound, dropped-event count,
+  and observation scope. Overflow fails diagnostic collection explicitly.
+- `correlated-invocations.tsv`: receipt and wall/CPU timings joined to that
+  invocation's GC overlap, heap/switch observations, and longest synchronous
+  API calls. Settlement intervals overlap synchronous calls and are not summed.
+
+The optional Linux x86-64 GDB observer
+`bench/tools/trace_compute_program_storage.py` uses retained library debug
+information. Its TSV records encoder identity, reuse reason, requested and
+returned command/reference capacity, actual allocator allocation/resize/remap
+calls and successes, contended mutex slow-path calls, and debugger-perturbed
+lock-wait duration. It observes out-of-line array-growth entrypoints; inlined
+sites remain outside its scope. Records are buffered until process exit.
+`correlated-storage.tsv` joins serial native encoder loans to invocation IDs
+only after verifying one host encoder per invocation and matching counts/order.
+Debugger timing cannot establish application latency or the uninstrumented
+duration of an allocation or lock wait. An empty reuse pool, actual array
+growth, and observed lock contention are distinct observations.
+
+Comparison TSVs retain complete invocation rows, process costs, p50/p95/p99
+statistics, raw control/treatment ratios, and the predeclared acceptance
+decision. `claimStatus` stays diagnostic. A reproducible bundle contains exact
+inputs, executors, package archives, policies, and replay commands; independent
+reproduction additionally requires retained results from another operator.
+
 ## External declared simulation
 
 Prepare HoloScript through the existing external reproduction front door, then

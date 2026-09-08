@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Compute program tail experiment policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "evaluationPolicy", "originalComparison", "previousQualification", "baselineQualification", "developmentApplication", "transferApplications", "reproductionProcessPairs", "expandedProcessPairs", "expandedTimedRuns", "minimumWallMedianReduction", "maximumLatencyRegression", "maximumCostRegression", "minimumImprovedProcessFraction", "diagnosticMaxEvents", "diagnosticProcessRuns", "slowInvocationCount"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "evaluationPolicy": {"type": "string", "minLength": 1},
+    "originalComparison": {"type": "string", "minLength": 1},
+    "previousQualification": {"type": "string", "minLength": 1},
+    "baselineQualification": {"type": "string", "minLength": 1},
+    "developmentApplication": {"const": "heat_diffusion"},
+    "transferApplications": {"const": ["image_edges", "holoscript_lif"]},
+    "reproductionProcessPairs": {"type": "integer", "minimum": 2},
+    "expandedProcessPairs": {"type": "integer", "minimum": 16},
+    "expandedTimedRuns": {"type": "integer", "minimum": 100},
+    "minimumWallMedianReduction": {"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1},
+    "maximumLatencyRegression": {"type": "number", "minimum": 0, "exclusiveMaximum": 1},
+    "maximumCostRegression": {"type": "number", "minimum": 0, "exclusiveMaximum": 1},
+    "minimumImprovedProcessFraction": {"type": "number", "minimum": 0.5, "maximum": 1},
+    "diagnosticMaxEvents": {"type": "integer", "minimum": 1, "maximum": 1048576},
+    "diagnosticProcessRuns": {"type": "integer", "minimum": 2},
+    "slowInvocationCount": {"type": "integer", "minimum": 1}
+  }
+}

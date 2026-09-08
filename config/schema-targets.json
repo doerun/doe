@@ -2,6 +2,10 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/compute-program-tail-experiment.schema.json",
+      "data": "config/compute-program-tail-experiment.json"
+    },
+    {
       "schema": "config/gemma270m-electron-qualification.schema.json",
       "data": "bench/out/external-projects/doppler/20260907-multi-dot-p0-qualified/result.json"
     },

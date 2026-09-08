@@ -337,6 +337,14 @@ classified and cannot be promoted by benchmark results.
   concurrent access, and final device cleanup. Retain the policy with application
   evidence; compare ordinary operation latency and process memory against the
   previous qualified binary before interpreting removed allocations as a gain.
+- Application tail experiments preserve the original comparison and freeze
+  thresholds before tuning. Diagnose complete, identified invocations; keep
+  allocation growth separate from reuse misses and contended lock waits.
+  Optional bounded diagnostics write after measurement and cannot establish a
+  performance benefit. Confirm corrections with diagnostics disabled, alternate
+  exact packages across fresh processes, and test transfer without retuning.
+  A failed acceptance decision permits no runtime change. Bundle reproducibility
+  and an independent operator's reproduction are separate evidence states.
 - Native coverage matrix version 2 requires artifact hashes and real execution
   provenance. Schema examples, renamed examples without an execution chain,
   wrong backends, failed/skipped native work, changed binaries, and missing or

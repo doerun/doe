@@ -14,7 +14,7 @@ const args = Object.fromEntries(process.argv.slice(2).map((arg) => {
   return [arg.slice(2, split), arg.slice(split + 1)];
 }));
 const allowed = new Set(['provider', 'application', 'policy', 'output', 'phase', 'backend']);
-const optional = new Set(['hardware', 'package-root', 'package-qualification']);
+const optional = new Set(['hardware', 'package-root', 'package-qualification', 'diagnostics']);
 if (Object.keys(args).some((key) => !allowed.has(key) && !optional.has(key)) || [...allowed].some((key) => !(key in args))) {
   throw new Error('Required: --provider= --application= --policy= --output= --phase=audit|measure --backend=vulkan|metal');
 }
@@ -117,6 +117,7 @@ const report = {
 let program;
 let device;
 let providerOwner;
+let diagnostics;
 try {
   const startup = performance.now();
   if (args.provider.startsWith('doe-')) {
@@ -199,6 +200,12 @@ try {
         validBits: [...bits][0], source: 'wgpu-vulkan-query-ticks' });
     }
   }
+  if (args.diagnostics) {
+    const diagnosticPolicy = JSON.parse(readFileSync(args.diagnostics));
+    const { createDiagnostics } = await import('./compute-program-diagnostics.mjs');
+    diagnostics = createDiagnostics(device, diagnosticPolicy.diagnosticMaxEvents);
+    report.measurementLimits.push('Invocation-linked host diagnostics enabled; these timings cannot confirm a performance benefit');
+  }
   if (args.phase === 'audit') {
     const createEncoder = device.createCommandEncoder.bind(device);
     device.createCommandEncoder = (...values) => {
@@ -232,11 +239,13 @@ try {
   async function runOne() {
     const expectedForRun = expectedSequence ? expectedSequence[completedRuns] : expected;
     if (!expectedForRun) throw new Error('Frozen sequence has no oracle for the next invocation');
+    diagnostics?.begin();
     const start = performance.now();
     const cpuStart = process.cpuUsage();
     const result = await program.run(expectedSequence && completedRuns > 0 ? {} : inputs);
     const cpu = process.cpuUsage(cpuStart);
     const wallMs = performance.now() - start;
+    diagnostics?.end(result.receipt);
     const oracle = compareNumerical(new Float32Array(result.output.buffer), expectedForRun,
       policy.absoluteTolerance, policy.relativeTolerance, checks);
     const outputPath = `${args.output}.run-${result.receipt.run}.output.f32`;
@@ -284,6 +293,12 @@ try {
     process.exitCode = 1;
   }
   report.teardownMs = performance.now() - teardown;
+  try { await diagnostics?.finish(args.output); }
+  catch (error) {
+    report.status = 'failed';
+    report.error = `${report.error ?? ''}\nDiagnostics: ${error?.stack ?? error}`;
+    process.exitCode = 1;
+  }
   writeFileSync(args.output, `${JSON.stringify(report, null, 2)}\n`);
 }
 console.log(JSON.stringify({ output: args.output, status: report.status, error: report.error,

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "evaluationPolicy": "bench/out/compute-program/20260908-encode-metadata/alternating/policy.json",
+  "originalComparison": "bench/out/compute-program/20260908-encode-metadata/alternating/comparison.tsv",
+  "previousQualification": "bench/out/compute-program/20260907-command-storage-qualified/summary.json",
+  "baselineQualification": "bench/out/compute-program/20260908-encode-metadata-qualified/summary.json",
+  "developmentApplication": "heat_diffusion",
+  "transferApplications": ["image_edges", "holoscript_lif"],
+  "reproductionProcessPairs": 8,
+  "expandedProcessPairs": 16,
+  "expandedTimedRuns": 128,
+  "minimumWallMedianReduction": 0.05,
+  "maximumLatencyRegression": 0.05,
+  "maximumCostRegression": 0.10,
+  "minimumImprovedProcessFraction": 0.75,
+  "diagnosticMaxEvents": 131072,
+  "diagnosticProcessRuns": 4,
+  "slowInvocationCount": 20
+}
