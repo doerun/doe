@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { setImmediate } from 'node:timers';
 import { dlopen, FFIType, JSCallback, ptr as bunPtr, toArrayBuffer } from "bun:ffi";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -2599,10 +2600,11 @@ function ensureBunDeviceLostRegistration(device, native) {
     const callback = new JSCallback(
         (reason, msgPtr, msgLen) => {
             resolveDeviceLost(device, mapDeviceLostReason(reason), decodeStringView(msgPtr, msgLen));
-            callback.close();
-            if (device._lostCallback === callback) {
-                device._lostCallback = null;
-            }
+            // The callback trampoline must survive the return through native code.
+            setImmediate(() => {
+                callback.close();
+                if (device._lostCallback === callback) device._lostCallback = null;
+            });
         },
         { args: [FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
     );
@@ -2623,10 +2625,6 @@ function ensureBunDeviceLostRegistration(device, native) {
 
 function setBunDeviceUncapturedErrorHandler(device, native, handler) {
     const setCallback = wgpu?.symbols?.doeNativeDeviceSetUncapturedErrorCallback;
-    if (device._uncapturedErrorCallback) {
-        device._uncapturedErrorCallback.close();
-        device._uncapturedErrorCallback = null;
-    }
     if (typeof setCallback !== "function") {
         if (handler) {
             throw unsupportedBunDeviceCapability("GPUDevice.onuncapturederror");
@@ -2634,6 +2632,11 @@ function setBunDeviceUncapturedErrorHandler(device, native, handler) {
         return;
     }
     setCallback(native, null, null, null);
+    const previous = device._uncapturedErrorCallback;
+    if (previous) {
+        device._uncapturedErrorCallback = null;
+        setImmediate(() => previous.close());
+    }
     if (!handler) {
         return;
     }
@@ -4404,6 +4407,9 @@ const fullSurfaceBackend = {
         setBunDeviceUncapturedErrorHandler(wrapper, native, handler);
     },
     deviceDestroy(native, wrapper) {
+        if (wrapper._uncapturedErrorCallback) {
+            setBunDeviceUncapturedErrorHandler(wrapper, native, null);
+        }
         destroyResource(wrapper.queue, (queue) => wgpu.symbols.wgpuQueueRelease(queue));
         wgpu.symbols.wgpuDeviceRelease(native);
     },

@@ -24,8 +24,9 @@ import { gpu, requestAdapter } from "doe-gpu/native";
 
 const adapter = await requestAdapter();
 if (!adapter) throw new Error("Doe native provider returned no adapter");
-const device = await adapter.requestDevice();
+let device;
 try {
+  device = await adapter.requestDevice();
   const output = await gpu.bind(device).compute({
     code: `@group(0) @binding(0) var<storage, read> input: array<f32>;
            @group(0) @binding(1) var<storage, read_write> output: array<f32>;
@@ -39,9 +40,15 @@ try {
   });
   console.log(output); // Float32Array [2, 4, 6, 8]
 } finally {
-  device.destroy();
+  device?.destroy();
+  adapter.destroy?.();
 }
 ```
+
+The one-shot `gpu.bind(device).compute()` helper releases its temporary buffers,
+shader, pipeline, bindings, and commands after completion or failure. Buffers
+supplied by the caller remain caller-owned. Concurrent one-shot calls retain
+their own temporary commands and resources.
 
 ## Repeated computation
 

@@ -336,12 +336,12 @@ fn create_device_for_adapter(
 
     if (comptime has_vulkan) {
         if (adapter.backend == .vulkan) {
+            const selected_policy = try selected_vulkan_policy();
             const dev = make(DoeDevice) orelse return error.DeviceAllocationFailed;
             const rt = alloc.create(NativeVulkanRuntime) catch {
                 alloc.destroy(dev);
                 return error.DeviceAllocationFailed;
             };
-            const selected_policy = try selected_vulkan_policy();
             rt.* = NativeVulkanRuntime.init_with_backend_policy(
                 alloc,
                 null,

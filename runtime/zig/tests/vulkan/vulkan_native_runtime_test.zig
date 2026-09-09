@@ -9,6 +9,15 @@ const compiler = @import("../../src/compiler/wgsl/mod.zig");
 const compute = @import("../../src/contracts/model/model_compute_types.zig");
 const binding_types = @import("../../src/contracts/model/model_binding_value_types.zig");
 const vk = @import("../../src/backend/vulkan/vk_constants.zig");
+const adapter_probe = @import("../../src/backend/vulkan/vk_adapter_probe.zig");
+
+fn probe_with_allocator(allocator: std.mem.Allocator) !void {
+    _ = try adapter_probe.probe_selected_adapter(allocator, .prefer_graphics_compute);
+}
+
+test "Vulkan adapter selection preserves allocation failures" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, probe_with_allocator, .{});
+}
 
 const REUSE_SHADER =
     \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;

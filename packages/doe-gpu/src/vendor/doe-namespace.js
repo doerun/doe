@@ -1,8 +1,9 @@
 // Legacy Doe helper surface carried forward into the consolidated doe-gpu package.
-// Local imports are limited to config-backed registry metadata used by receipts.
+// Compute helpers share provider resource-release handling.
 
 import { DOE_DETERMINISM_POLICY_REGISTRY } from './doe-determinism-policy.js';
 import { DOE_NUMERIC_STABILITY_POLICY_REGISTRY } from './doe-numeric-stability-policy.js';
+import { releaseOwnedResource } from './webgpu/shared/resource-lifecycle.js';
 
 const DOE_GPU_BUFFER_USAGE = {
   MAP_READ: 0x0001,
@@ -1327,8 +1328,14 @@ function resolvePassTarget(target, label) {
   throw new Error('Doe kernel.encode(...) requires a Doe compute batch or Doe compute pass target.');
 }
 
-function submitCommands(device, encoder) {
-  deferCommandBuffer(device, encoder.finish());
+function submitCommands(device, encoder, owned = null) {
+  const command = encoder.finish();
+  if (owned) {
+    owned.resources.push(command);
+    owned.commands.push(command);
+  } else {
+    deferCommandBuffer(device, command);
+  }
 }
 
 function descriptorWithOptionalLabel(label) {
@@ -1439,12 +1446,13 @@ class DoeKernelBindingsNamespace {
  * - See `gpu.commandEncoder.create(...)` for the lower-level explicit path.
  */
 class DoeComputeBatch {
-  constructor(device, options = {}) {
+  constructor(device, options = {}, owned = null) {
     this.device = device;
     this.label = options.label;
     this._encoder = device.createCommandEncoder(descriptorWithOptionalLabel(options.label));
     this._pass = null;
     this._submitted = false;
+    this._ownedResources = owned;
   }
 
   _ensurePass(label) {
@@ -1513,7 +1521,7 @@ class DoeComputeBatch {
       this._pass.end();
       this._pass = null;
     }
-    submitCommands(this.device, this._encoder);
+    submitCommands(this.device, this._encoder, this._ownedResources);
   }
 }
 
@@ -1807,40 +1815,41 @@ class DoeKernel {
    * - See `gpu.compute.begin(...)` when you want to batch many dispatches.
    * - See `kernel.encode(...)` for the lower-level pass-oriented path.
    */
-  async dispatch(options) {
-    const batch = new DoeComputeBatch(this.device, { label: options.label });
+  async dispatch(options, owned = null) {
+    const batch = new DoeComputeBatch(this.device, { label: options.label }, owned);
     this.encode(batch, options);
     await batch.submit();
   }
 }
 
-function createKernel(device, options) {
+function createKernel(device, options, owned = null) {
+  const retain = (resource) => { owned?.resources.push(resource); return resource; };
   const bindings = (options.bindings ?? []).map(normalizeBinding);
-  const shader = device.createShaderModule({ code: options.code });
+  const shader = retain(device.createShaderModule({ code: options.code }));
   const compute = {
     module: shader,
     entryPoint: options.entryPoint ?? 'main',
   };
-  let pipeline = device.createComputePipeline({
+  let pipeline = retain(device.createComputePipeline({
     layout: 'auto',
     compute,
-  });
+  }));
   let bindGroupLayout = null;
   if (bindings.length === 0) {
-    bindGroupLayout = device.createBindGroupLayout({ entries: [] });
+    bindGroupLayout = retain(device.createBindGroupLayout({ entries: [] }));
   } else if (typeof pipeline?.getBindGroupLayout === 'function') {
-    bindGroupLayout = pipeline.getBindGroupLayout(0);
+    bindGroupLayout = retain(pipeline.getBindGroupLayout(0));
   } else {
-    bindGroupLayout = device.createBindGroupLayout({
+    bindGroupLayout = retain(device.createBindGroupLayout({
       entries: bindings.map(bindGroupLayoutEntry),
-    });
-    const pipelineLayout = device.createPipelineLayout({
+    }));
+    const pipelineLayout = retain(device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout],
-    });
-    pipeline = device.createComputePipeline({
+    }));
+    pipeline = retain(device.createComputePipeline({
       layout: pipelineLayout,
       compute,
-    });
+    }));
   }
   return new DoeKernel(device, pipeline, bindGroupLayout, options.entryPoint ?? 'main', bindings.length);
 }
@@ -1877,11 +1886,16 @@ function createBufferFromData(device, data, options = {}) {
     size: view.byteLength,
     usage: resolveBufferUsage(usage),
   }), usage);
-  device.queue.writeBuffer(buffer, 0, view);
+  try {
+    device.queue.writeBuffer(buffer, 0, view);
+  } catch (error) {
+    releaseOwnedResource(buffer);
+    throw error;
+  }
   return buffer;
 }
 
-async function readBuffer(device, buffer, type, options = {}) {
+async function readBuffer(device, buffer, type, options = {}, owned = null) {
   if (arguments.length === 2 && buffer && typeof buffer === 'object') {
     return readBuffer(device, buffer.buffer, buffer.type, buffer);
   }
@@ -1901,6 +1915,7 @@ async function readBuffer(device, buffer, type, options = {}) {
   }
   if (((buffer.usage ?? 0) & DOE_GPU_BUFFER_USAGE.MAP_READ) !== 0) {
     const pendingCommands = drainPendingEncoders(device);
+    if (owned) pendingCommands.push(...owned.commands.splice(0));
     if (pendingCommands.length > 0) {
       device.queue.submit(pendingCommands);
     }
@@ -1915,23 +1930,23 @@ async function readBuffer(device, buffer, type, options = {}) {
     buffer.unmap();
     return new type(copy);
   }
-  let staging = DOE_READBACK_STAGING.get(buffer) ?? null;
+  let staging = owned ? null : DOE_READBACK_STAGING.get(buffer) ?? null;
   if (!staging || staging.size < size || staging._destroyed) {
     staging = device.createBuffer({
       label: options.label ?? undefined,
       size,
       usage: DOE_GPU_BUFFER_USAGE.COPY_DST | DOE_GPU_BUFFER_USAGE.MAP_READ,
     });
-    DOE_READBACK_STAGING.set(buffer, staging);
-  }
-  const pendingCommands = drainPendingEncoders(device);
-  const commands = [];
-  if (pendingCommands.length > 0) {
-    commands.push(...pendingCommands);
+    if (owned) owned.resources.push(staging);
+    else DOE_READBACK_STAGING.set(buffer, staging);
   }
   const encoder = device.createCommandEncoder(descriptorWithOptionalLabel(options.label));
   encoder.copyBufferToBuffer(buffer, offset, staging, 0, size);
-  commands.push(encoder.finish());
+  const readbackCommand = encoder.finish();
+  owned?.resources.push(readbackCommand);
+  const commands = drainPendingEncoders(device);
+  if (owned) commands.push(...owned.commands.splice(0));
+  commands.push(readbackCommand);
   device.queue.submit(commands);
   const fastRead = tryMapReadCopyUnmap(staging, type, 0, size);
   if (fastRead !== null) {
@@ -1945,13 +1960,15 @@ async function readBuffer(device, buffer, type, options = {}) {
   return new type(copy);
 }
 
-async function runKernel(device, options) {
-  const kernel = createKernel(device, options);
+async function runKernel(device, options, owned = null) {
+  const kernel = createKernel(device, options, owned);
+  const bindings = owned ? createBindingSet(kernel, options.bindings ?? [], options) : options.bindings ?? [];
+  if (owned && bindings.bindGroup) owned.resources.push(bindings.bindGroup);
   await kernel.dispatch({
-    bindings: options.bindings ?? [],
+    bindings,
     workgroups: options.workgroups,
     label: options.label,
-  });
+  }, owned);
 }
 
 function usesRawNumericFlags(usage) {
@@ -2048,26 +2065,27 @@ function normalizeOnceOutput(device, output, inputs) {
 }
 
 async function computeOnce(device, options) {
-  const inputs = (options.inputs ?? []).map((input, index) => normalizeOnceInput(device, input, index));
-  const output = normalizeOnceOutput(device, options.output, inputs);
-  validateWorkgroups(device, options.workgroups);
+  const owned = { resources: [], commands: [] };
   try {
+    const inputs = (options.inputs ?? []).map((input, index) => {
+      const normalized = normalizeOnceInput(device, input, index);
+      if (normalized.owned) owned.resources.push(normalized.buffer);
+      return normalized;
+    });
+    const output = normalizeOnceOutput(device, options.output, inputs);
+    owned.resources.push(output.buffer);
+    validateWorkgroups(device, options.workgroups);
     await runKernel(device, {
       code: options.code,
       entryPoint: options.entryPoint,
       bindings: [...inputs.map((input) => input.binding), output.binding],
       workgroups: options.workgroups,
       label: options.label,
-    });
-    return await readBuffer(device, output.buffer, output.type, output.read_options);
+    }, owned);
+    return await readBuffer(device, output.buffer, output.type, output.read_options, owned);
   } finally {
-    if (typeof output.buffer.destroy === 'function') {
-      output.buffer.destroy();
-    }
-    for (const input of inputs) {
-      if (input.owned && typeof input.buffer.destroy === 'function') {
-        input.buffer.destroy();
-      }
+    for (const resource of owned.resources.reverse()) {
+      releaseOwnedResource(resource);
     }
   }
 }

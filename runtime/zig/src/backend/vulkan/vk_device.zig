@@ -231,7 +231,10 @@ pub fn find_memory_type_index_with_preference(self: anytype, type_bits: u32, req
 fn select_preferred_physical_device(self: anytype, devices: []const VkPhysicalDevice) !PhysicalDeviceSelection {
     var best: ?PhysicalDeviceSelection = null;
     for (devices, 0..) |device, index| {
-        const queue = select_queue_family_for_device(self, device) catch continue;
+        const queue = select_queue_family_for_device(self, device) catch |err| switch (err) {
+            error.UnsupportedFeature => continue,
+            else => return err,
+        };
         const score = score_physical_device(device, queue, self.queue_family_policy);
         const candidate = PhysicalDeviceSelection{
             .index = @as(u32, @intCast(index)),

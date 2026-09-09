@@ -1,5 +1,21 @@
 # Reusable compute programs
 
+## Current A/A findings and correctness repairs
+
+The [accepted-package A/A control](../../bench/out/compute-program/20260908-startup-aa/completion.md)
+violates regression limits despite identical archives. It does not waive prior
+failures. The subsequent [adapter instance experiment](../../bench/out/compute-program/20260908-adapter-instance/completion.md)
+removes repeated instance creation but fails frozen application regression
+limits; its optimization remains isolated and rejected.
+
+The separate [helper cleanup repair](../../bench/out/compute-program/20260908-helper-cleanup/README.md)
+releases one-shot temporary resources, preserves borrowed inputs and concurrent
+calls, repairs Bun callback lifetime, and preserves native allocation failures.
+Installed qualification is retained across the controlled package hosts. Public
+contracts, original benchmark archives, and accepted instance ownership remain
+unchanged. Ordinary-provider advantage and independent operator reproduction
+remain open.
+
 ## Rejected startup correction and reproducible handoff
 
 The [startup experiment](../../bench/out/compute-program/20260908-startup-enumeration/completion.md)

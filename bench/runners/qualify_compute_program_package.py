@@ -114,6 +114,7 @@ def main() -> int:
                     shutil.copyfile(ROOT / source, output / Path(source).name)
                     replacements[f'../../../../{source}'] = f'./{Path(source).name}'
                 regressions = [('commands', 'native-command-ownership'),
+                               ('one-shot', 'one-shot-resources'),
                                ('reflection', 'native-reflection'),
                                ('rendering', 'native-render-ownership'),
                                ('plans', 'compute-program'), ('timestamps', 'timestamp-query'),

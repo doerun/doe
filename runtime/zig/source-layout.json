@@ -1276,9 +1276,9 @@
       },
       "src/backend/vulkan/vk_device.zig": {
         "decision": "Keep",
-        "moduleSha256": "8dfbaa6a473dc53d0a5c6f03b4d04be5f67b84068f1dcd833586ff053fccf561",
-        "reason": "Keep: physical device selection owns timestamp calibration; uninitialized runtime state cannot imply a nanosecond clock.",
-        "reviewer": "codex-gpu-program/2026-09-05"
+        "moduleSha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb",
+        "reason": "Keep: physical-device selection propagates allocation failure instead of silently treating it as an unsupported queue; timestamp calibration remains unchanged.",
+        "reviewer": "codex-lifecycle-failure/2026-09-08"
       },
       "src/backend/vulkan/vk_device_caps.zig": {
         "decision": "Keep",
@@ -3556,9 +3556,9 @@
       },
       "src/native/lifecycle/doe_instance_device_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "1d54b204820da95c6eb61852b0159fad2cb711158598d8cde4db13ffd6a4a3df",
-        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
-        "reviewer": "codex-command-storage/2026-09-07"
+        "moduleSha256": "2b78e6e510385be446b276166ebfd0a15acfdbc51c776438f82c163fab2fccbe",
+        "reason": "Keep: resolve runtime policy before allocating Vulkan device objects so policy rejection preserves rollback; device-owned command storage and instance lifetimes remain unchanged.",
+        "reviewer": "codex-lifecycle-failure/2026-09-08"
       },
       "src/native/mod.zig": {
         "decision": "Keep",

@@ -29,8 +29,9 @@ export async function runFirstKernel(runtimeHost, beforeRelease = null) {
   const startedAt = performance.now();
   const adapter = await requestAdapter();
   if (!adapter) throw new Error('Doe native provider returned no adapter');
-  const device = await adapter.requestDevice();
+  let device;
   try {
+    device = await adapter.requestDevice();
     const output = await gpu.bind(device).compute({
       code,
       inputs: [input],
@@ -58,6 +59,7 @@ export async function runFirstKernel(runtimeHost, beforeRelease = null) {
       },
     };
   } finally {
-    device.destroy();
+    device?.destroy();
+    adapter.destroy?.();
   }
 }

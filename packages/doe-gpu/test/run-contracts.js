@@ -17,6 +17,7 @@ const contracts = [
   './unit/program-bundle-runner.test.js',
   './unit/full-surface-lifecycle.test.js',
   './unit/compute-buffer-identity.test.js',
+  './unit/one-shot-resources.test.js',
   './unit/capability-publication.test.js',
   './unit/provider-diagnostics.test.js',
   './unit/stage-platform-freshness.test.js',
