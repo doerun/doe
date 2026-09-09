@@ -11,6 +11,8 @@ const vk_device_caps = @import("vk_device_caps.zig");
 const vk_feature_caps = @import("vk_feature_caps.zig");
 
 pub const AdapterProbe = struct {
+    // Ownership transfers to the native adapter after its allocation succeeds.
+    instance: c.VkInstance,
     identity: native_runtime.AdapterIdentity,
     feature_caps: vk_feature_caps.VulkanFeatureCaps,
     device_caps: vk_device_caps.VulkanDeviceCaps,
@@ -26,12 +28,13 @@ pub fn probe_selected_adapter(
         .queue_family_policy = queue_family_policy,
     };
     try vk_device.create_instance(&probe);
-    defer vk_device.destroy_instance_only(&probe);
+    errdefer vk_device.destroy_instance_only(&probe);
     try vk_device.select_physical_device(&probe);
 
     const identity = query_identity(probe.physical_device);
     const timestamp_valid_bits = probe.queue_family_timestamp_valid_bits_value_cache orelse 0;
     return .{
+        .instance = probe.instance,
         .identity = identity,
         .feature_caps = vk_feature_caps.query(probe.physical_device).caps,
         .device_caps = vk_device_caps.query_device_caps(
@@ -39,6 +42,10 @@ pub fn probe_selected_adapter(
             timestamp_valid_bits,
         ),
     };
+}
+
+pub fn release_instance(instance: c.VkInstance) void {
+    if (instance != null) c.vkDestroyInstance(instance, null);
 }
 
 pub fn query_identity(physical_device: c.VkPhysicalDevice) native_runtime.AdapterIdentity {

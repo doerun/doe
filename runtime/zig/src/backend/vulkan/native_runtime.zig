@@ -143,6 +143,7 @@ pub const NativeVulkanRuntime = struct {
     samplers: std.AutoHashMapUnmanaged(u64, descriptor_identity.Sampler) = .{},
 
     has_instance: bool = false,
+    instance_is_borrowed: bool = false,
     has_device: bool = false,
     has_command_pool: bool = false,
     has_primary_command_buffer: bool = false,
@@ -210,9 +211,36 @@ pub const NativeVulkanRuntime = struct {
         deferred_submission_sync_policy: webgpu.DeferredSubmissionSyncPolicy,
         vulkan_subgroup_size_policy: backend_policy.VulkanSubgroupSizePolicy,
     ) !NativeVulkanRuntime {
+        return init_with_instance(allocator, kernel_root, pipeline_cache_configuration, queue_family_policy, deferred_submission_sync_policy, vulkan_subgroup_size_policy, null);
+    }
+
+    /// The caller retains the instance owner until this runtime is deinitialized.
+    pub fn init_with_borrowed_instance(
+        allocator: std.mem.Allocator,
+        instance: c.VkInstance,
+        queue_family_policy: webgpu.QueueFamilyPolicy,
+        deferred_submission_sync_policy: webgpu.DeferredSubmissionSyncPolicy,
+        vulkan_subgroup_size_policy: backend_policy.VulkanSubgroupSizePolicy,
+    ) !NativeVulkanRuntime {
+        if (instance == null) return error.InvalidAdapterInstance;
+        return init_with_instance(allocator, null, .{}, queue_family_policy, deferred_submission_sync_policy, vulkan_subgroup_size_policy, instance);
+    }
+
+    fn init_with_instance(
+        allocator: std.mem.Allocator,
+        kernel_root: ?[]const u8,
+        pipeline_cache_configuration: runtime_configuration.PipelineCacheConfiguration,
+        queue_family_policy: webgpu.QueueFamilyPolicy,
+        deferred_submission_sync_policy: webgpu.DeferredSubmissionSyncPolicy,
+        vulkan_subgroup_size_policy: backend_policy.VulkanSubgroupSizePolicy,
+        borrowed_instance: c.VkInstance,
+    ) !NativeVulkanRuntime {
         var self = NativeVulkanRuntime{
             .allocator = allocator,
             .kernel_root = kernel_root,
+            .instance = borrowed_instance,
+            .has_instance = borrowed_instance != null,
+            .instance_is_borrowed = borrowed_instance != null,
             .pipeline_cache = vk_pipeline_cache_persistent.VulkanPipelineCache.init(allocator, pipeline_cache_configuration),
             .queue_family_policy = queue_family_policy,
             .deferred_submission_sync_policy = deferred_submission_sync_policy,
@@ -296,12 +324,7 @@ pub const NativeVulkanRuntime = struct {
             self.device = null;
             self.queue = null;
         }
-        if (self.has_instance) {
-            c.vkDestroyInstance(self.instance, null);
-            self.has_instance = false;
-            self.instance = null;
-            self.physical_device = null;
-        }
+        vk_device.destroy_instance_only(self);
     }
 
     // --- Kernel/shader API ---

@@ -269,11 +269,13 @@ fn create_adapter_for_instance(inst: ?*anyopaque) CreateAdapterError!*DoeAdapter
                     alloc,
                     selected_policy.queue_family_policy,
                 ) catch return error.VkAdapterProbeFailed;
+                errdefer vk_adapter_probe.release_instance(adapter_probe.instance);
                 const identity = adapter_probe.identity;
                 const adapter = make(DoeAdapter) orelse return error.AdapterAllocationFailed;
                 if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
                 adapter.* = .{
                     .backend = .vulkan,
+                    .vk_instance = adapter_probe.instance,
                     .instance = retained_instance,
                     .vendor_id = identity.vendor_id,
                     .device_id = identity.device_id,
@@ -336,15 +338,15 @@ fn create_device_for_adapter(
 
     if (comptime has_vulkan) {
         if (adapter.backend == .vulkan) {
+            const selected_policy = try selected_vulkan_policy();
             const dev = make(DoeDevice) orelse return error.DeviceAllocationFailed;
             const rt = alloc.create(NativeVulkanRuntime) catch {
                 alloc.destroy(dev);
                 return error.DeviceAllocationFailed;
             };
-            const selected_policy = try selected_vulkan_policy();
-            rt.* = NativeVulkanRuntime.init_with_backend_policy(
+            rt.* = NativeVulkanRuntime.init_with_borrowed_instance(
                 alloc,
-                null,
+                @ptrCast(adapter.vk_instance),
                 selected_policy.queue_family_policy,
                 selected_policy.deferred_submission_sync_policy,
                 selected_policy.vulkan_subgroup_size_policy,
@@ -556,12 +558,15 @@ pub export fn doeNativeAdapterGetInstance(raw: ?*anyopaque) callconv(.c) ?*anyop
 }
 
 pub export fn doeNativeAdapterRelease(raw: ?*anyopaque) callconv(.c) void {
-    // Every DoeDevice retains its adapter; the adapter owns their shared Metal device.
+    // Every DoeDevice retains its adapter through backend resource cleanup.
     if (cast(DoeAdapter, raw)) |a| {
         if (!native_helpers.object_should_destroy(a)) return;
         label_store.remove(raw);
         if (comptime has_vulkan) {
-            if (a.backend == .vulkan) vulkan_feature_cache.remove_adapter(raw);
+            if (a.backend == .vulkan) {
+                vulkan_feature_cache.remove_adapter(raw);
+                vk_adapter_probe.release_instance(@ptrCast(a.vk_instance));
+            }
         }
         if (a.backend == .d3d12) d3d12_device_caps.remove_adapter_caps(raw);
         if (a.backend == .metal) if (a.mtl_device) |device| metal_bridge_release(device);

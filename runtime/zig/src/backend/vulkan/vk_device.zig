@@ -30,7 +30,7 @@ pub const PhysicalDeviceSelection = struct {
 };
 
 pub fn bootstrap(self: anytype) !void {
-    try create_instance(self);
+    if (!self.has_instance) try create_instance(self);
     try select_physical_device(self);
     try create_device_and_queue(self);
     // Device-request latency matters for package cold-start benchmarks.
@@ -78,9 +78,10 @@ pub fn create_instance(self: anytype) !void {
 
 pub fn destroy_instance_only(self: anytype) void {
     if (!self.has_instance) return;
-    c.vkDestroyInstance(self.instance, null);
+    if (!self.instance_is_borrowed) c.vkDestroyInstance(self.instance, null);
     self.instance = null;
     self.has_instance = false;
+    self.instance_is_borrowed = false;
     self.physical_device = null;
 }
 
@@ -231,7 +232,10 @@ pub fn find_memory_type_index_with_preference(self: anytype, type_bits: u32, req
 fn select_preferred_physical_device(self: anytype, devices: []const VkPhysicalDevice) !PhysicalDeviceSelection {
     var best: ?PhysicalDeviceSelection = null;
     for (devices, 0..) |device, index| {
-        const queue = select_queue_family_for_device(self, device) catch continue;
+        const queue = select_queue_family_for_device(self, device) catch |err| switch (err) {
+            error.UnsupportedFeature => continue,
+            else => return err,
+        };
         const score = score_physical_device(device, queue, self.queue_family_policy);
         const candidate = PhysicalDeviceSelection{
             .index = @as(u32, @intCast(index)),

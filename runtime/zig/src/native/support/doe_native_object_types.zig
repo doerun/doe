@@ -48,6 +48,7 @@ pub const DoeAdapter = struct {
     ref_count: u32 = 1,
     instance: ?*DoeInstance = null,
     mtl_device: ?*anyopaque = null,
+    vk_instance: ?*anyopaque = null,
     backend: backend_contract.NativeBackendKind = .metal,
     vendor_id: u32 = 0,
     device_id: u32 = 0,

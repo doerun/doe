@@ -75,6 +75,19 @@ async function runWorkerGeneration(generation) {
 }
 
 if (isMainThread) {
+  const sharedAdapter = await createNativeDirect().requestAdapter();
+  const sharedDevices = [];
+  try {
+    sharedDevices.push(await sharedAdapter.requestDevice());
+    sharedDevices.push(await sharedAdapter.requestDevice());
+    sharedAdapter.destroy();
+    await copyWithNativeDirect(sharedDevices[0], inputFor(0, 0, 0));
+    sharedDevices[0].destroy();
+    await copyWithNativeDirect(sharedDevices[1], inputFor(1, 0, 0));
+  } finally {
+    for (const sharedDevice of sharedDevices) sharedDevice.destroy();
+    sharedAdapter.destroy();
+  }
   const adapter = await createNativeDirect().requestAdapter();
   const device = await adapter.requestDevice();
   try {

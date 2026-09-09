@@ -1,5 +1,20 @@
 # Reusable compute programs
 
+## Adapter instance retention candidate
+
+The [adapter instance experiment](../../bench/out/compute-program/20260908-adapter-instance/README.md)
+follows the accepted-package A/A control and bounded startup profiling. Native
+adapter ownership now retains its Vulkan instance for borrowing devices, with
+physical-device selection and exact identity checks preserved. Allocation-failure
+tests also reproduce and repair swallowed queue-selection allocation errors.
+Invalid runtime policy is resolved before device objects are allocated.
+
+Native tests, retained-package qualification, and explicit native fault/release
+checks are recorded in the experiment directory. Uninstrumented application
+acceptance remains pending; this branch is an isolated candidate. Public fields,
+evaluation schemas, workload requirements, and existing gate thresholds are
+unchanged. Earlier rejections and the accepted main-checkout runtime remain intact.
+
 ## Rejected startup correction and reproducible handoff
 
 The [startup experiment](../../bench/out/compute-program/20260908-startup-enumeration/completion.md)

@@ -1228,15 +1228,15 @@
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "04db092e9d827c128811c6fa396934a4ef1a95011e3fd18c865c4b126ee719e2",
-        "reason": "Keep: buffer/image transfers have one Vulkan recording owner; obsolete CPU readback delegation is removed.",
-        "reviewer": "codex-texture-transfer/2026-09-07"
+        "moduleSha256": "d00aae9945afb75b65412a1092b999431458c5d107ab8b99b2362bdb9bba4b39",
+        "reason": "Keep: runtime construction and cleanup distinguish owned instances from adapter-retained instances; device state remains local.",
+        "reviewer": "codex-adapter-instance/2026-09-08"
       },
       "src/backend/vulkan/vk_adapter_probe.zig": {
         "decision": "Keep",
-        "moduleSha256": "f3470c80c3cdfc7da3c2f0a03d7653c68782239813a85ae2169c50bffe5b0ff2",
-        "reason": "Keep: owns the single-selection binding between Vulkan adapter identity, feature capabilities, and hardware limits.",
-        "reviewer": "codex-runtime-ownership/2026-08-15"
+        "moduleSha256": "7e5afa945cc2435ccc65010370b88197accd35c921a9b23d384b0093aab91d65",
+        "reason": "Keep: adapter probing transfers its native instance with verified identity and capability results; failed construction releases ownership.",
+        "reviewer": "codex-adapter-instance/2026-09-08"
       },
       "src/backend/vulkan/vk_async_dispatch.zig": {
         "decision": "Keep",
@@ -1276,9 +1276,9 @@
       },
       "src/backend/vulkan/vk_device.zig": {
         "decision": "Keep",
-        "moduleSha256": "8dfbaa6a473dc53d0a5c6f03b4d04be5f67b84068f1dcd833586ff053fccf561",
-        "reason": "Keep: physical device selection owns timestamp calibration; uninitialized runtime state cannot imply a nanosecond clock.",
-        "reviewer": "codex-gpu-program/2026-09-05"
+        "moduleSha256": "09569e4be37df97159972d473f5357de14e34a87cbc19306d142376d8d6334dd",
+        "reason": "Keep: device bootstrap borrows adapter-owned instances; physical-device selection preserves allocation errors and timestamp calibration.",
+        "reviewer": "codex-adapter-instance/2026-09-08"
       },
       "src/backend/vulkan/vk_device_caps.zig": {
         "decision": "Keep",
@@ -3556,9 +3556,9 @@
       },
       "src/native/lifecycle/doe_instance_device_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "1d54b204820da95c6eb61852b0159fad2cb711158598d8cde4db13ffd6a4a3df",
-        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
-        "reviewer": "codex-command-storage/2026-09-07"
+        "moduleSha256": "7c819de20e4274445bafaa9e0afd13815e612e821d0684a2969041a997abbf5b",
+        "reason": "Keep: adapter-owned Vulkan instances outlive all borrowing devices; policy failure precedes device allocation and cleanup retains exact identity checks.",
+        "reviewer": "codex-adapter-instance/2026-09-08"
       },
       "src/native/mod.zig": {
         "decision": "Keep",
@@ -3754,9 +3754,9 @@
       },
       "src/native/support/doe_native_object_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "0c498ef8d47b30888411cc41a98645b59df94374265b79d0e1214845cd7d5107",
-        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
-        "reviewer": "codex-command-storage/2026-09-07"
+        "moduleSha256": "7f51f13623604fac656e9be62f79cdf68ac5c02ceb1fd1ae8483fe463797d6d9",
+        "reason": "Keep: native adapter owns its Vulkan instance while each device retains the adapter through cleanup.",
+        "reviewer": "codex-adapter-instance/2026-09-08"
       },
       "src/native/support/doe_native_runtime_helpers.zig": {
         "decision": "Keep",

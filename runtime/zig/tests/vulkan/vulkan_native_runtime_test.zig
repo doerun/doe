@@ -9,6 +9,66 @@ const compiler = @import("../../src/compiler/wgsl/mod.zig");
 const compute = @import("../../src/contracts/model/model_compute_types.zig");
 const binding_types = @import("../../src/contracts/model/model_binding_value_types.zig");
 const vk = @import("../../src/backend/vulkan/vk_constants.zig");
+const adapter_probe = @import("../../src/backend/vulkan/vk_adapter_probe.zig");
+
+fn probe_with_allocator(allocator: std.mem.Allocator) !void {
+    const probe = try adapter_probe.probe_selected_adapter(allocator, .prefer_graphics_compute);
+    defer adapter_probe.release_instance(probe.instance);
+}
+
+fn borrow_with_allocator(allocator: std.mem.Allocator, instance: vk.VkInstance) !void {
+    var rt = try native_runtime.NativeVulkanRuntime.init_with_borrowed_instance(
+        allocator,
+        instance,
+        .prefer_graphics_compute,
+        .prefer_timeline_semaphore,
+        .fixed_32_when_supported,
+    );
+    defer rt.deinit();
+}
+
+test "Vulkan adapter instance survives borrowed device cleanup and allocation failure" {
+    const probe = try adapter_probe.probe_selected_adapter(std.testing.allocator, .prefer_graphics_compute);
+    defer adapter_probe.release_instance(probe.instance);
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, probe_with_allocator, .{});
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, borrow_with_allocator, .{probe.instance});
+    {
+        var second = try native_runtime.NativeVulkanRuntime.init_with_borrowed_instance(
+            std.testing.allocator,
+            probe.instance,
+            .prefer_graphics_compute,
+            .prefer_timeline_semaphore,
+            .fixed_32_when_supported,
+        );
+        defer second.deinit();
+        {
+            var first = try native_runtime.NativeVulkanRuntime.init_with_borrowed_instance(
+                std.testing.allocator,
+                probe.instance,
+                .prefer_graphics_compute,
+                .prefer_timeline_semaphore,
+                .fixed_32_when_supported,
+            );
+            defer first.deinit();
+            try std.testing.expect(first.instance == probe.instance and second.instance == probe.instance);
+            try std.testing.expect(first.device != second.device);
+        }
+        try vk.check_vk(vk.vkQueueWaitIdle(second.queue));
+    }
+    var count: u32 = 0;
+    try vk.check_vk(vk.vkEnumeratePhysicalDevices(probe.instance, &count, null));
+    try std.testing.expect(count > 0);
+}
+
+test "Vulkan borrowed device rejects a missing adapter instance" {
+    try std.testing.expectError(error.InvalidAdapterInstance, native_runtime.NativeVulkanRuntime.init_with_borrowed_instance(
+        std.testing.allocator,
+        null,
+        .prefer_graphics_compute,
+        .prefer_timeline_semaphore,
+        .fixed_32_when_supported,
+    ));
+}
 
 const REUSE_SHADER =
     \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;
