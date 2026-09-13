@@ -12,6 +12,7 @@ import json
 import os
 import re
 import time
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,33 @@ DISABLED_MODE = "off"
 SIDECAR_SUFFIX = ".gpu-activity.json"
 ENGINE_PREFIX = "drm-engine-"
 CAPACITY_PREFIX = "drm-engine-capacity-"
+STAT_PARENT_INDEX = 1
+STAT_START_INDEX = 19
+
+
+def read_process_identity(process: Path) -> dict[str, Any] | None:
+    """Read diagnostic identity without command arguments or environment data."""
+    try:
+        raw = (process / "stat").read_text(encoding="utf-8", errors="replace")
+    except (PermissionError, FileNotFoundError, ProcessLookupError):
+        return None
+    prefix, separator, fields = raw.rpartition(") ")
+    pid, opening, name = prefix.partition(" (")
+    values = fields.split()
+    if (not separator or not opening or pid != process.name
+            or len(values) <= STAT_START_INDEX):
+        raise ValueError(f"Malformed process identity: {process / 'stat'}")
+    parent_pid = int(values[STAT_PARENT_INDEX])
+    start_ticks = int(values[STAT_START_INDEX])
+    if parent_pid < 0 or start_ticks < 0:
+        raise ValueError(f"Negative process identity: {process / 'stat'}")
+    return {"name": name, "parentPid": parent_pid, "startTicks": start_ticks}
+
+
+def read_boot_id(proc_root: Path = PROC_ROOT) -> str:
+    """Scope retained PID/start-tick identities to the observed host boot."""
+    return str(uuid.UUID((proc_root / "sys/kernel/random/boot_id").read_text(
+        encoding="utf-8").strip()))
 
 
 def detect_target(drm_class: Path = DRM_CLASS) -> dict[str, Any]:
@@ -40,7 +68,8 @@ def detect_target(drm_class: Path = DRM_CLASS) -> dict[str, Any]:
     node = nodes[0]
     device = (node / "device").resolve(strict=True)
     if not re.fullmatch(r"[0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2}\.[0-7]", device.name):
-        raise ValueError(f"GPU activity observation requires a PCI device: {device}")
+        raise ValueError(
+            f"GPU activity observation requires a PCI device: {device}")
     return {
         "renderNode": f"/dev/dri/{node.name}",
         "pciDevice": device.name,
@@ -52,19 +81,25 @@ def detect_target(drm_class: Path = DRM_CLASS) -> dict[str, Any]:
 def read_snapshot(
     target: dict[str, Any], proc_root: Path = PROC_ROOT
 ) -> dict[str, Any]:
-    """Retain raw matching fdinfo and visibility gaps without inspecting commands."""
+    """Retain matching fdinfo, stable process identity, and visibility gaps."""
     records = []
     unreadable = set()
     for process in sorted(proc_root.iterdir()):
         if not process.name.isdigit():
             continue
         pid = int(process.name)
+        process_records = []
+        identity_before = None
+        identity_read = False
         try:
             descriptors = list((process / "fd").iterdir())
             for descriptor in descriptors:
                 try:
                     if not os.readlink(descriptor).startswith("/dev/dri/"):
                         continue
+                    if not identity_read:
+                        identity_before = read_process_identity(process)
+                        identity_read = True
                     contents = (process / "fdinfo" / descriptor.name).read_text(
                         encoding="utf-8"
                     )
@@ -74,7 +109,7 @@ def read_snapshot(
                         if ":" in line
                     )
                     if fields.get("drm-pdev", "").strip() == target["pciDevice"]:
-                        records.append(
+                        process_records.append(
                             {
                                 "pid": pid,
                                 "fd": int(descriptor.name),
@@ -89,6 +124,12 @@ def read_snapshot(
             unreadable.add(pid)
         except (FileNotFoundError, ProcessLookupError):
             continue
+        if process_records:
+            identity_after = read_process_identity(process)
+            identity = (identity_before
+                        if identity_before == identity_after else None)
+            records.extend(record | {"process": identity}
+                           for record in process_records)
     return {
         "monotonicNs": time.monotonic_ns(),
         "fdinfo": records,
@@ -111,7 +152,8 @@ def client_counters(
                 raise ValueError(f"Duplicate DRM fdinfo field: {key}")
             fields[key] = value.strip()
         if fields.get("drm-pdev") != pci_device:
-            raise ValueError("GPU activity fdinfo belongs to a different PCI device")
+            raise ValueError(
+                "GPU activity fdinfo belongs to a different PCI device")
         client_id = fields.get("drm-client-id", "")
         if not client_id.isdecimal() or not fields.get("drm-driver"):
             raise ValueError(
@@ -139,7 +181,8 @@ def reject_activity(snapshots: list[dict[str, Any]], pci_device: str) -> None:
     previous = client_counters(before, pci_device)
     current = client_counters(after, pci_device)
     for client_id in previous.keys() - current.keys():
-        raise ValueError(f"GPU activity coverage lost foreign DRM client {client_id}")
+        raise ValueError(
+            f"GPU activity coverage lost foreign DRM client {client_id}")
     for client_id, engines in current.items():
         old = previous.get(client_id, {})
         if old.keys() - engines.keys():
@@ -160,7 +203,8 @@ def reject_activity(snapshots: list[dict[str, Any]], pci_device: str) -> None:
 
 def requires_observation(policy: dict[str, Any], phase: str) -> bool:
     return (
-        phase == "measure" and policy.get("gpuActivity", DISABLED_MODE) == ACTIVITY_MODE
+        phase == "measure" and policy.get(
+            "gpuActivity", DISABLED_MODE) == ACTIVITY_MODE
     )
 
 
@@ -177,13 +221,15 @@ def capture_activity(
             "Linux DRM GPU activity observation requires the Vulkan backend"
         )
     target = detect_target()
+    boot_id = read_boot_id()
     before = read_snapshot(target)
     try:
         yield
     finally:
         after = read_snapshot(target)
         record = {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
+            "bootId": boot_id,
             "kind": "compute_program_gpu_activity",
             "scope": "readable-clients-at-process-boundaries",
             "policyHash": policy_hash,
@@ -211,7 +257,8 @@ def validate_activity(
     if report["backend"] != "vulkan" or record["policyHash"] != report["policyHash"]:
         raise ValueError(f"{sidecar}: GPU activity policy or backend mismatch")
     if record["evaluationHash"] != file_sha256(path):
-        raise ValueError(f"{sidecar}: GPU activity belongs to a different evaluation")
+        raise ValueError(
+            f"{sidecar}: GPU activity belongs to a different evaluation")
     if report["provider"] != "dawn":
         adapter = report["adapter"]
         vendor = (
@@ -228,5 +275,6 @@ def validate_activity(
             record["target"]["vendorId"],
             record["target"]["deviceId"],
         ):
-            raise ValueError(f"{sidecar}: GPU activity belongs to a different adapter")
+            raise ValueError(
+                f"{sidecar}: GPU activity belongs to a different adapter")
     reject_activity(record["snapshots"], record["target"]["pciDevice"])

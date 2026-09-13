@@ -14,7 +14,14 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": 1
+      "oneOf": [
+        {
+          "const": 1
+        },
+        {
+          "const": 2
+        }
+      ]
     },
     "kind": {
       "const": "compute_program_gpu_activity"
@@ -104,6 +111,16 @@
                 "contents": {
                   "type": "string",
                   "minLength": 1
+                },
+                "process": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/$defs/processIdentity"
+                    }
+                  ]
                 }
               }
             }
@@ -118,6 +135,89 @@
           }
         }
       }
+    },
+    "bootId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
     }
-  }
+  },
+  "$defs": {
+    "processIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "parentPid",
+        "startTicks"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "parentPid": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "startTicks": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "bootId"
+          ]
+        },
+        "properties": {
+          "snapshots": {
+            "items": {
+              "properties": {
+                "fdinfo": {
+                  "items": {
+                    "not": {
+                      "required": [
+                        "process"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "required": [
+          "bootId"
+        ],
+        "properties": {
+          "snapshots": {
+            "items": {
+              "properties": {
+                "fdinfo": {
+                  "items": {
+                    "required": [
+                      "process"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

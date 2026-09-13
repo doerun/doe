@@ -604,6 +604,18 @@ missing counters, and counter regressions reject timing admission. Matrix
 verification recomputes admission from the raw sidecar and requires every run
 to use the matrix's policy. Numerical audit execution is unchanged.
 
+GPU activity sidecar version 2 adds the host `bootId` and a nullable `process`
+identity on each retained descriptor: task `name`, `parentPid`, and `startTicks`
+from [Linux process stat](https://man7.org/linux/man-pages/man5/proc_pid_stat.5.html).
+Start ticks are relative to that boot, not a wall-clock timestamp. The observer
+reads identity around descriptor collection; inaccessible, exited, or changed
+identities remain null while raw GPU counters remain available for rejection.
+Task names are diagnostic labels, not executable identity or ownership proof.
+Arguments and environment data are not collected. Version 1 remains readable
+without these fields and receives no retroactive attribution. This observer
+revision requires a fresh frozen calibration; thresholds, counter admission,
+application timing scopes, and accepted runtime bytes are unchanged.
+
 The observer covers readable clients at process boundaries. It records unreadable
 processes and cannot observe clients that start and exit between snapshots.
 Passing this check does not prove exclusive access or replace an isolated

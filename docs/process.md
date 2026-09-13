@@ -495,7 +495,9 @@ Application policies explicitly select host GPU activity observation. When
 `gpuActivity=reject-observed-linux-drm`, measured runs require hash-bound raw
 DRM observations and fail admission on observed foreign activity or lost counter
 continuity. The matrix gate recomputes this check and enforces common policy
-identity. Boundary observations do not establish exclusive device access;
+identity. New sidecars retain boot-scoped process attribution at observation
+time; missing or changed attribution never suppresses raw counter checks.
+Boundary observations do not establish exclusive device access;
 isolated-host qualification remains necessary. Numerical audits and historical
 policies retain their existing contracts. Migration and observation limits are
 documented in [`reusable-compute-programs.md`](reusable-compute-programs.md).

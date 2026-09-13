@@ -16,6 +16,8 @@ from bench.lib.compute_program_gpu_activity import (
     capture_activity,
     client_counters,
     detect_target,
+    read_boot_id,
+    read_process_identity,
     read_snapshot,
     reject_activity,
     validate_activity,
@@ -29,6 +31,8 @@ TARGET = {
     "deviceId": 5510,
 }
 MODULE = "bench.lib.compute_program_gpu_activity"
+BOOT_ID = "11111111-2222-3333-4444-555555555555"
+PROCESS = {"name": "test (gpu) task", "parentPid": 2, "startTicks": 12345}
 
 
 def fdinfo(
@@ -37,6 +41,7 @@ def fdinfo(
     return {
         "pid": pid,
         "fd": fd,
+        "process": None,
         "contents": f"drm-driver: amdgpu\ndrm-pdev: {TARGET['pciDevice']}\n"
         f"drm-client-id: {client}\ndrm-engine-compute: {time_ns} ns\n"
         "drm-engine-capacity-compute: 4\n",
@@ -63,12 +68,17 @@ class GpuActivityTests(unittest.TestCase):
         }
         self.before = snapshot(1, fdinfo(9, 100))
         self.after = snapshot(2, fdinfo(9, 100))
+        boot = patch(f"{MODULE}.read_boot_id", return_value=BOOT_ID)
+        boot.start()
+        self.addCleanup(boot.stop)
 
     def capture(self) -> Path:
         with (
             patch(f"{MODULE}.detect_target", return_value=TARGET),
-            patch(f"{MODULE}.read_snapshot", side_effect=[self.before, self.after]),
-            capture_activity(self.output, self.policy, "a" * 64, "vulkan", "measure"),
+            patch(f"{MODULE}.read_snapshot",
+                  side_effect=[self.before, self.after]),
+            capture_activity(self.output, self.policy,
+                             "a" * 64, "vulkan", "measure"),
         ):
             self.output.write_text(json.dumps(self.report), encoding="utf-8")
         return Path(f"{self.output}.gpu-activity.json")
@@ -81,7 +91,8 @@ class GpuActivityTests(unittest.TestCase):
             "drm-client-id: 9", "drm-client-id: 09"
         )
         self.assertEqual(
-            client_counters(observed, TARGET["pciDevice"]), {"9": {"compute": 100}}
+            client_counters(observed, TARGET["pciDevice"]), {
+                "9": {"compute": 100}}
         )
         reject_activity([observed, self.after], TARGET["pciDevice"])
 
@@ -166,9 +177,11 @@ class GpuActivityTests(unittest.TestCase):
     ) -> None:
         with (
             patch(f"{MODULE}.detect_target", return_value=TARGET),
-            patch(f"{MODULE}.read_snapshot", side_effect=[self.before, self.after]),
+            patch(f"{MODULE}.read_snapshot",
+                  side_effect=[self.before, self.after]),
             self.assertRaisesRegex(RuntimeError, "child failed"),
-            capture_activity(self.output, self.policy, "a" * 64, "vulkan", "measure"),
+            capture_activity(self.output, self.policy,
+                             "a" * 64, "vulkan", "measure"),
         ):
             raise RuntimeError("child failed")
         record = json.loads(
@@ -195,7 +208,8 @@ class GpuActivityTests(unittest.TestCase):
                     pass
         with (
             self.assertRaisesRegex(ValueError, "requires the Vulkan"),
-            capture_activity(self.output, self.policy, "a" * 64, "metal", "measure"),
+            capture_activity(self.output, self.policy,
+                             "a" * 64, "metal", "measure"),
         ):
             self.fail("unsupported backend executed")
 
@@ -217,6 +231,80 @@ class GpuActivityTests(unittest.TestCase):
             observed = read_snapshot(TARGET, proc)
         self.assertEqual(observed["fdinfo"], [])
         self.assertEqual(observed["unreadableProcesses"], [12])
+
+    def make_process(self) -> Path:
+        process = self.root / "proc/12"
+        (process / "fd").mkdir(parents=True)
+        (process / "fdinfo").mkdir()
+        (process / "fd/3").symlink_to(TARGET["renderNode"])
+        (process / "fdinfo/3").write_text(
+            fdinfo(9, 100)["contents"], encoding="utf-8")
+        fields = ["S", "2", *(["0"] * 17), "12345"]
+        (process / "stat").write_text(
+            f"12 ({PROCESS['name']}) {' '.join(fields)}\n", encoding="utf-8")
+        return process
+
+    def test_identity_survives_process_exit_without_later_pid_lookup(self) -> None:
+        process = self.make_process()
+        self.assertEqual(read_process_identity(process), PROCESS)
+        observed = read_snapshot(TARGET, process.parent)
+        (process / "stat").unlink()
+        self.assertEqual(observed["fdinfo"][0]["process"], PROCESS)
+        self.assertIsNone(read_process_identity(process))
+        boot = self.root / "sys/kernel/random/boot_id"
+        boot.parent.mkdir(parents=True)
+        boot.write_text(BOOT_ID + "\n", encoding="utf-8")
+        self.assertEqual(read_boot_id(self.root), BOOT_ID)
+
+    def test_identity_races_and_visibility_gaps_keep_raw_gpu_evidence(self) -> None:
+        process = self.make_process()
+        for after in [None, PROCESS | {"startTicks": 12346},
+                      PROCESS | {"name": "new executable"}]:
+            with (self.subTest(after=after), patch(
+                    f"{MODULE}.read_process_identity",
+                    side_effect=[PROCESS, after])):
+                observed = read_snapshot(TARGET, process.parent)
+            self.assertEqual(observed["fdinfo"], [fdinfo(9, 100)])
+            with self.assertRaisesRegex(ValueError, "Unrelated GPU activity"):
+                reject_activity([snapshot(0), observed], TARGET["pciDevice"])
+        with patch.object(Path, "read_text", side_effect=PermissionError):
+            self.assertIsNone(read_process_identity(process))
+
+    def test_identity_handles_parentheses_and_rejects_malformed_stat(self) -> None:
+        process = self.make_process()
+        raw = (process / "stat").read_text(encoding="utf-8")
+        name = "a ) (b\nc)"
+        (process / "stat").write_text(
+            raw.replace(PROCESS["name"], name), encoding="utf-8")
+        self.assertEqual(read_process_identity(
+            process), PROCESS | {"name": name})
+        for broken in ["12 bad", raw.replace("12 (", "13 ("),
+                       raw.replace(" S 2 ", " S -2 ")]:
+            (process / "stat").write_text(broken, encoding="utf-8")
+            with self.subTest(broken=broken), self.assertRaises(ValueError):
+                read_process_identity(process)
+
+    def test_versions_preserve_legacy_receipts_and_require_new_identity(self) -> None:
+        sidecar = self.capture()
+        current = json.loads(sidecar.read_text(encoding="utf-8"))
+        self.assertEqual(current["schemaVersion"], 2)
+        self.assertEqual(current["bootId"], BOOT_ID)
+        legacy = copy.deepcopy(current)
+        legacy["schemaVersion"] = 1
+        del legacy["bootId"]
+        for item in legacy["snapshots"]:
+            for record in item["fdinfo"]:
+                del record["process"]
+        sidecar.write_text(json.dumps(legacy), encoding="utf-8")
+        validate_activity(self.output, ROOT, self.policy, self.report)
+        missing_identity = copy.deepcopy(current)
+        del missing_identity["snapshots"][0]["fdinfo"][0]["process"]
+        for invalid in [legacy | {"schemaVersion": 2},
+                        current | {"schemaVersion": 1}, missing_identity]:
+            sidecar.write_text(json.dumps(invalid), encoding="utf-8")
+            with self.subTest(invalid=invalid), self.assertRaises(
+                    jsonschema.ValidationError):
+                validate_activity(self.output, ROOT, self.policy, self.report)
 
     def test_target_requires_unique_pci_render_device(self) -> None:
         drm = self.root / "drm"

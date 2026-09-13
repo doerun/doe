@@ -1,5 +1,18 @@
 # Reusable compute programs
 
+## GPU interference attribution
+
+The [latest warmup continuation](../../bench/out/compute-program/20260913-warmup-qualification/README.md)
+retains another incomplete calibration rejected on observed GPU work. Its
+departed client's application identity is unknown. The
+[observer repair](../../bench/out/compute-program/20260913-gpu-activity-attribution/README.md)
+now retains boot-scoped task identity alongside raw counters, preserving null
+attribution for visibility gaps and process races. A separate live observation
+identifies Chrome from the Doppler consumer-streaming worktree using the shared
+device. Counter admission and accepted runtime bytes remain unchanged. Fresh
+calibration with the revised observer and a quiet host remains required;
+interrupted cohorts cannot qualify the procedure or authorize a candidate.
+
 ## Process-boundary evidence retention
 
 The [retention repair](../../bench/out/compute-program/20260912-process-output-retention/README.md)
