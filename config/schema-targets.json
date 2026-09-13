@@ -1585,6 +1585,16 @@
       "allowEmpty": true
     },
     {
+      "schema": "config/compute-program-output-retention.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-calibration*/round-*/process-output-retention.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/compute-program-output-retention.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-experiment*/*/round-*/process-output-retention.json",
+      "allowEmpty": true
+    },
+    {
       "schema": "config/compute-program-process.schema.json",
       "glob": "bench/out/compute-program/*command-storage-experiment*/*/round-*/*.process.json",
       "allowEmpty": true

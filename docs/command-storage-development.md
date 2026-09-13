@@ -71,12 +71,27 @@ The calibration retains the existing regression checks in both label directions.
 Its metric rows retain apparent improvements as well as losses. The report
 binds inputs, package bytes, logs, raw outputs, and available boundary hwmon
 temperature observations. Storage policy version 2 checks free space before each
-cohort and shares identical completed numerical outputs through hash-verified
-hard links. Every original path and byte remains available to replay. Atomic
-report replacement preserves the last valid report if a write fails. Existing
+cohort and shares identical numerical outputs through hash-verified hard links.
+The executor also checks the same configured free-space bound before each child
+and retains outputs immediately afterward, including failed children. A cohort
+owns its content index, with one immutable representative per distinct output
+among its declared processes and invocations; allocation or I/O failure aborts
+the run. Representatives are verified before sharing, and fresh child paths
+prevent overwriting an earlier execution. Every original path and byte remains
+available to replay. The process-retention receipt accumulates sharing operations
+over the cohort. Atomic report and observer-sidecar replacement preserves the
+last valid receipt if a write fails; calibration writes an initial incomplete
+report before launching a cohort. Existing
 per-process Linux DRM admission still rejects
 observed foreign GPU activity. Boundary sampling does not establish an isolated
 machine, and builds must not run during the physical measurement cohort.
+
+Per-child retention replaces the earlier end-of-cohort scheduling after an
+expanded-warmup attempt exhausted disk space. Policy fields, byte limits, and
+receipt schemas keep their versions; evaluator source identity distinguishes
+the execution revision. Retention and admission run outside the measured child,
+but their CPU and I/O can affect the surrounding host state. The earlier
+interrupted attempt remains invalid and is not repaired into a calibration.
 
 Calibration version 3 uses the separately versioned
 [`compute-program-decision.json`](../config/compute-program-decision.json).

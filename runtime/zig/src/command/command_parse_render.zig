@@ -36,7 +36,7 @@ pub fn parseRenderCommand(allocator: Allocator, kind: command_kind.NormalizedKin
     const index_data = if (indexed_draw) blk: {
         const provided = raw_index_data orelse return ParseError.InvalidCommandPayload;
         if (provided.len == 0) return ParseError.InvalidCommandPayload;
-        break :blk parse_helpers.parseRenderIndexData(allocator, provided, requested_index_format) catch return ParseError.InvalidCommandPayload;
+        break :blk try parse_helpers.parseRenderIndexData(allocator, provided, requested_index_format);
     } else null;
     errdefer if (index_data) |values| switch (values) {
         .uint16 => |items| allocator.free(items),

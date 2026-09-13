@@ -81,73 +81,74 @@ fn freeCommandPayload(allocator: Allocator, command: model.Command) void {
             }
         },
         .texture_write => |write_texture| allocator.free(write_texture.data),
-        else => {},
+        .upload,
+        .copy_buffer_to_texture,
+        .barrier,
+        .dispatch,
+        .dispatch_indirect,
+        .sampler_create,
+        .sampler_destroy,
+        .texture_query,
+        .texture_destroy,
+        .surface_create,
+        .surface_capabilities,
+        .surface_configure,
+        .surface_acquire,
+        .surface_present,
+        .surface_unconfigure,
+        .surface_release,
+        .async_diagnostics,
+        .map_async,
+        => {},
     }
 }
 
 fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
     const kind = try command_kind.parseKind(raw);
-
-    if (kind == .upload) {
-        const bytes = raw.bytes orelse return ParseError.InvalidCommandPayload;
-        const align_bytes = raw.alignBytes orelse raw.alignmentBytes orelse 4;
-        return .{ .upload = .{ .bytes = bytes, .align_bytes = align_bytes } };
-    }
-
-    if (kind == .buffer_write) {
-        const handle = raw.handle orelse raw.resource_handle orelse raw.resourceHandle orelse return ParseError.InvalidCommandPayload;
-        const data = raw.data orelse return ParseError.InvalidCommandPayload;
-        if (data.len == 0) return ParseError.InvalidCommandPayload;
-        const owned_data = try allocator.dupe(u32, data);
-        errdefer allocator.free(owned_data);
-        return .{ .buffer_write = .{
-            .handle = handle,
-            .offset = raw.offset orelse 0,
-            .buffer_size = raw.buffer_size orelse raw.bufferSize orelse 0,
-            .data = owned_data,
-        } };
-    }
-
-    if (kind == .copy_buffer_to_texture) {
-        return command_parse_copy.parseCopyCommand(raw);
-    }
-
-    if (kind == .barrier) {
-        const dependency_count = raw.dependency_count orelse raw.dependencyCount orelse 0;
-        return .{ .barrier = .{ .dependency_count = dependency_count } };
-    }
-
-    if (kind == .kernel_dispatch or kind == .dispatch or kind == .dispatch_indirect) {
-        return command_parse_dispatch.parseDispatchCommand(allocator, kind, raw);
-    }
-
-    if (kind == .render_draw or kind == .draw_indirect or kind == .draw_indexed_indirect or kind == .render_pass) {
-        return command_parse_render.parseRenderCommand(allocator, kind, raw);
-    }
-
-    if (kind == .sampler_create) return .{ .sampler_create = parse_extra.parseSamplerCreateCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .sampler_destroy) return .{ .sampler_destroy = parse_extra.parseSamplerDestroyCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .texture_write) return .{ .texture_write = parse_extra.parseTextureWriteCommand(allocator, raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .texture_query) return .{ .texture_query = parse_extra.parseTextureQueryCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .texture_destroy) return .{ .texture_destroy = parse_extra.parseTextureDestroyCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .surface_create) return .{ .surface_create = parse_extra.parseSurfaceCreateCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .surface_capabilities) return .{ .surface_capabilities = parse_extra.parseSurfaceCapabilitiesCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .surface_configure) return .{ .surface_configure = parse_extra.parseSurfaceConfigureCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .surface_acquire) return .{ .surface_acquire = parse_extra.parseSurfaceAcquireCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .surface_present) return .{ .surface_present = parse_extra.parseSurfacePresentCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .surface_unconfigure) return .{ .surface_unconfigure = parse_extra.parseSurfaceUnconfigureCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .surface_release) return .{ .surface_release = parse_extra.parseSurfaceReleaseCommand(raw) catch return ParseError.InvalidCommandPayload };
-    if (kind == .async_diagnostics) return .{ .async_diagnostics = parse_extra.parseAsyncDiagnosticsCommand(raw) catch return ParseError.InvalidCommandPayload };
-
-    if (kind == .map_async) {
-        if (raw.map_async) |m| return .{ .map_async = m };
-        const bytes = raw.bytes orelse return ParseError.InvalidCommandPayload;
-        const mode_str = raw.map_mode orelse raw.mapMode orelse "write";
-        const mode: model.MapAsyncMode = if (std.mem.eql(u8, mode_str, "read")) .read else if (std.mem.eql(u8, mode_str, "write")) .write else return ParseError.InvalidCommandPayload;
-        return .{ .map_async = .{ .bytes = bytes, .mode = mode } };
-    }
-
-    return ParseError.UnknownCommandKind;
+    return switch (kind) {
+        .upload => blk: {
+            const bytes = raw.bytes orelse return ParseError.InvalidCommandPayload;
+            const align_bytes = raw.alignBytes orelse raw.alignmentBytes orelse 4;
+            break :blk .{ .upload = .{ .bytes = bytes, .align_bytes = align_bytes } };
+        },
+        .buffer_write => blk: {
+            const handle = raw.handle orelse raw.resource_handle orelse raw.resourceHandle orelse return ParseError.InvalidCommandPayload;
+            const data = raw.data orelse return ParseError.InvalidCommandPayload;
+            if (data.len == 0) return ParseError.InvalidCommandPayload;
+            const owned_data = try allocator.dupe(u32, data);
+            errdefer allocator.free(owned_data);
+            break :blk .{ .buffer_write = .{
+                .handle = handle,
+                .offset = raw.offset orelse 0,
+                .buffer_size = raw.buffer_size orelse raw.bufferSize orelse 0,
+                .data = owned_data,
+            } };
+        },
+        .copy_buffer_to_texture => command_parse_copy.parseCopyCommand(raw),
+        .barrier => .{ .barrier = .{ .dependency_count = raw.dependency_count orelse raw.dependencyCount orelse 0 } },
+        .kernel_dispatch, .dispatch, .dispatch_indirect => command_parse_dispatch.parseDispatchCommand(allocator, kind, raw),
+        .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => command_parse_render.parseRenderCommand(allocator, kind, raw),
+        .sampler_create => .{ .sampler_create = try parse_extra.parseSamplerCreateCommand(raw) },
+        .sampler_destroy => .{ .sampler_destroy = try parse_extra.parseSamplerDestroyCommand(raw) },
+        .texture_write => .{ .texture_write = try parse_extra.parseTextureWriteCommand(allocator, raw) },
+        .texture_query => .{ .texture_query = try parse_extra.parseTextureQueryCommand(raw) },
+        .texture_destroy => .{ .texture_destroy = try parse_extra.parseTextureDestroyCommand(raw) },
+        .surface_create => .{ .surface_create = try parse_extra.parseSurfaceCreateCommand(raw) },
+        .surface_capabilities => .{ .surface_capabilities = try parse_extra.parseSurfaceCapabilitiesCommand(raw) },
+        .surface_configure => .{ .surface_configure = try parse_extra.parseSurfaceConfigureCommand(raw) },
+        .surface_acquire => .{ .surface_acquire = try parse_extra.parseSurfaceAcquireCommand(raw) },
+        .surface_present => .{ .surface_present = try parse_extra.parseSurfacePresentCommand(raw) },
+        .surface_unconfigure => .{ .surface_unconfigure = try parse_extra.parseSurfaceUnconfigureCommand(raw) },
+        .surface_release => .{ .surface_release = try parse_extra.parseSurfaceReleaseCommand(raw) },
+        .async_diagnostics => .{ .async_diagnostics = try parse_extra.parseAsyncDiagnosticsCommand(raw) },
+        .map_async => blk: {
+            if (raw.map_async) |m| break :blk .{ .map_async = m };
+            const bytes = raw.bytes orelse return ParseError.InvalidCommandPayload;
+            const mode_str = raw.map_mode orelse raw.mapMode orelse "write";
+            const mode: model.MapAsyncMode = if (std.mem.eql(u8, mode_str, "read")) .read else if (std.mem.eql(u8, mode_str, "write")) .write else return ParseError.InvalidCommandPayload;
+            break :blk .{ .map_async = .{ .bytes = bytes, .mode = mode } };
+        },
+    };
 }
 
 // --- inline tests ---

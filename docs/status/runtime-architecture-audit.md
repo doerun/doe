@@ -10,6 +10,17 @@ The import fence and source-layout gates are the structural authority; this
 page records the lifecycle interpretation and follow-up decisions. The target
 structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../runtime-hexagonal-architecture-plan.md).
 
+## Command ingestion completeness and allocation errors
+
+The [command-ingestion record](../../bench/out/command-contract/20260912-parser-completeness/README.md)
+binds exhaustive parsing and cleanup to the existing command contract, derives
+canonical names from it, and rejects missing or ambiguous alias declarations
+during compilation. Independent allocator tests reproduce and repair allocation
+failures relabeled as invalid texture or render-index input. These checks do
+not prove ownership generally or establish application performance. The accepted
+staged runtime remains unchanged; existing schemas and valid commands keep
+their meaning.
+
 ## Source-edit build measurements
 
 Build measurement now distinguishes clean compilation, a no-change rebuild, and

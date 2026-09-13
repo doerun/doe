@@ -114,6 +114,12 @@ refer to that artifact rather than restating counts.
 
 ## Execution model
 
+Command ingestion takes stable identity and canonical names from
+`contracts/command.zig`. Parsing and payload cleanup switch exhaustively over
+that contract. Compile-time alias checks reject missing owners and ambiguous
+spellings; allocation and lifetime tests remain independent evidence. The
+native WebGPU object API retains its own narrow adapters.
+
 The [source-layout manifest](../runtime/zig/source-layout.json) owns module
 responsibilities and dependency permissions; its [generated source map](../runtime/zig/src/README.md)
 is the navigation surface. The [proposed user journeys](thesis.md#proposed-user-journeys)

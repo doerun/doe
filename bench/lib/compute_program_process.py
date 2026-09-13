@@ -1,12 +1,12 @@
 """Retain actual fresh-process identity outside the application's timing scope."""
 from __future__ import annotations
 
-import json
 import subprocess
 import time
 from pathlib import Path
 
 from bench.lib.hash_utils import file_sha256
+from bench.lib.compute_program_retention import write_json
 
 
 def run_tracked_process(
@@ -30,5 +30,5 @@ def run_tracked_process(
                    'completedMonotonicNs': time.monotonic_ns(), 'exitCode': process.returncode,
                    'reportPath': str(output.resolve()),
                    'reportHash': file_sha256(output) if output.is_file() else None}
-            identity.write_text(json.dumps(row, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+            write_json(identity, row)
     return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)

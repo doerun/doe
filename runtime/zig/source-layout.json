@@ -1588,9 +1588,9 @@
       },
       "src/command/command_json.zig": {
         "decision": "Keep",
-        "moduleSha256": "13d4508f653d06b28465949839e1f476031f795fd720a7a4759f6f7e0249b92d",
-        "reason": "Keep: reachable command implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-independent-float32-oracle/2026-08-10"
+        "moduleSha256": "bbf8c885593ce0274194a098996c79e923fcf0bdcaa1ccb874b83a439fa7e395",
+        "reason": "Keep: command parsing and payload cleanup exhaust the semantic command contract; canonical names derive from it and aliases have compile-time coverage. Allocation failures preserve their original cause.",
+        "reviewer": "codex-command-completeness/2026-09-12"
       },
       "src/command/command_json_extra.zig": {
         "decision": "Keep",
@@ -1606,9 +1606,9 @@
       },
       "src/command/command_kind.zig": {
         "decision": "Keep",
-        "moduleSha256": "12957ee949a48222558f8e09c11257e251d6d8bcf8d3cefc18534938adcd7336",
-        "reason": "Keep: reachable command implementation shared by 4 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "16f4967375b103e8012663eae5d594d9875609bc5929dd952b94e434fee90092",
+        "reason": "Keep: command parsing and payload cleanup exhaust the semantic command contract; canonical names derive from it and aliases have compile-time coverage. Allocation failures preserve their original cause.",
+        "reviewer": "codex-command-completeness/2026-09-12"
       },
       "src/command/command_parse_copy.zig": {
         "decision": "Keep",
@@ -1630,9 +1630,9 @@
       },
       "src/command/command_parse_render.zig": {
         "decision": "Keep",
-        "moduleSha256": "b3adca84e8114f3fc4576ba3c467ffca3d4ca6cfec67c7fd7818ce7a64a28fe0",
-        "reason": "Keep: reachable command implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "b7b249325b82b4780d329a4dbd324010dccf92f67d0df410c792a1ad49812cc9",
+        "reason": "Keep: command parsing and payload cleanup exhaust the semantic command contract; canonical names derive from it and aliases have compile-time coverage. Allocation failures preserve their original cause.",
+        "reviewer": "codex-command-completeness/2026-09-12"
       },
       "src/command/command_stream.zig": {
         "decision": "Keep",

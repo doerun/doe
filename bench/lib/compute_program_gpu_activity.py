@@ -19,6 +19,7 @@ from typing import Any
 import jsonschema
 
 from bench.lib.hash_utils import file_sha256
+from bench.lib.compute_program_retention import write_json
 
 DRM_CLASS = Path("/sys/class/drm")
 PROC_ROOT = Path("/proc")
@@ -190,9 +191,7 @@ def capture_activity(
             "evaluationHash": file_sha256(output) if output.exists() else None,
             "snapshots": [before, after],
         }
-        Path(f"{output}{SIDECAR_SUFFIX}").write_text(
-            json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        write_json(Path(f"{output}{SIDECAR_SUFFIX}"), record)
 
 
 def validate_activity(

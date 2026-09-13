@@ -57,6 +57,15 @@ classified and cannot be promoted by benchmark results.
   explicit experiment and invocation policies. A warmup revision requires fresh
   accepted-package A/A qualification; coherent output under a different policy
   cannot inherit a previous calibration.
+- Application evidence retention applies its declared free-space admission and
+  lossless sharing at child-process boundaries. Interrupted output remains
+  failure evidence. Retention and observer receipt writes must not replace a
+  valid receipt with a partial write, and their work stays outside application
+  timing.
+- Command ingestion derives canonical names from the command contract and
+  exhausts command kinds in parsing and payload cleanup. Alias coverage and
+  ambiguity fail compilation; allocation failures retain their original cause.
+  These structural checks do not replace allocation and behavioral regressions.
 - Quirk selector changes preserve scope membership, profile filtering, ranking,
   first-input ties, match counts, and proof/action decisions. Characterize both
   builders against retained decisions and exercise allocation failure before

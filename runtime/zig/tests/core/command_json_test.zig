@@ -18,6 +18,52 @@ fn testArena() std.heap.ArenaAllocator {
     return std.heap.ArenaAllocator.init(std.testing.allocator);
 }
 
+fn parseOwnedCommands(allocator: std.mem.Allocator) !void {
+    const commands = try parseCommands(allocator,
+        \\[{"command":"kernel_dispatch","kernel":"owned.wgsl","entry_point":"main",
+        \\  "bindings":[{"binding":0,"handle":1,"kind":"buffer"}]},
+        \\ {"command":"buffer_write","handle":2,"data":[1,2,3,4]},
+        \\ {"command":"texture_write","handle":3,"data":[1,2,3,4]}]
+    );
+    defer freeCommands(allocator, commands);
+    try std.testing.expectEqualStrings("owned.wgsl", commands[0].kernel_dispatch.kernel);
+    try std.testing.expectEqualSlices(u8, &.{ 1, 2, 3, 4 }, commands[2].texture_write.data);
+}
+
+test "command ownership preserves allocation failures and releases parsed payloads" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, parseOwnedCommands, .{});
+}
+
+fn parseOwnedRenderCommands(allocator: std.mem.Allocator) !void {
+    const commands = try parseCommands(allocator,
+        \\[{"command":"draw_indexed","draw_count":1,"index_format":"uint16",
+        \\  "index_data":[0,1,2],"bind_group_dynamic_offsets":[16,32]},
+        \\ {"command":"draw_indexed_indirect","draw_count":1,"index_format":"uint32",
+        \\  "index_data":[0,1,2],"bind_group_dynamic_offsets":[64]}]
+    );
+    defer freeCommands(allocator, commands);
+    try std.testing.expectEqualSlices(u16, &.{ 0, 1, 2 }, commands[0].render_draw.index_data.?.uint16);
+    try std.testing.expectEqualSlices(u32, &.{64}, commands[1].draw_indexed_indirect.bind_group_dynamic_offsets.?);
+}
+
+test "command ownership preserves render index allocation failures and cleanup" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, parseOwnedRenderCommands, .{});
+}
+
+test "command ownership releases earlier payloads when later input is invalid" {
+    try std.testing.expectError(ParseError.InvalidCommandPayload, parseCommands(std.testing.allocator,
+        \\[{"command":"kernel_dispatch","kernel":"owned.wgsl"},
+        \\ {"command":"buffer_write","handle":2,"data":[1,2,3]},
+        \\ {"command":"texture_write","data":[4,5,6]}]
+    ));
+}
+
+test "all canonical command names resolve from the semantic contract" {
+    for (std.enums.values(command.Kind)) |kind| {
+        try std.testing.expectEqual(kind, try command_kind.parseKind(.{ .command = command.name(kind) }));
+    }
+}
+
 // ============================================================
 // Valid command parsing — each command type with minimal JSON
 

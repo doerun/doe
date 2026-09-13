@@ -16,7 +16,6 @@ from bench.gates.compute_program_calibration_gate import validate_calibration
 from bench.gates.compute_program_gate import digest, validate_run
 from bench.lib.compute_program_host import host_observation
 from bench.lib.compute_program_package import load_qualification
-from bench.lib.compute_program_retention import deduplicate_outputs
 from bench.lib.compute_program_uncertainty import assess_uncertainty, candidate_verdict
 from bench.runners.run_compute_program_calibration import (
     assess_round, load_policy, read_pairs, reference, write_json,
@@ -144,6 +143,8 @@ def run_experiment(spec_path: Path, calibration_path: Path, output: Path) -> dic
                            '--candidate-qualification', spec['candidateQualification']['path'],
                            '--first-variant', VARIANTS[index % len(VARIANTS)],
                            '--record-process-identity']
+                command.extend(['--output-retention', policy['outputRetention'],
+                                '--minimum-free-bytes', str(policy['minimumFreeBytes'])])
                 write_json(series / f'round-{index:02d}.command.json', command)
                 write_json(series / f'round-{index:02d}.host-before.json', host_observation())
                 with (series / f'round-{index:02d}.log').open('w', encoding='utf-8') as stream:
@@ -153,9 +154,8 @@ def run_experiment(spec_path: Path, calibration_path: Path, output: Path) -> dic
                 verify_references(frozen)
                 if result.returncode:
                     raise ValueError(f'{series_name} cohort {index} failed; see retained log')
-                write_json(series / f'round-{index:02d}.retention.json',
-                           {'schemaVersion': 1, 'kind': 'compute-program-output-retention',
-                            **deduplicate_outputs(cohort)})
+                shutil.copyfile(cohort / 'process-output-retention.json',
+                                series / f'round-{index:02d}.retention.json')
                 print(f'{series_name} cohort {index}: validated', flush=True)
             uncertainty, raw = assess_series(series, startup, tail, decision)
             write_json(series / 'uncertainty.json', uncertainty)

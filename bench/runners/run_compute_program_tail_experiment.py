@@ -15,6 +15,7 @@ from bench.gates.compute_program_gate import digest, startup_scope
 from bench.lib.compute_program_package import (
     install_qualification, load_qualification, validate_package_root,
 )
+from bench.lib.compute_program_retention import ProcessOutputRetention
 from bench.native_compare_modules.reporting import format_stats
 from bench.runners.run_compute_program_evidence import run_child, same_adapter
 
@@ -196,6 +197,10 @@ def main() -> int:
                         help='Require current A/A admission for a new candidate decision')
     parser.add_argument('--record-process-identity', action='store_true',
                         help='Retain actual child process identity for uncertainty assessment')
+    parser.add_argument('--output-retention', choices=['none', 'hardlink-identical-outputs'],
+                        default='none', help='Share exact outputs after each child process')
+    parser.add_argument('--minimum-free-bytes', type=int,
+                        help='Configured free-space admission before each retained child')
     args = parser.parse_args()
     args.policy = args.policy.resolve()
     policy = load_experiment_policy(args.policy)
@@ -215,6 +220,7 @@ def main() -> int:
     if len(args.applications) != len(set(args.applications)):
         raise ValueError('Applications must be unique')
     output = args.output.resolve()
+    retention = ProcessOutputRetention(output, args.output_retention, args.minimum_free_bytes)
     output.mkdir(parents=True, exist_ok=False)
     shutil.copyfile(args.policy, output / 'experiment-policy.json')
     shutil.copyfile(__file__, output / Path(__file__).name)
@@ -249,8 +255,9 @@ def main() -> int:
     for application in args.applications:
         for variant in variants:
             path = output / f'{application}.{variant}.audit.json'
-            report = run_child('doe-webgpu', application, 'audit', path, evaluation_path, evaluation,
-                               'vulkan', 'node', '', None, packages[variant], output / variant / 'package-inputs/summary.json')
+            with retention.process(path):
+                report = run_child('doe-webgpu', application, 'audit', path, evaluation_path, evaluation,
+                                   'vulkan', 'node', '', None, packages[variant], output / variant / 'package-inputs/summary.json')
             identities[(application, variant)] = report
             print(f'audit passed: {application}/{variant}', flush=True)
         before, after = (identities[(application, variant)] for variant in variants)
@@ -260,9 +267,10 @@ def main() -> int:
         for application in args.applications:
             for variant in order:
                 path = output / f'{application}.{variant}.process-{index:02d}.json'
-                report = run_child('doe-webgpu', application, 'measure', path, evaluation_path, evaluation,
-                                   'vulkan', 'node', '', None, packages[variant], output / variant / 'package-inputs/summary.json',
-                                   process_identity=Path(f'{path}.process.json') if args.record_process_identity else None)
+                with retention.process(path):
+                    report = run_child('doe-webgpu', application, 'measure', path, evaluation_path, evaluation,
+                                       'vulkan', 'node', '', None, packages[variant], output / variant / 'package-inputs/summary.json',
+                                       process_identity=Path(f'{path}.process.json') if args.record_process_identity else None)
                 assert_control_identity(identities[(application, variant)], report)
                 print(f'measured: {application}/{variant}/{index}', flush=True)
     for variant, package in packages.items():

@@ -7,7 +7,6 @@ import os
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +14,7 @@ import jsonschema
 
 from bench.gates.compute_program_gate import digest
 from bench.lib.compute_program_package import load_qualification
-from bench.lib.compute_program_retention import deduplicate_outputs
+from bench.lib.compute_program_retention import write_json
 from bench.lib.compute_program_host import host_observation
 from bench.lib.compute_program_uncertainty import ProcessPair, assess_uncertainty
 from bench.runners.assess_compute_program_startup import assess_application
@@ -68,21 +67,6 @@ def load_policy(path: Path, schema_name: str) -> dict[str, Any]:
     schema = json.loads((ROOT / 'config' / schema_name).read_text(encoding='utf-8'))
     jsonschema.Draft202012Validator(schema).validate(value)
     return value
-
-
-def write_json(path: Path, value: Any) -> None:
-    temporary = None
-    try:
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8',
-                                         dir=path.parent, delete=False) as stream:
-            temporary = Path(stream.name)
-            stream.write(json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + '\n')
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, path)
-    finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
 
 
 def read_pairs(cohort: Path, application: str, index: int, count: int,
@@ -169,6 +153,7 @@ def run_calibration(policy_path: Path, output: Path) -> dict[str, Any]:
     all_rows = []
     all_pairs = []
     applications = [tail['developmentApplication'], *tail['transferApplications']]
+    write_json(output / 'report.json', report)
 
     def verify_frozen() -> None:
         for item in frozen:
@@ -190,6 +175,8 @@ def run_calibration(policy_path: Path, output: Path) -> dict[str, Any]:
                        '--baseline-qualification', str(qualification),
                        '--candidate-qualification', str(qualification),
                        '--first-variant', first, '--record-process-identity']
+            command.extend(['--output-retention', policy['outputRetention'],
+                            '--minimum-free-bytes', str(policy['minimumFreeBytes'])])
             command_path = output / f'round-{index:02d}.command.json'
             write_json(command_path, command)
             thermal_before = thermal_observations()
@@ -214,11 +201,13 @@ def run_calibration(policy_path: Path, output: Path) -> dict[str, Any]:
                 groups = {variant: [getattr(p, variant) for p in pairs] for variant in VARIANTS}
                 rows.extend(assess_round(groups, application, startup, tail))
             all_rows.extend({'round': index, 'firstVariant': first, **r} for r in rows)
+            retention = load_policy(cohort / 'process-output-retention.json',
+                                    'compute-program-output-retention.schema.json')
             report['rounds'].append({
                 'index': index, 'firstVariant': first,
                 'regressionsPassed': all(r['regressionPassed'] for r in rows),
                 'thermalBefore': thermal_before, 'thermalAfter': thermal_observations(),
-                'retention': deduplicate_outputs(cohort),
+                'retention': {key: retention[key] for key in ('filesLinked', 'duplicateLogicalBytes')},
             })
             write_tsv(output / 'metrics.tsv', all_rows)
             print(f'calibration round {index}: '

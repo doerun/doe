@@ -1,5 +1,16 @@
 # Reusable compute programs
 
+## Process-boundary evidence retention
+
+The [retention repair](../../bench/out/compute-program/20260912-process-output-retention/README.md)
+responds to a warmup cohort exhausting disk before end-of-cohort sharing.
+Calibration and candidate execution now apply the declared space bound before
+each child and retain identical outputs immediately afterward, including failed
+children. Observer receipts use atomic replacement. The interrupted files remain
+failure evidence; accepted archives, warmup settings, and thresholds are
+unchanged. A fresh complete calibration under the retained evaluator revision
+is required before procedure promotion.
+
 ## Explicit measurement policy and warmup qualification
 
 The [warmup revision](../../bench/out/compute-program/20260912-warmup-calibration-v1/README.md)
