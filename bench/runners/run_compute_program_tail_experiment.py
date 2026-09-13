@@ -25,6 +25,46 @@ COSTS = ('deviceStartupMs', 'preparationMs', 'teardownMs',
          'peakProcessRssBytes', 'allocatedBufferBytes')
 
 
+def load_experiment_policy(path: Path) -> dict[str, Any]:
+    """Validate an explicitly selected policy against the repository schema."""
+    policy = json.loads(path.read_text(encoding='utf-8'))
+    schema = json.loads(POLICY.with_suffix('.schema.json').read_text(encoding='utf-8'))
+    jsonschema.Draft202012Validator(schema).validate(policy)
+    return policy
+
+
+def evaluation_for_sampling(policy: dict[str, Any], sampling: str) -> dict[str, Any]:
+    """Derive sample counts while preserving the selected invocation procedure."""
+    if sampling not in ('frozen', 'expanded'):
+        raise ValueError(f'Unknown experiment sampling: {sampling}')
+    evaluation = json.loads((ROOT / policy['evaluationPolicy']).read_text(encoding='utf-8'))
+    evaluation['processRuns'] = policy['reproductionProcessPairs']
+    if sampling == 'expanded':
+        evaluation['timedRuns'] = policy['expandedTimedRuns']
+        evaluation['processRuns'] = policy['expandedProcessPairs']
+    schema = json.loads((ROOT / 'config/compute-program-evaluation.schema.json').read_text(encoding='utf-8'))
+    jsonschema.Draft202012Validator(schema).validate(evaluation)
+    return evaluation
+
+
+def verify_cohort_policy(directory: Path, policy: dict[str, Any]) -> dict[str, Any]:
+    """Reject a coherent cohort that executed a different declared procedure."""
+    if load_experiment_policy(directory / 'experiment-policy.json') != policy:
+        raise ValueError('Cohort experiment policy differs from calibration')
+    evaluation = json.loads((directory / 'policy.json').read_text(encoding='utf-8'))
+    if evaluation != evaluation_for_sampling(policy, 'expanded'):
+        raise ValueError('Cohort invocation policy differs from calibration')
+    return evaluation
+
+
+def require_calibrated_policy(path: Path, calibration: dict[str, Any]) -> None:
+    """A candidate cannot select a different procedure after calibration."""
+    selected = json.loads(Path(calibration['policy']['path']).read_text(encoding='utf-8'))
+    startup = json.loads((ROOT / selected['startupPolicy']).read_text(encoding='utf-8'))
+    if digest(path) != digest(ROOT / startup['tailExperimentPolicy']):
+        raise ValueError('Candidate experiment policy differs from calibrated procedure')
+
+
 def assert_control_identity(control: dict[str, Any], report: dict[str, Any]) -> None:
     """Reject changed work, host, or completion scope before interpreting latency."""
     if startup_scope(control) != startup_scope(report):
@@ -142,6 +182,8 @@ def summarize(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--policy', type=Path, default=POLICY,
+                        help='Versioned experiment policy; retained with the cohort')
     parser.add_argument('--output', type=Path, required=True, help='New retained experiment directory')
     parser.add_argument('--sampling', choices=['frozen', 'expanded'], required=True, help='Original or expanded sampling')
     parser.add_argument('--applications', nargs='+', required=True, help='Frozen development or transfer applications')
@@ -155,12 +197,12 @@ def main() -> int:
     parser.add_argument('--record-process-identity', action='store_true',
                         help='Retain actual child process identity for uncertainty assessment')
     args = parser.parse_args()
-    policy = json.loads(POLICY.read_text(encoding='utf-8'))
-    schema = json.loads(POLICY.with_suffix('.schema.json').read_text(encoding='utf-8'))
-    jsonschema.Draft202012Validator(schema).validate(policy)
+    args.policy = args.policy.resolve()
+    policy = load_experiment_policy(args.policy)
     if args.calibration_report:
         from bench.gates.compute_program_calibration_gate import validate_calibration
         calibration = validate_calibration(args.calibration_report.resolve())
+        require_calibrated_policy(args.policy, calibration)
         if args.candidate_qualification is None:
             raise ValueError('Calibrated candidate comparison requires a qualified candidate')
         baseline = args.baseline_qualification or ROOT / policy['baselineQualification']
@@ -174,17 +216,11 @@ def main() -> int:
         raise ValueError('Applications must be unique')
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
-    shutil.copyfile(POLICY, output / 'experiment-policy.json')
+    shutil.copyfile(args.policy, output / 'experiment-policy.json')
     shutil.copyfile(__file__, output / Path(__file__).name)
     shutil.copyfile(ROOT / policy['originalComparison'], output / 'original-comparison.tsv')
-    evaluation = json.loads((ROOT / policy['evaluationPolicy']).read_text(encoding='utf-8'))
-    processes = policy['reproductionProcessPairs']
-    if args.sampling == 'expanded':
-        evaluation['timedRuns'] = policy['expandedTimedRuns']
-        processes = policy['expandedProcessPairs']
-    evaluation['processRuns'] = processes
-    evaluation_schema = json.loads((ROOT / 'config/compute-program-evaluation.schema.json').read_text(encoding='utf-8'))
-    jsonschema.Draft202012Validator(evaluation_schema).validate(evaluation)
+    evaluation = evaluation_for_sampling(policy, args.sampling)
+    processes = evaluation['processRuns']
     for reference in evaluation.get('timestampSources', []):
         if digest(ROOT / reference['path']) != reference['hash']:
             raise ValueError(f'Timestamp source changed: {reference["path"]}')

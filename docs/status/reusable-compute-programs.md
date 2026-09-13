@@ -1,5 +1,16 @@
 # Reusable compute programs
 
+## Explicit measurement policy and warmup qualification
+
+The [warmup revision](../../bench/out/compute-program/20260912-warmup-calibration-v1/README.md)
+retains a separately generated procedure with unchanged accepted archives and
+thresholds. Calibration now passes its selected policy through execution;
+replay rejects differing experiment policies, invocation settings, or child
+policy identities. The fresh A/A attempt stopped on observed foreign GPU
+activity and cannot qualify the revised procedure or authorize a candidate.
+An uninterrupted fresh cohort remains required. The accepted runtime and
+original measurement procedure remain unchanged.
+
 ## Ordinary measurement warmup and cost attribution
 
 The [resolution diagnosis](../../bench/out/compute-program/20260912-runtime-resolution-final/README.md)

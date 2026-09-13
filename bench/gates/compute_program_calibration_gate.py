@@ -12,6 +12,7 @@ from bench.gates.compute_program_gate import digest, validate_run
 from bench.lib.compute_program_package import load_qualification
 from bench.lib.compute_program_uncertainty import assess_uncertainty
 from bench.runners.run_compute_program_calibration import assess_round, load_policy, read_pairs
+from bench.runners.run_compute_program_tail_experiment import verify_cohort_policy
 
 ROOT = Path(__file__).resolve().parents[2]
 VARIANTS = ('baseline', 'candidate')
@@ -45,7 +46,7 @@ def validate_calibration(path: Path) -> dict[str, Any]:
             qualification = load_qualification(cohort / variant / 'package-inputs/summary.json', ROOT)
             if sorted(p['hash'] for p in qualification['packages']) != expected_packages:
                 raise ValueError('Calibration packages differ between rounds or labels')
-        evaluation = json.loads((cohort / 'policy.json').read_text(encoding='utf-8'))
+        evaluation = verify_cohort_policy(cohort, tail)
         rows = []
         for application in [tail['developmentApplication'], *tail['transferApplications']]:
             groups = {}
@@ -55,7 +56,10 @@ def validate_calibration(path: Path) -> dict[str, Any]:
                     sample_path = cohort / f'{application}.{variant}.process-{process:02d}.json'
                     if Path(f'{sample_path}.events.tsv').exists():
                         raise ValueError('Diagnostic instrumentation cannot calibrate ordinary decisions')
-                    groups[variant].append(validate_run(sample_path, ROOT, evaluation))
+                    measured = validate_run(sample_path, ROOT, evaluation)
+                    if measured['policyHash'] != digest(cohort / 'policy.json'):
+                        raise ValueError('Calibration process does not bind its declared policy')
+                    groups[variant].append(measured)
             rows.extend(assess_round(groups, application, startup, tail))
             all_pairs.extend(read_pairs(cohort, application, index, tail['expandedProcessPairs'],
                                         require_identity=policy['schemaVersion'] == 3))

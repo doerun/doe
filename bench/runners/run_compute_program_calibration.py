@@ -125,10 +125,6 @@ def run_calibration(policy_path: Path, output: Path) -> dict[str, Any]:
     startup = load_policy(startup_path, 'compute-program-startup-experiment.schema.json')
     tail_path = ROOT / startup['tailExperimentPolicy']
     tail = load_policy(tail_path, 'compute-program-tail-experiment.schema.json')
-    # The existing executor owns this policy; accepting a different file here
-    # would assess one procedure after executing another.
-    if tail_path.resolve() != (ROOT / 'config/compute-program-tail-experiment.json').resolve():
-        raise ValueError('Calibration requires the canonical tail executor policy')
     qualification = ROOT / policy['baselineQualification']
     accepted = load_qualification(qualification, ROOT)
     if any(os.environ.get(key) for key in ('LD_PRELOAD', 'NODE_OPTIONS', 'NODE_PATH')):
@@ -188,6 +184,7 @@ def run_calibration(policy_path: Path, output: Path) -> dict[str, Any]:
             first = VARIANTS[index % len(VARIANTS)]
             command = [sys.executable, '-m',
                        'bench.runners.run_compute_program_tail_experiment',
+                       '--policy', str(tail_path),
                        '--output', str(cohort), '--sampling', 'expanded',
                        '--applications', *applications,
                        '--baseline-qualification', str(qualification),

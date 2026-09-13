@@ -21,7 +21,9 @@ from bench.lib.compute_program_uncertainty import assess_uncertainty, candidate_
 from bench.runners.run_compute_program_calibration import (
     assess_round, load_policy, read_pairs, reference, write_json,
 )
-from bench.runners.run_compute_program_tail_experiment import summarize, write_tsv
+from bench.runners.run_compute_program_tail_experiment import (
+    summarize, verify_cohort_policy, write_tsv,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 VARIANTS = ('baseline', 'candidate')
@@ -67,13 +69,16 @@ def assess_series(
         directory = output / f'round-{cohort:02d}'
         evaluation = json.loads((directory / 'policy.json').read_text(encoding='utf-8'))
         if validate:
+            evaluation = verify_cohort_policy(directory, tail)
             for app in [tail['developmentApplication'], *tail['transferApplications']]:
                 for variant in VARIANTS:
                     for i in range(tail['expandedProcessPairs']):
                         path = directory / f'{app}.{variant}.process-{i:02d}.json'
                         if Path(f'{path}.events.tsv').exists():
                             raise ValueError('Instrumented output cannot confirm an improvement')
-                        validate_run(path, ROOT, evaluation)
+                        measured = validate_run(path, ROOT, evaluation)
+                        if measured['policyHash'] != digest(directory / 'policy.json'):
+                            raise ValueError('Candidate process does not bind its declared policy')
             with tempfile.TemporaryDirectory(prefix='doe-storage-assess-') as scratch:
                 summarize(directory, tail, summary_output=Path(scratch))
                 if (Path(scratch) / 'acceptance.tsv').read_bytes() != (directory / 'acceptance.tsv').read_bytes():
@@ -132,6 +137,7 @@ def run_experiment(spec_path: Path, calibration_path: Path, output: Path) -> dic
                     raise ValueError('Insufficient free space for the declared experiment cohort')
                 cohort = series / f'round-{index:02d}'
                 command = [sys.executable, '-m', 'bench.runners.run_compute_program_tail_experiment',
+                           '--policy', str(ROOT / startup['tailExperimentPolicy']),
                            '--output', str(cohort), '--sampling', 'expanded', '--applications',
                            tail['developmentApplication'], *tail['transferApplications'],
                            '--baseline-qualification', spec['baselineQualification']['path'],

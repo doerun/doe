@@ -9,8 +9,67 @@ import unittest
 from pathlib import Path
 
 from bench.runners.run_compute_program_tail_experiment import (
-    POLICY, assert_control_identity, summarize,
+    POLICY, assert_control_identity, evaluation_for_sampling,
+    load_experiment_policy, require_calibrated_policy, summarize,
+    verify_cohort_policy,
 )
+
+
+class TailPolicyTests(unittest.TestCase):
+    def test_explicit_policy_preserves_warmup_and_rejects_changed_cohort(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            tail = load_experiment_policy(POLICY)
+            evaluation = evaluation_for_sampling(tail, 'frozen')
+            evaluation['warmupRuns'] += 1
+            evaluation_path = directory / 'revised-evaluation.json'
+            evaluation_path.write_text(json.dumps(evaluation), encoding='utf-8')
+            tail['evaluationPolicy'] = str(evaluation_path)
+            experiment_path = directory / 'experiment-policy.json'
+            experiment_path.write_text(json.dumps(tail), encoding='utf-8')
+            self.assertEqual(load_experiment_policy(experiment_path), tail)
+            expanded = evaluation_for_sampling(tail, 'expanded')
+            self.assertEqual(expanded, {
+                **evaluation, 'timedRuns': tail['expandedTimedRuns'],
+                'processRuns': tail['expandedProcessPairs'],
+            })
+            path = directory / 'policy.json'
+            path.write_text(json.dumps(expanded), encoding='utf-8')
+            self.assertEqual(verify_cohort_policy(directory, tail), expanded)
+            expanded['warmupRuns'] -= 1
+            path.write_text(json.dumps(expanded), encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'invocation policy'):
+                verify_cohort_policy(directory, tail)
+            with self.assertRaisesRegex(ValueError, 'experiment policy'):
+                verify_cohort_policy(directory, {**tail, 'maximumCostRegression': 0})
+
+    def test_selected_filename_does_not_select_a_weaker_schema(self) -> None:
+        import jsonschema
+
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'alternative.json'
+            path.write_text(json.dumps({**load_experiment_policy(POLICY),
+                                        'hiddenOverride': True}), encoding='utf-8')
+            path.with_suffix('.schema.json').write_text('{}', encoding='utf-8')
+            with self.assertRaises(jsonschema.ValidationError):
+                load_experiment_policy(path)
+
+    def test_candidate_cannot_change_procedure_after_calibration(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            accepted = directory / 'tail.json'
+            accepted.write_bytes(POLICY.read_bytes())
+            startup = directory / 'startup.json'
+            startup.write_text(json.dumps({'tailExperimentPolicy': str(accepted)}), encoding='utf-8')
+            calibration = directory / 'calibration.json'
+            calibration.write_text(json.dumps({'startupPolicy': str(startup)}), encoding='utf-8')
+            report = {'policy': {'path': str(calibration)}}
+            require_calibrated_policy(POLICY, report)
+            candidate = directory / 'candidate.json'
+            candidate.write_text(json.dumps({**load_experiment_policy(POLICY),
+                                             'maximumCostRegression': 0}), encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'calibrated procedure'):
+                require_calibrated_policy(candidate, report)
 
 
 class TailIdentityTests(unittest.TestCase):

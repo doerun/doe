@@ -58,6 +58,15 @@ same archives. Fresh processes alternate execution order; successive cohorts
 reverse their initial order. The original startup and tail policies own sample
 counts and regression limits. Nothing is tuned to admit a preferred candidate.
 
+Calibration passes its referenced tail policy explicitly to the executor's
+`--policy` argument. The default remains the canonical repository policy.
+Each cohort retains the selected policy and derived invocation policy. Review
+requires both to match calibration, including warmup, timed samples, work,
+and thresholds; a calibrated candidate cannot select a different procedure.
+This additive repository-only CLI contract allows a separately retained warmup
+revision to qualify against identical accepted archives before it is promoted.
+Existing schema versions and original policy bytes remain unchanged.
+
 The calibration retains the existing regression checks in both label directions.
 Its metric rows retain apparent improvements as well as losses. The report
 binds inputs, package bytes, logs, raw outputs, and available boundary hwmon
