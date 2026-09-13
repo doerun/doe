@@ -8,8 +8,10 @@ Calibration and candidate execution now apply the declared space bound before
 each child and retain identical outputs immediately afterward, including failed
 children. Observer receipts use atomic replacement. The interrupted files remain
 failure evidence; accepted archives, warmup settings, and thresholds are
-unchanged. A fresh complete calibration under the retained evaluator revision
-is required before procedure promotion.
+unchanged. The fresh physical continuation retained outputs successfully but
+stopped in its final cohort on observed foreign GPU work. Its incomplete receipt
+fails candidate admission and supplies no final precision assessment. A complete
+fresh calibration remains required before procedure promotion.
 
 ## Explicit measurement policy and warmup qualification
 

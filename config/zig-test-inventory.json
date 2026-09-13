@@ -219,6 +219,10 @@
           "kind": "integration"
         },
         {
+          "path": "src/native/queue/doe_queue_lifecycle.zig",
+          "kind": "inline"
+        },
+        {
           "path": "tests/core/capability_runtime_test.zig",
           "kind": "integration"
         },
@@ -397,6 +401,10 @@
         {
           "path": "tests/core/native_api_core_test.zig",
           "kind": "integration"
+        },
+        {
+          "path": "src/native/queue/doe_queue_lifecycle.zig",
+          "kind": "inline"
         },
         {
           "path": "tests/core/capability_runtime_test.zig",

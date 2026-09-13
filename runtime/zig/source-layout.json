@@ -3580,9 +3580,9 @@
       },
       "src/native/queue/doe_queue_lifecycle.zig": {
         "decision": "Keep",
-        "moduleSha256": "75da5955ab3b9a526c8a0de7700271c79ec9998ea0ac6bcfcad6d109130adf26",
-        "reason": "Keep: retain the existing resource owner and backend boundary while recorded commands and concurrent shader creation use explicit, atomic lifetime operations.",
-        "reviewer": "codex-native-ownership/2026-09-06"
+        "moduleSha256": "4874d2a1679adb36f3f4633ebf1355eb8c4e0b128f31c7a73e69cda7f083c95f",
+        "reason": "Keep: the native completion registry transfers pending callback batches before foreign callbacks run and synchronizes registration and future identity.",
+        "reviewer": "codex-completion-ownership/2026-09-12"
       },
       "src/native/queue/doe_queue_submit_d3d12.zig": {
         "decision": "Keep",

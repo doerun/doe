@@ -456,37 +456,52 @@ test "work done ownership preserves pending callbacks during reentrant enqueue" 
     try std.testing.expectEqualSlices(u8, &.{ 1, 2, 3, 4 }, &fixture.observed);
 }
 
-test "work done ownership serializes concurrent registration and future identity" {
+test "work done ownership serializes concurrent registration draining and future identity" {
     const Fixture = struct {
         const THREADS = 4;
         const PER_THREAD = MAX_GLOBAL_WORK_DONE / THREADS;
+        const Seen = std.atomic.Value(usize);
         ready: std.Thread.ResetEvent = .{},
         delivered: std.atomic.Value(usize) = .init(0),
         rejected: std.atomic.Value(usize) = .init(0),
+        finished: std.atomic.Value(usize) = .init(0),
         ids: [THREADS][PER_THREAD]u64 = undefined,
+        seen: [THREADS][PER_THREAD]Seen = [_][PER_THREAD]Seen{[_]Seen{.init(0)} ** PER_THREAD} ** THREADS,
 
         fn callback(
             _: abi_callback.WGPUQueueWorkDoneStatus,
             _: abi_core.WGPUStringView,
             userdata: ?*anyopaque,
-            _: ?*anyopaque,
+            slot: ?*anyopaque,
         ) callconv(.c) void {
             const self: *@This() = @ptrCast(@alignCast(userdata.?));
+            const seen: *Seen = @ptrCast(@alignCast(slot.?));
+            _ = seen.fetchAdd(1, .monotonic);
             _ = self.delivered.fetchAdd(1, .monotonic);
         }
 
         fn register(self: *@This(), index: usize) void {
             self.ready.wait();
-            for (&self.ids[index]) |*id| {
+            for (&self.ids[index], 0..) |*id, position| {
                 id.* = next_work_done_future().id;
                 if (!enqueue_global_work_done(.{
                     .nextInChain = null,
                     .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
                     .callback = callback,
                     .userdata1 = @ptrCast(self),
-                    .userdata2 = null,
+                    .userdata2 = @ptrCast(&self.seen[index][position]),
                 })) _ = self.rejected.fetchAdd(1, .monotonic);
             }
+            _ = self.finished.fetchAdd(1, .release);
+        }
+
+        fn drain(self: *@This()) void {
+            self.ready.wait();
+            while (self.finished.load(.acquire) != THREADS) {
+                drain_global_work_done();
+                std.Thread.yield() catch {};
+            }
+            drain_global_work_done();
         }
     };
     var fixture: Fixture = .{};
@@ -494,14 +509,17 @@ test "work done ownership serializes concurrent registration and future identity
     var started: usize = 0;
     defer drain_global_work_done();
     {
+        var consumer: ?std.Thread = null;
         defer {
             fixture.ready.set();
             for (workers[0..started]) |worker| worker.join();
+            if (consumer) |worker| worker.join();
         }
         for (&workers, 0..) |*worker, index| {
             worker.* = try std.Thread.spawn(.{}, Fixture.register, .{ &fixture, index });
             started += 1;
         }
+        consumer = try std.Thread.spawn(.{}, Fixture.drain, .{&fixture});
     }
     try std.testing.expectEqual(@as(usize, 0), fixture.rejected.load(.monotonic));
     const ids = std.mem.asBytes(&fixture.ids);
@@ -512,4 +530,7 @@ test "work done ownership serializes concurrent registration and future identity
     }
     drain_global_work_done();
     try std.testing.expectEqual(@as(usize, MAX_GLOBAL_WORK_DONE), fixture.delivered.load(.monotonic));
+    for (&fixture.seen) |*row| for (row) |*seen| {
+        try std.testing.expectEqual(@as(usize, 1), seen.load(.monotonic));
+    };
 }
