@@ -66,6 +66,10 @@ classified and cannot be promoted by benchmark results.
   exhausts command kinds in parsing and payload cleanup. Alias coverage and
   ambiguity fail compilation; allocation failures retain their original cause.
   These structural checks do not replace allocation and behavioral regressions.
+- Native callback dispatch transfers pending records before invoking foreign
+  code, and synchronizes shared registration and future identity. Reentrant
+  registration and concurrent producers require behavioral regressions; a
+  locked producer alone does not establish safe callback delivery.
 - Quirk selector changes preserve scope membership, profile filtering, ranking,
   first-input ties, match counts, and proof/action decisions. Characterize both
   builders against retained decisions and exercise allocation failure before

@@ -16,6 +16,7 @@ from bench.gates.compute_program_gate import (
     digest,
     validate_gpu_timing,
     validate_native_audit,
+    validate_row_comparability,
     validate_run,
 )
 from bench.lib.compute_program_fixture import load_fixture
@@ -438,6 +439,152 @@ class ComputeProgramGateTests(unittest.TestCase):
         Path(self.report['inputPaths']['input']).write_bytes(struct.pack('<f', 2.0))
         with self.assertRaisesRegex(ValueError, 'reference escapes or changed'):
             load_fixture(path, ROOT)
+
+    def test_comparison_rows_emits_structured_comparability_fields(self) -> None:
+        base = copy.deepcopy(self.report)
+        base.update(
+            schemaVersion=6,
+            deviceStartupTimingScope='provider-import-through-device-ready',
+            providerEvidenceMs=1,
+            adapter={
+                'isFallbackAdapter': False,
+                'vendor': 'fixture-vendor',
+                'device': 'fixture-device',
+                'vendorID': 4098,
+                'deviceID': 7,
+                'architecture': None,
+                'description': None,
+                'driverVersion': None,
+            },
+        )
+        doe_report = copy.deepcopy(base)
+        doe_report.update(provider='doe-recorded', phase='measure')
+        dawn_report = copy.deepcopy(base)
+        dawn_report.update(provider='dawn', phase='measure')
+        wgpu_report = copy.deepcopy(base)
+        wgpu_report.update(provider='wgpu', phase='measure',
+                           runtime={'name': 'deno', 'version': '2.9.6'})
+        doe_path = self.path.with_name('doe.json')
+        dawn_path = self.path.with_name('dawn.json')
+        wgpu_path = self.path.with_name('wgpu.json')
+
+        policy = self.policy | {'applications': ['image_edges'],
+                                'providers': ['doe-recorded', 'dawn', 'wgpu']}
+        reports = [(doe_path, doe_report), (dawn_path, dawn_report), (wgpu_path, wgpu_report)]
+        rows = comparison_rows(reports, policy)
+
+        row_map = {row['comparator']: row for row in rows}
+        self.assertIn('dawn', row_map)
+        self.assertIn('wgpu', row_map)
+
+        wgpu_row = row_map['wgpu']
+        self.assertEqual(wgpu_row['hostRuntime'], 'deno')
+        self.assertEqual(wgpu_row['pollingModel'], 'deno-poll')
+        self.assertEqual(wgpu_row['completionModel'], 'queue-and-map')
+        self.assertEqual(wgpu_row['readbackModel'], 'mapAsync-copy-unmap')
+        self.assertTrue(wgpu_row['pathAsymmetry'])
+        self.assertEqual(wgpu_row['exclusionReason'], 'deno_wgpu_host_polling_asymmetry')
+        self.assertFalse(wgpu_row['claimEligible'])
+        self.assertEqual(wgpu_row['claimStatus'], 'diagnostic')
+
+        dawn_row = row_map['dawn']
+        self.assertEqual(dawn_row['hostRuntime'], 'node')
+        self.assertEqual(dawn_row['pollingModel'], 'node-addon-tick')
+        self.assertFalse(dawn_row['pathAsymmetry'])
+        self.assertIsNone(dawn_row['exclusionReason'])
+        self.assertTrue(dawn_row['claimEligible'])
+
+        validate_row_comparability(rows)
+
+    def test_wgpu_huge_speedup_cannot_become_claimable(self) -> None:
+        row = {
+            'rowId': 'adversarial_image_edges_vs_wgpu',
+            'backend': 'vulkan',
+            'comparator': 'wgpu',
+            'claimStatus': 'diagnostic',
+            'hostRuntime': 'deno',
+            'completionModel': 'queue-and-map',
+            'readbackModel': 'mapAsync-copy-unmap',
+            'pollingModel': 'deno-poll',
+            'pathAsymmetry': True,
+            'exclusionReason': 'deno_wgpu_host_polling_asymmetry',
+            'claimEligible': False,
+            'p50SpeedRatio': 100.0,
+            'p95SpeedRatio': 80.0,
+            'p99SpeedRatio': 60.0,
+            'suspiciousSpeedup': True,
+        }
+        validate_row_comparability([row])
+
+        bad_claimable = copy.deepcopy(row)
+        bad_claimable['claimStatus'] = 'claimable'
+        with self.assertRaisesRegex(ValueError, 'pathAsymmetry=true cannot be claimed as evidence of superiority'):
+            validate_row_comparability([bad_claimable])
+
+        bad_eligible = copy.deepcopy(row)
+        bad_eligible['claimEligible'] = True
+        with self.assertRaisesRegex(ValueError, 'pathAsymmetry=true requires claimEligible=false'):
+            validate_row_comparability([bad_eligible])
+
+        bad_no_reason = copy.deepcopy(row)
+        bad_no_reason['exclusionReason'] = None
+        with self.assertRaisesRegex(ValueError, 'pathAsymmetry=true requires a non-empty exclusionReason'):
+            validate_row_comparability([bad_no_reason])
+
+    def test_schema_v2_validates_comparability_and_rejects_asymmetric_claims(self) -> None:
+        schema = json.loads((ROOT / 'config/compute-program-matrix.schema.json').read_text())
+        validator = jsonschema.Draft202012Validator(schema)
+
+        summary = {
+            'schemaVersion': 2,
+            'kind': 'compute_program_matrix',
+            'status': 'diagnostic',
+            'policyHash': 'a' * 64,
+            'backend': 'vulkan',
+            'sources': [{'path': 'test.py', 'hash': 'b' * 64}],
+            'artifacts': [{'path': 'test.json', 'hash': 'c' * 64}],
+            'error': None,
+            'rows': [
+                {
+                    'rowId': 'image_edges_vs_wgpu',
+                    'backend': 'vulkan',
+                    'comparator': 'wgpu',
+                    'claimStatus': 'diagnostic',
+                    'baselineStatsMs': {'count': 10, 'minMs': 1, 'maxMs': 2, 'p10Ms': 1, 'p50Ms': 1.2,
+                                        'p95Ms': 1.8, 'p99Ms': 1.9, 'meanMs': 1.3, 'stdevMs': 0.2},
+                    'comparisonStatsMs': {'count': 10, 'minMs': 50, 'maxMs': 100, 'p10Ms': 55, 'p50Ms': 70,
+                                          'p95Ms': 90, 'p99Ms': 95, 'meanMs': 72, 'stdevMs': 10},
+                    'p50SpeedRatio': 58.3,
+                    'p95SpeedRatio': 50.0,
+                    'p99SpeedRatio': 50.0,
+                    'cpuP95Ratio': 2.0,
+                    'preparationRecoveredAfterRuns': 1,
+                    'deadlineCrossing': False,
+                    'cpuOutcome': True,
+                    'suspiciousSpeedup': True,
+                    'artifactPaths': ['path1', 'path2'],
+                    'caveat': 'wgpu host polling asymmetry caveat',
+                    'hostRuntime': 'deno',
+                    'completionModel': 'queue-and-map',
+                    'readbackModel': 'mapAsync-copy-unmap',
+                    'pollingModel': 'deno-poll',
+                    'pathAsymmetry': True,
+                    'exclusionReason': 'deno_wgpu_host_polling_asymmetry',
+                    'claimEligible': False,
+                }
+            ]
+        }
+        validator.validate(summary)
+
+        bad_summary = copy.deepcopy(summary)
+        bad_summary['rows'][0]['claimStatus'] = 'claimable'
+        with self.assertRaises(jsonschema.ValidationError):
+            validator.validate(bad_summary)
+
+        bad_summary_eligible = copy.deepcopy(summary)
+        bad_summary_eligible['rows'][0]['claimEligible'] = True
+        with self.assertRaises(jsonschema.ValidationError):
+            validator.validate(bad_summary_eligible)
 
 
 if __name__ == '__main__':

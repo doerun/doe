@@ -150,6 +150,24 @@ def comparison_rows(reports: list[tuple[Path, dict[str, Any]]], policy: dict[str
             saved = control_stats["p50Ms"] - candidate_stats["p50Ms"]
             preparation_delta = sum(report["preparationMs"] for _, report in doe) / len(doe) - sum(
                 report["preparationMs"] for _, report in control) / len(control)
+            comparator_runtime = control[0][1].get("runtime", {}).get("name", "deno" if comparator == "wgpu" else "node")
+            completion_model = control[0][1]["cold"]["receipt"].get("completionMode", "queue-and-map")
+            readback_model = control[0][1]["cold"]["receipt"].get("readbackPath", "mapAsync-copy-unmap")
+            if comparator == "wgpu":
+                polling_model = "deno-poll"
+                path_asymmetry = True
+                exclusion_reason = "deno_wgpu_host_polling_asymmetry"
+                claim_eligible = False
+            elif comparator == "dawn":
+                polling_model = "node-addon-tick"
+                path_asymmetry = False
+                exclusion_reason = None
+                claim_eligible = True
+            else:
+                polling_model = "event-loop"
+                path_asymmetry = False
+                exclusion_reason = None
+                claim_eligible = False
             rows.append({
                 "rowId": f"{application}_vs_{comparator}", "backend": doe[0][1]["backend"],
                 "comparator": comparator, "claimStatus": "diagnostic",
@@ -164,6 +182,13 @@ def comparison_rows(reports: list[tuple[Path, dict[str, Any]]], policy: dict[str
                 "cpuOutcome": control_cpu["p95Ms"] >= doe_cpu["p95Ms"] * policy["minimumCpuReductionRatio"],
                 "artifactPaths": [str(path) for path, _ in [*doe, *control]],
                 "caveat": "Application invocation wall; persistent resources on both sides. GPU recording owns its compiled command buffer; preparation is measured separately. wgpu uses Deno and includes its host/polling costs. Requested buffer bytes are not peak GPU memory. No independent adoption or Metal transfer is inferred.",
+                "hostRuntime": comparator_runtime,
+                "completionModel": completion_model,
+                "readbackModel": readback_model,
+                "pollingModel": polling_model,
+                "pathAsymmetry": path_asymmetry,
+                "exclusionReason": exclusion_reason,
+                "claimEligible": claim_eligible,
             })
     return rows
 
@@ -211,7 +236,7 @@ def main() -> int:
     args.policy = output / 'policy.json'
     args.policy.write_text(json.dumps(policy, indent=2) + '\n', encoding='utf-8')
     reports: list[tuple[Path, dict[str, Any]]] = []
-    summary: dict[str, Any] = {"schemaVersion": 1, "kind": "compute_program_matrix", "status": "running",
+    summary: dict[str, Any] = {"schemaVersion": 2, "kind": "compute_program_matrix", "status": "running",
                                "policyHash": digest(args.policy), "backend": args.backend,
                                "rows": [], "artifacts": [], "sources": [], "error": None}
     source_paths = [Path(__file__), ROOT / 'bench/runners/run-compute-program.mjs',

@@ -54,6 +54,19 @@ external application adoption. Earlier threshold-only calibration failures
 retain their original meaning. Contracts, assumptions, and migration are in
 [command storage development](../command-storage-development.md).
 
+## Structured row comparability and wgpu claim exclusion
+
+Evaluation matrix schema version 2 introduces structured row-level comparability
+contracts in [`config/compute-program-matrix.schema.json`](../../config/compute-program-matrix.schema.json).
+Comparison rows now explicitly record `hostRuntime`, `completionModel`,
+`readbackModel`, `pollingModel`, `pathAsymmetry`, `exclusionReason`, and
+`claimEligible`. Deno/wgpu comparison rows declare `pathAsymmetry: true`,
+`exclusionReason: "deno_wgpu_host_polling_asymmetry"`, and `claimEligible: false`,
+keeping wgpu evidence visible for host/polling diagnostics while barring it from
+superiority claims in [`bench/gates/compute_program_gate.py`](../../bench/gates/compute_program_gate.py).
+Unit tests in [`bench/tests/test_compute_program_gate.py`](../../bench/tests/test_compute_program_gate.py)
+enforce that asymmetric rows cannot be marked claimable regardless of speed ratios.
+
 ## Current A/A findings and correctness repairs
 
 The [accepted-package A/A control](../../bench/out/compute-program/20260908-startup-aa/completion.md)

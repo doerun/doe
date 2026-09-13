@@ -10,6 +10,16 @@ The import fence and source-layout gates are the structural authority; this
 page records the lifecycle interpretation and follow-up decisions. The target
 structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../runtime-hexagonal-architecture-plan.md).
 
+## Completion callback batch ownership
+
+The [completion-dispatch record](../../bench/out/command-contract/20260912-completion-dispatch/README.md)
+tracks a callback overwriting pending delivery during reentrant registration.
+The repair transfers the pending batch before callbacks run and synchronizes
+registration and future identity. Native regression validation follows the
+active physical calibration; the accepted staged runtime remains unchanged.
+The compatibility registry retains its process-wide scope and existing callback
+modes, with caller-owned userdata through delivery.
+
 ## Command ingestion completeness and allocation errors
 
 The [command-ingestion record](../../bench/out/command-contract/20260912-parser-completeness/README.md)

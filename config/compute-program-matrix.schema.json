@@ -16,7 +16,11 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": 1
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
     },
     "kind": {
       "const": "compute_program_matrix"
@@ -80,7 +84,10 @@
             ]
           },
           "claimStatus": {
-            "const": "diagnostic"
+            "enum": [
+              "diagnostic",
+              "claimable"
+            ]
           },
           "baselineStatsMs": {
             "type": "object",
@@ -231,6 +238,34 @@
           "caveat": {
             "type": "string",
             "minLength": 1
+          },
+          "hostRuntime": {
+            "type": "string",
+            "minLength": 1
+          },
+          "completionModel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "readbackModel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pollingModel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pathAsymmetry": {
+            "type": "boolean"
+          },
+          "exclusionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "claimEligible": {
+            "type": "boolean"
           }
         }
       }
@@ -283,5 +318,58 @@
         "string"
       ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rows": {
+            "items": {
+              "required": [
+                "hostRuntime",
+                "completionModel",
+                "readbackModel",
+                "pollingModel",
+                "pathAsymmetry",
+                "exclusionReason",
+                "claimEligible"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "rows": {
+          "items": {
+            "if": {
+              "properties": {
+                "pathAsymmetry": {
+                  "const": true
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "claimEligible": {
+                  "const": false
+                },
+                "claimStatus": {
+                  "const": "diagnostic"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

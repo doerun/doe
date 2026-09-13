@@ -301,6 +301,34 @@ def validate_native_audit(path: Path, program: dict[str, Any], runs: int, *, gpu
             raise ValueError(f"{journal}: backend artifact bytes changed")
 
 
+def validate_row_comparability(rows: list[dict[str, Any]]) -> None:
+    """Enforce structured comparability and claim exclusion on comparison rows."""
+    for row in rows:
+        row_id = row.get("rowId", "unknown")
+        path_asymmetry = row.get("pathAsymmetry")
+        claim_eligible = row.get("claimEligible")
+        claim_status = row.get("claimStatus")
+        exclusion_reason = row.get("exclusionReason")
+        suspicious_speedup = row.get("suspiciousSpeedup")
+        if path_asymmetry is True:
+            if claim_eligible is not False:
+                raise ValueError(f"{row_id}: pathAsymmetry=true requires claimEligible=false")
+            if not exclusion_reason:
+                raise ValueError(f"{row_id}: pathAsymmetry=true requires a non-empty exclusionReason")
+            if claim_status == "claimable":
+                raise ValueError(
+                    f"{row_id}: pathAsymmetry=true cannot be claimed as evidence of superiority "
+                    f"(claimStatus must be diagnostic; exclusionReason={exclusion_reason})"
+                )
+        elif path_asymmetry is False:
+            if exclusion_reason is not None:
+                raise ValueError(f"{row_id}: symmetric row cannot declare an exclusionReason")
+        if claim_eligible is False and claim_status == "claimable":
+            raise ValueError(f"{row_id}: claimEligible=false cannot have claimStatus=claimable")
+        if suspicious_speedup is True and claim_status == "claimable":
+            raise ValueError(f"{row_id}: suspiciousSpeedup=true cannot be claimed without audited parity")
+
+
 def validate_matrix(path: Path, root: Path, policy_path: Path) -> dict[str, Any]:
     from bench.runners.run_compute_program_evidence import comparison_rows
 
@@ -332,6 +360,7 @@ def validate_matrix(path: Path, root: Path, policy_path: Path) -> dict[str, Any]
                 raise ValueError(f'{path}: incomplete audit or measurement coverage')
     if summary['rows'] != comparison_rows(reports, policy):
         raise ValueError(f'{path}: comparison rows do not match raw measurements')
+    validate_row_comparability(summary['rows'])
     return summary
 
 

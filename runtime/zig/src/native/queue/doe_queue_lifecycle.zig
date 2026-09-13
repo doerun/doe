@@ -1,4 +1,5 @@
 const builtin = @import("builtin");
+const std = @import("std");
 const abi_core = @import("../../core/abi/wgpu_core_base_types.zig");
 const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
 const pipeline_cache_ops = @import("../../backend/dropin_pipeline_cache.zig");
@@ -269,6 +270,7 @@ pub fn doeNativeQueueAddRef(raw: ?*anyopaque) void {
 }
 
 const MAX_GLOBAL_WORK_DONE: usize = 128;
+const WORK_DONE_FUTURE_ID_BASE: u64 = 4;
 const WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS: u32 = 0x00000002;
 const WGPU_CALLBACK_MODE_ALLOW_SPONTANEOUS: u32 = 0x00000003;
 
@@ -278,9 +280,12 @@ const WorkDoneEntry = struct {
     userdata2: ?*anyopaque,
 };
 
+// This compatibility registry owns pending callback records process-wide.
+// Transfer a batch under the mutex; invoke foreign callbacks after unlocking.
+var global_work_done_mutex: std.Thread.Mutex = .{};
 var global_work_done_buf: [MAX_GLOBAL_WORK_DONE]WorkDoneEntry = undefined;
 var global_work_done_count: usize = 0;
-var global_work_done_future_id: u64 = 4;
+var global_work_done_future_id: u64 = WORK_DONE_FUTURE_ID_BASE;
 
 fn shouldDispatchSpontaneousMetalWorkDone(
     q: *const DoeQueue,
@@ -292,14 +297,18 @@ fn shouldDispatchSpontaneousMetalWorkDone(
 }
 
 fn next_work_done_future() abi_core.WGPUFuture {
+    global_work_done_mutex.lock();
+    defer global_work_done_mutex.unlock();
     const id = global_work_done_future_id;
     global_work_done_future_id +%= 1;
-    if (global_work_done_future_id == 0) global_work_done_future_id = 4;
+    if (global_work_done_future_id == 0) global_work_done_future_id = WORK_DONE_FUTURE_ID_BASE;
     return .{ .id = id };
 }
 
 fn enqueue_global_work_done(info: abi_callback.WGPUQueueWorkDoneCallbackInfo) bool {
     if (info.callback == null) return true;
+    global_work_done_mutex.lock();
+    defer global_work_done_mutex.unlock();
     if (global_work_done_count >= MAX_GLOBAL_WORK_DONE) return false;
     global_work_done_buf[global_work_done_count] = .{
         .cb = info.callback,
@@ -311,9 +320,13 @@ fn enqueue_global_work_done(info: abi_callback.WGPUQueueWorkDoneCallbackInfo) bo
 }
 
 pub fn drain_global_work_done() void {
+    var batch: [MAX_GLOBAL_WORK_DONE]WorkDoneEntry = undefined;
+    global_work_done_mutex.lock();
     const n = global_work_done_count;
+    @memcpy(batch[0..n], global_work_done_buf[0..n]);
     global_work_done_count = 0;
-    for (global_work_done_buf[0..n]) |entry| {
+    global_work_done_mutex.unlock();
+    for (batch[0..n]) |entry| {
         if (entry.cb) |f| {
             f(.success, .{ .data = null, .length = 0 }, entry.userdata1, entry.userdata2);
         }
@@ -384,4 +397,119 @@ test "spontaneous completion stays on the synchronous path for non-Metal queues"
         .userdata2 = null,
     };
     try testing.expect(!shouldDispatchSpontaneousMetalWorkDone(&queue, info));
+}
+
+test "work done ownership preserves pending callbacks during reentrant enqueue" {
+    const Fixture = struct {
+        const Self = @This();
+        observed: [4]u8 = undefined,
+        count: usize = 0,
+        rejected: usize = 0,
+
+        const Event = struct {
+            owner: *Self,
+            id: u8,
+            followups: []const Event = &.{},
+
+            fn info(self: *const Event) abi_callback.WGPUQueueWorkDoneCallbackInfo {
+                return .{
+                    .nextInChain = null,
+                    .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+                    .callback = callback,
+                    .userdata1 = @ptrCast(@constCast(self)),
+                    .userdata2 = null,
+                };
+            }
+
+            fn callback(
+                _: abi_callback.WGPUQueueWorkDoneStatus,
+                _: abi_core.WGPUStringView,
+                userdata: ?*anyopaque,
+                _: ?*anyopaque,
+            ) callconv(.c) void {
+                const self: *const Event = @ptrCast(@alignCast(userdata.?));
+                if (self.owner.count < self.owner.observed.len) self.owner.observed[self.owner.count] = self.id;
+                self.owner.count += 1;
+                for (self.followups) |*event| {
+                    self.owner.rejected += @intFromBool(!enqueue_global_work_done(event.info()));
+                }
+            }
+        };
+    };
+    var fixture: Fixture = .{};
+    const followups = [_]Fixture.Event{
+        .{ .owner = &fixture, .id = 3 },
+        .{ .owner = &fixture, .id = 4 },
+    };
+    const initial = [_]Fixture.Event{
+        .{ .owner = &fixture, .id = 1, .followups = &followups },
+        .{ .owner = &fixture, .id = 2 },
+    };
+    defer drain_global_work_done();
+    for (&initial) |*event| try std.testing.expect(enqueue_global_work_done(event.info()));
+    drain_global_work_done();
+    try std.testing.expectEqual(@as(usize, 0), fixture.rejected);
+    try std.testing.expectEqual(@as(usize, 2), fixture.count);
+    try std.testing.expectEqualSlices(u8, &.{ 1, 2 }, fixture.observed[0..fixture.count]);
+    drain_global_work_done();
+    try std.testing.expectEqual(@as(usize, 4), fixture.count);
+    try std.testing.expectEqualSlices(u8, &.{ 1, 2, 3, 4 }, &fixture.observed);
+}
+
+test "work done ownership serializes concurrent registration and future identity" {
+    const Fixture = struct {
+        const THREADS = 4;
+        const PER_THREAD = MAX_GLOBAL_WORK_DONE / THREADS;
+        ready: std.Thread.ResetEvent = .{},
+        delivered: std.atomic.Value(usize) = .init(0),
+        rejected: std.atomic.Value(usize) = .init(0),
+        ids: [THREADS][PER_THREAD]u64 = undefined,
+
+        fn callback(
+            _: abi_callback.WGPUQueueWorkDoneStatus,
+            _: abi_core.WGPUStringView,
+            userdata: ?*anyopaque,
+            _: ?*anyopaque,
+        ) callconv(.c) void {
+            const self: *@This() = @ptrCast(@alignCast(userdata.?));
+            _ = self.delivered.fetchAdd(1, .monotonic);
+        }
+
+        fn register(self: *@This(), index: usize) void {
+            self.ready.wait();
+            for (&self.ids[index]) |*id| {
+                id.* = next_work_done_future().id;
+                if (!enqueue_global_work_done(.{
+                    .nextInChain = null,
+                    .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+                    .callback = callback,
+                    .userdata1 = @ptrCast(self),
+                    .userdata2 = null,
+                })) _ = self.rejected.fetchAdd(1, .monotonic);
+            }
+        }
+    };
+    var fixture: Fixture = .{};
+    var workers: [Fixture.THREADS]std.Thread = undefined;
+    var started: usize = 0;
+    defer drain_global_work_done();
+    {
+        defer {
+            fixture.ready.set();
+            for (workers[0..started]) |worker| worker.join();
+        }
+        for (&workers, 0..) |*worker, index| {
+            worker.* = try std.Thread.spawn(.{}, Fixture.register, .{ &fixture, index });
+            started += 1;
+        }
+    }
+    try std.testing.expectEqual(@as(usize, 0), fixture.rejected.load(.monotonic));
+    const ids = std.mem.asBytes(&fixture.ids);
+    const flat = std.mem.bytesAsSlice(u64, ids);
+    for (flat, 0..) |id, index| {
+        try std.testing.expect(id >= WORK_DONE_FUTURE_ID_BASE);
+        for (flat[0..index]) |previous| try std.testing.expect(id != previous);
+    }
+    drain_global_work_done();
+    try std.testing.expectEqual(@as(usize, MAX_GLOBAL_WORK_DONE), fixture.delivered.load(.monotonic));
 }

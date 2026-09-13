@@ -161,6 +161,13 @@ locations and operation identity; diagnostics belong to the compilation that
 produced them. Neither evidence collection nor workaround selection may become
 a competing execution implementation.
 
+The native compatibility work-done registry owns pending callback records
+process-wide. Registration, future identity, and batch transfer are serialized;
+event processing owns its transferred batch and invokes foreign callbacks after
+unlocking. Reentrant registration therefore cannot overwrite pending delivery.
+Callback userdata remains caller-owned through delivery. This registry does not
+provide instance-local event routing or establish asynchronous GPU completion.
+
 Resolve build configuration, device discovery, and invocation-dependent checks
 at their respective lifetimes. Toggle classifications are compiled from the
 versioned registry into immutable storage; physical GPU and driver matching
