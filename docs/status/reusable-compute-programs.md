@@ -2,19 +2,17 @@
 
 ## GPU interference attribution
 
-The [latest warmup continuation](../../bench/out/compute-program/20260913-warmup-qualification/README.md)
-retains another incomplete calibration rejected on observed GPU work. Its
-departed client's application identity is unknown. The
+The [latest warmup continuation](../../bench/out/compute-program/20260913-warmup-calibration-continued/README.md)
+retains an incomplete calibration rejected on observed Chrome GPU work from the
+Doppler consumer-streaming worktree. Its raw sidecar and matching live process
+inspection bind the interference to the same boot, PID, and start identity. The
 [observer repair](../../bench/out/compute-program/20260913-gpu-activity-attribution/README.md)
-now retains boot-scoped task identity alongside raw counters, preserving null
-attribution for visibility gaps and process races. A separate live observation
-identifies Chrome from the Doppler consumer-streaming worktree using the shared
-device. A fresh calibration with the revised observer then rejected GPU work
-from another captured Chrome process in that worktree. The attributed sidecar
-and matching live process identity are retained in the repair record. Counter
-admission and accepted runtime bytes remain unchanged. A complete calibration
-requires a window without the competing browser GPU work; interrupted cohorts
-cannot qualify the procedure or authorize a candidate.
+retains boot-scoped task identity alongside raw counters, preserving null
+attribution for visibility gaps and process races. Earlier departed clients
+without captured task identity remain unattributed. Counter admission, accepted
+runtime bytes, and measurement thresholds remain unchanged. A complete
+calibration requires a window without the competing browser GPU work;
+interrupted cohorts cannot qualify the procedure or authorize a candidate.
 
 ## Process-boundary evidence retention
 
