@@ -10,6 +10,17 @@ The import fence and source-layout gates are the structural authority; this
 page records the lifecycle interpretation and follow-up decisions. The target
 structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../runtime-hexagonal-architecture-plan.md).
 
+## Execution handler completeness
+
+The [dispatcher record](../../bench/out/command-contract/20260913-dispatch-completeness/README.md)
+extends command-contract coverage into the core and full execution switches.
+Omitting a handler for an in-scope command now requests a compiler error instead
+of silently compiling a path to `unreachable`. Existing payload types, scope
+decisions, handler implementations, and public commands keep their meanings.
+Production-build mutation checks and runtime verification are retained in the
+record; this structural change does not establish validator correctness or
+application performance. Accepted staged packages remain unchanged.
+
 ## Completion callback batch ownership
 
 The [completion-dispatch record](../../bench/out/command-contract/20260912-completion-dispatch/README.md)

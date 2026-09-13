@@ -22,6 +22,11 @@ pub fn execute(self: anytype, command: model.Command) !?execution_contract.Nativ
         .surface_unconfigure => |payload| try surface_commands.executeSurfaceUnconfigure(self, payload),
         .surface_release => |payload| try surface_commands.executeSurfaceRelease(self, payload),
         .async_diagnostics => |payload| try async_diagnostics_command.executeAsyncDiagnostics(self, payload),
-        else => unreachable,
+        inline else => |_, tag| {
+            if (comptime model.isFullOnlyKind(tag)) {
+                @compileError("full command requires an execution handler: " ++ @tagName(tag));
+            }
+            unreachable;
+        },
     };
 }

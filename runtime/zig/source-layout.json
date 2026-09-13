@@ -3076,9 +3076,9 @@
       },
       "src/core/command_dispatch.zig": {
         "decision": "Keep",
-        "moduleSha256": "dfabcd6241796592e4a3833185c89733a251e0999187fb2524fa0ac0a69b7bb8",
-        "reason": "Keep: reachable core implementation shared by 2 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-hexagonal-migration/2026-08-22"
+        "moduleSha256": "797d0c2f307b59770c0581208d90901270cb136039f1b8c091a93b86cba77949",
+        "reason": "Keep: command dispatch owns scope-specific handler selection and rejects omissions against the canonical command contract during compilation.",
+        "reviewer": "codex-command-handler-coverage/2026-09-13"
       },
       "src/core/compute/dispatch_preconditions.zig": {
         "decision": "Keep",
@@ -3280,9 +3280,9 @@
       },
       "src/full/command_dispatch.zig": {
         "decision": "Keep",
-        "moduleSha256": "b20e5b70783b4622727706add6e66e1f61ce987e4f9acfc58e4262c178ccee3c",
-        "reason": "Keep: reachable full implementation shared by 2 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-hexagonal-migration/2026-08-22"
+        "moduleSha256": "1fec9fcae9345ef5376034677942943f27ca75cc6f2c939f54db965ba7eada23",
+        "reason": "Keep: command dispatch owns scope-specific handler selection and rejects omissions against the canonical command contract during compilation.",
+        "reviewer": "codex-command-handler-coverage/2026-09-13"
       },
       "src/full/lifecycle/wgpu_async_diagnostics_command.zig": {
         "decision": "Keep",

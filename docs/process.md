@@ -65,6 +65,9 @@ classified and cannot be promoted by benchmark results.
 - Command ingestion derives canonical names from the command contract and
   exhausts command kinds in parsing and payload cleanup. Alias coverage and
   ambiguity fail compilation; allocation failures retain their original cause.
+  Core and full dispatchers also reject omitted execution handlers at compilation
+  according to that contract's scope. Isolated production builds must reproduce
+  missing-handler failures without adding a parallel handler registry.
   These structural checks do not replace allocation and behavioral regressions.
 - Native callback dispatch transfers pending records before invoking foreign
   code, and synchronizes shared registration and future identity. Reentrant

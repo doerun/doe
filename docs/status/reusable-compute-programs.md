@@ -9,9 +9,12 @@ departed client's application identity is unknown. The
 now retains boot-scoped task identity alongside raw counters, preserving null
 attribution for visibility gaps and process races. A separate live observation
 identifies Chrome from the Doppler consumer-streaming worktree using the shared
-device. Counter admission and accepted runtime bytes remain unchanged. Fresh
-calibration with the revised observer and a quiet host remains required;
-interrupted cohorts cannot qualify the procedure or authorize a candidate.
+device. A fresh calibration with the revised observer then rejected GPU work
+from another captured Chrome process in that worktree. The attributed sidecar
+and matching live process identity are retained in the repair record. Counter
+admission and accepted runtime bytes remain unchanged. A complete calibration
+requires a window without the competing browser GPU work; interrupted cohorts
+cannot qualify the procedure or authorize a candidate.
 
 ## Process-boundary evidence retention
 

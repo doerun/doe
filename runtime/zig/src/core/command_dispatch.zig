@@ -18,6 +18,11 @@ pub fn execute(self: anytype, command: model.Command) !?execution_contract.Nativ
         .texture_query => |payload| try texture_commands.executeTextureQuery(self, payload),
         .texture_destroy => |payload| try texture_commands.executeTextureDestroy(self, payload),
         .map_async => |payload| try copy_commands.executeMapAsync(self, payload),
-        else => unreachable,
+        inline else => |_, tag| {
+            if (comptime model.isCoreKind(tag)) {
+                @compileError("core command requires an execution handler: " ++ @tagName(tag));
+            }
+            unreachable;
+        },
     };
 }
