@@ -33,6 +33,7 @@ const test_src_runtime_trace_trace_zig_1a2b882c = @import("src/runtime/trace/tra
 const test_src_core_resource_wgpu_resource_normalizers_zig_fd16642d = @import("src/core/resource/wgpu_resource_normalizers.zig");
 const test_src_command_command_json_zig_5cc9e660 = @import("src/command/command_json.zig");
 const test_src_contracts_artifact_zig_0abbf03a = @import("src/contracts/artifact.zig");
+const test_src_contracts_prepared_operation_zig_1bb02759 = @import("src/contracts/prepared_operation.zig");
 const test_src_backend_common_artifact_state_zig_fb2d1fdc = @import("src/backend/common/artifact_state.zig");
 const test_src_runtime_task_pool_zig_46d4c2a7 = @import("src/runtime/task_pool.zig");
 const test_src_runtime_pipeline_singleflight_zig_b6b3feef = @import("src/runtime/pipeline_singleflight.zig");
@@ -106,6 +107,7 @@ comptime {
     _ = test_src_core_resource_wgpu_resource_normalizers_zig_fd16642d;
     _ = test_src_command_command_json_zig_5cc9e660;
     _ = test_src_contracts_artifact_zig_0abbf03a;
+    _ = test_src_contracts_prepared_operation_zig_1bb02759;
     _ = test_src_backend_common_artifact_state_zig_fb2d1fdc;
     _ = test_src_runtime_task_pool_zig_46d4c2a7;
     _ = test_src_runtime_pipeline_singleflight_zig_b6b3feef;

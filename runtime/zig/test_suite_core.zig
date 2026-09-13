@@ -10,6 +10,7 @@ const test_tests_core_surface_test_zig_20da8529 = @import("tests/core/surface_te
 const test_src_core_resource_wgpu_resource_normalizers_zig_fd16642d = @import("src/core/resource/wgpu_resource_normalizers.zig");
 const test_src_command_command_json_zig_5cc9e660 = @import("src/command/command_json.zig");
 const test_src_contracts_artifact_zig_0abbf03a = @import("src/contracts/artifact.zig");
+const test_src_contracts_prepared_operation_zig_1bb02759 = @import("src/contracts/prepared_operation.zig");
 const test_src_backend_common_artifact_state_zig_fb2d1fdc = @import("src/backend/common/artifact_state.zig");
 const test_tests_core_gpu_timeline_test_zig_db19d8b7 = @import("tests/core/gpu_timeline_test.zig");
 const test_tests_core_multi_queue_test_zig_b8c66d42 = @import("tests/core/multi_queue_test.zig");
@@ -49,6 +50,7 @@ comptime {
     _ = test_src_core_resource_wgpu_resource_normalizers_zig_fd16642d;
     _ = test_src_command_command_json_zig_5cc9e660;
     _ = test_src_contracts_artifact_zig_0abbf03a;
+    _ = test_src_contracts_prepared_operation_zig_1bb02759;
     _ = test_src_backend_common_artifact_state_zig_fb2d1fdc;
     _ = test_tests_core_gpu_timeline_test_zig_db19d8b7;
     _ = test_tests_core_multi_queue_test_zig_b8c66d42;

@@ -69,6 +69,12 @@ classified and cannot be promoted by benchmark results.
   according to that contract's scope. Isolated production builds must reproduce
   missing-handler failures without adding a parallel handler registry.
   These structural checks do not replace allocation and behavioral regressions.
+- Retained prepared-operation payloads require a defined cloning rule. Typed
+  data pointers, lengthless pointers, and untagged unions cannot silently cross
+  that boundary; opaque handles preserve their external ownership obligations.
+  Slice alignment and sentinels survive copying. The generated test inventory
+  registers snapshot lifetime and allocation-failure coverage, and isolated
+  compile checks reject unsafe fields added to the actual operation contract.
 - Native callback dispatch transfers pending records before invoking foreign
   code, and synchronizes shared registration and future identity. Reentrant
   registration and concurrent producers require behavioral regressions; a

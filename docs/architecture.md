@@ -153,6 +153,12 @@ within its synchronous execution and callback scope. Deferred use owns an
 completion: command recording, submission, completion, and final resource
 release must each preserve the owner's lifetime obligations. Updates prepare
 replacement state before publishing it, and failure preserves the old owner.
+Snapshot cloning preserves slice alignment and sentinels and rejects typed data
+pointers without an ownership rule. Opaque handles and callback addresses remain
+externally owned identities; copying them does not extend a resource lifetime.
+The registered snapshot tests cover source-owner release and partial-allocation
+rollback. This is structural coverage and lifetime testing, not general ownership
+proof or protection against copying an owning Zig struct.
 
 Compatibility adapters translate host values, C layouts, callbacks, and errors
 at explicit interfaces. They consume native ownership rules and expose the

@@ -151,6 +151,10 @@
           "kind": "inline"
         },
         {
+          "path": "src/contracts/prepared_operation.zig",
+          "kind": "inline"
+        },
+        {
           "path": "src/backend/common/artifact_state.zig",
           "kind": "inline"
         },
@@ -352,6 +356,10 @@
         },
         {
           "path": "src/contracts/artifact.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/contracts/prepared_operation.zig",
           "kind": "inline"
         },
         {

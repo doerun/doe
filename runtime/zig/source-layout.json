@@ -2824,9 +2824,9 @@
       },
       "src/contracts/prepared_operation.zig": {
         "decision": "Keep",
-        "moduleSha256": "f2c01f0fa04986808233028732823d1e01286758ab1f761924eb05226c312dd3",
-        "reason": "Keep: reachable neutral contract owner at src/contracts/prepared_operation.zig.",
-        "reviewer": "codex-architecture-refactor/2026-08-23"
+        "moduleSha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395",
+        "reason": "Keep: prepared operations own borrowed domain payloads and retained snapshots; cloning rejects undeclared pointer ownership and preserves slice bounds, alignment, and sentinels.",
+        "reviewer": "codex-prepared-snapshot-ownership/2026-09-13"
       },
       "src/contracts/primitives/byte_scan.zig": {
         "decision": "Keep",

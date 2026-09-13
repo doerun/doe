@@ -194,7 +194,9 @@ pub const PreparedOperation = union(enum) {
 ///
 /// Opaque handles and callback pointers remain identity values; all slices,
 /// including nested binding/oracle data, are recursively copied into the
-/// snapshot arena. Call `deinit` exactly once after the last borrowed view.
+/// snapshot arena. Their external resource owners must outlive use of the
+/// snapshot. Other pointer forms require an explicit snapshot rule. Call
+/// `deinit` exactly once after the last borrowed view.
 pub const OwnedPreparedOperation = struct {
     arena: std.heap.ArenaAllocator,
     operation: PreparedOperation,
@@ -230,17 +232,27 @@ fn cloneValue(comptime T: type, allocator: std.mem.Allocator, value: T) !T {
             for (value, 0..) |item, index| {
                 cloned[index] = try cloneValue(array.child, allocator, item);
             }
+            if (comptime array.sentinel()) |sentinel| cloned[array.len] = sentinel;
             break :blk cloned;
         },
         .pointer => |pointer| switch (pointer.size) {
             .slice => blk: {
-                const cloned = try allocator.alloc(pointer.child, value.len);
+                const cloned = try allocator.allocWithOptions(
+                    pointer.child,
+                    value.len,
+                    .fromByteUnits(pointer.alignment),
+                    pointer.sentinel(),
+                );
                 for (value, 0..) |item, index| {
                     cloned[index] = try cloneValue(pointer.child, allocator, item);
                 }
                 break :blk cloned;
             },
-            .one, .many, .c => value,
+            .one => switch (@typeInfo(pointer.child)) {
+                .@"opaque", .@"fn" => value,
+                else => @compileError("retained operation needs an ownership rule for data pointer " ++ @typeName(T)),
+            },
+            .many, .c => @compileError("retained operation needs a length-bearing slice instead of " ++ @typeName(T)),
         },
         .@"struct" => |structure| blk: {
             var cloned: T = undefined;
@@ -254,6 +266,7 @@ fn cloneValue(comptime T: type, allocator: std.mem.Allocator, value: T) !T {
             break :blk cloned;
         },
         .@"union" => |union_info| blk: {
+            if (union_info.tag_type == null) @compileError("retained operation needs a tagged union: " ++ @typeName(T));
             const active = std.meta.activeTag(value);
             inline for (union_info.fields) |field| {
                 if (active == @field(union_info.tag_type.?, field.name)) {
@@ -266,7 +279,8 @@ fn cloneValue(comptime T: type, allocator: std.mem.Allocator, value: T) !T {
             }
             unreachable;
         },
-        else => value,
+        .bool, .int, .float, .@"enum", .error_set, .void => value,
+        else => @compileError("retained operation has no snapshot rule for " ++ @typeName(T)),
     };
 }
 
@@ -389,4 +403,116 @@ test "owned prepared operation freezes nested borrowed payloads" {
     try std.testing.expectEqualStrings("abc", frozen.kernel);
     try std.testing.expectEqualStrings("u32", frozen.output_oracle.?.kind);
     try std.testing.expectEqual(@as(u64, 11), frozen.bindings.?[0].resource_handle);
+}
+
+test "owned prepared operation outlives the source allocation owner" {
+    var owned = blk: {
+        var source_owner = std.heap.ArenaAllocator.init(std.testing.allocator);
+        defer source_owner.deinit();
+        const words = try source_owner.allocator().dupe(u32, &.{ 3, 5, 7 });
+        const operation = fromCommand(.{ .buffer_write = .{
+            .handle = 19,
+            .data = words,
+        } }, 43);
+        var snapshot = try OwnedPreparedOperation.init(std.testing.allocator, operation);
+        errdefer snapshot.deinit();
+        try std.testing.expect(snapshot.borrow().transfer.operation.buffer_write.data.ptr != words.ptr);
+        break :blk snapshot;
+    };
+    defer owned.deinit();
+    try std.testing.expectEqualSlices(u32, &.{ 3, 5, 7 }, owned.borrow().transfer.operation.buffer_write.data);
+    try std.testing.expectEqual(@as(u64, 43), owned.borrow().operationId());
+}
+
+test "owned prepared operation preserves render snapshots through allocation failures" {
+    const Fixture = struct {
+        fn run(allocator: std.mem.Allocator, format: model_render.RenderIndexFormat) !void {
+            var indices16 = [_]u16{ 1, 2, 3 };
+            var indices32 = [_]u32{ 4, 5, 6 };
+            var offsets = [_]u32{ 16, 32 };
+            var shader_words = [_]u32{7} ** 1024;
+            var layouts = [_]model_render.RenderVertexBufferLayout{.{ .array_stride = 24 }};
+            var resource_token: u8 = 0;
+            const handle: *anyopaque = &resource_token;
+            var bindings = [_]model_render.RenderVertexBinding{.{ .slot = 2, .handle = handle }};
+            var entry = [_]u8{ 'm', 'a', 'i', 'n' };
+            var borrowed = fromCommand(.{ .render_draw = .{
+                .draw_count = 1,
+                .index_data = switch (format) {
+                    .uint16 => .{ .uint16 = &indices16 },
+                    .uint32 => .{ .uint32 = &indices32 },
+                },
+                .vertex_layouts = &layouts,
+                .vertex_bindings = &bindings,
+                .bind_group_dynamic_offsets = &offsets,
+                .vertex_spirv = &shader_words,
+                .fragment_spirv = &shader_words,
+                .vertex_entry_point = &entry,
+            } }, 47);
+            borrowed.render.identity.program.entry_point = &entry;
+            var owned = try OwnedPreparedOperation.init(allocator, borrowed);
+            defer owned.deinit();
+
+            indices16[0] = 99;
+            indices32[0] = 99;
+            offsets[0] = 99;
+            shader_words[0] = 99;
+            layouts[0].array_stride = 99;
+            bindings[0].handle = null;
+            entry[0] = 'x';
+
+            const frozen = owned.borrow().render;
+            const draw = frozen.operation.render_draw;
+            switch (format) {
+                .uint16 => try std.testing.expectEqualSlices(u16, &.{ 1, 2, 3 }, draw.index_data.?.uint16),
+                .uint32 => try std.testing.expectEqualSlices(u32, &.{ 4, 5, 6 }, draw.index_data.?.uint32),
+            }
+            try std.testing.expectEqualSlices(u32, &.{ 16, 32 }, draw.bind_group_dynamic_offsets.?);
+            try std.testing.expectEqual(@as(u32, 7), draw.vertex_spirv.?[0]);
+            try std.testing.expectEqual(@as(u32, 7), draw.fragment_spirv.?[0]);
+            try std.testing.expectEqual(@as(u64, 24), draw.vertex_layouts.?[0].array_stride);
+            try std.testing.expectEqual(handle, draw.vertex_bindings.?[0].handle.?);
+            try std.testing.expectEqualStrings("main", draw.vertex_entry_point.?);
+            try std.testing.expectEqualStrings("main", frozen.identity.program.entry_point);
+        }
+    };
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, Fixture.run, .{model_render.RenderIndexFormat.uint16});
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, Fixture.run, .{model_render.RenderIndexFormat.uint32});
+}
+
+test "owned prepared operation slice copying preserves alignment and sentinels" {
+    const SAMPLE_ALIGNMENT = 32;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    var source: [3:0]u8 align(SAMPLE_ALIGNMENT) = .{ 'a', 'b', 'c' };
+    const Slice = [:0]align(SAMPLE_ALIGNMENT) const u8;
+    const copied = try cloneValue(Slice, arena.allocator(), source[0..3 :0]);
+    source[0] = 'z';
+    try std.testing.expectEqualStrings("abc", copied);
+    try std.testing.expectEqual(@as(usize, 0), @intFromPtr(copied.ptr) % SAMPLE_ALIGNMENT);
+    try std.testing.expectEqual(@as(u8, 0), copied[copied.len]);
+    const empty = try cloneValue([:0]const u8, arena.allocator(), "");
+    try std.testing.expectEqual(@as(usize, 0), empty.len);
+    try std.testing.expectEqual(@as(u8, 0), empty[0]);
+    const array = try cloneValue([3:0]u8, arena.allocator(), source);
+    try std.testing.expectEqual(@as(u8, 0), std.mem.asBytes(&array)[3]);
+}
+
+test "owned prepared operation preserves externally owned opaque identities" {
+    const Fixture = struct {
+        const Identity = struct {
+            handle: *anyopaque,
+            callback: *const fn (u32) u32,
+        };
+
+        fn callback(value: u32) u32 {
+            return value + 1;
+        }
+    };
+    var token: u8 = 0;
+    const identity = Fixture.Identity{ .handle = &token, .callback = Fixture.callback };
+    const copied = try cloneValue(Fixture.Identity, std.testing.allocator, identity);
+    try std.testing.expectEqual(identity.handle, copied.handle);
+    try std.testing.expectEqual(identity.callback, copied.callback);
+    try std.testing.expectEqual(@as(u32, 8), copied.callback(7));
 }

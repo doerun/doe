@@ -271,6 +271,10 @@ pub const TIMESTAMP_BUFFER_SIZE: u64 = 16;
   observer callbacks. Anything that queues, retries asynchronously, records
   payloads for later replay, or otherwise retains the operation must own an
   `OwnedPreparedOperation` snapshot and release it explicitly.
+- Snapshot cloning must reject pointer forms without a declared ownership rule,
+  preserve slice alignment and sentinels, and release partial allocations on
+  failure. Opaque handles and callbacks remain identities whose external owners
+  must outlive their use; copying an address does not retain the resource.
 - Canonical command-to-operation conversion is owned by `app/prepare.zig`.
   Inbound adapters may not call the lower-level conversion directly.
 - Executor adapters may differ only in submission, resource retention,

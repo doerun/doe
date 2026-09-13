@@ -10,6 +10,20 @@ The import fence and source-layout gates are the structural authority; this
 page records the lifecycle interpretation and follow-up decisions. The target
 structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../runtime-hexagonal-architecture-plan.md).
 
+## Prepared snapshot ownership
+
+The [snapshot record](../../bench/out/command-contract/20260913-prepared-snapshot-ownership/README.md)
+reproduces the generic copier retaining a typed data pointer as a borrowed
+address. Snapshot cloning now rejects undeclared pointer forms and untagged
+unions at compilation, preserves slice alignment and sentinels, and retains
+opaque handles under their existing external ownership contract. The snapshot
+tests are explicitly registered in the aggregate and core suites; filtered
+execution previously depended on incidental transitive discovery and omitted
+that coverage. Lifetime,
+allocation-failure, and unsafe-payload compilation evidence are retained in the
+record. Existing command payloads and accepted staged packages remain unchanged;
+this does not establish general ownership proof or application performance.
+
 ## Execution handler completeness
 
 The [dispatcher record](../../bench/out/command-contract/20260913-dispatch-completeness/README.md)
