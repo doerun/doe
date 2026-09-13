@@ -15,8 +15,9 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 The [completion-dispatch record](../../bench/out/command-contract/20260912-completion-dispatch/README.md)
 tracks a callback overwriting pending delivery during reentrant registration.
 The repair transfers the pending batch before callbacks run and synchronizes
-registration and future identity. Native regression validation follows the
-active physical calibration; the accepted staged runtime remains unchanged.
+registration and future identity. The predecessor failure and repaired native
+regressions are retained, with the callback module explicitly registered in the
+generated aggregate and core suites. The accepted staged runtime remains unchanged.
 The compatibility registry retains its process-wide scope and existing callback
 modes, with caller-owned userdata through delivery.
 

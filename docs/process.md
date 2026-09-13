@@ -69,7 +69,9 @@ classified and cannot be promoted by benchmark results.
 - Native callback dispatch transfers pending records before invoking foreign
   code, and synchronizes shared registration and future identity. Reentrant
   registration and concurrent producers require behavioral regressions; a
-  locked producer alone does not establish safe callback delivery.
+  locked producer alone does not establish safe callback delivery. The callback
+  module is registered in the generated test inventory; filtered acceptance
+  records the executed-test summary.
 - Quirk selector changes preserve scope membership, profile filtering, ranking,
   first-input ties, match counts, and proof/action decisions. Characterize both
   builders against retained decisions and exercise allocation failure before
