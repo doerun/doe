@@ -3544,9 +3544,9 @@
       },
       "src/native/diagnostics/doe_program_identity_trace.zig": {
         "decision": "Keep",
-        "moduleSha256": "b72b907233b7da4c1ebf88fcdbb645c9bd01b3d250680b60cb361ccf23655c19",
-        "reason": "Keep: explicit resource ownership and prepared execution preserve ordinary provider semantics; validated by program and queue-ordering regressions.",
-        "reviewer": "codex-gpu-program/2026-09-05"
+        "moduleSha256": "e88987d196af2b8eedbfe6f63c33319e067865b2f716c7eca92a0eb383d77113",
+        "reason": "Keep: preserves existing native ownership; build-selected diagnostics observe actual command storage and export device-scoped metadata after cleanup.",
+        "reviewer": "codex-command-storage-observation/2026-09-12"
       },
       "src/native/lifecycle/doe_canvas_event_native.zig": {
         "decision": "Keep",
@@ -3556,9 +3556,9 @@
       },
       "src/native/lifecycle/doe_instance_device_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "2b78e6e510385be446b276166ebfd0a15acfdbc51c776438f82c163fab2fccbe",
-        "reason": "Keep: resolve runtime policy before allocating Vulkan device objects so policy rejection preserves rollback; device-owned command storage and instance lifetimes remain unchanged.",
-        "reviewer": "codex-lifecycle-failure/2026-09-08"
+        "moduleSha256": "0d1e6620136d2522f4e40b1a41db0fa79655cf497928f14ca28e4002bfe29fa8",
+        "reason": "Keep: preserves existing native ownership; build-selected diagnostics observe actual command storage and export device-scoped metadata after cleanup.",
+        "reviewer": "codex-command-storage-observation/2026-09-12"
       },
       "src/native/mod.zig": {
         "decision": "Keep",
@@ -4306,9 +4306,9 @@
       },
       "src/native/command/doe_command_recording.zig": {
         "decision": "Keep",
-        "moduleSha256": "eb6d1594bc2202c94a659d06bc05549f21eb8f669d2f15e45f5e4551e5cf4869",
-        "reason": "Keep: native admission preserves typed unsupported failures and complete recording ownership without claiming unexecuted shader-visible payloads.",
-        "reviewer": "codex-immediate-admission/2026-09-06"
+        "moduleSha256": "f4b2e166e747b512fabde1cbeb6a0cb280351714f3afb81cfa854e95c0d6c3ec",
+        "reason": "Keep: preserves existing native ownership; build-selected diagnostics observe actual command storage and export device-scoped metadata after cleanup.",
+        "reviewer": "codex-command-storage-observation/2026-09-12"
       },
       "src/native/command/doe_buffer_copy.zig": {
         "decision": "Keep",
@@ -4342,9 +4342,9 @@
       },
       "src/native/command/doe_command_storage.zig": {
         "decision": "Keep",
-        "moduleSha256": "fc9de24b922dc2ddfa08ce128669b9db8a2aeee4d1b6bf877210f2694730fbd9",
-        "reason": "Keep: device-owned empty command storage has bounded retention, exclusive allocator-matched loans, and resource-independent cleanup.",
-        "reviewer": "codex-command-storage/2026-09-07"
+        "moduleSha256": "bf7c702ececc4ab2cf285a041991f47fcc1b32fbee2ce5bdde23babef27769bc",
+        "reason": "Keep: preserves existing native ownership; build-selected diagnostics observe actual command storage and export device-scoped metadata after cleanup.",
+        "reviewer": "codex-command-storage-observation/2026-09-12"
       }
     },
     "linePolicy": {

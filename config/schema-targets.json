@@ -2,6 +2,22 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/compute-program-resolution.schema.json",
+      "data": "config/compute-program-resolution.json"
+    },
+    {
+      "schema": "config/compute-program-decision.schema.json",
+      "data": "config/compute-program-decision.json"
+    },
+    {
+      "schema": "config/native-command-storage-observation.schema.json",
+      "data": "config/native-command-storage-observation.json"
+    },
+    {
+      "schema": "config/compute-program-calibration.schema.json",
+      "data": "config/compute-program-calibration.json"
+    },
+    {
       "schema": "config/compute-program-startup-experiment.schema.json",
       "data": "config/compute-program-startup-experiment.json"
     },
@@ -1428,6 +1444,11 @@
   ],
   "globTargets": [
     {
+      "schema": "config/compute-program-resolution-report.schema.json",
+      "glob": "bench/out/compute-program/*runtime-resolution*/report.json",
+      "allowEmpty": true
+    },
+    {
       "schema": "config/doe-gpu-native-release-candidate.schema.json",
       "glob": "reports/benchmarks/*/*/doe-gpu-*-native-release-candidate.json",
       "allowEmpty": true
@@ -1526,6 +1547,61 @@
     {
       "schema": "config/program-candidate-isolation-report.schema.json",
       "glob": "bench/out/compute-program/*-candidate-isolation/final-*/isolation.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/compute-program-calibration-report.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-calibration*/report.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/compute-program-uncertainty.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-calibration*/uncertainty.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/compute-program-uncertainty.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-experiment*/*/uncertainty.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/compute-program-host-observation.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-calibration*/*.host-*.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/compute-program-host-observation.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-experiment*/*/*.host-*.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/command-storage-experiment.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-experiment*/report.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/compute-program-process.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-calibration*/round-*/*.process.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/compute-program-process.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-experiment*/*/round-*/*.process.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/compute-program-output-retention.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-experiment*/*/*.retention.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/command-storage-candidate.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-completion/candidate.json",
+      "allowEmpty": true
+    },
+    {
+      "schema": "config/compute-program-package.schema.json",
+      "glob": "bench/out/compute-program/*command-storage-completion/qualified-*/summary.json",
       "allowEmpty": true
     }
   ]

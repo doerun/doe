@@ -1,8 +1,63 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const storage_contract = @import("../../contracts/command_storage.zig");
+const build_options = @import("build_options");
 
 pub const TRACE_PATH_ENV = "DOE_PROGRAM_IDENTITY_TRACE_PATH";
 pub const TRACE_KIND = "doe_native_program_identity_v1";
+const MAX_STORAGE_ROW_BYTES: usize = 4096;
+
+fn storageRow(buffer: []u8, sequence: u64, device_id: usize, snapshot: storage_contract.Snapshot) ![]const u8 {
+    var writer = std.Io.Writer.fixed(buffer);
+    try std.json.Stringify.value(.{
+        .schemaVersion = 1,
+        .traceKind = TRACE_KIND,
+        .event = "command_storage_released",
+        .processId = processId(),
+        .sequence = sequence,
+        .deviceId = device_id,
+        .operationId = storage_contract.OPERATION_ID,
+        .policyHash = build_options.native_command_storage_policy_sha256,
+        .observationHash = build_options.native_command_storage_observation_sha256,
+        .mode = snapshot.mode,
+        .commandSizeBytes = snapshot.command_size_bytes,
+        .maxRetainedBytes = snapshot.max_retained_bytes,
+        .retainedBytesBeforeCleanup = snapshot.retained_bytes,
+        .retainedBytesAfterCleanup = @as(usize, 0),
+        .counterOverflow = snapshot.counter_overflow,
+        .measurements = snapshot.measurements,
+    }, .{}, &writer);
+    try writer.writeByte('\n');
+    return writer.buffered();
+}
+
+/// The device owner calls after freeing idle storage. No execution is replayed.
+pub fn recordCommandStorageReleased(device_id: usize, snapshot: storage_contract.Snapshot) void {
+    if (!enabled()) return;
+    g_trace_lock.lock();
+    defer g_trace_lock.unlock();
+    const path = g_trace_path orelse return;
+    var buffer: [MAX_STORAGE_ROW_BYTES]u8 = undefined;
+    const row = storageRow(&buffer, nextSequence(), device_id, snapshot) catch return;
+    _ = appendLocked(path, row);
+}
+
+test "command storage journal derives metric units and marks unavailable clocks" {
+    var buffer: [MAX_STORAGE_ROW_BYTES]u8 = undefined;
+    const row = try storageRow(&buffer, 1, 7, .{
+        .mode = .counters,
+        .command_size_bytes = 8,
+        .max_retained_bytes = 16,
+        .retained_bytes = 8,
+        .counter_overflow = false,
+        .measurements = storage_contract.metadata(),
+    });
+    const parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, row, .{});
+    defer parsed.deinit();
+    try std.testing.expectEqualStrings("command_storage_released", parsed.value.object.get("event").?.string);
+    try std.testing.expectEqual(@as(i64, 0), parsed.value.object.get("retainedBytesAfterCleanup").?.integer);
+    try std.testing.expectEqual(storage_contract.METRIC_COUNT, parsed.value.object.get("measurements").?.array.items.len);
+}
 
 pub fn recordComputeProgramPrepared(program_id: usize, dispatch_count: u64) void {
     recordComputeProgram("compute_program_prepared", program_id, dispatch_count, 0);

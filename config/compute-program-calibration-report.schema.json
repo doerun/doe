@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Accepted package A/A calibration report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "claimStatus",
+    "status",
+    "candidateEvaluationAllowed",
+    "policy",
+    "frozenInputs",
+    "packages",
+    "rounds",
+    "artifacts",
+    "error"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "enum": [
+        1,
+        2,
+        3
+      ]
+    },
+    "kind": {
+      "const": "compute-program-calibration"
+    },
+    "claimStatus": {
+      "const": "diagnostic"
+    },
+    "status": {
+      "enum": [
+        "incomplete",
+        "inconclusive",
+        "consistent"
+      ]
+    },
+    "candidateEvaluationAllowed": {
+      "type": "boolean"
+    },
+    "policy": {
+      "$ref": "#/$defs/reference"
+    },
+    "frozenInputs": {
+      "$ref": "#/$defs/reference"
+    },
+    "packages": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "$ref": "#/$defs/reference"
+      }
+    },
+    "rounds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/round"
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reference"
+      }
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "uncertainty": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/reference"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "promotionResolutionPassed": {
+      "type": "boolean"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "consistent"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "candidateEvaluationAllowed": {
+            "const": true
+          },
+          "error": {
+            "const": null
+          },
+          "rounds": {
+            "minItems": 2
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "candidateEvaluationAllowed": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "enum": [
+              2,
+              3
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rounds": {
+            "items": {
+              "required": [
+                "retention"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 3
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "uncertainty",
+          "promotionResolutionPassed"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 3
+          },
+          "status": {
+            "const": "consistent"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "uncertainty": {
+            "$ref": "#/$defs/reference"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "temperature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "milliCelsius",
+        "error"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "milliCelsius": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "round": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "firstVariant",
+        "regressionsPassed",
+        "thermalBefore",
+        "thermalAfter"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "firstVariant": {
+          "enum": [
+            "baseline",
+            "candidate"
+          ]
+        },
+        "regressionsPassed": {
+          "type": "boolean"
+        },
+        "thermalBefore": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/temperature"
+          }
+        },
+        "thermalAfter": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/temperature"
+          }
+        },
+        "retention": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "filesLinked",
+            "duplicateLogicalBytes"
+          ],
+          "properties": {
+            "filesLinked": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "duplicateLogicalBytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

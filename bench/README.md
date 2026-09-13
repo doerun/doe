@@ -32,6 +32,9 @@ applications using the exact archives retained by package qualification.
 Install the pinned comparator dependencies with `npm ci --prefix bench`.
 Their policy and evidence boundaries are documented in
 [`reusable-compute-programs.md`](../docs/reusable-compute-programs.md).
+Investigate ordinary application warmup and host costs through
+[`measurement diagnosis`](../docs/compute-program-resolution.md); its profiles
+remain separate from candidate acceptance.
 
 `program candidate` evaluates WGSL against an independently pinned job containing
 a trusted CPU reference, frozen numerical oracles, input files, resource limits,

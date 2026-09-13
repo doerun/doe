@@ -146,10 +146,28 @@ def main() -> int:
     parser.add_argument('--sampling', choices=['frozen', 'expanded'], required=True, help='Original or expanded sampling')
     parser.add_argument('--applications', nargs='+', required=True, help='Frozen development or transfer applications')
     parser.add_argument('--candidate-qualification', type=Path, help='Compare this qualified correction with baseline')
+    parser.add_argument('--baseline-qualification', type=Path,
+                        help='Explicit accepted qualification; workload and limits stay frozen')
+    parser.add_argument('--first-variant', choices=['baseline', 'candidate'],
+                        default='baseline', help='First side of an alternating candidate comparison')
+    parser.add_argument('--calibration-report', type=Path,
+                        help='Require current A/A admission for a new candidate decision')
+    parser.add_argument('--record-process-identity', action='store_true',
+                        help='Retain actual child process identity for uncertainty assessment')
     args = parser.parse_args()
     policy = json.loads(POLICY.read_text(encoding='utf-8'))
     schema = json.loads(POLICY.with_suffix('.schema.json').read_text(encoding='utf-8'))
     jsonschema.Draft202012Validator(schema).validate(policy)
+    if args.calibration_report:
+        from bench.gates.compute_program_calibration_gate import validate_calibration
+        calibration = validate_calibration(args.calibration_report.resolve())
+        if args.candidate_qualification is None:
+            raise ValueError('Calibrated candidate comparison requires a qualified candidate')
+        baseline = args.baseline_qualification or ROOT / policy['baselineQualification']
+        qualification = load_qualification(baseline, ROOT)
+        if (sorted(p['hash'] for p in qualification['packages'])
+                != sorted(p['hash'] for p in calibration['packages'])):
+            raise ValueError('Candidate baseline differs from calibrated accepted archives')
     if set(args.applications) - {policy['developmentApplication'], *policy['transferApplications']}:
         raise ValueError('Unknown application; use the frozen development and transfer set')
     if len(args.applications) != len(set(args.applications)):
@@ -175,6 +193,10 @@ def main() -> int:
     subprocess.run(['vulkaninfo', f"--json={evaluation['vulkanDeviceIndex']}", '-o', str(output / 'hardware-profile.json')],
                    capture_output=True, check=True, timeout=evaluation['processTimeoutMs'] / 1000)
     qualifications = {'previous': ROOT / policy['previousQualification'], 'baseline': ROOT / policy['baselineQualification']}
+    if args.baseline_qualification:
+        if args.candidate_qualification is None:
+            raise ValueError('Explicit baseline requires a candidate comparison')
+        qualifications['baseline'] = args.baseline_qualification.resolve()
     if args.candidate_qualification:
         qualifications = {'baseline': qualifications['baseline'], 'candidate': args.candidate_qualification.resolve()}
     packages = {}
@@ -183,6 +205,10 @@ def main() -> int:
         destination.mkdir()
         packages[variant] = install_qualification(qualification, destination, ROOT, evaluation['processTimeoutMs'])
     variants = list(packages)
+    if args.first_variant == 'candidate':
+        if 'candidate' not in variants:
+            raise ValueError('Candidate-first order requires a candidate comparison')
+        variants.reverse()
     identities = {}
     for application in args.applications:
         for variant in variants:
@@ -199,7 +225,8 @@ def main() -> int:
             for variant in order:
                 path = output / f'{application}.{variant}.process-{index:02d}.json'
                 report = run_child('doe-webgpu', application, 'measure', path, evaluation_path, evaluation,
-                                   'vulkan', 'node', '', None, packages[variant], output / variant / 'package-inputs/summary.json')
+                                   'vulkan', 'node', '', None, packages[variant], output / variant / 'package-inputs/summary.json',
+                                   process_identity=Path(f'{path}.process.json') if args.record_process_identity else None)
                 assert_control_identity(identities[(application, variant)], report)
                 print(f'measured: {application}/{variant}/{index}', flush=True)
     for variant, package in packages.items():

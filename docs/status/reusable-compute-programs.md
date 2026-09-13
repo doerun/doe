@@ -1,5 +1,37 @@
 # Reusable compute programs
 
+## Ordinary measurement warmup and cost attribution
+
+The [resolution diagnosis](../../bench/out/compute-program/20260912-runtime-resolution-final/README.md)
+retains an ordinary warmup comparison, separate host and V8 profiles, and
+physical evidence replay against the accepted package. Extended warmup reduces
+within-process useful-latency drift while encoding remains variable. Queue
+submission/completion and receipt hashing warrant distinct investigation;
+whole-process numerical checking and file writing cannot be counted as native
+runtime work. The [diagnostic contract](../compute-program-resolution.md)
+preserves ordered samples, unavailable observations, signed profiler deltas,
+and the original acceptance policy. This establishes no accepted optimization
+or resolved calibration precision. Fresh A/A qualification of any revised
+measurement procedure remains required before promotion.
+Later physical attempts retain observed foreign-GPU admission failures; the
+completed cohort's frozen inputs and separate stricter reviewer remain available
+for read-only evidence replay.
+
+## Command storage decisions and measurement resolution
+
+The [command-storage record](../../bench/out/compute-program/20260912-command-storage-completion/README.md)
+connects build-checked policy, derived diagnostics, package qualification, and
+ordinary application evaluation. The accepted Linux library remains unchanged.
+The [fresh calibration](../../bench/out/compute-program/20260912-command-storage-calibration-uncertainty/report.json)
+separates A/A null consistency from precision adequate for promotion. Unresolved
+regression bands still prevent accepting small improvements. The
+[bounded experiment](../../bench/out/compute-program/20260912-command-storage-experiment-ordinary/report.json)
+retains the rejected policy control and the cost endpoints supporting its
+decision; it does not establish a successful runtime optimization or unfamiliar
+external application adoption. Earlier threshold-only calibration failures
+retain their original meaning. Contracts, assumptions, and migration are in
+[command storage development](../command-storage-development.md).
+
 ## Current A/A findings and correctness repairs
 
 The [accepted-package A/A control](../../bench/out/compute-program/20260908-startup-aa/completion.md)

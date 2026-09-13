@@ -37,6 +37,28 @@ No prose-only waiver satisfies an invariant. If the named global gate cannot
 observe a changed behavior, the affected subsystem must add a focused
 characterization or parity test in the same change.
 
+## Build decisions and observed costs
+
+- Build decisions produce immutable typed values from versioned policy. Reject
+  unsupported versions, missing fields, and incompatible selections before
+  compiling consumers. Device facts resolve once per device; changing invocation
+  inputs retain explicit validation. Algorithm constants stay with the algorithm.
+- Derive diagnostic identity and coverage metadata from the owning contract.
+  Compile-time completeness is structural evidence; validators, executors, and
+  resource lifetimes still require independent behavioral tests.
+- Declare allocation sites in steady execution and distinguish reserved capacity
+  from allocator calls. Every cache specifies identity, owner, capacity,
+  invalidation, and full-capacity behavior. Owning structs cannot be freely copied;
+  Zig supplies no general ownership checker.
+- Keep pointers, casts, native handles, and foreign callbacks at narrow adapters.
+  Required metadata and allocation failures remain errors. API admission and
+  checked arithmetic must work in every supported optimization mode.
+- Instrument the real execution path. Optional observation has bounded storage,
+  explicit unavailable values, and overflow reporting. Export outside the measured
+  operation and confirm benefit in the ordinary configuration. Specialization,
+  forced inlining, and vector variants require application, binary-size, and build
+  evidence before adoption.
+
 ## Repository conventions
 
 - Shared command/profile contracts belong to `contracts/`; parsing belongs to

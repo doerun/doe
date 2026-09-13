@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "filesLinked",
+    "duplicateLogicalBytes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "compute-program-output-retention"
+    },
+    "filesLinked": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "duplicateLogicalBytes": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Lossless numerical output retention"
+}

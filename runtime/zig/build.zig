@@ -1,4 +1,5 @@
 const std = @import("std");
+const command_storage_contract = @import("src/contracts/command_storage.zig");
 const APP_BUNDLE_NAME = "Doe Runtime.app";
 const APP_ICON_BASENAME = "DoeRuntime";
 const APP_ICON_SOURCE_SVG = "../../assets/doe-logo.svg";
@@ -333,13 +334,20 @@ fn addCompilerArithmeticPolicy(options: *std.Build.Step.Options, allocator: std.
 }
 
 fn addNativeCommandStoragePolicy(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
-    const bytes = std.fs.cwd().readFileAlloc(allocator, "../../config/native-command-storage-policy.json", 64 * 1024) catch
+    const bytes = std.fs.cwd().readFileAlloc(allocator, "../../config/native-command-storage-policy.json", command_storage_contract.MAX_POLICY_BYTES) catch
         @panic("failed to read native-command-storage-policy.json");
-    const Policy = struct { schemaVersion: u32, maxRetainedBytes: u32 };
-    const policy = std.json.parseFromSlice(Policy, allocator, bytes, .{}) catch
+    defer allocator.free(bytes);
+    const policy = command_storage_contract.parsePolicy(allocator, bytes) catch
         @panic("invalid native command storage policy");
-    if (policy.value.schemaVersion != 1) @panic("unsupported native command storage policy version");
-    options.addOption(usize, "native_command_storage_max_retained_bytes", policy.value.maxRetainedBytes);
+    options.addOption(usize, "native_command_storage_max_retained_bytes", policy.maxRetainedBytes);
+    options.addOption([]const u8, "native_command_storage_policy_sha256", sha256HexAlloc(allocator, bytes));
+    const observation_bytes = std.fs.cwd().readFileAlloc(allocator, "../../config/native-command-storage-observation.json", command_storage_contract.MAX_POLICY_BYTES) catch
+        @panic("failed to read native-command-storage-observation.json");
+    defer allocator.free(observation_bytes);
+    const observation = command_storage_contract.parseObservation(allocator, observation_bytes) catch
+        @panic("invalid native command storage observation policy");
+    options.addOption([]const u8, "native_command_storage_observation_mode", @tagName(observation.mode));
+    options.addOption([]const u8, "native_command_storage_observation_sha256", sha256HexAlloc(allocator, observation_bytes));
 }
 
 fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {

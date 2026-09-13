@@ -163,6 +163,12 @@ retain device ownership. Future bounded scheduling belongs above those devices,
 with explicit transfers. Browser and application-engine adapters supply host
 requirements without adding browser or widget policy to shared GPU contracts.
 
+The [command-storage example](command-storage-development.md) connects a typed
+build policy to the existing pool and derived diagnostic metadata. Observation
+stays in native ownership paths; calibration and candidate decisions stay in
+benchmark tooling. This does not unify the native object API with the separate
+prepared-operation executor or impose an evaluator on runtime users.
+
 The active journeys reuse the existing package qualification, declared-program
 applications, and compiler regressions. Their accepted behavior, physical
 support, failure cases, and measurements stay with those executable workloads.

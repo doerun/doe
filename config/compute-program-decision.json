@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "method": "paired-process-sign-intervals",
+  "familywiseErrorRate": 0.01,
+  "cohorts": 4,
+  "orderStrata": "separate",
+  "rawGuardrails": "required",
+  "confirmation": "independent-complete-series",
+  "claimStatus": "diagnostic",
+  "processIdentity": "required-linux-child"
+}

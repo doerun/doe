@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "calibrationPolicy": "config/compute-program-calibration.json",
+  "calibrationReport": "bench/out/compute-program/20260912-command-storage-calibration-uncertainty/report.json",
+  "extendedWarmupRuns": 128,
+  "sampleBlocks": 4,
+  "cpuProfileIntervalUs": 100,
+  "claimStatus": "diagnostic"
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 3,
+  "startupPolicy": "config/compute-program-startup-experiment.json",
+  "baselineQualification": "bench/out/compute-program/20260908-helper-cleanup/qualified-final/summary.json",
+  "rounds": 4,
+  "minimumFreeBytes": 6442450944,
+  "outputRetention": "hardlink-identical-outputs",
+  "claimStatus": "diagnostic",
+  "decisionPolicy": "config/compute-program-decision.json"
+}

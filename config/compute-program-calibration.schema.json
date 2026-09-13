@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Accepted package A/A calibration policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "startupPolicy",
+    "baselineQualification",
+    "rounds",
+    "claimStatus"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "enum": [
+        1,
+        2,
+        3
+      ]
+    },
+    "startupPolicy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "baselineQualification": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rounds": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 32,
+      "multipleOf": 2
+    },
+    "maximumRegressionViolationRounds": {
+      "const": 0
+    },
+    "claimStatus": {
+      "const": "diagnostic"
+    },
+    "minimumFreeBytes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "outputRetention": {
+      "const": "hardlink-identical-outputs"
+    },
+    "decisionPolicy": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "enum": [
+              2,
+              3
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "minimumFreeBytes",
+          "outputRetention"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 3
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "decisionPolicy"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 3
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "maximumRegressionViolationRounds": false
+        }
+      },
+      "else": {
+        "required": [
+          "maximumRegressionViolationRounds"
+        ]
+      }
+    }
+  ]
+}

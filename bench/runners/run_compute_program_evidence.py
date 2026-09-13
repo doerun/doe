@@ -54,6 +54,7 @@ def run_child(
     node: str, deno: str, native_library: Path | None,
     package_root: Path | None = None, package_qualification: Path | None = None,
     diagnostics: Path | None = None,
+    process_identity: Path | None = None,
 ) -> dict[str, Any]:
     command = [node]
     environment = dict(os.environ)
@@ -85,8 +86,13 @@ def run_child(
     if policy.get('gpuTiming', 'off') != 'off' and backend == 'vulkan':
         command.append(f'--hardware={output.parent / "hardware-profile.json"}')
     with capture_activity(output, policy, digest(policy_path), backend, phase):
-        result = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True,
-                                text=True, timeout=policy["processTimeoutMs"] / 1000, check=False)
+        if process_identity is None:
+            result = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True,
+                                    text=True, timeout=policy["processTimeoutMs"] / 1000, check=False)
+        else:
+            from bench.lib.compute_program_process import run_tracked_process
+            result = run_tracked_process(command, ROOT, environment,
+                                         policy['processTimeoutMs'] / 1000, process_identity, output)
     Path(f"{output}.stdout").write_text(result.stdout, encoding="utf-8")
     Path(f"{output}.stderr").write_text(result.stderr, encoding="utf-8")
     if result.returncode:

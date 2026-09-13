@@ -337,6 +337,24 @@ classified and cannot be promoted by benchmark results.
   concurrent access, and final device cleanup. Retain the policy with application
   evidence; compare ordinary operation latency and process memory against the
   previous qualified binary before interpreting removed allocations as a gain.
+  Build-selected observations derive their identity and units from the typed
+  storage contract and export only after device storage cleanup. Validate actual
+  reuse, growth, allocator failures, exclusive loans, and unavailable clocks;
+  inspect ordinary builds for removed observation code. The additive policies
+  and journal migration are in [command storage development](command-storage-development.md).
+  New command-storage candidate decisions require a passing A/A calibration
+  gate under the frozen evaluation procedure. Versioned uncertainty checks use
+  actual fresh child identities, paired process observations, separate orders,
+  and a correction for the complete metric family. A/A null consistency and
+  resolution of the regression bands are separate results. Consistent but
+  imprecise calibration permits rejection or an inconclusive experiment, never
+  promotion. Original raw guards remain necessary. A potential accepted proposal
+  must also pass a separate complete confirmation series and the physical replay
+  gate. Final review through `bench.gates.command_storage_review_gate` also
+  rejects child identities reused between series and overlapping or reversed
+  execution boundaries. Evidence replay and execution independence are both
+  required; an identity-only check cannot assert acceptance. Previous candidates
+  and limits retain their historical meaning.
 - Application tail experiments preserve the original comparison and freeze
   thresholds before tuning. Diagnose complete, identified invocations; keep
   allocation growth separate from reuse misses and contended lock waits.
@@ -350,6 +368,13 @@ classified and cannot be promoted by benchmark results.
   an admission gap; record the stricter assessment separately.
   A failed acceptance decision permits no runtime change. Bundle reproducibility
   and an independent operator's reproduction are separate evidence states.
+  [Resolution diagnosis](compute-program-resolution.md) compares original and
+  extended warmup on the accepted package, then runs separate host and V8
+  profiles. Preserve ordered invocations, exact numerical outputs, process
+  identity, and the cost of verification between processes. The diagnostic
+  gate recomputes projections and rejects changed workload semantics or missing
+  treatments. Warmup effects and profiler samples cannot grant promotion;
+  procedure changes require fresh calibration before candidate evaluation.
 - Startup experiments use `config/compute-program-startup-experiment.json`, an
   additive repository-only contract validated through the schema target registry.
   It inherits frozen workload and regression limits while testing provider import

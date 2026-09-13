@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ordinary compute program resolution diagnosis",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "calibrationPolicy",
+    "calibrationReport",
+    "extendedWarmupRuns",
+    "sampleBlocks",
+    "cpuProfileIntervalUs",
+    "claimStatus"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "calibrationPolicy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "calibrationReport": {
+      "type": "string",
+      "minLength": 1
+    },
+    "extendedWarmupRuns": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4096
+    },
+    "sampleBlocks": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 32
+    },
+    "cpuProfileIntervalUs": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 10000
+    },
+    "claimStatus": {
+      "const": "diagnostic"
+    }
+  }
+}

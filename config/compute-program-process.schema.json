@@ -1,0 +1,58 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "bootId",
+    "pid",
+    "startedMonotonicNs",
+    "completedMonotonicNs",
+    "exitCode",
+    "reportPath",
+    "reportHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "compute-program-process"
+    },
+    "bootId": {
+      "type": "string",
+      "pattern": "^[0-9a-f-]{36}$"
+    },
+    "pid": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "startedMonotonicNs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completedMonotonicNs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "exitCode": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "reportPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reportHash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Actual application child process identity"
+}

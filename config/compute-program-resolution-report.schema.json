@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ordinary compute program resolution diagnosis report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "claimStatus",
+    "status",
+    "error",
+    "policy",
+    "inputs",
+    "runs",
+    "artifacts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "compute-program-resolution"
+    },
+    "claimStatus": {
+      "const": "diagnostic"
+    },
+    "status": {
+      "enum": [
+        "incomplete",
+        "completed"
+      ]
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "policy": {
+      "$ref": "#/$defs/reference"
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reference"
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "application",
+          "treatment",
+          "process",
+          "report",
+          "policy"
+        ],
+        "properties": {
+          "application": {
+            "type": "string",
+            "minLength": 1
+          },
+          "treatment": {
+            "enum": [
+              "original",
+              "extended",
+              "host",
+              "v8"
+            ]
+          },
+          "process": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "report": {
+            "$ref": "#/$defs/reference"
+          },
+          "policy": {
+            "$ref": "#/$defs/reference"
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reference"
+      }
+    }
+  },
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "completed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "const": null
+          },
+          "runs": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

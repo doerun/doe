@@ -641,7 +641,12 @@ pub export fn doeNativeDeviceRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeDevice, raw)) |d| {
         if (!native_helpers.object_should_destroy(d)) return;
         label_store.remove(raw);
-        if (d.command_storage) |*pool| pool.deinit();
+        if (d.command_storage) |*pool| {
+            const observation = pool.snapshot();
+            pool.deinit();
+            if (observation) |snapshot|
+                @import("../diagnostics/doe_program_identity_trace.zig").recordCommandStorageReleased(@intFromPtr(d), snapshot);
+        }
         if (d.metal_libraries) |*cache| cache.deinit(alloc);
         // Fire the device-lost callback with reason "destroyed" before teardown.
         const multi_adapter = @import("../../runtime/device/multi_adapter.zig");

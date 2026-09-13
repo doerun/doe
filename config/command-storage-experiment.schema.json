@@ -1,0 +1,269 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "claimStatus",
+    "status",
+    "error",
+    "candidate",
+    "calibration",
+    "frozenInputs",
+    "series",
+    "artifacts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "command-storage-experiment"
+    },
+    "claimStatus": {
+      "const": "diagnostic"
+    },
+    "status": {
+      "enum": [
+        "incomplete",
+        "reject",
+        "inconclusive",
+        "accepted-proposal"
+      ]
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "calibration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "frozenInputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "series": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "uncertainty",
+          "rawAcceptance",
+          "decision"
+        ],
+        "properties": {
+          "name": {
+            "enum": [
+              "evaluation",
+              "confirmation"
+            ]
+          },
+          "uncertainty": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "hash"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "hash": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "rawAcceptance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "hash"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "hash": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "decision": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "verdict",
+              "confirmedRegressionEndpoints",
+              "requiredImprovementRuledOut",
+              "improvementConfirmed",
+              "regressionsExcluded",
+              "rawAcceptancePassed",
+              "calibrationResolutionPassed"
+            ],
+            "properties": {
+              "verdict": {
+                "enum": [
+                  "confirm",
+                  "reject",
+                  "inconclusive"
+                ]
+              },
+              "confirmedRegressionEndpoints": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "requiredImprovementRuledOut": {
+                "type": "boolean"
+              },
+              "improvementConfirmed": {
+                "type": "boolean"
+              },
+              "regressionsExcluded": {
+                "type": "boolean"
+              },
+              "rawAcceptancePassed": {
+                "type": "boolean"
+              },
+              "calibrationResolutionPassed": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "hash"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Command storage experiment decision",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "reject",
+              "inconclusive",
+              "accepted-proposal"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "const": null
+          },
+          "series": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "accepted-proposal"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "series": {
+            "minItems": 2,
+            "items": {
+              "properties": {
+                "decision": {
+                  "properties": {
+                    "verdict": {
+                      "const": "confirm"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

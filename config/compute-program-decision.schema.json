@@ -1,0 +1,51 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "method",
+    "familywiseErrorRate",
+    "cohorts",
+    "orderStrata",
+    "rawGuardrails",
+    "confirmation",
+    "claimStatus",
+    "processIdentity"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "method": {
+      "const": "paired-process-sign-intervals"
+    },
+    "familywiseErrorRate": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 0.01
+    },
+    "cohorts": {
+      "type": "integer",
+      "minimum": 4,
+      "maximum": 32,
+      "multipleOf": 2
+    },
+    "orderStrata": {
+      "const": "separate"
+    },
+    "rawGuardrails": {
+      "const": "required"
+    },
+    "confirmation": {
+      "const": "independent-complete-series"
+    },
+    "claimStatus": {
+      "const": "diagnostic"
+    },
+    "processIdentity": {
+      "const": "required-linux-child"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Paired process decision policy"
+}

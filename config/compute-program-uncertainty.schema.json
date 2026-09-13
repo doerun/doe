@@ -1,0 +1,153 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "method",
+    "familywiseErrorRate",
+    "familySize",
+    "intervalErrorRate",
+    "allIntervalsFinite",
+    "nullConsistent",
+    "regressionBandsResolved",
+    "rows"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "compute-program-uncertainty"
+    },
+    "method": {
+      "const": "paired-process-sign-intervals"
+    },
+    "familywiseErrorRate": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 0.01
+    },
+    "familySize": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "intervalErrorRate": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "allIntervalsFinite": {
+      "type": "boolean"
+    },
+    "nullConsistent": {
+      "type": "boolean"
+    },
+    "regressionBandsResolved": {
+      "type": "boolean"
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "application",
+          "metric",
+          "summary",
+          "firstVariant",
+          "pairs",
+          "medianRatio",
+          "lowerRatio",
+          "upperRatio",
+          "endpointRank",
+          "maximumRegression",
+          "nullConsistent",
+          "regressionBandResolved"
+        ],
+        "properties": {
+          "application": {
+            "enum": [
+              "heat_diffusion",
+              "image_edges",
+              "holoscript_lif"
+            ]
+          },
+          "metric": {
+            "enum": [
+              "deviceStartupMs",
+              "preparationMs",
+              "teardownMs",
+              "coldWallMs",
+              "peakProcessRssBytes",
+              "allocatedBufferBytes",
+              "coldCpuMs",
+              "wallMs",
+              "cpuMs",
+              "upload",
+              "encode",
+              "submitWait",
+              "readback",
+              "total"
+            ]
+          },
+          "summary": {
+            "enum": [
+              "process",
+              "p50Ms",
+              "p95Ms",
+              "p99Ms"
+            ]
+          },
+          "firstVariant": {
+            "enum": [
+              "baseline",
+              "candidate"
+            ]
+          },
+          "pairs": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "medianRatio": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "lowerRatio": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "upperRatio": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "endpointRank": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "maximumRegression": {
+            "type": "number",
+            "minimum": 0
+          },
+          "nullConsistent": {
+            "type": "boolean"
+          },
+          "regressionBandResolved": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Paired process uncertainty and resolution"
+}
