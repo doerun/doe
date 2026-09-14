@@ -2,11 +2,13 @@
 
 ## GPU interference attribution
 
-The [current device and storage preflight](../../bench/out/command-contract/20260914-command-accounting/measurement-preflight.json)
-finds the earlier Chrome client absent, but available disk below the estimated
-space needed to finish the declared series above its existing reserve. No new
-calibration was launched. The estimate uses retained physical cohort sizes and
-does not replace the configured free-space admission or guarantee future space.
+The [current calibration preparation](../../bench/out/compute-program/20260914-calibration-window/README.md)
+restores sufficient estimated disk headroom by reclaiming stale Zig test-cache
+outputs, with benchmark evidence and accepted packages preserved. Chrome from
+the Doppler consumer-streaming worktree is again attached to the shared GPU.
+The idle window has been requested and remains unconfirmed; no new calibration
+was launched. New instrumentation and candidate work wait for the complete
+frozen calibration and its separate consistency and precision assessment.
 
 The [latest warmup continuation](../../bench/out/compute-program/20260913-warmup-calibration-continued/README.md)
 retains an incomplete calibration rejected on observed Chrome GPU work from the
