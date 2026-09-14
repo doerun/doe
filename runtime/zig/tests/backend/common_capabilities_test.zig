@@ -87,3 +87,24 @@ test "capability_name returns stable strings" {
     try std.testing.expectEqualStrings("gpu_timestamps", capabilities.capability_name(.gpu_timestamps));
     try std.testing.expectEqualStrings("buffer_upload", capabilities.capability_name(.buffer_upload));
 }
+
+test "async diagnostic modes require exactly their declared capabilities" {
+    const cases = [_]struct { input: model.Command, expected: capabilities.CapabilitySet }{
+        .{ .input = .{ .async_diagnostics = .{ .mode = .pipeline_async } }, .expected = capabilities.CapabilitySet.init(&.{.async_pipeline_diagnostics}) },
+        .{ .input = .{ .async_diagnostics = .{ .mode = .capability_introspection } }, .expected = capabilities.CapabilitySet.init(&.{.async_capability_introspection}) },
+        .{ .input = .{ .async_diagnostics = .{ .mode = .resource_table_immediates } }, .expected = capabilities.CapabilitySet.init(&.{.async_resource_table_immediates}) },
+        .{ .input = .{ .async_diagnostics = .{ .mode = .lifecycle_refcount } }, .expected = capabilities.CapabilitySet.init(&.{.async_lifecycle_refcount}) },
+        .{ .input = .{ .async_diagnostics = .{ .mode = .pixel_local_storage } }, .expected = capabilities.CapabilitySet.init(&.{.async_pixel_local_storage}) },
+        .{ .input = .{ .async_diagnostics = .{ .mode = .full } }, .expected = capabilities.CapabilitySet.init(&.{
+            .async_pipeline_diagnostics,
+            .async_capability_introspection,
+            .async_resource_table_immediates,
+            .async_lifecycle_refcount,
+            .async_pixel_local_storage,
+        }) },
+    };
+    for (cases) |case| {
+        try std.testing.expectEqual(case.expected.bits, command.requiredCapabilities(case.input).bits);
+        try std.testing.expectEqual(case.expected.bits, command.requirements(case.input).required_capabilities.bits);
+    }
+}

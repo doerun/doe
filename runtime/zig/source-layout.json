@@ -2662,7 +2662,7 @@
       },
       "src/contracts/command.zig": {
         "decision": "Keep",
-        "moduleSha256": "92a01af4cb62b8e77e788ab623e3642e2971a6581e3a782c81c7b77dc46538c7",
+        "moduleSha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1",
         "reason": "Keep: reachable neutral contract owner at src/contracts/command.zig.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },

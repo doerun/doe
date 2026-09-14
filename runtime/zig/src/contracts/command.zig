@@ -93,42 +93,52 @@ pub const CapabilityPolicy = union(enum) {
     async_diagnostics_mode,
 };
 
+/// Payload counts retain the historical minimum of one operation. This is
+/// accounting normalization, not validation of whether a command may execute.
+pub const OperationCountPolicy = enum {
+    single,
+    repeat,
+    draw_count,
+    iterations,
+};
+
 pub const Metadata = struct {
     scope: Scope,
     trace_name: []const u8,
     domain: Domain,
     is_dispatch: bool,
+    operation_count: OperationCountPolicy,
     capabilities: CapabilityPolicy,
 };
 
 pub const KIND_COUNT = @typeInfo(Kind).@"enum".fields.len;
 
 pub const metadata = [KIND_COUNT]Metadata{
-    .{ .scope = .core, .trace_name = "upload", .domain = .copy, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.buffer_upload}) } },
-    .{ .scope = .core, .trace_name = "buffer_write", .domain = .copy, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.buffer_write}) } },
-    .{ .scope = .core, .trace_name = "copy_buffer_to_texture", .domain = .copy, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .buffer_copy, .texture_write }) } },
-    .{ .scope = .core, .trace_name = "barrier", .domain = .compute, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.barrier_sync}) } },
-    .{ .scope = .core, .trace_name = "dispatch", .domain = .compute, .is_dispatch = true, .capabilities = .{ .fixed = CapabilitySet.init(&.{.compute_dispatch}) } },
-    .{ .scope = .core, .trace_name = "dispatch_indirect", .domain = .compute, .is_dispatch = true, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .compute_dispatch, .compute_dispatch_indirect }) } },
-    .{ .scope = .core, .trace_name = "kernel_dispatch", .domain = .compute, .is_dispatch = true, .capabilities = .{ .fixed = CapabilitySet.init(&.{.kernel_dispatch}) } },
-    .{ .scope = .full, .trace_name = "render_draw", .domain = .render, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.render_draw}) } },
-    .{ .scope = .full, .trace_name = "draw_indirect", .domain = .render, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .render_draw, .indirect_draw }) } },
-    .{ .scope = .full, .trace_name = "draw_indexed_indirect", .domain = .render, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .render_draw, .indexed_indirect_draw }) } },
-    .{ .scope = .full, .trace_name = "render_pass", .domain = .render, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.render_pass}) } },
-    .{ .scope = .full, .trace_name = "sampler_create", .domain = .resource, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.sampler_lifecycle}) } },
-    .{ .scope = .full, .trace_name = "sampler_destroy", .domain = .resource, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.sampler_lifecycle}) } },
-    .{ .scope = .core, .trace_name = "texture_write", .domain = .resource, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.texture_write}) } },
-    .{ .scope = .core, .trace_name = "texture_query", .domain = .resource, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.texture_query}) } },
-    .{ .scope = .core, .trace_name = "texture_destroy", .domain = .resource, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.texture_destroy}) } },
-    .{ .scope = .full, .trace_name = "surface_create", .domain = .surface, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.surface_lifecycle}) } },
-    .{ .scope = .full, .trace_name = "surface_capabilities", .domain = .surface, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.surface_lifecycle}) } },
-    .{ .scope = .full, .trace_name = "surface_configure", .domain = .surface, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.surface_lifecycle}) } },
-    .{ .scope = .full, .trace_name = "surface_acquire", .domain = .surface, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .surface_lifecycle, .surface_present }) } },
-    .{ .scope = .full, .trace_name = "surface_present", .domain = .surface, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .surface_lifecycle, .surface_present }) } },
-    .{ .scope = .full, .trace_name = "surface_unconfigure", .domain = .surface, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.surface_lifecycle}) } },
-    .{ .scope = .full, .trace_name = "surface_release", .domain = .surface, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.surface_lifecycle}) } },
-    .{ .scope = .full, .trace_name = "async_diagnostics", .domain = .lifecycle, .is_dispatch = false, .capabilities = .async_diagnostics_mode },
-    .{ .scope = .core, .trace_name = "map_async", .domain = .resource, .is_dispatch = false, .capabilities = .{ .fixed = CapabilitySet.init(&.{.map_async}) } },
+    .{ .scope = .core, .trace_name = "upload", .domain = .copy, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.buffer_upload}) } },
+    .{ .scope = .core, .trace_name = "buffer_write", .domain = .copy, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.buffer_write}) } },
+    .{ .scope = .core, .trace_name = "copy_buffer_to_texture", .domain = .copy, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .buffer_copy, .texture_write }) } },
+    .{ .scope = .core, .trace_name = "barrier", .domain = .compute, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.barrier_sync}) } },
+    .{ .scope = .core, .trace_name = "dispatch", .domain = .compute, .is_dispatch = true, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.compute_dispatch}) } },
+    .{ .scope = .core, .trace_name = "dispatch_indirect", .domain = .compute, .is_dispatch = true, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .compute_dispatch, .compute_dispatch_indirect }) } },
+    .{ .scope = .core, .trace_name = "kernel_dispatch", .domain = .compute, .is_dispatch = true, .operation_count = .repeat, .capabilities = .{ .fixed = CapabilitySet.init(&.{.kernel_dispatch}) } },
+    .{ .scope = .full, .trace_name = "render_draw", .domain = .render, .is_dispatch = false, .operation_count = .draw_count, .capabilities = .{ .fixed = CapabilitySet.init(&.{.render_draw}) } },
+    .{ .scope = .full, .trace_name = "draw_indirect", .domain = .render, .is_dispatch = false, .operation_count = .draw_count, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .render_draw, .indirect_draw }) } },
+    .{ .scope = .full, .trace_name = "draw_indexed_indirect", .domain = .render, .is_dispatch = false, .operation_count = .draw_count, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .render_draw, .indexed_indirect_draw }) } },
+    .{ .scope = .full, .trace_name = "render_pass", .domain = .render, .is_dispatch = false, .operation_count = .draw_count, .capabilities = .{ .fixed = CapabilitySet.init(&.{.render_pass}) } },
+    .{ .scope = .full, .trace_name = "sampler_create", .domain = .resource, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.sampler_lifecycle}) } },
+    .{ .scope = .full, .trace_name = "sampler_destroy", .domain = .resource, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.sampler_lifecycle}) } },
+    .{ .scope = .core, .trace_name = "texture_write", .domain = .resource, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.texture_write}) } },
+    .{ .scope = .core, .trace_name = "texture_query", .domain = .resource, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.texture_query}) } },
+    .{ .scope = .core, .trace_name = "texture_destroy", .domain = .resource, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.texture_destroy}) } },
+    .{ .scope = .full, .trace_name = "surface_create", .domain = .surface, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.surface_lifecycle}) } },
+    .{ .scope = .full, .trace_name = "surface_capabilities", .domain = .surface, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.surface_lifecycle}) } },
+    .{ .scope = .full, .trace_name = "surface_configure", .domain = .surface, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.surface_lifecycle}) } },
+    .{ .scope = .full, .trace_name = "surface_acquire", .domain = .surface, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .surface_lifecycle, .surface_present }) } },
+    .{ .scope = .full, .trace_name = "surface_present", .domain = .surface, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{ .surface_lifecycle, .surface_present }) } },
+    .{ .scope = .full, .trace_name = "surface_unconfigure", .domain = .surface, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.surface_lifecycle}) } },
+    .{ .scope = .full, .trace_name = "surface_release", .domain = .surface, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.surface_lifecycle}) } },
+    .{ .scope = .full, .trace_name = "async_diagnostics", .domain = .lifecycle, .is_dispatch = false, .operation_count = .iterations, .capabilities = .async_diagnostics_mode },
+    .{ .scope = .core, .trace_name = "map_async", .domain = .resource, .is_dispatch = false, .operation_count = .single, .capabilities = .{ .fixed = CapabilitySet.init(&.{.map_async}) } },
 };
 
 pub const Requirements = struct {
@@ -171,12 +181,16 @@ pub fn isDispatch(command: Command) bool {
 }
 
 pub fn operationCount(command: Command) u32 {
-    return switch (command) {
-        .kernel_dispatch => |kernel| if (kernel.repeat > 0) kernel.repeat else 1,
-        .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => |draw| if (draw.draw_count > 0) draw.draw_count else 1,
-        .async_diagnostics => |diagnostics| if (diagnostics.iterations > 0) diagnostics.iterations else 1,
-        else => 1,
-    };
+    inline for (@typeInfo(Kind).@"enum".fields) |field| {
+        const tag: Kind = @enumFromInt(field.value);
+        const policy = comptime metadataForKind(tag).operation_count;
+        if (comptime policy != .single) {
+            if (kind(command) == tag) {
+                return @max(@field(@field(command, field.name), @tagName(policy)), 1);
+            }
+        }
+    }
+    return 1;
 }
 
 pub fn shaderArtifactModule(command: Command) []const u8 {
@@ -246,6 +260,25 @@ comptime {
         if (field.value != index) @compileError("command kind values must remain contiguous");
         if (!std.mem.eql(u8, field.name, metadata[index].trace_name)) {
             @compileError("command trace name must match its stable command kind");
+        }
+        const count_policy = metadata[index].operation_count;
+        if (count_policy != .single) {
+            const Payload = @TypeOf(@field(@as(Command, undefined), field.name));
+            const count_field = @tagName(count_policy);
+            if (!@hasField(Payload, count_field)) {
+                @compileError("command operation count requires payload field: " ++ field.name ++ "." ++ count_field);
+            }
+            if (@TypeOf(@field(@as(Payload, undefined), count_field)) != u32) {
+                @compileError("command operation count field must be u32: " ++ field.name ++ "." ++ count_field);
+            }
+        }
+        switch (metadata[index].capabilities) {
+            .fixed => {},
+            .async_diagnostics_mode => {
+                if (!std.mem.eql(u8, field.name, "async_diagnostics")) {
+                    @compileError("dynamic async capabilities require async_diagnostics command: " ++ field.name);
+                }
+            },
         }
     }
     if (countForScope(.core) + countForScope(.full) != KIND_COUNT) {

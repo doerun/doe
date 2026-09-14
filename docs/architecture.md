@@ -120,6 +120,19 @@ that contract. Compile-time alias checks reject missing owners and ambiguous
 spellings; allocation and lifetime tests remain independent evidence. The
 native WebGPU object API retains its own narrow adapters.
 
+Operation accounting also belongs to command metadata. Every command declares
+a single operation or a payload count, with the existing minimum-one
+normalization. Compilation checks that a selected count field exists and is
+`u32`, and that dynamic async capability selection belongs to the async
+diagnostics command. Execution receipts and independent validation still decide
+whether work ran; an accounting count is not proof of dispatch or completion.
+
+Internal Zig migration: `Metadata` initializers now require `operation_count`;
+the contract declares `single`, `repeat`, `draw_count`, or `iterations` explicitly.
+No serialized command, trace, or requirements field changes, and existing command
+counts and capability sets retain their meaning. Compile-time structural checks
+do not prove that a declared accounting rule is semantically correct.
+
 The [source-layout manifest](../runtime/zig/source-layout.json) owns module
 responsibilities and dependency permissions; its [generated source map](../runtime/zig/src/README.md)
 is the navigation surface. The [proposed user journeys](thesis.md#proposed-user-journeys)

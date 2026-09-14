@@ -68,6 +68,12 @@ classified and cannot be promoted by benchmark results.
   Core and full dispatchers also reject omitted execution handlers at compilation
   according to that contract's scope. Isolated production builds must reproduce
   missing-handler failures without adding a parallel handler registry.
+  Operation accounting is mandatory command metadata, with payload field/type
+  checks and a checked owner for dynamic async capabilities. Isolated contract
+  mutations must reject missing rules, incompatible count fields, and misplaced
+  dynamic policies; independent count and capability regressions preserve the
+  existing trace accounting. Generated-code and build-cost observations bound
+  the use of compile-time dispatch without claiming application performance.
   These structural checks do not replace allocation and behavioral regressions.
 - Retained prepared-operation payloads require a defined cloning rule. Typed
   data pointers, lengthless pointers, and untagged unions cannot silently cross

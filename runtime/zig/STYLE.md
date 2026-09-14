@@ -185,7 +185,7 @@ for these decisions. None decides the outcome alone.
 
 Resolve duplicate sources of truth in this order:
 
-1. command kinds, payloads, scope, parser names, and trace names;
+1. command kinds, payloads, scope, parser names, trace names, and operation accounting;
 2. capabilities and feature identities;
 3. error and unsupported classifications;
 4. artifact identity and hash fields;
@@ -196,6 +196,12 @@ Resolve duplicate sources of truth in this order:
 Each family has one neutral typed owner. Backend-specific conversion and native
 control flow remain local to the backend. Prefer an explicit tagged union plus
 complete metadata table before considering type generation.
+
+Command accounting rules are required metadata, not catch-all defaults. Payload
+counts must name an existing `u32` field; dynamic capability policies must bind
+the command they inspect. Keep independent tests for count normalization and
+required capabilities because structural completeness cannot establish either
+rule's semantic correctness.
 
 ## Formatting
 

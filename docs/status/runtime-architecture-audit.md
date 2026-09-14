@@ -10,6 +10,17 @@ The import fence and source-layout gates are the structural authority; this
 page records the lifecycle interpretation and follow-up decisions. The target
 structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../runtime-hexagonal-architecture-plan.md).
 
+## Command accounting completeness
+
+The [accounting record](../../bench/out/command-contract/20260914-command-accounting/README.md)
+binds operation counts to mandatory command metadata. Compilation rejects
+missing rules, incompatible payload count fields, and dynamic async capability
+selection on another command kind. Existing normalization and capability sets
+retain their meaning. Predecessor characterization, contract mutation checks,
+and generated-code observations bound this structural change; they do not
+establish actual GPU work or an application speedup. Accepted staged runtime
+bytes and serialized command/trace contracts remain unchanged.
+
 ## Prepared snapshot ownership
 
 The [snapshot record](../../bench/out/command-contract/20260913-prepared-snapshot-ownership/README.md)

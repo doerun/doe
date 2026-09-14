@@ -89,3 +89,40 @@ test "operation_count returns 1 for simple dispatch" {
     const dispatch = model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } };
     try std.testing.expectEqual(@as(u32, 1), command_info.operation_count(dispatch));
 }
+
+test "operation accounting preserves payload counts and zero normalization" {
+    const cases = [_]struct { requested: u32, expected: u32 }{
+        .{ .requested = 0, .expected = 1 },
+        .{ .requested = 1, .expected = 1 },
+        .{ .requested = 37, .expected = 37 },
+        .{ .requested = std.math.maxInt(u32), .expected = std.math.maxInt(u32) },
+    };
+    for (cases) |case| {
+        const commands = [_]model.Command{
+            .{ .kernel_dispatch = .{ .kernel = "accounting.wgsl", .x = 8, .y = 4, .z = 2, .repeat = case.requested } },
+            .{ .render_draw = .{ .draw_count = case.requested, .vertex_count = 9, .instance_count = 3 } },
+            .{ .draw_indirect = .{ .draw_count = case.requested } },
+            .{ .draw_indexed_indirect = .{ .draw_count = case.requested } },
+            .{ .render_pass = .{ .draw_count = case.requested } },
+            .{ .async_diagnostics = .{ .iterations = case.requested } },
+        };
+        for (commands) |command| {
+            try std.testing.expectEqual(case.expected, command_info.operation_count(command));
+            try std.testing.expectEqual(case.expected, command_info.requirements(command).operation_count);
+        }
+    }
+}
+
+test "single operation accounting does not count bytes workgroups or dependencies" {
+    const commands = [_]model.Command{
+        .{ .upload = .{ .bytes = 4096, .align_bytes = 256 } },
+        .{ .dispatch = .{ .x = 8, .y = 4, .z = 2 } },
+        .{ .dispatch_indirect = .{ .x = 8, .y = 4, .z = 2 } },
+        .{ .barrier = .{ .dependency_count = 7 } },
+        .{ .map_async = .{ .bytes = 4096 } },
+    };
+    for (commands) |command| {
+        try std.testing.expectEqual(@as(u32, 1), command_info.operation_count(command));
+        try std.testing.expectEqual(@as(u32, 1), command_info.requirements(command).operation_count);
+    }
+}

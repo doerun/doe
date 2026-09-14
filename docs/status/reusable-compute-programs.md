@@ -2,6 +2,12 @@
 
 ## GPU interference attribution
 
+The [current device and storage preflight](../../bench/out/command-contract/20260914-command-accounting/measurement-preflight.json)
+finds the earlier Chrome client absent, but available disk below the estimated
+space needed to finish the declared series above its existing reserve. No new
+calibration was launched. The estimate uses retained physical cohort sizes and
+does not replace the configured free-space admission or guarantee future space.
+
 The [latest warmup continuation](../../bench/out/compute-program/20260913-warmup-calibration-continued/README.md)
 retains an incomplete calibration rejected on observed Chrome GPU work from the
 Doppler consumer-streaming worktree. Its raw sidecar and matching live process
