@@ -2,15 +2,18 @@
 
 ## GPU interference attribution
 
-The [current calibration preparation](../../bench/out/compute-program/20260914-calibration-window/README.md)
-restores sufficient estimated disk headroom by reclaiming stale Zig test-cache
-outputs, with benchmark evidence and accepted packages preserved. Chrome from
-the Doppler consumer-streaming worktree is again attached to the shared GPU.
-The idle window has been requested and remains unconfirmed; no new calibration
-was launched. New instrumentation and candidate work wait for the complete
-frozen calibration and its separate consistency and precision assessment.
+The [latest calibration retry](../../bench/out/compute-program/20260914-calibration-retry/README.md)
+started after quiet preflight and unchanged input/storage checks, then stopped
+when a foreign `chrome-headless` DRM client disappeared between observation
+boundaries. Its boot-scoped task identity is retained; the departed client
+cannot be attributed to a project. This is a coverage-loss rejection, not a
+measurement of concurrent engine work. The series remains incomplete and
+provides no final consistency or precision assessment. A complete shared-GPU
+window must also exclude competing headless-browser clients. New profiling and
+candidate work remain dependent on completed calibration; accepted packages,
+thresholds, and earlier evidence remain unchanged.
 
-The [latest warmup continuation](../../bench/out/compute-program/20260913-warmup-calibration-continued/README.md)
+The [preceding attributed continuation](../../bench/out/compute-program/20260913-warmup-calibration-continued/README.md)
 retains an incomplete calibration rejected on observed Chrome GPU work from the
 Doppler consumer-streaming worktree. Its raw sidecar and matching live process
 inspection bind the interference to the same boot, PID, and start identity. The
