@@ -27,6 +27,9 @@ jobs:
           python3 bench/tools/bootstrap_zig.py
           zig_version="$(jq -r '.toolchains.zig.version' config/toolchains.json)"
           echo "$GITHUB_WORKSPACE/.tooling/zig-${zig_version}" >> "$GITHUB_PATH"
+      - name: Check Zig formatting
+        working-directory: runtime/zig
+        run: zig build fmt-check
       - name: Run WGSL compiler tests
         working-directory: runtime/zig
         run: |

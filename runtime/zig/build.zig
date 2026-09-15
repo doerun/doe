@@ -7,6 +7,8 @@ const APP_ICON_PRECOMPILED_ICNS = "../../assets/doe-logo.icns";
 const ABSENT_PROOF_ARTIFACT_SHA256 = "0000000000000000000000000000000000000000000000000000000000000000";
 const MAX_LEAN_PROOF_ARTIFACT_BYTES: usize = 1024 * 1024;
 const MAX_QUIRK_TOGGLE_REGISTRY_BYTES: usize = 64 * 1024;
+const MAX_COMPARABILITY_OBLIGATIONS_BYTES: usize = 128 * 1024;
+const MAX_DROPIN_CONFIG_BYTES: usize = 64 * 1024;
 const QUIRK_TOGGLE_REGISTRY_SCHEMA_VERSION: u32 = 1;
 
 const QuirkToggleConfig = struct {
@@ -277,7 +279,7 @@ fn addShaderTranslationProvenanceOptions(
     options.addOption([]const u8, "proof_artifact_sha256", proof_artifact_sha256);
 }
 
-fn configure_non_windows_graphics(artifact: *std.Build.Step.Compile, b: *std.Build, target: std.Build.ResolvedTarget) void {
+fn configureNonWindowsGraphics(artifact: *std.Build.Step.Compile, b: *std.Build, target: std.Build.ResolvedTarget) void {
     artifact.linkSystemLibrary("dl");
     addBackendBridgeIncludePaths(artifact, b);
     artifact.addCSourceFile(.{
@@ -413,6 +415,35 @@ fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.me
     options.addOption(u32, "vulkan_timestamp_workgroup_size", timestamp.value.workgroupSize);
 }
 
+fn addComparabilityOptions(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
+    const file = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch
+        @panic("config/comparability-obligations.json not found");
+    defer file.close();
+    const json = file.readToEndAlloc(allocator, MAX_COMPARABILITY_OBLIGATIONS_BYTES) catch
+        @panic("failed to read comparability-obligations.json");
+    options.addOption([]const u8, "comparability_obligations_json", json);
+    options.addOption([]const u8, "comparability_obligations_sha256", sha256HexAlloc(allocator, json));
+}
+
+fn addDropinAbiOptions(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
+    {
+        const file = std.fs.cwd().openFile("../../config/dropin-abi-behavior.json", .{}) catch
+            @panic("config/dropin-abi-behavior.json not found");
+        defer file.close();
+        const json = file.readToEndAlloc(allocator, MAX_DROPIN_CONFIG_BYTES) catch
+            @panic("failed to read dropin-abi-behavior.json");
+        options.addOption([]const u8, "dropin_behavior_config_json", json);
+    }
+    {
+        const file = std.fs.cwd().openFile("../../config/dropin-symbol-ownership.json", .{}) catch
+            @panic("config/dropin-symbol-ownership.json not found");
+        defer file.close();
+        const json = file.readToEndAlloc(allocator, MAX_DROPIN_CONFIG_BYTES) catch
+            @panic("failed to read dropin-symbol-ownership.json");
+        options.addOption([]const u8, "dropin_symbol_ownership_config_json", json);
+    }
+}
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -442,15 +473,7 @@ pub fn build(b: *std.Build) void {
     build_options.addOption(bool, "lean_verified", lean_verified);
     build_options.addOption(BuildTier, "build_tier", build_tier);
     addProofProvenanceOptions(build_options, proof_provenance);
-    {
-        const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch
-            @panic("config/comparability-obligations.json not found");
-        defer f.close();
-        const json = f.readToEndAlloc(b.allocator, 128 * 1024) catch
-            @panic("failed to read comparability-obligations.json");
-        build_options.addOption([]const u8, "comparability_obligations_json", json);
-        build_options.addOption([]const u8, "comparability_obligations_sha256", sha256HexAlloc(b.allocator, json));
-    }
+    addComparabilityOptions(build_options, b.allocator);
 
     var proof_json: ?[]const u8 = null;
     var proof_artifact_sha256: []const u8 = ABSENT_PROOF_ARTIFACT_SHA256;
@@ -465,22 +488,7 @@ pub fn build(b: *std.Build) void {
     }
     addShaderTranslationProvenanceOptions(build_options, shader_translation_provenance, proof_artifact_sha256);
 
-    {
-        const f = std.fs.cwd().openFile("../../config/dropin-abi-behavior.json", .{}) catch
-            @panic("config/dropin-abi-behavior.json not found");
-        defer f.close();
-        const json = f.readToEndAlloc(b.allocator, 64 * 1024) catch
-            @panic("failed to read dropin-abi-behavior.json");
-        build_options.addOption([]const u8, "dropin_behavior_config_json", json);
-    }
-    {
-        const f = std.fs.cwd().openFile("../../config/dropin-symbol-ownership.json", .{}) catch
-            @panic("config/dropin-symbol-ownership.json not found");
-        defer f.close();
-        const json = f.readToEndAlloc(b.allocator, 64 * 1024) catch
-            @panic("failed to read dropin-symbol-ownership.json");
-        build_options.addOption([]const u8, "dropin_symbol_ownership_config_json", json);
-    }
+    addDropinAbiOptions(build_options, b.allocator);
     addQuirkToggleRegistryOptions(build_options, quirk_registry_json, quirk_registry.value);
 
     const build_options_module = build_options.createModule();
@@ -517,7 +525,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(dropin_lib, b, target);
+        configureNonWindowsGraphics(dropin_lib, b, target);
     }
     const install_dropin = b.addInstallArtifact(dropin_lib, .{});
 
@@ -768,7 +776,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(exe, b, target);
+        configureNonWindowsGraphics(exe, b, target);
     }
 
     const install_exe = b.addInstallArtifact(exe, .{});
@@ -795,7 +803,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(metal_staged_write_bench, b, target);
+        configureNonWindowsGraphics(metal_staged_write_bench, b, target);
     }
     const install_metal_staged_write_bench = b.addInstallArtifact(
         metal_staged_write_bench,
@@ -826,7 +834,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(metal_compute_bench, b, target);
+        configureNonWindowsGraphics(metal_compute_bench, b, target);
     }
     const install_metal_compute_bench = b.addInstallArtifact(
         metal_compute_bench,
@@ -946,7 +954,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(module_runner, b, target);
+        configureNonWindowsGraphics(module_runner, b, target);
     }
     const install_module_runner = b.addInstallArtifact(module_runner, .{});
     const module_runner_step = b.step("module-core-runner", "Build the module core runner");
@@ -1131,7 +1139,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(doe_plan_executor, b, target);
+        configureNonWindowsGraphics(doe_plan_executor, b, target);
     }
     const install_doe_plan_executor = b.addInstallArtifact(doe_plan_executor, .{});
     const doe_plan_executor_step = b.step("doe-plan-executor", "Build the standalone Doe direct plan executor");
@@ -1235,6 +1243,18 @@ pub fn build(b: *std.Build) void {
     tsir_bootstrap_oracle_step.dependOn(&install_tsir_bootstrap_oracle.step);
     b.getInstallStep().dependOn(tsir_bootstrap_oracle_step);
 
+    const fmt_options: std.Build.Step.Fmt.Options = .{
+        .paths = &.{"."},
+        .exclude_paths = &.{ "vendor", ".zig-cache", "zig-out" },
+    };
+    const fmt = b.addFmt(fmt_options);
+    b.step("fmt", "Format owned Zig source, tests, and build tooling").dependOn(&fmt.step);
+    var fmt_check_options = fmt_options;
+    fmt_check_options.check = true;
+    const fmt_check = b.addFmt(fmt_check_options);
+    b.step("fmt-check", "Check owned Zig formatting without changing files").dependOn(&fmt_check.step);
+    b.getInstallStep().dependOn(&fmt_check.step);
+
     const import_fence_check = b.addSystemCommand(&.{ "python3", "tools/check_core_import_fence.py" });
     const import_fence_step = b.step("import-fence", "Validate core/full one-way import boundaries");
     import_fence_step.dependOn(&import_fence_check.step);
@@ -1298,25 +1318,9 @@ pub fn build(b: *std.Build) void {
     compute_build_options.addOption(BuildTier, "build_tier", .compute);
     addProofProvenanceOptions(compute_build_options, proof_provenance);
     addShaderTranslationProvenanceOptions(compute_build_options, shader_translation_provenance, proof_artifact_sha256);
-    // Re-embed required config for the compute variant.
-    {
-        const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch @panic("config/comparability-obligations.json not found");
-        defer f.close();
-        const json = f.readToEndAlloc(b.allocator, 128 * 1024) catch @panic("failed to read comparability-obligations.json");
-        compute_build_options.addOption([]const u8, "comparability_obligations_json", json);
-        compute_build_options.addOption([]const u8, "comparability_obligations_sha256", sha256HexAlloc(b.allocator, json));
-    }
+    addComparabilityOptions(compute_build_options, b.allocator);
     if (lean_verified) compute_build_options.addOption([]const u8, "lean_proof_json", proof_json orelse @panic("lean proof json missing for compute build options"));
-    {
-        const f = std.fs.cwd().openFile("../../config/dropin-abi-behavior.json", .{}) catch @panic("config/dropin-abi-behavior.json not found");
-        defer f.close();
-        compute_build_options.addOption([]const u8, "dropin_behavior_config_json", f.readToEndAlloc(b.allocator, 64 * 1024) catch @panic("failed to read dropin-abi-behavior.json"));
-    }
-    {
-        const f = std.fs.cwd().openFile("../../config/dropin-symbol-ownership.json", .{}) catch @panic("config/dropin-symbol-ownership.json not found");
-        defer f.close();
-        compute_build_options.addOption([]const u8, "dropin_symbol_ownership_config_json", f.readToEndAlloc(b.allocator, 64 * 1024) catch @panic("failed to read dropin-symbol-ownership.json"));
-    }
+    addDropinAbiOptions(compute_build_options, b.allocator);
     addQuirkToggleRegistryOptions(compute_build_options, quirk_registry_json, quirk_registry.value);
     const compute_build_options_module = compute_build_options.createModule();
     const compute_doe_module = b.createModule(.{
@@ -1352,7 +1356,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(core_dropin_lib, b, target);
+        configureNonWindowsGraphics(core_dropin_lib, b, target);
     }
     const install_core_dropin = b.addInstallArtifact(core_dropin_lib, .{});
     const core_dropin_step = b.step("dropin-compute", "Build compute-only drop-in library (dispatch + buffer, no render)");
@@ -1371,24 +1375,9 @@ pub fn build(b: *std.Build) void {
     full_build_options.addOption(BuildTier, "build_tier", .full);
     addProofProvenanceOptions(full_build_options, proof_provenance);
     addShaderTranslationProvenanceOptions(full_build_options, shader_translation_provenance, proof_artifact_sha256);
-    {
-        const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch @panic("config/comparability-obligations.json not found");
-        defer f.close();
-        const json = f.readToEndAlloc(b.allocator, 128 * 1024) catch @panic("failed to read comparability-obligations.json");
-        full_build_options.addOption([]const u8, "comparability_obligations_json", json);
-        full_build_options.addOption([]const u8, "comparability_obligations_sha256", sha256HexAlloc(b.allocator, json));
-    }
+    addComparabilityOptions(full_build_options, b.allocator);
     if (lean_verified) full_build_options.addOption([]const u8, "lean_proof_json", proof_json orelse @panic("lean proof json missing for full build options"));
-    {
-        const f = std.fs.cwd().openFile("../../config/dropin-abi-behavior.json", .{}) catch @panic("config/dropin-abi-behavior.json not found");
-        defer f.close();
-        full_build_options.addOption([]const u8, "dropin_behavior_config_json", f.readToEndAlloc(b.allocator, 64 * 1024) catch @panic("failed to read dropin-abi-behavior.json"));
-    }
-    {
-        const f = std.fs.cwd().openFile("../../config/dropin-symbol-ownership.json", .{}) catch @panic("config/dropin-symbol-ownership.json not found");
-        defer f.close();
-        full_build_options.addOption([]const u8, "dropin_symbol_ownership_config_json", f.readToEndAlloc(b.allocator, 64 * 1024) catch @panic("failed to read dropin-symbol-ownership.json"));
-    }
+    addDropinAbiOptions(full_build_options, b.allocator);
     addQuirkToggleRegistryOptions(full_build_options, quirk_registry_json, quirk_registry.value);
     const full_build_options_module = full_build_options.createModule();
     const full_doe_module = b.createModule(.{
@@ -1424,13 +1413,14 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(full_dropin_lib, b, target);
+        configureNonWindowsGraphics(full_dropin_lib, b, target);
     }
     const install_full_dropin = b.addInstallArtifact(full_dropin_lib, .{});
     const full_dropin_step = b.step("dropin-full", "Build full Dawn drop-in library (all procs, surface, external textures)");
     full_dropin_step.dependOn(&install_full_dropin.step);
 
     const test_step = b.step("test", "Run Zig unit tests");
+    test_step.dependOn(&fmt_check.step);
     const test_root_module = b.createModule(.{
         .root_source_file = b.path("test_suite.zig"),
         .target = target,
@@ -1454,7 +1444,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(test_exec, b, target);
+        configureNonWindowsGraphics(test_exec, b, target);
     }
     const run_tests = b.addRunArtifact(test_exec);
     test_step.dependOn(&import_fence_check.step);
@@ -1466,6 +1456,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_tests.step);
 
     const core_test_step = b.step("test-core", "Run core-lane Zig unit tests");
+    core_test_step.dependOn(&fmt_check.step);
     const core_test_root_module = b.createModule(.{
         .root_source_file = b.path("test_suite_core.zig"),
         .target = target,
@@ -1488,7 +1479,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(core_test_exec, b, target);
+        configureNonWindowsGraphics(core_test_exec, b, target);
     }
     const run_core_tests = b.addRunArtifact(core_test_exec);
     core_test_step.dependOn(&import_fence_check.step);
@@ -1500,6 +1491,7 @@ pub fn build(b: *std.Build) void {
     core_test_step.dependOn(&run_core_tests.step);
 
     const full_test_step = b.step("test-full", "Run full-lane Zig unit tests");
+    full_test_step.dependOn(&fmt_check.step);
     const full_test_root_module = b.createModule(.{
         .root_source_file = b.path("test_suite_full.zig"),
         .target = target,
@@ -1522,7 +1514,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(full_test_exec, b, target);
+        configureNonWindowsGraphics(full_test_exec, b, target);
     }
     const run_full_tests = b.addRunArtifact(full_test_exec);
     full_test_step.dependOn(&import_fence_check.step);
@@ -1534,6 +1526,7 @@ pub fn build(b: *std.Build) void {
     full_test_step.dependOn(&run_full_tests.step);
 
     const d3d12_test_step = b.step("test-d3d12", "Run D3D12-focused Zig tests (no Metal test suite)");
+    d3d12_test_step.dependOn(&fmt_check.step);
     const d3d12_test_root_module = b.createModule(.{
         .root_source_file = b.path("test_suite_d3d12.zig"),
         .target = target,
@@ -1556,7 +1549,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        configure_non_windows_graphics(d3d12_test_exec, b, target);
+        configureNonWindowsGraphics(d3d12_test_exec, b, target);
     }
     const run_d3d12_tests = b.addRunArtifact(d3d12_test_exec);
     d3d12_test_step.dependOn(&import_fence_check.step);
@@ -1567,6 +1560,7 @@ pub fn build(b: *std.Build) void {
     d3d12_test_step.dependOn(&run_d3d12_tests.step);
 
     const wgsl_test_step = b.step("test-wgsl", "Run WGSL shader compiler tests");
+    wgsl_test_step.dependOn(&fmt_check.step);
     const wgsl_test_root_module = b.createModule(.{
         .root_source_file = b.path("test_suite_wgsl.zig"),
         .target = target,

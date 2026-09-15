@@ -50,6 +50,13 @@ classified and cannot be promoted by benchmark results.
 
 ## Workload and evidence law
 
+- Owned Zig formatting is a blocking build/test obligation under the configured
+  toolchain. The canonical `fmt-check` step covers the runtime tree while
+  excluding vendored sources, caches, and installed outputs. Naming, cohesion,
+  and lifetime review remain separate obligations in
+  [`../runtime/zig/STYLE.md`](../runtime/zig/STYLE.md); a formatter does not
+  establish them. Build refactors preserve generated options and their
+  configuration failure boundaries across the supported build variants.
 - A workload declares immutable input identity, oracle, executor, policy,
   required artifacts, and evidence extensions.
 - Correctness precedes performance interpretation.

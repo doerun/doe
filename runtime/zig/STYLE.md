@@ -1,6 +1,13 @@
-# Doe Zig Style Guide
+# Doe Zig style guide
 
-This guide is the Zig style contract for `zig`.
+This guide is the style contract for owned code under `runtime/zig/`. Use the
+Zig version pinned in [`../../config/toolchains.json`](../../config/toolchains.json).
+Component intent comes from the applicable `CATSCAN.md` chain; source ownership
+and size policy come from [`source-layout.json`](source-layout.json).
+
+Readable code makes its inputs, decisions, ownership, and failure paths visible.
+Shorter code is useful when it removes repetition or indirection; line count
+alone does not establish quality.
 
 ## Core principles
 
@@ -95,9 +102,6 @@ those facts.
 - Provider configuration is passed at construction. Mutable cache paths,
   enablement flags, handles, telemetry, and device identity belong to the
   selected provider instance, never a process-global configuration shim.
-- Non-backend implementation files must not import `backend/metal/*`,
-  `backend/vulkan/*`, or `backend/d3d12/*` directly. Route those dependencies
-  through backend-owned seam modules under `src/backend/`.
 - Non-backend implementation files must reach backend-specific behavior through
   backend-owned seam modules such as `backend/dropin_*.zig`, not by importing
   `backend/metal/*`, `backend/vulkan/*`, or `backend/d3d12/*` directly. The
@@ -142,24 +146,20 @@ those facts.
 
 ## File size
 
-The architecture-aware policy in `source-layout.json` is active:
-
-- 800 lines is an advisory review signal;
-- more than 1,200 lines requires an explicit cohesive-module justification in
-  the architecture manifest;
-- 1,500 lines is the hard maximum for handwritten production source;
-- generated specification or table files use a separately declared,
-  reproducible generation contract;
-- no size-driven split is accepted unless every resulting module has a named
-  semantic responsibility.
+The active `architecture.linePolicy` in `source-layout.json` sets the advisory
+review threshold, justification threshold, and hard maximum for handwritten
+production source under `src/`. Generated specification or table files require
+a declared, reproducible generation contract. Build tooling and test files are
+outside that production line gate; they still require cohesive responsibilities.
 
 The thresholds are not targets. A file that owns multiple state machines,
 artifact kinds, input languages, or execution phases must split even below the
 advisory signal. Split by cohesive functionality, keep related code together,
 and do not create a module whose only identity is satisfying a line limit.
 
-File-count reduction and size distribution are campaign observations, not
-architectural correctness gates.
+File-count reduction and size distribution are campaign observations. Report
+production, generated, test, and build/tooling code separately, and exclude
+retained benchmark source snapshots from active-tree totals.
 
 ## Semantic inventory decisions
 
@@ -205,15 +205,27 @@ rule's semantic correctness.
 
 ## Formatting
 
-- Run `zig fmt` on every changed file before commit.
-- `zig fmt` compliance is a blocking check; do not commit unformatted Zig.
+Run these commands from `runtime/zig/`:
+
+```bash
+zig build fmt-check
+zig build fmt
+```
+
+`fmt-check` checks without writing; `fmt` applies Zig's formatter. Both cover the
+runtime tree, including tests, generated suite roots, and build/tooling code,
+excluding `vendor/`, `.zig-cache/`, and `zig-out/`. Format generated source through
+its generator when a generator check would otherwise reject the result.
+
+Formatting is blocking in the default install step and every canonical test
+suite. The WGSL CI workflow also runs it explicitly before compilation. A named
+artifact-only build step is not a substitute for these checks.
 
 ## Imports
 
 - `std` and `builtin` first.
 - Then local modules, with shared contracts before domain-specific imports.
 - Group domain imports by subsystem (e.g. backend modules together).
-
 - Prefer small feature-scoped modules over catch-all utility files.
 - Prefer importing feature-local contract/state modules over whole runtime
   orchestrators.
@@ -222,13 +234,26 @@ rule's semantic correctness.
 
 ## Naming
 
-- Types and enums: `PascalCase`
-- Functions: `camelCase`
-- Variables and fields: `snake_case`
-- Compile-time constants: `UPPER_SNAKE_CASE`
-- File names: `snake_case.zig`
+- Types, including type-returning factory functions: `PascalCase`.
+- Ordinary functions and methods: `camelCase`.
+- Local values, parameters, fields, enum tags, and module import bindings:
+  `snake_case`. A local `const` is still a local value.
+- Named domain, ABI, and policy constants: `UPPER_SNAKE_CASE`.
+- File names: `snake_case.zig`.
 - Doe runtime files stay `snake_case.zig` even when a file is centered on one
   primary type; do not introduce `PascalCase.zig` files in `runtime/zig/src/`.
+
+Preserve spellings imposed by foreign symbols, generated bindings, serialized
+schemas, and external interfaces. Those contracts take precedence over a local
+naming preference. Rename private implementation symbols with their consumers
+when touching the responsibility they belong to; do not silently rename a
+public declaration, error, or serialized field for style. Existing mixed naming
+is review debt, not evidence that an automated naming gate exists.
+
+Choose names for the represented fact: `retained_bytes` distinguishes capacity
+from a live allocation count. Avoid `data`, `state`, and `result` when several
+different concepts share the scope. Use short names where their meaning is
+unambiguous, such as a loop index.
 
 ## Constants and magic numbers
 
@@ -236,7 +261,7 @@ rule's semantic correctness.
   they are the clearest expression of local mechanics.
 - Name domain, ABI, policy, threshold, size, retry, and timing values.
 - Use named `UPPER_SNAKE_CASE` comptime constants or config values.
-- Place constants at file top, after imports.
+- Place module constants after imports; keep type-owned constants with the type.
 - Domain-shared constants belong in the narrow contract module that owns their
   semantics, such as `model_texture_value_types.zig`,
   `model_binding_value_types.zig`, `wgpu_core_base_types.zig`, or
@@ -254,18 +279,20 @@ rule's semantic correctness.
 - Canonicalization refactors must preserve exact bytes, semantic digests, error
   classification, and allocation cleanup through characterization tests.
 
-```zig
-const QUEUE_SYNC_RETRY_LIMIT: u32 = 3;
-const QUEUE_SYNC_RETRY_BACKOFF_NS: u64 = 1_000_000;
-pub const TIMESTAMP_BUFFER_SIZE: u64 = 16;
-```
-
 ## Control flow
 
 - Prefer `switch` on enums over long `if` ladders.
+- Exhaust meaningful alternatives. Use `else` only for a deliberate shared
+  policy; do not let a new enum tag silently acquire success behavior.
 - Use early returns for invalid states.
 - Keep fallback behavior explicit and auditable.
 - Do not introduce silent capability switching.
+- Prefer immutable locals and the smallest useful scope. Represent mutually
+  exclusive states with a tagged union when independent flags permit invalid
+  combinations.
+- Extract a helper when it names a responsibility or removes duplicated
+  semantics. A forwarding wrapper, generic callback, or new module must earn
+  its indirection through an actual contract or consumer.
 
 ## Prepared operation parity
 
@@ -307,7 +334,8 @@ the dependencies or output contract of a subsystem or promoted execution path.
 - Include actionable context: what was expected, what was received.
 - Route runtime observability through pipeline/trace/trace-meta contracts.
 - No ad-hoc `std.debug.print` in runtime paths; use structured trace output.
-- Guarded debug output (e.g. `DOE_WGPU_TIMESTAMP_DEBUG`) is acceptable for investigation aids, not for production paths.
+- Investigation-only debug output must be removed before committing runtime
+  code; retained diagnostics use the owned trace contract.
 - When a parameter is required by an interface or callback but intentionally
   unused, suppress it explicitly with `_ = param;` rather than relying on broad
   placeholder naming.
@@ -316,7 +344,8 @@ the dependencies or output contract of a subsystem or promoted execution path.
 
 - Comments explain why, not what.
 - Do not add comments that restate the code.
-- Use `///` doc comments for public function/type intent.
+- Use `///` to explain public intent, ownership, lifetimes, and failure conditions
+  that a caller cannot infer from the signature. Do not repeat the identifier.
 - Inline comments are for preconditions, control-flow rationale, or non-obvious constraints.
 - Do not add TODO/FIXME inline; track follow-ups in the status log (`docs/status.md`, with dated entries in the current `docs/status/*.md` shard).
 
@@ -353,30 +382,16 @@ the dependencies or output contract of a subsystem or promoted execution path.
 - Collect function pointers into a `Procs` struct in `wgpu_types.zig`.
 - Required procs are non-optional fields. Optional/conditional procs use `?` wrapper.
 - Load required procs with `loadProc()` (error on missing symbol). Load optional procs with `loadOptionalProc()` (returns null on missing symbol).
-- Check optional proc availability before call: `if (procs.someFn) |fn| fn(...) else return error.Unsupported`.
-- C callbacks use `callconv(.c)` and cast `?*anyopaque` userdata to known state structs via `@ptrCast(@alignCast(...))`.
+- Check optional proc availability before call:
+  `if (procs.someFn) |proc| proc(...) else return error.Unsupported`.
+- C callbacks use `callconv(.c)` and cast `?*anyopaque` userdata to known state
+  structs via `@ptrCast(@alignCast(...))` only under the adapter's alignment,
+  nullability, and lifetime contract. Completion status must survive delivery;
+  setting a done flag alone does not establish success.
 - Suppress unused callback parameters with `_ = param;`.
 - Keep `@cImport` isolated to support or backend-boundary modules when
   unavoidable; do not spread ad-hoc C imports through general runtime logic
   when an existing typed seam or ABI module already owns that contract.
-
-```zig
-// Type alias
-pub const FnWgpuCreateInstance = *const fn (?*anyopaque) callconv(.c) WGPUInstance;
-
-// Proc struct
-pub const Procs = struct {
-    wgpuCreateInstance: FnWgpuCreateInstance,           // required
-    wgpuDeviceHasFeature: ?FnWgpuDeviceHasFeature,     // optional
-};
-
-// Callback
-fn onQueueWorkDone(status: types.WGPUQueueWorkDoneStatus, userdata1: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
-    const state = @as(*types.QueueSubmitState, @ptrCast(@alignCast(userdata1.?)));
-    state.done = true;
-    _ = status;
-}
-```
 
 ## Determinism and trace
 
@@ -435,3 +450,37 @@ shader output, fallback decision, synchronization behavior, or receipt field.
 - Run `zig build test` for affected runtime modules.
 - Verify replay/trace gate compatibility for runtime-visible changes.
 - For WebGPU API-surface changes, update config coverage + benchmark contracts in the same change.
+
+## Consistency checks and review
+
+| Concern | Enforced mechanically | Still requires review or behavioral evidence |
+| --- | --- | --- |
+| Formatting | `zig build fmt-check` | Clear names and useful documentation |
+| Ownership boundaries | `zig build import-fence source-layout` | Correct semantic owner and a necessary abstraction |
+| Production file size | `zig build line-limits` | Cohesion, even below the configured thresholds |
+| Generated contracts and suites | `zig build webgpu-abi test-inventory` | Independent oracle and meaningful failure coverage |
+| Types and command coverage | Compilation of the affected consumers | Correct validation, execution, and complete exercised paths |
+| Resource lifetime and allocation | Focused lifetime and allocation-failure tests | Complete ownership reasoning across asynchronous and foreign calls |
+
+For each cleanup, work through one named responsibility:
+
+1. Read its charter, consumers, and existing tests. Use the generated
+   `reports/architecture/` inventory to investigate duplicate declarations,
+   dependency edges, and reachability; inspect the code before accepting a
+   suggested merge or deletion.
+2. Name the concrete ambiguity or duplication being removed. Define what must
+   remain identical, including public names, errors, serialized bytes, and
+   resource lifetime where applicable.
+3. Make the smallest coherent change, migrate its consumers, and remove the
+   obsolete path. Prefer an existing typed contract or standard-library
+   operation over another registry, wrapper, or generic utility.
+4. Format, run the relevant structural gates and behavioral tests, and retain
+   the applicable equivalence receipt. Style-only edits do not need tests that
+   merely repeat the implementation. New enforcement must demonstrate that it
+   rejects the condition it claims to detect.
+5. Record remaining debt with the semantic owner and next concrete target in
+   the live status shard. Update this guide only when the rule generalizes;
+   keep policy values and module inventories with their existing owners.
+
+Measure execution changes with the frozen application procedure. A cleaner
+diff, fewer allocations, or a successful compile is not performance evidence.

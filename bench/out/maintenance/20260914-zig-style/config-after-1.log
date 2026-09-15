@@ -1,0 +1,31 @@
+thread 1627842 panic: config/dropin-abi-behavior.json not found
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/posix.zig:1861:23: 0x11315a7 in openatZ (std.zig)
+            .NOENT => return error.FileNotFound,
+                      ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/Dir.zig:904:16: 0x11173e2 in openFileZ (std.zig)
+    const fd = try posix.openatZ(self.fd, sub_path, os_flags, 0);
+               ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/Dir.zig:851:5: 0x10dafe5 in openFile (std.zig)
+    return self.openFileZ(&path_c, flags);
+    ^
+/tmp/doe-build-style-4zxx2x58/runtime/zig/build.zig:431:13: 0x12a2d4e in addDropinAbiOptions (build.zig)
+            @panic("config/dropin-abi-behavior.json not found");
+            ^
+/tmp/doe-build-style-4zxx2x58/runtime/zig/build.zig:491:24: 0x122e1ab in build (build.zig)
+    addDropinAbiOptions(build_options, b.allocator);
+                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/Build.zig:2214:33: 0x11fe0da in runBuild__anon_23567 (std.zig)
+        .void => build_zig.build(b),
+                                ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/compiler/build_runner.zig:366:29: 0x11e3ff1 in main (build_runner.zig)
+        try builder.runBuild(root);
+                            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:627:37: 0x11eac69 in posixCallMainAndExit (std.zig)
+            const result = root.main() catch |err| {
+                                    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:232:5: 0x11c9351 in _start (std.zig)
+    asm volatile (switch (native_arch) {
+    ^
+???:?:?: 0x0 in ??? (???)
+error: the following build command crashed:
+/home/x/deco/doe/runtime/zig/.zig-cache/o/d3c5323b000baa7d78ddaeed08ca2c07/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /tmp/doe-build-style-4zxx2x58/runtime/zig /home/x/deco/doe/runtime/zig/.zig-cache /home/x/.cache/zig --seed 0x20f7a3cd -Zbd4cf8b2ad0667c7 --help

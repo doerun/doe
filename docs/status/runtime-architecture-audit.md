@@ -10,6 +10,23 @@ The import fence and source-layout gates are the structural authority; this
 page records the lifecycle interpretation and follow-up decisions. The target
 structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../runtime-hexagonal-architecture-plan.md).
 
+## Zig consistency boundary
+
+The [style and build record](../../bench/out/maintenance/20260914-zig-style/README.md)
+separates active handwritten source, generated source, tests, build tooling, and
+retained snapshots. Formatting is enforced by the canonical build/test graph
+and WGSL CI; naming and cohesion remain review obligations in the
+[style guide](../../runtime/zig/STYLE.md). Shared build configuration loaders
+retain generated option bytes and configuration failure ordering.
+
+Remaining cleanup belongs to each source-layout owner. The next build-tooling
+target is repeated tier construction in `build.zig`: preserve tier-specific
+imports and link settings before sharing more setup. Implementation naming
+needs consumer-aware review within each subsystem; foreign and serialized
+spellings must remain intact. Existing architecture candidates require a
+current source fingerprint and semantic review before a merge or deletion.
+This work does not promote a runtime optimization or resolve calibration.
+
 ## Command accounting completeness
 
 The [accounting record](../../bench/out/command-contract/20260914-command-accounting/README.md)

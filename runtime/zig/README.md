@@ -20,6 +20,7 @@ responsibility splits and actual consumers.
 ## Build and test
 
 ```bash
+zig build fmt-check
 zig build
 zig build test
 zig build test-core
@@ -29,6 +30,10 @@ zig build import-fence
 zig build source-layout
 zig build line-limits
 ```
+
+Use the configured Zig toolchain and the [style guide](STYLE.md). `zig build fmt`
+formats owned Zig files; `fmt-check` is also a dependency of the default install
+and canonical test suites. Both exclude vendored sources and build outputs.
 
 Backend-specific builds and tools are listed by `zig build --help`. Hardware
 execution requires the matching host, SDK, driver, and declared backend lane.

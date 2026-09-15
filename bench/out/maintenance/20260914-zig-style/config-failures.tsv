@@ -1,0 +1,7 @@
+phase	missing_configs	exit	first_failure
+before	comparability-obligations.json,dropin-abi-behavior.json,dropin-symbol-ownership.json	1	config/comparability-obligations.json not found
+before	dropin-abi-behavior.json,dropin-symbol-ownership.json	1	config/dropin-abi-behavior.json not found
+before	dropin-symbol-ownership.json	1	config/dropin-symbol-ownership.json not found
+after	comparability-obligations.json,dropin-abi-behavior.json,dropin-symbol-ownership.json	1	config/comparability-obligations.json not found
+after	dropin-abi-behavior.json,dropin-symbol-ownership.json	1	config/dropin-abi-behavior.json not found
+after	dropin-symbol-ownership.json	1	config/dropin-symbol-ownership.json not found

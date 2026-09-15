@@ -1,0 +1,12 @@
+fmt-check
++- zig fmt --check failure
+error: /home/x/deco/doe/runtime/zig/style_format_probe.zig: non-conforming formatting
+error: the following command exited with error code 1:
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/zig fmt --check /home/x/deco/doe/runtime/zig --exclude /home/x/deco/doe/runtime/zig/vendor --exclude /home/x/deco/doe/runtime/zig/.zig-cache --exclude /home/x/deco/doe/runtime/zig/zig-out
+
+Build Summary: 0/2 steps succeeded; 1 failed
+fmt-check transitive failure
++- zig fmt --check failure
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/d3c5323b000baa7d78ddaeed08ca2c07/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0xaed10e20 -Zf8b2ce288db44ff5 fmt-check --summary all

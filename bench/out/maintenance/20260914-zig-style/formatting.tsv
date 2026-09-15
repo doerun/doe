@@ -1,0 +1,9 @@
+directory	check_exit	format_exit	unchanged_after_check	final_bytes
+.	1	0	true	formatted
+src	1	0	true	formatted
+tests	1	0	true	formatted
+bench	1	0	true	formatted
+tools	1	0	true	formatted
+vendor	0	0	true	unchanged
+.zig-cache	0	0	true	unchanged
+zig-out	0	0	true	unchanged

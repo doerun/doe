@@ -1,0 +1,5 @@
+path	sha256	predecessor_identity_preserved
+packages/doe-gpu-linux-x64/bin/libwebgpu_doe.so	44b9f5c2fcff53e90e155c172dc85ed519f6517e41b08eaa891af920674a2584	true
+packages/doe-gpu-linux-x64/bin/doe_napi.node	4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66	true
+config/native-command-storage-policy.json	1ec9c9b6c9fc8011cfc098d4fc00963d780e8ccafbd16acccb09ae515e8362f7	true
+config/native-command-storage-observation.json	4c96f721dadc11bd3c1aa90e7f73f21728648e4dd726507b0664efeba7ed753c	true

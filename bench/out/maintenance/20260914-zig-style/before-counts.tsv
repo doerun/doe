@@ -1,0 +1,9 @@
+category	files	physical	blank	comment_only	code
+active_total	758	206119	18858	10726	176535
+build_bench_tools	12	5146	413	115	4618
+generated_test_roots	5	400	5	10	385
+production_generated	1	1055	9	3	1043
+production_handwritten	608	147845	12342	7088	128415
+repository_total	7474	1860607	155976	88939	1615692
+retained_snapshots	6716	1654488	137118	78213	1439157
+tests	132	51673	6089	3510	42074
