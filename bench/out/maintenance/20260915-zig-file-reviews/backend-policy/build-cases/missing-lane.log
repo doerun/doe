@@ -1,0 +1,25 @@
+thread 3568331 panic: incomplete config/backend-runtime-policy.json: InvalidRuntimePolicy
+/home/x/deco/doe/bench/out/maintenance/20260915-zig-file-reviews/backend-policy/build-scratch/runtime/zig/src/backend/backend_policy.zig:39:84: 0x120dbda in policy_for_lane (build.zig)
+        const lane_obj = try require_object(self.lanes.get(lane_name(lane)) orelse return error.InvalidRuntimePolicy);
+                                                                                   ^
+/home/x/deco/doe/bench/out/maintenance/20260915-zig-file-reviews/backend-policy/build-scratch/runtime/zig/src/backend/backend_policy.zig:73:42: 0x1210d9d in complete_table (build.zig)
+            @field(result, field.name) = try self.policy_for_lane(@enumFromInt(field.value));
+                                         ^
+/home/x/deco/doe/bench/out/maintenance/20260915-zig-file-reviews/backend-policy/build-scratch/runtime/zig/build.zig:483:24: 0x121274f in build (build.zig)
+        std.debug.panic("incomplete config/backend-runtime-policy.json: {s}", .{@errorName(err)});
+                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/Build.zig:2214:33: 0x11de0da in runBuild__anon_23568 (std.zig)
+        .void => build_zig.build(b),
+                                ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/compiler/build_runner.zig:366:29: 0x11c3ff1 in main (build_runner.zig)
+        try builder.runBuild(root);
+                            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:627:37: 0x11cac69 in posixCallMainAndExit (std.zig)
+            const result = root.main() catch |err| {
+                                    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:232:5: 0x11a9351 in _start (std.zig)
+    asm volatile (switch (native_arch) {
+    ^
+???:?:?: 0x0 in ??? (???)
+error: the following build command crashed:
+.zig-cache/o/e22820648f2f517437e60abc02b84c90/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/bench/out/maintenance/20260915-zig-file-reviews/backend-policy/build-scratch/runtime/zig .zig-cache /home/x/.cache/zig --seed 0xdd022adb -Z90a80eccfd92c4e2 --help

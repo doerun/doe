@@ -38,6 +38,10 @@ const test_tests_core_dispatch_preconditions_test_zig_5beeb735 = @import("tests/
 const test_tests_core_runtime_integration_test_zig_f32beca4 = @import("tests/core/runtime_integration_test.zig");
 const test_tests_core_remaining_modules_test_zig_fc62eec2 = @import("tests/core/remaining_modules_test.zig");
 const test_tests_core_wgpu_resources_test_zig_eefc900d = @import("tests/core/wgpu_resources_test.zig");
+const test_src_backend_backend_policy_zig_263ee77d = @import("src/backend/backend_policy.zig");
+const test_tests_backend_backend_runtime_config_policy_test_zig_a6480ea9 = @import("tests/backend/backend_runtime_config_policy_test.zig");
+const test_tests_backend_backend_runtime_policy_test_zig_f04cc8a6 = @import("tests/backend/backend_runtime_policy_test.zig");
+const test_tests_backend_backend_vulkan_doe_app_lane_policy_test_zig_6d3b28d3 = @import("tests/backend/backend_vulkan_doe_app_lane_policy_test.zig");
 
 comptime {
     _ = test_tests_backend_common_artifact_meta_test_zig_80b3c4bd;
@@ -78,4 +82,8 @@ comptime {
     _ = test_tests_core_runtime_integration_test_zig_f32beca4;
     _ = test_tests_core_remaining_modules_test_zig_fc62eec2;
     _ = test_tests_core_wgpu_resources_test_zig_eefc900d;
+    _ = test_src_backend_backend_policy_zig_263ee77d;
+    _ = test_tests_backend_backend_runtime_config_policy_test_zig_a6480ea9;
+    _ = test_tests_backend_backend_runtime_policy_test_zig_f04cc8a6;
+    _ = test_tests_backend_backend_vulkan_doe_app_lane_policy_test_zig_6d3b28d3;
 }

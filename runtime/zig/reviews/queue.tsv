@@ -1,22 +1,22 @@
 level	targets	status	latestReview	prerequisites	nextAction
-file	bench/compiler/bench.zig	verified	compiler_stage_file_006		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
-file	bench/compiler/bench_compilation.zig	verified	compilation_file_004		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
+file	bench/compiler/bench.zig	verified	compiler_stage_file_007		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	bench/compiler/bench_compilation.zig	verified	compilation_file_005		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
 file	bench/entrypoints/bench_compilation.zig	retired	compilation_entrypoint_file_001		Retired source path; continue the compiler implementation review. This removal does not complete its directory review.
 file	bench/entrypoints/host_hotpath_bench.zig	retired	host_entry_file_001		Complete the replacement entrypoint review at bench/host_hotpath/host_hotpath_bench.zig, including dependent allocation and input fixes; keep case/support file coverage separate.
-file	bench/entrypoints/metal_compute_bench.zig	verified	metal_compute_file_003		Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.
-file	bench/entrypoints/metal_staged_write_bench.zig	verified	metal_staged_write_file_003		Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.
-file	bench/entrypoints/runtime_compile_report.zig	verified	runtime_compile_entry_file_002		Continue with src/app/mod.zig in TSV order. File coverage does not complete directory or relationship reviews.
-file	bench/host_hotpath/host_hotpath_bench.zig	verified	host_main_file_004		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
-file	bench/host_hotpath/host_hotpath_bench_cases.zig	verified	host_cases_file_003		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
-file	bench/host_hotpath/host_hotpath_bench_lexer.zig	verified	host_lexer_file_003		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
-file	bench/host_hotpath/host_hotpath_bench_support.zig	verified	host_support_file_003		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
-file	build.zig	verified	build_file_007		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
-file	src/app/mod.zig	verified	app_mod_file_001		Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.
-file	src/app/prepare.zig	verified	app_prepare_file_001		Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.
-file	src/app/request.zig	verified	app_request_file_001		Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.
-file	src/app/runner.zig	verified	app_runner_file_001		Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.
-file	src/backend/backend_policy.zig	pending			Read and review the complete scope.
-file	src/backend/backend_telemetry.zig	pending			Read and review the complete scope.
+file	bench/entrypoints/metal_compute_bench.zig	verified	metal_compute_file_004		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	bench/entrypoints/metal_staged_write_bench.zig	verified	metal_staged_write_file_004		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	bench/entrypoints/runtime_compile_report.zig	verified	runtime_compile_entry_file_003		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	bench/host_hotpath/host_hotpath_bench.zig	verified	host_main_file_005		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	bench/host_hotpath/host_hotpath_bench_cases.zig	verified	host_cases_file_004		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	bench/host_hotpath/host_hotpath_bench_lexer.zig	verified	host_lexer_file_004		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	bench/host_hotpath/host_hotpath_bench_support.zig	verified	host_support_file_004		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	build.zig	verified	build_file_008		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	src/app/mod.zig	verified	app_mod_file_002		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	src/app/prepare.zig	verified	app_prepare_file_002		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	src/app/request.zig	verified	app_request_file_002		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	src/app/runner.zig	verified	app_runner_file_002		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	src/backend/backend_policy.zig	verified	backend_policy_file_001		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
+file	src/backend/backend_telemetry.zig	verified	backend_telemetry_file_001		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
 file	src/backend/common/artifact_policy.zig	pending			Read and review the complete scope.
 file	src/backend/common/artifact_state.zig	pending			Read and review the complete scope.
 file	src/backend/common/path_utils.zig	pending			Read and review the complete scope.
@@ -334,7 +334,7 @@ file	src/compiler/wgsl/proof/dispatch_proof_match.zig	pending			Read and review 
 file	src/compiler/wgsl/proof/dispatch_uniform_bounds.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/proof/robustness_static_bounds.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/runtime/runtime_compile.zig	pending			Read and review the complete scope.
-file	src/compiler/wgsl/runtime/runtime_compile_report.zig	verified	runtime_compile_report_file_002		Continue with src/app/mod.zig in TSV order. File coverage does not complete directory or relationship reviews.
+file	src/compiler/wgsl/runtime/runtime_compile_report.zig	verified	runtime_compile_report_file_003		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
 file	src/compiler/wgsl/runtime/runtime_compute_translation.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/runtime/runtime_graphics_translation.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/runtime/runtime_translation_info.zig	pending			Read and review the complete scope.
@@ -624,7 +624,7 @@ file	test_suite.zig	pending			Read and review the complete scope.
 file	test_suite_core.zig	pending			Read and review the complete scope.
 file	test_suite_d3d12.zig	pending			Read and review the complete scope.
 file	test_suite_full.zig	pending			Read and review the complete scope.
-file	test_suite_runtime_compile_report.zig	verified	runtime_compile_report_suite_file_001		Continue with src/app/mod.zig in TSV order. File coverage does not complete directory or relationship reviews.
+file	test_suite_runtime_compile_report.zig	verified	runtime_compile_report_suite_file_002		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
 file	test_suite_wgsl.zig	pending			Read and review the complete scope.
 file	tests/backend/backend_identity_test.zig	pending			Read and review the complete scope.
 file	tests/backend/backend_runtime_config_policy_test.zig	pending			Read and review the complete scope.
@@ -765,7 +765,7 @@ directory	bench/compiler	pending		file:bench/compiler/bench.zig;file:bench/compi
 directory	bench/entrypoints	pending		file:bench/entrypoints/metal_compute_bench.zig;file:bench/entrypoints/metal_staged_write_bench.zig;file:bench/entrypoints/runtime_compile_report.zig	Read and review the complete scope.
 directory	bench/host_hotpath	pending		file:bench/host_hotpath/host_hotpath_bench.zig;file:bench/host_hotpath/host_hotpath_bench_cases.zig;file:bench/host_hotpath/host_hotpath_bench_lexer.zig;file:bench/host_hotpath/host_hotpath_bench_support.zig	Read and review the complete scope.
 directory	src	pending		file:src/mod.zig	Read and review the complete scope.
-directory	src/app	verified	app_directory_001	file:src/app/mod.zig;file:src/app/prepare.zig;file:src/app/request.zig;file:src/app/runner.zig	Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.
+directory	src/app	verified	app_directory_002	file:src/app/mod.zig;file:src/app/prepare.zig;file:src/app/request.zig;file:src/app/runner.zig	Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
 directory	src/backend	pending		file:src/backend/backend_policy.zig;file:src/backend/backend_telemetry.zig;file:src/backend/dawn_delegate_backend.zig;file:src/backend/dropin_capabilities.zig;file:src/backend/dropin_external_texture.zig;file:src/backend/dropin_lifecycle.zig;file:src/backend/dropin_pipeline_cache.zig;file:src/backend/dropin_queue_submit.zig;file:src/backend/dropin_render_state.zig;file:src/backend/dropin_resource_ops.zig;file:src/backend/dropin_surface_ops.zig;file:src/backend/metal_package_pipeline_cache.zig;file:src/backend/webgpu_backend.zig;file:src/backend/webgpu_backend_lifecycle.zig;file:src/backend/webgpu_backend_ops.zig;file:src/backend/webgpu_backend_support.zig;file:src/backend/webgpu_backend_types.zig	Read and review the complete scope.
 directory	src/backend/common	pending		file:src/backend/common/artifact_policy.zig;file:src/backend/common/artifact_state.zig;file:src/backend/common/path_utils.zig;file:src/backend/common/shader_artifact_manifest.zig;file:src/backend/common/submit_count_policy.zig;file:src/backend/common/timing.zig	Read and review the complete scope.
 directory	src/backend/d3d12	pending		file:src/backend/d3d12/artifact_emit.zig;file:src/backend/d3d12/d3d12_bridge_decls.zig;file:src/backend/d3d12/d3d12_constants.zig;file:src/backend/d3d12/d3d12_descriptors.zig;file:src/backend/d3d12/d3d12_device_caps.zig;file:src/backend/d3d12/d3d12_formats.zig;file:src/backend/d3d12/d3d12_native_runtime.zig;file:src/backend/d3d12/d3d12_query_set.zig;file:src/backend/d3d12/d3d12_runtime_compute.zig;file:src/backend/d3d12/d3d12_runtime_upload.zig;file:src/backend/d3d12/mod.zig	Read and review the complete scope.
@@ -870,7 +870,7 @@ within_directory	bench/compiler	pending		directory:bench/compiler	Read and revie
 within_directory	bench/entrypoints	pending		directory:bench/entrypoints	Read and review the complete scope.
 within_directory	bench/host_hotpath	pending		directory:bench/host_hotpath	Read and review the complete scope.
 within_directory	src	pending		directory:src;within_directory:src/app;within_directory:src/backend;within_directory:src/cli;within_directory:src/command;within_directory:src/compat;within_directory:src/compiler;within_directory:src/composition;within_directory:src/contracts;within_directory:src/core;within_directory:src/dropin;within_directory:src/evidence;within_directory:src/full;within_directory:src/integrations;within_directory:src/native;within_directory:src/plan;within_directory:src/quirk;within_directory:src/runtime;within_directory:src/spatial;within_directory:src/tooling;within_directory:src/verification	Read and review the complete scope.
-within_directory	src/app	verified	app_within_directory_001	directory:src/app	Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.
+within_directory	src/app	verified	app_within_directory_002	directory:src/app	Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
 within_directory	src/backend	pending		directory:src/backend;within_directory:src/backend/common;within_directory:src/backend/d3d12;within_directory:src/backend/metal;within_directory:src/backend/ports;within_directory:src/backend/vulkan	Read and review the complete scope.
 within_directory	src/backend/common	pending		directory:src/backend/common	Read and review the complete scope.
 within_directory	src/backend/d3d12	pending		directory:src/backend/d3d12;within_directory:src/backend/d3d12/commands;within_directory:src/backend/d3d12/resources;within_directory:src/backend/d3d12/surface	Read and review the complete scope.

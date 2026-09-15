@@ -1,0 +1,88 @@
+test-bench-metal-staged-write
++- run test stderr
+Metal staged-write capture expected 2 bytes; received 1
+Metal staged-write capture expected 1 bytes; received 2
+--bytes requires a count
+--iterations requires a positive count; received 0
+--bytes requires a positive count; received 0
+Metal staged-write limits are 128 iterations and 67108864 bytes; received 129 iterations and 2097152 bytes
+Metal staged-write limits are 128 iterations and 67108864 bytes; received 8 iterations and 67108865 bytes
+unknown Metal staged-write option '--typo'; expected --iterations, --bytes, or --inject-corruption
+test-bench-host-hotpaths
++- run test stderr
+--iterations requires a positive sample count; received 0
+missing value for --iterations
+unknown host benchmark option '--unknown'; expected --iterations, --warmup, or --out
+--warmup requires an unsigned integer; received 'bad': InvalidCharacter
+test-bench-compilation
++- run test stderr
+--iterations must be between 1 and 5000; received 0
+--iterations must be between 1 and 5000; received 5001
+missing value for --target
+--target expects msl, hlsl, spirv, or all; received 'bad'
+unknown compilation benchmark option '--typo'
+shader filter 'absent' does not match the selected corpus or external shader
+--shader-name and --shader-tier require --shader-path
+shader name and tier must be valid UTF-8 for JSON output
+empty_compute             msl          122.701     122.701     122.701      123
+test-runtime-compile-report
++- run test stderr
+unknown runtime compile report option '--typo'
+--shader-name requires a value
+--target expects msl or spirv; received 'hlsl'
+test-bench-metal-compute
++- run test stderr
+Metal compute capture expected 2 bytes; received 1
+Metal compute capture expected 1 bytes; received 2
+--iterations requires a count
+--iterations must be between 1 and 16; received 0
+--iterations must be between 1 and 16; received 17
+unknown Metal compute option '--typo'; expected --iterations or --inject-corruption
+test-bench-shader
++- run test stderr
+--iterations must be between 1 and 2000; received 0
+--iterations must be between 1 and 2000; received 2001
+missing value for --iterations
+unknown option '--typo'; expected --iterations, --warmup, --out, or --filter
+--warmup requires an unsigned integer; received 'bad': InvalidCharacter
+--iterations requires an unsigned integer; received '4294967296': Overflow
+unknown shader filter 'absent'; expected a built-in corpus name
+
+Build Summary: 21/21 steps succeeded; 58/58 tests passed
+test-bench-shader success
++- zig fmt --check success
++- run python3 success 431ms MaxRSS:28M
++- run test 4 passed 976ms MaxRSS:7M
+   +- compile test Debug native success 470ms MaxRSS:165M
+      +- options cached
+test-bench-compilation success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 4 passed 7ms MaxRSS:7M
+   +- compile test Debug native success 506ms MaxRSS:170M
+      +- options (reused)
+test-bench-host-hotpaths success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 9 passed 112ms MaxRSS:4M
+   +- compile test Debug native success 351ms MaxRSS:144M
+      +- options (reused)
+test-bench-metal-compute success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 6 passed 1ms MaxRSS:3M
+   +- compile test Debug native success 285ms MaxRSS:138M
+      +- options (reused)
+test-bench-metal-staged-write success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 6 passed 1ms MaxRSS:3M
+   +- compile test Debug native success 338ms MaxRSS:141M
+      +- options (reused)
+test-runtime-compile-report success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 29 passed 27ms MaxRSS:7M
+   +- compile test Debug native success 495ms MaxRSS:151M
+      +- options (reused)
+

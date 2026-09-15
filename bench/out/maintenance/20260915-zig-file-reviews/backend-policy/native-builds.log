@@ -1,0 +1,15 @@
+
+Build Summary: 12/12 steps succeeded
+dropin-compute success
++- install webgpu_doe_compute success
+   +- compile lib webgpu_doe_compute ReleaseFast native success 29s MaxRSS:688M
+      +- options success
+dropin-full success
++- install webgpu_doe_full success
+   +- compile lib webgpu_doe_full ReleaseFast native success 29s MaxRSS:688M
+      +- options success
+doe-runtime success
++- install doe-zig-runtime success
+   +- compile exe doe-zig-runtime ReleaseFast native success 39s MaxRSS:883M
+      +- options cached
+

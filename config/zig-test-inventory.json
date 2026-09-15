@@ -312,6 +312,22 @@
         {
           "path": "src/dropin/wgpu_dropin_ext_a_pipeline.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/backend/backend_policy.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "tests/backend/backend_runtime_config_policy_test.zig",
+          "kind": "backend"
+        },
+        {
+          "path": "tests/backend/backend_runtime_policy_test.zig",
+          "kind": "backend"
+        },
+        {
+          "path": "tests/backend/backend_vulkan_doe_app_lane_policy_test.zig",
+          "kind": "backend"
         }
       ]
     },
@@ -469,6 +485,22 @@
         {
           "path": "tests/core/wgpu_resources_test.zig",
           "kind": "integration"
+        },
+        {
+          "path": "src/backend/backend_policy.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "tests/backend/backend_runtime_config_policy_test.zig",
+          "kind": "backend"
+        },
+        {
+          "path": "tests/backend/backend_runtime_policy_test.zig",
+          "kind": "backend"
+        },
+        {
+          "path": "tests/backend/backend_vulkan_doe_app_lane_policy_test.zig",
+          "kind": "backend"
         }
       ]
     },

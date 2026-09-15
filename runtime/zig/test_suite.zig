@@ -73,6 +73,10 @@ const test_tests_dropin_dropin_symbol_ownership_test_zig_35113036 = @import("tes
 const test_src_backend_vulkan_vk_timestamp_zig_23d04f12 = if (builtin.os.tag == .linux) @import("src/backend/vulkan/vk_timestamp.zig") else struct {};
 const test_tests_core_quirk_registry_build_test_zig_997279fd = @import("tests/core/quirk_registry_build_test.zig");
 const test_src_dropin_wgpu_dropin_ext_a_pipeline_zig_66355213 = @import("src/dropin/wgpu_dropin_ext_a_pipeline.zig");
+const test_src_backend_backend_policy_zig_263ee77d = @import("src/backend/backend_policy.zig");
+const test_tests_backend_backend_runtime_config_policy_test_zig_a6480ea9 = @import("tests/backend/backend_runtime_config_policy_test.zig");
+const test_tests_backend_backend_runtime_policy_test_zig_f04cc8a6 = @import("tests/backend/backend_runtime_policy_test.zig");
+const test_tests_backend_backend_vulkan_doe_app_lane_policy_test_zig_6d3b28d3 = @import("tests/backend/backend_vulkan_doe_app_lane_policy_test.zig");
 
 comptime {
     _ = test_tests_metal_metal_mod_integration_test_zig_6f53b3ec;
@@ -147,4 +151,8 @@ comptime {
     _ = test_src_backend_vulkan_vk_timestamp_zig_23d04f12;
     _ = test_tests_core_quirk_registry_build_test_zig_997279fd;
     _ = test_src_dropin_wgpu_dropin_ext_a_pipeline_zig_66355213;
+    _ = test_src_backend_backend_policy_zig_263ee77d;
+    _ = test_tests_backend_backend_runtime_config_policy_test_zig_a6480ea9;
+    _ = test_tests_backend_backend_runtime_policy_test_zig_f04cc8a6;
+    _ = test_tests_backend_backend_vulkan_doe_app_lane_policy_test_zig_6d3b28d3;
 }

@@ -1,0 +1,48 @@
+webgpu_doe	libc	true
+webgpu_doe	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+webgpu_doe	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+webgpu_doe	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+doe-zig-runtime	libc	true
+doe-zig-runtime	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+doe-zig-runtime	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+doe-zig-runtime	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+module-core-runner	libc	true
+module-core-runner	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+module-core-runner	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+module-core-runner	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+doe-plan-executor	libc	true
+doe-plan-executor	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+doe-plan-executor	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+doe-plan-executor	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+webgpu_doe_compute	libc	true
+webgpu_doe_compute	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+webgpu_doe_compute	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+webgpu_doe_compute	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+webgpu_doe_full	libc	true
+webgpu_doe_full	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+webgpu_doe_full	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+webgpu_doe_full	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+test	libc	true
+test	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+test	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+test	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+test	libc	true
+test	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+test	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+test	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+test	libc	true
+test	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+test	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+test	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+test	libc	true
+test	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+test	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+test	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+doe-metal-compute-bench	libc	true
+doe-metal-compute-bench	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+doe-metal-compute-bench	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+doe-metal-compute-bench	c_source	src/backend/metal/metal_bridge_stubs.c	[]
+doe-metal-staged-write-bench	libc	true
+doe-metal-staged-write-bench	c_source	src/backend/d3d12/d3d12_bridge_stubs.c	[]
+doe-metal-staged-write-bench	library	{"name":"vulkan","needed":false,"weak":false,"use_pkg_config":"yes","preferred_link_mode":"dynamic","search_strategy":"paths_first"}
+doe-metal-staged-write-bench	c_source	src/backend/metal/metal_bridge_stubs.c	[]

@@ -3,11 +3,11 @@
   "title": "Fawn Backend Runtime Policy",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "defaultLane", "lanes"],
+  "required": ["schemaVersion", "defaultLane", "selectionPolicyHashSeed", "lanes"],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 6 },
     "defaultLane": { "type": "string", "minLength": 1 },
-    "selectionPolicyHashSeed": { "type": "string" },
+    "selectionPolicyHashSeed": { "type": "string", "minLength": 1 },
     "cutoverPolicyPath": { "type": "string", "minLength": 1 },
     "lanes": {
       "type": "object",

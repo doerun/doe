@@ -1,0 +1,177 @@
+Usage: /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig build [steps] [options]
+
+Steps:
+  install (default)            Copy build artifacts to prefix path
+  uninstall                    Remove build artifacts from prefix path
+  dropin                       Build the drop-in WebGPU shared library
+  ort-plugin-ep                Build the repo-only ONNX Runtime plugin EP scaffold shared library
+  ort-plugin-ep-smoke          Build the repo-only ONNX Runtime plugin EP smoke runner
+  ort-plugin-ep-smoke-run      Build and run the repo-only ONNX Runtime plugin EP smoke runner
+  ort-plugin-ep-session-smoke  Build the repo-only ONNX Runtime plugin EP session smoke runner
+  ort-plugin-ep-session-smoke-run Build and run the repo-only ONNX Runtime plugin EP session smoke runner
+  ort-incumbent-session-smoke  Build the repo-only incumbent ONNX Runtime WebGPU session smoke runner
+  ort-incumbent-session-smoke-run Build and run the repo-only incumbent ONNX Runtime WebGPU session smoke runner
+  doe-runtime                  Build the Doe runtime binary
+  bench-metal-staged-write     Build the correctness-bearing Metal staged-write benchmark
+  bench-metal-compute          Build the correctness-bearing Metal compute benchmark
+  app                          Build macOS Doe Runtime .app bundle with generated icon
+  run                          Run the sample runtime dispatcher
+  module-core-runner           Build the module core runner
+  emit-msl                     Build the WGSL-to-MSL emitter tool
+  emit-ir-digest               Build the canonical WGSL IR digest tool
+  emit-csl                     Build the WGSL-to-CSL emitter tool
+  emit-tsir-attention-canary   Build the TSIR-CSL attention canary emitter tool
+  emit-hlsl                    Build the WGSL-to-HLSL emitter tool
+  emit-dxil                    Build the WGSL-to-DXIL emitter tool
+  emit-spirv                   Build the WGSL-to-SPIR-V emitter tool
+  webgpu-plan-executor         Build the standalone direct WebGPU plan executor
+  doe-plan-executor            Build the standalone Doe direct plan executor
+  csl-sim-runner               Build the CSL simulator contract runner
+  csl-bundle-emitter           Build the WGSL-to-CSL bundle emitter
+  csl-host-plan-tool           Build the CSL host-plan lowering tool
+  tsir-bootstrap-manifest-inputs Build the TSIR bootstrap manifest fixture generator tool
+  tsir-bootstrap-oracle        Build the TSIR bootstrap reference oracle tool
+  fmt                          Format owned Zig source, tests, and build tooling
+  fmt-check                    Check owned Zig formatting without changing files
+  import-fence                 Validate core/full one-way import boundaries
+  source-layout                Validate Zig source ownership boundaries
+  webgpu-abi                   Validate generated WebGPU ABI against the pinned upstream header
+  line-limits                  Validate Zig source line-count policy
+  test-inventory               Validate generated Zig test-suite roots
+  bridge-manifest              Validate the Metal bridge manifest against Zig declarations and bridge sources
+  coverage-gate                Validate split core/full coverage ledgers against Zig partitions
+  spirv-val                    Validate SPIR-V artifacts with spirv-val (skips gracefully if not installed)
+  wgsl-coverage-gate           Validate generated admitted-shader, CTS, SPIR-V, and workaround coverage
+  dropin-compute               Build compute-only drop-in library (dispatch + buffer, no render)
+  dropin-core                  Alias for dropin-compute
+  dropin-full                  Build full Dawn drop-in library (all procs, surface, external textures)
+  test                         Run Zig unit tests
+  test-core                    Run core-lane Zig unit tests
+  test-full                    Run full-lane Zig unit tests
+  test-d3d12                   Run D3D12-focused Zig tests (no Metal test suite)
+  test-wgsl                    Run WGSL shader compiler tests
+  test-bench-metal-staged-write Run Metal staged-write benchmark contract tests without GPU execution
+  test-bench-metal-compute     Run Metal compute benchmark contract tests without GPU execution
+  test-bench-shader            Run the WGSL stage benchmark contract tests
+  bench-shader                 Build the WGSL shader compiler stage microbenchmark
+  bench-shader-run             Build and run the WGSL shader compiler stage microbenchmark
+  test-bench-host-hotpaths     Run host hotpath benchmark contract tests
+  bench-host-hotpaths          Build the host hotpath scalar-vs-SIMD benchmark
+  bench-host-hotpaths-run      Build and run the host hotpath scalar-vs-SIMD benchmark
+  test-bench-compilation       Run the WGSL compilation benchmark contract tests
+  bench-compilation            Build the WGSL compilation latency benchmark
+  bench-compilation-run        Build and run the WGSL compilation latency benchmark
+  test-runtime-compile-report  Run runtime compile report contract tests
+  runtime-compile-report       Build the WGSL runtime compile structural report CLI
+  runtime-compile-report-run   Build and run the WGSL runtime compile structural report CLI
+
+General Options:
+  -p, --prefix [path]          Where to install files (default: zig-out)
+  --prefix-lib-dir [path]      Where to install libraries
+  --prefix-exe-dir [path]      Where to install executables
+  --prefix-include-dir [path]  Where to install C header files
+
+  --release[=mode]             Request release mode, optionally specifying a
+                               preferred optimization mode: fast, safe, small
+
+  -fdarling,  -fno-darling     Integration with system-installed Darling to
+                               execute macOS programs on Linux hosts
+                               (default: no)
+  -fqemu,     -fno-qemu        Integration with system-installed QEMU to execute
+                               foreign-architecture programs on Linux hosts
+                               (default: no)
+  --libc-runtimes [path]       Enhances QEMU integration by providing dynamic libc
+                               (e.g. glibc or musl) built for multiple foreign
+                               architectures, allowing execution of non-native
+                               programs that link with libc.
+  -frosetta,  -fno-rosetta     Rely on Rosetta to execute x86_64 programs on
+                               ARM64 macOS hosts. (default: no)
+  -fwasmtime, -fno-wasmtime    Integration with system-installed wasmtime to
+                               execute WASI binaries. (default: no)
+  -fwine,     -fno-wine        Integration with system-installed Wine to execute
+                               Windows programs on Linux hosts. (default: no)
+
+  -h, --help                   Print this help and exit
+  -l, --list-steps             Print available steps
+  --verbose                    Print commands before executing them
+  --color [auto|off|on]        Enable or disable colored error messages
+  --prominent-compile-errors   Buffer compile errors and display at end
+  --summary [mode]             Control the printing of the build summary
+    all                        Print the build summary in its entirety
+    new                        Omit cached steps
+    failures                   (Default) Only print failed steps
+    none                       Do not print the build summary
+  -j<N>                        Limit concurrent jobs (default is to use all CPU cores)
+  --maxrss <bytes>             Limit memory usage (default is to use available memory)
+  --skip-oom-steps             Instead of failing, skip steps that would exceed --maxrss
+  --fetch[=mode]               Fetch dependency tree (optionally choose laziness) and exit
+    needed                     (Default) Lazy dependencies are fetched as needed
+    all                        Lazy dependencies are always fetched
+  --watch                      Continuously rebuild when source files are modified
+  --debounce <ms>              Delay before rebuilding after changed file detected
+  --webui[=ip]                 Enable the web interface on the given IP address
+  --fuzz                       Continuously search for unit test failures (implies '--webui')
+  --time-report                Force full rebuild and provide detailed information on
+                               compilation time of Zig source code (implies '--webui')
+     -fincremental             Enable incremental compilation
+  -fno-incremental             Disable incremental compilation
+
+Project-Specific Options:
+  -Dtarget=[string]            The CPU architecture, OS, and ABI to build for
+  -Dcpu=[string]               Target CPU features to add or subtract
+  -Dofmt=[string]              Target object format
+  -Ddynamic-linker=[string]    Path to interpreter on the target system
+  -Doptimize=[enum]            Prioritize performance, safety, or binary size
+                                 Supported Values:
+                                   Debug
+                                   ReleaseSafe
+                                   ReleaseFast
+                                   ReleaseSmall
+  -Dtier=[enum]                Build tier: compute (dispatch+buffer only), headless (full WebGPU sans presentation), full (Dawn drop-in)
+                                 Supported Values:
+                                   compute
+                                   headless
+                                   full
+  -Dtest-filter=[string]       Run only Zig tests whose names contain this value
+  -Dlean-verified=[bool]       Embed Lean proof artifact and validate at comptime
+
+System Integration Options:
+  --search-prefix [path]       Add a path to look for binaries, libraries, headers
+  --sysroot [path]             Set the system root directory (usually /)
+  --libc [file]                Provide a file which specifies libc paths
+
+  --system [pkgdir]            Disable package fetching; enable all integrations
+  -fsys=[name]                 Enable a system integration
+  -fno-sys=[name]              Disable a system integration
+
+  Available System Integrations:                Enabled:
+  (none)                                        -
+
+Advanced Options:
+  -freference-trace[=num]      How many lines of reference trace should be shown per compile error
+  -fno-reference-trace         Disable reference trace
+  -fallow-so-scripts           Allows .so files to be GNU ld scripts
+  -fno-allow-so-scripts        (default) .so files must be ELF files
+  --build-file [file]          Override path to build.zig
+  --cache-dir [path]           Override path to local Zig cache directory
+  --global-cache-dir [path]    Override path to global Zig cache directory
+  --zig-lib-dir [arg]          Override path to Zig lib directory
+  --build-runner [file]        Override path to build runner
+  --seed [integer]             For shuffling dependency traversal order (default: random)
+  --build-id[=style]           At a minor link-time expense, embeds a build ID in binaries
+      fast                     8-byte non-cryptographic hash (COFF, ELF, WASM)
+      sha1, tree               20-byte cryptographic hash (ELF, WASM)
+      md5                      16-byte cryptographic hash (ELF)
+      uuid                     16-byte random UUID (ELF, WASM)
+      0x[hexstring]            Constant ID, maximum 32 bytes (ELF, WASM)
+      none                     (default) No build ID
+  --debug-log [scope]          Enable debugging the compiler
+  --debug-pkg-config           Fail if unknown pkg-config flags encountered
+  --debug-rt                   Debug compiler runtime libraries
+  --verbose-link               Enable compiler debug output for linking
+  --verbose-air                Enable compiler debug output for Zig AIR
+  --verbose-llvm-ir[=file]     Enable compiler debug output for LLVM IR
+  --verbose-llvm-bc=[file]     Enable compiler debug output for LLVM BC
+  --verbose-cimport            Enable compiler debug output for C imports
+  --verbose-cc                 Enable compiler debug output for C compilation
+  --verbose-llvm-cpu-features  Enable compiler debug output for LLVM CPU features

@@ -1,0 +1,53 @@
+source layout violations detected:
+module decision review is stale for src/backend/backend_policy.zig: expected 40f1248dd4bf99b25048e09411c0e9a10d2afcb23812db55fe4a3d9317c4d953, got 4f77eb6695a57ee565f19ca70b48a378d8c8a679083a2d47f20daf1581c3b8b0
+test-core
++- run python3 failure
+error: the following command exited with error code 1:
+python3 tools/check_source_layout.py
+Zig source architecture review signals:
+src/backend/vulkan/native_runtime.zig: 1004 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_render.zig: 981 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_resources.zig: 1069 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_upload.zig: 843 lines exceeds advisory review signal 800
+src/backend/vulkan/vulkan_surface.zig: 808 lines exceeds advisory review signal 800
+src/compiler/tsir/digest.zig: 999 lines exceeds advisory review signal 800
+src/compiler/tsir/emit_kernel_body.zig: 895 lines exceeds advisory review signal 800
+src/compiler/tsir/frontend.zig: 885 lines exceeds advisory review signal 800
+src/compiler/tsir/reference_extended_ops.zig: 841 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_exec_v1.zig: 989 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_compile_source.zig: 895 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_runtime.zig: 837 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_ir_walk.zig: 888 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_layout.zig: 911 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/msl/emit_msl_ir.zig: 976 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig: 839 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig: 1046 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/parser_expr.zig: 851 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/sema.zig: 806 lines exceeds advisory review signal 800
+src/compiler/wgsl/ir/ir_transform_robustness.zig: 984 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_proof_match.zig: 890 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_uniform_bounds.zig: 878 lines exceeds advisory review signal 800
+src/dropin/dropin_browser_shared_memory.zig: 806 lines exceeds advisory review signal 800
+src/native/compute/doe_compute_fast.zig: 1062 lines exceeds advisory review signal 800
+src/native/queue/doe_queue_submit_metal.zig: 837 lines exceeds advisory review signal 800
+src/native/resource/doe_texture_sampler_native.zig: 829 lines exceeds advisory review signal 800
+src/native/shader/doe_shader_native.zig: 956 lines exceeds advisory review signal 800
+src/native/vulkan/vulkan_compute_native.zig: 1114 lines exceeds advisory review signal 800
+src/runtime/trace/trace.zig: 879 lines exceeds advisory review signal 800
+src/spatial/csl/csl_host_plan_tool.zig: 828 lines exceeds advisory review signal 800
+
+Build Summary: 9/11 steps succeeded; 1 failed; 1/1 tests passed
+test-core transitive failure
++- zig fmt --check success
++- run python3 success 808ms MaxRSS:13M
++- run python3 failure
++- run python3 success 47ms MaxRSS:21M
++- run python3 success 45ms MaxRSS:21M
++- run python3 success 37ms MaxRSS:21M
++- run python3 success 83ms MaxRSS:12M
++- run test 1 passed 22ms MaxRSS:3M
+   +- compile test Debug native success 348ms MaxRSS:143M
+      +- options success
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/abb5c4d070061d140efcba317143ad12/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x120ae0f8 -Z556bf665401ece38 test-core -Dtest-filter=backend runtime policy: compiled defaults -j2 --summary all

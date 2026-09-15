@@ -1,4 +1,5 @@
 const std = @import("std");
+const backend_policy = @import("src/backend/backend_policy.zig");
 const command_storage_contract = @import("src/contracts/command_storage.zig");
 const APP_BUNDLE_NAME = "Doe Runtime.app";
 const APP_ICON_BASENAME = "DoeRuntime";
@@ -473,8 +474,17 @@ pub fn build(b: *std.Build) void {
         std.debug.panic("invalid config/quirk-toggle-registry.json: {s}", .{@errorName(err)});
     defer quirk_registry.deinit();
 
+    const runtime_policy_bytes = readFileAlloc(b.allocator, "../../" ++ backend_policy.DEFAULT_RUNTIME_POLICY_PATH, backend_policy.MAX_RUNTIME_POLICY_BYTES);
+    defer b.allocator.free(runtime_policy_bytes);
+    const runtime_policy = backend_policy.parse_policy(b.allocator, runtime_policy_bytes) catch |err|
+        std.debug.panic("invalid config/backend-runtime-policy.json: {s}", .{@errorName(err)});
+    defer runtime_policy.deinit();
+    const runtime_policy_table = runtime_policy.complete_table() catch |err|
+        std.debug.panic("incomplete config/backend-runtime-policy.json: {s}", .{@errorName(err)});
+
     const lean_verified = b.option(bool, "lean-verified", "Embed Lean proof artifact and validate at comptime") orelse false;
     const build_options = b.addOptions();
+    build_options.addOption(backend_policy.PolicyTable, "backend_runtime_policy", runtime_policy_table);
     addComputeProgramContract(build_options, b.allocator);
     addNativeCommandStoragePolicy(build_options, b.allocator);
     addCompilerArithmeticPolicy(build_options, b.allocator);
@@ -1275,6 +1285,7 @@ pub fn build(b: *std.Build) void {
     // The default `dropin` step uses the --tier option (default: headless).
     // These named steps override tier for convenience.
     const compute_build_options = b.addOptions();
+    compute_build_options.addOption(backend_policy.PolicyTable, "backend_runtime_policy", runtime_policy_table);
     addComputeProgramContract(compute_build_options, b.allocator);
     addNativeCommandStoragePolicy(compute_build_options, b.allocator);
     addCompilerArithmeticPolicy(compute_build_options, b.allocator);
@@ -1321,6 +1332,7 @@ pub fn build(b: *std.Build) void {
 
     // Full Dawn drop-in variant (tier=full).
     const full_build_options = b.addOptions();
+    full_build_options.addOption(backend_policy.PolicyTable, "backend_runtime_policy", runtime_policy_table);
     addComputeProgramContract(full_build_options, b.allocator);
     addNativeCommandStoragePolicy(full_build_options, b.allocator);
     addCompilerArithmeticPolicy(full_build_options, b.allocator);

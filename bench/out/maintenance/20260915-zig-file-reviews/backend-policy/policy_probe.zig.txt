@@ -1,0 +1,2 @@
+const policy = @import("src/backend/backend_policy.zig");
+comptime { _ = policy; }

@@ -92,6 +92,7 @@ test "backend runtime policy rejects fallback-enabled lane config" {
         .data =
         \\{
         \\  "schemaVersion": 6,
+        \\  "defaultLane": "metal_doe_comparable",
         \\  "selectionPolicyHashSeed": "backend-runtime-policy-v7",
         \\  "lanes": {
         \\    "metal_doe_comparable": {
@@ -125,6 +126,7 @@ test "backend runtime policy rejects mapped shortcuts for strict staged-upload l
         .data =
         \\{
         \\  "schemaVersion": 6,
+        \\  "defaultLane": "metal_doe_release",
         \\  "selectionPolicyHashSeed": "backend-runtime-policy-v7",
         \\  "lanes": {
         \\    "metal_doe_release": {
@@ -159,6 +161,7 @@ test "backend runtime policy rejects missing deferred sync policy" {
         .data =
         \\{
         \\  "schemaVersion": 6,
+        \\  "defaultLane": "vulkan_doe_comparable",
         \\  "selectionPolicyHashSeed": "backend-runtime-policy-v7",
         \\  "lanes": {
         \\    "vulkan_doe_comparable": {

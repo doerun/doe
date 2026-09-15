@@ -1,0 +1,11 @@
+case	exitCode	expected
+accepted	0	accept
+missing-lane	1	reject
+unknown-root-field	1	reject
+unknown-lane-field	1	reject
+wrong-version	1	reject
+empty-hash	1	reject
+missing-default	1	reject
+fallback	1	reject
+staged-upload	1	reject
+unknown-enum	1	reject

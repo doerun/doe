@@ -724,9 +724,9 @@
       },
       "src/backend/backend_policy.zig": {
         "decision": "Keep",
-        "moduleSha256": "4f77eb6695a57ee565f19ca70b48a378d8c8a679083a2d47f20daf1581c3b8b0",
-        "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-hexagonal-migration/2026-08-22"
+        "moduleSha256": "94e1c39d7e3337d359003493e963e529c2138f9e360cd4631a2bf960f033d248",
+        "reason": "Keep: owns strict backend selection policy loading and borrowed build-table construction; compiled defaults derive from versioned config instead of a duplicate lane map. Allocation, policy parity, and admission checks are recorded separately in the file review.",
+        "reviewer": "codex-file-review/2026-09-15"
       },
       "src/backend/backend_telemetry.zig": {
         "decision": "Keep",

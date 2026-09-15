@@ -1,0 +1,7 @@
+target	proof	nativeGraphEqual	oldOptionsPreserved
+x86_64-linux-gnu	false	true	true
+x86_64-linux-gnu	true	true	true
+x86_64-windows-gnu	false	true	true
+x86_64-windows-gnu	true	true	true
+aarch64-macos	false	true	true
+aarch64-macos	true	true	true

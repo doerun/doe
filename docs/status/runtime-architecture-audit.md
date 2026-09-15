@@ -12,6 +12,13 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [backend-policy review](../../bench/out/maintenance/20260915-zig-file-reviews/backend-policy/README.md)
+repairs divergence between compiled defaults and the versioned runtime policy.
+The build now requires complete lane coverage and emits typed immutable defaults;
+explicit loads share strict admission and preserve owned policy identity.
+Source and CPU checks cover the migration. Accepted binaries remain unchanged,
+and physical performance qualification remains a separate dependency.
+
 The [application-layer review](../../bench/out/maintenance/20260915-zig-file-reviews/app/README.md)
 replaces duplicate request payloads with canonical contract types and preserves
 the compute output oracle through preparation. File, directory-organization,

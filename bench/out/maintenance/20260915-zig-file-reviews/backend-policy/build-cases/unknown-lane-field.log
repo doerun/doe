@@ -1,0 +1,25 @@
+thread 3568901 panic: invalid config/backend-runtime-policy.json: InvalidRuntimePolicy
+/home/x/deco/doe/bench/out/maintenance/20260915-zig-file-reviews/backend-policy/build-scratch/runtime/zig/src/backend/backend_policy.zig:42:60: 0x120ddd7 in policy_for_lane (build.zig)
+            if (std.meta.stringToEnum(Field, key) == null) return error.InvalidRuntimePolicy;
+                                                           ^
+/home/x/deco/doe/bench/out/maintenance/20260915-zig-file-reviews/backend-policy/build-scratch/runtime/zig/src/backend/backend_policy.zig:100:13: 0x121028e in parse_policy (build.zig)
+        _ = try result.policy_for_lane(lane);
+            ^
+/home/x/deco/doe/bench/out/maintenance/20260915-zig-file-reviews/backend-policy/build-scratch/runtime/zig/build.zig:480:24: 0x121263e in build (build.zig)
+        std.debug.panic("invalid config/backend-runtime-policy.json: {s}", .{@errorName(err)});
+                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/Build.zig:2214:33: 0x11de0da in runBuild__anon_23568 (std.zig)
+        .void => build_zig.build(b),
+                                ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/compiler/build_runner.zig:366:29: 0x11c3ff1 in main (build_runner.zig)
+        try builder.runBuild(root);
+                            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:627:37: 0x11cac69 in posixCallMainAndExit (std.zig)
+            const result = root.main() catch |err| {
+                                    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:232:5: 0x11a9351 in _start (std.zig)
+    asm volatile (switch (native_arch) {
+    ^
+???:?:?: 0x0 in ??? (???)
+error: the following build command crashed:
+.zig-cache/o/e22820648f2f517437e60abc02b84c90/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/bench/out/maintenance/20260915-zig-file-reviews/backend-policy/build-scratch/runtime/zig .zig-cache /home/x/.cache/zig --seed 0xd1974ed -Zca38ef9fbe0f18e9 --help

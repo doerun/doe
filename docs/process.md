@@ -384,6 +384,13 @@ classified and cannot be promoted by benchmark results.
   coherence and supported memory-type requirements remain mandatory. Validate
   the selection regression and physical ordinary/prepared application controls
   before interpreting an allocation-policy change as an improvement.
+- Backend selection defaults are generated during the Zig build from
+  `config/backend-runtime-policy.json`. Every canonical lane must resolve before
+  consumers compile. Validate config admission, compiled/file-loaded parity,
+  allocation failure cleanup, and affected native builds. Explicit file loads
+  use the same parser and retain their owned policy identity. This source repair
+  does not promote newly built binaries or establish a performance improvement;
+  see the [policy migration and evidence](../bench/out/maintenance/20260915-zig-file-reviews/backend-policy/README.md).
 - Native host command storage uses `config/native-command-storage-policy.json`.
   Validate exclusive loans, allocator identity, idle byte bounds, reference release,
   concurrent access, and final device cleanup. Retain the policy with application
