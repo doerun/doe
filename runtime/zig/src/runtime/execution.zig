@@ -35,9 +35,9 @@ fn prepareNativeOperation(operation: NativeOperation, operation_id: u64) prepare
     return switch (operation) {
         .command => |command| app.prepareCommand(command, operation_id),
         .buffer_write_bytes => |write| .{ .transfer = app.prepareTransfer(.{
-            .buffer_handle = write.handle,
+            .handle = write.handle,
             .offset_bytes = write.offset,
-            .size_bytes = write.buffer_size,
+            .buffer_size = write.buffer_size,
             .data = write.data,
         }, operation_id) },
     };

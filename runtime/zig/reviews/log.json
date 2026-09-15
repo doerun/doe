@@ -4256,6 +4256,1198 @@
       "targets": [
         "bench/entrypoints/metal_staged_write_bench.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "docs/runtime-hexagonal-architecture-plan.md",
+          "sha256": "fc75bb1aeb4730dfe37f04471040387561f6ff9fb36e0bf99b840f2521227756"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/app/prepare.zig",
+          "sha256": "5d629d7087e3458a8daf34dd47020e79d897593b8f0900a46499799fd8437cb4"
+        },
+        {
+          "path": "runtime/zig/src/app/request.zig",
+          "sha256": "1cca15c3fc6fcf9a50e787b286debac79496f9b88bea51100cbd7903b38b5ae1"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/compute.zig",
+          "sha256": "0e2212c3a962dd8f032450dc6dabbf77c6a5f86e84bf2f399a9d6a7787e219de"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/factory.zig",
+          "sha256": "1dd0a6f2832e16ceeff9ca10fda421bb0fbbc036d549378b17a6df61f70e6f26"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/transfer.zig",
+          "sha256": "5ec70c607520115db27e75962866ce865b864d29f3dc92c15eba78c15b558a04"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "d4389b0613833c47ee24d03987b5b1fec965ce17cb653bf89a27aeda1a8c7fbf"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "abf563ff61f358d954d27553581924d91c600be7c598edbed313b1c7131b22cb"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "cff7b79ba3b40a1bd45cc2463585d7af10eb4e71df376f1eda30b496e6f2a4c1"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_architecture_test.zig",
+          "sha256": "9ec116196207a026fd5df345714d1e35beb64d7637b54bf42df7d3d1c2cfa8b0"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_composition_test.zig",
+          "sha256": "f88c5ae5ea2b882984b42e394712d544ef834981bc63046fd343d417cf35ab7f"
+        },
+        {
+          "path": "runtime/zig/tests/support/provider_harness.zig",
+          "sha256": "4b35ec20ffd2da66af7586a6c0a6b9fc8fb0928d50edc2b3eee1344efa49c883"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/README.md",
+          "sha256": "211f687c7adf8ee6d730418ac239ddda0b1b2a6d6828b71725248ad67440ee9a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/SHA256SUMS",
+          "sha256": "9d5b874d64229ada83aded718bcf135e1b19b9625a3daf4faf903611cbcdac1d"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/aggregate-release-tests.log",
+          "sha256": "cd75df55078ef4245d806254c6f293c60c05068b689b06d0737cd015bc614c01"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/composition-tests.log",
+          "sha256": "542aadbdddbce5cb76075a859a1052051ed42d6a7a2e2fcddc4324229fefc8fd"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/full-build.log",
+          "sha256": "62f2eb39bef72405184ad45fdfe5600391a5fc998872fd6ba8f11040c645a08a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/runtime-build.log",
+          "sha256": "465e326d6ab80b331d36be7b2fd0b5c6d6b0e4363a1378f3709fa1f8b2a89092"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/source-files.tsv",
+          "sha256": "cad11c4bafba52c2687f8ca1d03587c35f600fe5c5f63cd1dd181457ee908535"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/tests-final.log",
+          "sha256": "ae0ed91fb0de729e64d7607fd57f290b2c37a40f84495760a49842fbfc9952fb"
+        }
+      ],
+      "findings": [],
+      "inputHash": "62bd26d9bf917ea7f952efac0826df1c640efdba4fc9dc928e00013faa9e4fb7",
+      "level": "file",
+      "nextAction": "Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "app_mod_file_001",
+      "reviewedAt": "2026-09-15T04:22:44.646237+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "f18fc803642d06b79b5b19659a4bb43382b2b950",
+      "status": "verified",
+      "summary": "Read the complete facade: direct aliases preserve named request, preparation, and runner entrypoints. No state, allocation, unsafe boundary, or ownership transfer is introduced.",
+      "supersedes": null,
+      "targets": [
+        "src/app/mod.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "docs/runtime-hexagonal-architecture-plan.md",
+          "sha256": "fc75bb1aeb4730dfe37f04471040387561f6ff9fb36e0bf99b840f2521227756"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/app/mod.zig",
+          "sha256": "6671d7e9be0c0cdf0bdfb3e2ef5a0c1bd926d9c15d16a9905fa2f18a91800411"
+        },
+        {
+          "path": "runtime/zig/src/app/request.zig",
+          "sha256": "1cca15c3fc6fcf9a50e787b286debac79496f9b88bea51100cbd7903b38b5ae1"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/compute.zig",
+          "sha256": "0e2212c3a962dd8f032450dc6dabbf77c6a5f86e84bf2f399a9d6a7787e219de"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/factory.zig",
+          "sha256": "1dd0a6f2832e16ceeff9ca10fda421bb0fbbc036d549378b17a6df61f70e6f26"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/transfer.zig",
+          "sha256": "5ec70c607520115db27e75962866ce865b864d29f3dc92c15eba78c15b558a04"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "d4389b0613833c47ee24d03987b5b1fec965ce17cb653bf89a27aeda1a8c7fbf"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "abf563ff61f358d954d27553581924d91c600be7c598edbed313b1c7131b22cb"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "cff7b79ba3b40a1bd45cc2463585d7af10eb4e71df376f1eda30b496e6f2a4c1"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_architecture_test.zig",
+          "sha256": "9ec116196207a026fd5df345714d1e35beb64d7637b54bf42df7d3d1c2cfa8b0"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_composition_test.zig",
+          "sha256": "f88c5ae5ea2b882984b42e394712d544ef834981bc63046fd343d417cf35ab7f"
+        },
+        {
+          "path": "runtime/zig/tests/support/provider_harness.zig",
+          "sha256": "4b35ec20ffd2da66af7586a6c0a6b9fc8fb0928d50edc2b3eee1344efa49c883"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/README.md",
+          "sha256": "211f687c7adf8ee6d730418ac239ddda0b1b2a6d6828b71725248ad67440ee9a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/SHA256SUMS",
+          "sha256": "9d5b874d64229ada83aded718bcf135e1b19b9625a3daf4faf903611cbcdac1d"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/aggregate-release-tests.log",
+          "sha256": "cd75df55078ef4245d806254c6f293c60c05068b689b06d0737cd015bc614c01"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/composition-tests.log",
+          "sha256": "542aadbdddbce5cb76075a859a1052051ed42d6a7a2e2fcddc4324229fefc8fd"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/full-build.log",
+          "sha256": "62f2eb39bef72405184ad45fdfe5600391a5fc998872fd6ba8f11040c645a08a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/runtime-build.log",
+          "sha256": "465e326d6ab80b331d36be7b2fd0b5c6d6b0e4363a1378f3709fa1f8b2a89092"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/source-files.tsv",
+          "sha256": "cad11c4bafba52c2687f8ca1d03587c35f600fe5c5f63cd1dd181457ee908535"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/tests-final.log",
+          "sha256": "ae0ed91fb0de729e64d7607fd57f290b2c37a40f84495760a49842fbfc9952fb"
+        }
+      ],
+      "findings": [],
+      "inputHash": "904b14b287fb3fdedc67972acb3a0c221b9eaf203c211650f85e96a7c119d8fc",
+      "level": "file",
+      "nextAction": "Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Replaced the duplicate compute field map with DispatchRequest.toCommand so the existing output oracle and dispatch controls survive preparation. Canonical payload regression and Debug/ReleaseFast app tests pass.",
+        "Pass DirectBufferWrite directly through its contract constructor; capacity, offset, write length, and borrowed pointer lifetime are tested separately. Removed an unused import."
+      ],
+      "reviewId": "app_prepare_file_001",
+      "reviewedAt": "2026-09-15T04:22:45.527471+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "f18fc803642d06b79b5b19659a4bb43382b2b950",
+      "status": "verified",
+      "summary": "Read the complete preparation module: canonical borrowed payload conversion, operation-domain selection, identity assignment, and synchronous lifetime. Device validation remains with its existing owner.",
+      "supersedes": null,
+      "targets": [
+        "src/app/prepare.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "docs/runtime-hexagonal-architecture-plan.md",
+          "sha256": "fc75bb1aeb4730dfe37f04471040387561f6ff9fb36e0bf99b840f2521227756"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/app/mod.zig",
+          "sha256": "6671d7e9be0c0cdf0bdfb3e2ef5a0c1bd926d9c15d16a9905fa2f18a91800411"
+        },
+        {
+          "path": "runtime/zig/src/app/prepare.zig",
+          "sha256": "5d629d7087e3458a8daf34dd47020e79d897593b8f0900a46499799fd8437cb4"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/compute.zig",
+          "sha256": "0e2212c3a962dd8f032450dc6dabbf77c6a5f86e84bf2f399a9d6a7787e219de"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/factory.zig",
+          "sha256": "1dd0a6f2832e16ceeff9ca10fda421bb0fbbc036d549378b17a6df61f70e6f26"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/transfer.zig",
+          "sha256": "5ec70c607520115db27e75962866ce865b864d29f3dc92c15eba78c15b558a04"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "d4389b0613833c47ee24d03987b5b1fec965ce17cb653bf89a27aeda1a8c7fbf"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "abf563ff61f358d954d27553581924d91c600be7c598edbed313b1c7131b22cb"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "cff7b79ba3b40a1bd45cc2463585d7af10eb4e71df376f1eda30b496e6f2a4c1"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_architecture_test.zig",
+          "sha256": "9ec116196207a026fd5df345714d1e35beb64d7637b54bf42df7d3d1c2cfa8b0"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_composition_test.zig",
+          "sha256": "f88c5ae5ea2b882984b42e394712d544ef834981bc63046fd343d417cf35ab7f"
+        },
+        {
+          "path": "runtime/zig/tests/support/provider_harness.zig",
+          "sha256": "4b35ec20ffd2da66af7586a6c0a6b9fc8fb0928d50edc2b3eee1344efa49c883"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/README.md",
+          "sha256": "211f687c7adf8ee6d730418ac239ddda0b1b2a6d6828b71725248ad67440ee9a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/SHA256SUMS",
+          "sha256": "9d5b874d64229ada83aded718bcf135e1b19b9625a3daf4faf903611cbcdac1d"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/aggregate-release-tests.log",
+          "sha256": "cd75df55078ef4245d806254c6f293c60c05068b689b06d0737cd015bc614c01"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/composition-tests.log",
+          "sha256": "542aadbdddbce5cb76075a859a1052051ed42d6a7a2e2fcddc4324229fefc8fd"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/full-build.log",
+          "sha256": "62f2eb39bef72405184ad45fdfe5600391a5fc998872fd6ba8f11040c645a08a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/runtime-build.log",
+          "sha256": "465e326d6ab80b331d36be7b2fd0b5c6d6b0e4363a1378f3709fa1f8b2a89092"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/source-files.tsv",
+          "sha256": "cad11c4bafba52c2687f8ca1d03587c35f600fe5c5f63cd1dd181457ee908535"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/tests-final.log",
+          "sha256": "ae0ed91fb0de729e64d7607fd57f290b2c37a40f84495760a49842fbfc9952fb"
+        }
+      ],
+      "findings": [],
+      "inputHash": "911dc360de0d18b9a71174c76434217d2a98d23aaef6239a66f3e44d45299a50",
+      "level": "file",
+      "nextAction": "Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed duplicate request structs and defaults by aliasing DispatchRequest and DirectBufferWrite. The application API can now represent the existing compute output oracle. Internal callers use canonical kernel, handle, and buffer_size fields; isolated full library and runtime builds pass.",
+        "Documented the internal source migration without changing JSON, trace, native ABI, npm fields, or storage policy. Removed an unused import."
+      ],
+      "reviewId": "app_request_file_001",
+      "reviewedAt": "2026-09-15T04:22:46.465905+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "f18fc803642d06b79b5b19659a4bb43382b2b950",
+      "status": "verified",
+      "summary": "Read the complete request module: canonical named types and existing convenience tagged alternatives. Payload ownership is borrowed; preparation does not acquire handles.",
+      "supersedes": null,
+      "targets": [
+        "src/app/request.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "docs/runtime-hexagonal-architecture-plan.md",
+          "sha256": "fc75bb1aeb4730dfe37f04471040387561f6ff9fb36e0bf99b840f2521227756"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/app/mod.zig",
+          "sha256": "6671d7e9be0c0cdf0bdfb3e2ef5a0c1bd926d9c15d16a9905fa2f18a91800411"
+        },
+        {
+          "path": "runtime/zig/src/app/prepare.zig",
+          "sha256": "5d629d7087e3458a8daf34dd47020e79d897593b8f0900a46499799fd8437cb4"
+        },
+        {
+          "path": "runtime/zig/src/app/request.zig",
+          "sha256": "1cca15c3fc6fcf9a50e787b286debac79496f9b88bea51100cbd7903b38b5ae1"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/compute.zig",
+          "sha256": "0e2212c3a962dd8f032450dc6dabbf77c6a5f86e84bf2f399a9d6a7787e219de"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/factory.zig",
+          "sha256": "1dd0a6f2832e16ceeff9ca10fda421bb0fbbc036d549378b17a6df61f70e6f26"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/transfer.zig",
+          "sha256": "5ec70c607520115db27e75962866ce865b864d29f3dc92c15eba78c15b558a04"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "d4389b0613833c47ee24d03987b5b1fec965ce17cb653bf89a27aeda1a8c7fbf"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "abf563ff61f358d954d27553581924d91c600be7c598edbed313b1c7131b22cb"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "cff7b79ba3b40a1bd45cc2463585d7af10eb4e71df376f1eda30b496e6f2a4c1"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_architecture_test.zig",
+          "sha256": "9ec116196207a026fd5df345714d1e35beb64d7637b54bf42df7d3d1c2cfa8b0"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_composition_test.zig",
+          "sha256": "f88c5ae5ea2b882984b42e394712d544ef834981bc63046fd343d417cf35ab7f"
+        },
+        {
+          "path": "runtime/zig/tests/support/provider_harness.zig",
+          "sha256": "4b35ec20ffd2da66af7586a6c0a6b9fc8fb0928d50edc2b3eee1344efa49c883"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/README.md",
+          "sha256": "211f687c7adf8ee6d730418ac239ddda0b1b2a6d6828b71725248ad67440ee9a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/SHA256SUMS",
+          "sha256": "9d5b874d64229ada83aded718bcf135e1b19b9625a3daf4faf903611cbcdac1d"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/aggregate-release-tests.log",
+          "sha256": "cd75df55078ef4245d806254c6f293c60c05068b689b06d0737cd015bc614c01"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/composition-tests.log",
+          "sha256": "542aadbdddbce5cb76075a859a1052051ed42d6a7a2e2fcddc4324229fefc8fd"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/full-build.log",
+          "sha256": "62f2eb39bef72405184ad45fdfe5600391a5fc998872fd6ba8f11040c645a08a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/runtime-build.log",
+          "sha256": "465e326d6ab80b331d36be7b2fd0b5c6d6b0e4363a1378f3709fa1f8b2a89092"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/source-files.tsv",
+          "sha256": "cad11c4bafba52c2687f8ca1d03587c35f600fe5c5f63cd1dd181457ee908535"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/tests-final.log",
+          "sha256": "ae0ed91fb0de729e64d7607fd57f290b2c37a40f84495760a49842fbfc9952fb"
+        }
+      ],
+      "findings": [],
+      "inputHash": "d93bb32a648f507752707d79cfcfecf25121fff566d8e242e348275bfb9c2a7c",
+      "level": "file",
+      "nextAction": "Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed an unused import. Existing CPU composition checks confirm direct-write and command routing, observer records, trace-only status, and backend failure handling."
+      ],
+      "reviewId": "app_runner_file_001",
+      "reviewedAt": "2026-09-15T04:22:47.384784+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "f18fc803642d06b79b5b19659a4bb43382b2b950",
+      "status": "verified",
+      "summary": "Read the complete runner: exhaustive prepared-domain routing and specialized compute/transfer calls forward typed operations and original port errors/reports. No allocation, catch/fallback, retained state, or pointer cast exists in this module.",
+      "supersedes": null,
+      "targets": [
+        "src/app/runner.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "docs/runtime-hexagonal-architecture-plan.md",
+          "sha256": "fc75bb1aeb4730dfe37f04471040387561f6ff9fb36e0bf99b840f2521227756"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/app/mod.zig",
+          "sha256": "6671d7e9be0c0cdf0bdfb3e2ef5a0c1bd926d9c15d16a9905fa2f18a91800411"
+        },
+        {
+          "path": "runtime/zig/src/app/prepare.zig",
+          "sha256": "5d629d7087e3458a8daf34dd47020e79d897593b8f0900a46499799fd8437cb4"
+        },
+        {
+          "path": "runtime/zig/src/app/request.zig",
+          "sha256": "1cca15c3fc6fcf9a50e787b286debac79496f9b88bea51100cbd7903b38b5ae1"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/compute.zig",
+          "sha256": "0e2212c3a962dd8f032450dc6dabbf77c6a5f86e84bf2f399a9d6a7787e219de"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/factory.zig",
+          "sha256": "1dd0a6f2832e16ceeff9ca10fda421bb0fbbc036d549378b17a6df61f70e6f26"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/transfer.zig",
+          "sha256": "5ec70c607520115db27e75962866ce865b864d29f3dc92c15eba78c15b558a04"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "d4389b0613833c47ee24d03987b5b1fec965ce17cb653bf89a27aeda1a8c7fbf"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "abf563ff61f358d954d27553581924d91c600be7c598edbed313b1c7131b22cb"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "cff7b79ba3b40a1bd45cc2463585d7af10eb4e71df376f1eda30b496e6f2a4c1"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_architecture_test.zig",
+          "sha256": "9ec116196207a026fd5df345714d1e35beb64d7637b54bf42df7d3d1c2cfa8b0"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_composition_test.zig",
+          "sha256": "f88c5ae5ea2b882984b42e394712d544ef834981bc63046fd343d417cf35ab7f"
+        },
+        {
+          "path": "runtime/zig/tests/support/provider_harness.zig",
+          "sha256": "4b35ec20ffd2da66af7586a6c0a6b9fc8fb0928d50edc2b3eee1344efa49c883"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/README.md",
+          "sha256": "211f687c7adf8ee6d730418ac239ddda0b1b2a6d6828b71725248ad67440ee9a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/SHA256SUMS",
+          "sha256": "9d5b874d64229ada83aded718bcf135e1b19b9625a3daf4faf903611cbcdac1d"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/aggregate-release-tests.log",
+          "sha256": "cd75df55078ef4245d806254c6f293c60c05068b689b06d0737cd015bc614c01"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/composition-tests.log",
+          "sha256": "542aadbdddbce5cb76075a859a1052051ed42d6a7a2e2fcddc4324229fefc8fd"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/full-build.log",
+          "sha256": "62f2eb39bef72405184ad45fdfe5600391a5fc998872fd6ba8f11040c645a08a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/runtime-build.log",
+          "sha256": "465e326d6ab80b331d36be7b2fd0b5c6d6b0e4363a1378f3709fa1f8b2a89092"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/source-files.tsv",
+          "sha256": "cad11c4bafba52c2687f8ca1d03587c35f600fe5c5f63cd1dd181457ee908535"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/tests-final.log",
+          "sha256": "ae0ed91fb0de729e64d7607fd57f290b2c37a40f84495760a49842fbfc9952fb"
+        }
+      ],
+      "findings": [],
+      "inputHash": "61f293b7002ec0669ef911c3ccdcc76084de7827069e90a923e6c9ba259ecc78",
+      "level": "directory",
+      "nextAction": "Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.",
+      "prerequisites": [
+        "app_mod_file_001",
+        "app_prepare_file_001",
+        "app_request_file_001",
+        "app_runner_file_001"
+      ],
+      "resolvedFindings": [
+        "Removed the local duplicate payload registry. No additional files, child directories, or generic utility owner are needed for the existing application responsibility. Tests stay with core contract/composition coverage."
+      ],
+      "reviewId": "app_directory_001",
+      "reviewedAt": "2026-09-15T04:22:48.287395+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "f18fc803642d06b79b5b19659a4bb43382b2b950",
+      "status": "verified",
+      "summary": "Separately reviewed directory membership, facade, responsibility placement, and test location after completing each direct file. Request aliases, preparation adapters, and outbound routing belong together; canonical command contracts cover other domains without expanding the convenience request union.",
+      "supersedes": null,
+      "targets": [
+        "src/app"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "docs/runtime-hexagonal-architecture-plan.md",
+          "sha256": "fc75bb1aeb4730dfe37f04471040387561f6ff9fb36e0bf99b840f2521227756"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/app/mod.zig",
+          "sha256": "6671d7e9be0c0cdf0bdfb3e2ef5a0c1bd926d9c15d16a9905fa2f18a91800411"
+        },
+        {
+          "path": "runtime/zig/src/app/prepare.zig",
+          "sha256": "5d629d7087e3458a8daf34dd47020e79d897593b8f0900a46499799fd8437cb4"
+        },
+        {
+          "path": "runtime/zig/src/app/request.zig",
+          "sha256": "1cca15c3fc6fcf9a50e787b286debac79496f9b88bea51100cbd7903b38b5ae1"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/compute.zig",
+          "sha256": "0e2212c3a962dd8f032450dc6dabbf77c6a5f86e84bf2f399a9d6a7787e219de"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/factory.zig",
+          "sha256": "1dd0a6f2832e16ceeff9ca10fda421bb0fbbc036d549378b17a6df61f70e6f26"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/transfer.zig",
+          "sha256": "5ec70c607520115db27e75962866ce865b864d29f3dc92c15eba78c15b558a04"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "d4389b0613833c47ee24d03987b5b1fec965ce17cb653bf89a27aeda1a8c7fbf"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "abf563ff61f358d954d27553581924d91c600be7c598edbed313b1c7131b22cb"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "cff7b79ba3b40a1bd45cc2463585d7af10eb4e71df376f1eda30b496e6f2a4c1"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_architecture_test.zig",
+          "sha256": "9ec116196207a026fd5df345714d1e35beb64d7637b54bf42df7d3d1c2cfa8b0"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_composition_test.zig",
+          "sha256": "f88c5ae5ea2b882984b42e394712d544ef834981bc63046fd343d417cf35ab7f"
+        },
+        {
+          "path": "runtime/zig/tests/support/provider_harness.zig",
+          "sha256": "4b35ec20ffd2da66af7586a6c0a6b9fc8fb0928d50edc2b3eee1344efa49c883"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/README.md",
+          "sha256": "211f687c7adf8ee6d730418ac239ddda0b1b2a6d6828b71725248ad67440ee9a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/SHA256SUMS",
+          "sha256": "9d5b874d64229ada83aded718bcf135e1b19b9625a3daf4faf903611cbcdac1d"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/aggregate-release-tests.log",
+          "sha256": "cd75df55078ef4245d806254c6f293c60c05068b689b06d0737cd015bc614c01"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/composition-tests.log",
+          "sha256": "542aadbdddbce5cb76075a859a1052051ed42d6a7a2e2fcddc4324229fefc8fd"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/full-build.log",
+          "sha256": "62f2eb39bef72405184ad45fdfe5600391a5fc998872fd6ba8f11040c645a08a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/runtime-build.log",
+          "sha256": "465e326d6ab80b331d36be7b2fd0b5c6d6b0e4363a1378f3709fa1f8b2a89092"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/source-files.tsv",
+          "sha256": "cad11c4bafba52c2687f8ca1d03587c35f600fe5c5f63cd1dd181457ee908535"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/tests-final.log",
+          "sha256": "ae0ed91fb0de729e64d7607fd57f290b2c37a40f84495760a49842fbfc9952fb"
+        }
+      ],
+      "findings": [],
+      "inputHash": "570948a05df3594324f8c6c3e29cd8a47c9968b784346add2a338591a7ebfbbc",
+      "level": "within_directory",
+      "nextAction": "Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.",
+      "prerequisites": [
+        "app_directory_001"
+      ],
+      "resolvedFindings": [
+        "Canonical request aliases and conversion remove the local omission opportunity for the existing output oracle. Payload and borrowed-subrange regressions plus CPU production routing checks preserve the local contract.",
+        "Named backend/session owners remain responsible for port context lifetime; queued work requires the existing owned snapshot. Cross-directory and full-runtime reviews remain pending."
+      ],
+      "reviewId": "app_within_directory_001",
+      "reviewedAt": "2026-09-15T04:22:49.210662+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "f18fc803642d06b79b5b19659a4bb43382b2b950",
+      "status": "verified",
+      "summary": "Separately traced facade imports, request-to-preparation data flow, canonical conversion, identity creation, borrowed lifetime, and exhaustive port routing. The local import graph is acyclic and has no competing request-default authority. App holds no allocator, cache, native owner, or retained callback state.",
+      "supersedes": null,
+      "targets": [
+        "src/app"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/kernels/concurrent_execution_runsingle_u32.metal",
+          "sha256": "99a7b03b5b24d9c5ec30115b8d66c9a4adc7b1f7cf7a74b8df238246c0b32477"
+        },
+        {
+          "path": "bench/kernels/concurrent_execution_runsingle_u32.wgsl",
+          "sha256": "57313155741224f77622b55aa9e739ec7698e5cc3079d92584d253334f1d95a6"
+        },
+        {
+          "path": "config/doe-metal-compute-benchmark.schema.json",
+          "sha256": "fc78d7a41aeaa2bc4663116e8982e037beab6c4f6b74f81f29d2df9b28e6c62d"
+        },
+        {
+          "path": "config/doe-workload-suite.json",
+          "sha256": "4a44f069766e8bcfbafbaf6c6f2e39aafc019bc532003d8ead78ae2c844eeaae"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "a03f4433cadf15413456ad895fad10f193cbc01669c1a31bc42ecfbe58986e22"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/app/mod.zig",
+          "sha256": "6671d7e9be0c0cdf0bdfb3e2ef5a0c1bd926d9c15d16a9905fa2f18a91800411"
+        },
+        {
+          "path": "runtime/zig/src/app/prepare.zig",
+          "sha256": "5d629d7087e3458a8daf34dd47020e79d897593b8f0900a46499799fd8437cb4"
+        },
+        {
+          "path": "runtime/zig/src/app/request.zig",
+          "sha256": "1cca15c3fc6fcf9a50e787b286debac79496f9b88bea51100cbd7903b38b5ae1"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "d4389b0613833c47ee24d03987b5b1fec965ce17cb653bf89a27aeda1a8c7fbf"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution_receipt.zig",
+          "sha256": "0ff5dd77bec0e5167e3ca5e917bbb382a3dfe21868fbb690560af0dff353c4f0"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/README.md",
+          "sha256": "211f687c7adf8ee6d730418ac239ddda0b1b2a6d6828b71725248ad67440ee9a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/SHA256SUMS",
+          "sha256": "9d5b874d64229ada83aded718bcf135e1b19b9625a3daf4faf903611cbcdac1d"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/aggregate-release-tests.log",
+          "sha256": "cd75df55078ef4245d806254c6f293c60c05068b689b06d0737cd015bc614c01"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/composition-tests.log",
+          "sha256": "542aadbdddbce5cb76075a859a1052051ed42d6a7a2e2fcddc4324229fefc8fd"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/full-build.log",
+          "sha256": "62f2eb39bef72405184ad45fdfe5600391a5fc998872fd6ba8f11040c645a08a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/metal-consumer-tests.log",
+          "sha256": "91afe30a197b58e4a7cb49b8536fbeff1bb6edfd85183de806bde3ef80b5ca4a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/runtime-build.log",
+          "sha256": "465e326d6ab80b331d36be7b2fd0b5c6d6b0e4363a1378f3709fa1f8b2a89092"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/source-files.tsv",
+          "sha256": "cad11c4bafba52c2687f8ca1d03587c35f600fe5c5f63cd1dd181457ee908535"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/tests-final.log",
+          "sha256": "ae0ed91fb0de729e64d7607fd57f290b2c37a40f84495760a49842fbfc9952fb"
+        }
+      ],
+      "findings": [],
+      "inputHash": "f43da63d2aded35b56b02466ceca8d5dace05e45039f942a01ab6267612a7599",
+      "level": "file",
+      "nextAction": "Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The shared direct-write constructor now names canonical handle and buffer_size fields with identical values. Isolated runtime/full builds compile the consumer; accepted package and policy hashes are unchanged. No Metal hardware qualification is inferred."
+      ],
+      "reviewId": "metal_compute_file_003",
+      "reviewedAt": "2026-09-15T04:22:50.087269+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "f18fc803642d06b79b5b19659a4bb43382b2b950",
+      "status": "verified",
+      "summary": "Re-examined the bound execution-context constructor after the internal app request field migration. Benchmark source, capture/serialization logic, ownership, receipt fields, and timing boundaries remain unchanged; existing CPU benchmark tests and production composition checks pass.",
+      "supersedes": "metal_compute_file_002",
+      "targets": [
+        "bench/entrypoints/metal_compute_bench.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/doe-metal-staged-write-benchmark.schema.json",
+          "sha256": "102ec270a6fd616edcd414eda49bc4bb026e28653a7c9317d987d14b6a16a96c"
+        },
+        {
+          "path": "config/doe-workload-suite.json",
+          "sha256": "4a44f069766e8bcfbafbaf6c6f2e39aafc019bc532003d8ead78ae2c844eeaae"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "a03f4433cadf15413456ad895fad10f193cbc01669c1a31bc42ecfbe58986e22"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/app/mod.zig",
+          "sha256": "6671d7e9be0c0cdf0bdfb3e2ef5a0c1bd926d9c15d16a9905fa2f18a91800411"
+        },
+        {
+          "path": "runtime/zig/src/app/prepare.zig",
+          "sha256": "5d629d7087e3458a8daf34dd47020e79d897593b8f0900a46499799fd8437cb4"
+        },
+        {
+          "path": "runtime/zig/src/app/request.zig",
+          "sha256": "1cca15c3fc6fcf9a50e787b286debac79496f9b88bea51100cbd7903b38b5ae1"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "d4389b0613833c47ee24d03987b5b1fec965ce17cb653bf89a27aeda1a8c7fbf"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution_receipt.zig",
+          "sha256": "0ff5dd77bec0e5167e3ca5e917bbb382a3dfe21868fbb690560af0dff353c4f0"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/README.md",
+          "sha256": "211f687c7adf8ee6d730418ac239ddda0b1b2a6d6828b71725248ad67440ee9a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/SHA256SUMS",
+          "sha256": "9d5b874d64229ada83aded718bcf135e1b19b9625a3daf4faf903611cbcdac1d"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/aggregate-release-tests.log",
+          "sha256": "cd75df55078ef4245d806254c6f293c60c05068b689b06d0737cd015bc614c01"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/composition-tests.log",
+          "sha256": "542aadbdddbce5cb76075a859a1052051ed42d6a7a2e2fcddc4324229fefc8fd"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/full-build.log",
+          "sha256": "62f2eb39bef72405184ad45fdfe5600391a5fc998872fd6ba8f11040c645a08a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/metal-consumer-tests.log",
+          "sha256": "91afe30a197b58e4a7cb49b8536fbeff1bb6edfd85183de806bde3ef80b5ca4a"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/runtime-build.log",
+          "sha256": "465e326d6ab80b331d36be7b2fd0b5c6d6b0e4363a1378f3709fa1f8b2a89092"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/source-files.tsv",
+          "sha256": "cad11c4bafba52c2687f8ca1d03587c35f600fe5c5f63cd1dd181457ee908535"
+        },
+        {
+          "path": "bench/out/maintenance/20260915-zig-file-reviews/app/tests-final.log",
+          "sha256": "ae0ed91fb0de729e64d7607fd57f290b2c37a40f84495760a49842fbfc9952fb"
+        }
+      ],
+      "findings": [],
+      "inputHash": "13f79ae423c85678ff81b343b9d295d77961ce69431a4bc9fbc3fbe98c66e102",
+      "level": "file",
+      "nextAction": "Continue with src/backend/backend_policy.zig in TSV file order; cross-directory review remains prerequisite-bound.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The shared direct-write constructor now names canonical handle and buffer_size fields with identical values. Isolated runtime/full builds compile the consumer; accepted package and policy hashes are unchanged. No Metal hardware qualification is inferred."
+      ],
+      "reviewId": "metal_staged_write_file_003",
+      "reviewedAt": "2026-09-15T04:22:50.992891+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "f18fc803642d06b79b5b19659a4bb43382b2b950",
+      "status": "verified",
+      "summary": "Re-examined the bound execution-context constructor after the internal app request field migration. Benchmark source, capture/serialization logic, ownership, receipt fields, and timing boundaries remain unchanged; existing CPU benchmark tests and production composition checks pass.",
+      "supersedes": "metal_staged_write_file_002",
+      "targets": [
+        "bench/entrypoints/metal_staged_write_bench.zig"
+      ]
     }
   ],
   "schemaVersion": 1

@@ -43,7 +43,7 @@ test "hexagonal contracts: identity, execution report, and exactness" {
 
 test "hexagonal application layer: prepare and execute compute" {
     const req = app.ComputeRequest{
-        .kernel_source = "@compute @workgroup_size(1) fn main() {}",
+        .kernel = "sha256.wgsl",
         .entry_point = "main",
         .workgroups = .{ .x = 1, .y = 1, .z = 1 },
     };
@@ -95,9 +95,9 @@ test "hexagonal application layer: prepare and execute compute" {
 test "hexagonal application layer: prepare and execute transfer" {
     const data = [_]u8{ 1, 2, 3, 4 };
     const req = app.TransferRequest{
-        .buffer_handle = 101,
+        .handle = 101,
         .offset_bytes = 0,
-        .size_bytes = data.len,
+        .buffer_size = data.len,
         .data = &data,
     };
 
@@ -141,6 +141,55 @@ test "hexagonal application layer: prepare and execute transfer" {
     const result = try app.executeTransfer(port, op);
     try std.testing.expect(result.status.isSuccess());
     try std.testing.expectEqual(@as(u64, 60), result.timing.totalWallNs());
+}
+
+test "hexagonal application layer: canonical request preserves output oracle and dispatch controls" {
+    const compute_contract = @import("../../src/contracts/compute.zig");
+    const command: contracts.model.computeTypes().KernelDispatchCommand = .{
+        .kernel = "sha256.wgsl",
+        .entry_point = "main",
+        .x = 3,
+        .y = 5,
+        .z = 7,
+        .repeat = 11,
+        .repeat_synchronization = .independent,
+        .warmup_dispatch_count = 13,
+        .initialize_buffers_on_create = true,
+        .bindings = &.{.{ .binding = 2, .resource_kind = .buffer, .resource_handle = 9 }},
+        .output_oracle = .{
+            .schema_version = 2,
+            .scope = .command_graph,
+            .reference_class = .independent,
+            .kind = "sha256_exact_v1",
+            .initialization = "zero_fill_v1",
+            .binding_group = 0,
+            .binding = 2,
+            .dispatch_count = 11,
+            .expected_sha256 = "0" ** 64,
+            .reference_id = "fixture-reference",
+        },
+    };
+    const req: app.ComputeRequest = compute_contract.DispatchRequest.fromCommand(command);
+    const op = app.prepareCompute(req, 42);
+    try std.testing.expectEqualDeep(command, op.operation.kernel_dispatch);
+    try std.testing.expectEqual(@as(u64, 42), op.operation_id);
+}
+
+test "hexagonal application layer: transfer capacity and offset preserve a borrowed subrange" {
+    var bytes = [_]u8{ 1, 2, 3, 4 };
+    const req: app.TransferRequest = .{
+        .handle = 101,
+        .offset_bytes = 5,
+        .buffer_size = 16,
+        .data = &bytes,
+    };
+    const op = app.prepareTransfer(req, 99);
+    const write = op.operation.direct_buffer_write;
+    try std.testing.expectEqualDeep(req, write);
+    try std.testing.expectEqual(bytes[0..].ptr, write.data.ptr);
+    bytes[0] = 7;
+    try std.testing.expectEqual(@as(u8, 7), write.data[0]);
+    try std.testing.expectEqual(@as(u64, 99), op.operation_id);
 }
 
 test "optimization and learning contracts: profile, policy, and promotion" {

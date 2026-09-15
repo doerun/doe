@@ -339,6 +339,23 @@ real semantic owners until a shared application use case requires a distinct
 phase. Do not create package-reexported phase modules without production
 consumers merely to make the directory resemble a diagram.
 
+The internal Zig request migration uses `contracts/compute.zig.DispatchRequest`
+as `app.ComputeRequest` and `contracts/prepared_operation.zig.DirectBufferWrite`
+as `app.TransferRequest`. Callers replace `kernel_source` with `kernel`,
+`buffer_handle` with `handle`, and `size_bytes` with `buffer_size`. `kernel`
+identifies the kernel consumed by the existing resolver; it does not introduce
+inline WGSL compilation. `buffer_size` is destination capacity, while `data.len`
+is the write length. Compute preparation delegates to the canonical conversion,
+including its existing output oracle and dispatch controls.
+
+These requests borrow slices for synchronous execution. Retention requires the
+existing owned snapshot contract, and handles retain their external owners.
+Preparation classifies an operation and assigns its identity; device and
+backend validation retain their responsibilities. This internal source migration
+adds no JSON, trace, native ABI, or public npm fields. Its
+[review evidence](../bench/out/maintenance/20260915-zig-file-reviews/app/README.md)
+records payload, lifetime, routing, and build checks.
+
 ### 5. `runtime/zig/src/backend/backend_iface.zig`
 
 **Current issue:** one broad vtable owns command execution, dispatch, byte writes, upload configuration, queue modes, timestamp modes, flushing, prewarming, and capture. It is both too broad and leaks runtime types.

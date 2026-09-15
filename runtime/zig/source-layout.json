@@ -706,21 +706,21 @@
       },
       "src/app/prepare.zig": {
         "decision": "Keep",
-        "moduleSha256": "77cb571915224a446e06842474deb4dc386d37609ba1ef7c1fe76824ddf24957",
-        "reason": "Keep: reachable app implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-architecture-refactor/2026-08-23"
+        "moduleSha256": "5d629d7087e3458a8daf34dd47020e79d897593b8f0900a46499799fd8437cb4",
+        "reason": "Keep: pure borrowed preparation delegates field conversion to canonical contracts and assigns the operation identity.",
+        "reviewer": "codex-file-review/2026-09-15"
       },
       "src/app/request.zig": {
         "decision": "Keep",
-        "moduleSha256": "e9d09558ffaaff4399cb71c3c398dde474ebb23d310a8bb3ee2d8c6b9f6f980c",
-        "reason": "Keep: reachable app implementation shared by 6 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "1cca15c3fc6fcf9a50e787b286debac79496f9b88bea51100cbd7903b38b5ae1",
+        "reason": "Keep: application vocabulary aliases canonical dispatch and direct-write contracts; no parallel payload field registry.",
+        "reviewer": "codex-file-review/2026-09-15"
       },
       "src/app/runner.zig": {
         "decision": "Keep",
-        "moduleSha256": "4bfc6e2bfac42048cc025aae28087ec4e5224aa5aa9570c736c4466f69fec6da",
-        "reason": "Keep: reachable app implementation shared by 3 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-hexagonal-migration/2026-08-22"
+        "moduleSha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005",
+        "reason": "Keep: exhaustive routing to named outbound ports with original report and error propagation.",
+        "reviewer": "codex-file-review/2026-09-15"
       },
       "src/backend/backend_policy.zig": {
         "decision": "Keep",
@@ -3970,9 +3970,9 @@
       },
       "src/runtime/execution.zig": {
         "decision": "Keep",
-        "moduleSha256": "ce1428a615731a64a3edaad6db490f2e32930ca13c499722c739264ec4ba46e1",
-        "reason": "Keep: reachable runtime implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-hexagonal-migration/2026-08-22"
+        "moduleSha256": "d4389b0613833c47ee24d03987b5b1fec965ce17cb653bf89a27aeda1a8c7fbf",
+        "reason": "Keep: runtime execution and observation owner; direct-write call site uses canonical request field names without changing payload or receipt behavior.",
+        "reviewer": "codex-file-review/2026-09-15"
       },
       "src/runtime/execution_receipt.zig": {
         "decision": "Keep",

@@ -52,9 +52,9 @@ pub const ProviderHarness = struct {
         const operation_id = self.next_operation_id;
         self.next_operation_id +%= 1;
         return (try app.executePrepared(self.ports, .{ .transfer = app.prepareTransfer(.{
-            .buffer_handle = handle,
+            .handle = handle,
             .offset_bytes = offset,
-            .size_bytes = buffer_size,
+            .buffer_size = buffer_size,
             .data = data,
         }, operation_id) })).toNative();
     }

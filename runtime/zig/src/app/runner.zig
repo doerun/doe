@@ -1,6 +1,5 @@
 //! Application runner driving prepared operations through narrow outbound ports.
 
-const std = @import("std");
 const prepared = @import("../contracts/prepared_operation.zig");
 const report = @import("../contracts/execution_report.zig");
 const port_factory = @import("../backend/ports/factory.zig");

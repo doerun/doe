@@ -12,6 +12,13 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [application-layer review](../../bench/out/maintenance/20260915-zig-file-reviews/app/README.md)
+replaces duplicate request payloads with canonical contract types and preserves
+the compute output oracle through preparation. File, directory-organization,
+and within-directory relationship verdicts are recorded separately. CPU payload
+and routing checks plus isolated native builds support this internal migration;
+cross-directory and complete-runtime coverage remain separate queue obligations.
+
 The [runtime compile-report review](../../bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md)
 enforces argument ownership and typed JSON output, with a dedicated test root
 for the implementation behind its forwarding entrypoint. Emitted-output and
