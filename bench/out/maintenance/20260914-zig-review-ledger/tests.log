@@ -1,0 +1,18 @@
+test_complete_bottom_up_reviews_allow_system_coverage (test_review_log.ReviewLogTests.test_complete_bottom_up_reviews_allow_system_coverage) ... ok
+test_deleted_file_retains_retired_history (test_review_log.ReviewLogTests.test_deleted_file_retains_retired_history) ... ok
+test_file_reviews_do_not_complete_directory_or_system (test_review_log.ReviewLogTests.test_file_reviews_do_not_complete_directory_or_system) ... ok
+test_guidance_and_additional_context_are_bound (test_review_log.ReviewLogTests.test_guidance_and_additional_context_are_bound) ... ok
+test_history_checker_rejects_mutation_and_allows_append (test_review_log.ReviewLogTests.test_history_checker_rejects_mutation_and_allows_append) ... ok
+test_inventory_does_not_grant_review_credit (test_review_log.ReviewLogTests.test_inventory_does_not_grant_review_credit) ... ok
+test_log_rejects_duplicate_ids_bad_history_and_escaping_paths (test_review_log.ReviewLogTests.test_log_rejects_duplicate_ids_bad_history_and_escaping_paths) ... ok
+test_lost_or_modified_evidence_invalidates_review (test_review_log.ReviewLogTests.test_lost_or_modified_evidence_invalidates_review) ... ok
+test_new_file_cannot_inherit_completed_directory_review (test_review_log.ReviewLogTests.test_new_file_cannot_inherit_completed_directory_review) ... ok
+test_schema_rejects_completion_with_findings_or_without_evidence (test_review_log.ReviewLogTests.test_schema_rejects_completion_with_findings_or_without_evidence) ... ok
+test_source_change_reopens_ancestors_and_boundary (test_review_log.ReviewLogTests.test_source_change_reopens_ancestors_and_boundary) ... ok
+test_source_inventory_includes_new_files_and_excludes_outputs (test_review_log.ReviewLogTests.test_source_inventory_includes_new_files_and_excludes_outputs) ... ok
+test_superseding_lower_review_reopens_parent_without_source_change (test_review_log.ReviewLogTests.test_superseding_lower_review_reopens_parent_without_source_change) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.267s
+
+OK

@@ -17,6 +17,10 @@ Use the nearest owner rather than adding catch-all utilities. The import fence
 enforces dependency direction; organization quality still requires reviewing
 responsibility splits and actual consumers.
 
+The [review ledger](reviews/README.md) tracks examination from individual files
+through directory relationships and complete runtime paths. Its generated queue
+records coverage separately from architecture decisions and passing tests.
+
 ## Build and test
 
 ```bash

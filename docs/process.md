@@ -50,6 +50,13 @@ classified and cannot be promoted by benchmark results.
 
 ## Workload and evidence law
 
+- Systematic Zig review records file, directory, internal relationship,
+  cross-directory, and system passes independently in the
+  [review ledger](../runtime/zig/reviews/README.md). Entries are append-only and
+  source-bound; completed lower-level reviews never replace examination of a
+  higher-level contract. Stale, partial, and blocked coverage remains explicit.
+  Review coverage complements the existing blocking gates and does not certify
+  correctness or performance.
 - Owned Zig formatting is a blocking build/test obligation under the configured
   toolchain. The canonical `fmt-check` step covers the runtime tree while
   excluding vendored sources, caches, and installed outputs. Naming, cohesion,

@@ -10,6 +10,24 @@ The import fence and source-layout gates are the structural authority; this
 page records the lifecycle interpretation and follow-up decisions. The target
 structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../runtime-hexagonal-architecture-plan.md).
 
+## Hierarchical code review
+
+The [review ledger](../../runtime/zig/reviews/README.md) separates examination of
+individual files, directory organization, relationships within directories,
+cross-directory contracts, and complete runtime paths. Its
+[log](../../runtime/zig/reviews/log.json) preserves findings and verification;
+the [queue](../../runtime/zig/reviews/queue.tsv) derives current coverage from
+source fingerprints and prerequisite reviews. Existing architecture decisions
+remain separate. The initial build-file review is partial; no whole-file or
+directory completion is inherited from the formatting/configuration cleanup.
+The [ledger validation](../../bench/out/maintenance/20260914-zig-review-ledger/README.md)
+binds history, prerequisite, and invalidation checks to the tooling inputs.
+
+Owner: Zig runtime maintainers and the reviewer named in each log entry. Resume
+the current entry's next action, complete the file examination, then proceed
+through the queue's explicit directory and relationship prerequisites. Review
+coverage does not resolve the application-calibration dependency.
+
 ## Zig consistency boundary
 
 The [style and build record](../../bench/out/maintenance/20260914-zig-style/README.md)

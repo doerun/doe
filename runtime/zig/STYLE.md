@@ -462,6 +462,12 @@ shader output, fallback decision, synchronization behavior, or receipt field.
 | Types and command coverage | Compilation of the affected consumers | Correct validation, execution, and complete exercised paths |
 | Resource lifetime and allocation | Focused lifetime and allocation-failure tests | Complete ownership reasoning across asynchronous and foreign calls |
 
+Record systematic coverage in the [hierarchical review ledger](reviews/README.md).
+File, directory, internal relationships, cross-directory relationships, and
+whole-runtime reviews are distinct. A partial cleanup does not establish that
+the entire file has been reviewed. Append new findings and evidence; let the
+generated queue determine whether earlier reviews remain current.
+
 For each cleanup, work through one named responsibility:
 
 1. Read its charter, consumers, and existing tests. Use the generated

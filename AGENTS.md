@@ -231,6 +231,22 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - "leaning out" means deleting runtime logic, not moving hot-path execution into a runtime Lean interpreter.
 - if a condition cannot be proven/hoisted yet, keep the explicit Zig implementation and measure it.
 
+## Systematic Zig review
+
+For systematic Zig cleanup, use [`runtime/zig/reviews/README.md`](runtime/zig/reviews/README.md)
+and its append-only log. Review each file, directory organization, relationships
+within directories, cross-directory boundaries, and complete execution paths as
+separate passes. Existing module decisions and passing gates do not grant code
+review credit. Partial inspection remains unfinished; higher-level completion
+requires current lower-level reviews and its own findings and evidence.
+
+Append findings, fixes, verification artifacts, and the next concrete action
+before handing off a review. Regenerate and check the queue with
+`python3 runtime/zig/tools/review_log.py --write` and `--check`. When checking a
+committed change, pass `--base-ref` with its predecessor or PR base to enforce
+history preservation across the change. Source ownership policy remains in the
+existing charter chain and architecture manifest.
+
 ## Implementation style
 
 - keep modules small, composable, and explicit in data flow

@@ -2,6 +2,10 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/zig-review-log.schema.json",
+      "data": "runtime/zig/reviews/log.json"
+    },
+    {
       "schema": "config/compute-program-resolution.schema.json",
       "data": "config/compute-program-resolution.json"
     },

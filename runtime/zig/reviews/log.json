@@ -1,0 +1,78 @@
+{
+  "reviews": [
+    {
+      "context": [
+        {
+          "path": "config/comparability-obligations.json",
+          "sha256": "122a21b854428b45c6c4dc17780057eda8c0b16d56739b1625a580f8ba0af3db"
+        },
+        {
+          "path": "config/dropin-abi-behavior.json",
+          "sha256": "6a97d9b5e731fd9c72c9fa73f78486fe2afefaf1f990146ac52199bd58e10344"
+        },
+        {
+          "path": "config/dropin-symbol-ownership.json",
+          "sha256": "8b3e24938dd3238892071ea316930881c8078ba29e96b3e944a93111558f34d8"
+        },
+        {
+          "path": "config/native-command-storage-observation.json",
+          "sha256": "4c96f721dadc11bd3c1aa90e7f73f21728648e4dd726507b0664efeba7ed753c"
+        },
+        {
+          "path": "config/native-command-storage-policy.json",
+          "sha256": "1ec9c9b6c9fc8011cfc098d4fc00963d780e8ccafbd16acccb09ae515e8362f7"
+        },
+        {
+          "path": "config/toolchains.json",
+          "sha256": "37f59f20472666ca5da1831e8d89d4fc09e1b7b2a5bcb7b51fdb56fa97999f08"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command_storage.zig",
+          "sha256": "d1938764b4ecef581341c5274a27e9335af5905a8629af37431b96cc4e2a33a6"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-style/README.md",
+          "sha256": "fc0ef36874d0602a57ad06da562896f7d413c22e1ce9bc0ef7630e0a7038a2d5"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-style/after/options.tsv",
+          "sha256": "3e3335eb3aa5eb4aa4ab1b721a22516c72fc2514be2ff82e2285b2dbc21f13a8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-style/build-tests.log",
+          "sha256": "e178f875e2b5c2bd555ed61fcfa058cee4a664d38b8aad9824795e9ce1e4681e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-style/config-failures.tsv",
+          "sha256": "146ff8cbbce234090e65ebd9c5949ec468c8435d48c6f72a1f5a77fb5898c4f3"
+        }
+      ],
+      "findings": [
+        "build(): main, compute, and full variants still repeat module construction, contract option setup, and native link recipes. Review their differences before deciding whether more setup should share an owner.",
+        "Complete examination of the executable, installation, platform, and benchmark graph remains pending."
+      ],
+      "inputHash": "1d3ca5ba73152ce945ce210da95bd6d6aa8bcfef04c5b678466dc75e9fe58d5a",
+      "level": "file",
+      "nextAction": "Read every remaining declaration and build graph section in build.zig; examine platform/link/install differences and its consumers, then append findings and verification before recording file-level completion.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Comparability and drop-in ABI embedding now have shared named helpers; generated option bytes and missing-configuration failure order match the predecessor.",
+        "Owned formatting now has check/repair build steps and canonical test/install dependencies; rejection, repair, and exclusions were exercised.",
+        "The private graphics setup helper consistently uses configureNonWindowsGraphics at its declaration and consumers."
+      ],
+      "reviewId": "build_file_001",
+      "reviewedAt": "2026-09-15T02:09:08.630874+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "1b9623f7959b607630300a2c0481cd85b1cd3e7d",
+      "status": "in_progress",
+      "summary": "Partial file review: examined build policy embedding, graphics helper naming, formatting enforcement, and canonical test dependencies. This does not claim complete examination of build.zig.",
+      "supersedes": null,
+      "targets": [
+        "build.zig"
+      ]
+    }
+  ],
+  "schemaVersion": 1
+}

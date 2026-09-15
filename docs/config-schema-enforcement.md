@@ -41,3 +41,13 @@ frees retained capacity. No command, resource, prepared recording, public ABI, o
 execution receipt is cached or changed by this policy. Rebuild the native binary
 after changing the policy; compare complete operations and process memory before
 adopting another bound.
+
+## Zig review log introduction
+
+`zig-review-log.schema.json` introduces versioned append-only review records for
+files, directories, internal relationships, cross-directory relationships, and
+system behavior. Each entry binds its source scope, reviewer, prerequisite
+reviews, findings, additional inputs, and verification evidence. The generated
+queue derives current coverage and invalidation; it does not own architecture
+policy or convert old module decisions into completed code reviews. No runtime,
+public API, or existing artifact field changes meaning.
