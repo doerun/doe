@@ -18,8 +18,10 @@ cross-directory contracts, and complete runtime paths. Its
 [log](../../runtime/zig/reviews/log.json) preserves findings and verification;
 the [queue](../../runtime/zig/reviews/queue.tsv) derives current coverage from
 source fingerprints and prerequisite reviews. Existing architecture decisions
-remain separate. The initial build-file review is partial; no whole-file or
-directory completion is inherited from the formatting/configuration cleanup.
+remain separate. The [build-file examination](../../bench/out/maintenance/20260914-zig-file-reviews/build/README.md)
+completes its earlier partial review and records test selection, required-input
+errors, and native linking evidence. Directory and relationship completion
+requires its own examination.
 The [ledger validation](../../bench/out/maintenance/20260914-zig-review-ledger/README.md)
 binds history, prerequisite, and invalidation checks to the tooling inputs.
 
@@ -37,9 +39,9 @@ and WGSL CI; naming and cohesion remain review obligations in the
 [style guide](../../runtime/zig/STYLE.md). Shared build configuration loaders
 retain generated option bytes and configuration failure ordering.
 
-Remaining cleanup belongs to each source-layout owner. The next build-tooling
-target is repeated tier construction in `build.zig`: preserve tier-specific
-imports and link settings before sharing more setup. Implementation naming
+Remaining cleanup belongs to each source-layout owner. The build graph shares
+its common native link recipe while retaining explicit tier-specific roots,
+imports, and option identities. Implementation naming
 needs consumer-aware review within each subsystem; foreign and serialized
 spellings must remain intact. Existing architecture candidates require a
 current source fingerprint and semantic review before a merge or deletion.

@@ -62,13 +62,6 @@ fn fileExists(path: []const u8) bool {
     return true;
 }
 
-fn firstExistingPath(candidates: []const []const u8) []const u8 {
-    for (candidates) |candidate| {
-        if (fileExists(candidate)) return candidate;
-    }
-    @panic("required include path not found");
-}
-
 fn addExistingIncludePaths(
     artifact: *std.Build.Step.Compile,
     b: *std.Build,
@@ -137,11 +130,11 @@ const ShaderTranslationProvenance = struct {
 };
 
 fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8, max_bytes: usize) []u8 {
-    const file = std.fs.cwd().openFile(path, .{}) catch
-        @panic("required file not found");
+    const file = std.fs.cwd().openFile(path, .{}) catch |err|
+        std.debug.panic("failed to open required build input {s}: {s}", .{ path, @errorName(err) });
     defer file.close();
-    return file.readToEndAlloc(allocator, max_bytes) catch
-        @panic("failed to read required file");
+    return file.readToEndAlloc(allocator, max_bytes) catch |err|
+        std.debug.panic("failed to read required build input {s}: {s}", .{ path, @errorName(err) });
 }
 
 fn hashFileAlloc(allocator: std.mem.Allocator, path: []const u8, max_bytes: usize) []u8 {
@@ -317,6 +310,21 @@ fn configureNonWindowsGraphics(artifact: *std.Build.Step.Compile, b: *std.Build,
             .file = b.path("src/backend/metal/metal_bridge_stubs.c"),
             .flags = &.{},
         });
+    }
+}
+
+fn configureNativeGraphics(artifact: *std.Build.Step.Compile, b: *std.Build, target: std.Build.ResolvedTarget) void {
+    artifact.linkLibC();
+    if (target.result.os.tag == .windows) {
+        artifact.linkSystemLibrary("d3d12");
+        artifact.linkSystemLibrary("dxgi");
+        artifact.linkSystemLibrary("dxguid");
+        artifact.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
+    } else {
+        configureNonWindowsGraphics(artifact, b, target);
     }
 }
 
@@ -515,18 +523,7 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
-    dropin_lib.linkLibC();
-    if (target.result.os.tag == .windows) {
-        dropin_lib.linkSystemLibrary("d3d12");
-        dropin_lib.linkSystemLibrary("dxgi");
-        dropin_lib.linkSystemLibrary("dxguid");
-        dropin_lib.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
-            .flags = &.{},
-        });
-    } else {
-        configureNonWindowsGraphics(dropin_lib, b, target);
-    }
+    configureNativeGraphics(dropin_lib, b, target);
     const install_dropin = b.addInstallArtifact(dropin_lib, .{});
 
     const dropin_step = b.step("dropin", "Build the drop-in WebGPU shared library");
@@ -766,18 +763,7 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
-    exe.linkLibC();
-    if (target.result.os.tag == .windows) {
-        exe.linkSystemLibrary("d3d12");
-        exe.linkSystemLibrary("dxgi");
-        exe.linkSystemLibrary("dxguid");
-        exe.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
-            .flags = &.{},
-        });
-    } else {
-        configureNonWindowsGraphics(exe, b, target);
-    }
+    configureNativeGraphics(exe, b, target);
 
     const install_exe = b.addInstallArtifact(exe, .{});
     const runtime_step = b.step("doe-runtime", "Build the Doe runtime binary");
@@ -944,18 +930,7 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
-    module_runner.linkLibC();
-    if (target.result.os.tag == .windows) {
-        module_runner.linkSystemLibrary("d3d12");
-        module_runner.linkSystemLibrary("dxgi");
-        module_runner.linkSystemLibrary("dxguid");
-        module_runner.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
-            .flags = &.{},
-        });
-    } else {
-        configureNonWindowsGraphics(module_runner, b, target);
-    }
+    configureNativeGraphics(module_runner, b, target);
     const install_module_runner = b.addInstallArtifact(module_runner, .{});
     const module_runner_step = b.step("module-core-runner", "Build the module core runner");
     module_runner_step.dependOn(&install_module_runner.step);
@@ -1129,18 +1104,7 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
-    doe_plan_executor.linkLibC();
-    if (target.result.os.tag == .windows) {
-        doe_plan_executor.linkSystemLibrary("d3d12");
-        doe_plan_executor.linkSystemLibrary("dxgi");
-        doe_plan_executor.linkSystemLibrary("dxguid");
-        doe_plan_executor.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
-            .flags = &.{},
-        });
-    } else {
-        configureNonWindowsGraphics(doe_plan_executor, b, target);
-    }
+    configureNativeGraphics(doe_plan_executor, b, target);
     const install_doe_plan_executor = b.addInstallArtifact(doe_plan_executor, .{});
     const doe_plan_executor_step = b.step("doe-plan-executor", "Build the standalone Doe direct plan executor");
     doe_plan_executor_step.dependOn(&install_doe_plan_executor.step);
@@ -1346,18 +1310,7 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
-    core_dropin_lib.linkLibC();
-    if (target.result.os.tag == .windows) {
-        core_dropin_lib.linkSystemLibrary("d3d12");
-        core_dropin_lib.linkSystemLibrary("dxgi");
-        core_dropin_lib.linkSystemLibrary("dxguid");
-        core_dropin_lib.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
-            .flags = &.{},
-        });
-    } else {
-        configureNonWindowsGraphics(core_dropin_lib, b, target);
-    }
+    configureNativeGraphics(core_dropin_lib, b, target);
     const install_core_dropin = b.addInstallArtifact(core_dropin_lib, .{});
     const core_dropin_step = b.step("dropin-compute", "Build compute-only drop-in library (dispatch + buffer, no render)");
     core_dropin_step.dependOn(&install_core_dropin.step);
@@ -1403,18 +1356,7 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
-    full_dropin_lib.linkLibC();
-    if (target.result.os.tag == .windows) {
-        full_dropin_lib.linkSystemLibrary("d3d12");
-        full_dropin_lib.linkSystemLibrary("dxgi");
-        full_dropin_lib.linkSystemLibrary("dxguid");
-        full_dropin_lib.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
-            .flags = &.{},
-        });
-    } else {
-        configureNonWindowsGraphics(full_dropin_lib, b, target);
-    }
+    configureNativeGraphics(full_dropin_lib, b, target);
     const install_full_dropin = b.addInstallArtifact(full_dropin_lib, .{});
     const full_dropin_step = b.step("dropin-full", "Build full Dawn drop-in library (all procs, surface, external textures)");
     full_dropin_step.dependOn(&install_full_dropin.step);
@@ -1434,18 +1376,7 @@ pub fn build(b: *std.Build) void {
         .root_module = test_root_module,
         .filters = test_filters,
     });
-    test_exec.linkLibC();
-    if (target.result.os.tag == .windows) {
-        test_exec.linkSystemLibrary("d3d12");
-        test_exec.linkSystemLibrary("dxgi");
-        test_exec.linkSystemLibrary("dxguid");
-        test_exec.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
-            .flags = &.{},
-        });
-    } else {
-        configureNonWindowsGraphics(test_exec, b, target);
-    }
+    configureNativeGraphics(test_exec, b, target);
     const run_tests = b.addRunArtifact(test_exec);
     test_step.dependOn(&import_fence_check.step);
     test_step.dependOn(&source_layout_check.step);
@@ -1468,19 +1399,9 @@ pub fn build(b: *std.Build) void {
     addSourceModuleIncludePaths(core_test_root_module, b);
     const core_test_exec = b.addTest(.{
         .root_module = core_test_root_module,
+        .filters = test_filters,
     });
-    core_test_exec.linkLibC();
-    if (target.result.os.tag == .windows) {
-        core_test_exec.linkSystemLibrary("d3d12");
-        core_test_exec.linkSystemLibrary("dxgi");
-        core_test_exec.linkSystemLibrary("dxguid");
-        core_test_exec.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
-            .flags = &.{},
-        });
-    } else {
-        configureNonWindowsGraphics(core_test_exec, b, target);
-    }
+    configureNativeGraphics(core_test_exec, b, target);
     const run_core_tests = b.addRunArtifact(core_test_exec);
     core_test_step.dependOn(&import_fence_check.step);
     core_test_step.dependOn(&source_layout_check.step);
@@ -1503,19 +1424,9 @@ pub fn build(b: *std.Build) void {
     addSourceModuleIncludePaths(full_test_root_module, b);
     const full_test_exec = b.addTest(.{
         .root_module = full_test_root_module,
+        .filters = test_filters,
     });
-    full_test_exec.linkLibC();
-    if (target.result.os.tag == .windows) {
-        full_test_exec.linkSystemLibrary("d3d12");
-        full_test_exec.linkSystemLibrary("dxgi");
-        full_test_exec.linkSystemLibrary("dxguid");
-        full_test_exec.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
-            .flags = &.{},
-        });
-    } else {
-        configureNonWindowsGraphics(full_test_exec, b, target);
-    }
+    configureNativeGraphics(full_test_exec, b, target);
     const run_full_tests = b.addRunArtifact(full_test_exec);
     full_test_step.dependOn(&import_fence_check.step);
     full_test_step.dependOn(&source_layout_check.step);
@@ -1538,19 +1449,9 @@ pub fn build(b: *std.Build) void {
     addSourceModuleIncludePaths(d3d12_test_root_module, b);
     const d3d12_test_exec = b.addTest(.{
         .root_module = d3d12_test_root_module,
+        .filters = test_filters,
     });
-    d3d12_test_exec.linkLibC();
-    if (target.result.os.tag == .windows) {
-        d3d12_test_exec.linkSystemLibrary("d3d12");
-        d3d12_test_exec.linkSystemLibrary("dxgi");
-        d3d12_test_exec.linkSystemLibrary("dxguid");
-        d3d12_test_exec.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
-            .flags = &.{},
-        });
-    } else {
-        configureNonWindowsGraphics(d3d12_test_exec, b, target);
-    }
+    configureNativeGraphics(d3d12_test_exec, b, target);
     const run_d3d12_tests = b.addRunArtifact(d3d12_test_exec);
     d3d12_test_step.dependOn(&import_fence_check.step);
     d3d12_test_step.dependOn(&source_layout_check.step);
@@ -1572,6 +1473,7 @@ pub fn build(b: *std.Build) void {
     addSourceModuleIncludePaths(wgsl_test_root_module, b);
     const wgsl_test_exec = b.addTest(.{
         .root_module = wgsl_test_root_module,
+        .filters = test_filters,
     });
     wgsl_test_exec.linkLibC();
     const run_wgsl_tests = b.addRunArtifact(wgsl_test_exec);

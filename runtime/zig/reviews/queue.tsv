@@ -9,7 +9,7 @@ file	bench/entrypoints/runtime_compile_report.zig	pending			Read and review the 
 file	bench/host_hotpath/host_hotpath_bench_cases.zig	pending			Read and review the complete scope.
 file	bench/host_hotpath/host_hotpath_bench_lexer.zig	pending			Read and review the complete scope.
 file	bench/host_hotpath/host_hotpath_bench_support.zig	pending			Read and review the complete scope.
-file	build.zig	in_progress	build_file_001		Read every remaining declaration and build graph section in build.zig; examine platform/link/install differences and its consumers, then append findings and verification before recording file-level completion.
+file	build.zig	verified	build_file_002		Continue file reviews in TSV order; directory and cross-directory reviews remain separate.
 file	src/app/mod.zig	pending			Read and review the complete scope.
 file	src/app/prepare.zig	pending			Read and review the complete scope.
 file	src/app/request.zig	pending			Read and review the complete scope.

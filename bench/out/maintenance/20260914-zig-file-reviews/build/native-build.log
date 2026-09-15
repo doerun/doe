@@ -1,0 +1,11 @@
+
+Build Summary: 8/8 steps succeeded
+dropin-compute success
++- install webgpu_doe_compute success
+   +- compile lib webgpu_doe_compute ReleaseFast native success 32s MaxRSS:713M
+      +- options success
+dropin-full success
++- install webgpu_doe_full success
+   +- compile lib webgpu_doe_full ReleaseFast native success 32s MaxRSS:707M
+      +- options success
+

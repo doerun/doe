@@ -72,6 +72,141 @@
       "targets": [
         "build.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/comparability-obligations.json",
+          "sha256": "122a21b854428b45c6c4dc17780057eda8c0b16d56739b1625a580f8ba0af3db"
+        },
+        {
+          "path": "config/dropin-abi-behavior.json",
+          "sha256": "6a97d9b5e731fd9c72c9fa73f78486fe2afefaf1f990146ac52199bd58e10344"
+        },
+        {
+          "path": "config/dropin-symbol-ownership.json",
+          "sha256": "8b3e24938dd3238892071ea316930881c8078ba29e96b3e944a93111558f34d8"
+        },
+        {
+          "path": "config/native-command-storage-observation.json",
+          "sha256": "4c96f721dadc11bd3c1aa90e7f73f21728648e4dd726507b0664efeba7ed753c"
+        },
+        {
+          "path": "config/native-command-storage-policy.json",
+          "sha256": "1ec9c9b6c9fc8011cfc098d4fc00963d780e8ccafbd16acccb09ae515e8362f7"
+        },
+        {
+          "path": "config/toolchains.json",
+          "sha256": "37f59f20472666ca5da1831e8d89d4fc09e1b7b2a5bcb7b51fdb56fa97999f08"
+        },
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "f0ceb19253f045ef1ec7ba6c7af1ab054522cd919c0212298a7b3cbe956646c1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command_storage.zig",
+          "sha256": "d1938764b4ecef581341c5274a27e9335af5905a8629af37431b96cc4e2a33a6"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "abf563ff61f358d954d27553581924d91c600be7c598edbed313b1c7131b22cb"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "cff7b79ba3b40a1bd45cc2463585d7af10eb4e71df376f1eda30b496e6f2a4c1"
+        },
+        {
+          "path": "runtime/zig/test_suite_d3d12.zig",
+          "sha256": "fd39113719a35d938b4312527dc738d0ad090ff3323395c64f23cf4bbf435f59"
+        },
+        {
+          "path": "runtime/zig/test_suite_full.zig",
+          "sha256": "fddeeafadb177e12a06422ee03ff5e585caa3e728abfb8eb85e0cfab13b514a2"
+        },
+        {
+          "path": "runtime/zig/test_suite_wgsl.zig",
+          "sha256": "48c0a20c7f18e4f3cd3aa7625cad2e8fce1b040131e8b8e9a3fe6ff1299a70bb"
+        },
+        {
+          "path": "runtime/zig/tests/core/quirk_registry_build_test.zig",
+          "sha256": "c18169738b2a78831f94cf0c5af142bcb836ffa0f87efcb3f404d89a9244478a"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/README.md",
+          "sha256": "2428bbdcc163fc2110fa1d6154ee8b9fc14f247db3114f497db334fcd7842f4c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/filter-after-core-registered.log",
+          "sha256": "0f39769a720bbd3206a580db3d14437901ef78df96bbadc877703643950d2645"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/filter-after-d3d12.log",
+          "sha256": "d4da05c7c34b8b558aa0cdf4365fb61207b2f40a8af33e6abac443bf15a9e21a"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/filter-after-empty.log",
+          "sha256": "571d475487a73fcc77d9cbb8e5736e35bca078b9b15e17642f09eddb973cddf9"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/filter-after-quirk.log",
+          "sha256": "ee843905ab5a13885c87040d7cd624d6d76c16922cf498baa483ad176c0aa51a"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/filter-after-wgsl-registered.log",
+          "sha256": "29f9f0882d277f0beb385f1c2897c1067e7712f1ad30f4da7b60c8460604d463"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/filter-before.log",
+          "sha256": "a10fcce4c11c38a1f15cc0a50d62750d266fe531fcc79a602814e57abf605d9d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/graph-equivalence.tsv",
+          "sha256": "e49f08dfa4c227573229380ff5104af19911e88619390491f098e54ef539279c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/input-errors.tsv",
+          "sha256": "438bd080945c1b3d328eacec4347559519d0e822683c4e07b411c2be2f91083c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/native-build.log",
+          "sha256": "edb917688d149d37ae9405afeee9a3ef7b1217c9b5097ed65550dfaaca420b59"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/preserved-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/source-files.tsv",
+          "sha256": "7bb63300a5a17fe11d2416812a0d634e52fdab96b795e25335053b10b8d3926d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/build/wgsl-full.log",
+          "sha256": "febf0bbf295df99329a6963373541131333dcc9f21c0ff7977b1bee196e5fb2e"
+        }
+      ],
+      "findings": [],
+      "inputHash": "e02f5be7376edcb24a52afe9bcf9f790d1896fd750e7d795ccccecb867a6ccb2",
+      "level": "file",
+      "nextAction": "Continue file reviews in TSV order; directory and cross-directory reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "All canonical suites now receive test_filters. Actual negative and registered positive selections and the unfiltered WGSL suite verify selection and execution separately.",
+        "The common native graphics linking decision has one typed helper; actual link graph and option bytes match across target/proof configurations, while distinct Metal benchmark and tier roots remain explicit.",
+        "Removed firstExistingPath after confirming no consumers. Required file read failures preserve path and original error, exercised through missing and oversized build inputs.",
+        "Completed examination of every executable, installation, platform, policy, benchmark, and test section; retained variant-specific module construction is declarative configuration with distinct source and option identities."
+      ],
+      "reviewId": "build_file_002",
+      "reviewedAt": "2026-09-15T02:33:20.006865+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "f3897d28c713f74a68922128345149dc7501733c",
+      "status": "verified",
+      "summary": "Read the complete build file and its configured test roots. Checked configuration and proof embedding, ownership and failure paths, tier construction, platform linking, installation, tools, and canonical test selection.",
+      "supersedes": "build_file_001",
+      "targets": [
+        "build.zig"
+      ]
     }
   ],
   "schemaVersion": 1

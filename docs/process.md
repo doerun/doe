@@ -64,6 +64,10 @@ classified and cannot be promoted by benchmark results.
   [`../runtime/zig/STYLE.md`](../runtime/zig/STYLE.md); a formatter does not
   establish them. Build refactors preserve generated options and their
   configuration failure boundaries across the supported build variants.
+  The canonical test suites apply `-Dtest-filter` consistently; filtered
+  verification records the selected test names and executed count and cannot
+  substitute for the full suite. Required build-input failures identify the
+  path and underlying error.
 - A workload declares immutable input identity, oracle, executor, policy,
   required artifacts, and evidence extensions.
 - Correctness precedes performance interpretation.

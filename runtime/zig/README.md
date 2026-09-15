@@ -39,6 +39,11 @@ Use the configured Zig toolchain and the [style guide](STYLE.md). `zig build fmt
 formats owned Zig files; `fmt-check` is also a dependency of the default install
 and canonical test suites. Both exclude vendored sources and build outputs.
 
+`-Dtest-filter=<substring>` selects test names in `test`, `test-core`,
+`test-full`, `test-d3d12`, and `test-wgsl`. Check the executed test count:
+a filter matching no names runs no tests, and a filtered run does not qualify
+the complete suite.
+
 Backend-specific builds and tools are listed by `zig build --help`. Hardware
 execution requires the matching host, SDK, driver, and declared backend lane.
 
