@@ -1,0 +1,17 @@
+--iterations requires an unsigned count; received '4294967296': Overflow
+error: Overflow
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/math.zig:570:21: 0x114d9ed in add__anon_25650 (std.zig)
+    if (ov[1] != 0) return error.Overflow;
+                    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:468:22: 0x1146f84 in parseIntWithSign__anon_23016 (std.zig)
+        accumulate = try add(Accumulate, accumulate, math.cast(Accumulate, digit) orelse return error.Overflow);
+                     ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:489:5: 0x1140ec5 in parseUnsigned__anon_22815 (std.zig)
+    return parseIntWithSign(T, u8, buf, base, .pos);
+    ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig:88:17: 0x113ee1d in parseArgs (metal_compute_bench.zig)
+                return err;
+                ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig:294:27: 0x113f5d8 in main (metal_compute_bench.zig)
+    return run(allocator, try parseArgs(args[1..]));
+                          ^

@@ -1,0 +1,7 @@
+error: MissingArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig:81:36: 0x113ec2a in parseArgs (metal_compute_bench.zig)
+            index += 1;
+                                   ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig:280:48: 0x113f2e7 in main (metal_compute_bench.zig)
+        },
+                                               ^

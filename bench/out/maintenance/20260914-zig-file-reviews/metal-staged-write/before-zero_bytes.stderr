@@ -1,0 +1,10 @@
+error: InvalidArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:57:22: 0x113eb24 in parsePositive__anon_22828 (metal_staged_write_bench.zig)
+    return .{
+                     ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:82:33: 0x113f1e8 in parseArgs (metal_staged_write_bench.zig)
+        if (std.mem.eql(u8, arg, "--inject-corruption")) {
+                                ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:237:48: 0x113f937 in main (metal_staged_write_bench.zig)
+            .expectedOutcomeSatisfied = outcome_satisfied,
+                                               ^

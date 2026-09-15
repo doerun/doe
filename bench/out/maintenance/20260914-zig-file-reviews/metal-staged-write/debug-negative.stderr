@@ -1,0 +1,20 @@
+--iterations requires an unsigned count; received '-1': InvalidCharacter
+error: InvalidCharacter
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:590:17: 0x114faf5 in charToDigit (std.zig)
+        else => return error.InvalidCharacter,
+                ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:458:23: 0x1147aee in parseIntWithSign__anon_23057 (std.zig)
+        const digit = try charToDigit(math.cast(u8, c) orelse return error.InvalidCharacter, buf_base);
+                      ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:489:5: 0x1141855 in parseUnsigned__anon_22828 (std.zig)
+    return parseIntWithSign(T, u8, buf, base, .pos);
+    ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:68:9: 0x113eb9a in parsePositive__anon_22816 (metal_staged_write_bench.zig)
+        return err;
+        ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:92:33: 0x113f394 in parseArgs (metal_staged_write_bench.zig)
+            config.iterations = try parsePositive(u32, arg, argv[index]);
+                                ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:263:27: 0x113ff58 in main (metal_staged_write_bench.zig)
+    return run(allocator, try parseArgs(args[1..]));
+                          ^

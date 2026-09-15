@@ -1,0 +1,8 @@
+path	sha256
+bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/before-install/bin/doe-metal-staged-write-bench	ee0991887374dda93aa9bba969c42884454741aa4a1f4beae951537622a58912
+bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/debug-install/bin/doe-metal-staged-write-bench	c15c4e9aa8dd49a5fef7e28f6daa11751bef8a6f0a0f273087fb547615ac826a
+bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-debug-install/bin/doe-metal-compute-bench	cbe6c40836cd64850d7b2f56610e5a17f9a0338f92029a4bbd8fe8c6fa341f71
+bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-debug-install/bin/doe-metal-staged-write-bench	f73da59a94bcbe61aacbafb10a0b91d072065b8e5b365c80a56c63c9d26e355a
+bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-release-install/bin/doe-metal-compute-bench	0e1298f9ba6e9e3209f66d774405b641e1eee2eb0d0646d1acc43e6506f04074
+bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-release-install/bin/doe-metal-staged-write-bench	e9247143552f1abb5ba0cada00a032cf85d983139db17e54781c4742c5d506fa
+bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/release-install/bin/doe-metal-staged-write-bench	e0a85a0859261cc7629241b2c707e562f5ec51d36cff80823c9cb219cef3130d

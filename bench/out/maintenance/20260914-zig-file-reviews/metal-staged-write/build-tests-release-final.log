@@ -1,0 +1,41 @@
+test-bench-metal-compute
++- run test stderr
+Metal compute capture expected 2 bytes; received 1
+Metal compute capture expected 1 bytes; received 2
+--iterations requires a count
+--iterations must be between 1 and 16; received 0
+--iterations must be between 1 and 16; received 17
+unknown Metal compute option '--typo'; expected --iterations or --inject-corruption
+test-bench-metal-staged-write
++- run test stderr
+Metal staged-write capture expected 2 bytes; received 1
+Metal staged-write capture expected 1 bytes; received 2
+--bytes requires a count
+--iterations requires a positive count; received 0
+--bytes requires a positive count; received 0
+Metal staged-write limits are 128 iterations and 67108864 bytes; received 129 iterations and 2097152 bytes
+Metal staged-write limits are 128 iterations and 67108864 bytes; received 8 iterations and 67108865 bytes
+unknown Metal staged-write option '--typo'; expected --iterations, --bytes, or --inject-corruption
+
+Build Summary: 15/15 steps succeeded; 12/12 tests passed
+bench-metal-compute success
++- install doe-metal-compute-bench success
+   +- compile exe doe-metal-compute-bench ReleaseFast native success 4s MaxRSS:207M
+      +- options cached
+bench-metal-staged-write success
++- install doe-metal-staged-write-bench success
+   +- compile exe doe-metal-staged-write-bench ReleaseFast native success 4s MaxRSS:204M
+      +- options (reused)
+test-bench-metal-compute success
++- zig fmt --check success
++- run python3 success 421ms MaxRSS:28M
++- run test 6 passed 1ms MaxRSS:3M
+   +- compile test ReleaseFast native success 5s MaxRSS:230M
+      +- options (reused)
+test-bench-metal-staged-write success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 6 passed 969us MaxRSS:3M
+   +- compile test ReleaseFast native success 5s MaxRSS:233M
+      +- options (reused)
+

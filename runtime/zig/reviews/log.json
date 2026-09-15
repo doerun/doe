@@ -1675,6 +1675,910 @@
       "targets": [
         "bench/compiler/bench_compilation.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/kernels/concurrent_execution_runsingle_u32.metal",
+          "sha256": "99a7b03b5b24d9c5ec30115b8d66c9a4adc7b1f7cf7a74b8df238246c0b32477"
+        },
+        {
+          "path": "bench/kernels/concurrent_execution_runsingle_u32.wgsl",
+          "sha256": "57313155741224f77622b55aa9e739ec7698e5cc3079d92584d253334f1d95a6"
+        },
+        {
+          "path": "config/doe-metal-compute-benchmark.schema.json",
+          "sha256": "fc78d7a41aeaa2bc4663116e8982e037beab6c4f6b74f81f29d2df9b28e6c62d"
+        },
+        {
+          "path": "config/doe-workload-suite.json",
+          "sha256": "4a44f069766e8bcfbafbaf6c6f2e39aafc019bc532003d8ead78ae2c844eeaae"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "e25a49006988e47a5245ca081b71e84461d2e5eea713b23df6a92fc8ab6e7e12"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "9fe36b9a8e4f1a705069d0c8dc7942e52708b6cf56e9932fff3ed2cb35a2eb37"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "ce1428a615731a64a3edaad6db490f2e32930ca13c499722c739264ec4ba46e1"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution_receipt.zig",
+          "sha256": "0ff5dd77bec0e5167e3ca5e917bbb382a3dfe21868fbb690560af0dff353c4f0"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-compute/README.md",
+          "sha256": "8e725c1e40e4e73a9900f30901463f6c3f3906b017dc39c60f95fc714049bd91"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-compute/SHA256SUMS",
+          "sha256": "bc510bcef6ad438b2a4d3e867001f5f576e35c5b4fb3f802d31d48963e249374"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-compute/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-compute/before-cases.tsv",
+          "sha256": "967b1f23d5bc247b22b13519b0fd870c2a34b920e8563eef1963d3f886a3e7f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-compute/capture-before.log",
+          "sha256": "c051cc22bfa73260c570e43ccc5e45aaf2da2eb0cdbacc0d75410814d70533cf"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-compute/debug-cases.tsv",
+          "sha256": "967b1f23d5bc247b22b13519b0fd870c2a34b920e8563eef1963d3f886a3e7f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-compute/release-cases.tsv",
+          "sha256": "967b1f23d5bc247b22b13519b0fd870c2a34b920e8563eef1963d3f886a3e7f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-compute/source-files.tsv",
+          "sha256": "913c4c6fa43051eb0680bf61811e80c05c2a16b68245fc5f6dd9b625d102c789"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-compute/tests-debug.log",
+          "sha256": "f6840cb969da1e10d3df832dd83b828d7eb104512fd0d8c7edf6ae3ded8cf2b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-compute/tests-release.log",
+          "sha256": "ba580195b0a1f208938b913d4d3c572aaaf5ce08b286e3e80ecd2c14459571a7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md",
+          "sha256": "77414c4a6d8e6235967375da04a7854fd85e3157fd4dda8eb988f06e1f4856b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/SHA256SUMS",
+          "sha256": "c87799930686fab80ec225dfe4406248934706bdf76b39efab8b173f6a39f213"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/build-tests-release-final.log",
+          "sha256": "b6117e20966515af91bd985065a100bf8b00b105bcdf38c6d35b918a503c2ac4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/documentation-checks.log",
+          "sha256": "862eb5096f65390cc970cc6345f023111b93fe44af740114b774612483be5490"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/filter-empty.log",
+          "sha256": "4d83a70d788ac88ea01b73dcfb757b32c390aef7ee5343637be62cafdd96325d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-checks.log",
+          "sha256": "7cbe956242e7760ec1c8a8ac46af4e6cbf39061f2f69c0b48f7aefc6ebb0d81b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/proof-tests-final.log",
+          "sha256": "fb38412073a24a1724b85bf4a1395e76076fea561d3c42fcf0b7cd08ad3cef8c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "f43da63d2aded35b56b02466ceca8d5dace05e45039f942a01ab6267612a7599",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/runtime_compile_report.zig. Physical Metal qualification still requires the unchanged workload suite on an Apple host; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reproduced unequal-slice comparison panic and added explicit CaptureSizeMismatch before byte access; Debug and ReleaseFast regressions preserve first mismatch and aggregate counts.",
+        "Made serialization allocator/output ownership explicit and verified allocation failure plus original file-output errors.",
+        "Borrowed process arguments, named existing limits and fixture constants, retained CLI error taxonomy, and used Zig error-union byte main return so deferred cleanup runs on oracle status exits."
+      ],
+      "reviewId": "metal_compute_file_001",
+      "reviewedAt": "2026-09-15T03:49:14.517347+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9b8371db4c6931b125ffba1ebf2e2999eb65e62d",
+      "status": "verified",
+      "summary": "Read the complete Metal compute entrypoint: bounded CLI inputs, fixed policy profile, host oracle, native session and buffer lifetime, upload/dispatch/flush sequence, capture ownership, mismatch accounting, diagnostic timing, receipt serialization, and exit cleanup. Linux helper and admission checks passed; Apple frameworks and physical Metal execution are explicitly outside this receipt.",
+      "supersedes": null,
+      "targets": [
+        "bench/entrypoints/metal_compute_bench.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/doe-metal-staged-write-benchmark.schema.json",
+          "sha256": "102ec270a6fd616edcd414eda49bc4bb026e28653a7c9317d987d14b6a16a96c"
+        },
+        {
+          "path": "config/doe-workload-suite.json",
+          "sha256": "4a44f069766e8bcfbafbaf6c6f2e39aafc019bc532003d8ead78ae2c844eeaae"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "e25a49006988e47a5245ca081b71e84461d2e5eea713b23df6a92fc8ab6e7e12"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "9fe36b9a8e4f1a705069d0c8dc7942e52708b6cf56e9932fff3ed2cb35a2eb37"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "ce1428a615731a64a3edaad6db490f2e32930ca13c499722c739264ec4ba46e1"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution_receipt.zig",
+          "sha256": "0ff5dd77bec0e5167e3ca5e917bbb382a3dfe21868fbb690560af0dff353c4f0"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md",
+          "sha256": "77414c4a6d8e6235967375da04a7854fd85e3157fd4dda8eb988f06e1f4856b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/SHA256SUMS",
+          "sha256": "c87799930686fab80ec225dfe4406248934706bdf76b39efab8b173f6a39f213"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/before-cases.tsv",
+          "sha256": "debdfc00c7d125e2fe9f76e2cae4bffdc599ca73db98e1ec31f27079b975710f"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/build-tests-release-final.log",
+          "sha256": "b6117e20966515af91bd985065a100bf8b00b105bcdf38c6d35b918a503c2ac4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/capture-before.log",
+          "sha256": "15ce22960b1a521ead7d1224839ff1af6dddf6a2d234e93c0c0ed872061d2460"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/debug-cases.tsv",
+          "sha256": "debdfc00c7d125e2fe9f76e2cae4bffdc599ca73db98e1ec31f27079b975710f"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/documentation-checks.log",
+          "sha256": "862eb5096f65390cc970cc6345f023111b93fe44af740114b774612483be5490"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/filter-empty.log",
+          "sha256": "4d83a70d788ac88ea01b73dcfb757b32c390aef7ee5343637be62cafdd96325d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-checks.log",
+          "sha256": "7cbe956242e7760ec1c8a8ac46af4e6cbf39061f2f69c0b48f7aefc6ebb0d81b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/proof-tests-final.log",
+          "sha256": "fb38412073a24a1724b85bf4a1395e76076fea561d3c42fcf0b7cd08ad3cef8c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/release-cases.tsv",
+          "sha256": "debdfc00c7d125e2fe9f76e2cae4bffdc599ca73db98e1ec31f27079b975710f"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/source-files.tsv",
+          "sha256": "1e5ee47c6122928444f5078465c754124c44f5f81b894647c17719097a100f64"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/tests-debug.log",
+          "sha256": "efb3ca9d5788aeff11ca20173cd47a94fdc0864e0b653139ecb41222c44e637e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/tests-release.log",
+          "sha256": "99e45d9230af2a4d81cbfff26a230e460124a89d33dbc59a19b651e431e28873"
+        }
+      ],
+      "findings": [],
+      "inputHash": "13f79ae423c85678ff81b343b9d295d77961ce69431a4bc9fbc3fbe98c66e102",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/runtime_compile_report.zig. Physical Metal qualification still requires the unchanged workload suite on an Apple host; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reproduced unequal-slice comparison panic and added explicit CaptureSizeMismatch before byte access; Debug and ReleaseFast regressions preserve first mismatch and aggregate counts.",
+        "Made serialization allocator/output ownership explicit and verified allocation failure plus original file-output errors.",
+        "Borrowed process arguments, named existing limits and fixture constants, retained CLI error taxonomy, and used Zig error-union byte main return so deferred cleanup runs on oracle status exits."
+      ],
+      "reviewId": "metal_staged_write_file_001",
+      "reviewedAt": "2026-09-15T03:49:15.326094+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9b8371db4c6931b125ffba1ebf2e2999eb65e62d",
+      "status": "verified",
+      "summary": "Read the complete Metal staged-write entrypoint: bounded CLI inputs, fixed policy profile, host oracle, native session and buffer lifetime, upload/dispatch/flush sequence, capture ownership, mismatch accounting, diagnostic timing, receipt serialization, and exit cleanup. Linux helper and admission checks passed; Apple frameworks and physical Metal execution are explicitly outside this receipt.",
+      "supersedes": null,
+      "targets": [
+        "bench/entrypoints/metal_staged_write_bench.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/README.md",
+          "sha256": "a0c68e6fa9972dc99209685d8d4c3818863264484fd49e25384f9d2eb8dbf415"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/bench.zig",
+          "sha256": "a7b7c29192328d3397c905d5c736a86f1f0b18999ee49bcb5b33bc7cf4ae2fd0"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/bench_compilation.zig",
+          "sha256": "731470b10afed87aea9f75a5697e5262a0d5a2b410b0489d7d3842d24be75132"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "e25a49006988e47a5245ca081b71e84461d2e5eea713b23df6a92fc8ab6e7e12"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/metal_compute_bench.zig",
+          "sha256": "6698f3f7f1b4bf10996028f09a52cd0b9e276c7d750a69c0033c0e038ae1d9f4"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/metal_staged_write_bench.zig",
+          "sha256": "cba0f03654f0dea2df8c67ee7fbe47a238a372e2e68fc77ff5ceb077698900f6"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md",
+          "sha256": "77414c4a6d8e6235967375da04a7854fd85e3157fd4dda8eb988f06e1f4856b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/SHA256SUMS",
+          "sha256": "c87799930686fab80ec225dfe4406248934706bdf76b39efab8b173f6a39f213"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/build-tests-release-final.log",
+          "sha256": "b6117e20966515af91bd985065a100bf8b00b105bcdf38c6d35b918a503c2ac4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/documentation-checks.log",
+          "sha256": "862eb5096f65390cc970cc6345f023111b93fe44af740114b774612483be5490"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/filter-empty.log",
+          "sha256": "4d83a70d788ac88ea01b73dcfb757b32c390aef7ee5343637be62cafdd96325d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-checks.log",
+          "sha256": "7cbe956242e7760ec1c8a8ac46af4e6cbf39061f2f69c0b48f7aefc6ebb0d81b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/proof-tests-final.log",
+          "sha256": "fb38412073a24a1724b85bf4a1395e76076fea561d3c42fcf0b7cd08ad3cef8c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "374b9c91334da9f73fcc0d04c934ea7262f06fcec81a34a1627b7539366151f0",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The changed shared build context preserves the existing benchmark consumers; combined canonical tests and structural checks passed."
+      ],
+      "reviewId": "build_file_006",
+      "reviewedAt": "2026-09-15T03:49:16.119860+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9b8371db4c6931b125ffba1ebf2e2999eb65e62d",
+      "status": "verified",
+      "summary": "Re-examined the build delta after the prior complete review: both Metal benchmark tests reuse their actual executable modules, options, native link inputs, and filters. Existing build recipes remain unchanged. Linux tests, proof options, and empty selection passed; macOS frameworks remain unavailable.",
+      "supersedes": "build_file_005",
+      "targets": [
+        "build.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/lean-proof-patterns.json",
+          "sha256": "0e839bfbcd0f4c5f8087c880434c9741804fb32797fc8650fe8951c00d57529d"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/README.md",
+          "sha256": "387f94834524f25f06305f88456ef98f3d4d1629d438daa399d6d80af570a4ce"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "9fe36b9a8e4f1a705069d0c8dc7942e52708b6cf56e9932fff3ed2cb35a2eb37"
+        },
+        {
+          "path": "runtime/zig/src/compiler/mod.zig",
+          "sha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md",
+          "sha256": "77414c4a6d8e6235967375da04a7854fd85e3157fd4dda8eb988f06e1f4856b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/SHA256SUMS",
+          "sha256": "c87799930686fab80ec225dfe4406248934706bdf76b39efab8b173f6a39f213"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/build-tests-release-final.log",
+          "sha256": "b6117e20966515af91bd985065a100bf8b00b105bcdf38c6d35b918a503c2ac4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/documentation-checks.log",
+          "sha256": "862eb5096f65390cc970cc6345f023111b93fe44af740114b774612483be5490"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/filter-empty.log",
+          "sha256": "4d83a70d788ac88ea01b73dcfb757b32c390aef7ee5343637be62cafdd96325d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-checks.log",
+          "sha256": "7cbe956242e7760ec1c8a8ac46af4e6cbf39061f2f69c0b48f7aefc6ebb0d81b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/proof-tests-final.log",
+          "sha256": "fb38412073a24a1724b85bf4a1395e76076fea561d3c42fcf0b7cd08ad3cef8c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "8dfd60614835f9cb2f32a6eeaa26e3086e505f0b5af444c4835d14f485e63b59",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The changed shared build context preserves the existing benchmark consumers; combined canonical tests and structural checks passed."
+      ],
+      "reviewId": "compiler_stage_file_005",
+      "reviewedAt": "2026-09-15T03:49:16.935186+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9b8371db4c6931b125ffba1ebf2e2999eb65e62d",
+      "status": "verified",
+      "summary": "Rechecked this unchanged file after the shared build gained the Metal benchmark CPU test targets. Its source, ownership, output, and timing contracts remain unchanged; the complete combined benchmark tests pass.",
+      "supersedes": "compiler_stage_file_004",
+      "targets": [
+        "bench/compiler/bench.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/native_compare_modules/compilation_runner.py",
+          "sha256": "a4196e5c29b28d0965b9de04d538e485bd701cb71db2459fc8ebd3ea9ca9166f"
+        },
+        {
+          "path": "config/zig-compilation-bench.schema.json",
+          "sha256": "cdb27986694f9cdac442c095df9ce748ed58134c5d35474ec3a2dcdcf52a29cf"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/README.md",
+          "sha256": "387f94834524f25f06305f88456ef98f3d4d1629d438daa399d6d80af570a4ce"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "9fe36b9a8e4f1a705069d0c8dc7942e52708b6cf56e9932fff3ed2cb35a2eb37"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/mod.zig",
+          "sha256": "144dd739b734b3feb58587e9b3d01b09c35994e7a03662b73f4733defe03ca8f"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/pipeline/analysis.zig",
+          "sha256": "d15ecf46c5a8bec32ca8e487aea16c372fd6652c975e9c9c9ef14f90327ce5a3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md",
+          "sha256": "77414c4a6d8e6235967375da04a7854fd85e3157fd4dda8eb988f06e1f4856b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/SHA256SUMS",
+          "sha256": "c87799930686fab80ec225dfe4406248934706bdf76b39efab8b173f6a39f213"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/build-tests-release-final.log",
+          "sha256": "b6117e20966515af91bd985065a100bf8b00b105bcdf38c6d35b918a503c2ac4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/documentation-checks.log",
+          "sha256": "862eb5096f65390cc970cc6345f023111b93fe44af740114b774612483be5490"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/filter-empty.log",
+          "sha256": "4d83a70d788ac88ea01b73dcfb757b32c390aef7ee5343637be62cafdd96325d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-checks.log",
+          "sha256": "7cbe956242e7760ec1c8a8ac46af4e6cbf39061f2f69c0b48f7aefc6ebb0d81b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/proof-tests-final.log",
+          "sha256": "fb38412073a24a1724b85bf4a1395e76076fea561d3c42fcf0b7cd08ad3cef8c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "77d11f281796ef9abb7c1f1949175b0da21449de88e64311b1789059a8cd9235",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The changed shared build context preserves the existing benchmark consumers; combined canonical tests and structural checks passed."
+      ],
+      "reviewId": "compilation_file_003",
+      "reviewedAt": "2026-09-15T03:49:17.718475+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9b8371db4c6931b125ffba1ebf2e2999eb65e62d",
+      "status": "verified",
+      "summary": "Rechecked this unchanged file after the shared build gained the Metal benchmark CPU test targets. Its source, ownership, output, and timing contracts remain unchanged; the complete combined benchmark tests pass.",
+      "supersedes": "compilation_file_002",
+      "targets": [
+        "bench/compiler/bench_compilation.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-host-hotpath-bench.schema.json",
+          "sha256": "c0796d7c70b17687fa1305873e43fdc21e811a0fa7ede39113999a702f7d4a7f"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/README.md",
+          "sha256": "7daa949db296f839a3861300f42d25130849ed2e9bab790e28c0aaaad76156f4"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig",
+          "sha256": "d8f95bc519a72f0c3ef37f55d73e8681a0b6b5544881d7bf6ea68ae5bfac07dc"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_lexer.zig",
+          "sha256": "e61e333edb982ec909408691899f75241655425c2d58043bac9a6659a0c5fb78"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig",
+          "sha256": "1bf6cdfe3687d29c9743bc9883c2be8c9fd5bd6ad78989faa3859b2d0b184100"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "9fe36b9a8e4f1a705069d0c8dc7942e52708b6cf56e9932fff3ed2cb35a2eb37"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/lexer.zig",
+          "sha256": "4aceabeeac548b00c2c801a2cd0dc9a38a92ca92e89f6c2bc435626cea83a5a2"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/token.zig",
+          "sha256": "882a686eb333be897f8138645d7f645da39aa108ddf0ff8e81434479548de7f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/primitives/byte_scan.zig",
+          "sha256": "bbd7f527595de402d9609da8d332863da51c9e1810df4edc3fd0ef7a58e95dab"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        },
+        {
+          "path": "runtime/zig/src/runtime/simd/f32_ops.zig",
+          "sha256": "7b82408343bdb44c63b1bd3991f1fc63cda7425351339c25d47d49d04dd2da7c"
+        },
+        {
+          "path": "runtime/zig/src/runtime/trace/trace_text.zig",
+          "sha256": "4215a97c594d4f5940b4feab81686dae14196225d93ae3e04134b0f9c081eeaa"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md",
+          "sha256": "77414c4a6d8e6235967375da04a7854fd85e3157fd4dda8eb988f06e1f4856b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/SHA256SUMS",
+          "sha256": "c87799930686fab80ec225dfe4406248934706bdf76b39efab8b173f6a39f213"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/build-tests-release-final.log",
+          "sha256": "b6117e20966515af91bd985065a100bf8b00b105bcdf38c6d35b918a503c2ac4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/documentation-checks.log",
+          "sha256": "862eb5096f65390cc970cc6345f023111b93fe44af740114b774612483be5490"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/filter-empty.log",
+          "sha256": "4d83a70d788ac88ea01b73dcfb757b32c390aef7ee5343637be62cafdd96325d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-checks.log",
+          "sha256": "7cbe956242e7760ec1c8a8ac46af4e6cbf39061f2f69c0b48f7aefc6ebb0d81b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/proof-tests-final.log",
+          "sha256": "fb38412073a24a1724b85bf4a1395e76076fea561d3c42fcf0b7cd08ad3cef8c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "d459ba23f00eb6fa4b2f7e8a11be6f7dc861975628a34c9e38bdc8646fad3248",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The changed shared build context preserves the existing benchmark consumers; combined canonical tests and structural checks passed."
+      ],
+      "reviewId": "host_main_file_003",
+      "reviewedAt": "2026-09-15T03:49:18.504707+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9b8371db4c6931b125ffba1ebf2e2999eb65e62d",
+      "status": "verified",
+      "summary": "Rechecked this unchanged file after the shared build gained the Metal benchmark CPU test targets. Its source, ownership, output, and timing contracts remain unchanged; the complete combined benchmark tests pass.",
+      "supersedes": "host_main_file_002",
+      "targets": [
+        "bench/host_hotpath/host_hotpath_bench.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-host-hotpath-bench.schema.json",
+          "sha256": "c0796d7c70b17687fa1305873e43fdc21e811a0fa7ede39113999a702f7d4a7f"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/README.md",
+          "sha256": "7daa949db296f839a3861300f42d25130849ed2e9bab790e28c0aaaad76156f4"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench.zig",
+          "sha256": "521693cc4e68db597e533200eaace39a159800481ae7ea224b887d3b39d79d1a"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig",
+          "sha256": "d8f95bc519a72f0c3ef37f55d73e8681a0b6b5544881d7bf6ea68ae5bfac07dc"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_lexer.zig",
+          "sha256": "e61e333edb982ec909408691899f75241655425c2d58043bac9a6659a0c5fb78"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "9fe36b9a8e4f1a705069d0c8dc7942e52708b6cf56e9932fff3ed2cb35a2eb37"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/lexer.zig",
+          "sha256": "4aceabeeac548b00c2c801a2cd0dc9a38a92ca92e89f6c2bc435626cea83a5a2"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/token.zig",
+          "sha256": "882a686eb333be897f8138645d7f645da39aa108ddf0ff8e81434479548de7f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/primitives/byte_scan.zig",
+          "sha256": "bbd7f527595de402d9609da8d332863da51c9e1810df4edc3fd0ef7a58e95dab"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        },
+        {
+          "path": "runtime/zig/src/runtime/simd/f32_ops.zig",
+          "sha256": "7b82408343bdb44c63b1bd3991f1fc63cda7425351339c25d47d49d04dd2da7c"
+        },
+        {
+          "path": "runtime/zig/src/runtime/trace/trace_text.zig",
+          "sha256": "4215a97c594d4f5940b4feab81686dae14196225d93ae3e04134b0f9c081eeaa"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md",
+          "sha256": "77414c4a6d8e6235967375da04a7854fd85e3157fd4dda8eb988f06e1f4856b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/SHA256SUMS",
+          "sha256": "c87799930686fab80ec225dfe4406248934706bdf76b39efab8b173f6a39f213"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/build-tests-release-final.log",
+          "sha256": "b6117e20966515af91bd985065a100bf8b00b105bcdf38c6d35b918a503c2ac4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/documentation-checks.log",
+          "sha256": "862eb5096f65390cc970cc6345f023111b93fe44af740114b774612483be5490"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/filter-empty.log",
+          "sha256": "4d83a70d788ac88ea01b73dcfb757b32c390aef7ee5343637be62cafdd96325d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-checks.log",
+          "sha256": "7cbe956242e7760ec1c8a8ac46af4e6cbf39061f2f69c0b48f7aefc6ebb0d81b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/proof-tests-final.log",
+          "sha256": "fb38412073a24a1724b85bf4a1395e76076fea561d3c42fcf0b7cd08ad3cef8c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "1fbc5ee4773a30f4ba62d5fd0c57703f5f6399fa010f831811116b5ec34f5774",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The changed shared build context preserves the existing benchmark consumers; combined canonical tests and structural checks passed."
+      ],
+      "reviewId": "host_support_file_002",
+      "reviewedAt": "2026-09-15T03:49:19.286965+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9b8371db4c6931b125ffba1ebf2e2999eb65e62d",
+      "status": "verified",
+      "summary": "Rechecked this unchanged file after the shared build gained the Metal benchmark CPU test targets. Its source, ownership, output, and timing contracts remain unchanged; the complete combined benchmark tests pass.",
+      "supersedes": "host_support_file_001",
+      "targets": [
+        "bench/host_hotpath/host_hotpath_bench_support.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-host-hotpath-bench.schema.json",
+          "sha256": "c0796d7c70b17687fa1305873e43fdc21e811a0fa7ede39113999a702f7d4a7f"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/README.md",
+          "sha256": "7daa949db296f839a3861300f42d25130849ed2e9bab790e28c0aaaad76156f4"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench.zig",
+          "sha256": "521693cc4e68db597e533200eaace39a159800481ae7ea224b887d3b39d79d1a"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_lexer.zig",
+          "sha256": "e61e333edb982ec909408691899f75241655425c2d58043bac9a6659a0c5fb78"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig",
+          "sha256": "1bf6cdfe3687d29c9743bc9883c2be8c9fd5bd6ad78989faa3859b2d0b184100"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "9fe36b9a8e4f1a705069d0c8dc7942e52708b6cf56e9932fff3ed2cb35a2eb37"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/lexer.zig",
+          "sha256": "4aceabeeac548b00c2c801a2cd0dc9a38a92ca92e89f6c2bc435626cea83a5a2"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/token.zig",
+          "sha256": "882a686eb333be897f8138645d7f645da39aa108ddf0ff8e81434479548de7f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/primitives/byte_scan.zig",
+          "sha256": "bbd7f527595de402d9609da8d332863da51c9e1810df4edc3fd0ef7a58e95dab"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        },
+        {
+          "path": "runtime/zig/src/runtime/simd/f32_ops.zig",
+          "sha256": "7b82408343bdb44c63b1bd3991f1fc63cda7425351339c25d47d49d04dd2da7c"
+        },
+        {
+          "path": "runtime/zig/src/runtime/trace/trace_text.zig",
+          "sha256": "4215a97c594d4f5940b4feab81686dae14196225d93ae3e04134b0f9c081eeaa"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md",
+          "sha256": "77414c4a6d8e6235967375da04a7854fd85e3157fd4dda8eb988f06e1f4856b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/SHA256SUMS",
+          "sha256": "c87799930686fab80ec225dfe4406248934706bdf76b39efab8b173f6a39f213"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/build-tests-release-final.log",
+          "sha256": "b6117e20966515af91bd985065a100bf8b00b105bcdf38c6d35b918a503c2ac4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/documentation-checks.log",
+          "sha256": "862eb5096f65390cc970cc6345f023111b93fe44af740114b774612483be5490"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/filter-empty.log",
+          "sha256": "4d83a70d788ac88ea01b73dcfb757b32c390aef7ee5343637be62cafdd96325d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-checks.log",
+          "sha256": "7cbe956242e7760ec1c8a8ac46af4e6cbf39061f2f69c0b48f7aefc6ebb0d81b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/proof-tests-final.log",
+          "sha256": "fb38412073a24a1724b85bf4a1395e76076fea561d3c42fcf0b7cd08ad3cef8c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "9e3552724d524790b1de5eaf366a2091b70cad9ddda2bc271fde9c948618d9c9",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The changed shared build context preserves the existing benchmark consumers; combined canonical tests and structural checks passed."
+      ],
+      "reviewId": "host_cases_file_002",
+      "reviewedAt": "2026-09-15T03:49:20.089141+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9b8371db4c6931b125ffba1ebf2e2999eb65e62d",
+      "status": "verified",
+      "summary": "Rechecked this unchanged file after the shared build gained the Metal benchmark CPU test targets. Its source, ownership, output, and timing contracts remain unchanged; the complete combined benchmark tests pass.",
+      "supersedes": "host_cases_file_001",
+      "targets": [
+        "bench/host_hotpath/host_hotpath_bench_cases.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-host-hotpath-bench.schema.json",
+          "sha256": "c0796d7c70b17687fa1305873e43fdc21e811a0fa7ede39113999a702f7d4a7f"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/README.md",
+          "sha256": "7daa949db296f839a3861300f42d25130849ed2e9bab790e28c0aaaad76156f4"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench.zig",
+          "sha256": "521693cc4e68db597e533200eaace39a159800481ae7ea224b887d3b39d79d1a"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig",
+          "sha256": "d8f95bc519a72f0c3ef37f55d73e8681a0b6b5544881d7bf6ea68ae5bfac07dc"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig",
+          "sha256": "1bf6cdfe3687d29c9743bc9883c2be8c9fd5bd6ad78989faa3859b2d0b184100"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "9fe36b9a8e4f1a705069d0c8dc7942e52708b6cf56e9932fff3ed2cb35a2eb37"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/lexer.zig",
+          "sha256": "4aceabeeac548b00c2c801a2cd0dc9a38a92ca92e89f6c2bc435626cea83a5a2"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/token.zig",
+          "sha256": "882a686eb333be897f8138645d7f645da39aa108ddf0ff8e81434479548de7f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/primitives/byte_scan.zig",
+          "sha256": "bbd7f527595de402d9609da8d332863da51c9e1810df4edc3fd0ef7a58e95dab"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        },
+        {
+          "path": "runtime/zig/src/runtime/simd/f32_ops.zig",
+          "sha256": "7b82408343bdb44c63b1bd3991f1fc63cda7425351339c25d47d49d04dd2da7c"
+        },
+        {
+          "path": "runtime/zig/src/runtime/trace/trace_text.zig",
+          "sha256": "4215a97c594d4f5940b4feab81686dae14196225d93ae3e04134b0f9c081eeaa"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md",
+          "sha256": "77414c4a6d8e6235967375da04a7854fd85e3157fd4dda8eb988f06e1f4856b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/SHA256SUMS",
+          "sha256": "c87799930686fab80ec225dfe4406248934706bdf76b39efab8b173f6a39f213"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/build-tests-release-final.log",
+          "sha256": "b6117e20966515af91bd985065a100bf8b00b105bcdf38c6d35b918a503c2ac4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/documentation-checks.log",
+          "sha256": "862eb5096f65390cc970cc6345f023111b93fe44af740114b774612483be5490"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/filter-empty.log",
+          "sha256": "4d83a70d788ac88ea01b73dcfb757b32c390aef7ee5343637be62cafdd96325d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-checks.log",
+          "sha256": "7cbe956242e7760ec1c8a8ac46af4e6cbf39061f2f69c0b48f7aefc6ebb0d81b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/proof-tests-final.log",
+          "sha256": "fb38412073a24a1724b85bf4a1395e76076fea561d3c42fcf0b7cd08ad3cef8c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "f0138d555b570e90019e81582c6548fba2761efb0e4b254e0ca451f06d3df0fd",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The changed shared build context preserves the existing benchmark consumers; combined canonical tests and structural checks passed."
+      ],
+      "reviewId": "host_lexer_file_002",
+      "reviewedAt": "2026-09-15T03:49:20.869010+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9b8371db4c6931b125ffba1ebf2e2999eb65e62d",
+      "status": "verified",
+      "summary": "Rechecked this unchanged file after the shared build gained the Metal benchmark CPU test targets. Its source, ownership, output, and timing contracts remain unchanged; the complete combined benchmark tests pass.",
+      "supersedes": "host_lexer_file_001",
+      "targets": [
+        "bench/host_hotpath/host_hotpath_bench_lexer.zig"
+      ]
     }
   ],
   "schemaVersion": 1

@@ -1,0 +1,106 @@
+test-bench-metal-compute
++- run test stderr
+Metal compute capture expected 2 bytes; received 1
+Metal compute capture expected 1 bytes; received 2
+--iterations requires a count
+--iterations must be between 1 and 16; received 0
+--iterations must be between 1 and 16; received 17
+unknown Metal compute option '--typo'; expected --iterations or --inject-corruption
+test-bench-host-hotpaths
++- run test stderr
+--iterations requires a positive sample count; received 0
+missing value for --iterations
+unknown host benchmark option '--unknown'; expected --iterations, --warmup, or --out
+--warmup requires an unsigned integer; received 'bad': InvalidCharacter
+test-bench-compilation
++- run test stderr
+--iterations must be between 1 and 5000; received 0
+--iterations must be between 1 and 5000; received 5001
+missing value for --target
+--target expects msl, hlsl, spirv, or all; received 'bad'
+unknown compilation benchmark option '--typo'
+shader filter 'absent' does not match the selected corpus or external shader
+--shader-name and --shader-tier require --shader-path
+shader name and tier must be valid UTF-8 for JSON output
+empty_compute             msl          158.849     158.849     158.849      123
+test-bench-shader
++- run test stderr
+--iterations must be between 1 and 2000; received 0
+--iterations must be between 1 and 2000; received 2001
+missing value for --iterations
+unknown option '--typo'; expected --iterations, --warmup, --out, or --filter
+--warmup requires an unsigned integer; received 'bad': InvalidCharacter
+--iterations requires an unsigned integer; received '4294967296': Overflow
+unknown shader filter 'absent'; expected a built-in corpus name
+Zig source architecture review signals:
+src/backend/vulkan/native_runtime.zig: 1004 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_render.zig: 981 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_resources.zig: 1069 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_upload.zig: 843 lines exceeds advisory review signal 800
+src/backend/vulkan/vulkan_surface.zig: 808 lines exceeds advisory review signal 800
+src/compiler/tsir/digest.zig: 999 lines exceeds advisory review signal 800
+src/compiler/tsir/emit_kernel_body.zig: 895 lines exceeds advisory review signal 800
+src/compiler/tsir/frontend.zig: 885 lines exceeds advisory review signal 800
+src/compiler/tsir/reference_extended_ops.zig: 841 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_exec_v1.zig: 989 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_compile_source.zig: 895 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_runtime.zig: 837 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_ir_walk.zig: 888 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_layout.zig: 911 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/msl/emit_msl_ir.zig: 976 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig: 839 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig: 1046 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/parser_expr.zig: 851 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/sema.zig: 806 lines exceeds advisory review signal 800
+src/compiler/wgsl/ir/ir_transform_robustness.zig: 984 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_proof_match.zig: 890 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_uniform_bounds.zig: 878 lines exceeds advisory review signal 800
+src/dropin/dropin_browser_shared_memory.zig: 806 lines exceeds advisory review signal 800
+src/native/compute/doe_compute_fast.zig: 1062 lines exceeds advisory review signal 800
+src/native/queue/doe_queue_submit_metal.zig: 837 lines exceeds advisory review signal 800
+src/native/resource/doe_texture_sampler_native.zig: 829 lines exceeds advisory review signal 800
+src/native/shader/doe_shader_native.zig: 956 lines exceeds advisory review signal 800
+src/native/vulkan/vulkan_compute_native.zig: 1114 lines exceeds advisory review signal 800
+src/runtime/trace/trace.zig: 879 lines exceeds advisory review signal 800
+src/spatial/csl/csl_host_plan_tool.zig: 828 lines exceeds advisory review signal 800
+
+Build Summary: 27/27 steps succeeded; 22/22 tests passed
+test-bench-shader success
++- zig fmt --check success
++- run python3 success 468ms MaxRSS:27M
++- run test 4 passed 976ms MaxRSS:7M
+   +- compile test Debug native cached 16ms MaxRSS:31M
+      +- options cached
+test-bench-compilation success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 4 passed 9ms MaxRSS:7M
+   +- compile test Debug native cached 18ms MaxRSS:31M
+      +- options (reused)
+test-bench-host-hotpaths success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 9 passed 112ms MaxRSS:4M
+   +- compile test Debug native cached 26ms MaxRSS:31M
+      +- options (reused)
+test-bench-metal-compute success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 5 passed 1ms MaxRSS:3M
+   +- compile test Debug native cached 14ms MaxRSS:31M
+      +- options (reused)
+fmt-check success
++- zig fmt --check (reused)
+import-fence success
++- run python3 success 819ms MaxRSS:14M
+source-layout success
++- run python3 (reused)
+line-limits success
++- run python3 success 50ms MaxRSS:20M
+webgpu-abi success
++- run python3 success 47ms MaxRSS:21M
+test-inventory success
++- run python3 success 28ms MaxRSS:22M
+bridge-manifest success
++- run python3 success 73ms MaxRSS:12M
+

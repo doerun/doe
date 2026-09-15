@@ -1,0 +1,17 @@
+test-bench-metal-compute
++- run test stderr
+Metal compute capture expected 2 bytes; received 1
+Metal compute capture expected 1 bytes; received 2
+--iterations requires a count
+--iterations must be between 1 and 16; received 0
+--iterations must be between 1 and 16; received 17
+unknown Metal compute option '--typo'; expected --iterations or --inject-corruption
+
+Build Summary: 6/6 steps succeeded; 5/5 tests passed
+test-bench-metal-compute success
++- zig fmt --check success
++- run python3 success 436ms MaxRSS:27M
++- run test 5 passed 1ms MaxRSS:3M
+   +- compile test Debug native success 314ms MaxRSS:140M
+      +- options cached
+

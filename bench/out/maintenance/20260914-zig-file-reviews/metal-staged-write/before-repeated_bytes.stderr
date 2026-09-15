@@ -1,0 +1,7 @@
+error: UnsupportedPlatform
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:116:35: 0x113f7fe in run (metal_staged_write_bench.zig)
+    for (bytes, 0..) |*byte, index| {
+                                  ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:237:23: 0x113f9ec in main (metal_staged_write_bench.zig)
+            .expectedOutcomeSatisfied = outcome_satisfied,
+                      ^

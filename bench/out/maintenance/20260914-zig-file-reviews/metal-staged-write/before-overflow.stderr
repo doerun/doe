@@ -1,0 +1,19 @@
+error: Overflow
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/math.zig:570:21: 0x114c87d in add__anon_25585 (std.zig)
+    if (ov[1] != 0) return error.Overflow;
+                    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:468:22: 0x1146b54 in parseIntWithSign__anon_23006 (std.zig)
+        accumulate = try add(Accumulate, accumulate, math.cast(Accumulate, digit) orelse return error.Overflow);
+                     ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:489:5: 0x1141435 in parseUnsigned__anon_22820 (std.zig)
+    return parseIntWithSign(T, u8, buf, base, .pos);
+    ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:56:20: 0x113ea15 in parsePositive__anon_22808 (metal_staged_write_bench.zig)
+fn deviceProfile() model_profile.DeviceProfile {
+                   ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:76:33: 0x113efb2 in parseArgs (metal_staged_write_bench.zig)
+
+                                ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:237:48: 0x113f937 in main (metal_staged_write_bench.zig)
+            .expectedOutcomeSatisfied = outcome_satisfied,
+                                               ^

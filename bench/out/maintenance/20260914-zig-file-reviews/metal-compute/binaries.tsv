@@ -1,0 +1,6 @@
+path	sha256
+bench/out/maintenance/20260914-zig-file-reviews/metal-compute/before-install/bin/doe-metal-compute-bench	939b62443ad9d6ef46aaac7e104747ca86a6eab470631babadedfa9de9d0edf6
+bench/out/maintenance/20260914-zig-file-reviews/metal-compute/debug-install/bin/doe-metal-compute-bench	2fb4b74e7701600b83b04f3c64d9e88b4b951f425841acd4b1b2acd3360f2005
+bench/out/maintenance/20260914-zig-file-reviews/metal-compute/release-install/bin/doe-metal-compute-bench	e024f35ccce559fb766a58ea8d34dafc4dd8c07054dbfe843769fedda78282ff
+bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-debug-install/bin/doe-metal-compute-bench	cbe6c40836cd64850d7b2f56610e5a17f9a0338f92029a4bbd8fe8c6fa341f71
+bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/final-release-install/bin/doe-metal-compute-bench	0e1298f9ba6e9e3209f66d774405b641e1eee2eb0d0646d1acc43e6506f04074

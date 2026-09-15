@@ -1,0 +1,7 @@
+
+Build Summary: 4/4 steps succeeded
+bench-metal-compute success
++- install doe-metal-compute-bench success
+   +- compile exe doe-metal-compute-bench ReleaseFast native success 4s MaxRSS:205M
+      +- options cached
+

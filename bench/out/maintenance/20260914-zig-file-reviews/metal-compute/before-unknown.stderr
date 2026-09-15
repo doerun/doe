@@ -1,0 +1,7 @@
+error: UnknownArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig:88:9: 0x113ee5c in parseArgs (metal_compute_bench.zig)
+                return err;
+        ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig:280:48: 0x113f2e7 in main (metal_compute_bench.zig)
+        },
+                                               ^

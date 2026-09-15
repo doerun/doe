@@ -1,0 +1,9 @@
+case	exit	error
+default	1	UnsupportedPlatform
+zero	1	InvalidArgument
+missing	1	MissingArgument
+unknown	1	UnknownArgument
+negative	1	InvalidCharacter
+overflow	1	Overflow
+corruption	1	UnsupportedPlatform
+too_many	1	InvalidArgument

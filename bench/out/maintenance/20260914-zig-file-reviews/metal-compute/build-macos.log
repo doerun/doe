@@ -1,0 +1,21 @@
+bench-metal-compute
++- install doe-metal-compute-bench
+   +- compile exe doe-metal-compute-bench Debug aarch64-macos failure
+error: error: unable to find framework 'Metal'. searched paths:  none
+error: unable to find framework 'Foundation'. searched paths:  none
+error: unable to find framework 'QuartzCore'. searched paths:  none
+error: unable to find framework 'AppKit'. searched paths:  none
+error: unable to find framework 'CoreVideo'. searched paths:  none
+error: unable to find framework 'IOSurface'. searched paths:  none
+
+error: the following command exited with error code 1:
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/zig build-exe /home/x/deco/doe/runtime/zig/src/backend/d3d12/d3d12_bridge_stubs.c -cflags -fobjc-arc -- /home/x/deco/doe/runtime/zig/src/backend/metal/metal_bridge.m -cflags -fobjc-arc -- /home/x/deco/doe/runtime/zig/src/backend/metal/metal_render_state_bridge.m -cflags -fobjc-arc -- /home/x/deco/doe/runtime/zig/src/backend/metal/metal_surface_bridge.m -cflags -fobjc-arc -- /home/x/deco/doe/runtime/zig/src/backend/metal/metal_external_texture_bridge.m -ODebug -target aarch64-macos -mcpu baseline -I /home/x/deco/doe/runtime/zig/src/backend/d3d12 -I /home/x/deco/doe/runtime/zig/src/backend/metal --dep build_options --dep doe -Mroot=/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig -Mbuild_options=.zig-cache/c/a46a45d4e3897fd29fe3f8216c7243bc/options.zig -ODebug -target aarch64-macos -mcpu baseline -I /home/x/deco/doe/runtime/zig/src/backend/d3d12 -I /home/x/deco/doe/runtime/zig/src/backend/metal -I /home/x/deco/doe/runtime/zig/vendor/webgpu-headers --dep build_options -Mdoe=/home/x/deco/doe/runtime/zig/src/mod.zig -framework Metal -framework Foundation -framework QuartzCore -framework AppKit -framework CoreVideo -framework IOSurface -lc --cache-dir .zig-cache --global-cache-dir /home/x/.cache/zig --name doe-metal-compute-bench --zig-lib-dir /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/ --listen=-
+
+Build Summary: 1/4 steps succeeded; 1 failed
+bench-metal-compute transitive failure
++- install doe-metal-compute-bench transitive failure
+   +- compile exe doe-metal-compute-bench Debug aarch64-macos failure
+      +- options cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/6cec7579ca74f548893c755382345c0e/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x62e8d10 -Z8af64db0ab0375db bench-metal-compute -Dtarget=aarch64-macos -Doptimize=Debug --prefix ../../bench/out/maintenance/20260914-zig-file-reviews/metal-compute/macos-install -j2 --summary all

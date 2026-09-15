@@ -1,0 +1,7 @@
+error: MissingArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:75:36: 0x113ee65 in parseArgs (metal_staged_write_bench.zig)
+}
+                                   ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:237:48: 0x113f937 in main (metal_staged_write_bench.zig)
+            .expectedOutcomeSatisfied = outcome_satisfied,
+                                               ^

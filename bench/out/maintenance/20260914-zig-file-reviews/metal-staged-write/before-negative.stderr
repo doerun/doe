@@ -1,0 +1,19 @@
+error: InvalidCharacter
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:590:17: 0x114c695 in charToDigit (std.zig)
+        else => return error.InvalidCharacter,
+                ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:458:23: 0x114699e in parseIntWithSign__anon_23006 (std.zig)
+        const digit = try charToDigit(math.cast(u8, c) orelse return error.InvalidCharacter, buf_base);
+                      ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:489:5: 0x1141435 in parseUnsigned__anon_22820 (std.zig)
+    return parseIntWithSign(T, u8, buf, base, .pos);
+    ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:56:20: 0x113ea15 in parsePositive__anon_22808 (metal_staged_write_bench.zig)
+fn deviceProfile() model_profile.DeviceProfile {
+                   ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:76:33: 0x113efb2 in parseArgs (metal_staged_write_bench.zig)
+
+                                ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:237:48: 0x113f937 in main (metal_staged_write_bench.zig)
+            .expectedOutcomeSatisfied = outcome_satisfied,
+                                               ^

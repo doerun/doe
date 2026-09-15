@@ -12,6 +12,12 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [Metal compute review](../../bench/out/maintenance/20260914-zig-file-reviews/metal-compute/README.md)
+and [staged-write review](../../bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md)
+cover explicit capture bounds, ownership, and diagnostic tool contracts.
+CPU verification and unsupported-host admission are evidenced; the Linux host
+lacks Apple frameworks, so these file reviews do not qualify Metal execution.
+
 The [host benchmark review](../../bench/out/maintenance/20260914-zig-file-reviews/host-entry/README.md)
 repairs its module root, partial-allocation cleanup, ineffective argument
 admission, checksum-based false agreement, and scalar lexer operator drift.

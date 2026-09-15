@@ -1,16 +1,16 @@
 level	targets	status	latestReview	prerequisites	nextAction
-file	bench/compiler/bench.zig	verified	compiler_stage_file_004		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order; directory and relationship reviews remain separate.
-file	bench/compiler/bench_compilation.zig	verified	compilation_file_002		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order; directory and relationship reviews remain separate.
+file	bench/compiler/bench.zig	verified	compiler_stage_file_005		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
+file	bench/compiler/bench_compilation.zig	verified	compilation_file_003		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
 file	bench/entrypoints/bench_compilation.zig	retired	compilation_entrypoint_file_001		Retired source path; continue the compiler implementation review. This removal does not complete its directory review.
 file	bench/entrypoints/host_hotpath_bench.zig	retired	host_entry_file_001		Complete the replacement entrypoint review at bench/host_hotpath/host_hotpath_bench.zig, including dependent allocation and input fixes; keep case/support file coverage separate.
-file	bench/entrypoints/metal_compute_bench.zig	pending			Read and review the complete scope.
-file	bench/entrypoints/metal_staged_write_bench.zig	pending			Read and review the complete scope.
+file	bench/entrypoints/metal_compute_bench.zig	verified	metal_compute_file_001		Continue with bench/entrypoints/runtime_compile_report.zig. Physical Metal qualification still requires the unchanged workload suite on an Apple host; directory and relationship reviews remain separate.
+file	bench/entrypoints/metal_staged_write_bench.zig	verified	metal_staged_write_file_001		Continue with bench/entrypoints/runtime_compile_report.zig. Physical Metal qualification still requires the unchanged workload suite on an Apple host; directory and relationship reviews remain separate.
 file	bench/entrypoints/runtime_compile_report.zig	pending			Read and review the complete scope.
-file	bench/host_hotpath/host_hotpath_bench.zig	verified	host_main_file_002		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order. Host directory and relationship reviews require their separate passes.
-file	bench/host_hotpath/host_hotpath_bench_cases.zig	verified	host_cases_file_001		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order. Host directory and relationship reviews require their separate passes.
-file	bench/host_hotpath/host_hotpath_bench_lexer.zig	verified	host_lexer_file_001		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order. Host directory and relationship reviews require their separate passes.
-file	bench/host_hotpath/host_hotpath_bench_support.zig	verified	host_support_file_001		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order. Host directory and relationship reviews require their separate passes.
-file	build.zig	verified	build_file_005		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order; directory and relationship reviews remain separate.
+file	bench/host_hotpath/host_hotpath_bench.zig	verified	host_main_file_003		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
+file	bench/host_hotpath/host_hotpath_bench_cases.zig	verified	host_cases_file_002		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
+file	bench/host_hotpath/host_hotpath_bench_lexer.zig	verified	host_lexer_file_002		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
+file	bench/host_hotpath/host_hotpath_bench_support.zig	verified	host_support_file_002		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
+file	build.zig	verified	build_file_006		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
 file	src/app/mod.zig	pending			Read and review the complete scope.
 file	src/app/prepare.zig	pending			Read and review the complete scope.
 file	src/app/request.zig	pending			Read and review the complete scope.

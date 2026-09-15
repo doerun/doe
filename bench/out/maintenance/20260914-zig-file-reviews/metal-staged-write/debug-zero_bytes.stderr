@@ -1,0 +1,11 @@
+--bytes requires a positive count; received 0
+error: InvalidArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:72:9: 0x113ef95 in parsePositive__anon_22854 (metal_staged_write_bench.zig)
+        return error.InvalidArgument;
+        ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:101:33: 0x113f55b in parseArgs (metal_staged_write_bench.zig)
+            config.byte_count = try parsePositive(usize, arg, argv[index]);
+                                ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:263:27: 0x113ff58 in main (metal_staged_write_bench.zig)
+    return run(allocator, try parseArgs(args[1..]));
+                          ^

@@ -1,0 +1,15 @@
+
+Build Summary: 9/9 steps succeeded
+test-bench-metal-compute success
++- zig fmt --check success
++- run python3 success 449ms MaxRSS:27M
++- run test success 777us MaxRSS:3M
+   +- compile test Debug native success 264ms MaxRSS:136M
+      +- options cached
+test-bench-metal-staged-write success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test success 338us MaxRSS:3M
+   +- compile test Debug native success 251ms MaxRSS:136M
+      +- options (reused)
+

@@ -1,0 +1,8 @@
+--iterations must be between 1 and 16; received 0
+error: InvalidArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig:92:17: 0x113eec0 in parseArgs (metal_compute_bench.zig)
+                return error.InvalidArgument;
+                ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig:294:27: 0x113f5d8 in main (metal_compute_bench.zig)
+    return run(allocator, try parseArgs(args[1..]));
+                          ^

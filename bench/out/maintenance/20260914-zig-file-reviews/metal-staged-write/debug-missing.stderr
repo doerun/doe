@@ -1,0 +1,8 @@
+--iterations requires a count
+error: MissingArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:90:17: 0x113f296 in parseArgs (metal_staged_write_bench.zig)
+                return error.MissingArgument;
+                ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:263:27: 0x113ff58 in main (metal_staged_write_bench.zig)
+    return run(allocator, try parseArgs(args[1..]));
+                          ^

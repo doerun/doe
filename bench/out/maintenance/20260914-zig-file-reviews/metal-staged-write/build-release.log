@@ -1,0 +1,7 @@
+
+Build Summary: 4/4 steps succeeded
+bench-metal-staged-write success
++- install doe-metal-staged-write-bench success
+   +- compile exe doe-metal-staged-write-bench ReleaseFast native success 3s MaxRSS:206M
+      +- options cached
+

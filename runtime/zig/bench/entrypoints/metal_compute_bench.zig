@@ -10,12 +10,16 @@ const KERNEL_ROOT = "../../bench/kernels";
 const KERNEL_NAME = "concurrent_execution_runsingle_u32";
 const BUFFER_HANDLE_BASE: u64 = 7201;
 const WORD_COUNT: usize = 1024;
-const WORD_COUNT_U32: u32 = 1024;
+const WORD_COUNT_U32: u32 = WORD_COUNT;
 const ITERATION_COUNT: u32 = 1_000_000;
 const BUFFER_BYTES: u64 = WORD_COUNT * @sizeOf(u32);
+const DEFAULT_ITERATIONS: u32 = 3;
+const MAX_ITERATIONS: u32 = 16;
+const INPUT_ITERATION_STRIDE: u32 = 257;
+const ACCUMULATOR_ADDEND: u32 = 123;
 
 const Config = struct {
-    iterations: u32 = 3,
+    iterations: u32 = DEFAULT_ITERATIONS,
     inject_corruption: bool = false,
 };
 
@@ -64,12 +68,9 @@ fn deviceProfile() model_profile.DeviceProfile {
     };
 }
 
-fn parseArgs(allocator: std.mem.Allocator) !Config {
-    const argv = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, argv);
-
+fn parseArgs(argv: []const []const u8) !Config {
     var config = Config{};
-    var index: usize = 1;
+    var index: usize = 0;
     while (index < argv.len) : (index += 1) {
         const arg = argv[index];
         if (std.mem.eql(u8, arg, "--inject-corruption")) {
@@ -78,13 +79,21 @@ fn parseArgs(allocator: std.mem.Allocator) !Config {
         }
         if (std.mem.eql(u8, arg, "--iterations")) {
             index += 1;
-            if (index >= argv.len) return error.MissingArgument;
-            config.iterations = try std.fmt.parseUnsigned(u32, argv[index], 10);
-            if (config.iterations == 0 or config.iterations > 16) {
+            if (index >= argv.len) {
+                std.debug.print("--iterations requires a count\n", .{});
+                return error.MissingArgument;
+            }
+            config.iterations = std.fmt.parseUnsigned(u32, argv[index], 10) catch |err| {
+                std.debug.print("--iterations requires an unsigned count; received '{s}': {s}\n", .{ argv[index], @errorName(err) });
+                return err;
+            };
+            if (config.iterations == 0 or config.iterations > MAX_ITERATIONS) {
+                std.debug.print("--iterations must be between 1 and {d}; received {d}\n", .{ MAX_ITERATIONS, config.iterations });
                 return error.InvalidArgument;
             }
             continue;
         }
+        std.debug.print("unknown Metal compute option '{s}'; expected --iterations or --inject-corruption\n", .{arg});
         return error.UnknownArgument;
     }
     return config;
@@ -93,7 +102,7 @@ fn parseArgs(allocator: std.mem.Allocator) !Config {
 fn makeInput(iteration: u32) [WORD_COUNT]u32 {
     var data: [WORD_COUNT]u32 = undefined;
     for (&data, 0..) |*value, index| {
-        value.* = @as(u32, @intCast(index)) +% (iteration *% 257);
+        value.* = @as(u32, @intCast(index)) +% (iteration *% INPUT_ITERATION_STRIDE);
     }
     return data;
 }
@@ -106,25 +115,34 @@ fn expectedFirstWord(input: []const u32) u32 {
     var index: u32 = 0;
     while (index < ITERATION_COUNT) : (index += 1) {
         const word_index: usize = @intCast((index +% accum) % WORD_COUNT_U32);
-        accum = (accum ^ threadgroup_words[word_index]) +% 123;
+        accum = (accum ^ threadgroup_words[word_index]) +% ACCUMULATOR_ADDEND;
     }
     return accum;
 }
 
-fn writeArtifact(artifact: Artifact) !void {
-    var payload_writer: std.io.Writer.Allocating = .init(std.heap.page_allocator);
-    defer payload_writer.deinit();
-    try std.json.Stringify.value(
-        artifact,
-        .{ .whitespace = .indent_2 },
-        &payload_writer.writer,
-    );
-    const payload = try payload_writer.toOwnedSlice();
-    defer std.heap.page_allocator.free(payload);
-    const stdout = std.fs.File.stdout().deprecatedWriter();
-    try stdout.writeAll(payload);
-    try stdout.writeByte('\n');
+fn writeArtifact(allocator: std.mem.Allocator, artifact: Artifact, output: std.fs.File) !void {
+    const payload = try std.json.Stringify.valueAlloc(allocator, artifact, .{ .whitespace = .indent_2 });
+    defer allocator.free(payload);
+    try output.writeAll(payload);
+    try output.writeAll("\n");
 }
+
+const Mismatches = struct {
+    bytes: u64 = 0,
+    first_byte: ?u64 = null,
+
+    fn observe(self: *Mismatches, expected: []const u8, actual: []const u8, offset: u64) !void {
+        if (actual.len != expected.len) {
+            std.debug.print("Metal compute capture expected {d} bytes; received {d}\n", .{ expected.len, actual.len });
+            return error.CaptureSizeMismatch;
+        }
+        for (expected, actual, 0..) |expected_byte, actual_byte, byte_index| {
+            if (expected_byte == actual_byte) continue;
+            self.bytes +|= 1;
+            if (self.first_byte == null) self.first_byte = offset + byte_index;
+        }
+    }
+};
 
 fn run(allocator: std.mem.Allocator, config: Config) !u8 {
     if (builtin.os.tag != .macos) return error.UnsupportedPlatform;
@@ -150,8 +168,7 @@ fn run(allocator: std.mem.Allocator, config: Config) !u8 {
     var dispatch_submit_wait_ns: u64 = 0;
     var capture_ns: u64 = 0;
     var dispatch_count: u32 = 0;
-    var mismatched_bytes: u64 = 0;
-    var first_mismatch_byte: ?u64 = null;
+    var mismatches: Mismatches = .{};
     var every_dispatch_completed = true;
     var every_submit_wait_completed = true;
 
@@ -225,16 +242,10 @@ fn run(allocator: std.mem.Allocator, config: Config) !u8 {
         capture_ns +|= capture_timer.read();
         defer allocator.free(actual);
 
-        for (expected_bytes, actual, 0..) |expected_byte, actual_byte, byte_index| {
-            if (expected_byte == actual_byte) continue;
-            mismatched_bytes +|= 1;
-            if (first_mismatch_byte == null) {
-                first_mismatch_byte = @as(u64, iteration) * BUFFER_BYTES + byte_index;
-            }
-        }
+        try mismatches.observe(expected_bytes, actual, @as(u64, iteration) * BUFFER_BYTES);
     }
 
-    const observed_matches = mismatched_bytes == 0;
+    const observed_matches = mismatches.bytes == 0;
     const content_outcome_satisfied = if (config.inject_corruption)
         !observed_matches
     else
@@ -253,8 +264,8 @@ fn run(allocator: std.mem.Allocator, config: Config) !u8 {
         .correctness = .{
             .expectedOutcomeSatisfied = outcome_satisfied,
             .observedContentMatchesExpected = observed_matches,
-            .mismatchedBytes = mismatched_bytes,
-            .firstMismatchByte = first_mismatch_byte,
+            .mismatchedBytes = mismatches.bytes,
+            .firstMismatchByte = mismatches.first_byte,
             .dispatchCount = dispatch_count,
             .everyDispatchCompleted = every_dispatch_completed,
             .everySubmitWaitCompleted = every_submit_wait_completed,
@@ -268,15 +279,85 @@ fn run(allocator: std.mem.Allocator, config: Config) !u8 {
             .captureNs = capture_ns,
         },
     };
-    try writeArtifact(artifact);
+    try writeArtifact(allocator, artifact, std.fs.File.stdout());
 
     if (!outcome_satisfied) return 3;
     return if (config.inject_corruption) 2 else 0;
 }
 
-pub fn main() !void {
+pub fn main() !u8 {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const exit_code = try run(gpa.allocator(), try parseArgs(gpa.allocator()));
-    if (exit_code != 0) std.process.exit(exit_code);
+    const allocator = gpa.allocator();
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+    return run(allocator, try parseArgs(args[1..]));
+}
+
+test "Metal compute capture rejects inconsistent lengths before reading bytes" {
+    var mismatches: Mismatches = .{};
+    try std.testing.expectError(error.CaptureSizeMismatch, mismatches.observe(&.{ 1, 2 }, &.{1}, 0));
+    try std.testing.expectError(error.CaptureSizeMismatch, mismatches.observe(&.{1}, &.{ 1, 2 }, 0));
+    try std.testing.expectEqual(@as(u64, 0), mismatches.bytes);
+    try std.testing.expectEqual(null, mismatches.first_byte);
+}
+
+test "Metal compute mismatch evidence retains first absolute byte across captures" {
+    var mismatches: Mismatches = .{};
+    try mismatches.observe(&.{ 1, 2, 3 }, &.{ 1, 2, 3 }, 0);
+    try std.testing.expectEqual(@as(u64, 0), mismatches.bytes);
+    try mismatches.observe(&.{ 1, 2, 3 }, &.{ 1, 4, 3 }, BUFFER_BYTES);
+    try mismatches.observe(&.{ 1, 2, 3 }, &.{ 9, 2, 8 }, BUFFER_BYTES * 2);
+    try std.testing.expectEqual(@as(u64, 3), mismatches.bytes);
+    try std.testing.expectEqual(@as(?u64, BUFFER_BYTES + 1), mismatches.first_byte);
+}
+
+test "Metal compute CLI preserves bounded sampling and explicit errors" {
+    try std.testing.expectError(error.MissingArgument, parseArgs(&.{"--iterations"}));
+    try std.testing.expectError(error.InvalidArgument, parseArgs(&.{ "--iterations", "0" }));
+    try std.testing.expectError(error.InvalidArgument, parseArgs(&.{ "--iterations", "17" }));
+    try std.testing.expectError(error.UnknownArgument, parseArgs(&.{"--typo"}));
+    const config = try parseArgs(&.{ "--iterations", "1", "--iterations", "16", "--inject-corruption" });
+    try std.testing.expectEqual(MAX_ITERATIONS, config.iterations);
+    try std.testing.expect(config.inject_corruption);
+}
+
+fn exerciseArtifactAllocations(allocator: std.mem.Allocator, output: std.fs.File) !void {
+    const artifact: Artifact = .{
+        .status = "fail",
+        .iterations = 1,
+        .totalBytes = BUFFER_BYTES,
+        .faultInjection = false,
+        .correctness = .{
+            .expectedOutcomeSatisfied = false,
+            .observedContentMatchesExpected = false,
+            .mismatchedBytes = 1,
+            .firstMismatchByte = 0,
+            .dispatchCount = 1,
+            .everyDispatchCompleted = false,
+            .everySubmitWaitCompleted = false,
+        },
+        .timing = .{ .wallNs = 1, .writeSetupNs = 1, .dispatchSetupNs = 1, .dispatchEncodeNs = 1, .dispatchSubmitWaitNs = 1, .captureNs = 1 },
+    };
+    try writeArtifact(allocator, artifact, output);
+}
+
+test "Metal compute artifact releases allocations and preserves allocation errors" {
+    var temp = std.testing.tmpDir(.{});
+    defer temp.cleanup();
+    const output = try temp.dir.createFile("fixture.json", .{});
+    defer output.close();
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseArtifactAllocations, .{output});
+}
+
+test "Metal compute rejects unsupported hosts without allocation or execution" {
+    if (builtin.os.tag == .macos) return error.SkipZigTest;
+    try std.testing.expectError(error.UnsupportedPlatform, run(std.testing.failing_allocator, .{}));
+}
+
+test "Metal compute artifact preserves output errors and releases serialized storage" {
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    const output = try std.fs.openFileAbsolute("/dev/full", .{ .mode = .write_only });
+    defer output.close();
+    try std.testing.expectError(error.NoSpaceLeft, exerciseArtifactAllocations(std.testing.allocator, output));
 }

@@ -1,0 +1,7 @@
+error: UnsupportedPlatform
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig:130:35: 0x113f1ad in run (metal_compute_bench.zig)
+const Mismatches = struct {
+                                  ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_compute_bench.zig:280:23: 0x113f395 in main (metal_compute_bench.zig)
+        },
+                      ^

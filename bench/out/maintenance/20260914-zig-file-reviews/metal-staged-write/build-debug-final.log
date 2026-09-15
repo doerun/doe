@@ -1,0 +1,11 @@
+
+Build Summary: 7/7 steps succeeded
+bench-metal-compute success
++- install doe-metal-compute-bench success
+   +- compile exe doe-metal-compute-bench Debug native success 266ms MaxRSS:134M
+      +- options cached
+bench-metal-staged-write success
++- install doe-metal-staged-write-bench success
+   +- compile exe doe-metal-staged-write-bench Debug native success 243ms MaxRSS:133M
+      +- options (reused)
+

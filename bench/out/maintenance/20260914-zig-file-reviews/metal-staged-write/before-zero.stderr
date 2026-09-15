@@ -1,0 +1,10 @@
+error: InvalidArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:57:22: 0x113ea3a in parsePositive__anon_22808 (metal_staged_write_bench.zig)
+    return .{
+                     ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:76:33: 0x113efb2 in parseArgs (metal_staged_write_bench.zig)
+
+                                ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:237:48: 0x113f937 in main (metal_staged_write_bench.zig)
+            .expectedOutcomeSatisfied = outcome_satisfied,
+                                               ^

@@ -1483,6 +1483,24 @@ pub fn build(b: *std.Build) void {
     wgsl_test_step.dependOn(&test_inventory_check.step);
     wgsl_test_step.dependOn(&run_wgsl_tests.step);
 
+    const metal_staged_write_bench_tests = b.addTest(.{
+        .root_module = metal_staged_write_bench.root_module,
+        .filters = test_filters,
+    });
+    const metal_staged_write_bench_test_step = b.step("test-bench-metal-staged-write", "Run Metal staged-write benchmark contract tests without GPU execution");
+    metal_staged_write_bench_test_step.dependOn(&fmt_check.step);
+    metal_staged_write_bench_test_step.dependOn(&source_layout_check.step);
+    metal_staged_write_bench_test_step.dependOn(&b.addRunArtifact(metal_staged_write_bench_tests).step);
+
+    const metal_compute_bench_tests = b.addTest(.{
+        .root_module = metal_compute_bench.root_module,
+        .filters = test_filters,
+    });
+    const metal_compute_bench_test_step = b.step("test-bench-metal-compute", "Run Metal compute benchmark contract tests without GPU execution");
+    metal_compute_bench_test_step.dependOn(&fmt_check.step);
+    metal_compute_bench_test_step.dependOn(&source_layout_check.step);
+    metal_compute_bench_test_step.dependOn(&b.addRunArtifact(metal_compute_bench_tests).step);
+
     const shader_bench_exe = b.addExecutable(.{
         .name = "doe-shader-bench",
         .root_module = b.createModule(.{

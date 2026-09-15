@@ -1,0 +1,8 @@
+unknown Metal staged-write option '--typo'; expected --iterations, --bytes, or --inject-corruption
+error: UnknownArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:105:9: 0x113f61f in parseArgs (metal_staged_write_bench.zig)
+        return error.UnknownArgument;
+        ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:263:27: 0x113ff58 in main (metal_staged_write_bench.zig)
+    return run(allocator, try parseArgs(args[1..]));
+                          ^

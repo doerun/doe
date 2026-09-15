@@ -1,0 +1,8 @@
+Metal staged-write limits are 128 iterations and 67108864 bytes; received 8 iterations and 67108865 bytes
+error: InvalidArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:109:9: 0x113f832 in parseArgs (metal_staged_write_bench.zig)
+        return error.InvalidArgument;
+        ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:263:27: 0x113ff58 in main (metal_staged_write_bench.zig)
+    return run(allocator, try parseArgs(args[1..]));
+                          ^

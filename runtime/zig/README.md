@@ -33,6 +33,7 @@ zig build test-wgsl
 zig build test-bench-shader
 zig build test-bench-compilation
 zig build test-bench-host-hotpaths
+zig build test-bench-metal-compute test-bench-metal-staged-write
 zig build import-fence
 zig build source-layout
 zig build line-limits
@@ -44,7 +45,8 @@ and canonical test suites. Both exclude vendored sources and build outputs.
 
 `-Dtest-filter=<substring>` selects test names in `test`, `test-core`,
 `test-full`, `test-d3d12`, `test-wgsl`, `test-bench-shader`, and
-`test-bench-compilation`, and `test-bench-host-hotpaths`. Check the executed test count:
+`test-bench-compilation`, `test-bench-host-hotpaths`, `test-bench-metal-compute`,
+and `test-bench-metal-staged-write`. Check the executed test count:
 a filter matching no names runs no tests, and a filtered run does not qualify
 the complete suite.
 
@@ -54,6 +56,8 @@ The [compiler benchmark contract](bench/compiler/README.md) describes the
 diagnostic stage tool's sampling, error handling, and timing boundaries.
 The [host benchmark contract](bench/host_hotpath/README.md) describes local
 variant observations, ownership, and diagnostic output migration.
+The [Metal benchmark contract](bench/entrypoints/README.md) separates CPU
+contract tests from physical Metal execution.
 
 ## Runtime contract
 

@@ -1,0 +1,7 @@
+error: InvalidArgument
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:88:9: 0x113f3ca in parseArgs (metal_staged_write_bench.zig)
+            if (index >= argv.len) {
+        ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:237:48: 0x113f937 in main (metal_staged_write_bench.zig)
+            .expectedOutcomeSatisfied = outcome_satisfied,
+                                               ^

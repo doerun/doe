@@ -1,0 +1,2 @@
+Metal staged-write limits are 128 iterations and 67108864 bytes; received 8 iterations and 67108865 bytes
+error: InvalidArgument

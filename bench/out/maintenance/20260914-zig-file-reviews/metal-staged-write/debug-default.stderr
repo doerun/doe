@@ -1,0 +1,7 @@
+error: UnsupportedPlatform
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:146:35: 0x113fc0e in run (metal_staged_write_bench.zig)
+    if (builtin.os.tag != .macos) return error.UnsupportedPlatform;
+                                  ^
+/home/x/deco/doe/runtime/zig/bench/entrypoints/metal_staged_write_bench.zig:263:5: 0x113ffda in main (metal_staged_write_bench.zig)
+    return run(allocator, try parseArgs(args[1..]));
+    ^
