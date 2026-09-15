@@ -1,0 +1,8 @@
+missing value for --iterations
+error: MissingArgumentValue
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:131:13: 0x11810cf in parseArgs (bench.zig)
+            return error.MissingArgumentValue;
+            ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:326:20: 0x11a085b in main (bench.zig)
+    const config = try parseArgs(args[1..]);
+                   ^

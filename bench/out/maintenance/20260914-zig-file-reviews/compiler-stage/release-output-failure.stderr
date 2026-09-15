@@ -1,0 +1,3 @@
+bench: compute_simple
+bench: compute_simple failed: NoSpaceLeft
+error: NoSpaceLeft

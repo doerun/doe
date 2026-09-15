@@ -1,0 +1,20 @@
+bench-shader
++- install doe-shader-bench
+   +- compile exe doe-shader-bench Debug native 1 errors
+src/mod.zig:1:1: error: file exists in modules 'lean_proof' and 'doe'
+src/mod.zig:1:1: note: files must belong to only one module
+src/mod.zig:1:1: note: file is the root of module 'lean_proof'
+src/mod.zig:36:24: note: file is imported here by the root of module 'doe'
+        return @import("verification/lean_proof.zig");
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+error: the following command failed with 1 compilation errors:
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/zig build-exe -ODebug --dep build_options --dep doe --dep lean_proof -Mroot=/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig -Mbuild_options=.zig-cache/c/a46a45d4e3897fd29fe3f8216c7243bc/options.zig -ODebug -I /home/x/deco/doe/runtime/zig/src/backend/d3d12 -I /home/x/deco/doe/runtime/zig/src/backend/metal -I /home/x/deco/doe/runtime/zig/vendor/webgpu-headers --dep build_options -Mdoe=/home/x/deco/doe/runtime/zig/src/mod.zig -ODebug --dep build_options -Mlean_proof=/home/x/deco/doe/runtime/zig/src/verification/lean_proof.zig -lc --cache-dir .zig-cache --global-cache-dir /home/x/.cache/zig --name doe-shader-bench --zig-lib-dir /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/ --listen=-
+
+Build Summary: 1/4 steps succeeded; 1 failed
+bench-shader transitive failure
++- install doe-shader-bench transitive failure
+   +- compile exe doe-shader-bench Debug native 1 errors
+      +- options cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/5117e4da4684cd5e5543f0da880e0a98/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x481a607c -Zfc2214d072cac145 bench-shader -Doptimize=Debug -j2 --prefix /home/x/deco/doe/bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/before-install --summary all

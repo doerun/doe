@@ -1,0 +1,18 @@
+test-bench-shader
++- run test stderr
+--iterations must be between 1 and 2000; received 0
+--iterations must be between 1 and 2000; received 2001
+missing value for --iterations
+unknown option '--typo'; expected --iterations, --warmup, --out, or --filter
+--warmup requires an unsigned integer; received 'bad': InvalidCharacter
+--iterations requires an unsigned integer; received '4294967296': Overflow
+unknown shader filter 'absent'; expected a built-in corpus name
+
+Build Summary: 6/6 steps succeeded; 4/4 tests passed
+test-bench-shader success
++- zig fmt --check success
++- run python3 success 464ms MaxRSS:27M
++- run test 4 passed 952ms MaxRSS:7M
+   +- compile test Debug native success 18s MaxRSS:592M
+      +- options cached
+

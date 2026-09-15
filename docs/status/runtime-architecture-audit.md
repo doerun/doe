@@ -12,6 +12,13 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [compiler stage review](../../bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/README.md)
+repairs argument admission, retained-module cleanup, stage failure reporting,
+and a duplicate proof-module build identity. Its executable and allocation
+checks are source/tooling evidence. The queue records the current file verdicts
+and the subsequent build-file re-examination; directory reviews remain pending
+until their separate pass.
+
 The [review ledger](../../runtime/zig/reviews/README.md) separates examination of
 individual files, directory organization, relationships within directories,
 cross-directory contracts, and complete runtime paths. Its

@@ -30,6 +30,7 @@ zig build test
 zig build test-core
 zig build test-full
 zig build test-wgsl
+zig build test-bench-shader
 zig build import-fence
 zig build source-layout
 zig build line-limits
@@ -40,12 +41,14 @@ formats owned Zig files; `fmt-check` is also a dependency of the default install
 and canonical test suites. Both exclude vendored sources and build outputs.
 
 `-Dtest-filter=<substring>` selects test names in `test`, `test-core`,
-`test-full`, `test-d3d12`, and `test-wgsl`. Check the executed test count:
+`test-full`, `test-d3d12`, `test-wgsl`, and `test-bench-shader`. Check the executed test count:
 a filter matching no names runs no tests, and a filtered run does not qualify
 the complete suite.
 
 Backend-specific builds and tools are listed by `zig build --help`. Hardware
 execution requires the matching host, SDK, driver, and declared backend lane.
+The [compiler benchmark contract](bench/compiler/README.md) describes the
+diagnostic stage tool's sampling, error handling, and timing boundaries.
 
 ## Runtime contract
 

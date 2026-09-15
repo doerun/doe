@@ -1,7 +1,5 @@
-// doe_wgsl/bench.zig — standalone microbenchmark for each stage of the WGSL compiler pipeline.
-//
-// Measures parse→sema→ir_build→ir_validate, each emit backend independently,
-// and full end-to-end paths. Outputs NDJSON to stdout or --out file.
+// Diagnostic WGSL stage timings. Whole-process success requires every selected
+// shader/stage to complete; partial NDJSON is never a successful benchmark.
 
 const std = @import("std");
 const doe = @import("doe");
@@ -14,24 +12,15 @@ const emit_msl_mod = doe.compiler.wgsl_emit.msl();
 const emit_spirv_mod = doe.compiler.wgsl_emit.spirv();
 const emit_hlsl_mod = doe.compiler.wgsl_emit.hlsl();
 const ir_mod = doe.compiler.wgsl_ir.core();
-const lean_proof = @import("lean_proof");
-
-// ============================================================
-// Constants
-// ============================================================
+const lean_proof = doe.verification.leanProof();
 
 const DEFAULT_ITERATIONS: u32 = 500;
 const DEFAULT_WARMUP: u32 = 20;
 const MAX_SAMPLES: u32 = 2000;
 
-// Output buffer sizes sourced from the emit modules — no bare literals.
 const MSL_BUF_SIZE: usize = emit_msl_mod.MAX_OUTPUT;
 const SPIRV_BUF_SIZE: usize = emit_spirv_mod.MAX_OUTPUT;
 const HLSL_BUF_SIZE: usize = emit_hlsl_mod.MAX_OUTPUT;
-
-// ============================================================
-// Shader corpus
-// ============================================================
 
 const Shader = struct {
     name: []const u8,
@@ -49,8 +38,6 @@ const SHADERS = [_]Shader{
         ,
     },
     .{
-        // Struct-based uniform dims so sema recognises member access;
-        // k = k + 1u avoids the ++ increment which is not yet in sema.
         .name = "compute_matmul",
         .source =
         \\struct Dims { M: u32, N: u32, K: u32, }
@@ -85,8 +72,6 @@ const SHADERS = [_]Shader{
         ,
     },
     .{
-        // textureSample works in compute-stage sema but the fragment-stage sampler+texture_2d
-        // binding path raises UnsupportedBuiltin; replace with a math-only fragment shader for now.
         .name = "fragment_math",
         .source =
         \\@fragment fn fs_main(@location(0) uv: vec2f, @builtin(position) pos: vec4f) -> @location(0) vec4f {
@@ -109,10 +94,6 @@ const SHADERS = [_]Shader{
     },
 };
 
-// ============================================================
-// Stage identifiers
-// ============================================================
-
 const Stage = enum {
     analyze_to_ir,
     emit_msl,
@@ -123,67 +104,60 @@ const Stage = enum {
     e2e_hlsl,
 };
 
-const STAGES = [_]Stage{
-    .analyze_to_ir,
-    .emit_msl,
-    .emit_spirv,
-    .emit_hlsl,
-    .e2e_msl,
-    .e2e_spirv,
-    .e2e_hlsl,
-};
-
-// ============================================================
-// CLI argument parsing
-// ============================================================
-
 const Config = struct {
-    iterations: u32,
-    warmup: u32,
-    out_path: ?[]const u8,
-    filter: ?[]const u8,
+    iterations: u32 = DEFAULT_ITERATIONS,
+    warmup: u32 = DEFAULT_WARMUP,
+    out_path: ?[]const u8 = null,
+    filter: ?[]const u8 = null,
 };
 
-fn parse_args(allocator: std.mem.Allocator) !Config {
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
-
-    var cfg = Config{
-        .iterations = DEFAULT_ITERATIONS,
-        .warmup = DEFAULT_WARMUP,
-        .out_path = null,
-        .filter = null,
-    };
-
-    var i: usize = 1;
-    while (i < args.len) : (i += 1) {
-        if (std.mem.eql(u8, args[i], "--iterations") and i + 1 < args.len) {
-            i += 1;
-            cfg.iterations = std.fmt.parseInt(u32, args[i], 10) catch blk: {
-                std.debug.print("warning: invalid --iterations value '{s}', using default {d}\n", .{ args[i], DEFAULT_ITERATIONS });
-                break :blk DEFAULT_ITERATIONS;
-            };
-        } else if (std.mem.eql(u8, args[i], "--warmup") and i + 1 < args.len) {
-            i += 1;
-            cfg.warmup = std.fmt.parseInt(u32, args[i], 10) catch blk: {
-                std.debug.print("warning: invalid --warmup value '{s}', using default {d}\n", .{ args[i], DEFAULT_WARMUP });
-                break :blk DEFAULT_WARMUP;
-            };
-        } else if (std.mem.eql(u8, args[i], "--out") and i + 1 < args.len) {
-            i += 1;
-            cfg.out_path = try allocator.dupe(u8, args[i]);
-        } else if (std.mem.eql(u8, args[i], "--filter") and i + 1 < args.len) {
-            i += 1;
-            cfg.filter = try allocator.dupe(u8, args[i]);
+// The argument owner must outlive this borrowed configuration.
+fn parseArgs(args: []const []const u8) !Config {
+    var config = Config{};
+    var index: usize = 0;
+    while (index < args.len) : (index += 2) {
+        const option = args[index];
+        const Option = enum { iterations, warmup, out, filter };
+        const selected = if (std.mem.startsWith(u8, option, "--"))
+            std.meta.stringToEnum(Option, option[2..])
+        else
+            null;
+        const kind = selected orelse {
+            std.debug.print("unknown option '{s}'; expected --iterations, --warmup, --out, or --filter\n", .{option});
+            return error.UnknownArgument;
+        };
+        if (index + 1 == args.len) {
+            std.debug.print("missing value for {s}\n", .{option});
+            return error.MissingArgumentValue;
+        }
+        const value = args[index + 1];
+        switch (kind) {
+            .iterations => config.iterations = try parseCount(option, value),
+            .warmup => config.warmup = try parseCount(option, value),
+            .out => config.out_path = value,
+            .filter => config.filter = value,
         }
     }
-
-    return cfg;
+    if (config.iterations == 0 or config.iterations > MAX_SAMPLES) {
+        std.debug.print("--iterations must be between 1 and {d}; received {d}\n", .{ MAX_SAMPLES, config.iterations });
+        return error.InvalidIterations;
+    }
+    if (config.filter) |name| {
+        for (SHADERS) |shader| {
+            if (std.mem.eql(u8, name, shader.name)) return config;
+        }
+        std.debug.print("unknown shader filter '{s}'; expected a built-in corpus name\n", .{name});
+        return error.UnknownShader;
+    }
+    return config;
 }
 
-// ============================================================
-// Statistics
-// ============================================================
+fn parseCount(option: []const u8, value: []const u8) !u32 {
+    return std.fmt.parseInt(u32, value, 10) catch |err| {
+        std.debug.print("{s} requires an unsigned integer; received '{s}': {s}\n", .{ option, value, @errorName(err) });
+        return err;
+    };
+}
 
 const Stats = struct {
     min_ns: u64,
@@ -194,11 +168,12 @@ const Stats = struct {
     p99_ns: u64,
 };
 
-fn compute_stats(samples: []u64) Stats {
+fn computeStats(samples: []u64) !Stats {
+    if (samples.len == 0) return error.EmptySamples;
     std.sort.block(u64, samples, {}, std.sort.asc(u64));
 
     const n = samples.len;
-    var sum: u64 = 0;
+    var sum: u128 = 0;
     for (samples) |s| sum += s;
 
     const p50_idx = n / 2;
@@ -208,19 +183,15 @@ fn compute_stats(samples: []u64) Stats {
     return .{
         .min_ns = samples[0],
         .max_ns = samples[n - 1],
-        .mean_ns = sum / n,
+        .mean_ns = @intCast(sum / n),
         .p50_ns = samples[p50_idx],
         .p95_ns = samples[p95_idx],
         .p99_ns = samples[p99_idx],
     };
 }
 
-// ============================================================
-// Output
-// ============================================================
-
-fn write_result(
-    writer: anytype,
+fn writeResult(
+    writer: std.fs.File.DeprecatedWriter,
     shader_name: []const u8,
     stage_name: []const u8,
     iterations: u32,
@@ -249,445 +220,172 @@ fn write_result(
     );
 }
 
-// ============================================================
-// Stage runners
-// ============================================================
-
-fn maybe_validate_module(module: *const ir_mod.Module, failure_label: []const u8) bool {
-    if (lean_proof.validator_elimination_available) return true;
-    ir_validate_mod.validate(module) catch |err| {
-        std.debug.print("  {s}: {}\n", .{ failure_label, err });
-        return false;
-    };
-    return true;
+// This spelling is referenced by config/lean-proof-patterns.json.
+fn maybe_validate_module(module: *const ir_mod.Module) !void {
+    if (lean_proof.validator_elimination_available) return;
+    try ir_validate_mod.validate(module);
 }
 
-fn prepare_module_for_emit(module: *ir_mod.Module, failure_label: []const u8) bool {
-    _ = ir_opt_rewrite_mod.apply(module.allocator, module) catch |err| {
-        std.debug.print("  {s}: {}\n", .{ failure_label, err });
-        return false;
-    };
-    return true;
-}
-
-// Returns null when the stage fails; caller skips this (shader, stage) pair.
-fn run_analyze_to_ir(
-    allocator: std.mem.Allocator,
-    source: []const u8,
-    samples: []u64,
-) !?usize {
-    for (samples) |*slot| {
-        var timer = try std.time.Timer.start();
-        var tree = parser_mod.parseSource(allocator, source) catch |err| {
-            std.debug.print("  parse failed: {}\n", .{err});
-            return null;
-        };
-        defer tree.deinit();
-        var semantic = sema_mod.analyze(allocator, &tree) catch |err| {
-            std.debug.print("  sema failed: {}\n", .{err});
-            return null;
-        };
-        defer semantic.deinit();
-        var module = ir_builder_mod.build(allocator, &tree, &semantic) catch |err| {
-            std.debug.print("  ir_build failed: {}\n", .{err});
-            return null;
-        };
-        defer module.deinit();
-        if (!maybe_validate_module(&module, "ir_validate failed")) return null;
-        slot.* = timer.read();
-    }
-    return 0;
-}
-
-fn run_emit_msl(
-    allocator: std.mem.Allocator,
-    module: *const ir_mod.Module,
-    samples: []u64,
-) !?usize {
-    const out_buf = try allocator.alloc(u8, MSL_BUF_SIZE);
-    defer allocator.free(out_buf);
-
-    var last_bytes: usize = 0;
-    for (samples) |*slot| {
-        var timer = try std.time.Timer.start();
-        const n = emit_msl_mod.emit(module, out_buf) catch |err| {
-            std.debug.print("  emit_msl failed: {}\n", .{err});
-            return null;
-        };
-        slot.* = timer.read();
-        last_bytes = n;
-    }
-    return last_bytes;
-}
-
-fn run_emit_spirv(
-    allocator: std.mem.Allocator,
-    module: *const ir_mod.Module,
-    samples: []u64,
-) !?usize {
-    const out_buf = try allocator.alloc(u8, SPIRV_BUF_SIZE);
-    defer allocator.free(out_buf);
-
-    var last_bytes: usize = 0;
-    for (samples) |*slot| {
-        var timer = try std.time.Timer.start();
-        const n = emit_spirv_mod.emit(module, out_buf) catch |err| {
-            std.debug.print("  emit_spirv failed: {}\n", .{err});
-            return null;
-        };
-        slot.* = timer.read();
-        last_bytes = n;
-    }
-    return last_bytes;
-}
-
-fn run_emit_hlsl(
-    allocator: std.mem.Allocator,
-    module: *const ir_mod.Module,
-    samples: []u64,
-) !?usize {
-    const out_buf = try allocator.alloc(u8, HLSL_BUF_SIZE);
-    defer allocator.free(out_buf);
-
-    var last_bytes: usize = 0;
-    for (samples) |*slot| {
-        var timer = try std.time.Timer.start();
-        const n = emit_hlsl_mod.emit(module, out_buf) catch |err| {
-            std.debug.print("  emit_hlsl failed: {}\n", .{err});
-            return null;
-        };
-        slot.* = timer.read();
-        last_bytes = n;
-    }
-    return last_bytes;
-}
-
-fn run_e2e_msl(
-    allocator: std.mem.Allocator,
-    source: []const u8,
-    samples: []u64,
-) !?usize {
-    const out_buf = try allocator.alloc(u8, MSL_BUF_SIZE);
-    defer allocator.free(out_buf);
-
-    var last_bytes: usize = 0;
-    for (samples) |*slot| {
-        var timer = try std.time.Timer.start();
-        var tree = parser_mod.parseSource(allocator, source) catch |err| {
-            std.debug.print("  parse failed: {}\n", .{err});
-            return null;
-        };
-        defer tree.deinit();
-        var semantic = sema_mod.analyze(allocator, &tree) catch |err| {
-            std.debug.print("  sema failed: {}\n", .{err});
-            return null;
-        };
-        defer semantic.deinit();
-        var module = ir_builder_mod.build(allocator, &tree, &semantic) catch |err| {
-            std.debug.print("  ir_build failed: {}\n", .{err});
-            return null;
-        };
-        defer module.deinit();
-        if (!maybe_validate_module(&module, "ir_validate failed")) return null;
-        if (!prepare_module_for_emit(&module, "ir_opt_rewrite failed")) return null;
-        const n = emit_msl_mod.emit(&module, out_buf) catch |err| {
-            std.debug.print("  emit_msl failed: {}\n", .{err});
-            return null;
-        };
-        slot.* = timer.read();
-        last_bytes = n;
-    }
-    return last_bytes;
-}
-
-fn run_e2e_spirv(
-    allocator: std.mem.Allocator,
-    source: []const u8,
-    samples: []u64,
-) !?usize {
-    const out_buf = try allocator.alloc(u8, SPIRV_BUF_SIZE);
-    defer allocator.free(out_buf);
-
-    var last_bytes: usize = 0;
-    for (samples) |*slot| {
-        var timer = try std.time.Timer.start();
-        var tree = parser_mod.parseSource(allocator, source) catch |err| {
-            std.debug.print("  parse failed: {}\n", .{err});
-            return null;
-        };
-        defer tree.deinit();
-        var semantic = sema_mod.analyze(allocator, &tree) catch |err| {
-            std.debug.print("  sema failed: {}\n", .{err});
-            return null;
-        };
-        defer semantic.deinit();
-        var module = ir_builder_mod.build(allocator, &tree, &semantic) catch |err| {
-            std.debug.print("  ir_build failed: {}\n", .{err});
-            return null;
-        };
-        defer module.deinit();
-        if (!maybe_validate_module(&module, "ir_validate failed")) return null;
-        if (!prepare_module_for_emit(&module, "ir_opt_rewrite failed")) return null;
-        const n = emit_spirv_mod.emit(&module, out_buf) catch |err| {
-            std.debug.print("  emit_spirv failed: {}\n", .{err});
-            return null;
-        };
-        slot.* = timer.read();
-        last_bytes = n;
-    }
-    return last_bytes;
-}
-
-fn run_e2e_hlsl(
-    allocator: std.mem.Allocator,
-    source: []const u8,
-    samples: []u64,
-) !?usize {
-    const out_buf = try allocator.alloc(u8, HLSL_BUF_SIZE);
-    defer allocator.free(out_buf);
-
-    var last_bytes: usize = 0;
-    for (samples) |*slot| {
-        var timer = try std.time.Timer.start();
-        var tree = parser_mod.parseSource(allocator, source) catch |err| {
-            std.debug.print("  parse failed: {}\n", .{err});
-            return null;
-        };
-        defer tree.deinit();
-        var semantic = sema_mod.analyze(allocator, &tree) catch |err| {
-            std.debug.print("  sema failed: {}\n", .{err});
-            return null;
-        };
-        defer semantic.deinit();
-        var module = ir_builder_mod.build(allocator, &tree, &semantic) catch |err| {
-            std.debug.print("  ir_build failed: {}\n", .{err});
-            return null;
-        };
-        defer module.deinit();
-        if (!maybe_validate_module(&module, "ir_validate failed")) return null;
-        if (!prepare_module_for_emit(&module, "ir_opt_rewrite failed")) return null;
-        const n = emit_hlsl_mod.emit(&module, out_buf) catch |err| {
-            std.debug.print("  emit_hlsl failed: {}\n", .{err});
-            return null;
-        };
-        slot.* = timer.read();
-        last_bytes = n;
-    }
-    return last_bytes;
-}
-
-// ============================================================
-// Per-shader benchmark driver
-// ============================================================
-
-// Builds a pre-compiled IR module for emit-only stages.
-// Returns null when analysis fails during warmup — emit stages are skipped.
-fn build_reference_module(
-    allocator: std.mem.Allocator,
-    source: []const u8,
-) !?ir_mod.Module {
-    var tree = parser_mod.parseSource(allocator, source) catch |err| {
-        std.debug.print("  warmup parse failed: {}\n", .{err});
-        return null;
-    };
+fn buildReferenceModule(allocator: std.mem.Allocator, source: []const u8) !ir_mod.Module {
+    var tree = try parser_mod.parseSource(allocator, source);
     defer tree.deinit();
-
-    var semantic = sema_mod.analyze(allocator, &tree) catch |err| {
-        std.debug.print("  warmup sema failed: {}\n", .{err});
-        return null;
-    };
+    var semantic = try sema_mod.analyze(allocator, &tree);
     defer semantic.deinit();
-
-    var module = ir_builder_mod.build(allocator, &tree, &semantic) catch |err| {
-        std.debug.print("  warmup ir_build failed: {}\n", .{err});
-        return null;
-    };
-    if (!maybe_validate_module(&module, "warmup ir_validate failed")) {
-        module.deinit();
-        return null;
-    }
-    if (!prepare_module_for_emit(&module, "warmup ir_opt_rewrite failed")) {
-        module.deinit();
-        return null;
-    }
+    var module = try ir_builder_mod.build(allocator, &tree, &semantic);
+    errdefer module.deinit();
+    try maybe_validate_module(&module);
+    _ = try ir_opt_rewrite_mod.apply(allocator, &module);
     return module;
 }
 
-fn bench_shader(
-    allocator: std.mem.Allocator,
-    shader: Shader,
-    cfg: Config,
-    writer: anytype,
-) !void {
-    const capped = @min(cfg.iterations, MAX_SAMPLES);
-    const samples = try allocator.alloc(u64, capped);
-    defer allocator.free(samples);
-
-    // A single reference module is built once and reused for emit-only stages.
-    // It must be kept alive for the duration of the emit benchmarks.
-    const maybe_module = try build_reference_module(allocator, shader.source);
-
-    for (STAGES) |stage| {
-        const stage_name = @tagName(stage);
-
-        // Warmup: run warmup iterations; discard timings. Stop if stage fails.
-        var warmup_ok = true;
-        {
-            var wi: u32 = 0;
-            while (wi < cfg.warmup) : (wi += 1) {
-                const ok = run_warmup_iteration(allocator, shader.source, stage, maybe_module) catch |err| {
-                    std.debug.print("bench: {s}/{s} warmup error: {}\n", .{ shader.name, stage_name, err });
-                    warmup_ok = false;
-                    break;
-                };
-                if (!ok) {
-                    std.debug.print("bench: {s}/{s} failed during warmup — skipping\n", .{ shader.name, stage_name });
-                    warmup_ok = false;
-                    break;
-                }
-            }
-        }
-        if (!warmup_ok) continue;
-
-        // Timed runs.
-        const maybe_bytes: ?usize = blk: {
-            switch (stage) {
-                .analyze_to_ir => break :blk try run_analyze_to_ir(allocator, shader.source, samples),
-                .emit_msl => {
-                    const m = maybe_module orelse break :blk null;
-                    break :blk try run_emit_msl(allocator, &m, samples);
-                },
-                .emit_spirv => {
-                    const m = maybe_module orelse break :blk null;
-                    break :blk try run_emit_spirv(allocator, &m, samples);
-                },
-                .emit_hlsl => {
-                    const m = maybe_module orelse break :blk null;
-                    break :blk try run_emit_hlsl(allocator, &m, samples);
-                },
-                .e2e_msl => break :blk try run_e2e_msl(allocator, shader.source, samples),
-                .e2e_spirv => break :blk try run_e2e_spirv(allocator, shader.source, samples),
-                .e2e_hlsl => break :blk try run_e2e_hlsl(allocator, shader.source, samples),
-            }
-        };
-
-        const bytes_out = maybe_bytes orelse {
-            std.debug.print("bench: {s}/{s} failed during timed run — skipping\n", .{ shader.name, stage_name });
-            continue;
-        };
-
-        const stats = compute_stats(samples);
-        try write_result(writer, shader.name, stage_name, capped, cfg.warmup, stats, bytes_out);
-    }
-
-    // Release the reference module after all emit stages are done.
-    if (maybe_module) |*m| {
-        const mut_m: *ir_mod.Module = @constCast(m);
-        mut_m.deinit();
-    }
+fn emitStage(stage: Stage, module: *const ir_mod.Module, output: []u8) !usize {
+    return switch (stage) {
+        .emit_msl, .e2e_msl => emit_msl_mod.emit(module, output),
+        .emit_spirv, .e2e_spirv => emit_spirv_mod.emit(module, output),
+        .emit_hlsl, .e2e_hlsl => emit_hlsl_mod.emit(module, output),
+        .analyze_to_ir => error.InvalidEmissionStage,
+    };
 }
 
-// Returns true when a single warmup iteration succeeds, false when it fails gracefully.
-fn run_warmup_iteration(
+fn runStage(
     allocator: std.mem.Allocator,
     source: []const u8,
     stage: Stage,
-    maybe_module: ?ir_mod.Module,
-) !bool {
-    switch (stage) {
-        .analyze_to_ir, .e2e_msl, .e2e_spirv, .e2e_hlsl => {
-            // Compile from source — verify the full pipeline parses successfully.
-            var tree = parser_mod.parseSource(allocator, source) catch return false;
-            defer tree.deinit();
-            var semantic = sema_mod.analyze(allocator, &tree) catch return false;
-            defer semantic.deinit();
-            var module = ir_builder_mod.build(allocator, &tree, &semantic) catch return false;
-            defer module.deinit();
-            if (!maybe_validate_module(&module, "warmup ir_validate failed")) return false;
-            if (!prepare_module_for_emit(&module, "warmup ir_opt_rewrite failed")) return false;
-
-            if (stage == .e2e_msl) {
-                const buf = try allocator.alloc(u8, MSL_BUF_SIZE);
-                defer allocator.free(buf);
-                _ = emit_msl_mod.emit(&module, buf) catch return false;
-            } else if (stage == .e2e_spirv) {
-                const buf = try allocator.alloc(u8, SPIRV_BUF_SIZE);
-                defer allocator.free(buf);
-                _ = emit_spirv_mod.emit(&module, buf) catch return false;
-            } else if (stage == .e2e_hlsl) {
-                const buf = try allocator.alloc(u8, HLSL_BUF_SIZE);
-                defer allocator.free(buf);
-                _ = emit_hlsl_mod.emit(&module, buf) catch return false;
-            }
-            return true;
-        },
-        .emit_msl => {
-            const m = maybe_module orelse return false;
-            const buf = try allocator.alloc(u8, MSL_BUF_SIZE);
-            defer allocator.free(buf);
-            _ = emit_msl_mod.emit(&m, buf) catch return false;
-            return true;
-        },
-        .emit_spirv => {
-            const m = maybe_module orelse return false;
-            const buf = try allocator.alloc(u8, SPIRV_BUF_SIZE);
-            defer allocator.free(buf);
-            _ = emit_spirv_mod.emit(&m, buf) catch return false;
-            return true;
-        },
-        .emit_hlsl => {
-            const m = maybe_module orelse return false;
-            const buf = try allocator.alloc(u8, HLSL_BUF_SIZE);
-            defer allocator.free(buf);
-            _ = emit_hlsl_mod.emit(&m, buf) catch return false;
-            return true;
-        },
+    reference: *const ir_mod.Module,
+    samples: []u64,
+) !usize {
+    const capacity: usize = switch (stage) {
+        .analyze_to_ir => 0,
+        .emit_msl, .e2e_msl => MSL_BUF_SIZE,
+        .emit_spirv, .e2e_spirv => SPIRV_BUF_SIZE,
+        .emit_hlsl, .e2e_hlsl => HLSL_BUF_SIZE,
+    };
+    const output = try allocator.alloc(u8, capacity);
+    defer allocator.free(output);
+    var bytes_out: usize = 0;
+    for (samples) |*sample| {
+        var timer = try std.time.Timer.start();
+        switch (stage) {
+            .emit_msl, .emit_spirv, .emit_hlsl => {
+                bytes_out = try emitStage(stage, reference, output);
+                sample.* = timer.read();
+            },
+            .analyze_to_ir, .e2e_msl, .e2e_spirv, .e2e_hlsl => {
+                var tree = try parser_mod.parseSource(allocator, source);
+                defer tree.deinit();
+                var semantic = try sema_mod.analyze(allocator, &tree);
+                defer semantic.deinit();
+                var module = try ir_builder_mod.build(allocator, &tree, &semantic);
+                defer module.deinit();
+                try maybe_validate_module(&module);
+                if (stage != .analyze_to_ir) {
+                    _ = try ir_opt_rewrite_mod.apply(allocator, &module);
+                    bytes_out = try emitStage(stage, &module, output);
+                }
+                // Preserve the stage scope: cleanup follows the final timestamp.
+                sample.* = timer.read();
+            },
+        }
     }
+    return bytes_out;
 }
 
-// ============================================================
-// Entry point
-// ============================================================
+fn benchShader(
+    allocator: std.mem.Allocator,
+    shader: Shader,
+    config: Config,
+    writer: std.fs.File.DeprecatedWriter,
+) !void {
+    const samples = try allocator.alloc(u64, config.iterations);
+    defer allocator.free(samples);
+    var reference = try buildReferenceModule(allocator, shader.source);
+    defer reference.deinit();
+
+    for (std.enums.values(Stage)) |stage| {
+        var warmup_sample: [1]u64 = undefined;
+        for (0..config.warmup) |_| {
+            _ = runStage(allocator, shader.source, stage, &reference, &warmup_sample) catch |err| {
+                std.debug.print("bench: {s}/{s} warmup failed: {s}\n", .{ shader.name, @tagName(stage), @errorName(err) });
+                return err;
+            };
+        }
+        const bytes_out = runStage(allocator, shader.source, stage, &reference, samples) catch |err| {
+            std.debug.print("bench: {s}/{s} timed run failed: {s}\n", .{ shader.name, @tagName(stage), @errorName(err) });
+            return err;
+        };
+        try writeResult(writer, shader.name, @tagName(stage), config.iterations, config.warmup, try computeStats(samples), bytes_out);
+    }
+}
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+    const config = try parseArgs(args[1..]);
+    const output = if (config.out_path) |path|
+        try std.fs.cwd().createFile(path, .{})
+    else
+        std.fs.File.stdout();
+    defer if (config.out_path != null) output.close();
 
-    const cfg = parse_args(allocator) catch |err| {
-        std.debug.print("error parsing args: {}\n", .{err});
-        std.process.exit(1);
-    };
-    defer if (cfg.out_path) |p| allocator.free(p);
-    defer if (cfg.filter) |f| allocator.free(f);
-
-    if (cfg.iterations > MAX_SAMPLES) {
-        std.debug.print(
-            "warning: --iterations {d} exceeds cap {d}; capped at {d}\n",
-            .{ cfg.iterations, MAX_SAMPLES, MAX_SAMPLES },
-        );
-    }
-
-    // Open output destination — use deprecatedWriter which is the idiomatic pattern in this codebase.
-    if (cfg.out_path) |path| {
-        const out_file = try std.fs.cwd().createFile(path, .{});
-        defer out_file.close();
-        const writer = out_file.deprecatedWriter();
-        for (SHADERS) |shader| {
-            if (cfg.filter) |f| {
-                if (!std.mem.eql(u8, f, shader.name)) continue;
-            }
-            std.debug.print("bench: {s}\n", .{shader.name});
-            try bench_shader(allocator, shader, cfg, writer);
+    for (SHADERS) |shader| {
+        if (config.filter) |name| {
+            if (!std.mem.eql(u8, name, shader.name)) continue;
         }
-    } else {
-        const writer = std.fs.File.stdout().deprecatedWriter();
-        for (SHADERS) |shader| {
-            if (cfg.filter) |f| {
-                if (!std.mem.eql(u8, f, shader.name)) continue;
-            }
-            std.debug.print("bench: {s}\n", .{shader.name});
-            try bench_shader(allocator, shader, cfg, writer);
-        }
+        std.debug.print("bench: {s}\n", .{shader.name});
+        benchShader(allocator, shader, config, output.deprecatedWriter()) catch |err| {
+            std.debug.print("bench: {s} failed: {s}\n", .{ shader.name, @errorName(err) });
+            return err;
+        };
     }
+}
+
+test "stage benchmark rejects invalid sampling and selection" {
+    try std.testing.expectError(error.InvalidIterations, parseArgs(&.{ "--iterations", "0" }));
+    try std.testing.expectError(error.InvalidIterations, parseArgs(&.{ "--iterations", "2001" }));
+    try std.testing.expectError(error.MissingArgumentValue, parseArgs(&.{"--iterations"}));
+    try std.testing.expectError(error.UnknownArgument, parseArgs(&.{ "--typo", "1" }));
+    try std.testing.expectError(error.InvalidCharacter, parseArgs(&.{ "--warmup", "bad" }));
+    try std.testing.expectError(error.Overflow, parseArgs(&.{ "--iterations", "4294967296" }));
+    try std.testing.expectError(error.UnknownShader, parseArgs(&.{ "--filter", "absent" }));
+    const config = try parseArgs(&.{ "--filter", "compute_simple", "--filter", "compute_matmul", "--warmup", "0" });
+    try std.testing.expectEqualStrings("compute_matmul", config.filter.?);
+    try std.testing.expectEqual(@as(u32, 0), config.warmup);
+}
+
+test "stage benchmark statistics handle empty and large samples" {
+    try std.testing.expectError(error.EmptySamples, computeStats(&.{}));
+    var large = [_]u64{ std.math.maxInt(u64), std.math.maxInt(u64) };
+    try std.testing.expectEqual(std.math.maxInt(u64), (try computeStats(&large)).mean_ns);
+    var samples = [_]u64{ 30, 10, 20 };
+    const stats = try computeStats(&samples);
+    try std.testing.expectEqual(@as(u64, 10), stats.min_ns);
+    try std.testing.expectEqual(@as(u64, 20), stats.p50_ns);
+    try std.testing.expectEqual(@as(u64, 30), stats.p95_ns);
+    try std.testing.expectEqual(@as(u64, 30), stats.p99_ns);
+    try std.testing.expectEqual(@as(u64, 20), stats.mean_ns);
+}
+
+fn exerciseStageAllocations(allocator: std.mem.Allocator) !void {
+    var reference = try buildReferenceModule(allocator, SHADERS[0].source);
+    defer reference.deinit();
+    var sample: [1]u64 = undefined;
+    for (std.enums.values(Stage)) |stage| {
+        _ = try runStage(allocator, SHADERS[0].source, stage, &reference, &sample);
+    }
+}
+
+test "stage benchmark releases reference and stage allocation failures" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseStageAllocations, .{});
+}
+
+test "stage benchmark preserves source failures" {
+    try std.testing.expectError(error.UnexpectedToken, benchShader(
+        std.testing.allocator,
+        .{ .name = "invalid", .source = "@" },
+        .{ .iterations = 1, .warmup = 0 },
+        std.fs.File.stdout().deprecatedWriter(),
+    ));
 }

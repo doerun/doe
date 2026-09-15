@@ -1,0 +1,7 @@
+case	arguments	exitCode	rows
+corpus	--iterations 1 --warmup 0	0	35
+zero	--iterations 0 --warmup 0 --filter compute_simple	-6	0
+duplicate	--iterations 1 --warmup 0 --filter compute_simple --filter compute_simple	0	7
+missing	--iterations	0	35
+unknown-filter	--iterations 1 --warmup 0 --filter __missing__	0	0
+output-failure	--iterations 1 --warmup 0 --filter compute_simple --out /dev/full	1	0

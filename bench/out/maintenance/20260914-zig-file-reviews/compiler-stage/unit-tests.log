@@ -1,0 +1,12 @@
+1/4 bench.test.stage benchmark rejects invalid sampling and selection...--iterations must be between 1 and 2000; received 0
+--iterations must be between 1 and 2000; received 2001
+missing value for --iterations
+unknown option '--typo'; expected --iterations, --warmup, --out, or --filter
+--warmup requires an unsigned integer; received 'bad': InvalidCharacter
+--iterations requires an unsigned integer; received '4294967296': Overflow
+unknown shader filter 'absent'; expected a built-in corpus name
+OK
+2/4 bench.test.stage benchmark statistics handle empty and large samples...OK
+3/4 bench.test.stage benchmark releases reference and stage allocation failures...OK
+4/4 bench.test.stage benchmark preserves source failures...OK
+All 4 tests passed.

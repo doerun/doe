@@ -1,0 +1,271 @@
+bench: compute_simple
+error(gpa): memory address 0x7ee430c80000 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/mem/Allocator.zig:436:40: 0x10b283e in dupe__anon_5703 (std.zig)
+    const new_buf = try allocator.alloc(T, m.len);
+                                       ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir.zig:672:30: 0x11846f9 in dup_string (mod.zig)
+    return try allocator.dupe(u8, value);
+                             ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:383:48: 0x12b73f9 in lower_expr (mod.zig)
+                .field_name = try ir.dup_string(self.allocator, self.tree.tokenSlice(node.data.rhs)),
+                                               ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:534:44: 0x125eec2 in lower_value_expr (mod.zig)
+        const expr_id = try self.lower_expr(node_idx);
+                                           ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:387:51: 0x12b7724 in lower_expr (mod.zig)
+                .index = try self.lower_value_expr(node.data.rhs),
+                                                  ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:552:44: 0x12631f4 in lower_ref_expr (mod.zig)
+        const expr_id = try self.lower_expr(node_idx);
+                                           ^
+
+error(gpa): memory address 0x7ee430c80001 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/mem/Allocator.zig:436:40: 0x10b283e in dupe__anon_5703 (std.zig)
+    const new_buf = try allocator.alloc(T, m.len);
+                                       ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir.zig:672:30: 0x11846f9 in dup_string (mod.zig)
+    return try allocator.dupe(u8, value);
+                             ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:383:48: 0x12b73f9 in lower_expr (mod.zig)
+                .field_name = try ir.dup_string(self.allocator, self.tree.tokenSlice(node.data.rhs)),
+                                               ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:534:44: 0x125eec2 in lower_value_expr (mod.zig)
+        const expr_id = try self.lower_expr(node_idx);
+                                           ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:387:51: 0x12b7724 in lower_expr (mod.zig)
+                .index = try self.lower_value_expr(node.data.rhs),
+                                                  ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:534:44: 0x125eec2 in lower_value_expr (mod.zig)
+        const expr_id = try self.lower_expr(node_idx);
+                                           ^
+
+error(gpa): memory address 0x7ee430ca0002 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/mem/Allocator.zig:436:40: 0x10b283e in dupe__anon_5703 (std.zig)
+    const new_buf = try allocator.alloc(T, m.len);
+                                       ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir.zig:672:30: 0x11846f9 in dup_string (mod.zig)
+    return try allocator.dupe(u8, value);
+                             ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:121:42: 0x122704d in copy_functions (mod.zig)
+                .name = try ir.dup_string(allocator, param.name),
+                                         ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:47:23: 0x11e3512 in buildWithContext (mod.zig)
+    try copy_functions(allocator, tree, &module, semantic, failure);
+                      ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:36:28: 0x11b6679 in build (mod.zig)
+    return buildWithContext(allocator, tree, semantic, &last_failure_context);
+                           ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:501:38: 0x119d70f in build_reference_module (bench.zig)
+    var module = ir_builder_mod.build(allocator, &tree, &semantic) catch |err| {
+                                     ^
+
+error(gpa): memory address 0x7ee430ce0008 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/mem/Allocator.zig:436:40: 0x10b283e in dupe__anon_5703 (std.zig)
+    const new_buf = try allocator.alloc(T, m.len);
+                                       ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir.zig:672:30: 0x11846f9 in dup_string (mod.zig)
+    return try allocator.dupe(u8, value);
+                             ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:92:38: 0x1225dd5 in copy_globals (mod.zig)
+            .name = try ir.dup_string(allocator, global_info.name),
+                                     ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:46:21: 0x11e344d in buildWithContext (mod.zig)
+    try copy_globals(allocator, tree, &module, semantic, failure);
+                    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:36:28: 0x11b6679 in build (mod.zig)
+    return buildWithContext(allocator, tree, semantic, &last_failure_context);
+                           ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:501:38: 0x119d70f in build_reference_module (bench.zig)
+    var module = ir_builder_mod.build(allocator, &tree, &semantic) catch |err| {
+                                     ^
+
+error(gpa): memory address 0x7ee430ce000c leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/mem/Allocator.zig:436:40: 0x10b283e in dupe__anon_5703 (std.zig)
+    const new_buf = try allocator.alloc(T, m.len);
+                                       ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir.zig:672:30: 0x11846f9 in dup_string (mod.zig)
+    return try allocator.dupe(u8, value);
+                             ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:110:38: 0x1226a02 in copy_functions (mod.zig)
+            .name = try ir.dup_string(allocator, function_info.name),
+                                     ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:47:23: 0x11e3512 in buildWithContext (mod.zig)
+    try copy_functions(allocator, tree, &module, semantic, failure);
+                      ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:36:28: 0x11b6679 in build (mod.zig)
+    return buildWithContext(allocator, tree, semantic, &last_failure_context);
+                           ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:501:38: 0x119d70f in build_reference_module (bench.zig)
+    var module = ir_builder_mod.build(allocator, &tree, &semantic) catch |err| {
+                                     ^
+
+error(gpa): memory address 0x7ee430d60480 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1231:56: 0x1306a8e in ensureTotalCapacityPrecise (std.zig)
+                const new_memory = try gpa.alignedAlloc(T, alignment, new_capacity);
+                                                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1207:51: 0x12b04d5 in ensureTotalCapacity (std.zig)
+            return self.ensureTotalCapacityPrecise(gpa, growCapacity(self.capacity, new_capacity));
+                                                  ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1246:44: 0x125d508 in ensureUnusedCapacity (std.zig)
+            return self.ensureTotalCapacity(gpa, try addOrOom(self.items.len, additional_count));
+                                           ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:90:48: 0x1225c51 in copy_globals (mod.zig)
+        try module.globals.ensureUnusedCapacity(allocator, 1);
+                                               ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:46:21: 0x11e344d in buildWithContext (mod.zig)
+    try copy_globals(allocator, tree, &module, semantic, failure);
+                    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:36:28: 0x11b6679 in build (mod.zig)
+    return buildWithContext(allocator, tree, semantic, &last_failure_context);
+                           ^
+
+error(gpa): memory address 0x7ee430d60500 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1231:56: 0x13073be in ensureTotalCapacityPrecise (std.zig)
+                const new_memory = try gpa.alignedAlloc(T, alignment, new_capacity);
+                                                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1207:51: 0x12b0825 in ensureTotalCapacity (std.zig)
+            return self.ensureTotalCapacityPrecise(gpa, growCapacity(self.capacity, new_capacity));
+                                                  ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1246:44: 0x125d718 in ensureUnusedCapacity (std.zig)
+            return self.ensureTotalCapacity(gpa, try addOrOom(self.items.len, additional_count));
+                                           ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:119:53: 0x1226f3e in copy_functions (mod.zig)
+            try function.params.ensureUnusedCapacity(allocator, 1);
+                                                    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:47:23: 0x11e3512 in buildWithContext (mod.zig)
+    try copy_functions(allocator, tree, &module, semantic, failure);
+                      ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:36:28: 0x11b6679 in build (mod.zig)
+    return buildWithContext(allocator, tree, semantic, &last_failure_context);
+                           ^
+
+error(gpa): memory address 0x7ee430d60600 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1231:56: 0x1369a7e in ensureTotalCapacityPrecise (std.zig)
+                const new_memory = try gpa.alignedAlloc(T, alignment, new_capacity);
+                                                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1207:51: 0x13416b5 in ensureTotalCapacity (std.zig)
+            return self.ensureTotalCapacityPrecise(gpa, growCapacity(self.capacity, new_capacity));
+                                                  ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1261:41: 0x130833b in addOne (std.zig)
+            try self.ensureTotalCapacity(gpa, newlen);
+                                        ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:894:49: 0x12b0e92 in append (std.zig)
+            const new_item_ptr = try self.addOne(gpa);
+                                                ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir.zig:531:30: 0x125de60 in append_stmt (mod.zig)
+        try self.stmts.append(allocator, stmt);
+                             ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:194:57: 0x12667f0 in lower_stmt (mod.zig)
+                break :blk try self.function.append_stmt(self.allocator, .{ .assign = .{
+                                                        ^
+
+error(gpa): memory address 0x7ee430d60700 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1231:56: 0x12a2f5e in ensureTotalCapacityPrecise (std.zig)
+                const new_memory = try gpa.alignedAlloc(T, alignment, new_capacity);
+                                                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1207:51: 0x12478f5 in ensureTotalCapacity (std.zig)
+            return self.ensureTotalCapacityPrecise(gpa, growCapacity(self.capacity, new_capacity));
+                                                  ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1246:44: 0x1214308 in ensureUnusedCapacity (std.zig)
+            return self.ensureTotalCapacity(gpa, try addOrOom(self.items.len, additional_count));
+                                           ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:975:42: 0x11c5dee in appendSlice (std.zig)
+            try self.ensureUnusedCapacity(gpa, items.len);
+                                         ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir.zig:543:43: 0x125db4d in append_stmt_children (mod.zig)
+        try self.stmt_children.appendSlice(allocator, children);
+                                          ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:237:61: 0x125e562 in lower_block (mod.zig)
+        const range = try self.function.append_stmt_children(self.allocator, children.items);
+                                                            ^
+
+error(gpa): memory address 0x7ee430d60780 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1231:56: 0x1342e9e in ensureTotalCapacityPrecise (std.zig)
+                const new_memory = try gpa.alignedAlloc(T, alignment, new_capacity);
+                                                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1207:51: 0x130bc15 in ensureTotalCapacity (std.zig)
+            return self.ensureTotalCapacityPrecise(gpa, growCapacity(self.capacity, new_capacity));
+                                                  ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1261:41: 0x12b8c0b in addOne (std.zig)
+            try self.ensureTotalCapacity(gpa, newlen);
+                                        ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:894:49: 0x1267a62 in append (std.zig)
+            const new_item_ptr = try self.addOne(gpa);
+                                                ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:148:43: 0x1227c92 in copy_functions (mod.zig)
+            try module.entry_points.append(allocator, .{
+                                          ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:47:23: 0x11e3512 in buildWithContext (mod.zig)
+    try copy_functions(allocator, tree, &module, semantic, failure);
+                      ^
+
+error(gpa): memory address 0x7ee430cc0400 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1231:56: 0x130b5fe in ensureTotalCapacityPrecise (std.zig)
+                const new_memory = try gpa.alignedAlloc(T, alignment, new_capacity);
+                                                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1207:51: 0x12b8ac5 in ensureTotalCapacity (std.zig)
+            return self.ensureTotalCapacityPrecise(gpa, growCapacity(self.capacity, new_capacity));
+                                                  ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1246:44: 0x1267978 in ensureUnusedCapacity (std.zig)
+            return self.ensureTotalCapacity(gpa, try addOrOom(self.items.len, additional_count));
+                                           ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:146:50: 0x1227aa1 in copy_functions (mod.zig)
+        try module.functions.ensureUnusedCapacity(allocator, 1);
+                                                 ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:47:23: 0x11e3512 in buildWithContext (mod.zig)
+    try copy_functions(allocator, tree, &module, semantic, failure);
+                      ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:36:28: 0x11b6679 in build (mod.zig)
+    return buildWithContext(allocator, tree, semantic, &last_failure_context);
+                           ^
+
+error(gpa): memory address 0x7ee430d00200 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1231:56: 0x1247f6e in ensureTotalCapacityPrecise (std.zig)
+                const new_memory = try gpa.alignedAlloc(T, alignment, new_capacity);
+                                                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1207:51: 0x1214995 in ensureTotalCapacity (std.zig)
+            return self.ensureTotalCapacityPrecise(gpa, growCapacity(self.capacity, new_capacity));
+                                                  ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1246:44: 0x1258788 in ensureUnusedCapacity (std.zig)
+            return self.ensureTotalCapacity(gpa, try addOrOom(self.items.len, additional_count));
+                                           ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:975:42: 0x122450e in appendSlice (std.zig)
+            try self.ensureUnusedCapacity(gpa, items.len);
+                                         ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:44:39: 0x11e32d0 in buildWithContext (mod.zig)
+    try module.types.items.appendSlice(allocator, semantic.types.items.items);
+                                      ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:36:28: 0x11b6679 in build (mod.zig)
+    return buildWithContext(allocator, tree, semantic, &last_failure_context);
+                           ^
+
+error(gpa): memory address 0x7ee430d20c00 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1231:56: 0x136a3ae in ensureTotalCapacityPrecise (std.zig)
+                const new_memory = try gpa.alignedAlloc(T, alignment, new_capacity);
+                                                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1207:51: 0x1341a05 in ensureTotalCapacity (std.zig)
+            return self.ensureTotalCapacityPrecise(gpa, growCapacity(self.capacity, new_capacity));
+                                                  ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1261:41: 0x130af7b in addOne (std.zig)
+            try self.ensureTotalCapacity(gpa, newlen);
+                                        ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:894:49: 0x12b8692 in append (std.zig)
+            const new_item_ptr = try self.addOne(gpa);
+                                                ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir.zig:525:30: 0x125ed30 in append_expr (mod.zig)
+        try self.exprs.append(allocator, expr);
+                             ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig:396:45: 0x12b79e5 in lower_expr (mod.zig)
+        return try self.function.append_expr(self.allocator, .{
+                                            ^
+
+error: NoSpaceLeft
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:231:5: 0x11a53f1 in write_result__anon_24962 (bench.zig)
+    try writer.print(
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:580:9: 0x11a6d10 in bench_shader__anon_22947 (bench.zig)
+        try write_result(writer, shader.name, stage_name, capped, cfg.warmup, stats, bytes_out);
+        ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:681:13: 0x11a8161 in main (bench.zig)
+            try bench_shader(allocator, shader, cfg, writer);
+            ^

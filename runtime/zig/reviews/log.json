@@ -207,6 +207,229 @@
       "targets": [
         "build.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/lean-proof-patterns.json",
+          "sha256": "0e839bfbcd0f4c5f8087c880434c9741804fb32797fc8650fe8951c00d57529d"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "79de8185048e6aa4aa6a288a994c41c312cf335d46f4c50ed4e8d4f83a6bded7"
+        },
+        {
+          "path": "runtime/zig/src/compiler/mod.zig",
+          "sha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/before-cases.tsv",
+          "sha256": "85e1e20dc5487bc270d4f8674e502f2b34d86ddaf738a1638a69ca934f2319d9"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/before-duplicate.stderr",
+          "sha256": "d3bb3846c3647b1e83af6d068fa8d240d63d566948a21cd63da80f9eddf23a7e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/before-output-failure.stderr",
+          "sha256": "7a19d2c095880d1c1b6cfbbd4ca5f2f726bc3d5786d0e747fbaf7ec88a44b2b0"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/build-before.log",
+          "sha256": "6d99eaf8df8355b86cf7ba0e72c5a01cbbe5ed6aa30b3641d11eefc4c07f496a"
+        }
+      ],
+      "findings": [
+        "Finish optimized CLI verification, proof-enabled tests, and source-bound receipt before file completion."
+      ],
+      "inputHash": "8dfd60614835f9cb2f32a6eeaa26e3086e505f0b5af444c4835d14f485e63b59",
+      "level": "file",
+      "nextAction": "Inspect final CLI/proof/structural results and append the verified file record with immutable evidence.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Use the existing Doe proof module, borrow CLI strings from their process owner, reject invalid inputs, retain cleanup with defer, and propagate original stage errors.",
+        "Warmup and timed execution now use one exhaustive stage runner; named functions and a concrete file writer replace local inconsistent naming and hidden writer type."
+      ],
+      "reviewId": "compiler_stage_file_001",
+      "reviewedAt": "2026-09-15T02:43:17.211051+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "723dd140f78385eb6bb564f8d2ab41b16421df1d",
+      "status": "in_progress",
+      "summary": "Read the complete compiler stage benchmark and reproduced its module identity conflict, invalid sampling, ignored arguments, and retained-storage leaks. Repairs are implemented; final validation and the file receipt are being completed.",
+      "supersedes": null,
+      "targets": [
+        "bench/compiler/bench.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/README.md",
+          "sha256": "92342b3c694c23aae77a867106586e1d610bffb770316c776d74e158af21216f"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/bench.zig",
+          "sha256": "a7b7c29192328d3397c905d5c736a86f1f0b18999ee49bcb5b33bc7cf4ae2fd0"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/README.md",
+          "sha256": "0f26efcd564e76e01906b58a9b2f83c748b8ec2953c83237095e58a9f989cdaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/after-cases.tsv",
+          "sha256": "804cd913c0067c077adf1f99166993416766a452697137de1bb131e204dd2a2e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/build-after.log",
+          "sha256": "7cf586121cb841dd7822c6172e451f26ffbe1c91f29b5b068fbad288f237f020"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/build-before.log",
+          "sha256": "6d99eaf8df8355b86cf7ba0e72c5a01cbbe5ed6aa30b3641d11eefc4c07f496a"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/canonical-tests.log",
+          "sha256": "a1c9f3111a376768abf295012abfec30598508a08fb1f7855ad789f1aeb16874"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/filter-tests.log",
+          "sha256": "3e04d0ad243afcb98cc7e499463aca2f92b7002ac88d9eadf7c4423c5ed1cf35"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/proof-enabled-tests.log",
+          "sha256": "72a1f739b31e7a42b6205b2e2e546c9236b47dbe69adcdedecf5382370acc6b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/release-cases.tsv",
+          "sha256": "804cd913c0067c077adf1f99166993416766a452697137de1bb131e204dd2a2e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/source-files.tsv",
+          "sha256": "d7a052c8602cbae4483ecd28522666fe09ad0c513f4836d46983b111f96dab79"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/structural-gates.log",
+          "sha256": "dd7a603efaa76795cea13d4b3451129d9817d30a48b401e2fc6ab689318ac373"
+        }
+      ],
+      "findings": [],
+      "inputHash": "b81b451152a795f2acb2bba6f289bd52ace32035d75f0570db7e1d6cb4415745",
+      "level": "file",
+      "nextAction": "Review bench/compiler/bench_compilation.zig next; retain directory and relationship passes as separate scopes.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed the separate lean_proof module after the benchmark moved to the existing Doe verification facade; the actual benchmark now compiles in Debug and ReleaseFast.",
+        "Added test-bench-shader using the executable module, formatting/source gates, and the shared test filter; unfiltered, filtered, and proof-enabled executions passed."
+      ],
+      "reviewId": "build_file_003",
+      "reviewedAt": "2026-09-15T02:44:45.129075+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "723dd140f78385eb6bb564f8d2ab41b16421df1d",
+      "status": "verified",
+      "summary": "Re-examined the shader benchmark build entry after its consumer exposed duplicate proof-source ownership. The rest of the whole-file review remains as recorded in build_file_002.",
+      "supersedes": "build_file_002",
+      "targets": [
+        "build.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/lean-proof-patterns.json",
+          "sha256": "0e839bfbcd0f4c5f8087c880434c9741804fb32797fc8650fe8951c00d57529d"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/README.md",
+          "sha256": "a4c8af99226ff8679bf95c7b42b63a1b7cdf3b8048a4d67dc4cd323ca6a23f6e"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "79de8185048e6aa4aa6a288a994c41c312cf335d46f4c50ed4e8d4f83a6bded7"
+        },
+        {
+          "path": "runtime/zig/src/compiler/mod.zig",
+          "sha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/README.md",
+          "sha256": "0f26efcd564e76e01906b58a9b2f83c748b8ec2953c83237095e58a9f989cdaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/after-cases.tsv",
+          "sha256": "804cd913c0067c077adf1f99166993416766a452697137de1bb131e204dd2a2e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/build-after.log",
+          "sha256": "7cf586121cb841dd7822c6172e451f26ffbe1c91f29b5b068fbad288f237f020"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/build-before.log",
+          "sha256": "6d99eaf8df8355b86cf7ba0e72c5a01cbbe5ed6aa30b3641d11eefc4c07f496a"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/canonical-tests.log",
+          "sha256": "a1c9f3111a376768abf295012abfec30598508a08fb1f7855ad789f1aeb16874"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/filter-tests.log",
+          "sha256": "3e04d0ad243afcb98cc7e499463aca2f92b7002ac88d9eadf7c4423c5ed1cf35"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/proof-enabled-tests.log",
+          "sha256": "72a1f739b31e7a42b6205b2e2e546c9236b47dbe69adcdedecf5382370acc6b7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/release-cases.tsv",
+          "sha256": "804cd913c0067c077adf1f99166993416766a452697137de1bb131e204dd2a2e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/source-files.tsv",
+          "sha256": "d7a052c8602cbae4483ecd28522666fe09ad0c513f4836d46983b111f96dab79"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/structural-gates.log",
+          "sha256": "dd7a603efaa76795cea13d4b3451129d9817d30a48b401e2fc6ab689318ac373"
+        }
+      ],
+      "findings": [],
+      "inputHash": "8dfd60614835f9cb2f32a6eeaa26e3086e505f0b5af444c4835d14f485e63b59",
+      "level": "file",
+      "nextAction": "Review bench/compiler/bench_compilation.zig next; retain directory and relationship passes as separate scopes.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Debug CLI reproduction and repaired runs verify the zero-sample crash, repeated-option leaks, output-failure reference leak, ignored invalid arguments, and successful empty selection.",
+        "Reference and stage allocation-failure sweeps preserve original errors and free partial ownership; output errors also release the retained module.",
+        "One exhaustive runner covers warmup and timed stage work; output sizes, row order/fields, corpus contents, proof selection, and cleanup timing boundaries are preserved.",
+        "Private helpers use consistent names and a concrete file writer; the externally referenced proof function spelling remains unchanged. Empty and large sample arithmetic are checked outside timing."
+      ],
+      "reviewId": "compiler_stage_file_002",
+      "reviewedAt": "2026-09-15T02:44:45.916132+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "723dd140f78385eb6bb564f8d2ab41b16421df1d",
+      "status": "verified",
+      "summary": "Completed the whole compiler-stage file review: corpus, argument borrowing/admission, sample statistics, serialization, stage/proof selection, timing boundaries, lifetime cleanup, and original-error propagation.",
+      "supersedes": "compiler_stage_file_001",
+      "targets": [
+        "bench/compiler/bench.zig"
+      ]
     }
   ],
   "schemaVersion": 1

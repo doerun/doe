@@ -1492,21 +1492,18 @@ pub fn build(b: *std.Build) void {
             .imports = &.{
                 .{ .name = "build_options", .module = build_options_module },
                 .{ .name = "doe", .module = doe_module },
-                .{
-                    .name = "lean_proof",
-                    .module = b.createModule(.{
-                        .root_source_file = b.path("src/verification/lean_proof.zig"),
-                        .target = target,
-                        .optimize = optimize,
-                        .imports = &.{
-                            .{ .name = "build_options", .module = build_options_module },
-                        },
-                    }),
-                },
             },
         }),
     });
     shader_bench_exe.linkLibC();
+    const shader_bench_tests = b.addTest(.{
+        .root_module = shader_bench_exe.root_module,
+        .filters = test_filters,
+    });
+    const shader_bench_test_step = b.step("test-bench-shader", "Run the WGSL stage benchmark contract tests");
+    shader_bench_test_step.dependOn(&fmt_check.step);
+    shader_bench_test_step.dependOn(&source_layout_check.step);
+    shader_bench_test_step.dependOn(&b.addRunArtifact(shader_bench_tests).step);
     const install_shader_bench = b.addInstallArtifact(shader_bench_exe, .{});
     const shader_bench_step = b.step("bench-shader", "Build the WGSL shader compiler stage microbenchmark");
     shader_bench_step.dependOn(&install_shader_bench.step);

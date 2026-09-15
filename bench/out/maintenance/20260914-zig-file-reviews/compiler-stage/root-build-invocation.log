@@ -1,0 +1,37 @@
+thread 2206644 panic: failed to open required build input ../../config/toolchains.json: FileNotFound
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/posix.zig:1861:23: 0x11015a7 in openatZ (std.zig)
+            .NOENT => return error.FileNotFound,
+                      ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/Dir.zig:904:16: 0x10e73e2 in openFileZ (std.zig)
+    const fd = try posix.openatZ(self.fd, sub_path, os_flags, 0);
+               ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/Dir.zig:851:5: 0x10aafe5 in openFile (std.zig)
+    return self.openFileZ(&path_c, flags);
+    ^
+/home/x/deco/doe/runtime/zig/build.zig:134:24: 0x134948d in readFileAlloc (build.zig)
+        std.debug.panic("failed to open required build input {s}: {s}", .{ path, @errorName(err) });
+                       ^
+/home/x/deco/doe/runtime/zig/build.zig:224:31: 0x12ada64 in loadLeanToolchainRefAlloc (build.zig)
+    const json = readFileAlloc(allocator, "../../config/toolchains.json", 64 * 1024);
+                              ^
+/home/x/deco/doe/runtime/zig/build.zig:240:56: 0x1267850 in loadProofProvenance (build.zig)
+        .lean_toolchain_ref = loadLeanToolchainRefAlloc(allocator),
+                                                       ^
+/home/x/deco/doe/runtime/zig/build.zig:466:49: 0x11fd5d0 in build (build.zig)
+    const proof_provenance = loadProofProvenance(b.allocator);
+                                                ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/Build.zig:2214:33: 0x11ce0da in runBuild__anon_23568 (std.zig)
+        .void => build_zig.build(b),
+                                ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/compiler/build_runner.zig:366:29: 0x11b3ff1 in main (build_runner.zig)
+        try builder.runBuild(root);
+                            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:627:37: 0x11bac69 in posixCallMainAndExit (std.zig)
+            const result = root.main() catch |err| {
+                                    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:232:5: 0x1199351 in _start (std.zig)
+    asm volatile (switch (native_arch) {
+    ^
+???:?:?: 0x0 in ??? (???)
+error: the following build command crashed:
+runtime/zig/.zig-cache/o/636967424732aeb8d0273ca7fa46431f/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib runtime/zig runtime/zig/.zig-cache /home/x/.cache/zig --seed 0x71dd92f7 -Zb3bff57fab1d592d --help

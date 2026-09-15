@@ -1,0 +1,8 @@
+unknown option '--typo'; expected --iterations, --warmup, --out, or --filter
+error: UnknownArgument
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:127:13: 0x1180ff3 in parseArgs (bench.zig)
+            return error.UnknownArgument;
+            ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:326:20: 0x11a085b in main (bench.zig)
+    const config = try parseArgs(args[1..]);
+                   ^

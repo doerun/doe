@@ -1,0 +1,4 @@
+path	sha256
+bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/after-install/bin/doe-shader-bench	5d2d7006da041f458ef5b51e405458c9d21ed1298b79bb51eddbff2ab09f977c
+bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/import-fixed-install/bin/doe-shader-bench	97bc372812257ae6194d2140e87a331e78e4e334ceebf253113144caa98823d8
+bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/release-install/bin/doe-shader-bench	1340e22428550910176b314684301f2185d654e0d37e6a93466605fd86e9b254

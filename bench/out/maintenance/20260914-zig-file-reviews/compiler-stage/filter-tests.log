@@ -1,0 +1,9 @@
+
+Build Summary: 6/6 steps succeeded; 1/1 tests passed
+test-bench-shader success
++- zig fmt --check success
++- run python3 success 470ms MaxRSS:27M
++- run test 1 passed 814us MaxRSS:3M
+   +- compile test Debug native success 268ms MaxRSS:137M
+      +- options cached
+

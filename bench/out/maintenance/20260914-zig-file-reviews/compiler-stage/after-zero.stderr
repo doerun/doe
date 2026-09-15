@@ -1,0 +1,8 @@
+--iterations must be between 1 and 2000; received 0
+error: InvalidIterations
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:143:9: 0x11815cb in parseArgs (bench.zig)
+        return error.InvalidIterations;
+        ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:326:20: 0x11a085b in main (bench.zig)
+    const config = try parseArgs(args[1..]);
+                   ^

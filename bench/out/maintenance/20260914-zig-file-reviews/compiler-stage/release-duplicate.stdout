@@ -1,0 +1,7 @@
+{"kind":"shader_bench","shader":"compute_simple","stage":"analyze_to_ir","iterations":1,"warmup":0,"p50_ns":21390,"p95_ns":21390,"p99_ns":21390,"min_ns":21390,"max_ns":21390,"mean_ns":21390,"bytes_out":0}
+{"kind":"shader_bench","shader":"compute_simple","stage":"emit_msl","iterations":1,"warmup":0,"p50_ns":6793,"p95_ns":6793,"p99_ns":6793,"min_ns":6793,"max_ns":6793,"mean_ns":6793,"bytes_out":231}
+{"kind":"shader_bench","shader":"compute_simple","stage":"emit_spirv","iterations":1,"warmup":0,"p50_ns":52418,"p95_ns":52418,"p99_ns":52418,"min_ns":52418,"max_ns":52418,"mean_ns":52418,"bytes_out":688}
+{"kind":"shader_bench","shader":"compute_simple","stage":"emit_hlsl","iterations":1,"warmup":0,"p50_ns":6062,"p95_ns":6062,"p99_ns":6062,"min_ns":6062,"max_ns":6062,"mean_ns":6062,"bytes_out":2939}
+{"kind":"shader_bench","shader":"compute_simple","stage":"e2e_msl","iterations":1,"warmup":0,"p50_ns":27832,"p95_ns":27832,"p99_ns":27832,"min_ns":27832,"max_ns":27832,"mean_ns":27832,"bytes_out":231}
+{"kind":"shader_bench","shader":"compute_simple","stage":"e2e_spirv","iterations":1,"warmup":0,"p50_ns":81193,"p95_ns":81193,"p99_ns":81193,"min_ns":81193,"max_ns":81193,"mean_ns":81193,"bytes_out":688}
+{"kind":"shader_bench","shader":"compute_simple","stage":"e2e_hlsl","iterations":1,"warmup":0,"p50_ns":22563,"p95_ns":22563,"p99_ns":22563,"min_ns":22563,"max_ns":22563,"mean_ns":22563,"bytes_out":2939}

@@ -1,0 +1,18 @@
+bench: compute_simple
+thread 2216115 panic: index out of bounds: index 0, len 0
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:209:26: 0x11b8e7e in compute_stats (bench.zig)
+        .min_ns = samples[0],
+                         ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:579:36: 0x11a6b5c in bench_shader__anon_22947 (bench.zig)
+        const stats = compute_stats(samples);
+                                   ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:690:29: 0x11a84db in main (bench.zig)
+            try bench_shader(allocator, shader, cfg, writer);
+                            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:627:37: 0x11a9591 in main (std.zig)
+            const result = root.main() catch |err| {
+                                    ^
+../sysdeps/nptl/libc_start_call_main.h:59:16: 0x762f38a2a600 in __libc_start_call_main (../sysdeps/x86/libc-start.c)
+../csu/libc-start.c:360:3: 0x762f38a2a717 in __libc_start_main_impl (../sysdeps/x86/libc-start.c)
+???:?:?: 0x1467d14 in ??? (???)
+???:?:?: 0x0 in ??? (???)

@@ -1,0 +1,5 @@
+bench: compute_simple
+bench: compute_matmul
+bench: vertex_struct_io
+bench: fragment_math
+bench: fragment_discard

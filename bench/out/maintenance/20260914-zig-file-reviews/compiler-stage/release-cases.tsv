@@ -1,0 +1,11 @@
+case	arguments	exitCode	rows	noAllocatorLeaks	matched
+corpus	--iterations 1 --warmup 0	0	35	True	True
+warmup	--iterations 3 --warmup 2	0	35	True	True
+zero	--iterations 0	1	0	True	True
+cap	--iterations 2001	1	0	True	True
+duplicate	--iterations 1 --warmup 0 --filter compute_simple --filter compute_simple	0	7	True	True
+missing	--iterations	1	0	True	True
+invalid	--iterations invalid	1	0	True	True
+unknown-option	--typo 1	1	0	True	True
+unknown-filter	--filter __missing__	1	0	True	True
+output-failure	--iterations 1 --warmup 0 --filter compute_simple --out /dev/full	1	0	True	True

@@ -1,0 +1,7 @@
+
+Build Summary: 4/4 steps succeeded
+bench-shader success
++- install doe-shader-bench success
+   +- compile exe doe-shader-bench Debug native success 404ms MaxRSS:160M
+      +- options cached
+

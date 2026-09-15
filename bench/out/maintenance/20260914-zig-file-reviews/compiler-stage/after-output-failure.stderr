@@ -1,0 +1,12 @@
+bench: compute_simple
+bench: compute_simple failed: NoSpaceLeft
+error: NoSpaceLeft
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:202:5: 0x119efa1 in writeResult (bench.zig)
+    try writer.print(
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:316:9: 0x119ff5d in benchShader (bench.zig)
+        try writeResult(writer, shader.name, @tagName(stage), config.iterations, config.warmup, try computeStats(samples), bytes_out);
+        ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:340:13: 0x11a0f5f in main (bench.zig)
+            return err;
+            ^

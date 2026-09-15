@@ -1,0 +1,17 @@
+bench: compute_simple
+error(gpa): memory address 0x75419fae0000 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/mem/Allocator.zig:436:40: 0x10b283e in dupe__anon_5703 (std.zig)
+    const new_buf = try allocator.alloc(T, m.len);
+                                       ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:177:44: 0x11827f3 in parse_args (bench.zig)
+            cfg.filter = try allocator.dupe(u8, args[i]);
+                                           ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench.zig:657:27: 0x11a76f1 in main (bench.zig)
+    const cfg = parse_args(allocator) catch |err| {
+                          ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:627:37: 0x11a9591 in main (std.zig)
+            const result = root.main() catch |err| {
+                                    ^
+../sysdeps/nptl/libc_start_call_main.h:59:16: 0x75419f82a600 in __libc_start_call_main (../sysdeps/x86/libc-start.c)
+../csu/libc-start.c:360:3: 0x75419f82a717 in __libc_start_main_impl (../sysdeps/x86/libc-start.c)
+
