@@ -1,0 +1,20 @@
+cannot read shader '/home/x/deco/doe/bench/out/maintenance/20260914-zig-file-reviews/compilation/__missing_shader__': FileNotFound
+error: FileNotFound
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/posix.zig:1861:23: 0x10f2163 in openatZ (std.zig)
+            .NOENT => return error.FileNotFound,
+                      ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/Dir.zig:904:16: 0x10d8412 in openFileZ (std.zig)
+    const fd = try posix.openatZ(self.fd, sub_path, os_flags, 0);
+               ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/Dir.zig:851:5: 0x109c625 in openFile (std.zig)
+    return self.openFileZ(&path_c, flags);
+    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/Dir.zig:2006:16: 0x118c743 in readFileAllocOptions__anon_25874 (std.zig)
+    var file = try self.openFile(file_path, .{});
+               ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/Dir.zig:1986:5: 0x118cb6b in readFileAlloc (std.zig)
+    return self.readFileAllocOptions(allocator, file_path, max_bytes, null, .of(u8), null);
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:433:13: 0x119284a in main (bench_compilation.zig)
+            return err;
+            ^

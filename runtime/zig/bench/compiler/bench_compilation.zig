@@ -1,44 +1,19 @@
-// doe_wgsl/bench_compilation.zig — shader compilation latency benchmark.
-//
-// Measures full WGSL-to-target translation time (the metric that matters for
-// pipeline creation and first-frame UX). Targets: MSL, HLSL, SPIR-V.
-//
-// Shader corpus spans four complexity tiers so results can be compared against
-// Tint/Dawn on equivalent workloads. Outputs NDJSON with p50/p95/p99 and a
-// final summary line per target.
-//
-// Usage:
-//   zig-out/bin/doe-compilation-bench [--iterations N] [--warmup N] [--out path] [--filter name] [--target msl|hlsl|spirv|all]
-//
-// Methodology notes for Tint comparison:
-//   - Doe measures WGSL source -> target text/binary, including parse+sema+IR+emit.
-//   - Tint equivalent: `tint --format=msl shader.wgsl` measures the same scope.
-//   - Tint must be built in Release mode (Chrome build or standalone cmake -DCMAKE_BUILD_TYPE=Release).
-//   - Both sides must use the same shader source verbatim (no preprocessing).
-//   - Report hardware, OS, and compiler versions alongside results.
-//   - Doe is single-threaded; confirm Tint is not using thread-pool internally.
+// In-process WGSL translation diagnostics. Comparison harnesses own matched
+// timing scopes, validation, trace identity, and performance claims.
 
 const std = @import("std");
-const mod = @import("doe").compiler.wgsl();
-const translateToMsl = mod.translateToMsl;
-const translateToHlsl = mod.translateToHlsl;
-const translateToSpirv = mod.translateToSpirv;
-
-// ============================================================
-// Constants
-// ============================================================
+const wgsl = @import("doe").compiler.wgsl();
 
 const DEFAULT_ITERATIONS: u32 = 500;
 const DEFAULT_WARMUP: u32 = 50;
 const MAX_SAMPLES: u32 = 5000;
-const MSL_BUF_SIZE: usize = mod.MAX_OUTPUT;
-const HLSL_BUF_SIZE: usize = mod.MAX_HLSL_OUTPUT;
-const SPIRV_BUF_SIZE: usize = mod.MAX_SPIRV_OUTPUT;
-const BENCH_VERSION: u32 = 1;
-
-// ============================================================
-// Shader corpus — four complexity tiers
-// ============================================================
+const MSL_BUF_SIZE: usize = wgsl.MAX_OUTPUT;
+const HLSL_BUF_SIZE: usize = wgsl.MAX_HLSL_OUTPUT;
+const SPIRV_BUF_SIZE: usize = wgsl.MAX_SPIRV_OUTPUT;
+const BENCH_VERSION: u32 = 2;
+const MAX_SHADER_SOURCE_BYTES: usize = 8 * 1024 * 1024;
+const NS_PER_MICROSECOND: u64 = std.time.ns_per_us;
+const TIMER_CALIBRATION_ITERATIONS: u32 = 1000;
 
 const Shader = struct {
     name: []const u8,
@@ -47,16 +22,17 @@ const Shader = struct {
     source_lines: u32,
 };
 
-fn count_lines(src: []const u8) u32 {
+fn countLines(src: []const u8) u32 {
     @setEvalBranchQuota(10_000);
-    var n: u32 = 1;
+    if (src.len == 0) return 0;
+    var n: u32 = if (src[src.len - 1] == '\n') 0 else 1;
     for (src) |c| {
         if (c == '\n') n += 1;
     }
     return n;
 }
 
-const SHADER_SOURCES = struct {
+const ShaderSources = struct {
     // -- Tier: trivial --
     const empty_compute =
         \\@compute @workgroup_size(1)
@@ -156,20 +132,16 @@ const SHADER_SOURCES = struct {
 };
 
 const SHADERS = [_]Shader{
-    .{ .name = "empty_compute", .tier = "trivial", .source = SHADER_SOURCES.empty_compute, .source_lines = count_lines(SHADER_SOURCES.empty_compute) },
-    .{ .name = "passthrough_vertex", .tier = "trivial", .source = SHADER_SOURCES.passthrough_vertex, .source_lines = count_lines(SHADER_SOURCES.passthrough_vertex) },
-    .{ .name = "scale_compute", .tier = "simple", .source = SHADER_SOURCES.scale_compute, .source_lines = count_lines(SHADER_SOURCES.scale_compute) },
-    .{ .name = "color_fragment", .tier = "simple", .source = SHADER_SOURCES.color_fragment, .source_lines = count_lines(SHADER_SOURCES.color_fragment) },
-    .{ .name = "matmul_compute", .tier = "moderate", .source = SHADER_SOURCES.matmul_compute, .source_lines = count_lines(SHADER_SOURCES.matmul_compute) },
-    .{ .name = "vertex_transform", .tier = "moderate", .source = SHADER_SOURCES.vertex_transform, .source_lines = count_lines(SHADER_SOURCES.vertex_transform) },
-    .{ .name = "texture_compute", .tier = "complex", .source = SHADER_SOURCES.texture_compute, .source_lines = count_lines(SHADER_SOURCES.texture_compute) },
-    .{ .name = "multi_binding_compute", .tier = "complex", .source = SHADER_SOURCES.multi_binding_compute, .source_lines = count_lines(SHADER_SOURCES.multi_binding_compute) },
-    .{ .name = "fragment_discard", .tier = "complex", .source = SHADER_SOURCES.fragment_discard, .source_lines = count_lines(SHADER_SOURCES.fragment_discard) },
+    .{ .name = "empty_compute", .tier = "trivial", .source = ShaderSources.empty_compute, .source_lines = countLines(ShaderSources.empty_compute) },
+    .{ .name = "passthrough_vertex", .tier = "trivial", .source = ShaderSources.passthrough_vertex, .source_lines = countLines(ShaderSources.passthrough_vertex) },
+    .{ .name = "scale_compute", .tier = "simple", .source = ShaderSources.scale_compute, .source_lines = countLines(ShaderSources.scale_compute) },
+    .{ .name = "color_fragment", .tier = "simple", .source = ShaderSources.color_fragment, .source_lines = countLines(ShaderSources.color_fragment) },
+    .{ .name = "matmul_compute", .tier = "moderate", .source = ShaderSources.matmul_compute, .source_lines = countLines(ShaderSources.matmul_compute) },
+    .{ .name = "vertex_transform", .tier = "moderate", .source = ShaderSources.vertex_transform, .source_lines = countLines(ShaderSources.vertex_transform) },
+    .{ .name = "texture_compute", .tier = "complex", .source = ShaderSources.texture_compute, .source_lines = countLines(ShaderSources.texture_compute) },
+    .{ .name = "multi_binding_compute", .tier = "complex", .source = ShaderSources.multi_binding_compute, .source_lines = countLines(ShaderSources.multi_binding_compute) },
+    .{ .name = "fragment_discard", .tier = "complex", .source = ShaderSources.fragment_discard, .source_lines = countLines(ShaderSources.fragment_discard) },
 };
-
-// ============================================================
-// Target selection
-// ============================================================
 
 const Target = enum {
     msl,
@@ -177,89 +149,91 @@ const Target = enum {
     spirv,
 };
 
-const ALL_TARGETS = [_]Target{ .msl, .hlsl, .spirv };
-
-// ============================================================
-// CLI argument parsing
-// ============================================================
+const ALL_TARGETS = std.enums.values(Target);
 
 const Config = struct {
-    iterations: u32,
-    warmup: u32,
-    out_path: ?[]const u8,
-    filter: ?[]const u8,
-    shader_path: ?[]const u8,
-    shader_name: ?[]const u8,
-    shader_tier: ?[]const u8,
-    targets: []const Target,
+    iterations: u32 = DEFAULT_ITERATIONS,
+    warmup: u32 = DEFAULT_WARMUP,
+    out_path: ?[]const u8 = null,
+    filter: ?[]const u8 = null,
+    shader_path: ?[]const u8 = null,
+    shader_name: ?[]const u8 = null,
+    shader_tier: ?[]const u8 = null,
+    target: ?Target = null,
 };
 
-fn parse_args(allocator: std.mem.Allocator) !Config {
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
-
-    var cfg = Config{
-        .iterations = DEFAULT_ITERATIONS,
-        .warmup = DEFAULT_WARMUP,
-        .out_path = null,
-        .filter = null,
-        .shader_path = null,
-        .shader_name = null,
-        .shader_tier = null,
-        .targets = &ALL_TARGETS,
-    };
-
-    var i: usize = 1;
-    while (i < args.len) : (i += 1) {
-        if (std.mem.eql(u8, args[i], "--iterations") and i + 1 < args.len) {
-            i += 1;
-            cfg.iterations = std.fmt.parseInt(u32, args[i], 10) catch blk: {
-                std.debug.print("warning: invalid --iterations '{s}', using default {d}\n", .{ args[i], DEFAULT_ITERATIONS });
-                break :blk DEFAULT_ITERATIONS;
-            };
-        } else if (std.mem.eql(u8, args[i], "--warmup") and i + 1 < args.len) {
-            i += 1;
-            cfg.warmup = std.fmt.parseInt(u32, args[i], 10) catch blk: {
-                std.debug.print("warning: invalid --warmup '{s}', using default {d}\n", .{ args[i], DEFAULT_WARMUP });
-                break :blk DEFAULT_WARMUP;
-            };
-        } else if (std.mem.eql(u8, args[i], "--out") and i + 1 < args.len) {
-            i += 1;
-            cfg.out_path = try allocator.dupe(u8, args[i]);
-        } else if (std.mem.eql(u8, args[i], "--filter") and i + 1 < args.len) {
-            i += 1;
-            cfg.filter = try allocator.dupe(u8, args[i]);
-        } else if (std.mem.eql(u8, args[i], "--shader-path") and i + 1 < args.len) {
-            i += 1;
-            cfg.shader_path = try allocator.dupe(u8, args[i]);
-        } else if (std.mem.eql(u8, args[i], "--shader-name") and i + 1 < args.len) {
-            i += 1;
-            cfg.shader_name = try allocator.dupe(u8, args[i]);
-        } else if (std.mem.eql(u8, args[i], "--shader-tier") and i + 1 < args.len) {
-            i += 1;
-            cfg.shader_tier = try allocator.dupe(u8, args[i]);
-        } else if (std.mem.eql(u8, args[i], "--target") and i + 1 < args.len) {
-            i += 1;
-            if (std.mem.eql(u8, args[i], "msl")) {
-                cfg.targets = &[_]Target{.msl};
-            } else if (std.mem.eql(u8, args[i], "hlsl")) {
-                cfg.targets = &[_]Target{.hlsl};
-            } else if (std.mem.eql(u8, args[i], "spirv")) {
-                cfg.targets = &[_]Target{.spirv};
-            } else if (std.mem.eql(u8, args[i], "all")) {
-                cfg.targets = &ALL_TARGETS;
-            } else {
-                std.debug.print("warning: unknown --target '{s}', using all\n", .{args[i]});
-            }
+// All string fields borrow from the process argument owner through execution.
+fn parseArgs(args: []const []const u8) !Config {
+    var config = Config{};
+    var index: usize = 0;
+    while (index < args.len) : (index += 2) {
+        const option = args[index];
+        const Option = enum { iterations, warmup, out, filter, @"shader-path", @"shader-name", @"shader-tier", target };
+        const selected = if (std.mem.startsWith(u8, option, "--"))
+            std.meta.stringToEnum(Option, option[2..])
+        else
+            null;
+        const kind = selected orelse {
+            std.debug.print("unknown compilation benchmark option '{s}'\n", .{option});
+            return error.UnknownArgument;
+        };
+        if (index + 1 == args.len) {
+            std.debug.print("missing value for {s}\n", .{option});
+            return error.MissingArgumentValue;
+        }
+        const value = args[index + 1];
+        switch (kind) {
+            .iterations => config.iterations = try parseCount(option, value),
+            .warmup => config.warmup = try parseCount(option, value),
+            .out => config.out_path = value,
+            .filter => config.filter = value,
+            .@"shader-path" => config.shader_path = value,
+            .@"shader-name" => config.shader_name = value,
+            .@"shader-tier" => config.shader_tier = value,
+            .target => config.target = if (std.mem.eql(u8, value, "all")) null else std.meta.stringToEnum(Target, value) orelse {
+                std.debug.print("--target expects msl, hlsl, spirv, or all; received '{s}'\n", .{value});
+                return error.InvalidTarget;
+            },
         }
     }
-
-    return cfg;
+    if (config.iterations == 0 or config.iterations > MAX_SAMPLES) {
+        std.debug.print("--iterations must be between 1 and {d}; received {d}\n", .{ MAX_SAMPLES, config.iterations });
+        return error.InvalidIterations;
+    }
+    if (config.shader_path == null and (config.shader_name != null or config.shader_tier != null)) {
+        std.debug.print("--shader-name and --shader-tier require --shader-path\n", .{});
+        return error.InvalidShaderSelection;
+    }
+    if (config.shader_path) |path| {
+        const name = config.shader_name orelse std.fs.path.stem(std.fs.path.basename(path));
+        const tier = config.shader_tier orelse "external";
+        if (!std.unicode.utf8ValidateSlice(name) or !std.unicode.utf8ValidateSlice(tier)) {
+            std.debug.print("shader name and tier must be valid UTF-8 for JSON output\n", .{});
+            return error.InvalidShaderMetadata;
+        }
+        if (config.filter) |filter| {
+            if (!std.mem.eql(u8, filter, name)) return unknownShader(filter);
+        }
+    } else if (config.filter) |filter| {
+        for (SHADERS) |shader| {
+            if (std.mem.eql(u8, filter, shader.name)) return config;
+        }
+        return unknownShader(filter);
+    }
+    return config;
 }
 
-// ============================================================
-// Statistics
-// ============================================================
+fn unknownShader(filter: []const u8) error{UnknownShader} {
+    std.debug.print("shader filter '{s}' does not match the selected corpus or external shader\n", .{filter});
+    return error.UnknownShader;
+}
+
+fn parseCount(option: []const u8, value: []const u8) !u32 {
+    return std.fmt.parseInt(u32, value, 10) catch |err| {
+        std.debug.print("{s} requires an unsigned integer; received '{s}': {s}\n", .{ option, value, @errorName(err) });
+        return err;
+    };
+}
 
 const Stats = struct {
     min_ns: u64,
@@ -271,21 +245,21 @@ const Stats = struct {
     stddev_ns: u64,
 };
 
-fn compute_stats(samples: []u64) Stats {
+fn computeStats(samples: []u64) !Stats {
+    if (samples.len == 0) return error.EmptySamples;
     std.sort.block(u64, samples, {}, std.sort.asc(u64));
 
     const n = samples.len;
-    var sum: u64 = 0;
+    var sum: u128 = 0;
     for (samples) |s| sum += s;
-    const mean = sum / n;
+    const mean: u64 = @intCast(sum / n);
 
-    // stddev via two-pass
-    var var_sum: u128 = 0;
-    for (samples) |s| {
-        const diff: i128 = @as(i128, @intCast(s)) - @as(i128, @intCast(mean));
-        var_sum += @intCast(@as(u128, @bitCast(diff * diff)));
+    var squared_difference_sum: u256 = 0;
+    for (samples) |sample| {
+        const difference: u128 = if (sample >= mean) sample - mean else mean - sample;
+        squared_difference_sum += difference * difference;
     }
-    const variance = var_sum / n;
+    const variance: u128 = @intCast(squared_difference_sum / n);
     const stddev: u64 = @intCast(std.math.sqrt(variance));
 
     return .{
@@ -299,34 +273,20 @@ fn compute_stats(samples: []u64) Stats {
     };
 }
 
-// ============================================================
-// Translation runner
-// ============================================================
-
-const TranslateResult = struct {
-    bytes_out: usize,
-    succeeded: bool,
-};
-
-fn translate_once(
+fn translateOnce(
     allocator: std.mem.Allocator,
     source: []const u8,
     target: Target,
     out_buf: []u8,
-) TranslateResult {
-    const result = switch (target) {
-        .msl => translateToMsl(allocator, source, out_buf),
-        .hlsl => translateToHlsl(allocator, source, out_buf),
-        .spirv => translateToSpirv(allocator, source, out_buf),
+) !usize {
+    return switch (target) {
+        .msl => wgsl.translateToMsl(allocator, source, out_buf),
+        .hlsl => wgsl.translateToHlsl(allocator, source, out_buf),
+        .spirv => wgsl.translateToSpirv(allocator, source, out_buf),
     };
-    if (result) |n| {
-        return .{ .bytes_out = n, .succeeded = true };
-    } else |_| {
-        return .{ .bytes_out = 0, .succeeded = false };
-    }
 }
 
-fn buf_size_for(target: Target) usize {
+fn bufferSizeFor(target: Target) usize {
     return switch (target) {
         .msl => MSL_BUF_SIZE,
         .hlsl => HLSL_BUF_SIZE,
@@ -334,12 +294,9 @@ fn buf_size_for(target: Target) usize {
     };
 }
 
-// ============================================================
-// NDJSON output
-// ============================================================
-
-fn write_result(
-    writer: anytype,
+fn writeResult(
+    allocator: std.mem.Allocator,
+    writer: std.fs.File.DeprecatedWriter,
     shader: Shader,
     target: Target,
     iterations: u32,
@@ -347,19 +304,23 @@ fn write_result(
     stats: Stats,
     bytes_out: usize,
 ) !void {
+    const shader_name = try std.json.Stringify.valueAlloc(allocator, shader.name, .{});
+    defer allocator.free(shader_name);
+    const shader_tier = try std.json.Stringify.valueAlloc(allocator, shader.tier, .{});
+    defer allocator.free(shader_tier);
     try writer.print(
         "{{\"kind\":\"compilation_bench\",\"version\":{d}," ++
-            "\"shader\":\"{s}\",\"tier\":\"{s}\"," ++
+            "\"shader\":{s},\"tier\":{s}," ++
             "\"target\":\"{s}\",\"sourceLines\":{d}," ++
             "\"iterations\":{d},\"warmup\":{d}," ++
             "\"p50_ns\":{d},\"p95_ns\":{d},\"p99_ns\":{d}," ++
             "\"min_ns\":{d},\"max_ns\":{d},\"mean_ns\":{d}," ++
             "\"stddev_ns\":{d},\"bytesOut\":{d}," ++
-            "\"p50_us\":{d}.{d:0>3},\"compiler\":\"doe_wgsl\",\"compilerLoc\":18000}}\n",
+            "\"p50_us\":{d}.{d:0>3},\"compiler\":\"doe_wgsl\"}}\n",
         .{
             BENCH_VERSION,
-            shader.name,
-            shader.tier,
+            shader_name,
+            shader_tier,
             @tagName(target),
             shader.source_lines,
             iterations,
@@ -372,163 +333,125 @@ fn write_result(
             stats.mean_ns,
             stats.stddev_ns,
             bytes_out,
-            stats.p50_ns / 1000,
-            stats.p50_ns % 1000,
+            stats.p50_ns / NS_PER_MICROSECOND,
+            stats.p50_ns % NS_PER_MICROSECOND,
         },
     );
 }
 
-fn write_summary_line(
-    writer: anytype,
+fn writeSummary(
+    writer: std.fs.File.DeprecatedWriter,
     target: Target,
     shader_count: u32,
     total_p50_ns: u64,
     min_p50_ns: u64,
     max_p50_ns: u64,
 ) !void {
+    if (shader_count == 0) return error.NoShadersSelected;
     try writer.print(
         "{{\"kind\":\"compilation_bench_summary\",\"version\":{d}," ++
             "\"target\":\"{s}\",\"shaderCount\":{d}," ++
             "\"totalP50_ns\":{d},\"avgP50_ns\":{d}," ++
             "\"minP50_ns\":{d},\"maxP50_ns\":{d}," ++
             "\"totalP50_us\":{d}.{d:0>3}," ++
-            "\"compiler\":\"doe_wgsl\",\"compilerLoc\":18000}}\n",
+            "\"compiler\":\"doe_wgsl\"}}\n",
         .{
             BENCH_VERSION,
             @tagName(target),
             shader_count,
             total_p50_ns,
-            if (shader_count > 0) total_p50_ns / shader_count else 0,
+            total_p50_ns / shader_count,
             min_p50_ns,
             max_p50_ns,
-            total_p50_ns / 1000,
-            total_p50_ns % 1000,
+            total_p50_ns / NS_PER_MICROSECOND,
+            total_p50_ns % NS_PER_MICROSECOND,
         },
     );
 }
 
-// ============================================================
-// Benchmark driver
-// ============================================================
-
-fn bench_shader_target(
+fn benchShaderTarget(
     allocator: std.mem.Allocator,
     shader: Shader,
     target: Target,
-    cfg: Config,
-    writer: anytype,
-) !?u64 {
-    const capped = @min(cfg.iterations, MAX_SAMPLES);
-    const samples = try allocator.alloc(u64, capped);
+    config: Config,
+    writer: std.fs.File.DeprecatedWriter,
+) !u64 {
+    const samples = try allocator.alloc(u64, config.iterations);
     defer allocator.free(samples);
-
-    const out_buf = try allocator.alloc(u8, buf_size_for(target));
-    defer allocator.free(out_buf);
-
-    // Warmup — verify shader compiles and prime caches.
-    {
-        var wi: u32 = 0;
-        while (wi < cfg.warmup) : (wi += 1) {
-            const r = translate_once(allocator, shader.source, target, out_buf);
-            if (!r.succeeded) {
-                std.debug.print("  {s}/{s}: compilation failed during warmup — skipping\n", .{ shader.name, @tagName(target) });
-                return null;
-            }
-        }
+    const output = try allocator.alloc(u8, bufferSizeFor(target));
+    defer allocator.free(output);
+    for (0..config.warmup) |_| {
+        _ = try translateOnce(allocator, shader.source, target, output);
     }
-
-    // Timed iterations.
     var last_bytes: usize = 0;
-    for (samples) |*slot| {
+    for (samples) |*sample| {
         var timer = try std.time.Timer.start();
-        const r = translate_once(allocator, shader.source, target, out_buf);
-        slot.* = timer.read();
-        if (!r.succeeded) {
-            std.debug.print("  {s}/{s}: compilation failed during timed run — skipping\n", .{ shader.name, @tagName(target) });
-            return null;
-        }
-        last_bytes = r.bytes_out;
+        last_bytes = try translateOnce(allocator, shader.source, target, output);
+        sample.* = timer.read();
     }
-
-    const stats = compute_stats(samples);
-    try write_result(writer, shader, target, capped, cfg.warmup, stats, last_bytes);
+    const stats = try computeStats(samples);
+    try writeResult(allocator, writer, shader, target, config.iterations, config.warmup, stats, last_bytes);
+    printStderrRow(shader.name, target, stats, last_bytes);
     return stats.p50_ns;
 }
 
-// ============================================================
-// Human-readable stderr summary
-// ============================================================
-
-fn print_stderr_header() void {
+fn printStderrHeader() void {
     std.debug.print("\n{s:<25} {s:<8} {s:>10} {s:>10} {s:>10} {s:>8}\n", .{
         "shader", "target", "p50(us)", "p95(us)", "p99(us)", "out(B)",
     });
     std.debug.print("{s}\n", .{"-" ** 78});
 }
 
-fn print_stderr_row(name: []const u8, target: Target, stats: Stats, bytes: usize) void {
+fn printStderrRow(name: []const u8, target: Target, stats: Stats, bytes: usize) void {
     std.debug.print("{s:<25} {s:<8} {d:>7}.{d:0>3} {d:>7}.{d:0>3} {d:>7}.{d:0>3} {d:>8}\n", .{
         name,
         @tagName(target),
-        stats.p50_ns / 1000,
-        stats.p50_ns % 1000,
-        stats.p95_ns / 1000,
-        stats.p95_ns % 1000,
-        stats.p99_ns / 1000,
-        stats.p99_ns % 1000,
+        stats.p50_ns / NS_PER_MICROSECOND,
+        stats.p50_ns % NS_PER_MICROSECOND,
+        stats.p95_ns / NS_PER_MICROSECOND,
+        stats.p95_ns % NS_PER_MICROSECOND,
+        stats.p99_ns / NS_PER_MICROSECOND,
+        stats.p99_ns % NS_PER_MICROSECOND,
         bytes,
     });
 }
-
-// ============================================================
-// Entry point
-// ============================================================
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+    const config = try parseArgs(args[1..]);
 
-    const cfg = parse_args(allocator) catch |err| {
-        std.debug.print("error parsing args: {}\n", .{err});
-        std.process.exit(1);
-    };
-    defer if (cfg.out_path) |p| allocator.free(p);
-    defer if (cfg.filter) |f| allocator.free(f);
-    defer if (cfg.shader_path) |p| allocator.free(p);
-    defer if (cfg.shader_name) |n| allocator.free(n);
-    defer if (cfg.shader_tier) |t| allocator.free(t);
+    var dynamic_source: ?[]u8 = null;
+    defer if (dynamic_source) |source| allocator.free(source);
+    var external_shader: [1]Shader = undefined;
+    const shaders: []const Shader = if (config.shader_path) |path| blk: {
+        const source = std.fs.cwd().readFileAlloc(allocator, path, MAX_SHADER_SOURCE_BYTES) catch |err| {
+            std.debug.print("cannot read shader '{s}': {s}\n", .{ path, @errorName(err) });
+            return err;
+        };
+        dynamic_source = source;
+        external_shader[0] = .{
+            .name = config.shader_name orelse std.fs.path.stem(std.fs.path.basename(path)),
+            .tier = config.shader_tier orelse "external",
+            .source = source,
+            .source_lines = countLines(source),
+        };
+        break :blk &external_shader;
+    } else &SHADERS;
 
-    if (cfg.iterations > MAX_SAMPLES) {
-        std.debug.print(
-            "warning: --iterations {d} exceeds cap {d}; capped\n",
-            .{ cfg.iterations, MAX_SAMPLES },
-        );
-    }
-
+    const output = if (config.out_path) |path|
+        try std.fs.cwd().createFile(path, .{})
+    else
+        std.fs.File.stdout();
+    defer if (config.out_path != null) output.close();
     std.debug.print("doe_wgsl compilation benchmark v{d}\n", .{BENCH_VERSION});
-    std.debug.print("  iterations={d} warmup={d} targets={d} shaders={d}\n", .{
-        @min(cfg.iterations, MAX_SAMPLES),
-        cfg.warmup,
-        cfg.targets.len,
-        SHADERS.len,
-    });
-
-    // Determine output writer.
-    if (cfg.out_path) |path| {
-        const out_file = try std.fs.cwd().createFile(path, .{});
-        defer out_file.close();
-        const writer = out_file.deprecatedWriter();
-        try run_all(allocator, cfg, writer);
-    } else {
-        const writer = std.fs.File.stdout().deprecatedWriter();
-        try run_all(allocator, cfg, writer);
-    }
+    try runAll(allocator, config, shaders, output.deprecatedWriter());
 }
 
-const TIMER_CALIBRATION_ITERATIONS: u32 = 1000;
-
-fn measure_timer_overhead_ns(allocator: std.mem.Allocator) !u64 {
+fn measureTimerOverheadNs(allocator: std.mem.Allocator) !u64 {
     const samples = try allocator.alloc(u64, TIMER_CALIBRATION_ITERATIONS);
     defer allocator.free(samples);
     for (samples) |*slot| {
@@ -539,7 +462,7 @@ fn measure_timer_overhead_ns(allocator: std.mem.Allocator) !u64 {
     return samples[samples.len / 2];
 }
 
-fn write_calibration(writer: anytype, timer_overhead_ns: u64) !void {
+fn writeCalibration(writer: std.fs.File.DeprecatedWriter, timer_overhead_ns: u64) !void {
     try writer.print(
         "{{\"kind\":\"compilation_bench_calibration\",\"version\":{d}," ++
             "\"timerOverheadP50Ns\":{d}," ++
@@ -550,73 +473,107 @@ fn write_calibration(writer: anytype, timer_overhead_ns: u64) !void {
     );
 }
 
-fn run_all(allocator: std.mem.Allocator, cfg: Config, writer: anytype) !void {
-    print_stderr_header();
-
-    const timer_overhead_ns = try measure_timer_overhead_ns(allocator);
-    try write_calibration(writer, timer_overhead_ns);
-
-    var dynamic_source: ?[]u8 = null;
-    defer if (dynamic_source) |buf| allocator.free(buf);
-    var dynamic_name: ?[]u8 = null;
-    defer if (dynamic_name) |buf| allocator.free(buf);
-    var dynamic_tier: ?[]u8 = null;
-    defer if (dynamic_tier) |buf| allocator.free(buf);
-
-    const shader_slice = blk: {
-        if (cfg.shader_path) |shader_path| {
-            const source = try std.fs.cwd().readFileAlloc(allocator, shader_path, 8 * 1024 * 1024);
-            dynamic_source = source;
-            const name = if (cfg.shader_name) |shader_name| name_blk: {
-                break :name_blk try allocator.dupe(u8, shader_name);
-            } else stem_blk: {
-                const basename = std.fs.path.basename(shader_path);
-                const stem = std.fs.path.stem(basename);
-                break :stem_blk try allocator.dupe(u8, stem);
-            };
-            dynamic_name = name;
-            const tier = if (cfg.shader_tier) |shader_tier|
-                try allocator.dupe(u8, shader_tier)
-            else
-                try allocator.dupe(u8, "external");
-            dynamic_tier = tier;
-            const external_shader = try allocator.alloc(Shader, 1);
-            external_shader[0] = .{
-                .name = name,
-                .tier = tier,
-                .source = source,
-                .source_lines = count_lines(source),
-            };
-            break :blk external_shader;
+fn runAll(allocator: std.mem.Allocator, config: Config, shaders: []const Shader, writer: std.fs.File.DeprecatedWriter) !void {
+    printStderrHeader();
+    try writeCalibration(writer, try measureTimerOverheadNs(allocator));
+    for (ALL_TARGETS) |target| {
+        if (config.target) |selected| {
+            if (selected != target) continue;
         }
-        break :blk SHADERS[0..];
-    };
-    defer if (cfg.shader_path != null) allocator.free(shader_slice);
-
-    for (cfg.targets) |target| {
         var total_p50: u64 = 0;
         var min_p50: u64 = std.math.maxInt(u64);
         var max_p50: u64 = 0;
         var shader_count: u32 = 0;
-
-        for (shader_slice) |shader| {
-            if (cfg.filter) |f| {
-                if (!std.mem.eql(u8, f, shader.name)) continue;
+        for (shaders) |shader| {
+            if (config.filter) |filter| {
+                if (!std.mem.eql(u8, filter, shader.name)) continue;
             }
-
-            const maybe_p50 = try bench_shader_target(allocator, shader, target, cfg, writer);
-            if (maybe_p50) |p50| {
-                total_p50 += p50;
-                min_p50 = @min(min_p50, p50);
-                max_p50 = @max(max_p50, p50);
-                shader_count += 1;
-            }
+            const p50 = benchShaderTarget(allocator, shader, target, config, writer) catch |err| {
+                std.debug.print("compilation failed for {s}/{s}: {s}\n", .{ shader.name, @tagName(target), @errorName(err) });
+                return err;
+            };
+            total_p50 = try std.math.add(u64, total_p50, p50);
+            min_p50 = @min(min_p50, p50);
+            max_p50 = @max(max_p50, p50);
+            shader_count += 1;
         }
-
-        if (shader_count > 0) {
-            try write_summary_line(writer, target, shader_count, total_p50, min_p50, max_p50);
-        }
+        if (shader_count == 0) return error.NoShadersSelected;
+        try writeSummary(writer, target, shader_count, total_p50, min_p50, max_p50);
     }
+}
 
-    std.debug.print("\ndone.\n", .{});
+test "compilation benchmark rejects invalid and ineffective inputs" {
+    try std.testing.expectError(error.InvalidIterations, parseArgs(&.{ "--iterations", "0" }));
+    try std.testing.expectError(error.InvalidIterations, parseArgs(&.{ "--iterations", "5001" }));
+    try std.testing.expectError(error.MissingArgumentValue, parseArgs(&.{"--target"}));
+    try std.testing.expectError(error.InvalidTarget, parseArgs(&.{ "--target", "bad" }));
+    try std.testing.expectError(error.UnknownArgument, parseArgs(&.{ "--typo", "1" }));
+    try std.testing.expectError(error.UnknownShader, parseArgs(&.{ "--filter", "absent" }));
+    try std.testing.expectError(error.InvalidShaderSelection, parseArgs(&.{ "--shader-name", "absent" }));
+    try std.testing.expectError(error.InvalidShaderMetadata, parseArgs(&.{ "--shader-path", "shader.wgsl", "--shader-name", "\xff" }));
+    const config = try parseArgs(&.{ "--target", "msl", "--target", "all", "--filter", "empty_compute", "--warmup", "0" });
+    try std.testing.expectEqual(null, config.target);
+    try std.testing.expectEqual(@as(u32, 0), config.warmup);
+}
+
+test "compilation benchmark sample arithmetic and physical source lines" {
+    try std.testing.expectError(error.EmptySamples, computeStats(&.{}));
+    var maximum = [_]u64{ std.math.maxInt(u64), std.math.maxInt(u64) };
+    const maximum_stats = try computeStats(&maximum);
+    try std.testing.expectEqual(std.math.maxInt(u64), maximum_stats.mean_ns);
+    try std.testing.expectEqual(@as(u64, 0), maximum_stats.stddev_ns);
+    var extremes = [_]u64{ 0, std.math.maxInt(u64) };
+    const extremes_stats = try computeStats(&extremes);
+    try std.testing.expectEqual(std.math.maxInt(u64) / 2, extremes_stats.mean_ns);
+    try std.testing.expectEqual(std.math.maxInt(u64) / 2, extremes_stats.stddev_ns);
+    try std.testing.expectEqual(@as(u32, 0), countLines(""));
+    try std.testing.expectEqual(@as(u32, 1), countLines("one"));
+    try std.testing.expectEqual(@as(u32, 1), countLines("one\n"));
+    try std.testing.expectEqual(@as(u32, 2), countLines("one\n\n"));
+}
+
+test "compilation benchmark escapes external metadata" {
+    var temp = std.testing.tmpDir(.{});
+    defer temp.cleanup();
+    const file = try temp.dir.createFile("rows.ndjson", .{ .read = true });
+    defer file.close();
+    const name = "quote\"line\nslash\\";
+    const tier = "tier\t\r\x00";
+    var sample = [_]u64{1000};
+    try writeResult(std.testing.allocator, file.deprecatedWriter(), .{
+        .name = name,
+        .tier = tier,
+        .source = "",
+        .source_lines = 0,
+    }, .msl, 1, 0, try computeStats(&sample), 1);
+    try file.seekTo(0);
+    const bytes = try file.readToEndAlloc(std.testing.allocator, 4096);
+    defer std.testing.allocator.free(bytes);
+    const record = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, bytes, .{});
+    defer record.deinit();
+    try std.testing.expectEqualStrings(name, record.value.object.get("shader").?.string);
+    try std.testing.expectEqualStrings(tier, record.value.object.get("tier").?.string);
+    try std.testing.expect(record.value.object.get("compilerLoc") == null);
+}
+
+fn exerciseCompilationAllocations(allocator: std.mem.Allocator, writer: std.fs.File.DeprecatedWriter) !void {
+    _ = try benchShaderTarget(allocator, SHADERS[0], .msl, .{ .iterations = 1, .warmup = 1 }, writer);
+}
+
+test "compilation benchmark releases failed translation and output allocations" {
+    var temp = std.testing.tmpDir(.{});
+    defer temp.cleanup();
+    const file = try temp.dir.createFile("rows.ndjson", .{});
+    defer file.close();
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseCompilationAllocations, .{file.deprecatedWriter()});
+    const invalid: Shader = .{ .name = "invalid", .tier = "test", .source = "@", .source_lines = 1 };
+    for (ALL_TARGETS) |target| {
+        try std.testing.expectError(error.UnexpectedToken, benchShaderTarget(
+            std.testing.allocator,
+            invalid,
+            target,
+            .{ .iterations = 1, .warmup = 0 },
+            file.deprecatedWriter(),
+        ));
+    }
 }

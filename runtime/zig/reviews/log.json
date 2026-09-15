@@ -430,6 +430,331 @@
       "targets": [
         "bench/compiler/bench.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "c4e7cd7b9e7808dce7a9a472be7b34bce1ea629087c9cf16db75c9e974d08c40"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/build-before.log",
+          "sha256": "65c0b19f691ccf22656a5a2b326bf7b56daff71832eba0f6b3c0adf6f364a4ab"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/build-root-fixed.log",
+          "sha256": "9dd515f6a488363b633348abd1545669d826f8dc801df7d1599e0d441b1e3db6"
+        }
+      ],
+      "findings": [],
+      "inputHash": "46f4fa426f66d423ec3ce59699eac1d5a74308d093e9df24729777883cc28932",
+      "level": "file",
+      "nextAction": "Retired source path; continue the compiler implementation review. This removal does not complete its directory review.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Actual bench-compilation build failed at this forwarding import. Directly rooting the existing compiler benchmark builds successfully and preserves the executable name and implementation. No other active consumer or contract names this file."
+      ],
+      "reviewId": "compilation_entrypoint_file_001",
+      "reviewedAt": "2026-09-15T02:49:46.801849+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "fcda31bfd68f92635e7b322bce6e36e4efdaa4e8",
+      "status": "verified",
+      "summary": "Read the complete one-line forwarding entrypoint and its only active build consumer. Its parent-relative import is outside Zig module root; the build now selects the implementation directly and the unused forwarding file is removed.",
+      "supersedes": null,
+      "targets": [
+        "bench/entrypoints/bench_compilation.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/README.md",
+          "sha256": "92fab4efa2a0926c376773309aad6600984225b7e0ee81bd47df2385387a7bce"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/bench.zig",
+          "sha256": "a7b7c29192328d3397c905d5c736a86f1f0b18999ee49bcb5b33bc7cf4ae2fd0"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/bench_compilation.zig",
+          "sha256": "731470b10afed87aea9f75a5697e5262a0d5a2b410b0489d7d3842d24be75132"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/README.md",
+          "sha256": "ef10d390414d9be8481419a86a624d9852dcf761488e92e25c75150435b6fb40"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/after-cases.tsv",
+          "sha256": "e54c8679aae075914c866e61a67441ddbebf0b98ad488048f0c4b23af5997369"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/build-before.log",
+          "sha256": "65c0b19f691ccf22656a5a2b326bf7b56daff71832eba0f6b3c0adf6f364a4ab"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/build-root-fixed.log",
+          "sha256": "9dd515f6a488363b633348abd1545669d826f8dc801df7d1599e0d441b1e3db6"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/final-build.log",
+          "sha256": "08506ae2e368b53b71983c1a2e9156c0f265bea3d612d12aad81812a6d5f2f45"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/final-cases.tsv",
+          "sha256": "e54c8679aae075914c866e61a67441ddbebf0b98ad488048f0c4b23af5997369"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/final-tests.log",
+          "sha256": "8602d3bdf1f9a0f8211d9d6dc1f437a1bef2695b7863aeb46e0960d5a3357cf0"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/proof-enabled-tests.log",
+          "sha256": "fb5eb229c59b9ef3186fd3a08a4946213e23da3095858b7022fc2f158ac43d0e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/release-cases.tsv",
+          "sha256": "e54c8679aae075914c866e61a67441ddbebf0b98ad488048f0c4b23af5997369"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/schema-negative.tsv",
+          "sha256": "abe2879fd79022088dd83c9e9206e9409a59f868bf476ac674aad76ce25c810e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/source-before.tsv",
+          "sha256": "b14ea10e0e92c1c3ed2d79bcc683b4fc59b4ef086680bbddf12f4de7844953b6"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/source-files.tsv",
+          "sha256": "979e8594142cde408d526f49b5a4cb3a2f780a283e60db7837a904f6f6565d5b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/structural-gates.log",
+          "sha256": "01efc90b9e2e98e1383ac0968d82e70fe269271c5f8aa7b744a725f8ad98c3d8"
+        }
+      ],
+      "findings": [],
+      "inputHash": "8a1c8522e33340db43208e6fb1da1588a05bc09e21874e7fe39bcf1ba8caf13a",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/host_hotpath_bench.zig in TSV order; compiler directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The actual compilation benchmark exposed a forwarding import outside Zig module root. The graph now roots the implementation directly, preserving the executable name and option imports.",
+        "test-bench-compilation shares the executable module and the existing test-filter, formatting, and ownership checks. Actual Debug/ReleaseFast builds, both proof modes, and the combined benchmark tests passed."
+      ],
+      "reviewId": "build_file_004",
+      "reviewedAt": "2026-09-15T03:01:18.600355+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "fcda31bfd68f92635e7b322bce6e36e4efdaa4e8",
+      "status": "verified",
+      "summary": "Re-examined the compilation benchmark root and its contract-test build entry. Earlier complete build-file review remains the base for unchanged graph sections.",
+      "supersedes": "build_file_003",
+      "targets": [
+        "build.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/lean-proof-patterns.json",
+          "sha256": "0e839bfbcd0f4c5f8087c880434c9741804fb32797fc8650fe8951c00d57529d"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/README.md",
+          "sha256": "387f94834524f25f06305f88456ef98f3d4d1629d438daa399d6d80af570a4ce"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "c936baf17dacb8db8e57686f0fbd0646038963e69940768a82dfb377c6d4382a"
+        },
+        {
+          "path": "runtime/zig/src/compiler/mod.zig",
+          "sha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/README.md",
+          "sha256": "ef10d390414d9be8481419a86a624d9852dcf761488e92e25c75150435b6fb40"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/after-cases.tsv",
+          "sha256": "e54c8679aae075914c866e61a67441ddbebf0b98ad488048f0c4b23af5997369"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/build-before.log",
+          "sha256": "65c0b19f691ccf22656a5a2b326bf7b56daff71832eba0f6b3c0adf6f364a4ab"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/build-root-fixed.log",
+          "sha256": "9dd515f6a488363b633348abd1545669d826f8dc801df7d1599e0d441b1e3db6"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/final-build.log",
+          "sha256": "08506ae2e368b53b71983c1a2e9156c0f265bea3d612d12aad81812a6d5f2f45"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/final-cases.tsv",
+          "sha256": "e54c8679aae075914c866e61a67441ddbebf0b98ad488048f0c4b23af5997369"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/final-tests.log",
+          "sha256": "8602d3bdf1f9a0f8211d9d6dc1f437a1bef2695b7863aeb46e0960d5a3357cf0"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/proof-enabled-tests.log",
+          "sha256": "fb5eb229c59b9ef3186fd3a08a4946213e23da3095858b7022fc2f158ac43d0e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/release-cases.tsv",
+          "sha256": "e54c8679aae075914c866e61a67441ddbebf0b98ad488048f0c4b23af5997369"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/schema-negative.tsv",
+          "sha256": "abe2879fd79022088dd83c9e9206e9409a59f868bf476ac674aad76ce25c810e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/source-before.tsv",
+          "sha256": "b14ea10e0e92c1c3ed2d79bcc683b4fc59b4ef086680bbddf12f4de7844953b6"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/source-files.tsv",
+          "sha256": "979e8594142cde408d526f49b5a4cb3a2f780a283e60db7837a904f6f6565d5b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/structural-gates.log",
+          "sha256": "01efc90b9e2e98e1383ac0968d82e70fe269271c5f8aa7b744a725f8ad98c3d8"
+        }
+      ],
+      "findings": [],
+      "inputHash": "8dfd60614835f9cb2f32a6eeaa26e3086e505f0b5af444c4835d14f485e63b59",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/host_hotpath_bench.zig in TSV order; compiler directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The shared documentation now distinguishes the stage cleanup boundary from whole public translation calls; no stage source changed.",
+        "The final combined build executes stage argument, sample, source-error, and allocation-failure tests with the updated build graph."
+      ],
+      "reviewId": "compiler_stage_file_003",
+      "reviewedAt": "2026-09-15T03:01:19.373662+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "fcda31bfd68f92635e7b322bce6e36e4efdaa4e8",
+      "status": "verified",
+      "summary": "Rechecked the unchanged stage benchmark after the shared README and build context gained compilation benchmark contracts. Its stage timing and error contract remain unchanged.",
+      "supersedes": "compiler_stage_file_002",
+      "targets": [
+        "bench/compiler/bench.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/native_compare_modules/compilation_runner.py",
+          "sha256": "a4196e5c29b28d0965b9de04d538e485bd701cb71db2459fc8ebd3ea9ca9166f"
+        },
+        {
+          "path": "config/zig-compilation-bench.schema.json",
+          "sha256": "cdb27986694f9cdac442c095df9ce748ed58134c5d35474ec3a2dcdcf52a29cf"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/README.md",
+          "sha256": "387f94834524f25f06305f88456ef98f3d4d1629d438daa399d6d80af570a4ce"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "c936baf17dacb8db8e57686f0fbd0646038963e69940768a82dfb377c6d4382a"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/mod.zig",
+          "sha256": "144dd739b734b3feb58587e9b3d01b09c35994e7a03662b73f4733defe03ca8f"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/pipeline/analysis.zig",
+          "sha256": "d15ecf46c5a8bec32ca8e487aea16c372fd6652c975e9c9c9ef14f90327ce5a3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/README.md",
+          "sha256": "ef10d390414d9be8481419a86a624d9852dcf761488e92e25c75150435b6fb40"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/after-cases.tsv",
+          "sha256": "e54c8679aae075914c866e61a67441ddbebf0b98ad488048f0c4b23af5997369"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/build-before.log",
+          "sha256": "65c0b19f691ccf22656a5a2b326bf7b56daff71832eba0f6b3c0adf6f364a4ab"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/build-root-fixed.log",
+          "sha256": "9dd515f6a488363b633348abd1545669d826f8dc801df7d1599e0d441b1e3db6"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/final-build.log",
+          "sha256": "08506ae2e368b53b71983c1a2e9156c0f265bea3d612d12aad81812a6d5f2f45"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/final-cases.tsv",
+          "sha256": "e54c8679aae075914c866e61a67441ddbebf0b98ad488048f0c4b23af5997369"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/final-tests.log",
+          "sha256": "8602d3bdf1f9a0f8211d9d6dc1f437a1bef2695b7863aeb46e0960d5a3357cf0"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/proof-enabled-tests.log",
+          "sha256": "fb5eb229c59b9ef3186fd3a08a4946213e23da3095858b7022fc2f158ac43d0e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/release-cases.tsv",
+          "sha256": "e54c8679aae075914c866e61a67441ddbebf0b98ad488048f0c4b23af5997369"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/schema-negative.tsv",
+          "sha256": "abe2879fd79022088dd83c9e9206e9409a59f868bf476ac674aad76ce25c810e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/source-before.tsv",
+          "sha256": "b14ea10e0e92c1c3ed2d79bcc683b4fc59b4ef086680bbddf12f4de7844953b6"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/source-files.tsv",
+          "sha256": "979e8594142cde408d526f49b5a4cb3a2f780a283e60db7837a904f6f6565d5b"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/structural-gates.log",
+          "sha256": "01efc90b9e2e98e1383ac0968d82e70fe269271c5f8aa7b744a725f8ad98c3d8"
+        }
+      ],
+      "findings": [],
+      "inputHash": "77d11f281796ef9abb7c1f1949175b0da21449de88e64311b1789059a8cd9235",
+      "level": "file",
+      "nextAction": "Continue with bench/entrypoints/host_hotpath_bench.zig in TSV order; compiler directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Rejected invalid sampling, unknown options/targets, ineffective filters and unbound metadata. Repeated strings now borrow the argument owner; external shader data is retained by one source owner.",
+        "Preserved compiler errors through warmup and timed execution; allocation failures unwind through output serialization. Invalid source no longer produces a successful process with no work rows.",
+        "Escaped external strings, removed the unobserved compilerLoc field under version 2 and a registered closed schema, and defined physical source lines without an extra trailing line. Existing consumer parsing and successful row identities/output sizes were checked.",
+        "Mean, variance and summary arithmetic handle bounds explicitly; helper naming and target enumeration are consistent. The compiler call remains the timing boundary, with source I/O, allocations for reporting, and statistics outside."
+      ],
+      "reviewId": "compilation_file_001",
+      "reviewedAt": "2026-09-15T03:01:20.151294+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "fcda31bfd68f92635e7b322bce6e36e4efdaa4e8",
+      "status": "verified",
+      "summary": "Read the complete compilation benchmark: built-in/external corpus, CLI borrowing and selection, source ownership, translation timing, statistics, NDJSON/calibration/summary output, and error/cleanup paths.",
+      "supersedes": null,
+      "targets": [
+        "bench/compiler/bench_compilation.zig"
+      ]
     }
   ],
   "schemaVersion": 1

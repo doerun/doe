@@ -1,0 +1,14 @@
+case	exitCode	rows	noAllocatorLeakReport	matched
+corpus	0	31	True	True
+warmup	0	31	True	True
+duplicate	0	7	True	True
+escaped-name	0	7	True	True
+zero	1	0	True	True
+cap	1	0	True	True
+missing	1	0	True	True
+invalid	1	0	True	True
+unknown-filter	1	0	True	True
+unknown-target	1	0	True	True
+unknown-option	1	0	True	True
+invalid-source	1	1	True	True
+output-failure	1	0	True	True

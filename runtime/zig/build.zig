@@ -1540,7 +1540,7 @@ pub fn build(b: *std.Build) void {
     const compilation_bench_exe = b.addExecutable(.{
         .name = "doe-compilation-bench",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("bench/entrypoints/bench_compilation.zig"),
+            .root_source_file = b.path("bench/compiler/bench_compilation.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -1550,6 +1550,14 @@ pub fn build(b: *std.Build) void {
         }),
     });
     compilation_bench_exe.linkLibC();
+    const compilation_bench_tests = b.addTest(.{
+        .root_module = compilation_bench_exe.root_module,
+        .filters = test_filters,
+    });
+    const compilation_bench_test_step = b.step("test-bench-compilation", "Run the WGSL compilation benchmark contract tests");
+    compilation_bench_test_step.dependOn(&fmt_check.step);
+    compilation_bench_test_step.dependOn(&source_layout_check.step);
+    compilation_bench_test_step.dependOn(&b.addRunArtifact(compilation_bench_tests).step);
     const install_compilation_bench = b.addInstallArtifact(compilation_bench_exe, .{});
     const compilation_bench_step = b.step("bench-compilation", "Build the WGSL compilation latency benchmark");
     compilation_bench_step.dependOn(&install_compilation_bench.step);

@@ -1,0 +1,238 @@
+case: corpus
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+empty_compute             msl          226.075     226.075     226.075      123
+passthrough_vertex        msl          243.999     243.999     243.999      457
+scale_compute             msl          385.225     385.225     385.225      423
+color_fragment            msl          427.114     427.114     427.114      707
+matmul_compute            msl          876.550     876.550     876.550     1107
+vertex_transform          msl          340.952     340.952     340.952      487
+texture_compute           msl          600.049     600.049     600.049     1430
+multi_binding_compute     msl          684.028     684.028     684.028      938
+fragment_discard          msl          292.390     292.390     292.390      589
+empty_compute             hlsl         112.933     112.933     112.933     2682
+passthrough_vertex        hlsl         230.935     230.935     230.935     2875
+scale_compute             hlsl         304.353     304.353     304.353     3060
+color_fragment            hlsl         401.175     401.175     401.175     3062
+matmul_compute            hlsl         828.330     828.330     828.330     3891
+vertex_transform          hlsl         327.747     327.747     327.747     3029
+texture_compute           hlsl        1312.099    1312.099    1312.099     4314
+multi_binding_compute     hlsl         681.233     681.233     681.233     3793
+fragment_discard          hlsl         293.994     293.994     293.994     3000
+empty_compute             spirv        179.548     179.548     179.548      228
+passthrough_vertex        spirv        242.076     242.076     242.076      448
+scale_compute             spirv        443.706     443.706     443.706      888
+color_fragment            spirv        478.791     478.791     478.791      804
+matmul_compute            spirv       1030.450    1030.450    1030.450     2380
+vertex_transform          spirv        387.710     387.710     387.710      748
+texture_compute           spirv        654.753     654.753     654.753     1464
+multi_binding_compute     spirv        823.620     823.620     823.620     1732
+fragment_discard          spirv        336.653     336.653     336.653      748
+
+case: warmup
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+empty_compute             msl           79.479      85.310      85.310      123
+passthrough_vertex        msl          130.175     139.953     139.953      457
+scale_compute             msl          207.110     208.884     208.884      423
+color_fragment            msl          269.167     275.559     275.559      707
+matmul_compute            msl          565.855     578.789     578.789     1107
+vertex_transform          msl          217.850     219.503     219.503      487
+texture_compute           msl          381.929     392.459     392.459     1430
+multi_binding_compute     msl          446.511     448.684     448.684      938
+fragment_discard          msl          185.840     187.674     187.674      589
+empty_compute             hlsl          70.553      70.683      70.683     2682
+passthrough_vertex        hlsl         124.144     125.877     125.877     2875
+scale_compute             hlsl         193.124     198.564     198.564     3060
+color_fragment            hlsl         265.550     271.892     271.892     3062
+matmul_compute            hlsl         564.322    1305.237    1305.237     3891
+vertex_transform          hlsl         216.488     221.276     221.276     3029
+texture_compute           hlsl         361.670     405.744     405.744     4314
+multi_binding_compute     hlsl         435.079     441.120     441.120     3793
+fragment_discard          hlsl         186.140     188.074     188.074     3000
+empty_compute             spirv         96.632     100.920     100.920      228
+passthrough_vertex        spirv        144.952     148.850     148.850      448
+scale_compute             spirv        257.815     268.706     268.706      888
+color_fragment            spirv        312.618     326.194     326.194      804
+matmul_compute            spirv        692.714     701.991     701.991     2380
+vertex_transform          spirv        252.615     253.908     253.908      748
+texture_compute           spirv        427.454     430.871     430.871     1464
+multi_binding_compute     spirv        549.023     553.812     553.812     1732
+fragment_discard          spirv        215.566     242.577     242.577      748
+
+case: duplicate
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+empty_compute             msl          207.100     207.100     207.100      123
+empty_compute             hlsl         127.369     127.369     127.369     2682
+empty_compute             spirv        175.059     175.059     175.059      228
+
+case: escaped-name
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+quote"line
+slash\         msl          160.352     160.352     160.352      123
+quote"line
+slash\         hlsl         116.850     116.850     116.850     2682
+quote"line
+slash\         spirv        169.369     169.369     169.369      228
+
+case: zero
+--iterations must be between 1 and 5000; received 0
+error: InvalidIterations
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:201:9: 0x118a901 in parseArgs (bench_compilation.zig)
+        return error.InvalidIterations;
+        ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:425:20: 0x11923cd in main (bench_compilation.zig)
+    const config = try parseArgs(args[1..]);
+                   ^
+
+case: cap
+--iterations must be between 1 and 5000; received 5001
+error: InvalidIterations
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:201:9: 0x118a901 in parseArgs (bench_compilation.zig)
+        return error.InvalidIterations;
+        ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:425:20: 0x11923cd in main (bench_compilation.zig)
+    const config = try parseArgs(args[1..]);
+                   ^
+
+case: missing
+missing value for --iterations
+error: MissingArgumentValue
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:182:13: 0x118a0f4 in parseArgs (bench_compilation.zig)
+            return error.MissingArgumentValue;
+            ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:425:20: 0x11923cd in main (bench_compilation.zig)
+    const config = try parseArgs(args[1..]);
+                   ^
+
+case: invalid
+--iterations requires an unsigned integer; received 'bad': InvalidCharacter
+error: InvalidCharacter
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:593:24: 0x11d6fa1 in charToDigit (std.zig)
+    if (value >= base) return error.InvalidCharacter;
+                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:458:23: 0x11c8a1e in parseIntWithSign__anon_29926 (std.zig)
+        const digit = try charToDigit(math.cast(u8, c) orelse return error.InvalidCharacter, buf_base);
+                      ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:346:5: 0x11b4f1a in parseIntWithGenericCharacter__anon_26841 (std.zig)
+    return parseIntWithSign(Result, Character, buf, base, .pos);
+    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:333:5: 0x1195505 in parseInt__anon_22854 (std.zig)
+    return parseIntWithGenericCharacter(T, u8, buf, base);
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:234:9: 0x1189bc3 in parseCount (bench_compilation.zig)
+        return err;
+        ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:186:48: 0x118a25e in parseArgs (bench_compilation.zig)
+            .iterations => config.iterations = try parseCount(option, value),
+                                               ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:425:20: 0x11923cd in main (bench_compilation.zig)
+    const config = try parseArgs(args[1..]);
+                   ^
+
+case: unknown-filter
+shader filter '__missing__' does not match the selected corpus or external shader
+error: UnknownShader
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:228:5: 0x1195fb0 in unknownShader (bench_compilation.zig)
+    return error.UnknownShader;
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:221:9: 0x118b3a7 in parseArgs (bench_compilation.zig)
+        return unknownShader(filter);
+        ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:425:20: 0x11923cd in main (bench_compilation.zig)
+    const config = try parseArgs(args[1..]);
+                   ^
+
+case: unknown-target
+--target expects msl, hlsl, spirv, or all; received 'absent'
+error: InvalidTarget
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:195:17: 0x118a726 in parseArgs (bench_compilation.zig)
+                return error.InvalidTarget;
+                ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:425:20: 0x11923cd in main (bench_compilation.zig)
+    const config = try parseArgs(args[1..]);
+                   ^
+
+case: unknown-option
+unknown compilation benchmark option '--typo'
+error: UnknownArgument
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:178:13: 0x118a015 in parseArgs (bench_compilation.zig)
+            return error.UnknownArgument;
+            ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:425:20: 0x11923cd in main (bench_compilation.zig)
+    const config = try parseArgs(args[1..]);
+                   ^
+
+case: invalid-source
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+compilation failed for invalid/msl: UnexpectedToken
+error: UnexpectedToken
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/frontend/parser.zig:166:17: 0x12781c8 in parseTopLevelDecl (mod.zig)
+                return ParseError.UnexpectedToken;
+                ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/frontend/parser.zig:107:26: 0x1230395 in parse (mod.zig)
+            const decl = try self.parseTopLevelDecl();
+                         ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/frontend/parser.zig:228:9: 0x11f5002 in parseSourceWithContext (mod.zig)
+    _ = try parser.parse();
+        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig:130:9: 0x120ee35 in analyzeWithDiagnostic (mod.zig)
+        return kind;
+        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig:113:5: 0x11e6ead in analyzeToIrWithConfigTimedAndOverridesWithDiagnostic (mod.zig)
+    return analyzeWithDiagnostic(allocator, wgsl, config, overrides, diagnostic);
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig:108:20: 0x11d8181 in analyzeToIrWithConfigAndOverridesWithDiagnostic (mod.zig)
+    const result = try analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, config, overrides, diagnostic);
+                   ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/translate_msl.zig:20:21: 0x11cea4a in translateToMslWithOverridesWithDiagnostic (mod.zig)
+    var module_ir = try analysis.analyzeToIrWithConfigAndOverridesWithDiagnostic(arena.allocator(), wgsl, analysis.default_translation_robustness_config(), override_slice, diagnostic);
+                    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/translate_msl.zig:10:5: 0x11c05c7 in translateToMslWithDiagnostic (mod.zig)
+    return translateToMslWithOverridesWithDiagnostic(allocator, wgsl, out, null, 0, diagnostic);
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/translate_msl.zig:35:5: 0x11ae987 in translateToMsl (mod.zig)
+    return translateToMslWithDiagnostic(allocator, wgsl, out, analysis.compatibilityDiagnostic());
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:282:5: 0x118d731 in translateOnce (bench_compilation.zig)
+    return switch (target) {
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:389:22: 0x11901f2 in benchShaderTarget (bench_compilation.zig)
+        last_bytes = try translateOnce(allocator, shader.source, target, output);
+                     ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:493:17: 0x1191a97 in runAll (bench_compilation.zig)
+                return err;
+                ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:451:5: 0x11931e9 in main (bench_compilation.zig)
+    try runAll(allocator, config, shaders, output.deprecatedWriter());
+    ^
+
+case: output-failure
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+error: NoSpaceLeft
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:466:5: 0x118d4c2 in writeCalibration (bench_compilation.zig)
+    try writer.print(
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:478:5: 0x11915ca in runAll (bench_compilation.zig)
+    try writeCalibration(writer, try measureTimerOverheadNs(allocator));
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:451:5: 0x11931e9 in main (bench_compilation.zig)
+    try runAll(allocator, config, shaders, output.deprecatedWriter());
+    ^
+

@@ -12,6 +12,14 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [compilation benchmark review](../../bench/out/maintenance/20260914-zig-file-reviews/compilation/README.md)
+rejects ineffective input selection and lost compiler failures, preserves
+argument/source ownership, and escapes external metadata. Its diagnostic row
+version removes an unobserved compiler LOC field and defines physical source
+lines. The unused forwarding entrypoint is retired; the build selects the
+implementation directly. These are tool contract checks, not performance or
+compiler-output qualification.
+
 The [compiler stage review](../../bench/out/maintenance/20260914-zig-file-reviews/compiler-stage/README.md)
 repairs argument admission, retained-module cleanup, stage failure reporting,
 and a duplicate proof-module build identity. Its executable and allocation

@@ -1,0 +1,1 @@
+{"kind":"compilation_bench_calibration","version":1,"timerOverheadP50Ns":130,"timerOverheadIterations":1000,"timerSource":"std.time.Timer","timerScope":"per-translation in-process"}

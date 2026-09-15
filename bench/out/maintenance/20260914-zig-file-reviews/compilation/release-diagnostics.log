@@ -1,0 +1,130 @@
+case: corpus
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+empty_compute             msl           47.990      47.990      47.990      123
+passthrough_vertex        msl           43.141      43.141      43.141      457
+scale_compute             msl           53.751      53.751      53.751      423
+color_fragment            msl           40.707      40.707      40.707      707
+matmul_compute            msl           61.135      61.135      61.135     1107
+vertex_transform          msl           29.555      29.555      29.555      487
+texture_compute           msl           47.951      47.951      47.951     1430
+multi_binding_compute     msl           42.991      42.991      42.991      938
+fragment_discard          msl           29.476      29.476      29.476      589
+empty_compute             hlsl          17.262      17.262      17.262     2682
+passthrough_vertex        hlsl          32.171      32.171      32.171     2875
+scale_compute             hlsl          33.924      33.924      33.924     3060
+color_fragment            hlsl          37.200      37.200      37.200     3062
+matmul_compute            hlsl          56.496      56.496      56.496     3891
+vertex_transform          hlsl          27.572      27.572      27.572     3029
+texture_compute           hlsl          49.453      49.453      49.453     4314
+multi_binding_compute     hlsl          41.418      41.418      41.418     3793
+fragment_discard          hlsl          22.382      22.382      22.382     3000
+empty_compute             spirv         28.474      28.474      28.474      228
+passthrough_vertex        spirv         27.251      27.251      27.251      448
+scale_compute             spirv         49.633      49.633      49.633      888
+color_fragment            spirv         34.595      34.595      34.595      804
+matmul_compute            spirv         63.039      63.039      63.039     2380
+vertex_transform          spirv         30.758      30.758      30.758      748
+texture_compute           spirv         43.803      43.803      43.803     1464
+multi_binding_compute     spirv         51.657      51.657      51.657     1732
+fragment_discard          spirv         37.150      37.150      37.150      748
+
+case: warmup
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+empty_compute             msl           12.994      13.585      13.585      123
+passthrough_vertex        msl           19.377      22.632      22.632      457
+scale_compute             msl           20.950      24.055      24.055      423
+color_fragment            msl           24.386      28.604      28.604      707
+matmul_compute            msl           41.287      49.073      49.073     1107
+vertex_transform          msl           21.129      25.868      25.868      487
+texture_compute           msl           37.641      42.359      42.359     1430
+multi_binding_compute     msl           37.020      42.009      42.009      938
+fragment_discard          msl           23.344      24.867      24.867      589
+empty_compute             hlsl          14.637      16.611      16.611     2682
+passthrough_vertex        hlsl          21.510      23.364      23.364     2875
+scale_compute             hlsl          23.574      23.594      23.594     3060
+color_fragment            hlsl          26.540      28.854      28.854     3062
+matmul_compute            hlsl          40.686      48.532      48.532     3891
+vertex_transform          hlsl          21.430      25.468      25.468     3029
+texture_compute           hlsl          35.186      39.354      39.354     4314
+multi_binding_compute     hlsl          33.443      35.977      35.977     3793
+fragment_discard          hlsl          23.494      24.356      24.356     3000
+empty_compute             spirv         17.833      24.026      24.026      228
+passthrough_vertex        spirv         18.384      20.128      20.128      448
+scale_compute             spirv         27.812      33.513      33.513      888
+color_fragment            spirv         29.936      32.021      32.021      804
+matmul_compute            spirv         48.441      49.763      49.763     2380
+vertex_transform          spirv         21.911      22.482      22.482      748
+texture_compute           spirv         36.709      39.594      39.594     1464
+multi_binding_compute     spirv         42.591      43.832      43.832     1732
+fragment_discard          spirv         25.027      30.708      30.708      748
+
+case: duplicate
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+empty_compute             msl           34.444      34.444      34.444      123
+empty_compute             hlsl          23.615      23.615      23.615     2682
+empty_compute             spirv         29.665      29.665      29.665      228
+
+case: escaped-name
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+quote"line
+slash\         msl           28.574      28.574      28.574      123
+quote"line
+slash\         hlsl          18.575      18.575      18.575     2682
+quote"line
+slash\         spirv         27.302      27.302      27.302      228
+
+case: zero
+--iterations must be between 1 and 5000; received 0
+error: InvalidIterations
+
+case: cap
+--iterations must be between 1 and 5000; received 5001
+error: InvalidIterations
+
+case: missing
+missing value for --iterations
+error: MissingArgumentValue
+
+case: invalid
+--iterations requires an unsigned integer; received 'bad': InvalidCharacter
+error: InvalidCharacter
+
+case: unknown-filter
+shader filter '__missing__' does not match the selected corpus or external shader
+error: UnknownShader
+
+case: unknown-target
+--target expects msl, hlsl, spirv, or all; received 'absent'
+error: InvalidTarget
+
+case: unknown-option
+unknown compilation benchmark option '--typo'
+error: UnknownArgument
+
+case: invalid-source
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+compilation failed for invalid/msl: UnexpectedToken
+error: UnexpectedToken
+
+case: output-failure
+doe_wgsl compilation benchmark v2
+
+shader                    target      p50(us)    p95(us)    p99(us)   out(B)
+------------------------------------------------------------------------------
+error: NoSpaceLeft
+

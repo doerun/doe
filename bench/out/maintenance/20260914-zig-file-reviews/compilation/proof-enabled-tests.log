@@ -1,0 +1,20 @@
+test-bench-compilation
++- run test stderr
+--iterations must be between 1 and 5000; received 0
+--iterations must be between 1 and 5000; received 5001
+missing value for --target
+--target expects msl, hlsl, spirv, or all; received 'bad'
+unknown compilation benchmark option '--typo'
+shader filter 'absent' does not match the selected corpus or external shader
+--shader-name and --shader-tier require --shader-path
+shader name and tier must be valid UTF-8 for JSON output
+empty_compute             msl          161.814     161.814     161.814      123
+
+Build Summary: 6/6 steps succeeded; 4/4 tests passed
+test-bench-compilation success
++- zig fmt --check success
++- run python3 success 455ms MaxRSS:27M
++- run test 4 passed 9ms MaxRSS:7M
+   +- compile test Debug native success 20s MaxRSS:540M
+      +- options cached
+

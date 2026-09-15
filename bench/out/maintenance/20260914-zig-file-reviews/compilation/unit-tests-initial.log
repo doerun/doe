@@ -1,0 +1,64 @@
+test-bench-compilation
++- run test 3/4 passed, 1 failed
+error: 'bench_compilation.test.compilation benchmark releases failed translation and output allocations' failed: --iterations must be between 1 and 5000; received 0
+--iterations must be between 1 and 5000; received 5001
+missing value for --target
+--target expects msl, hlsl, spirv, or all; received 'bad'
+unknown compilation benchmark option '--typo'
+shader filter 'absent' does not match the selected corpus or external shader
+--shader-name and --shader-tier require --shader-path
+shader name and tier must be valid UTF-8 for JSON output
+empty_compute             msl          113.022     113.022     113.022      123
+expected error.InvalidWgsl, found error.UnexpectedToken
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/frontend/parser.zig:166:17: 0x1295108 in parseTopLevelDecl (mod.zig)
+                return ParseError.UnexpectedToken;
+                ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/frontend/parser.zig:107:26: 0x124f4e5 in parse (mod.zig)
+            const decl = try self.parseTopLevelDecl();
+                         ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/frontend/parser.zig:228:9: 0x1217a32 in parseSourceWithContext (mod.zig)
+    _ = try parser.parse();
+        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig:130:9: 0x1231865 in analyzeWithDiagnostic (mod.zig)
+        return kind;
+        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig:113:5: 0x120d47d in analyzeToIrWithConfigTimedAndOverridesWithDiagnostic (mod.zig)
+    return analyzeWithDiagnostic(allocator, wgsl, config, overrides, diagnostic);
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig:108:20: 0x1203251 in analyzeToIrWithConfigAndOverridesWithDiagnostic (mod.zig)
+    const result = try analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, config, overrides, diagnostic);
+                   ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/translate_msl.zig:20:21: 0x11ff3aa in translateToMslWithOverridesWithDiagnostic (mod.zig)
+    var module_ir = try analysis.analyzeToIrWithConfigAndOverridesWithDiagnostic(arena.allocator(), wgsl, analysis.default_translation_robustness_config(), override_slice, diagnostic);
+                    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/translate_msl.zig:10:5: 0x11fda67 in translateToMslWithDiagnostic (mod.zig)
+    return translateToMslWithOverridesWithDiagnostic(allocator, wgsl, out, null, 0, diagnostic);
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/translate_msl.zig:35:5: 0x11fb767 in translateToMsl (mod.zig)
+    return translateToMslWithDiagnostic(allocator, wgsl, out, analysis.compatibilityDiagnostic());
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:282:5: 0x11f8171 in translateOnce (bench_compilation.zig)
+    return switch (target) {
+    ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:389:22: 0x11f8b92 in benchShaderTarget (bench_compilation.zig)
+        last_bytes = try translateOnce(allocator, shader.source, target, output);
+                     ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/testing.zig:64:13: 0x11fa629 in expectError__anon_37320 (std.zig)
+            return error.TestUnexpectedError;
+            ^
+/home/x/deco/doe/runtime/zig/bench/compiler/bench_compilation.zig:571:9: 0x11faaba in test.compilation benchmark releases failed translation and output allocations (bench_compilation.zig)
+        try std.testing.expectError(error.InvalidWgsl, benchShaderTarget(
+        ^
+error: while executing test 'bench_compilation.test.compilation benchmark releases failed translation and output allocations', the following test command failed:
+./.zig-cache/o/1378c850dd247be483fb8a209684e07e/test --cache-dir=./.zig-cache --seed=0x872d5688 --listen=-
+
+Build Summary: 4/6 steps succeeded; 1 failed; 3/4 tests passed; 1 failed
+test-bench-compilation transitive failure
++- zig fmt --check success
++- run python3 success 435ms MaxRSS:28M
++- run test 3/4 passed, 1 failed
+   +- compile test Debug native success 485ms MaxRSS:169M
+      +- options cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/16377189e3a42676d08ca904ff2cc51f/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x872d5688 -Zc47c7c45d9ea79b3 test-bench-compilation -j2 --summary all

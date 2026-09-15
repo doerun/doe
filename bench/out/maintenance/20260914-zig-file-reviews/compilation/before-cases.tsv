@@ -1,0 +1,7 @@
+case	exitCode	rows	allocatorLeakReported
+corpus	0	31	False
+zero	-6	1	False
+duplicate	0	7	True
+invalid-source	0	1	False
+escaped-name	0	10	False
+unknown-filter	0	1	False

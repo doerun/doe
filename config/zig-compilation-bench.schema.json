@@ -1,0 +1,351 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Version 2 removes the unobserved compilerLoc field. Each row kind is closed; process success and complete workload coverage remain separate obligations.",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "bytesOut": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "compiler": {
+          "const": "doe_wgsl"
+        },
+        "iterations": {
+          "maximum": 4294967295,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "kind": {
+          "const": "compilation_bench"
+        },
+        "max_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "mean_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "min_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "p50_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "p50_us": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "p95_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "p99_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "shader": {
+          "type": "string"
+        },
+        "sourceLines": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "stddev_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "target": {
+          "enum": [
+            "msl",
+            "hlsl",
+            "spirv"
+          ]
+        },
+        "tier": {
+          "type": "string"
+        },
+        "version": {
+          "const": 2
+        },
+        "warmup": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "version",
+        "target",
+        "compiler",
+        "kind",
+        "shader",
+        "tier",
+        "sourceLines",
+        "iterations",
+        "warmup",
+        "bytesOut",
+        "p50_us",
+        "min_ns",
+        "max_ns",
+        "mean_ns",
+        "p50_ns",
+        "p95_ns",
+        "p99_ns",
+        "stddev_ns"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "avgP50_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "compiler": {
+          "const": "doe_wgsl"
+        },
+        "kind": {
+          "const": "compilation_bench_summary"
+        },
+        "maxP50_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "minP50_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "shaderCount": {
+          "maximum": 4294967295,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "target": {
+          "enum": [
+            "msl",
+            "hlsl",
+            "spirv"
+          ]
+        },
+        "totalP50_ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "totalP50_us": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "version": {
+          "const": 2
+        }
+      },
+      "required": [
+        "version",
+        "target",
+        "compiler",
+        "kind",
+        "shaderCount",
+        "totalP50_us",
+        "totalP50_ns",
+        "avgP50_ns",
+        "minP50_ns",
+        "maxP50_ns"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "compilation_bench_calibration"
+        },
+        "timerOverheadIterations": {
+          "maximum": 4294967295,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "timerOverheadP50Ns": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "timerScope": {
+          "const": "per-translation in-process"
+        },
+        "timerSource": {
+          "const": "std.time.Timer"
+        },
+        "version": {
+          "const": 2
+        }
+      },
+      "required": [
+        "kind",
+        "version",
+        "timerOverheadP50Ns",
+        "timerOverheadIterations",
+        "timerSource",
+        "timerScope"
+      ],
+      "type": "object"
+    }
+  ],
+  "properties": {
+    "avgP50_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "bytesOut": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "compiler": {
+      "const": "doe_wgsl"
+    },
+    "iterations": {
+      "maximum": 4294967295,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "kind": {
+      "enum": [
+        "compilation_bench",
+        "compilation_bench_summary",
+        "compilation_bench_calibration"
+      ]
+    },
+    "maxP50_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "max_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "mean_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "minP50_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "min_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "p50_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "p50_us": {
+      "minimum": 0,
+      "type": "number"
+    },
+    "p95_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "p99_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "shader": {
+      "type": "string"
+    },
+    "shaderCount": {
+      "maximum": 4294967295,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "sourceLines": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "stddev_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "target": {
+      "enum": [
+        "msl",
+        "hlsl",
+        "spirv"
+      ]
+    },
+    "tier": {
+      "type": "string"
+    },
+    "timerOverheadIterations": {
+      "maximum": 4294967295,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "timerOverheadP50Ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "timerScope": {
+      "const": "per-translation in-process"
+    },
+    "timerSource": {
+      "const": "std.time.Timer"
+    },
+    "totalP50_ns": {
+      "maximum": 18446744073709551615,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "totalP50_us": {
+      "minimum": 0,
+      "type": "number"
+    },
+    "version": {
+      "const": 2
+    },
+    "warmup": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "kind",
+    "version"
+  ],
+  "title": "Zig compilation benchmark diagnostic row",
+  "type": "object"
+}
