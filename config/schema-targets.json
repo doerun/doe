@@ -2,6 +2,10 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/zig-host-hotpath-bench.schema.json",
+      "data": "bench/out/maintenance/20260914-zig-file-reviews/host-entry/after.json"
+    },
+    {
       "schema": "config/zig-compilation-bench.schema.json",
       "data": "bench/out/maintenance/20260914-zig-file-reviews/compilation/contract-rows.json"
     },

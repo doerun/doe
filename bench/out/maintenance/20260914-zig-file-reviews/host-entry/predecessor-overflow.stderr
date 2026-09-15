@@ -1,0 +1,19 @@
+error: Overflow
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/math.zig:570:21: 0x11b103d in add__anon_25155 (std.zig)
+    if (ov[1] != 0) return error.Overflow;
+                    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:468:22: 0x1198904 in parseIntWithSign__anon_24496 (std.zig)
+        accumulate = try add(Accumulate, accumulate, math.cast(Accumulate, digit) orelse return error.Overflow);
+                     ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:346:5: 0x1174bda in parseIntWithGenericCharacter__anon_24089 (std.zig)
+    return parseIntWithSign(Result, Character, buf, base, .pos);
+    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:333:5: 0x1168135 in parseInt__anon_22724 (std.zig)
+    return parseIntWithGenericCharacter(T, u8, buf, base);
+    ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:105:30: 0x114cdab in parseArgs (host_hotpath_bench.zig)
+        const Option = enum { iterations, warmup, out };
+                             ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench.zig:10:17: 0x11620a0 in main (host_hotpath_bench.zig)
+pub fn main() !void {
+                ^

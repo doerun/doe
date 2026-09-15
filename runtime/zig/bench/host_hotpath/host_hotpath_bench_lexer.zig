@@ -3,6 +3,8 @@ const doe = @import("doe");
 const lexer_mod = doe.compiler.wgsl_frontend.lexer();
 const token_mod = doe.compiler.wgsl_frontend.token();
 const byte_scan = doe.runtime.simd.byteScan();
+const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
+const FNV_PRIME: u64 = 1099511628211;
 
 pub const LexDigest = struct {
     count: usize,
@@ -56,12 +58,17 @@ const ScalarLexer = struct {
         }
 
         switch (c) {
-            '+' => return self.compoundOrSingle('=', .plus_eq, .@"+"),
+            '+' => {
+                if (self.peek(1) == '+') return self.double(.plus_plus);
+                if (self.peek(1) == '=') return self.double(.plus_eq);
+                return self.single(.@"+");
+            },
             '*' => return self.compoundOrSingle('=', .star_eq, .@"*"),
             '%' => return self.compoundOrSingle('=', .percent_eq, .@"%"),
             '^' => return self.compoundOrSingle('=', .caret_eq, .@"^"),
             '-' => {
                 if (self.peek(1) == '>') return self.double(.arrow);
+                if (self.peek(1) == '-') return self.double(.minus_minus);
                 if (self.peek(1) == '=') return self.double(.minus_eq);
                 return self.single(.@"-");
             },
@@ -80,12 +87,18 @@ const ScalarLexer = struct {
                 return self.single(.@"|");
             },
             '<' => {
-                if (self.peek(1) == '<') return self.double(.shift_left);
+                if (self.peek(1) == '<') {
+                    if (self.peek(2) == '=') return self.triple(.shift_left_eq);
+                    return self.double(.shift_left);
+                }
                 if (self.peek(1) == '=') return self.double(.lte);
                 return self.single(.@"<");
             },
             '>' => {
-                if (self.peek(1) == '>') return self.double(.shift_right);
+                if (self.peek(1) == '>') {
+                    if (self.peek(2) == '=') return self.triple(.shift_right_eq);
+                    return self.double(.shift_right);
+                }
                 if (self.peek(1) == '=') return self.double(.gte);
                 return self.single(.@">");
             },
@@ -124,6 +137,12 @@ const ScalarLexer = struct {
     fn compoundOrSingle(self: *ScalarLexer, next_char: u8, compound: token_mod.Tag, simple: token_mod.Tag) token_mod.Token {
         if (self.peek(1) == next_char) return self.double(compound);
         return self.single(simple);
+    }
+
+    fn triple(self: *ScalarLexer, tag: token_mod.Tag) token_mod.Token {
+        const start = self.pos;
+        self.pos += 3;
+        return .{ .tag = tag, .loc = .{ .start = start, .end = self.pos } };
     }
 
     fn peek(self: *const ScalarLexer, offset: u32) u8 {
@@ -243,17 +262,17 @@ fn isIdentStart(c: u8) bool {
 
 fn digestToken(current: u64, token: token_mod.Token) u64 {
     var hash = current ^ @as(u64, @intFromEnum(token.tag));
-    hash = hash *% 1099511628211;
+    hash = hash *% FNV_PRIME;
     hash ^= token.loc.start;
-    hash = hash *% 1099511628211;
+    hash = hash *% FNV_PRIME;
     hash ^= token.loc.end;
-    return hash *% 1099511628211;
+    return hash *% FNV_PRIME;
 }
 
 pub fn lexWithSimd(source: []const u8) LexDigest {
     var lexer = lexer_mod.Lexer.init(source);
     var count: usize = 0;
-    var hash: u64 = 0xcbf29ce484222325;
+    var hash: u64 = FNV_OFFSET_BASIS;
     while (true) {
         const token = lexer.next();
         count += 1;
@@ -266,7 +285,7 @@ pub fn lexWithSimd(source: []const u8) LexDigest {
 pub fn lexWithScalar(source: []const u8) LexDigest {
     var lexer = ScalarLexer.init(source);
     var count: usize = 0;
-    var hash: u64 = 0xcbf29ce484222325;
+    var hash: u64 = FNV_OFFSET_BASIS;
     while (true) {
         const token = lexer.next();
         count += 1;
@@ -274,4 +293,21 @@ pub fn lexWithScalar(source: []const u8) LexDigest {
         if (token.tag == .eof) break;
     }
     return .{ .count = count, .hash = hash };
+}
+
+test "host scalar lexer preserves compound operator tags and spans" {
+    const source = "++ -- <<= >>=";
+    var scalar = ScalarLexer.init(source);
+    var runtime = lexer_mod.Lexer.init(source);
+    const expected = [_]token_mod.Token{
+        .{ .tag = .plus_plus, .loc = .{ .start = 0, .end = 2 } },
+        .{ .tag = .minus_minus, .loc = .{ .start = 3, .end = 5 } },
+        .{ .tag = .shift_left_eq, .loc = .{ .start = 6, .end = 9 } },
+        .{ .tag = .shift_right_eq, .loc = .{ .start = 10, .end = 13 } },
+        .{ .tag = .eof, .loc = .{ .start = 13, .end = 13 } },
+    };
+    for (expected) |token| {
+        try std.testing.expectEqualDeep(token, scalar.next());
+        try std.testing.expectEqualDeep(token, runtime.next());
+    }
 }

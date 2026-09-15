@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Compiled target metadata and local variant observations. Ratios are unavailable when either observed mean is zero; output agreement and numerical envelopes do not establish application correctness or performance.",
+  "properties": {
+    "cases": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "comparison": {
+            "additionalProperties": false,
+            "properties": {
+              "baseline_variant": {
+                "type": "string"
+              },
+              "candidate_variant": {
+                "type": "string"
+              },
+              "max_abs_diff": {
+                "minimum": 0,
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "max_rel_diff": {
+                "minimum": 0,
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "output_hash_match": {
+                "type": "boolean"
+              },
+              "speedup": {
+                "exclusiveMinimum": 0,
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "baseline_variant",
+              "candidate_variant",
+              "speedup",
+              "output_hash_match",
+              "max_abs_diff",
+              "max_rel_diff"
+            ],
+            "type": "object"
+          },
+          "description": {
+            "type": "string"
+          },
+          "variants": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "checksum": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "input_bytes": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "iterations": {
+                  "maximum": 4294967295,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "max_ns": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "mean_ns": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "min_ns": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "output_hash": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "p50_ns": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "p95_ns": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "p99_ns": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "variant": {
+                  "type": "string"
+                },
+                "warmup": {
+                  "maximum": 4294967295,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "work_items": {
+                  "maximum": 18446744073709551615,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "warmup",
+                "input_bytes",
+                "work_items",
+                "min_ns",
+                "max_ns",
+                "mean_ns",
+                "p50_ns",
+                "p95_ns",
+                "p99_ns",
+                "checksum",
+                "output_hash",
+                "variant",
+                "iterations"
+              ],
+              "type": "object"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          }
+        },
+        "required": [
+          "category",
+          "case_id",
+          "description",
+          "variants",
+          "comparison"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "claimStatus": {
+      "const": "diagnostic"
+    },
+    "host": {
+      "additionalProperties": false,
+      "properties": {
+        "abi": {
+          "type": "string"
+        },
+        "byte_scan_lanes": {
+          "maximum": 4294967295,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "cpu_arch": {
+          "type": "string"
+        },
+        "cpu_model": {
+          "type": "string"
+        },
+        "f32_lanes": {
+          "maximum": 4294967295,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "os": {
+          "type": "string"
+        },
+        "target_triple": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "cpu_arch",
+        "cpu_model",
+        "os",
+        "abi",
+        "target_triple",
+        "byte_scan_lanes",
+        "f32_lanes"
+      ],
+      "type": "object"
+    },
+    "kind": {
+      "const": "doe_host_hotpath_bench"
+    },
+    "schema_version": {
+      "const": 2,
+      "type": "integer"
+    },
+    "timingScope": {
+      "const": "variant invocation and checksum accumulation"
+    },
+    "timingSource": {
+      "const": "std.time.Timer"
+    },
+    "tool": {
+      "const": "doe-host-hotpath-bench"
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "tool",
+    "claimStatus",
+    "timingSource",
+    "timingScope",
+    "host",
+    "cases"
+  ],
+  "title": "Zig host hotpath diagnostic benchmark",
+  "type": "object"
+}

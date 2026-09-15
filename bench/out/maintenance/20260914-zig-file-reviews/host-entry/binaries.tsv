@@ -1,0 +1,5 @@
+path	sha256
+after-install/bin/doe-host-hotpath-bench	9f6ef92151ff29fa3127d99e70ff654cfd6e4feb524123f6db9dab2a0d9fa0c8
+debug-install/bin/doe-host-hotpath-bench	ddf7255aca48bfc0cc1dcb06fa57e3c5ffd09b4cc6ea34f5ad9bcb59b00d6be9
+release-install/bin/doe-host-hotpath-bench	51b3c690a0b07893036e093700b45e6021f2e7f25ff38b686b8fdfbe00a20ba1
+root-fixed-install/bin/doe-host-hotpath-bench	5e607cfff89146102fafb46bbae816d98ec354df9d7fc5d47348b96cd6a0ebd7

@@ -1,0 +1,64 @@
+test-bench-host-hotpaths
++- run test 6/7 passed, 1 failed
+error: 'host_hotpath_bench_support.test.host artifact writer releases metadata and serialization allocations' failed: --iterations requires a positive sample count; received 0
+missing value for --iterations
+unknown host benchmark option '--unknown'; expected --iterations, --warmup, or --out
+--warmup requires an unsigned integer; received 'bad': InvalidCharacter
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/mem/Allocator.zig:283:82: 0x10d477f in allocBytesWithAlignment__anon_14005 (std.zig)
+    const byte_ptr = self.rawAlloc(byte_count, alignment, return_address) orelse return Error.OutOfMemory;
+                                                                                 ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/mem/Allocator.zig:269:5: 0x10afc54 in allocWithSizeAndAlignment__anon_10706 (std.zig)
+    return self.allocBytesWithAlignment(alignment, byte_count, return_address);
+    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/mem/Allocator.zig:245:5: 0x10be10d in alignedAlloc__anon_12477 (std.zig)
+    return self.allocAdvancedWithRetAddr(T, alignment, n, @returnAddress());
+    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1231:36: 0x116abea in ensureTotalCapacityPrecise (std.zig)
+                const new_memory = try gpa.alignedAlloc(T, alignment, new_capacity);
+                                   ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1207:13: 0x1164b75 in ensureTotalCapacity (std.zig)
+            return self.ensureTotalCapacityPrecise(gpa, growCapacity(self.capacity, new_capacity));
+            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/array_list.zig:1246:13: 0x115c0c1 in ensureUnusedCapacity (std.zig)
+            return self.ensureTotalCapacity(gpa, try addOrOom(self.items.len, additional_count));
+            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/Io/Writer.zig:2635:77: 0x1234721 in drain (std.zig)
+            list.ensureUnusedCapacity(gpa, bytes.len + splat_len + 1) catch return error.WriteFailed;
+                                                                            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/Io/Writer.zig:726:19: 0x107657a in writeByte (std.zig)
+        const n = try w.vtable.drain(w, &.{&.{byte}}, 1);
+                  ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/json/Stringify.zig:94:5: 0x11ed973 in beginObject (std.zig)
+    try self.writer.writeByte('{');
+    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/json/Stringify.zig:456:17: 0x11e74ce in write__anon_36451 (std.zig)
+                try self.beginObject();
+                ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/json/Stringify.zig:575:5: 0x11ddc08 in value__anon_36280 (std.zig)
+    try s.write(v);
+    ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:306:5: 0x11da4d6 in writeArtifact (host_hotpath_bench.zig)
+    try std.json.Stringify.value(artifact, .{ .whitespace = .indent_2 }, &payload_writer.writer);
+    ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:366:5: 0x11db756 in exerciseArtifactAllocations (host_hotpath_bench.zig)
+    try writeArtifact(allocator, .{ .host = host, .cases = &.{} }, path);
+    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/testing.zig:1170:21: 0x11dc46d in checkAllAllocationFailures__anon_35847 (std.zig)
+            else => return err,
+                    ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:376:5: 0x11dcca8 in test.host artifact writer releases metadata and serialization allocations (host_hotpath_bench.zig)
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseArtifactAllocations, .{path});
+    ^
+error: while executing test 'host_hotpath_bench_cases.test.host coordination outputs do not inherit even sample XOR cancellation', the following test command failed:
+./.zig-cache/o/83a2387bb4df462f42f57d9ae07ae7be/test --cache-dir=./.zig-cache --seed=0x10f1068 --listen=-
+
+Build Summary: 4/6 steps succeeded; 1 failed; 6/7 tests passed; 1 failed
+test-bench-host-hotpaths transitive failure
++- zig fmt --check success
++- run python3 success 450ms MaxRSS:28M
++- run test 6/7 passed, 1 failed
+   +- compile test Debug native success 333ms MaxRSS:143M
+      +- options cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/5af28a2fb121ade9e1499ad1642e40b9/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x10f1068 -Zcf61cf2059364ad0 test-bench-host-hotpaths -j2 --summary all

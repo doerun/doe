@@ -1,15 +1,16 @@
 level	targets	status	latestReview	prerequisites	nextAction
-file	bench/compiler/bench.zig	verified	compiler_stage_file_003		Continue with bench/entrypoints/host_hotpath_bench.zig in TSV order; compiler directory and relationship reviews remain separate.
-file	bench/compiler/bench_compilation.zig	verified	compilation_file_001		Continue with bench/entrypoints/host_hotpath_bench.zig in TSV order; compiler directory and relationship reviews remain separate.
+file	bench/compiler/bench.zig	verified	compiler_stage_file_004		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order; directory and relationship reviews remain separate.
+file	bench/compiler/bench_compilation.zig	verified	compilation_file_002		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order; directory and relationship reviews remain separate.
 file	bench/entrypoints/bench_compilation.zig	retired	compilation_entrypoint_file_001		Retired source path; continue the compiler implementation review. This removal does not complete its directory review.
-file	bench/entrypoints/host_hotpath_bench.zig	pending			Read and review the complete scope.
+file	bench/entrypoints/host_hotpath_bench.zig	retired	host_entry_file_001		Complete the replacement entrypoint review at bench/host_hotpath/host_hotpath_bench.zig, including dependent allocation and input fixes; keep case/support file coverage separate.
 file	bench/entrypoints/metal_compute_bench.zig	pending			Read and review the complete scope.
 file	bench/entrypoints/metal_staged_write_bench.zig	pending			Read and review the complete scope.
 file	bench/entrypoints/runtime_compile_report.zig	pending			Read and review the complete scope.
-file	bench/host_hotpath/host_hotpath_bench_cases.zig	pending			Read and review the complete scope.
-file	bench/host_hotpath/host_hotpath_bench_lexer.zig	pending			Read and review the complete scope.
-file	bench/host_hotpath/host_hotpath_bench_support.zig	pending			Read and review the complete scope.
-file	build.zig	verified	build_file_004		Continue with bench/entrypoints/host_hotpath_bench.zig in TSV order; compiler directory and relationship reviews remain separate.
+file	bench/host_hotpath/host_hotpath_bench.zig	verified	host_main_file_002		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order. Host directory and relationship reviews require their separate passes.
+file	bench/host_hotpath/host_hotpath_bench_cases.zig	verified	host_cases_file_001		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order. Host directory and relationship reviews require their separate passes.
+file	bench/host_hotpath/host_hotpath_bench_lexer.zig	verified	host_lexer_file_001		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order. Host directory and relationship reviews require their separate passes.
+file	bench/host_hotpath/host_hotpath_bench_support.zig	verified	host_support_file_001		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order. Host directory and relationship reviews require their separate passes.
+file	build.zig	verified	build_file_005		Continue with bench/entrypoints/metal_compute_bench.zig in TSV order; directory and relationship reviews remain separate.
 file	src/app/mod.zig	pending			Read and review the complete scope.
 file	src/app/prepare.zig	pending			Read and review the complete scope.
 file	src/app/request.zig	pending			Read and review the complete scope.
@@ -760,8 +761,8 @@ file	tools/source_ast_inventory.zig	pending			Read and review the complete scope
 directory	.	pending		file:build.zig;file:test_suite.zig;file:test_suite_core.zig;file:test_suite_d3d12.zig;file:test_suite_full.zig;file:test_suite_wgsl.zig	Read and review the complete scope.
 directory	bench	pending			Read and review the complete scope.
 directory	bench/compiler	pending		file:bench/compiler/bench.zig;file:bench/compiler/bench_compilation.zig	Read and review the complete scope.
-directory	bench/entrypoints	pending		file:bench/entrypoints/host_hotpath_bench.zig;file:bench/entrypoints/metal_compute_bench.zig;file:bench/entrypoints/metal_staged_write_bench.zig;file:bench/entrypoints/runtime_compile_report.zig	Read and review the complete scope.
-directory	bench/host_hotpath	pending		file:bench/host_hotpath/host_hotpath_bench_cases.zig;file:bench/host_hotpath/host_hotpath_bench_lexer.zig;file:bench/host_hotpath/host_hotpath_bench_support.zig	Read and review the complete scope.
+directory	bench/entrypoints	pending		file:bench/entrypoints/metal_compute_bench.zig;file:bench/entrypoints/metal_staged_write_bench.zig;file:bench/entrypoints/runtime_compile_report.zig	Read and review the complete scope.
+directory	bench/host_hotpath	pending		file:bench/host_hotpath/host_hotpath_bench.zig;file:bench/host_hotpath/host_hotpath_bench_cases.zig;file:bench/host_hotpath/host_hotpath_bench_lexer.zig;file:bench/host_hotpath/host_hotpath_bench_support.zig	Read and review the complete scope.
 directory	src	pending		file:src/mod.zig	Read and review the complete scope.
 directory	src/app	pending		file:src/app/mod.zig;file:src/app/prepare.zig;file:src/app/request.zig;file:src/app/runner.zig	Read and review the complete scope.
 directory	src/backend	pending		file:src/backend/backend_policy.zig;file:src/backend/backend_telemetry.zig;file:src/backend/dawn_delegate_backend.zig;file:src/backend/dropin_capabilities.zig;file:src/backend/dropin_external_texture.zig;file:src/backend/dropin_lifecycle.zig;file:src/backend/dropin_pipeline_cache.zig;file:src/backend/dropin_queue_submit.zig;file:src/backend/dropin_render_state.zig;file:src/backend/dropin_resource_ops.zig;file:src/backend/dropin_surface_ops.zig;file:src/backend/metal_package_pipeline_cache.zig;file:src/backend/webgpu_backend.zig;file:src/backend/webgpu_backend_lifecycle.zig;file:src/backend/webgpu_backend_ops.zig;file:src/backend/webgpu_backend_support.zig;file:src/backend/webgpu_backend_types.zig	Read and review the complete scope.

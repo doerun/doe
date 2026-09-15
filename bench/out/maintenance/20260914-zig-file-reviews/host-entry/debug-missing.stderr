@@ -1,0 +1,8 @@
+missing value for --iterations
+error: MissingArgumentValue
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:116:13: 0x114e103 in parseArgs (host_hotpath_bench.zig)
+            return error.MissingArgumentValue;
+            ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench.zig:17:17: 0x1164c03 in main (host_hotpath_bench.zig)
+    const cfg = try support.parseArgs(args[1..]);
+                ^

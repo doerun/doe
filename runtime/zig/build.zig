@@ -1517,7 +1517,7 @@ pub fn build(b: *std.Build) void {
     const host_hotpath_bench_exe = b.addExecutable(.{
         .name = "doe-host-hotpath-bench",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("bench/entrypoints/host_hotpath_bench.zig"),
+            .root_source_file = b.path("bench/host_hotpath/host_hotpath_bench.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -1527,6 +1527,14 @@ pub fn build(b: *std.Build) void {
         }),
     });
     host_hotpath_bench_exe.linkLibC();
+    const host_hotpath_bench_tests = b.addTest(.{
+        .root_module = host_hotpath_bench_exe.root_module,
+        .filters = test_filters,
+    });
+    const host_hotpath_bench_test_step = b.step("test-bench-host-hotpaths", "Run host hotpath benchmark contract tests");
+    host_hotpath_bench_test_step.dependOn(&fmt_check.step);
+    host_hotpath_bench_test_step.dependOn(&source_layout_check.step);
+    host_hotpath_bench_test_step.dependOn(&b.addRunArtifact(host_hotpath_bench_tests).step);
     const install_host_hotpath_bench = b.addInstallArtifact(host_hotpath_bench_exe, .{});
     const host_hotpath_bench_step = b.step("bench-host-hotpaths", "Build the host hotpath scalar-vs-SIMD benchmark");
     host_hotpath_bench_step.dependOn(&install_host_hotpath_bench.step);

@@ -1,0 +1,20 @@
+--iterations requires an unsigned integer; received '-1': Overflow
+error: Overflow
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:465:82: 0x119d14b in parseIntWithSign__anon_24956 (std.zig)
+            accumulate = math.cast(Accumulate, -@as(i8, @intCast(digit))) orelse return error.Overflow;
+                                                                                 ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:345:24: 0x1177d2c in parseIntWithGenericCharacter__anon_24435 (std.zig)
+    if (buf[0] == '-') return parseIntWithSign(Result, Character, buf[1..], base, .neg);
+                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:333:5: 0x116b9b5 in parseInt__anon_22765 (std.zig)
+    return parseIntWithGenericCharacter(T, u8, buf, base);
+    ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:135:9: 0x114dc03 in parseCount (host_hotpath_bench.zig)
+        return err;
+        ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:120:48: 0x114e26a in parseArgs (host_hotpath_bench.zig)
+            .iterations => config.iterations = try parseCount(option, value),
+                                               ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench.zig:17:17: 0x1164c03 in main (host_hotpath_bench.zig)
+    const cfg = try support.parseArgs(args[1..]);
+                ^

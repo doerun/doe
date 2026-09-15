@@ -5,6 +5,10 @@ const lexer_bench = @import("host_hotpath_bench_lexer.zig");
 const support = @import("host_hotpath_bench_support.zig");
 const trace_text = doe.runtime.traceText();
 
+comptime {
+    _ = lexer_bench;
+}
+
 const VariantResult = support.VariantResult;
 const CaseResult = support.CaseResult;
 const JSON_ESCAPE_MAX_EXPANSION = support.JSON_ESCAPE_MAX_EXPANSION;
@@ -13,6 +17,20 @@ const SINGLEFLIGHT_WAITERS = support.SINGLEFLIGHT_WAITERS;
 const ATTENTION_SEQ_LEN = support.ATTENTION_SEQ_LEN;
 const ATTENTION_HEAD_DIM = support.ATTENTION_HEAD_DIM;
 const ATTENTION_VALUE_DIM = support.ATTENTION_VALUE_DIM;
+const SCALED_ITERATION_DIVISOR: u32 = 4;
+const SCALED_WARMUP_DIVISOR: u32 = 2;
+const SCALED_MIN_ITERATIONS: u32 = 20;
+const SCALED_MIN_WARMUP: u32 = 5;
+const RELATIVE_ERROR_DENOMINATOR_FLOOR: f64 = 1e-12;
+
+const Sampling = struct { iterations: u32, warmup: u32 };
+
+fn intensiveCaseSampling(config: support.Config) Sampling {
+    return .{
+        .iterations = @max(config.iterations / SCALED_ITERATION_DIVISOR, SCALED_MIN_ITERATIONS),
+        .warmup = @max(config.warmup / SCALED_WARMUP_DIVISOR, SCALED_MIN_WARMUP),
+    };
+}
 
 const EscapeBench = struct {
     input: []const u8,
@@ -213,7 +231,7 @@ fn diffEnvelope(lhs: []const f64, rhs: []const f64) struct { max_abs: f64, max_r
     var max_rel: f64 = 0;
     for (lhs, rhs) |left, right| {
         const abs_diff = @abs(left - right);
-        const denom = @max(@abs(left), 1e-12);
+        const denom = @max(@abs(left), RELATIVE_ERROR_DENOMINATOR_FLOOR);
         const rel_diff = abs_diff / denom;
         if (abs_diff > max_abs) max_abs = abs_diff;
         if (rel_diff > max_rel) max_rel = rel_diff;
@@ -232,6 +250,14 @@ pub const LinkedQueueBench = struct {
     pub fn run(self: *LinkedQueueBench) !u64 {
         var head: ?*LinkedJobNode = null;
         var tail: ?*LinkedJobNode = null;
+        errdefer {
+            var current = head;
+            while (current) |node| {
+                const next = node.next;
+                self.allocator.destroy(node);
+                current = next;
+            }
+        }
 
         var enqueue_index: usize = 0;
         while (enqueue_index < LINKED_QUEUE_WORK_ITEMS) : (enqueue_index += 1) {
@@ -411,7 +437,9 @@ pub fn createTraceCase(
     description: []const u8,
     input: []const u8,
 ) !CaseResult {
-    const scratch = try allocator.alloc(u8, (input.len * JSON_ESCAPE_MAX_EXPANSION) + 2);
+    const capacity = try std.math.add(usize, try std.math.mul(usize, input.len, JSON_ESCAPE_MAX_EXPANSION), 2);
+    const scratch = try allocator.alloc(u8, capacity);
+    defer allocator.free(scratch);
     var bench = EscapeBench{ .input = input, .scratch = scratch };
     const scalar = try support.measure(EscapeBench, allocator, cfg.iterations, cfg.warmup, &bench, EscapeBench.runScalar);
     const simd = try support.measure(EscapeBench, allocator, cfg.iterations, cfg.warmup, &bench, EscapeBench.runSimd);
@@ -465,11 +493,16 @@ pub fn createLexerCase(
     description: []const u8,
     source: []const u8,
 ) !CaseResult {
+    if (source.len > std.math.maxInt(u32)) return error.SourceTooLarge;
     var bench = lexer_bench.LexerBench{ .source = source };
-    const scalar = try support.measure(lexer_bench.LexerBench, allocator, cfg.iterations, cfg.warmup, &bench, lexer_bench.LexerBench.runScalar);
-    const simd = try support.measure(lexer_bench.LexerBench, allocator, cfg.iterations, cfg.warmup, &bench, lexer_bench.LexerBench.runSimd);
     const scalar_digest = lexer_bench.lexWithScalar(source);
     const simd_digest = lexer_bench.lexWithSimd(source);
+    if (scalar_digest.count != simd_digest.count or scalar_digest.hash != simd_digest.hash) {
+        std.debug.print("lexer case '{s}' produced different token streams; scalar count={d}, runtime count={d}\n", .{ case_id, scalar_digest.count, simd_digest.count });
+        return error.LexerOutputMismatch;
+    }
+    const scalar = try support.measure(lexer_bench.LexerBench, allocator, cfg.iterations, cfg.warmup, &bench, lexer_bench.LexerBench.runScalar);
+    const simd = try support.measure(lexer_bench.LexerBench, allocator, cfg.iterations, cfg.warmup, &bench, lexer_bench.LexerBench.runSimd);
     return .{
         .category = "lexer",
         .case_id = case_id,
@@ -491,7 +524,7 @@ pub fn createDotCase(allocator: std.mem.Allocator, cfg: support.Config, lhs: []c
     const scalar_value = bench.scalarValue();
     const simd_value = bench.simdValue();
     const diff = @abs(@as(f64, scalar_value) - @as(f64, simd_value));
-    const rel = diff / @max(@abs(@as(f64, scalar_value)), 1e-12);
+    const rel = diff / @max(@abs(@as(f64, scalar_value)), RELATIVE_ERROR_DENOMINATOR_FLOOR);
     return .{
         .category = "numeric",
         .case_id = "numeric_dot_4096",
@@ -527,7 +560,7 @@ pub fn createSumCase(allocator: std.mem.Allocator, cfg: support.Config, values: 
     const scalar_value = bench.scalarValue();
     const simd_value = bench.simdValue();
     const diff = @abs(@as(f64, scalar_value) - @as(f64, simd_value));
-    const rel = diff / @max(@abs(@as(f64, scalar_value)), 1e-12);
+    const rel = diff / @max(@abs(@as(f64, scalar_value)), RELATIVE_ERROR_DENOMINATOR_FLOOR);
     return .{
         .category = "numeric",
         .case_id = "numeric_reduce_4096",
@@ -557,8 +590,9 @@ pub fn createSumCase(allocator: std.mem.Allocator, cfg: support.Config, values: 
 }
 
 pub fn createAttentionCase(allocator: std.mem.Allocator, cfg: support.Config, bench: *AttentionBench) !CaseResult {
-    const iterations = @max(cfg.iterations / 4, 20);
-    const warmup = @max(cfg.warmup / 2, 5);
+    const sampling = intensiveCaseSampling(cfg);
+    const iterations = sampling.iterations;
+    const warmup = sampling.warmup;
     const scalar = try support.measure(AttentionBench, allocator, iterations, warmup, bench, AttentionBench.runScalar);
     const simd = try support.measure(AttentionBench, allocator, iterations, warmup, bench, AttentionBench.runSimd);
     runAttentionScalar(bench.q, bench.k, bench.v, bench.scale, bench.scalar_weighted, bench.scalar_output);
@@ -600,10 +634,13 @@ pub fn createQueueCase(
     linked: *LinkedQueueBench,
     ring: *RingQueueBench,
 ) !CaseResult {
-    const iterations = @max(cfg.iterations / 4, 20);
-    const warmup = @max(cfg.warmup / 2, 5);
+    const sampling = intensiveCaseSampling(cfg);
+    const iterations = sampling.iterations;
+    const warmup = sampling.warmup;
     const linked_stats = try support.measure(LinkedQueueBench, allocator, iterations, warmup, linked, LinkedQueueBench.run);
     const ring_stats = try support.measure(RingQueueBench, allocator, iterations, warmup, ring, RingQueueBench.run);
+    const linked_output = try linked.run();
+    const ring_output = try ring.run();
     return .{
         .category = "coordination",
         .case_id = "task_queue_submit_drain_4096",
@@ -616,16 +653,16 @@ pub fn createQueueCase(
             LINKED_QUEUE_WORK_ITEMS,
             "linked",
             linked_stats,
-            linked_stats.checksum,
+            linked_output,
             "flat_ring",
             ring_stats,
-            ring_stats.checksum,
+            ring_output,
         ),
         .comparison = .{
             .baseline_variant = "linked",
             .candidate_variant = "flat_ring",
             .speedup = support.speedup(linked_stats.mean_ns, ring_stats.mean_ns),
-            .output_hash_match = linked_stats.checksum == ring_stats.checksum,
+            .output_hash_match = linked_output == ring_output,
         },
     };
 }
@@ -646,6 +683,8 @@ pub fn createSingleflightCase(
 ) !CaseResult {
     const flat_stats = try support.measure(FlatSingleflightBench, allocator, cfg.iterations, cfg.warmup, flat, FlatSingleflightBench.run);
     const intrusive_stats = try support.measure(IntrusiveSingleflightBench, allocator, cfg.iterations, cfg.warmup, intrusive, IntrusiveSingleflightBench.run);
+    const flat_output = try flat.run();
+    const intrusive_output = try intrusive.run();
     return .{
         .category = "coordination",
         .case_id = "singleflight_join_take_512",
@@ -658,16 +697,67 @@ pub fn createSingleflightCase(
             SINGLEFLIGHT_WAITERS,
             "flat_waiters",
             flat_stats,
-            flat_stats.checksum,
+            flat_output,
             "intrusive_waiters",
             intrusive_stats,
-            intrusive_stats.checksum,
+            intrusive_output,
         ),
         .comparison = .{
             .baseline_variant = "flat_waiters",
             .candidate_variant = "intrusive_waiters",
             .speedup = support.speedup(flat_stats.mean_ns, intrusive_stats.mean_ns),
-            .output_hash_match = flat_stats.checksum == intrusive_stats.checksum,
+            .output_hash_match = flat_output == intrusive_output,
         },
     };
+}
+
+test "host queue releases partially constructed nodes on allocation failure" {
+    for ([_]usize{ 0, 1, LINKED_QUEUE_WORK_ITEMS / 2, LINKED_QUEUE_WORK_ITEMS - 1 }) |failure_index| {
+        var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = failure_index });
+        var queue = LinkedQueueBench{ .allocator = failing.allocator() };
+        try std.testing.expectError(error.OutOfMemory, queue.run());
+        try std.testing.expectEqual(failing.allocated_bytes, failing.freed_bytes);
+    }
+}
+
+test "host lexer comparison covers increment and shift assignment operators" {
+    const result = try createLexerCase(std.testing.allocator, .{ .iterations = 1, .warmup = 0 }, "operators", "Operator fixture", "i++; j--; x <<= 2; y >>= 3;");
+    defer std.testing.allocator.free(result.variants);
+    try std.testing.expect(result.comparison.output_hash_match);
+    try std.testing.expectEqual(result.variants[0].work_items, result.variants[1].work_items);
+}
+
+fn exerciseTraceAllocations(allocator: std.mem.Allocator) !void {
+    const result = try createTraceCase(allocator, .{ .iterations = 1, .warmup = 0 }, "escape", "Escaping fixture", "quote\"\n");
+    defer allocator.free(result.variants);
+}
+
+test "host trace case releases scratch and failed result allocations" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseTraceAllocations, .{});
+}
+
+test "host coordination outputs do not inherit even sample XOR cancellation" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+    const config: support.Config = .{ .iterations = 2, .warmup = 0 };
+    var linked = LinkedQueueBench{ .allocator = std.heap.c_allocator };
+    var ring = try RingQueueBench.init(allocator);
+    defer ring.deinit(allocator);
+    const queue = try createQueueCase(allocator, config, &linked, &ring);
+    const queue_output = LINKED_QUEUE_WORK_ITEMS * (LINKED_QUEUE_WORK_ITEMS - 1) / 2;
+    for (queue.variants) |variant| {
+        try std.testing.expectEqual(@as(u64, 0), variant.checksum);
+        try std.testing.expectEqual(@as(u64, queue_output), variant.output_hash);
+    }
+    const nodes = try makeWaiterNodes(allocator);
+    var flat: FlatSingleflightBench = .{ .allocator = allocator, .nodes = nodes };
+    defer flat.deinit();
+    var intrusive: IntrusiveSingleflightBench = .{ .nodes = nodes };
+    const singleflight = try createSingleflightCase(allocator, config, &flat, &intrusive);
+    const waiter_output = SINGLEFLIGHT_WAITERS * (SINGLEFLIGHT_WAITERS - 1) / 2;
+    for (singleflight.variants) |variant| {
+        try std.testing.expectEqual(@as(u64, 0), variant.checksum);
+        try std.testing.expectEqual(@as(u64, waiter_output), variant.output_hash);
+    }
 }

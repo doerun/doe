@@ -1,0 +1,7 @@
+
+Build Summary: 4/4 steps succeeded
+bench-host-hotpaths success
++- install doe-host-hotpath-bench success
+   +- compile exe doe-host-hotpath-bench ReleaseFast native success 2s MaxRSS:187M
+      +- options cached
+

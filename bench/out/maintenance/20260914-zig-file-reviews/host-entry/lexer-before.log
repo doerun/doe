@@ -1,0 +1,22 @@
+test-bench-host-hotpaths
++- run test 0/1 passed, 1 failed
+error: 'host_hotpath_bench_cases.test.host lexer comparison covers increment and shift assignment operators' failed: lexer case 'operators' produced different token streams; scalar count=19, runtime count=15
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig:497:9: 0x119bf52 in createLexerCase (host_hotpath_bench.zig)
+        return error.LexerOutputMismatch;
+        ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig:719:20: 0x119c95f in test.host lexer comparison covers increment and shift assignment operators (host_hotpath_bench.zig)
+    const result = try createLexerCase(std.testing.allocator, .{ .iterations = 1, .warmup = 0 }, "operators", "Operator fixture", "i++; j--; x <<= 2; y >>= 3;");
+                   ^
+error: while executing test 'host_hotpath_bench_cases.test.host lexer comparison covers increment and shift assignment operators', the following test command failed:
+./.zig-cache/o/5d49bb1dd3714ac52573acf1683c3242/test --cache-dir=./.zig-cache --seed=0x2f5e8d54 --listen=-
+
+Build Summary: 4/6 steps succeeded; 1 failed; 0/1 tests passed; 1 failed
+test-bench-host-hotpaths transitive failure
++- zig fmt --check success
++- run python3 success 470ms MaxRSS:28M
++- run test 0/1 passed, 1 failed
+   +- compile test Debug native success 335ms MaxRSS:136M
+      +- options cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/5af28a2fb121ade9e1499ad1642e40b9/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x2f5e8d54 -Z60b967c3e96ab255 test-bench-host-hotpaths -Dtest-filter=host lexer comparison -j2 --summary all

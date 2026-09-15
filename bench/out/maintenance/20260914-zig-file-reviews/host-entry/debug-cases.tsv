@@ -1,0 +1,12 @@
+case	exit	result
+zero	1	rejected
+missing	1	rejected
+unknown	1	rejected
+negative	1	rejected
+overflow	1	rejected
+bad_warmup	1	rejected
+even	0	validated
+odd	0	validated
+duplicate_out	0	last option wins; first preserved
+invalid_preserves_output	1	preserved
+full	1	original output error

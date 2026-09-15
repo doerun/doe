@@ -49,7 +49,7 @@ pub const VariantResult = struct {
 pub const CaseComparison = struct {
     baseline_variant: []const u8,
     candidate_variant: []const u8,
-    speedup: f64,
+    speedup: ?f64,
     output_hash_match: bool,
     max_abs_diff: ?f64 = null,
     max_rel_diff: ?f64 = null,
@@ -74,7 +74,10 @@ pub const HostMetadata = struct {
 };
 
 pub const Artifact = struct {
-    schema_version: u32 = 1,
+    schema_version: u32 = 2,
+    claimStatus: []const u8 = "diagnostic",
+    timingSource: []const u8 = "std.time.Timer",
+    timingScope: []const u8 = "variant invocation and checksum accumulation",
     kind: []const u8 = "doe_host_hotpath_bench",
     tool: []const u8 = "doe-host-hotpath-bench",
     host: HostMetadata,
@@ -93,25 +96,44 @@ pub const SMALL_WGSL =
     \\}
 ;
 
-pub fn parseArgs(allocator: std.mem.Allocator) !Config {
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
-
-    var cfg = Config{};
-    var index: usize = 1;
-    while (index < args.len) : (index += 1) {
-        if (std.mem.eql(u8, args[index], "--iterations") and index + 1 < args.len) {
-            index += 1;
-            cfg.iterations = try std.fmt.parseInt(u32, args[index], 10);
-        } else if (std.mem.eql(u8, args[index], "--warmup") and index + 1 < args.len) {
-            index += 1;
-            cfg.warmup = try std.fmt.parseInt(u32, args[index], 10);
-        } else if (std.mem.eql(u8, args[index], "--out") and index + 1 < args.len) {
-            index += 1;
-            cfg.out_path = try allocator.dupe(u8, args[index]);
+/// Strings borrow the caller's argument storage through artifact writing.
+pub fn parseArgs(args: []const []const u8) !Config {
+    var config = Config{};
+    var index: usize = 0;
+    while (index < args.len) : (index += 2) {
+        const option = args[index];
+        const Option = enum { iterations, warmup, out };
+        const selected = if (std.mem.startsWith(u8, option, "--"))
+            std.meta.stringToEnum(Option, option[2..])
+        else
+            null;
+        const kind = selected orelse {
+            std.debug.print("unknown host benchmark option '{s}'; expected --iterations, --warmup, or --out\n", .{option});
+            return error.UnknownArgument;
+        };
+        if (index + 1 == args.len) {
+            std.debug.print("missing value for {s}\n", .{option});
+            return error.MissingArgumentValue;
+        }
+        const value = args[index + 1];
+        switch (kind) {
+            .iterations => config.iterations = try parseCount(option, value),
+            .warmup => config.warmup = try parseCount(option, value),
+            .out => config.out_path = value,
         }
     }
-    return cfg;
+    if (config.iterations == 0) {
+        std.debug.print("--iterations requires a positive sample count; received 0\n", .{});
+        return error.InvalidIterations;
+    }
+    return config;
+}
+
+fn parseCount(option: []const u8, value: []const u8) !u32 {
+    return std.fmt.parseInt(u32, value, 10) catch |err| {
+        std.debug.print("{s} requires an unsigned integer; received '{s}': {s}\n", .{ option, value, @errorName(err) });
+        return err;
+    };
 }
 
 fn computeStats(samples: []u64, checksum: u64) Stats {
@@ -138,8 +160,8 @@ pub fn measure(
     ctx: *Context,
     run: *const fn (*Context) anyerror!u64,
 ) !Stats {
-    const sample_count = @max(iterations, 1);
-    const samples = try allocator.alloc(u64, @intCast(sample_count));
+    if (iterations == 0) return error.InvalidIterations;
+    const samples = try allocator.alloc(u64, iterations);
     defer allocator.free(samples);
 
     var warmup_index: u32 = 0;
@@ -149,16 +171,15 @@ pub fn measure(
 
     var checksum: u64 = 0;
     var sample_index: usize = 0;
-    while (sample_index < sample_count) : (sample_index += 1) {
-        const start = std.time.nanoTimestamp();
+    while (sample_index < samples.len) : (sample_index += 1) {
+        var timer = try std.time.Timer.start();
         checksum ^= try run(ctx);
-        const end = std.time.nanoTimestamp();
-        samples[sample_index] = @intCast(end - start);
+        samples[sample_index] = timer.read();
     }
     return computeStats(samples, checksum);
 }
 
-pub fn writeJsonStringScalar(writer: anytype, value: []const u8) !void {
+pub fn writeJsonStringScalar(writer: std.io.FixedBufferStream([]u8).Writer, value: []const u8) !void {
     try writer.writeByte('"');
     for (value) |byte| {
         switch (byte) {
@@ -210,16 +231,14 @@ pub fn checksumSlice(bytes: []const u8) u64 {
     return std.hash.Wyhash.hash(0, bytes);
 }
 
-pub fn speedup(baseline: u64, candidate: u64) f64 {
+pub fn speedup(baseline: u64, candidate: u64) ?f64 {
+    if (baseline == 0 or candidate == 0) return null;
     return @as(f64, @floatFromInt(baseline)) / @as(f64, @floatFromInt(candidate));
 }
 
-pub fn appendCase(list: *std.ArrayList(CaseResult), allocator: std.mem.Allocator, case_result: CaseResult) !void {
-    try list.append(allocator, case_result);
-}
-
 pub fn buildLargeWgsl(allocator: std.mem.Allocator) ![]u8 {
-    var list = try std.ArrayList(u8).initCapacity(allocator, 0);
+    var list: std.ArrayList(u8) = .empty;
+    defer list.deinit(allocator);
     for (0..48) |index| {
         try list.writer(allocator).print("// shader block {d}\n{s}\n", .{ index, SMALL_WGSL });
         if ((index % 3) == 0) {
@@ -230,7 +249,8 @@ pub fn buildLargeWgsl(allocator: std.mem.Allocator) ![]u8 {
 }
 
 pub fn buildLongEscapeInput(allocator: std.mem.Allocator) ![]u8 {
-    var list = try std.ArrayList(u8).initCapacity(allocator, 0);
+    var list: std.ArrayList(u8) = .empty;
+    defer list.deinit(allocator);
     for (0..256) |index| {
         try list.writer(allocator).print("segment-{d}:value=\"quoted\"\\path\t", .{index});
         if ((index % 4) == 0) try list.append(allocator, '\n');
@@ -276,12 +296,12 @@ pub fn makeHostMetadata(allocator: std.mem.Allocator) !HostMetadata {
     };
 }
 
-pub fn writeArtifact(artifact: Artifact, out_path: ?[]const u8) !void {
-    var payload_writer: std.io.Writer.Allocating = .init(std.heap.page_allocator);
+pub fn writeArtifact(allocator: std.mem.Allocator, artifact: Artifact, out_path: ?[]const u8) !void {
+    var payload_writer: std.io.Writer.Allocating = .init(allocator);
     defer payload_writer.deinit();
-    try std.json.Stringify.value(artifact, .{ .whitespace = .indent_2 }, &payload_writer.writer);
-    const payload = try payload_writer.toOwnedSlice();
-    defer std.heap.page_allocator.free(payload);
+    // The in-memory writer erases allocation failure to WriteFailed.
+    std.json.Stringify.value(artifact, .{ .whitespace = .indent_2 }, &payload_writer.writer) catch return error.OutOfMemory;
+    const payload = payload_writer.written();
 
     if (out_path) |path| {
         if (std.fs.path.dirname(path)) |dir| {
@@ -296,4 +316,59 @@ pub fn writeArtifact(artifact: Artifact, out_path: ?[]const u8) !void {
     const stdout = std.fs.File.stdout().deprecatedWriter();
     try stdout.writeAll(payload);
     try stdout.writeByte('\n');
+}
+
+test "host benchmark admission rejects ignored or ineffective options" {
+    try std.testing.expectError(error.InvalidIterations, parseArgs(&.{ "--iterations", "0" }));
+    try std.testing.expectError(error.MissingArgumentValue, parseArgs(&.{"--iterations"}));
+    try std.testing.expectError(error.UnknownArgument, parseArgs(&.{ "--unknown", "1" }));
+    try std.testing.expectError(error.InvalidCharacter, parseArgs(&.{ "--warmup", "bad" }));
+    const config = try parseArgs(&.{ "--out", "old.json", "--out", "new.json", "--warmup", "0" });
+    try std.testing.expectEqualStrings("new.json", config.out_path.?);
+    try std.testing.expectEqual(@as(u32, 0), config.warmup);
+}
+
+test "host measurement rejects zero samples before invocation" {
+    const Counter = struct {
+        calls: usize = 0,
+        fn run(self: *@This()) !u64 {
+            self.calls += 1;
+            return 7;
+        }
+    };
+    var counter = Counter{};
+    try std.testing.expectError(error.InvalidIterations, measure(Counter, std.testing.allocator, 0, 0, &counter, Counter.run));
+    try std.testing.expectEqual(@as(usize, 0), counter.calls);
+    _ = try measure(Counter, std.testing.allocator, 2, 3, &counter, Counter.run);
+    try std.testing.expectEqual(@as(usize, 5), counter.calls);
+    try std.testing.expectEqual(null, speedup(0, 1));
+    try std.testing.expectEqual(null, speedup(1, 0));
+    try std.testing.expectEqual(@as(f64, 2), speedup(2, 1).?);
+}
+
+fn exerciseCorpusAllocations(allocator: std.mem.Allocator) !void {
+    const shader = try buildLargeWgsl(allocator);
+    defer allocator.free(shader);
+    const text = try buildLongEscapeInput(allocator);
+    defer allocator.free(text);
+}
+
+test "host corpus builders unwind every allocation failure" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseCorpusAllocations, .{});
+}
+
+fn exerciseArtifactAllocations(allocator: std.mem.Allocator, path: []const u8) !void {
+    const host = try makeHostMetadata(allocator);
+    defer allocator.free(host.target_triple);
+    try writeArtifact(allocator, .{ .host = host, .cases = &.{} }, path);
+}
+
+test "host artifact writer releases metadata and serialization allocations" {
+    var temp = std.testing.tmpDir(.{});
+    defer temp.cleanup();
+    const directory = try temp.dir.realpathAlloc(std.testing.allocator, ".");
+    defer std.testing.allocator.free(directory);
+    const path = try std.fs.path.join(std.testing.allocator, &.{ directory, "artifact.json" });
+    defer std.testing.allocator.free(path);
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseArtifactAllocations, .{path});
 }

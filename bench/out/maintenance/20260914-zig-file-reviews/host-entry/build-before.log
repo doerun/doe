@@ -1,0 +1,20 @@
+bench-host-hotpaths
++- install doe-host-hotpath-bench
+   +- compile exe doe-host-hotpath-bench Debug native 2 errors
+bench/entrypoints/host_hotpath_bench.zig:2:25: error: import of file outside module path
+const support = @import("../host_hotpath/host_hotpath_bench_support.zig");
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+bench/entrypoints/host_hotpath_bench.zig:3:23: error: import of file outside module path
+const cases = @import("../host_hotpath/host_hotpath_bench_cases.zig");
+                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+error: the following command failed with 2 compilation errors:
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/zig build-exe -ODebug --dep build_options --dep doe -Mroot=/home/x/deco/doe/runtime/zig/bench/entrypoints/host_hotpath_bench.zig -Mbuild_options=.zig-cache/c/a46a45d4e3897fd29fe3f8216c7243bc/options.zig -ODebug -I /home/x/deco/doe/runtime/zig/src/backend/d3d12 -I /home/x/deco/doe/runtime/zig/src/backend/metal -I /home/x/deco/doe/runtime/zig/vendor/webgpu-headers --dep build_options -Mdoe=/home/x/deco/doe/runtime/zig/src/mod.zig -lc --cache-dir .zig-cache --global-cache-dir /home/x/.cache/zig --name doe-host-hotpath-bench --zig-lib-dir /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/ --listen=-
+
+Build Summary: 1/4 steps succeeded; 1 failed
+bench-host-hotpaths transitive failure
++- install doe-host-hotpath-bench transitive failure
+   +- compile exe doe-host-hotpath-bench Debug native 2 errors
+      +- options cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/16377189e3a42676d08ca904ff2cc51f/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x73538a63 -Z65bf5402fe833ac6 bench-host-hotpaths -Doptimize=Debug -j2 --prefix /home/x/deco/doe/bench/out/maintenance/20260914-zig-file-reviews/host-entry/before-install --summary all

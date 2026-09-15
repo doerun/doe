@@ -12,6 +12,13 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [host benchmark review](../../bench/out/maintenance/20260914-zig-file-reviews/host-entry/README.md)
+repairs its module root, partial-allocation cleanup, ineffective argument
+admission, checksum-based false agreement, and scalar lexer operator drift.
+Its versioned diagnostic artifact identifies timing scope and unavailable
+ratios. File reviews and build rechecks are tracked separately in the queue;
+these tool checks do not establish application performance or calibration.
+
 The [compilation benchmark review](../../bench/out/maintenance/20260914-zig-file-reviews/compilation/README.md)
 rejects ineffective input selection and lost compiler failures, preserves
 argument/source ownership, and escapes external metadata. Its diagnostic row

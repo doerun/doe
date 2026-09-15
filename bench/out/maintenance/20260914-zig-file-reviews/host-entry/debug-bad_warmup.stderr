@@ -1,0 +1,23 @@
+--warmup requires an unsigned integer; received 'no': InvalidCharacter
+error: InvalidCharacter
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:593:24: 0x11b58e1 in charToDigit (std.zig)
+    if (value >= base) return error.InvalidCharacter;
+                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:458:23: 0x119c2fe in parseIntWithSign__anon_24954 (std.zig)
+        const digit = try charToDigit(math.cast(u8, c) orelse return error.InvalidCharacter, buf_base);
+                      ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:346:5: 0x1177d9a in parseIntWithGenericCharacter__anon_24435 (std.zig)
+    return parseIntWithSign(Result, Character, buf, base, .pos);
+    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:333:5: 0x116b9b5 in parseInt__anon_22765 (std.zig)
+    return parseIntWithGenericCharacter(T, u8, buf, base);
+    ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:135:9: 0x114dc03 in parseCount (host_hotpath_bench.zig)
+        return err;
+        ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:121:40: 0x114e2f4 in parseArgs (host_hotpath_bench.zig)
+            .warmup => config.warmup = try parseCount(option, value),
+                                       ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench.zig:17:17: 0x1164c03 in main (host_hotpath_bench.zig)
+    const cfg = try support.parseArgs(args[1..]);
+                ^

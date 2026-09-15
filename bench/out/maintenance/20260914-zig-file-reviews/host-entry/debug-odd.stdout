@@ -1,0 +1,559 @@
+{
+  "schema_version": 2,
+  "claimStatus": "diagnostic",
+  "timingSource": "std.time.Timer",
+  "timingScope": "variant invocation and checksum accumulation",
+  "kind": "doe_host_hotpath_bench",
+  "tool": "doe-host-hotpath-bench",
+  "host": {
+    "cpu_arch": "x86_64",
+    "cpu_model": "znver5",
+    "os": "linux",
+    "abi": "gnu",
+    "target_triple": "x86_64-linux-gnu",
+    "byte_scan_lanes": 16,
+    "f32_lanes": 8
+  },
+  "cases": [
+    {
+      "category": "trace",
+      "case_id": "trace_json_escape_short_plain",
+      "description": "Short trace JSON string with no escapes.",
+      "variants": [
+        {
+          "variant": "scalar",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 18,
+          "work_items": 18,
+          "min_ns": 3246,
+          "max_ns": 7154,
+          "mean_ns": 4595,
+          "p50_ns": 3387,
+          "p95_ns": 7154,
+          "p99_ns": 7154,
+          "checksum": 54,
+          "output_hash": 8597745350862629478
+        },
+        {
+          "variant": "simd",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 18,
+          "work_items": 18,
+          "min_ns": 1122,
+          "max_ns": 3507,
+          "mean_ns": 1950,
+          "p50_ns": 1223,
+          "p95_ns": 3507,
+          "p99_ns": 3507,
+          "checksum": 54,
+          "output_hash": 8597745350862629478
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "scalar",
+        "candidate_variant": "simd",
+        "speedup": 2.3564102564102565,
+        "output_hash_match": true,
+        "max_abs_diff": null,
+        "max_rel_diff": null
+      }
+    },
+    {
+      "category": "trace",
+      "case_id": "trace_json_escape_medium_mixed",
+      "description": "Medium trace JSON string with quotes, backslashes, and separators.",
+      "variants": [
+        {
+          "variant": "scalar",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 87,
+          "work_items": 87,
+          "min_ns": 13355,
+          "max_ns": 13986,
+          "mean_ns": 13588,
+          "p50_ns": 13425,
+          "p95_ns": 13986,
+          "p99_ns": 13986,
+          "checksum": 121,
+          "output_hash": 11224717335758091840
+        },
+        {
+          "variant": "simd",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 87,
+          "work_items": 87,
+          "min_ns": 3546,
+          "max_ns": 4248,
+          "mean_ns": 3780,
+          "p50_ns": 3547,
+          "p95_ns": 4248,
+          "p99_ns": 4248,
+          "checksum": 121,
+          "output_hash": 11224717335758091840
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "scalar",
+        "candidate_variant": "simd",
+        "speedup": 3.5947089947089945,
+        "output_hash_match": true,
+        "max_abs_diff": null,
+        "max_rel_diff": null
+      }
+    },
+    {
+      "category": "trace",
+      "case_id": "trace_json_escape_long_dense",
+      "description": "Long trace JSON string with repeated escaping and control characters.",
+      "variants": [
+        {
+          "variant": "scalar",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 8146,
+          "work_items": 8146,
+          "min_ns": 1175043,
+          "max_ns": 1181003,
+          "mean_ns": 1177437,
+          "p50_ns": 1176265,
+          "p95_ns": 1181003,
+          "p99_ns": 1181003,
+          "checksum": 9270,
+          "output_hash": 487365925975926174
+        },
+        {
+          "variant": "simd",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 8146,
+          "work_items": 8146,
+          "min_ns": 697523,
+          "max_ns": 707322,
+          "mean_ns": 703357,
+          "p50_ns": 705228,
+          "p95_ns": 707322,
+          "p99_ns": 707322,
+          "checksum": 9270,
+          "output_hash": 487365925975926174
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "scalar",
+        "candidate_variant": "simd",
+        "speedup": 1.6740247129125039,
+        "output_hash_match": true,
+        "max_abs_diff": null,
+        "max_rel_diff": null
+      }
+    },
+    {
+      "category": "trace",
+      "case_id": "trace_status_normalize_medium",
+      "description": "Medium execution-status normalization workload.",
+      "variants": [
+        {
+          "variant": "scalar_reference",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 57,
+          "work_items": 57,
+          "min_ns": 1343,
+          "max_ns": 2625,
+          "mean_ns": 1830,
+          "p50_ns": 1523,
+          "p95_ns": 2625,
+          "p99_ns": 2625,
+          "checksum": 17661011783862647367,
+          "output_hash": 17661011783862647367
+        },
+        {
+          "variant": "runtime",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 57,
+          "work_items": 57,
+          "min_ns": 1463,
+          "max_ns": 2595,
+          "mean_ns": 1950,
+          "p50_ns": 1794,
+          "p95_ns": 2595,
+          "p99_ns": 2595,
+          "checksum": 17661011783862647367,
+          "output_hash": 17661011783862647367
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "scalar_reference",
+        "candidate_variant": "runtime",
+        "speedup": 0.9384615384615385,
+        "output_hash_match": true,
+        "max_abs_diff": null,
+        "max_rel_diff": null
+      }
+    },
+    {
+      "category": "trace",
+      "case_id": "trace_status_normalize_long",
+      "description": "Long execution-status normalization workload.",
+      "variants": [
+        {
+          "variant": "scalar_reference",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 117,
+          "work_items": 117,
+          "min_ns": 2255,
+          "max_ns": 2965,
+          "mean_ns": 2598,
+          "p50_ns": 2575,
+          "p95_ns": 2965,
+          "p99_ns": 2965,
+          "checksum": 5716259415055280623,
+          "output_hash": 5716259415055280623
+        },
+        {
+          "variant": "runtime",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 117,
+          "work_items": 117,
+          "min_ns": 2465,
+          "max_ns": 2966,
+          "mean_ns": 2648,
+          "p50_ns": 2514,
+          "p95_ns": 2966,
+          "p99_ns": 2966,
+          "checksum": 5716259415055280623,
+          "output_hash": 5716259415055280623
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "scalar_reference",
+        "candidate_variant": "runtime",
+        "speedup": 0.9811178247734139,
+        "output_hash_match": true,
+        "max_abs_diff": null,
+        "max_rel_diff": null
+      }
+    },
+    {
+      "category": "lexer",
+      "case_id": "lexer_small_shader",
+      "description": "Tokenize a compact WGSL corpus.",
+      "variants": [
+        {
+          "variant": "scalar",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 422,
+          "work_items": 101,
+          "min_ns": 110758,
+          "max_ns": 111950,
+          "mean_ns": 111282,
+          "p50_ns": 111139,
+          "p95_ns": 111950,
+          "p99_ns": 111950,
+          "checksum": 14443164796756461328,
+          "output_hash": 14443164796756461429
+        },
+        {
+          "variant": "simd",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 422,
+          "work_items": 101,
+          "min_ns": 150704,
+          "max_ns": 152638,
+          "mean_ns": 151442,
+          "p50_ns": 150984,
+          "p95_ns": 152638,
+          "p99_ns": 152638,
+          "checksum": 14443164796756461328,
+          "output_hash": 14443164796756461429
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "scalar",
+        "candidate_variant": "simd",
+        "speedup": 0.7348159691499055,
+        "output_hash_match": true,
+        "max_abs_diff": null,
+        "max_rel_diff": null
+      }
+    },
+    {
+      "category": "lexer",
+      "case_id": "lexer_large_shader",
+      "description": "Tokenize a large WGSL corpus with comments and repeated declarations.",
+      "variants": [
+        {
+          "variant": "scalar",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 21718,
+          "work_items": 4801,
+          "min_ns": 5305920,
+          "max_ns": 5315799,
+          "mean_ns": 5311510,
+          "p50_ns": 5312813,
+          "p95_ns": 5315799,
+          "p99_ns": 5315799,
+          "checksum": 8357406328349966856,
+          "output_hash": 8357406328349970633
+        },
+        {
+          "variant": "simd",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 21718,
+          "work_items": 4801,
+          "min_ns": 7417256,
+          "max_ns": 7420081,
+          "mean_ns": 7418775,
+          "p50_ns": 7418989,
+          "p95_ns": 7420081,
+          "p99_ns": 7420081,
+          "checksum": 8357406328349966856,
+          "output_hash": 8357406328349970633
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "scalar",
+        "candidate_variant": "simd",
+        "speedup": 0.7159551273626711,
+        "output_hash_match": true,
+        "max_abs_diff": null,
+        "max_rel_diff": null
+      }
+    },
+    {
+      "category": "numeric",
+      "case_id": "numeric_dot_4096",
+      "description": "Scalar versus SIMD f32 dot accumulation over deterministic f64 inputs.",
+      "variants": [
+        {
+          "variant": "scalar",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 65536,
+          "work_items": 4096,
+          "min_ns": 14227,
+          "max_ns": 14608,
+          "mean_ns": 14384,
+          "p50_ns": 14317,
+          "p95_ns": 14608,
+          "p99_ns": 14608,
+          "checksum": 1137356987,
+          "output_hash": 1137356987
+        },
+        {
+          "variant": "simd",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 65536,
+          "work_items": 4096,
+          "min_ns": 19908,
+          "max_ns": 20880,
+          "mean_ns": 20248,
+          "p50_ns": 19958,
+          "p95_ns": 20880,
+          "p99_ns": 20880,
+          "checksum": 1137356969,
+          "output_hash": 1137356969
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "scalar",
+        "candidate_variant": "simd",
+        "speedup": 0.7103911497431845,
+        "output_hash_match": false,
+        "max_abs_diff": 0.00054931640625,
+        "max_rel_diff": 0.0000013550630236048215
+      }
+    },
+    {
+      "category": "numeric",
+      "case_id": "numeric_reduce_4096",
+      "description": "Scalar versus SIMD f32 reduction over deterministic f64 inputs.",
+      "variants": [
+        {
+          "variant": "scalar",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 32768,
+          "work_items": 4096,
+          "min_ns": 14217,
+          "max_ns": 14427,
+          "mean_ns": 14287,
+          "p50_ns": 14217,
+          "p95_ns": 14427,
+          "p99_ns": 14427,
+          "checksum": 1140383075,
+          "output_hash": 1140383075
+        },
+        {
+          "variant": "simd",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 32768,
+          "work_items": 4096,
+          "min_ns": 10860,
+          "max_ns": 11000,
+          "mean_ns": 10923,
+          "p50_ns": 10910,
+          "p95_ns": 11000,
+          "p99_ns": 11000,
+          "checksum": 1140383100,
+          "output_hash": 1140383100
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "scalar",
+        "candidate_variant": "simd",
+        "speedup": 1.3079739998169002,
+        "output_hash_match": false,
+        "max_abs_diff": 0.000762939453125,
+        "max_rel_diff": 0.0000015328392726665388
+      }
+    },
+    {
+      "category": "numeric",
+      "case_id": "numeric_attention_seq128_head64",
+      "description": "Scalar versus SIMD attention-style weighted reduction with explicit scratch reuse.",
+      "variants": [
+        {
+          "variant": "scalar",
+          "iterations": 20,
+          "warmup": 5,
+          "input_bytes": 131584,
+          "work_items": 8192,
+          "min_ns": 139423,
+          "max_ns": 157466,
+          "mean_ns": 142251,
+          "p50_ns": 140044,
+          "p95_ns": 157466,
+          "p99_ns": 157466,
+          "checksum": 0,
+          "output_hash": 9500665761546878344
+        },
+        {
+          "variant": "simd",
+          "iterations": 20,
+          "warmup": 5,
+          "input_bytes": 131584,
+          "work_items": 8192,
+          "min_ns": 161403,
+          "max_ns": 169229,
+          "mean_ns": 163109,
+          "p50_ns": 161955,
+          "p95_ns": 169229,
+          "p99_ns": 169229,
+          "checksum": 0,
+          "output_hash": 16568860563300323518
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "scalar",
+        "candidate_variant": "simd",
+        "speedup": 0.8721223231090866,
+        "output_hash_match": false,
+        "max_abs_diff": 0.00000002421438694000244,
+        "max_rel_diff": 0.0000015433722017771576
+      }
+    },
+    {
+      "category": "coordination",
+      "case_id": "task_queue_submit_drain_4096",
+      "description": "Linked per-job heap nodes versus flat ring storage for task-pool-style enqueue and drain.",
+      "variants": [
+        {
+          "variant": "linked",
+          "iterations": 20,
+          "warmup": 5,
+          "input_bytes": 32768,
+          "work_items": 4096,
+          "min_ns": 562329,
+          "max_ns": 917547,
+          "mean_ns": 600595,
+          "p50_ns": 565836,
+          "p95_ns": 917547,
+          "p99_ns": 917547,
+          "checksum": 0,
+          "output_hash": 8386560
+        },
+        {
+          "variant": "flat_ring",
+          "iterations": 20,
+          "warmup": 5,
+          "input_bytes": 32768,
+          "work_items": 4096,
+          "min_ns": 71955,
+          "max_ns": 74750,
+          "mean_ns": 72413,
+          "p50_ns": 72196,
+          "p95_ns": 74750,
+          "p99_ns": 74750,
+          "checksum": 0,
+          "output_hash": 8386560
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "linked",
+        "candidate_variant": "flat_ring",
+        "speedup": 8.294021791667243,
+        "output_hash_match": true,
+        "max_abs_diff": null,
+        "max_rel_diff": null
+      }
+    },
+    {
+      "category": "coordination",
+      "case_id": "singleflight_join_take_512",
+      "description": "Flat waiter storage versus intrusive waiter chains for join/take reconstruction.",
+      "variants": [
+        {
+          "variant": "flat_waiters",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 8192,
+          "work_items": 512,
+          "min_ns": 32802,
+          "max_ns": 37170,
+          "mean_ns": 34311,
+          "p50_ns": 32962,
+          "p95_ns": 37170,
+          "p99_ns": 37170,
+          "checksum": 130816,
+          "output_hash": 130816
+        },
+        {
+          "variant": "intrusive_waiters",
+          "iterations": 3,
+          "warmup": 0,
+          "input_bytes": 8192,
+          "work_items": 512,
+          "min_ns": 1593,
+          "max_ns": 1783,
+          "mean_ns": 1659,
+          "p50_ns": 1603,
+          "p95_ns": 1783,
+          "p99_ns": 1783,
+          "checksum": 130816,
+          "output_hash": 130816
+        }
+      ],
+      "comparison": {
+        "baseline_variant": "flat_waiters",
+        "candidate_variant": "intrusive_waiters",
+        "speedup": 20.681735985533454,
+        "output_hash_match": true,
+        "max_abs_diff": null,
+        "max_rel_diff": null
+      }
+    }
+  ]
+}

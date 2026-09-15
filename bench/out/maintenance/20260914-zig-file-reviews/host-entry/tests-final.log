@@ -1,0 +1,15 @@
+test-bench-host-hotpaths
++- run test stderr
+--iterations requires a positive sample count; received 0
+missing value for --iterations
+unknown host benchmark option '--unknown'; expected --iterations, --warmup, or --out
+--warmup requires an unsigned integer; received 'bad': InvalidCharacter
+
+Build Summary: 6/6 steps succeeded; 7/7 tests passed
+test-bench-host-hotpaths success
++- zig fmt --check success
++- run python3 success 437ms MaxRSS:27M
++- run test 7 passed 116ms MaxRSS:4M
+   +- compile test Debug native success 330ms MaxRSS:145M
+      +- options cached
+

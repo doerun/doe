@@ -1,0 +1,7 @@
+case	exit	result
+zero	0	characterized
+missing	0	characterized
+unknown	0	characterized
+negative	1	characterized
+overflow	1	characterized
+bad_warmup	1	characterized

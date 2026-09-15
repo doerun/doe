@@ -1,0 +1,47 @@
+test-bench-host-hotpaths
++- run test stderr
+--iterations requires a positive sample count; received 0
+missing value for --iterations
+unknown host benchmark option '--unknown'; expected --iterations, --warmup, or --out
+--warmup requires an unsigned integer; received 'bad': InvalidCharacter
+test-bench-compilation
++- run test stderr
+--iterations must be between 1 and 5000; received 0
+--iterations must be between 1 and 5000; received 5001
+missing value for --target
+--target expects msl, hlsl, spirv, or all; received 'bad'
+unknown compilation benchmark option '--typo'
+shader filter 'absent' does not match the selected corpus or external shader
+--shader-name and --shader-tier require --shader-path
+shader name and tier must be valid UTF-8 for JSON output
+empty_compute             msl          116.179     116.179     116.179      123
+test-bench-shader
++- run test stderr
+--iterations must be between 1 and 2000; received 0
+--iterations must be between 1 and 2000; received 2001
+missing value for --iterations
+unknown option '--typo'; expected --iterations, --warmup, --out, or --filter
+--warmup requires an unsigned integer; received 'bad': InvalidCharacter
+--iterations requires an unsigned integer; received '4294967296': Overflow
+unknown shader filter 'absent'; expected a built-in corpus name
+
+Build Summary: 12/12 steps succeeded; 17/17 tests passed
+test-bench-shader success
++- zig fmt --check success
++- run python3 success 508ms MaxRSS:27M
++- run test 4 passed 938ms MaxRSS:7M
+   +- compile test Debug native cached 17ms MaxRSS:31M
+      +- options cached
+test-bench-compilation success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 4 passed 6ms MaxRSS:7M
+   +- compile test Debug native cached 25ms MaxRSS:31M
+      +- options (reused)
+test-bench-host-hotpaths success
++- zig fmt --check (reused)
++- run python3 (reused)
++- run test 9 passed 111ms MaxRSS:4M
+   +- compile test Debug native success 364ms MaxRSS:144M
+      +- options (reused)
+

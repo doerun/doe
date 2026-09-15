@@ -1,0 +1,16 @@
+error: NoSpaceLeft
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/posix.zig:1305:23: 0x10d01d8 in write (std.zig)
+            .NOSPC => return error.NoSpaceLeft,
+                      ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/File.zig:971:5: 0x10ab10b in write (std.zig)
+    return posix.write(self.handle, bytes);
+    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/File.zig:978:18: 0x107f910 in writeAll (std.zig)
+        index += try self.write(bytes[index..]);
+                 ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:312:9: 0x1163dbe in writeArtifact (host_hotpath_bench.zig)
+        try file.writeAll(payload);
+        ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench.zig:77:5: 0x116897e in main (host_hotpath_bench.zig)
+    try support.writeArtifact(arena, artifact, cfg.out_path);
+    ^

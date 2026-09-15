@@ -1,0 +1,9 @@
+
+Build Summary: 6/6 steps succeeded
+test-bench-host-hotpaths success
++- zig fmt --check success
++- run python3 success 563ms MaxRSS:26M
++- run test success 515us MaxRSS:3M
+   +- compile test Debug native success 320ms MaxRSS:135M
+      +- options cached
+

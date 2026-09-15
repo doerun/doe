@@ -1,0 +1,41 @@
+test-bench-host-hotpaths
++- run test 0/1 passed, 1 failed, 1 leaked
+error: 'host_hotpath_bench_cases.test.host queue releases partially constructed nodes on allocation failure' failed: expected 16, found 0
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/testing.zig:110:17: 0x1199ea9 in expectEqualInner__anon_29853 (std.zig)
+                return error.TestExpectedEqual;
+                ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig:680:9: 0x119a221 in test.host queue releases partially constructed nodes on allocation failure (host_hotpath_bench.zig)
+        try std.testing.expectEqual(failing.allocated_bytes, failing.freed_bytes);
+        ^
+[gpa] (err): memory address 0x709ad1de0000 leaked: 
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig:238:51: 0x1199908 in run (host_hotpath_bench.zig)
+            const node = try self.allocator.create(LinkedJobNode);
+                                                  ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig:679:65: 0x119a060 in test.host queue releases partially constructed nodes on allocation failure (host_hotpath_bench.zig)
+        try std.testing.expectError(error.OutOfMemory, queue.run());
+                                                                ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/compiler/test_runner.zig:130:29: 0x11538e3 in mainServer (test_runner.zig)
+                test_fn.func() catch |err| switch (err) {
+                            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/compiler/test_runner.zig:64:26: 0x1154b66 in main (test_runner.zig)
+        return mainServer() catch @panic("internal test runner failure");
+                         ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:618:22: 0x114f195 in main (std.zig)
+            root.main();
+                     ^
+../sysdeps/nptl/libc_start_call_main.h:59:16: 0x709ad1e2a600 in __libc_start_call_main (../sysdeps/x86/libc-start.c)
+../csu/libc-start.c:360:3: 0x709ad1e2a717 in __libc_start_main_impl (../sysdeps/x86/libc-start.c)
+???:?:?: 0x11b8d14 in ??? (???)
+error: while executing test 'host_hotpath_bench_cases.test.host queue releases partially constructed nodes on allocation failure', the following test command failed:
+./.zig-cache/o/b4a282a48a0c31889942503d0429dae5/test --cache-dir=./.zig-cache --seed=0x7107288c --listen=-
+
+Build Summary: 4/6 steps succeeded; 1 failed; 0/1 tests passed; 1 failed; 1 leaked
+test-bench-host-hotpaths transitive failure
++- zig fmt --check success
++- run python3 success 435ms MaxRSS:26M
++- run test 0/1 passed, 1 failed, 1 leaked
+   +- compile test Debug native success 257ms MaxRSS:135M
+      +- options cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/5af28a2fb121ade9e1499ad1642e40b9/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x7107288c -Z98b943b337fe0225 test-bench-host-hotpaths -Dtest-filter=host queue releases --summary all

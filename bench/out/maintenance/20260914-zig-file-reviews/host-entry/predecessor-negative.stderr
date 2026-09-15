@@ -1,0 +1,16 @@
+error: Overflow
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:465:82: 0x119959b in parseIntWithSign__anon_24498 (std.zig)
+            accumulate = math.cast(Accumulate, -@as(i8, @intCast(digit))) orelse return error.Overflow;
+                                                                                 ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:345:24: 0x1174b6c in parseIntWithGenericCharacter__anon_24089 (std.zig)
+    if (buf[0] == '-') return parseIntWithSign(Result, Character, buf[1..], base, .neg);
+                       ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fmt.zig:333:5: 0x1168135 in parseInt__anon_22724 (std.zig)
+    return parseIntWithGenericCharacter(T, u8, buf, base);
+    ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig:105:30: 0x114cdab in parseArgs (host_hotpath_bench.zig)
+        const Option = enum { iterations, warmup, out };
+                             ^
+/home/x/deco/doe/runtime/zig/bench/host_hotpath/host_hotpath_bench.zig:10:17: 0x11620a0 in main (host_hotpath_bench.zig)
+pub fn main() !void {
+                ^
