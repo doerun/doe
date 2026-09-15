@@ -12,6 +12,12 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [runtime compile-report review](../../bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md)
+enforces argument ownership and typed JSON output, with a dedicated test root
+for the implementation behind its forwarding entrypoint. Emitted-output and
+consumer checks are compiler-tool evidence; application calibration remains a
+separate dependency.
+
 The [Metal compute review](../../bench/out/maintenance/20260914-zig-file-reviews/metal-compute/README.md)
 and [staged-write review](../../bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md)
 cover explicit capture bounds, ownership, and diagnostic tool contracts.

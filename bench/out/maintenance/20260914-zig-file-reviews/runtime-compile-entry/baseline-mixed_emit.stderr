@@ -1,0 +1,4 @@
+error: EmitTargetMismatch
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:149:38: 0x1186d56 in main (mod.zig)
+        ),
+                                     ^

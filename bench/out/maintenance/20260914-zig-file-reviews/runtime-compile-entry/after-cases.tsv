@@ -1,0 +1,13 @@
+case	exit	result
+msl	0	valid schema and output bytes
+spirv	0	valid schema and output bytes
+quoted	0	checked
+duplicate	0	checked
+unknown	1	checked
+missing	1	checked
+empty_name	1	checked
+target	1	checked
+mixed_emit	1	preserved=True
+quoted_path	0	valid escaped path
+invalid_source	1	original error; output preserved
+full	1	original output error

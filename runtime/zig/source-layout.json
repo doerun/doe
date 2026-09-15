@@ -2590,9 +2590,9 @@
       },
       "src/compiler/wgsl/runtime/runtime_compile_report.zig": {
         "decision": "Keep",
-        "moduleSha256": "4465176049041f2556578838febe0c9454fc69e5de76cd1a7cb10830525d74de",
-        "reason": "Keep: executable process root at src/compiler/wgsl/runtime/runtime_compile_report.zig.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "284d9f79193e9ba900fd3b6f90ec3c9651d90357f67719f0d22fd5580f51c156",
+        "reason": "Keep: runtime-translation diagnostic CLI with explicit process-owned arguments, typed report serialization, and independently checked allocation/error paths. Canonical benchmark entrypoint delegates to this compiler metadata owner.",
+        "reviewer": "codex-file-review/2026-09-14"
       },
       "src/compiler/wgsl/runtime/runtime_compute_translation.zig": {
         "decision": "Keep",

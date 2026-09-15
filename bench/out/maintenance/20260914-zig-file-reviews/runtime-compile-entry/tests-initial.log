@@ -1,0 +1,9 @@
+
+Build Summary: 6/6 steps succeeded
+test-runtime-compile-report success
++- zig fmt --check success
++- run python3 success 430ms MaxRSS:28M
++- run test success 643us MaxRSS:3M
+   +- compile test Debug native success 257ms MaxRSS:134M
+      +- options success
+

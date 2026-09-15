@@ -1,0 +1,19 @@
+error: NoSpaceLeft
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/posix.zig:1305:23: 0x1103198 in write (std.zig)
+            .NOSPC => return error.NoSpaceLeft,
+                      ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/File.zig:971:5: 0x10de0cb in write (std.zig)
+    return posix.write(self.handle, bytes);
+    ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/fs/File.zig:978:18: 0x10b28d0 in writeAll (std.zig)
+        index += try self.write(bytes[index..]);
+                 ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:104:5: 0x1182f77 in writeReport (mod.zig)
+    try output.writeAll(payload);
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:195:9: 0x11851e1 in run (mod.zig)
+        try writeReport(allocator, report, file);
+        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:123:5: 0x118691a in main (mod.zig)
+    try run(allocator, config);
+    ^

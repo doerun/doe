@@ -1,0 +1,14 @@
+test-runtime-compile-report
++- run test stderr
+unknown runtime compile report option '--typo'
+--shader-name requires a value
+--target expects msl or spirv; received 'hlsl'
+
+Build Summary: 6/6 steps succeeded; 29/29 tests passed
+test-runtime-compile-report success
++- zig fmt --check success
++- run python3 success 456ms MaxRSS:28M
++- run test 29 passed 34ms MaxRSS:7M
+   +- compile test Debug native success 445ms MaxRSS:151M
+      +- options cached
+

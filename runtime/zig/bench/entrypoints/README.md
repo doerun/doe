@@ -41,3 +41,21 @@ there is no serialized-field migration. The [compute review](../../../../bench/o
 and [staged-write review](../../../../bench/out/maintenance/20260914-zig-file-reviews/metal-staged-write/README.md)
 record validation and platform limitations. Existing process, trace, schema,
 and release gates retain their authority.
+
+## Runtime compile report
+
+`runtime_compile_report.zig` delegates to the WGSL runtime translation report
+owner. Its [existing schema](../../../../config/runtime-compile-report.schema.json)
+retains the same fields and version. Names and paths are JSON escaped; command
+arguments borrow process storage. Unknown or incomplete options, invalid
+metadata, and incompatible emit targets fail before compilation. A shader
+translation error remains an error and cannot become an empty successful report.
+
+`zig build test-runtime-compile-report` uses a dedicated test root to register
+the implementation's tests. Testing the forwarding module alone does not
+discover tests inside the separate named compiler module. The
+[review receipt](../../../../bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md)
+records that discovery failure, allocation tests, emitted-output comparisons,
+schema checks, and the existing report consumer. Translation phase boundaries
+and successful emitted bytes retain their meaning. These compiler observations
+do not establish GPU execution, numerical application correctness, or a speedup.

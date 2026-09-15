@@ -1,0 +1,28 @@
+error: UnexpectedToken
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/frontend/parser.zig:166:17: 0x11eb778 in parseTopLevelDecl (mod.zig)
+                return ParseError.UnexpectedToken;
+                ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/frontend/parser.zig:107:26: 0x11ccd45 in parse (mod.zig)
+            const decl = try self.parseTopLevelDecl();
+                         ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/frontend/parser.zig:228:9: 0x11a4742 in parseSourceWithContext (mod.zig)
+    _ = try parser.parse();
+        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig:130:9: 0x11be575 in analyzeWithDiagnostic (mod.zig)
+        return kind;
+        ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig:113:5: 0x119cc5d in analyzeToIrWithConfigTimedAndOverridesWithDiagnostic (mod.zig)
+    return analyzeWithDiagnostic(allocator, wgsl, config, overrides, diagnostic);
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig:85:20: 0x11930a2 in translateToMslForComputeRuntimeTimedWithDiagnostic (mod.zig)
+    var analyzed = try analysis.analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, compute_runtime_robustness_config(), override_slice, diagnostic);
+                   ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig:163:5: 0x118a507 in translateToMslForComputeRuntimeTimed (mod.zig)
+    return translateToMslForComputeRuntimeTimedWithDiagnostic(allocator, wgsl, out, overrides, override_count, analysis.compatibilityDiagnostic());
+    ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:143:17: 0x1183890 in run (mod.zig)
+        .msl => try runtime_compile.translateToMslForComputeRuntimeTimed(
+                ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:123:5: 0x118691a in main (mod.zig)
+    try run(allocator, config);
+    ^

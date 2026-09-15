@@ -1,0 +1,6 @@
+case	exit	validJson	leakDiagnostic
+valid	0	True	False
+quoted	0	False	False
+duplicate	0	True	True
+unknown	0	True	False
+missing	0	True	False

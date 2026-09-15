@@ -1,0 +1,3 @@
+usage: doe-runtime-compile-report --shader-path <path> [--shader-name <name>] [--out <path>] [--target msl|spirv] [--emit-msl <path>] [--emit-spirv <path>]
+error: EmitTargetMismatch
+error: EmitTargetMismatch

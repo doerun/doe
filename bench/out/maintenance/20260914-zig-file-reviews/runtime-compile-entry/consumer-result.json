@@ -1,0 +1,21 @@
+{
+  "status": "ok",
+  "diagnosticCode": "",
+  "diagnosticMessage": "",
+  "outputSha256": "3adc0634a82daa592cebb02cac24230a0d69fb67d366ce2ba87cc7cc33468c66",
+  "irSha256": "77534aa9c9ce670a488ad34e9581684c2907c7ae2786b06484e6109bc3edd38e",
+  "outputPath": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer/quote\"consumer/doe/output.spv",
+  "validationStatus": "passed",
+  "validationTool": "spirv-val",
+  "validationMessage": "",
+  "phaseTimingsNs": {
+    "parse": 99788,
+    "sema": 56627,
+    "lower": 25778,
+    "emit": 68670,
+    "total": 260821
+  },
+  "phaseBenchmarkTimingsNs": {},
+  "receiptPath": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer/quote\"consumer/doe/compile-report.json",
+  "outputArtifacts": []
+}

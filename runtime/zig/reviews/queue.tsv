@@ -1,16 +1,16 @@
 level	targets	status	latestReview	prerequisites	nextAction
-file	bench/compiler/bench.zig	verified	compiler_stage_file_005		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
-file	bench/compiler/bench_compilation.zig	verified	compilation_file_003		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
+file	bench/compiler/bench.zig	verified	compiler_stage_file_006		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
+file	bench/compiler/bench_compilation.zig	verified	compilation_file_004		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
 file	bench/entrypoints/bench_compilation.zig	retired	compilation_entrypoint_file_001		Retired source path; continue the compiler implementation review. This removal does not complete its directory review.
 file	bench/entrypoints/host_hotpath_bench.zig	retired	host_entry_file_001		Complete the replacement entrypoint review at bench/host_hotpath/host_hotpath_bench.zig, including dependent allocation and input fixes; keep case/support file coverage separate.
-file	bench/entrypoints/metal_compute_bench.zig	verified	metal_compute_file_001		Continue with bench/entrypoints/runtime_compile_report.zig. Physical Metal qualification still requires the unchanged workload suite on an Apple host; directory and relationship reviews remain separate.
-file	bench/entrypoints/metal_staged_write_bench.zig	verified	metal_staged_write_file_001		Continue with bench/entrypoints/runtime_compile_report.zig. Physical Metal qualification still requires the unchanged workload suite on an Apple host; directory and relationship reviews remain separate.
-file	bench/entrypoints/runtime_compile_report.zig	pending			Read and review the complete scope.
-file	bench/host_hotpath/host_hotpath_bench.zig	verified	host_main_file_003		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
-file	bench/host_hotpath/host_hotpath_bench_cases.zig	verified	host_cases_file_002		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
-file	bench/host_hotpath/host_hotpath_bench_lexer.zig	verified	host_lexer_file_002		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
-file	bench/host_hotpath/host_hotpath_bench_support.zig	verified	host_support_file_002		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
-file	build.zig	verified	build_file_006		Continue with bench/entrypoints/runtime_compile_report.zig; directory and relationship reviews remain separate.
+file	bench/entrypoints/metal_compute_bench.zig	verified	metal_compute_file_002		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
+file	bench/entrypoints/metal_staged_write_bench.zig	verified	metal_staged_write_file_002		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
+file	bench/entrypoints/runtime_compile_report.zig	verified	runtime_compile_entry_file_002		Continue with src/app/mod.zig in TSV order. File coverage does not complete directory or relationship reviews.
+file	bench/host_hotpath/host_hotpath_bench.zig	verified	host_main_file_004		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
+file	bench/host_hotpath/host_hotpath_bench_cases.zig	verified	host_cases_file_003		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
+file	bench/host_hotpath/host_hotpath_bench_lexer.zig	verified	host_lexer_file_003		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
+file	bench/host_hotpath/host_hotpath_bench_support.zig	verified	host_support_file_003		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
+file	build.zig	verified	build_file_007		Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.
 file	src/app/mod.zig	pending			Read and review the complete scope.
 file	src/app/prepare.zig	pending			Read and review the complete scope.
 file	src/app/request.zig	pending			Read and review the complete scope.
@@ -334,7 +334,7 @@ file	src/compiler/wgsl/proof/dispatch_proof_match.zig	pending			Read and review 
 file	src/compiler/wgsl/proof/dispatch_uniform_bounds.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/proof/robustness_static_bounds.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/runtime/runtime_compile.zig	pending			Read and review the complete scope.
-file	src/compiler/wgsl/runtime/runtime_compile_report.zig	pending			Read and review the complete scope.
+file	src/compiler/wgsl/runtime/runtime_compile_report.zig	verified	runtime_compile_report_file_002		Continue with src/app/mod.zig in TSV order. File coverage does not complete directory or relationship reviews.
 file	src/compiler/wgsl/runtime/runtime_compute_translation.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/runtime/runtime_graphics_translation.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/runtime/runtime_translation_info.zig	pending			Read and review the complete scope.
@@ -624,6 +624,7 @@ file	test_suite.zig	pending			Read and review the complete scope.
 file	test_suite_core.zig	pending			Read and review the complete scope.
 file	test_suite_d3d12.zig	pending			Read and review the complete scope.
 file	test_suite_full.zig	pending			Read and review the complete scope.
+file	test_suite_runtime_compile_report.zig	verified	runtime_compile_report_suite_file_001		Continue with src/app/mod.zig in TSV order. File coverage does not complete directory or relationship reviews.
 file	test_suite_wgsl.zig	pending			Read and review the complete scope.
 file	tests/backend/backend_identity_test.zig	pending			Read and review the complete scope.
 file	tests/backend/backend_runtime_config_policy_test.zig	pending			Read and review the complete scope.
@@ -758,7 +759,7 @@ file	tests/wgsl/tsir_planner_test.zig	pending			Read and review the complete sco
 file	tests/wgsl/tsir_reference_interpreter_test.zig	pending			Read and review the complete scope.
 file	tests/wgsl/tsir_scaffold_test.zig	pending			Read and review the complete scope.
 file	tools/source_ast_inventory.zig	pending			Read and review the complete scope.
-directory	.	pending		file:build.zig;file:test_suite.zig;file:test_suite_core.zig;file:test_suite_d3d12.zig;file:test_suite_full.zig;file:test_suite_wgsl.zig	Read and review the complete scope.
+directory	.	pending		file:build.zig;file:test_suite.zig;file:test_suite_core.zig;file:test_suite_d3d12.zig;file:test_suite_full.zig;file:test_suite_runtime_compile_report.zig;file:test_suite_wgsl.zig	Read and review the complete scope.
 directory	bench	pending			Read and review the complete scope.
 directory	bench/compiler	pending		file:bench/compiler/bench.zig;file:bench/compiler/bench_compilation.zig	Read and review the complete scope.
 directory	bench/entrypoints	pending		file:bench/entrypoints/metal_compute_bench.zig;file:bench/entrypoints/metal_staged_write_bench.zig;file:bench/entrypoints/runtime_compile_report.zig	Read and review the complete scope.

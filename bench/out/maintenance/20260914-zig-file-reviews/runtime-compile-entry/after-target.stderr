@@ -1,0 +1,10 @@
+--target expects msl or spirv; received 'hlsl'
+usage: doe-runtime-compile-report --shader-path <path> [--shader-name <name>] [--out <path>] [--target msl|spirv] [--emit-msl <path>] [--emit-spirv <path>]
+error: InvalidTarget
+error: InvalidTarget
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:52:17: 0x1181257 in parseArgs (mod.zig)
+                return error.InvalidTarget;
+                ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:121:9: 0x1186821 in main (mod.zig)
+        return err;
+        ^

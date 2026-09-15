@@ -1,0 +1,9 @@
+usage: doe-runtime-compile-report --shader-path <path> [--shader-name <name>] [--out <path>] [--target msl|spirv] [--emit-msl <path>] [--emit-spirv <path>]
+error: InvalidShaderName
+error: InvalidShaderName
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:60:68: 0x11815d3 in parseArgs (mod.zig)
+        if (name.len == 0 or !std.unicode.utf8ValidateSlice(name)) return error.InvalidShaderName;
+                                                                   ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:121:9: 0x1186821 in main (mod.zig)
+        return err;
+        ^

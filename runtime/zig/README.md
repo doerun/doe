@@ -34,6 +34,7 @@ zig build test-bench-shader
 zig build test-bench-compilation
 zig build test-bench-host-hotpaths
 zig build test-bench-metal-compute test-bench-metal-staged-write
+zig build test-runtime-compile-report
 zig build import-fence
 zig build source-layout
 zig build line-limits
@@ -46,7 +47,7 @@ and canonical test suites. Both exclude vendored sources and build outputs.
 `-Dtest-filter=<substring>` selects test names in `test`, `test-core`,
 `test-full`, `test-d3d12`, `test-wgsl`, `test-bench-shader`, and
 `test-bench-compilation`, `test-bench-host-hotpaths`, `test-bench-metal-compute`,
-and `test-bench-metal-staged-write`. Check the executed test count:
+`test-bench-metal-staged-write`, and `test-runtime-compile-report`. Check the executed test count:
 a filter matching no names runs no tests, and a filtered run does not qualify
 the complete suite.
 

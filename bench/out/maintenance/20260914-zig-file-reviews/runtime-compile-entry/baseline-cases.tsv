@@ -1,0 +1,10 @@
+case	exit	result
+msl	0	valid schema and output bytes
+spirv	0	valid schema and output bytes
+quoted	0	characterized
+duplicate	0	characterized
+unknown	0	characterized
+missing	0	characterized
+empty_name	0	characterized
+target	1	characterized
+mixed_emit	1	preserved=False

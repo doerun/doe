@@ -1,0 +1,10 @@
+unknown runtime compile report option '--typo'
+usage: doe-runtime-compile-report --shader-path <path> [--shader-name <name>] [--out <path>] [--target msl|spirv] [--emit-msl <path>] [--emit-spirv <path>]
+error: UnknownArgument
+error: UnknownArgument
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:37:13: 0x1180cfe in parseArgs (mod.zig)
+            return error.UnknownArgument;
+            ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:121:9: 0x1186821 in main (mod.zig)
+        return err;
+        ^

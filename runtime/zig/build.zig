@@ -1607,6 +1607,20 @@ pub fn build(b: *std.Build) void {
         }),
     });
     runtime_compile_report_exe.linkLibC();
+    const runtime_compile_report_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test_suite_runtime_compile_report.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+            .imports = &.{.{ .name = "build_options", .module = build_options_module }},
+        }),
+        .filters = test_filters,
+    });
+    const runtime_compile_report_test_step = b.step("test-runtime-compile-report", "Run runtime compile report contract tests");
+    runtime_compile_report_test_step.dependOn(&fmt_check.step);
+    runtime_compile_report_test_step.dependOn(&source_layout_check.step);
+    runtime_compile_report_test_step.dependOn(&b.addRunArtifact(runtime_compile_report_tests).step);
     const install_runtime_compile_report = b.addInstallArtifact(runtime_compile_report_exe, .{});
     const runtime_compile_report_step = b.step("runtime-compile-report", "Build the WGSL runtime compile structural report CLI");
     runtime_compile_report_step.dependOn(&install_runtime_compile_report.step);

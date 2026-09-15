@@ -1,0 +1,16 @@
+error(gpa): memory address 0x7e31775a0000 leaked: 
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/mem/Allocator.zig:436:40: 0x10b083e in dupe__anon_5703 (std.zig)
+    const new_buf = try allocator.alloc(T, m.len);
+                                       ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:49:52: 0x1180176 in parseArgs (mod.zig)
+            config.shader_name = try allocator.dupe(u8, args[i]);
+                                                   ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:93:29: 0x1182bf3 in main (mod.zig)
+    const config = parseArgs(allocator) catch |err| {
+                            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:627:37: 0x118db91 in main (std.zig)
+            const result = root.main() catch |err| {
+                                    ^
+../sysdeps/nptl/libc_start_call_main.h:59:16: 0x7e317722a600 in __libc_start_call_main (../sysdeps/x86/libc-start.c)
+../csu/libc-start.c:360:3: 0x7e317722a717 in __libc_start_main_impl (../sysdeps/x86/libc-start.c)
+

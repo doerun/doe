@@ -2579,6 +2579,1683 @@
       "targets": [
         "bench/host_hotpath/host_hotpath_bench_lexer.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/valid.wgsl",
+          "sha256": "95b71646ab522e330331b56411c70cce7c13de4708d428bb1ad760d0d8fe6040"
+        },
+        {
+          "path": "config/runtime-compile-report.schema.json",
+          "sha256": "8f6733ce7f109fab00c33f32a592b36a71b10b64c3668ef24a302763edf8dc5d"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "9fe36b9a8e4f1a705069d0c8dc7942e52708b6cf56e9932fff3ed2cb35a2eb37"
+        },
+        {
+          "path": "runtime/zig/src/compiler/mod.zig",
+          "sha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig",
+          "sha256": "4465176049041f2556578838febe0c9454fc69e5de76cd1a7cb10830525d74de"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/before-cases.tsv",
+          "sha256": "8119e6085d063cfc0aa7824c2f1bd399a07c541023909e23e3e3189b15d4e04c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/build-debug.log",
+          "sha256": "ebff5fe2cde8da403f725d42776962ab7c91b0736dde7715635c9ca8dfeb64d7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/duplicate.stderr",
+          "sha256": "ea0e7bb6d248b326edb5ddac3daa5edeeeb98f5c9fcd7ea236139e5deb09cc0f"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/quoted.stdout",
+          "sha256": "e75b567f8186473fc1848e32d3990fbbc1cc98654ec95c91bcb0c9ff6b195872"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-before.tsv",
+          "sha256": "ef62e220d8892641563b269e4e1f9f24a9965908eb1b2597d2f77149ed4d3051"
+        }
+      ],
+      "findings": [
+        "Quoted shader names produce invalid JSON with exit 0.",
+        "Repeated shader names leak the superseded owned allocation.",
+        "Unknown options and missing option values are silently ignored.",
+        "Opposite-target emit requests are checked after translation and can follow another file write."
+      ],
+      "inputHash": "2d18ec14a021efc1d1a164ff254af85777549f4656e120e2b7cd25e30a2a0d21",
+      "level": "file",
+      "nextAction": "Repair the report implementation and validate real MSL/SPIR-V outputs, allocation failures, strict argument admission, and existing schema before closing these file reviews.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "runtime_compile_entry_file_001",
+      "reviewedAt": "2026-09-15T03:51:06.090896+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "needs_changes",
+      "summary": "Read the entire forwarding entrypoint and its report implementation. The canonical root builds, but the consumed CLI has invalid JSON escaping, repeated-argument ownership leaks, ignored options, and output-target validation after compilation/emission.",
+      "supersedes": null,
+      "targets": [
+        "bench/entrypoints/runtime_compile_report.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/compilation/valid.wgsl",
+          "sha256": "95b71646ab522e330331b56411c70cce7c13de4708d428bb1ad760d0d8fe6040"
+        },
+        {
+          "path": "config/runtime-compile-report.schema.json",
+          "sha256": "8f6733ce7f109fab00c33f32a592b36a71b10b64c3668ef24a302763edf8dc5d"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/runtime_compile_report.zig",
+          "sha256": "385d2c2da599f9c68ef1cf9488cf50428cfc1745083f5edf4c83ff95b58b43e3"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "9fe36b9a8e4f1a705069d0c8dc7942e52708b6cf56e9932fff3ed2cb35a2eb37"
+        },
+        {
+          "path": "runtime/zig/src/compiler/mod.zig",
+          "sha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/before-cases.tsv",
+          "sha256": "8119e6085d063cfc0aa7824c2f1bd399a07c541023909e23e3e3189b15d4e04c"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/build-debug.log",
+          "sha256": "ebff5fe2cde8da403f725d42776962ab7c91b0736dde7715635c9ca8dfeb64d7"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/duplicate.stderr",
+          "sha256": "ea0e7bb6d248b326edb5ddac3daa5edeeeb98f5c9fcd7ea236139e5deb09cc0f"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/quoted.stdout",
+          "sha256": "e75b567f8186473fc1848e32d3990fbbc1cc98654ec95c91bcb0c9ff6b195872"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-before.tsv",
+          "sha256": "ef62e220d8892641563b269e4e1f9f24a9965908eb1b2597d2f77149ed4d3051"
+        }
+      ],
+      "findings": [
+        "Quoted shader names produce invalid JSON with exit 0.",
+        "Repeated shader names leak the superseded owned allocation.",
+        "Unknown options and missing option values are silently ignored.",
+        "Opposite-target emit requests are checked after translation and can follow another file write."
+      ],
+      "inputHash": "fe24ad4a5db52ff71160f0b4a35ea9c6974d6122e5c383485a4713a7e2655eaf",
+      "level": "file",
+      "nextAction": "Repair the report implementation and validate real MSL/SPIR-V outputs, allocation failures, strict argument admission, and existing schema before closing these file reviews.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "runtime_compile_report_file_001",
+      "reviewedAt": "2026-09-15T03:51:06.960307+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "needs_changes",
+      "summary": "Read the entire forwarding entrypoint and its report implementation. The canonical root builds, but the consumed CLI has invalid JSON escaping, repeated-argument ownership leaks, ignored options, and output-target validation after compilation/emission.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/runtime/runtime_compile_report.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/native-compare/compare_doe_vs_tint_compilation.py",
+          "sha256": "6e53d255b7884f48f0daa523dd567bbc1b140fffff8a1891ae331580ca54d043"
+        },
+        {
+          "path": "config/runtime-compile-report.schema.json",
+          "sha256": "8f6733ce7f109fab00c33f32a592b36a71b10b64c3668ef24a302763edf8dc5d"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "a03f4433cadf15413456ad895fad10f193cbc01669c1a31bc42ecfbe58986e22"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/compiler/mod.zig",
+          "sha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig",
+          "sha256": "284d9f79193e9ba900fd3b6f90ec3c9651d90357f67719f0d22fd5580f51c156"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig",
+          "sha256": "945d3e8979882d41cbc2e0cd01b5d97faca1cc578d76246de5b924e12a3d9020"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_translation_info.zig",
+          "sha256": "7a66d29cdaa5c91857cce584037f6c5a90a0cb6ac9190c9189835b0422ec1621"
+        },
+        {
+          "path": "runtime/zig/test_suite_runtime_compile_report.zig",
+          "sha256": "27a5b2b51940a9ef26ebf466b16e6c275fe19608e8f761d6bb637d293546eb83"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "2d18ec14a021efc1d1a164ff254af85777549f4656e120e2b7cd25e30a2a0d21",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order. File coverage does not complete directory or relationship reviews.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reproduced and repaired invalid JSON escaping, overwritten argument leaks, ignored options, and emit-target checks after file writes; valid existing fields and MSL/SPIR-V bytes are preserved for the retained shader.",
+        "Verified actual allocation-failure sweeps and error cleanup after correcting test registration; focused report tests, discovered dependency tests, proof options, optimized runs, the WGSL suite, and existing consumer checks pass."
+      ],
+      "reviewId": "runtime_compile_entry_file_002",
+      "reviewedAt": "2026-09-15T04:04:18.631200+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Read the complete forwarding entrypoint and its consumers. The existing public main alias remains appropriate; the implementation repair and dedicated test root supply executable validation without forcing unrelated entrypoint structure.",
+      "supersedes": "runtime_compile_entry_file_001",
+      "targets": [
+        "bench/entrypoints/runtime_compile_report.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/native-compare/compare_doe_vs_tint_compilation.py",
+          "sha256": "6e53d255b7884f48f0daa523dd567bbc1b140fffff8a1891ae331580ca54d043"
+        },
+        {
+          "path": "config/runtime-compile-report.schema.json",
+          "sha256": "8f6733ce7f109fab00c33f32a592b36a71b10b64c3668ef24a302763edf8dc5d"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "a03f4433cadf15413456ad895fad10f193cbc01669c1a31bc42ecfbe58986e22"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/runtime_compile_report.zig",
+          "sha256": "385d2c2da599f9c68ef1cf9488cf50428cfc1745083f5edf4c83ff95b58b43e3"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/compiler/mod.zig",
+          "sha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig",
+          "sha256": "945d3e8979882d41cbc2e0cd01b5d97faca1cc578d76246de5b924e12a3d9020"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_translation_info.zig",
+          "sha256": "7a66d29cdaa5c91857cce584037f6c5a90a0cb6ac9190c9189835b0422ec1621"
+        },
+        {
+          "path": "runtime/zig/test_suite_runtime_compile_report.zig",
+          "sha256": "27a5b2b51940a9ef26ebf466b16e6c275fe19608e8f761d6bb637d293546eb83"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "bfe28a4c3283809d0eea252c87eeae258f46995ffb0ccfd49e7c66e56348e209",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order. File coverage does not complete directory or relationship reviews.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reproduced and repaired invalid JSON escaping, overwritten argument leaks, ignored options, and emit-target checks after file writes; valid existing fields and MSL/SPIR-V bytes are preserved for the retained shader.",
+        "Verified actual allocation-failure sweeps and error cleanup after correcting test registration; focused report tests, discovered dependency tests, proof options, optimized runs, the WGSL suite, and existing consumer checks pass."
+      ],
+      "reviewId": "runtime_compile_report_file_002",
+      "reviewedAt": "2026-09-15T04:04:19.460476+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Read the entire runtime compile-report implementation and new tests: borrowed input configuration, source and metadata ownership, target translation, structural observations, typed JSON, output routing, and every allocation/error cleanup path.",
+      "supersedes": "runtime_compile_report_file_001",
+      "targets": [
+        "src/compiler/wgsl/runtime/runtime_compile_report.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/native-compare/compare_doe_vs_tint_compilation.py",
+          "sha256": "6e53d255b7884f48f0daa523dd567bbc1b140fffff8a1891ae331580ca54d043"
+        },
+        {
+          "path": "config/runtime-compile-report.schema.json",
+          "sha256": "8f6733ce7f109fab00c33f32a592b36a71b10b64c3668ef24a302763edf8dc5d"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "a03f4433cadf15413456ad895fad10f193cbc01669c1a31bc42ecfbe58986e22"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/runtime_compile_report.zig",
+          "sha256": "385d2c2da599f9c68ef1cf9488cf50428cfc1745083f5edf4c83ff95b58b43e3"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/compiler/mod.zig",
+          "sha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig",
+          "sha256": "284d9f79193e9ba900fd3b6f90ec3c9651d90357f67719f0d22fd5580f51c156"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig",
+          "sha256": "945d3e8979882d41cbc2e0cd01b5d97faca1cc578d76246de5b924e12a3d9020"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_translation_info.zig",
+          "sha256": "7a66d29cdaa5c91857cce584037f6c5a90a0cb6ac9190c9189835b0422ec1621"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "5fdf14313b46b09a730a2a67ad40d910e904c7dd8d48a72688a4f51bd20e7dd1",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order. File coverage does not complete directory or relationship reviews.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reproduced and repaired invalid JSON escaping, overwritten argument leaks, ignored options, and emit-target checks after file writes; valid existing fields and MSL/SPIR-V bytes are preserved for the retained shader.",
+        "Verified actual allocation-failure sweeps and error cleanup after correcting test registration; focused report tests, discovered dependency tests, proof options, optimized runs, the WGSL suite, and existing consumer checks pass."
+      ],
+      "reviewId": "runtime_compile_report_suite_file_001",
+      "reviewedAt": "2026-09-15T04:04:20.252694+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Read the complete dedicated test root and its build module. The direct source import registers report tests inside the test module; a reference through the executable named module had run no tests. Actual focused execution verifies discovery.",
+      "supersedes": null,
+      "targets": [
+        "test_suite_runtime_compile_report.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/README.md",
+          "sha256": "9bc27c142de6778081c99b23d7c26842dfede3c25fea0797db9a5e08729a96be"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/bench.zig",
+          "sha256": "a7b7c29192328d3397c905d5c736a86f1f0b18999ee49bcb5b33bc7cf4ae2fd0"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/bench_compilation.zig",
+          "sha256": "731470b10afed87aea9f75a5697e5262a0d5a2b410b0489d7d3842d24be75132"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "a03f4433cadf15413456ad895fad10f193cbc01669c1a31bc42ecfbe58986e22"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/metal_compute_bench.zig",
+          "sha256": "6698f3f7f1b4bf10996028f09a52cd0b9e276c7d750a69c0033c0e038ae1d9f4"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/metal_staged_write_bench.zig",
+          "sha256": "cba0f03654f0dea2df8c67ee7fbe47a238a372e2e68fc77ff5ceb077698900f6"
+        },
+        {
+          "path": "runtime/zig/test_suite_runtime_compile_report.zig",
+          "sha256": "27a5b2b51940a9ef26ebf466b16e6c275fe19608e8f761d6bb637d293546eb83"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "40ae6592cab2fc00139bd3b885bb076d4d4d2c375737c654be7c4297bc149235",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The final combined benchmark/report test run and structural checks pass with actual report-test discovery. Metal execution remains unqualified on this Linux host."
+      ],
+      "reviewId": "build_file_007",
+      "reviewedAt": "2026-09-15T04:04:21.062027+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Re-examined the build delta after the prior full review: report tests need their own direct source root because the forwarding executable module did not discover named-module tests. Target, optimization, libc, and build options are preserved; focused and full runs now execute the intended tests.",
+      "supersedes": "build_file_006",
+      "targets": [
+        "build.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/lean-proof-patterns.json",
+          "sha256": "0e839bfbcd0f4c5f8087c880434c9741804fb32797fc8650fe8951c00d57529d"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/README.md",
+          "sha256": "387f94834524f25f06305f88456ef98f3d4d1629d438daa399d6d80af570a4ce"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/compiler/mod.zig",
+          "sha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "8dfd60614835f9cb2f32a6eeaa26e3086e505f0b5af444c4835d14f485e63b59",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The final combined benchmark/report test run and structural checks pass with actual report-test discovery. Metal execution remains unqualified on this Linux host."
+      ],
+      "reviewId": "compiler_stage_file_006",
+      "reviewedAt": "2026-09-15T04:04:21.862264+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Rechecked this unchanged source after the shared build and entrypoint documentation gained the runtime compile-report test contract. Existing compiler/host/Metal benchmark tests pass together; their implementation and timing contracts retain their meaning.",
+      "supersedes": "compiler_stage_file_005",
+      "targets": [
+        "bench/compiler/bench.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/native_compare_modules/compilation_runner.py",
+          "sha256": "a4196e5c29b28d0965b9de04d538e485bd701cb71db2459fc8ebd3ea9ca9166f"
+        },
+        {
+          "path": "config/zig-compilation-bench.schema.json",
+          "sha256": "cdb27986694f9cdac442c095df9ce748ed58134c5d35474ec3a2dcdcf52a29cf"
+        },
+        {
+          "path": "runtime/zig/bench/compiler/README.md",
+          "sha256": "387f94834524f25f06305f88456ef98f3d4d1629d438daa399d6d80af570a4ce"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/mod.zig",
+          "sha256": "144dd739b734b3feb58587e9b3d01b09c35994e7a03662b73f4733defe03ca8f"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/pipeline/analysis.zig",
+          "sha256": "d15ecf46c5a8bec32ca8e487aea16c372fd6652c975e9c9c9ef14f90327ce5a3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "77d11f281796ef9abb7c1f1949175b0da21449de88e64311b1789059a8cd9235",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The final combined benchmark/report test run and structural checks pass with actual report-test discovery. Metal execution remains unqualified on this Linux host."
+      ],
+      "reviewId": "compilation_file_004",
+      "reviewedAt": "2026-09-15T04:04:22.699517+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Rechecked this unchanged source after the shared build and entrypoint documentation gained the runtime compile-report test contract. Existing compiler/host/Metal benchmark tests pass together; their implementation and timing contracts retain their meaning.",
+      "supersedes": "compilation_file_003",
+      "targets": [
+        "bench/compiler/bench_compilation.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-host-hotpath-bench.schema.json",
+          "sha256": "c0796d7c70b17687fa1305873e43fdc21e811a0fa7ede39113999a702f7d4a7f"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/README.md",
+          "sha256": "7daa949db296f839a3861300f42d25130849ed2e9bab790e28c0aaaad76156f4"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig",
+          "sha256": "d8f95bc519a72f0c3ef37f55d73e8681a0b6b5544881d7bf6ea68ae5bfac07dc"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_lexer.zig",
+          "sha256": "e61e333edb982ec909408691899f75241655425c2d58043bac9a6659a0c5fb78"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig",
+          "sha256": "1bf6cdfe3687d29c9743bc9883c2be8c9fd5bd6ad78989faa3859b2d0b184100"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/lexer.zig",
+          "sha256": "4aceabeeac548b00c2c801a2cd0dc9a38a92ca92e89f6c2bc435626cea83a5a2"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/token.zig",
+          "sha256": "882a686eb333be897f8138645d7f645da39aa108ddf0ff8e81434479548de7f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/primitives/byte_scan.zig",
+          "sha256": "bbd7f527595de402d9609da8d332863da51c9e1810df4edc3fd0ef7a58e95dab"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        },
+        {
+          "path": "runtime/zig/src/runtime/simd/f32_ops.zig",
+          "sha256": "7b82408343bdb44c63b1bd3991f1fc63cda7425351339c25d47d49d04dd2da7c"
+        },
+        {
+          "path": "runtime/zig/src/runtime/trace/trace_text.zig",
+          "sha256": "4215a97c594d4f5940b4feab81686dae14196225d93ae3e04134b0f9c081eeaa"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "d459ba23f00eb6fa4b2f7e8a11be6f7dc861975628a34c9e38bdc8646fad3248",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The final combined benchmark/report test run and structural checks pass with actual report-test discovery. Metal execution remains unqualified on this Linux host."
+      ],
+      "reviewId": "host_main_file_004",
+      "reviewedAt": "2026-09-15T04:04:23.510454+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Rechecked this unchanged source after the shared build and entrypoint documentation gained the runtime compile-report test contract. Existing compiler/host/Metal benchmark tests pass together; their implementation and timing contracts retain their meaning.",
+      "supersedes": "host_main_file_003",
+      "targets": [
+        "bench/host_hotpath/host_hotpath_bench.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-host-hotpath-bench.schema.json",
+          "sha256": "c0796d7c70b17687fa1305873e43fdc21e811a0fa7ede39113999a702f7d4a7f"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/README.md",
+          "sha256": "7daa949db296f839a3861300f42d25130849ed2e9bab790e28c0aaaad76156f4"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench.zig",
+          "sha256": "521693cc4e68db597e533200eaace39a159800481ae7ea224b887d3b39d79d1a"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig",
+          "sha256": "d8f95bc519a72f0c3ef37f55d73e8681a0b6b5544881d7bf6ea68ae5bfac07dc"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_lexer.zig",
+          "sha256": "e61e333edb982ec909408691899f75241655425c2d58043bac9a6659a0c5fb78"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/lexer.zig",
+          "sha256": "4aceabeeac548b00c2c801a2cd0dc9a38a92ca92e89f6c2bc435626cea83a5a2"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/token.zig",
+          "sha256": "882a686eb333be897f8138645d7f645da39aa108ddf0ff8e81434479548de7f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/primitives/byte_scan.zig",
+          "sha256": "bbd7f527595de402d9609da8d332863da51c9e1810df4edc3fd0ef7a58e95dab"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        },
+        {
+          "path": "runtime/zig/src/runtime/simd/f32_ops.zig",
+          "sha256": "7b82408343bdb44c63b1bd3991f1fc63cda7425351339c25d47d49d04dd2da7c"
+        },
+        {
+          "path": "runtime/zig/src/runtime/trace/trace_text.zig",
+          "sha256": "4215a97c594d4f5940b4feab81686dae14196225d93ae3e04134b0f9c081eeaa"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "1fbc5ee4773a30f4ba62d5fd0c57703f5f6399fa010f831811116b5ec34f5774",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The final combined benchmark/report test run and structural checks pass with actual report-test discovery. Metal execution remains unqualified on this Linux host."
+      ],
+      "reviewId": "host_support_file_003",
+      "reviewedAt": "2026-09-15T04:04:24.335954+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Rechecked this unchanged source after the shared build and entrypoint documentation gained the runtime compile-report test contract. Existing compiler/host/Metal benchmark tests pass together; their implementation and timing contracts retain their meaning.",
+      "supersedes": "host_support_file_002",
+      "targets": [
+        "bench/host_hotpath/host_hotpath_bench_support.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-host-hotpath-bench.schema.json",
+          "sha256": "c0796d7c70b17687fa1305873e43fdc21e811a0fa7ede39113999a702f7d4a7f"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/README.md",
+          "sha256": "7daa949db296f839a3861300f42d25130849ed2e9bab790e28c0aaaad76156f4"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench.zig",
+          "sha256": "521693cc4e68db597e533200eaace39a159800481ae7ea224b887d3b39d79d1a"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_lexer.zig",
+          "sha256": "e61e333edb982ec909408691899f75241655425c2d58043bac9a6659a0c5fb78"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig",
+          "sha256": "1bf6cdfe3687d29c9743bc9883c2be8c9fd5bd6ad78989faa3859b2d0b184100"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/lexer.zig",
+          "sha256": "4aceabeeac548b00c2c801a2cd0dc9a38a92ca92e89f6c2bc435626cea83a5a2"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/token.zig",
+          "sha256": "882a686eb333be897f8138645d7f645da39aa108ddf0ff8e81434479548de7f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/primitives/byte_scan.zig",
+          "sha256": "bbd7f527595de402d9609da8d332863da51c9e1810df4edc3fd0ef7a58e95dab"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        },
+        {
+          "path": "runtime/zig/src/runtime/simd/f32_ops.zig",
+          "sha256": "7b82408343bdb44c63b1bd3991f1fc63cda7425351339c25d47d49d04dd2da7c"
+        },
+        {
+          "path": "runtime/zig/src/runtime/trace/trace_text.zig",
+          "sha256": "4215a97c594d4f5940b4feab81686dae14196225d93ae3e04134b0f9c081eeaa"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "9e3552724d524790b1de5eaf366a2091b70cad9ddda2bc271fde9c948618d9c9",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The final combined benchmark/report test run and structural checks pass with actual report-test discovery. Metal execution remains unqualified on this Linux host."
+      ],
+      "reviewId": "host_cases_file_003",
+      "reviewedAt": "2026-09-15T04:04:25.154922+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Rechecked this unchanged source after the shared build and entrypoint documentation gained the runtime compile-report test contract. Existing compiler/host/Metal benchmark tests pass together; their implementation and timing contracts retain their meaning.",
+      "supersedes": "host_cases_file_002",
+      "targets": [
+        "bench/host_hotpath/host_hotpath_bench_cases.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-host-hotpath-bench.schema.json",
+          "sha256": "c0796d7c70b17687fa1305873e43fdc21e811a0fa7ede39113999a702f7d4a7f"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/README.md",
+          "sha256": "7daa949db296f839a3861300f42d25130849ed2e9bab790e28c0aaaad76156f4"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench.zig",
+          "sha256": "521693cc4e68db597e533200eaace39a159800481ae7ea224b887d3b39d79d1a"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_cases.zig",
+          "sha256": "d8f95bc519a72f0c3ef37f55d73e8681a0b6b5544881d7bf6ea68ae5bfac07dc"
+        },
+        {
+          "path": "runtime/zig/bench/host_hotpath/host_hotpath_bench_support.zig",
+          "sha256": "1bf6cdfe3687d29c9743bc9883c2be8c9fd5bd6ad78989faa3859b2d0b184100"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/lexer.zig",
+          "sha256": "4aceabeeac548b00c2c801a2cd0dc9a38a92ca92e89f6c2bc435626cea83a5a2"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/frontend/token.zig",
+          "sha256": "882a686eb333be897f8138645d7f645da39aa108ddf0ff8e81434479548de7f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/primitives/byte_scan.zig",
+          "sha256": "bbd7f527595de402d9609da8d332863da51c9e1810df4edc3fd0ef7a58e95dab"
+        },
+        {
+          "path": "runtime/zig/src/mod.zig",
+          "sha256": "52f74277382843b47dc04b47becf9ebd7509dba302359876f99dc0a96b8aaedb"
+        },
+        {
+          "path": "runtime/zig/src/runtime/simd/f32_ops.zig",
+          "sha256": "7b82408343bdb44c63b1bd3991f1fc63cda7425351339c25d47d49d04dd2da7c"
+        },
+        {
+          "path": "runtime/zig/src/runtime/trace/trace_text.zig",
+          "sha256": "4215a97c594d4f5940b4feab81686dae14196225d93ae3e04134b0f9c081eeaa"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "f0138d555b570e90019e81582c6548fba2761efb0e4b254e0ca451f06d3df0fd",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The final combined benchmark/report test run and structural checks pass with actual report-test discovery. Metal execution remains unqualified on this Linux host."
+      ],
+      "reviewId": "host_lexer_file_003",
+      "reviewedAt": "2026-09-15T04:04:25.982002+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Rechecked this unchanged source after the shared build and entrypoint documentation gained the runtime compile-report test contract. Existing compiler/host/Metal benchmark tests pass together; their implementation and timing contracts retain their meaning.",
+      "supersedes": "host_lexer_file_002",
+      "targets": [
+        "bench/host_hotpath/host_hotpath_bench_lexer.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/kernels/concurrent_execution_runsingle_u32.metal",
+          "sha256": "99a7b03b5b24d9c5ec30115b8d66c9a4adc7b1f7cf7a74b8df238246c0b32477"
+        },
+        {
+          "path": "bench/kernels/concurrent_execution_runsingle_u32.wgsl",
+          "sha256": "57313155741224f77622b55aa9e739ec7698e5cc3079d92584d253334f1d95a6"
+        },
+        {
+          "path": "config/doe-metal-compute-benchmark.schema.json",
+          "sha256": "fc78d7a41aeaa2bc4663116e8982e037beab6c4f6b74f81f29d2df9b28e6c62d"
+        },
+        {
+          "path": "config/doe-workload-suite.json",
+          "sha256": "4a44f069766e8bcfbafbaf6c6f2e39aafc019bc532003d8ead78ae2c844eeaae"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "a03f4433cadf15413456ad895fad10f193cbc01669c1a31bc42ecfbe58986e22"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "ce1428a615731a64a3edaad6db490f2e32930ca13c499722c739264ec4ba46e1"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution_receipt.zig",
+          "sha256": "0ff5dd77bec0e5167e3ca5e917bbb382a3dfe21868fbb690560af0dff353c4f0"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "f43da63d2aded35b56b02466ceca8d5dace05e45039f942a01ab6267612a7599",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The final combined benchmark/report test run and structural checks pass with actual report-test discovery. Metal execution remains unqualified on this Linux host."
+      ],
+      "reviewId": "metal_compute_file_002",
+      "reviewedAt": "2026-09-15T04:04:26.798735+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Rechecked this unchanged source after the shared build and entrypoint documentation gained the runtime compile-report test contract. Existing compiler/host/Metal benchmark tests pass together; their implementation and timing contracts retain their meaning.",
+      "supersedes": "metal_compute_file_001",
+      "targets": [
+        "bench/entrypoints/metal_compute_bench.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/doe-metal-staged-write-benchmark.schema.json",
+          "sha256": "102ec270a6fd616edcd414eda49bc4bb026e28653a7c9317d987d14b6a16a96c"
+        },
+        {
+          "path": "config/doe-workload-suite.json",
+          "sha256": "4a44f069766e8bcfbafbaf6c6f2e39aafc019bc532003d8ead78ae2c844eeaae"
+        },
+        {
+          "path": "runtime/zig/bench/entrypoints/README.md",
+          "sha256": "a03f4433cadf15413456ad895fad10f193cbc01669c1a31bc42ecfbe58986e22"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "929c70813d72988b9a7cd1144584072874ff43a1119defab77a9ced17d3c0ffb"
+        },
+        {
+          "path": "runtime/zig/src/composition/execution_session.zig",
+          "sha256": "ac8556d60b9549ddbe32bf80ba7dd31ccefb05cd455e6c61e9ea425ce49733c3"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "ce1428a615731a64a3edaad6db490f2e32930ca13c499722c739264ec4ba46e1"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution_receipt.zig",
+          "sha256": "0ff5dd77bec0e5167e3ca5e917bbb382a3dfe21868fbb690560af0dff353c4f0"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/README.md",
+          "sha256": "a51cd81762206886cb2dfb30efb63792541fae515afa443b6d1a73b43052fded"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/SHA256SUMS",
+          "sha256": "b49db8c060597dbbeb46d4e52e6166560ea11442a93b61b55a1b7a1779017366"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/accepted-inputs.tsv",
+          "sha256": "d4d288e360b98dabe207fa0bcc993ad8ca81417420f12986f93425bbdf817425"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-result.json",
+          "sha256": "2badbcccd7668126d22690531eba55d5baf4a510237470bcb86a39fcf7e094cc"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/consumer-unittest.log",
+          "sha256": "adea112c74aadb201d5b201a06b28f90608226dd07a8a50fea1ebe5c6bd14e6e"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/documentation-checks.log",
+          "sha256": "eadd39c6061c8176c4cc44b2f607b56c5af0201921400d775eeee7f0bc3dbde3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/final-tests.log",
+          "sha256": "a17d054ee18a715bf2dc939ec86726d3edda022120ed9d325469f425f2987cb2"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/proof-tests.log",
+          "sha256": "e21af2f8b6316ef6ab4ea4c87c162f7fe5a54ccf2f965f955e93b86e3d40cf65"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-cases.tsv",
+          "sha256": "262f444c9bd0e8554e7d2ff676cbc86f591187463d898388faf61ab2dd0587c1"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/release-registered.log",
+          "sha256": "e8b4b436ad6c4baafa0e29ce6e3bc522682094c6a6b00a73b305384955e6d03d"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-functions.log",
+          "sha256": "2dbee62d8666f27804c37360ad851f7a4b24dc15130c94a585b60ccbc94780f8"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/schema-gate.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/source-files.tsv",
+          "sha256": "a1ec51492f2e065005681afa81414c701f18b334ffa3ff4952304236554802c4"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-focused.log",
+          "sha256": "b4bd00d55f617dcf2ffe6ab7d6f0317a7955f94d1c8f425257a4dff038b30ba3"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/tests-registered.log",
+          "sha256": "bb5c6b23a510854a9216c9ae35da63cc8ef60a59c77ff750cc82c993579adc70"
+        },
+        {
+          "path": "bench/out/maintenance/20260914-zig-file-reviews/runtime-compile-entry/wgsl-structural-checks.log",
+          "sha256": "a24262df8522abecd7faa3b2046d20144c8cf1cdd9b6e20b4f07def37b23577a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "13f79ae423c85678ff81b343b9d295d77961ce69431a4bc9fbc3fbe98c66e102",
+      "level": "file",
+      "nextAction": "Continue with src/app/mod.zig in TSV order; directory and relationship reviews remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The final combined benchmark/report test run and structural checks pass with actual report-test discovery. Metal execution remains unqualified on this Linux host."
+      ],
+      "reviewId": "metal_staged_write_file_002",
+      "reviewedAt": "2026-09-15T04:04:27.614817+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "9f621831f12430d017b7f6dea5afffa9a663bb87",
+      "status": "verified",
+      "summary": "Rechecked this unchanged source after the shared build and entrypoint documentation gained the runtime compile-report test contract. Existing compiler/host/Metal benchmark tests pass together; their implementation and timing contracts retain their meaning.",
+      "supersedes": "metal_staged_write_file_001",
+      "targets": [
+        "bench/entrypoints/metal_staged_write_bench.zig"
+      ]
     }
   ],
   "schemaVersion": 1

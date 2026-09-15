@@ -1,0 +1,9 @@
+usage: doe-runtime-compile-report --shader-path <path> [--shader-name <name>] [--out <path>] [--target msl|spirv] [--emit-msl <path>] [--emit-spirv <path>]
+error: EmitTargetMismatch
+error: EmitTargetMismatch
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:63:71: 0x1181812 in parseArgs (mod.zig)
+        (config.emit_spirv_path != null and config.target != .spirv)) return error.EmitTargetMismatch;
+                                                                      ^
+/home/x/deco/doe/runtime/zig/src/compiler/wgsl/runtime/runtime_compile_report.zig:121:9: 0x1186821 in main (mod.zig)
+        return err;
+        ^
