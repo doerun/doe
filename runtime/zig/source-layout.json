@@ -784,13 +784,13 @@
       },
       "src/backend/d3d12/commands/d3d12_dispatch.zig": {
         "decision": "Keep",
-        "moduleSha256": "04d208c7581c60b6e47d157c09e0c2790f83e0cb15d2b7158ebb9d8a25903082",
+        "moduleSha256": "8eeb0c24d621efdd85b05f1b86912a05f267ce4a37ac0f42b5f24c024b2202d8",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-hexagonal-migration/2026-08-22"
       },
       "src/backend/d3d12/commands/d3d12_gpu_timestamps.zig": {
         "decision": "Keep",
-        "moduleSha256": "8d5a0dfd1efdcfd7c7af2a5e7699ddc2769df88e3d4d8804ab230ee2aabb0c25",
+        "moduleSha256": "c2e6b64219084fe00d5d99bbd668a39b4e3e2f4855faa64acdddeeb42dea6354",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -862,7 +862,7 @@
       },
       "src/backend/d3d12/d3d12_native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "fa7b6ac265ad3f1a2d43e8a785c73cc55cab78cf90d2099d5ab21d4b70544ffe",
+        "moduleSha256": "856d31cfd5a39bb08b09ac7f4f5db048143f7739f8ca01a99cb9ca8c890db1eb",
         "reason": "Keep: reachable backend implementation shared by 2 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-hexagonal-migration/2026-08-22"
       },
@@ -874,7 +874,7 @@
       },
       "src/backend/d3d12/d3d12_runtime_compute.zig": {
         "decision": "Keep",
-        "moduleSha256": "df0878e56941f4d00a73181546d9513ee7e92f685ef8e3348e836d52973a33f2",
+        "moduleSha256": "82d37ad594568c375b9d389154702b7b1f4afd48ff2dd2d6aa75d61939c9493d",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-common-audit/2026-09-19"
       },
@@ -886,7 +886,7 @@
       },
       "src/backend/d3d12/mod.zig": {
         "decision": "Keep",
-        "moduleSha256": "0063865ed51f19d6a0d9378eadd915366a7764374cd46d6f747bcbc07cff5710",
+        "moduleSha256": "20d6072880945797ad819e63e5da3949166d822145b188f619e85cee9e2bf81f",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-common-audit/2026-09-19"
       },

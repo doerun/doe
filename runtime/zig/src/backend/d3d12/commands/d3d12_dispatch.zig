@@ -4,6 +4,7 @@ const execution_contract = @import("../../../contracts/execution.zig");
 const common_timing = @import("../../common/timing.zig");
 const webgpu = @import("../../../contracts/runtime_types.zig");
 const dc = @import("../d3d12_constants.zig");
+const timestamps = @import("d3d12_gpu_timestamps.zig");
 const bridge = @import("../d3d12_bridge_decls.zig");
 
 const DISPATCH_INDIRECT_ARG_BYTES = 3 * @sizeOf(u32);
@@ -36,6 +37,7 @@ fn State(comptime native: type) type {
         const Self = @This();
 
         pending_fence: ?u64 = null,
+        timestamps: ?*timestamps.State(native) = null,
         root_signature: ?*anyopaque = null,
         noop_pipeline: ?*anyopaque = null,
         cmd_allocator: ?*anyopaque = null,
@@ -112,11 +114,19 @@ fn State(comptime native: type) type {
             if (native.d3d12_bridge_command_list_reset(commands.list, commands.allocator) != 0) return error.InvalidState;
             native.d3d12_bridge_command_list_set_compute_root_signature(commands.list, self.root_signature);
             native.d3d12_bridge_command_list_set_pipeline_state(commands.list, self.noop_pipeline);
+            var timestamp_recording = false;
+            errdefer if (timestamp_recording) self.timestamps.?.cancel_unsubmitted();
+            if (self.timestamps) |measurement| {
+                if (deferred) return error.TimingPolicyMismatch;
+                try measurement.begin(commands.list, fence, fence_value.* + 1);
+                timestamp_recording = true;
+            }
             if (indirect) {
                 native.d3d12_bridge_command_list_execute_indirect(commands.list, self.dispatch_cmd_sig, 1, argument_buffer, 0);
             } else {
                 native.d3d12_bridge_command_list_dispatch(commands.list, cmd.x, cmd.y, cmd.z);
             }
+            if (self.timestamps) |measurement| try measurement.end(commands.list);
             if (native.d3d12_bridge_command_list_close_checked(commands.list) != 0) return error.InvalidState;
             const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
             const submit_start = common_timing.now_ns();
@@ -183,7 +193,7 @@ fn State(comptime native: type) type {
 }
 
 const RecordingNative = struct {
-    const Object = struct { live: bool = false, bytes: [DISPATCH_INDIRECT_ARG_BYTES]u8 = @splat(0xa5) };
+    const Object = struct { live: bool = false, bytes: [16]u8 = @splat(0xa5) };
     var objects: [64]Object = undefined;
     var count: usize = 0;
     var calls: usize = 0;
@@ -192,6 +202,9 @@ const RecordingNative = struct {
     var waits: usize = 0;
     var last_dimensions: [3]u32 = .{ 0, 0, 0 };
     var external: u8 = 0;
+    var completed: u64 = 0;
+    var query_order: [4]u8 = @splat(0);
+    var query_events: usize = 0;
 
     fn reset(failure: usize) void {
         objects = @splat(.{});
@@ -200,6 +213,9 @@ const RecordingNative = struct {
         fail_at = failure;
         submissions = 0;
         waits = 0;
+        completed = 0;
+        query_events = 0;
+        query_order = @splat(0);
         signal_result = 0;
         wait_result = 0;
         last_dimensions = .{ 0, 0, 0 };
@@ -223,52 +239,60 @@ const RecordingNative = struct {
         for (objects[0..count]) |entry| result += @intFromBool(entry.live);
         return result;
     }
-    fn d3d12_bridge_release(handle: ?*anyopaque) void {
+    pub fn d3d12_bridge_release(handle: ?*anyopaque) void {
         const entry = object(handle);
         std.debug.assert(entry.live);
         entry.live = false;
     }
-    fn d3d12_bridge_device_create_root_signature_empty(_: ?*anyopaque) ?*anyopaque {
+    pub fn d3d12_bridge_device_create_root_signature_empty(_: ?*anyopaque) ?*anyopaque {
         return create();
     }
-    fn d3d12_bridge_device_create_compute_pipeline(_: ?*anyopaque, _: ?*anyopaque, _: [*]const u8, _: usize) ?*anyopaque {
+    pub fn d3d12_bridge_device_create_compute_pipeline(_: ?*anyopaque, _: ?*anyopaque, _: [*]const u8, _: usize) ?*anyopaque {
         return create();
     }
-    fn d3d12_bridge_device_create_command_allocator(_: ?*anyopaque) ?*anyopaque {
+    pub fn d3d12_bridge_device_create_command_allocator(_: ?*anyopaque) ?*anyopaque {
         return create();
     }
-    fn d3d12_bridge_device_create_command_list(_: ?*anyopaque, _: ?*anyopaque) ?*anyopaque {
+    pub fn d3d12_bridge_device_create_command_list(_: ?*anyopaque, _: ?*anyopaque) ?*anyopaque {
         return create();
     }
-    fn d3d12_bridge_command_list_close_checked(_: ?*anyopaque) c_int {
+    pub fn d3d12_bridge_command_list_close_checked(_: ?*anyopaque) c_int {
         return if (fails()) -1 else 0;
     }
-    fn d3d12_bridge_command_allocator_reset(_: ?*anyopaque) c_int {
+    pub fn d3d12_bridge_command_allocator_reset(_: ?*anyopaque) c_int {
         return if (fails()) -1 else 0;
     }
-    fn d3d12_bridge_command_list_reset(_: ?*anyopaque, _: ?*anyopaque) c_int {
+    pub fn d3d12_bridge_command_list_reset(_: ?*anyopaque, _: ?*anyopaque) c_int {
         return if (fails()) -1 else 0;
     }
-    fn d3d12_bridge_device_create_command_signature_dispatch(_: ?*anyopaque, root: ?*anyopaque) ?*anyopaque {
+    pub fn d3d12_bridge_device_create_command_signature_dispatch(_: ?*anyopaque, root: ?*anyopaque) ?*anyopaque {
         std.debug.assert(root == null);
         return create();
     }
-    fn d3d12_bridge_device_create_buffer(_: ?*anyopaque, size: usize, heap: c_int) ?*anyopaque {
-        std.debug.assert(size == DISPATCH_INDIRECT_ARG_BYTES and heap == dc.HEAP_TYPE_UPLOAD);
+    pub fn d3d12_bridge_device_create_buffer(_: ?*anyopaque, size: usize, heap: c_int) ?*anyopaque {
+        std.debug.assert((size == DISPATCH_INDIRECT_ARG_BYTES and heap == dc.HEAP_TYPE_UPLOAD) or (size == 16 and heap == dc.HEAP_TYPE_READBACK));
         return create();
     }
-    fn d3d12_bridge_resource_map(handle: ?*anyopaque) ?*anyopaque {
+    pub fn d3d12_bridge_resource_map(handle: ?*anyopaque) ?*anyopaque {
         if (fails()) return null;
         return &object(handle).bytes;
     }
-    fn d3d12_bridge_resource_unmap(_: ?*anyopaque) void {}
-    fn d3d12_bridge_command_list_set_compute_root_signature(_: ?*anyopaque, _: ?*anyopaque) void {}
-    fn d3d12_bridge_command_list_set_pipeline_state(_: ?*anyopaque, _: ?*anyopaque) void {}
-    fn d3d12_bridge_command_list_dispatch(_: ?*anyopaque, x: u32, y: u32, z: u32) void {
+    pub fn d3d12_bridge_resource_unmap(_: ?*anyopaque) void {}
+    pub fn d3d12_bridge_command_list_set_compute_root_signature(_: ?*anyopaque, _: ?*anyopaque) void {}
+    pub fn d3d12_bridge_command_list_set_pipeline_state(_: ?*anyopaque, _: ?*anyopaque) void {}
+    pub fn d3d12_bridge_command_list_dispatch(_: ?*anyopaque, x: u32, y: u32, z: u32) void {
         last_dimensions = .{ x, y, z };
+        if (query_events > 0) {
+            query_order[query_events] = 2;
+            query_events += 1;
+        }
     }
-    fn d3d12_bridge_command_list_execute_indirect(_: ?*anyopaque, _: ?*anyopaque, max_count: u32, handle: ?*anyopaque, offset: u64) void {
+    pub fn d3d12_bridge_command_list_execute_indirect(_: ?*anyopaque, _: ?*anyopaque, max_count: u32, handle: ?*anyopaque, offset: u64) void {
         std.debug.assert(max_count == 1 and offset == 0);
+        if (query_events > 0) {
+            query_order[query_events] = 2;
+            query_events += 1;
+        }
         const bytes = &object(handle).bytes;
         last_dimensions = .{
             std.mem.readInt(u32, bytes[0..4], .little),
@@ -276,18 +300,44 @@ const RecordingNative = struct {
             std.mem.readInt(u32, bytes[8..12], .little),
         };
     }
-    fn d3d12_bridge_queue_execute_command_list(_: ?*anyopaque, _: ?*anyopaque) void {
+    pub fn d3d12_bridge_queue_execute_command_list(_: ?*anyopaque, _: ?*anyopaque) void {
         submissions += 1;
     }
     var signal_result: c_int = 0;
     var wait_result: c_int = 0;
-    fn d3d12_bridge_queue_signal_checked(_: ?*anyopaque, _: ?*anyopaque, _: u64) c_int {
+    pub fn d3d12_bridge_queue_signal_checked(_: ?*anyopaque, _: ?*anyopaque, _: u64) c_int {
         return signal_result;
     }
-    fn d3d12_bridge_fence_wait_checked(_: ?*anyopaque, _: u64) c_int {
+    pub fn d3d12_bridge_fence_wait_checked(_: ?*anyopaque, value: u64) c_int {
         waits += 1;
+        if (wait_result == 0) completed = value;
         return wait_result;
     }
+    pub fn d3d12_bridge_fence_completed_value(_: ?*anyopaque) u64 {
+        return completed;
+    }
+    pub fn d3d12_bridge_queue_get_timestamp_frequency_checked(_: ?*anyopaque, frequency: *u64) c_int {
+        frequency.* = 1000;
+        return 0;
+    }
+    pub fn d3d12_bridge_device_create_timestamp_query_heap(_: ?*anyopaque, _: u32) ?*anyopaque {
+        return create();
+    }
+    pub fn d3d12_bridge_command_list_end_query(_: ?*anyopaque, heap: ?*anyopaque, index: u32) void {
+        const bytes = &object(heap).bytes;
+        if (index == 0) std.mem.writeInt(u64, bytes[0..8], 100, .little) else std.mem.writeInt(u64, bytes[8..16], 130, .little);
+        query_order[query_events] = if (index == 0) 1 else 3;
+        query_events += 1;
+    }
+    pub fn d3d12_bridge_command_list_resolve_query_data(_: ?*anyopaque, heap: ?*anyopaque, _: u32, _: u32, buffer: ?*anyopaque, _: u64) void {
+        object(buffer).bytes = object(heap).bytes;
+        query_order[query_events] = 4;
+        query_events += 1;
+    }
+    pub fn d3d12_bridge_resource_map_read(buffer: ?*anyopaque, _: usize) ?*anyopaque {
+        return &object(buffer).bytes;
+    }
+    pub fn d3d12_bridge_resource_unmap_read(_: ?*anyopaque) void {}
     fn retire(submission: DispatchSubmission) void {
         if (submission.indirect_arg_buffer) |buffer| d3d12_bridge_release(buffer);
         if (submission.cmd_list) |list| d3d12_bridge_release(list);
@@ -437,4 +487,58 @@ test "D3D12 post-submit failure preserves resources and forbids cached reuse" {
             }
         }
     }
+}
+
+test "D3D12 timestamps bracket direct and indirect dispatch before resolution" {
+    for ([_]bool{ false, true }) |indirect| {
+        RecordingNative.reset(0);
+        var measurement: timestamps.State(RecordingNative) = .{};
+        var state: State(RecordingNative) = .{ .timestamps = &measurement };
+        const handle = &RecordingNative.external;
+        try measurement.init_resources(handle, handle);
+        try state.prepare_pipeline(handle, "compiled-test-fixture");
+        var value: u64 = 0;
+        const command = model_compute_types.DispatchCommand{ .x = 3, .y = 2, .z = 1 };
+        const submission = if (indirect)
+            try state.execute_dispatch_indirect(handle, handle, handle, &value, command, .per_command)
+        else
+            try state.execute_dispatch(handle, handle, handle, &value, command, .per_command);
+        try std.testing.expect(submission.completed);
+        try std.testing.expectEqual([_]u8{ 1, 2, 3, 4 }, RecordingNative.query_order);
+        try std.testing.expectEqual(@as(u64, 30_000_000), try measurement.read_gpu_timestamp_ns());
+        measurement.deinit();
+        state.deinit();
+        try std.testing.expectEqual(@as(usize, 0), RecordingNative.live_count());
+    }
+}
+
+test "D3D12 timestamps cancel failed encoding but retain submitted observations" {
+    RecordingNative.reset(0);
+    var measurement: timestamps.State(RecordingNative) = .{};
+    var state: State(RecordingNative) = .{ .timestamps = &measurement };
+    const handle = &RecordingNative.external;
+    try measurement.init_resources(handle, handle);
+    defer measurement.deinit();
+    try state.prepare_pipeline(handle, "compiled-test-fixture");
+    defer state.deinit();
+    var value: u64 = 0;
+    // Acquisition closes once, then allocator/list reset and final close follow.
+    RecordingNative.fail_at = RecordingNative.calls + 6;
+    try std.testing.expectError(error.InvalidState, state.execute_dispatch(handle, handle, handle, &value, .{ .x = 1, .y = 1, .z = 1 }, .per_command));
+    try std.testing.expectEqual(@as(usize, 0), RecordingNative.submissions);
+    try std.testing.expect(measurement.pending == null);
+    try std.testing.expectEqual(@as(u64, 0), value);
+
+    RecordingNative.fail_at = 0;
+    RecordingNative.query_events = 0;
+    RecordingNative.signal_result = bridge.c.D3D12_SYNC_FAILED;
+    const submission = try state.execute_dispatch(handle, handle, handle, &value, .{ .x = 1, .y = 1, .z = 1 }, .per_command);
+    try std.testing.expectEqual(error.QueueSignalFailed, submission.completion_error.?);
+    try std.testing.expect(measurement.pending != null);
+    try std.testing.expectError(error.TimestampPending, measurement.read_gpu_timestamp_ns());
+    try std.testing.expectEqual(@as(usize, 1), RecordingNative.submissions);
+    // Model the runtime's successful recovery barrier before collection/teardown.
+    RecordingNative.completed = value;
+    state.pending_fence = null;
+    try std.testing.expectEqual(@as(u64, 30_000_000), try measurement.read_gpu_timestamp_ns());
 }

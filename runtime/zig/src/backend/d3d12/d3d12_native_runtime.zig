@@ -73,6 +73,7 @@ pub const NativeD3D12Runtime = struct {
     fence: ?*anyopaque = null,
     retirement_fence: ?*anyopaque = null,
     device_lost: bool = false,
+    last_timestamp_attempted: bool = false,
     last_dispatch_submit_count: u32 = 0,
     fence_value: u64 = 0,
     completed_fence_value: u64 = 0,
@@ -202,8 +203,8 @@ pub const NativeD3D12Runtime = struct {
         return compute.setComputeShader(self, bytecode);
     }
 
-    pub fn run_dispatch(self: *NativeD3D12Runtime, x: u32, y: u32, z: u32, repeat: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {
-        return compute.runDispatch(self, x, y, z, repeat, queue_sync_mode);
+    pub fn run_dispatch(self: *NativeD3D12Runtime, x: u32, y: u32, z: u32, repeat: u32, queue_sync_mode: webgpu.QueueSyncMode, timestamp_mode: webgpu.GpuTimestampMode) !DispatchMetrics {
+        return compute.runDispatch(self, x, y, z, repeat, queue_sync_mode, timestamp_mode);
     }
 
     pub fn flush_before_dropin_submit_if_needed(self: *NativeD3D12Runtime) !void {
@@ -305,18 +306,19 @@ pub const NativeD3D12Runtime = struct {
         return self.sampler_state.sampler_destroy(cmd);
     }
 
-    pub fn execute_compute_dispatch(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchCommand, queue_sync_mode: webgpu.QueueSyncMode) !d3d12_dispatch.DispatchMetrics {
-        return self.executeDispatch(cmd, queue_sync_mode, false);
+    pub fn execute_compute_dispatch(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchCommand, queue_sync_mode: webgpu.QueueSyncMode, timestamp_mode: webgpu.GpuTimestampMode) !d3d12_dispatch.DispatchMetrics {
+        return self.executeDispatch(cmd, queue_sync_mode, timestamp_mode, false);
     }
 
-    pub fn execute_dispatch_indirect(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchIndirectCommand, queue_sync_mode: webgpu.QueueSyncMode) !d3d12_dispatch.DispatchMetrics {
-        return self.executeDispatch(cmd, queue_sync_mode, true);
+    pub fn execute_dispatch_indirect(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchIndirectCommand, queue_sync_mode: webgpu.QueueSyncMode, timestamp_mode: webgpu.GpuTimestampMode) !d3d12_dispatch.DispatchMetrics {
+        return self.executeDispatch(cmd, queue_sync_mode, timestamp_mode, true);
     }
 
-    fn executeDispatch(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchCommand, queue_sync_mode: webgpu.QueueSyncMode, indirect: bool) !d3d12_dispatch.DispatchMetrics {
+    fn executeDispatch(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchCommand, queue_sync_mode: webgpu.QueueSyncMode, timestamp_mode: webgpu.GpuTimestampMode, indirect: bool) !d3d12_dispatch.DispatchMetrics {
         self.last_dispatch_submit_count = 0;
         if (self.device_lost) return error.DeviceLost;
         try d3d12_dispatch.validate(cmd, self.fence_value);
+        const attempted = try d3d12_timestamps.should_measure(timestamp_mode, queue_sync_mode);
         const recovery_wait_ns = if (self.dispatch_state.pending_fence != null) try self.flush_queue() else 0;
         const setup_start = common_timing.now_ns();
         if (self.dispatch_state.noop_pipeline == null) {
@@ -324,6 +326,9 @@ pub const NativeD3D12Runtime = struct {
             defer self.allocator.free(bytecode);
             try self.dispatch_state.prepare_pipeline(self.device, bytecode);
         }
+        const measured = try self.prepareTimestamps(timestamp_mode, queue_sync_mode);
+        self.dispatch_state.timestamps = if (measured) &self.timestamp_state else null;
+        defer self.dispatch_state.timestamps = null;
         var retained_handles: std.ArrayListUnmanaged(?*anyopaque) = .{};
         errdefer retained_handles.deinit(self.allocator);
         if (queue_sync_mode != .per_command) {
@@ -338,6 +343,7 @@ pub const NativeD3D12Runtime = struct {
         var metrics = try self.finishDispatch(submission, queue_sync_mode, &retained_handles);
         metrics.setup_ns +|= setup_ns;
         metrics.submit_wait_ns +|= recovery_wait_ns;
+        try self.collectTimestamp(&metrics, attempted, measured);
         return metrics;
     }
 
@@ -443,8 +449,24 @@ pub const NativeD3D12Runtime = struct {
         return d3d12_map.execute_map_async(self.device, cmd);
     }
 
-    pub fn init_timestamps(self: *NativeD3D12Runtime) !void {
-        try self.timestamp_state.init_resources(self.device, self.queue);
+    pub fn prepareTimestamps(self: *NativeD3D12Runtime, mode: webgpu.GpuTimestampMode, sync_mode: webgpu.QueueSyncMode) !bool {
+        self.last_timestamp_attempted = try d3d12_timestamps.should_measure(mode, sync_mode);
+        return self.timestamp_state.prepare(mode, sync_mode, self.device, self.queue) catch |err| {
+            if (err == error.DeviceLost) self.device_lost = true;
+            return err;
+        };
+    }
+
+    pub fn collectTimestamp(self: *NativeD3D12Runtime, metrics: *DispatchMetrics, attempted: bool, measured: bool) !void {
+        metrics.gpu_timestamp_attempted = attempted;
+        if (!measured) return;
+        const read_start = common_timing.now_ns();
+        defer metrics.submit_wait_ns +|= common_timing.ns_delta(common_timing.now_ns(), read_start);
+        metrics.gpu_timestamp_ns = self.timestamp_state.read_gpu_timestamp_ns() catch |err| {
+            if (err == error.DeviceLost) self.device_lost = true;
+            return err;
+        };
+        metrics.gpu_timestamp_valid = true;
     }
 
     // Flush outstanding GPU work before reporting completion to the caller.
@@ -521,7 +543,7 @@ test "D3D12 dispatch reserves retirement storage before submitting and unwinds a
             };
             // Non-Windows native creation fails after the retirement allocations.
             defer runtime.pending_submit_batches.deinit(allocator);
-            const result = runtime.execute_dispatch_indirect(.{ .x = 7, .y = 3, .z = 2 }, .deferred);
+            const result = runtime.execute_dispatch_indirect(.{ .x = 7, .y = 3, .z = 2 }, .deferred, .off);
             if (result) |_| {
                 return error.TestUnexpectedResult;
             } else |err| {
@@ -575,7 +597,7 @@ test "D3D12 completion observations never promote device loss or an earlier fenc
     try std.testing.expect(runtime.device_lost);
     try std.testing.expectEqual(@as(u64, 3), runtime.completed_fence_value);
     try std.testing.expectEqual(@as(?u64, 9), runtime.dispatch_state.pending_fence);
-    try std.testing.expectError(error.DeviceLost, runtime.execute_compute_dispatch(.{ .x = 1, .y = 1, .z = 1 }, .per_command));
+    try std.testing.expectError(error.DeviceLost, runtime.execute_compute_dispatch(.{ .x = 1, .y = 1, .z = 1 }, .per_command, .off));
 }
 
 test "D3D12 submitted handles transfer before reporting synchronization failure" {

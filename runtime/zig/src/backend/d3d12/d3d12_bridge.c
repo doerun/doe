@@ -1218,11 +1218,34 @@ void d3d12_bridge_command_list_resolve_query_data(D3D12Handle cmd_list_h, D3D12H
     cmd->lpVtbl->ResolveQueryData(cmd, heap, D3D12_QUERY_TYPE_TIMESTAMP, start_index, count, dst, dst_offset);
 }
 
-uint64_t d3d12_bridge_queue_get_timestamp_frequency(D3D12Handle queue_h) {
+int d3d12_bridge_queue_get_timestamp_frequency_checked(D3D12Handle queue_h, uint64_t* frequency) {
     ID3D12CommandQueue* queue = (ID3D12CommandQueue*)queue_h;
-    UINT64 freq = 0;
-    queue->lpVtbl->GetTimestampFrequency(queue, &freq);
-    return (uint64_t)freq;
+    UINT64 native_frequency = 0;
+    *frequency = 0;
+    HRESULT hr = queue->lpVtbl->GetTimestampFrequency(queue, &native_frequency);
+    if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET) return D3D12_SYNC_DEVICE_LOST;
+    if (FAILED(hr) || native_frequency == 0) return D3D12_SYNC_FAILED;
+    *frequency = native_frequency;
+    return D3D12_SYNC_OK;
+}
+
+uint64_t d3d12_bridge_queue_get_timestamp_frequency(D3D12Handle queue_h) {
+    uint64_t frequency = 0;
+    (void)d3d12_bridge_queue_get_timestamp_frequency_checked(queue_h, &frequency);
+    return frequency;
+}
+
+void* d3d12_bridge_resource_map_read(D3D12Handle resource_h, size_t size) {
+    ID3D12Resource* resource = (ID3D12Resource*)resource_h;
+    D3D12_RANGE range = { 0, size };
+    void* data = NULL;
+    return SUCCEEDED(resource->lpVtbl->Map(resource, 0, &range, &data)) ? data : NULL;
+}
+
+void d3d12_bridge_resource_unmap_read(D3D12Handle resource_h) {
+    ID3D12Resource* resource = (ID3D12Resource*)resource_h;
+    D3D12_RANGE no_writes = { 0, 0 };
+    resource->lpVtbl->Unmap(resource, 0, &no_writes);
 }
 
 /* --- Map/Unmap --- */

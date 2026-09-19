@@ -1,0 +1,8 @@
+Zig 0.15.2
+zig cc -target x86_64-windows-gnu -c runtime/zig/src/backend/d3d12/d3d12_bridge.c -I runtime/zig/src/backend/d3d12 -o bench/out/maintenance/20260919-zig-d3d12-timestamps/bridge-windows.obj
+Exit code: 0
+Scope: Windows C object cross-compilation; no link or GPU execution
+
+1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50  runtime/zig/src/backend/d3d12/d3d12_bridge.c
+7e969f497e73b9525bc581a30c70dbc942c50052337d057efda04c4118f6a92c  runtime/zig/src/backend/d3d12/d3d12_bridge.h
+e47430ea0fcd23ab95d9cf2d10cfdacd13c54908ba3292830309f2f0c0fd947d  bench/out/maintenance/20260919-zig-d3d12-timestamps/bridge-windows.obj

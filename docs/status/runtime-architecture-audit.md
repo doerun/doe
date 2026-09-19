@@ -12,15 +12,20 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
-The [D3D12 synchronization follow-up](../../bench/out/maintenance/20260919-zig-d3d12-synchronization/README.md)
-closes the dispatch file's retained-resource and completion findings. Submitted
-handles transfer before errors propagate; checked waits distinguish device loss,
-failed flushes preserve ownership, and teardown uses an explicit retirement
-barrier. Host failure injection and Windows bridge cross-compilation are retained
-separately from physical qualification. The next scope is the D3D12 timestamp
-command file. Earlier [dispatch evidence](../../bench/out/maintenance/20260919-zig-d3d12-dispatch/README.md)
-remains intact; supporting edits grant no additional scope credit, and accepted
-runtime packages are unchanged.
+The [D3D12 timestamp review](../../bench/out/maintenance/20260919-zig-d3d12-timestamps/README.md)
+connects the existing measurement owner to compute command recording and completed
+readback. Acquisition is transactional; missing frequency stays unavailable;
+conversion checks bounds. Existing timestamp modes now govern acquisition and
+receipts, with required deferred measurements rejected before runtime work.
+Host failure tests and native bridge cross-compilation are retained separately
+from physical Windows accuracy. The next scope is the D3D12 map-async command
+file. Supporting edits grant no additional audit credit; accepted packages and
+measurement thresholds are unchanged.
+
+The [synchronization follow-up](../../bench/out/maintenance/20260919-zig-d3d12-synchronization/README.md)
+and [preceding dispatch review](../../bench/out/maintenance/20260919-zig-d3d12-dispatch/README.md)
+retain their findings and evidence. Changes to their bound inputs reopen current
+verification without discarding that history.
 
 The [common-backend batch](../../bench/out/maintenance/20260919-zig-common-audit/README.md)
 records current file, directory, and relationship coverage separately. Artifact

@@ -7,6 +7,7 @@ const hlsl_translation = @import("../../compiler/wgsl/pipeline/translate_hlsl.zi
 const dispatch_info = @import("../../contracts/shader_abi/dispatch_info.zig");
 const execution_contract = @import("../../contracts/execution.zig");
 const d3d12_descriptors = @import("d3d12_descriptors.zig");
+const timestamps = @import("commands/d3d12_gpu_timestamps.zig");
 const dc = @import("d3d12_constants.zig");
 const bridge = @import("d3d12_bridge_decls.zig");
 
@@ -74,9 +75,18 @@ pub fn setComputeShader(self: anytype, bytecode: []const u8) !void {
     try buildComputePipeline(self, bytecode, hash);
 }
 
-pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {
+pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32, queue_sync_mode: webgpu.QueueSyncMode, timestamp_mode: webgpu.GpuTimestampMode) !DispatchMetrics {
     if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
     if (!self.has_compute_pipeline) return error.Unsupported;
+    if (self.device_lost) return error.DeviceLost;
+    if (self.fence_value >= std.math.maxInt(u64) - 1) return error.InvalidState;
+    const attempted = try timestamps.should_measure(timestamp_mode, queue_sync_mode);
+    const setup_start = common_timing.now_ns();
+    const measured = try self.prepareTimestamps(timestamp_mode, queue_sync_mode);
+    const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
+    var submitted = false;
+    var timestamp_recording = false;
+    errdefer if (timestamp_recording and !submitted) self.timestamp_state.cancel_unsubmitted();
 
     const run_count: u32 = if (repeat == 0) 1 else repeat;
     var compute_allocator = if (queue_sync_mode == .per_command) self.compute_allocator else null;
@@ -107,28 +117,37 @@ pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32, queue_syn
     bridge.c.d3d12_bridge_command_list_set_pipeline_state(compute_cmd_list, self.compute_pipeline);
     try bindDispatchInfo(self, compute_cmd_list, x, y, z, queue_sync_mode, &retained_handles);
 
+    if (measured) {
+        try self.timestamp_state.begin(compute_cmd_list, self.fence, self.fence_value + 1);
+        timestamp_recording = true;
+    }
     var i: u32 = 0;
     while (i < run_count) : (i += 1) {
         bridge.c.d3d12_bridge_command_list_dispatch(compute_cmd_list, x, y, z);
     }
-    bridge.c.d3d12_bridge_command_list_close(compute_cmd_list);
+    if (measured) try self.timestamp_state.end(compute_cmd_list);
+    if (bridge.c.d3d12_bridge_command_list_close_checked(compute_cmd_list) != 0) return error.InvalidState;
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
+    const submit_start = common_timing.now_ns();
     bridge.c.d3d12_bridge_queue_execute_command_list(self.queue, compute_cmd_list);
-    self.fence_value +|= 1;
+    submitted = true;
+    self.fence_value += 1;
     bridge.c.d3d12_bridge_queue_signal(self.queue, self.fence, self.fence_value);
     if (queue_sync_mode == .per_command) {
-        const submit_start = common_timing.now_ns();
         bridge.c.d3d12_bridge_fence_wait(self.fence, self.fence_value);
         const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
         self.noteCompletedFenceWait();
-        return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count };
+        if (self.device_lost) return error.DeviceLost;
+        var metrics = DispatchMetrics{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count, .submit_count = 1 };
+        try self.collectTimestamp(&metrics, attempted, measured);
+        return metrics;
     }
 
     try self.trackDropinSubmission(compute_allocator, compute_cmd_list, &retained_handles);
     owns_retained_handles = false;
 
-    return .{ .encode_ns = encode_ns, .submit_wait_ns = 0, .dispatch_count = run_count };
+    return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start), .dispatch_count = run_count, .submit_count = 1 };
 }
 
 pub fn destroyComputeObjects(self: anytype) void {

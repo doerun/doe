@@ -365,6 +365,14 @@
           "kind": "inline"
         },
         {
+          "path": "src/backend/d3d12/commands/d3d12_gpu_timestamps.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/mod.zig",
+          "kind": "inline"
+        },
+        {
           "path": "src/backend/d3d12/d3d12_native_runtime.zig",
           "kind": "inline"
         },
@@ -585,6 +593,14 @@
           "kind": "inline"
         },
         {
+          "path": "src/backend/d3d12/commands/d3d12_gpu_timestamps.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/mod.zig",
+          "kind": "inline"
+        },
+        {
           "path": "src/backend/d3d12/d3d12_native_runtime.zig",
           "kind": "inline"
         },
@@ -659,6 +675,14 @@
         },
         {
           "path": "src/backend/d3d12/commands/d3d12_dispatch.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/commands/d3d12_gpu_timestamps.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/mod.zig",
           "kind": "inline"
         },
         {

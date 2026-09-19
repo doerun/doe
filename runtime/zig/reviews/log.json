@@ -12530,6 +12530,132 @@
       "targets": [
         "src/backend/d3d12/commands/d3d12_dispatch.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "5dc71da9204712b6c6f50e9ba777d0e7c1bbebbc9ed96ee926b1fe642f55bd48"
+        },
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "7accb6bfd15b6c0f7a456ef7586a57a88f5add386c32d8c43ed19879b22b39d4"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_dispatch.zig",
+          "sha256": "8eeb0c24d621efdd85b05f1b86912a05f267ce4a37ac0f42b5f24c024b2202d8"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.h",
+          "sha256": "7e969f497e73b9525bc581a30c70dbc942c50052337d057efda04c4118f6a92c"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge_decls.zig",
+          "sha256": "036207e6791097450f3d3d62b423b360102586b712d77b7e7cdb6bdab5dc1695"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge_stubs.c",
+          "sha256": "49f3dfe5ad4f2cb0934d958d6846cada76e7a1c66304ea68a371ec27c659b8c7"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+          "sha256": "638197701120590d724bfbf550eaba97878c1a658ac0dde33c32c9019ebe9140"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "856d31cfd5a39bb08b09ac7f4f5db048143f7739f8ca01a99cb9ca8c890db1eb"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_compute.zig",
+          "sha256": "82d37ad594568c375b9d389154702b7b1f4afd48ff2dd2d6aa75d61939c9493d"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "20d6072880945797ad819e63e5da3949166d822145b188f619e85cee9e2bf81f"
+        },
+        {
+          "path": "runtime/zig/src/contracts/execution.zig",
+          "sha256": "648dc2c443fd47ebf04c8e2111ea4f9dd0b32b48d247a21d845c2547e3cda6fd"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_configuration.zig",
+          "sha256": "45c3191e8ce14f96a55bbf92682f66f8a9373bb4825851fcfe2aabf7ecd1ad89"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-timestamps/README.md",
+          "sha256": "1b0188d08e80ae3a8762bca6c440f674418d4dc46fbb155630c9213b8963b137"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-timestamps/aggregate-final.log",
+          "sha256": "1a511a4a8ce0289eba5bcf160cc18d5c58202144255280e891dc3731eac00dea"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-timestamps/bridge-probe-main.c",
+          "sha256": "692fe32eb997f19a49852c96978020992acef82474921edef383231e982b02e0"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-timestamps/bridge-probe-prefix.c",
+          "sha256": "8f98749aa831de8afa236a44b51467405360388b378cb1e9800e83f34289e196"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-timestamps/bridge-probe.log",
+          "sha256": "5dbd95682d29faa301a0b350c3dcca6cf0a1789da85c7305dbe2d303cfc98c9a"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-timestamps/bridge-windows.obj",
+          "sha256": "e47430ea0fcd23ab95d9cf2d10cfdacd13c54908ba3292830309f2f0c0fd947d"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-timestamps/doc-links.log",
+          "sha256": "0c1444824fd71eec878a61b61872df1e891b1aacd98843caec2dfe110aef03c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-timestamps/probe-bridge.py",
+          "sha256": "dad61f65b4d0ca369acc00550989e983497959171d91573c3b67b2d93f2583f1"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-timestamps/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-timestamps/windows-compile-receipt.txt",
+          "sha256": "9ec821df85895ec968ae98a0067c8578a994a444f8e1a070a8a97785e5f07368"
+        }
+      ],
+      "findings": [],
+      "inputHash": "d7e0b9d7b274453a0b6339ed1e7f917d8fac0c6e25a9660ff4c027edaa8c0df9",
+      "level": "file",
+      "nextAction": "Review file:src/backend/d3d12/commands/d3d12_map_async.zig: resource selection, map admission, callbacks/completion, error propagation, and retained lifetime. Keep file, directory, relationship, and physical Windows qualification verdicts separate; do not refresh stale dispatch evidence automatically.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "init_resources published partial native acquisition and substituted frequency 1 on failure. It now validates device/queue and checked native frequency, acquires query/readback objects transactionally, releases rollback state, and permits clean retry; native/host failure probes cover these paths.",
+        "The timestamp helper had no real record/read callers and owned unused command objects. It now borrows the actual direct, indirect, and kernel command lists; queries surround dispatch work and resolve afterward. Dispatch recording probes exercise both direct and indirect production control flow. Kernel wiring is compiled and source-traced, without hardware qualification.",
+        "Readback mapped without proving completion, used an alignment assertion, and returned zero for missing/invalid state. Pending observations now bind one command list and fence/value; reuse and readback require native completion, device loss remains distinct, byte reads avoid alignment assumptions, and failed readback is explicit/retryable. Pre-submit close failure cancels observations; post-submit synchronization failure preserves them.",
+        "Unsigned tick conversion could overflow its multiplication and conflate reversed/zero timestamps. Wide arithmetic now preserves actual zero duration, rejects reversed ticks and output overflow, and never fabricates a frequency. Boundary tests exercise maximum representable output and fractional conversion.",
+        "Native mapping declared no CPU reads. Dedicated readback adapters declare the consumed range and zero writes on unmap; the production C-body recording probe verifies ranges, mapping failure, frequency failure, and terminal device loss.",
+        "The provider ignored configured timestamp modes and discarded timing/attempt metadata. Existing modes now govern compute acquisition and receipt validity; required deferred mode rejects before runtime work, warmups disable capture, and per-command attempt state resets without copying the runtime owner. Existing host timing fields include actual preparation/submission/collection costs. Full-suite provider admission checks cover the real wrapper.",
+        "Inline regressions were not registered in test roots. The canonical inventory now explicitly includes the timestamp owner and provider admission regression in aggregate/core/D3D12 suites; supporting dispatch failure/order tests use the same timestamp implementation."
+      ],
+      "reviewId": "d3d12_gpu_timestamps_20260919_001",
+      "reviewedAt": "2026-09-19T23:29:00.233574+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ec905c6df9f92db5db85e8385156bfc5a9909a93",
+      "status": "verified",
+      "summary": "Completed timestamp-file examination: one runtime-owned query/readback pair now records actual compute work, preserves submission lifetime, checks native completion before mapping, and converts durations without overflow. Existing mode/receipt contracts govern availability and errors. Host tests and Windows bridge compilation establish source/control-flow coverage, not physical GPU accuracy or review completion for supporting files.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_gpu_timestamps.zig"
+      ]
     }
   ],
   "schemaVersion": 1

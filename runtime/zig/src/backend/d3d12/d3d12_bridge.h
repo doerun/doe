@@ -223,8 +223,13 @@ void d3d12_bridge_command_list_resolve_query_data(D3D12Handle cmd_list, D3D12Han
                                                     uint32_t start_index, uint32_t count,
                                                     D3D12Handle dst_buffer, uint64_t dst_offset);
 uint64_t d3d12_bridge_queue_get_timestamp_frequency(D3D12Handle queue);
+int d3d12_bridge_queue_get_timestamp_frequency_checked(D3D12Handle queue, uint64_t* frequency);
 
-/* Map/Unmap for readback */
+/* CPU read mapping declares the accessed range and no CPU writes on unmap. */
+void* d3d12_bridge_resource_map_read(D3D12Handle resource, size_t size);
+void d3d12_bridge_resource_unmap_read(D3D12Handle resource);
+
+/* General Map/Unmap */
 void* d3d12_bridge_resource_map(D3D12Handle resource);
 void  d3d12_bridge_resource_unmap(D3D12Handle resource);
 

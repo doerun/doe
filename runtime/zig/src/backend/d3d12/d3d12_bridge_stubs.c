@@ -158,3 +158,7 @@ int d3d12_bridge_queue_signal_checked(D3D12Handle queue, D3D12Handle fence, uint
 int d3d12_bridge_fence_wait_checked(D3D12Handle fence, uint64_t value) { (void)fence; (void)value; return D3D12_SYNC_FAILED; }
 uint64_t d3d12_bridge_fence_completed_value(D3D12Handle fence) { (void)fence; return 0; }
 int d3d12_bridge_queue_drain(D3D12Handle device, D3D12Handle queue, D3D12Handle fence) { (void)device; (void)queue; (void)fence; return D3D12_SYNC_FAILED; }
+
+int d3d12_bridge_queue_get_timestamp_frequency_checked(D3D12Handle queue, uint64_t* frequency) { (void)queue; *frequency = 0; return D3D12_SYNC_FAILED; }
+void* d3d12_bridge_resource_map_read(D3D12Handle resource, size_t size) { (void)resource; (void)size; return NULL; }
+void d3d12_bridge_resource_unmap_read(D3D12Handle resource) { (void)resource; }

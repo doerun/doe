@@ -15,6 +15,8 @@ const test_tests_d3d12_d3d12_timing_semantics_test_zig_d70c327c = @import("tests
 const test_tests_backend_d3d12_descriptors_formats_test_zig_30b22068 = @import("tests/backend/d3d12_descriptors_formats_test.zig");
 const test_tests_d3d12_d3d12_native_unit_test_zig_8a0c5009 = @import("tests/d3d12/d3d12_native_unit_test.zig");
 const test_src_backend_d3d12_commands_d3d12_dispatch_zig_793febe7 = @import("src/backend/d3d12/commands/d3d12_dispatch.zig");
+const test_src_backend_d3d12_commands_d3d12_gpu_timestamps_zig_4c78b353 = @import("src/backend/d3d12/commands/d3d12_gpu_timestamps.zig");
+const test_src_backend_d3d12_mod_zig_1d072893 = @import("src/backend/d3d12/mod.zig");
 const test_src_backend_d3d12_d3d12_native_runtime_zig_55270130 = @import("src/backend/d3d12/d3d12_native_runtime.zig");
 const test_src_backend_d3d12_d3d12_runtime_upload_zig_19153cf8 = @import("src/backend/d3d12/d3d12_runtime_upload.zig");
 const test_src_backend_d3d12_commands_d3d12_streaming_copy_zig_061dc0c0 = @import("src/backend/d3d12/commands/d3d12_streaming_copy.zig");
@@ -35,6 +37,8 @@ comptime {
     _ = test_tests_backend_d3d12_descriptors_formats_test_zig_30b22068;
     _ = test_tests_d3d12_d3d12_native_unit_test_zig_8a0c5009;
     _ = test_src_backend_d3d12_commands_d3d12_dispatch_zig_793febe7;
+    _ = test_src_backend_d3d12_commands_d3d12_gpu_timestamps_zig_4c78b353;
+    _ = test_src_backend_d3d12_mod_zig_1d072893;
     _ = test_src_backend_d3d12_d3d12_native_runtime_zig_55270130;
     _ = test_src_backend_d3d12_d3d12_runtime_upload_zig_19153cf8;
     _ = test_src_backend_d3d12_commands_d3d12_streaming_copy_zig_061dc0c0;

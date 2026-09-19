@@ -23,6 +23,7 @@ const artifact_meta = @import("../../contracts/artifact.zig");
 const artifact_policy = @import("../common/artifact_policy.zig");
 const artifact_state = @import("../common/artifact_state.zig");
 const artifact_emit = @import("artifact_emit.zig");
+const timestamps = @import("commands/d3d12_gpu_timestamps.zig");
 const native_runtime = @import("d3d12_native_runtime.zig");
 
 // Uploads accumulate and flush lazily: flush_pending_uploads_if_required fires
@@ -238,27 +239,27 @@ fn execute_kernel_dispatch(self: *ZigD3D12Backend, setup_ns: u64, kd: model.Kern
 
     var warmup_index: u32 = 0;
     while (warmup_index < kd.warmup_dispatch_count) : (warmup_index += 1) {
-        _ = try runtime.run_dispatch(kd.x, kd.y, kd.z, 1, .per_command);
+        _ = try runtime.run_dispatch(kd.x, kd.y, kd.z, 1, .per_command, .off);
     }
 
-    const metrics = try runtime.run_dispatch(kd.x, kd.y, kd.z, kd.repeat, self.queue_sync_mode);
+    const metrics = try runtime.run_dispatch(kd.x, kd.y, kd.z, kd.repeat, self.queue_sync_mode, self.gpu_timestamp_mode);
     return .{
         .status = .ok,
         .status_message = "",
-        .setup_ns = setup_ns,
+        .setup_ns = setup_ns +| metrics.setup_ns,
         .encode_ns = metrics.encode_ns,
         .submit_wait_ns = metrics.submit_wait_ns,
         .dispatch_count = metrics.dispatch_count,
-        .gpu_timestamp_ns = 0,
-        .gpu_timestamp_attempted = false,
-        .gpu_timestamp_valid = false,
+        .gpu_timestamp_ns = metrics.gpu_timestamp_ns,
+        .gpu_timestamp_attempted = metrics.gpu_timestamp_attempted,
+        .gpu_timestamp_valid = metrics.gpu_timestamp_valid,
     };
 }
 
 fn execute_compute_dispatch_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.DispatchCommand) !webgpu.NativeExecutionResult {
     const rt = try ensure_runtime_bootstrapped(self);
     defer self.telemetry.last_submit_count = rt.last_dispatch_submit_count;
-    const metrics = try rt.execute_compute_dispatch(cmd, self.queue_sync_mode);
+    const metrics = try rt.execute_compute_dispatch(cmd, self.queue_sync_mode, self.gpu_timestamp_mode);
     return .{
         .status = .ok,
         .status_message = "",
@@ -266,13 +267,16 @@ fn execute_compute_dispatch_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: mode
         .encode_ns = metrics.encode_ns,
         .submit_wait_ns = metrics.submit_wait_ns,
         .dispatch_count = metrics.dispatch_count,
+        .gpu_timestamp_ns = metrics.gpu_timestamp_ns,
+        .gpu_timestamp_attempted = metrics.gpu_timestamp_attempted,
+        .gpu_timestamp_valid = metrics.gpu_timestamp_valid,
     };
 }
 
 fn execute_dispatch_indirect_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.DispatchIndirectCommand) !webgpu.NativeExecutionResult {
     const rt = try ensure_runtime_bootstrapped(self);
     defer self.telemetry.last_submit_count = rt.last_dispatch_submit_count;
-    const metrics = try rt.execute_dispatch_indirect(cmd, self.queue_sync_mode);
+    const metrics = try rt.execute_dispatch_indirect(cmd, self.queue_sync_mode, self.gpu_timestamp_mode);
     return .{
         .status = .ok,
         .status_message = "",
@@ -280,6 +284,9 @@ fn execute_dispatch_indirect_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: mod
         .encode_ns = metrics.encode_ns,
         .submit_wait_ns = metrics.submit_wait_ns,
         .dispatch_count = metrics.dispatch_count,
+        .gpu_timestamp_ns = metrics.gpu_timestamp_ns,
+        .gpu_timestamp_attempted = metrics.gpu_timestamp_attempted,
+        .gpu_timestamp_valid = metrics.gpu_timestamp_valid,
     };
 }
 
@@ -403,6 +410,12 @@ fn execute_native_command(
         };
     }
 
+    switch (command) {
+        .dispatch, .dispatch_indirect, .kernel_dispatch => {
+            _ = try timestamps.should_measure(self.gpu_timestamp_mode, self.queue_sync_mode);
+        },
+        else => {},
+    }
     var setup_ns: u64 = 0;
     if (self.runtime == null) {
         const setup_start = common_timing.now_ns();
@@ -460,13 +473,14 @@ fn execute_command_typed(
     command: model.Command,
     promoted_dispatch: ?compute_contract.DispatchRequest,
 ) anyerror!webgpu.NativeExecutionResult {
+    if (self.runtime) |*runtime| runtime.last_timestamp_attempted = false;
     return execute_native_command(self, command, promoted_dispatch) catch |err| {
         const requirements = command_requirements.requirements(command);
         return .{
             .status = common_errors.map_error_status(err),
             .status_message = write_status(self, "{s}", .{common_errors.error_code(err)}),
             .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
-            .gpu_timestamp_attempted = false,
+            .gpu_timestamp_attempted = if (self.runtime) |*runtime| runtime.last_timestamp_attempted else false,
             .gpu_timestamp_valid = false,
         };
     };
@@ -631,3 +645,21 @@ const PortDriver = struct {
     pub const capture = capture_buffer;
     pub const telemetrySnapshot = telemetry_snapshot;
 };
+
+test "D3D12 required deferred timestamps reject before runtime work and reset observation state" {
+    var backend = ZigD3D12Backend{
+        .allocator = std.testing.allocator,
+        .capability_set = native_capability_set(),
+        .artifacts = .{ .allocator = std.testing.allocator },
+        .queue_sync_mode = .deferred,
+        .gpu_timestamp_mode = .require,
+        .runtime = .{ .allocator = std.testing.allocator, .last_timestamp_attempted = true },
+    };
+    const result = try execute_command_typed(&backend, .{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } }, null);
+    try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
+    try std.testing.expectEqualStrings("TimingPolicyMismatch", result.status_message);
+    try std.testing.expect(!result.gpu_timestamp_attempted and !result.gpu_timestamp_valid);
+    try std.testing.expect(!backend.runtime.?.last_timestamp_attempted);
+    try std.testing.expect(backend.runtime.?.timestamp_state.query_heap == null);
+    try std.testing.expectEqual(@as(u64, 0), backend.runtime.?.fence_value);
+}
