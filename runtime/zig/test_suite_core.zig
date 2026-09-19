@@ -50,6 +50,8 @@ const test_src_backend_common_shader_artifact_manifest_zig_cb43fe13 = @import("s
 const test_src_backend_common_submit_count_policy_zig_3141e5eb = @import("src/backend/common/submit_count_policy.zig");
 const test_src_backend_d3d12_commands_d3d12_async_diagnostics_zig_382f4e78 = @import("src/backend/d3d12/commands/d3d12_async_diagnostics.zig");
 const test_src_backend_vulkan_vk_shader_source_zig_d25a569b = @import("src/backend/vulkan/vk_shader_source.zig");
+const test_src_backend_d3d12_commands_d3d12_dispatch_zig_793febe7 = @import("src/backend/d3d12/commands/d3d12_dispatch.zig");
+const test_src_backend_d3d12_d3d12_native_runtime_zig_55270130 = @import("src/backend/d3d12/d3d12_native_runtime.zig");
 
 comptime {
     _ = test_tests_backend_common_artifact_meta_test_zig_80b3c4bd;
@@ -101,4 +103,6 @@ comptime {
     _ = test_src_backend_common_submit_count_policy_zig_3141e5eb;
     _ = test_src_backend_d3d12_commands_d3d12_async_diagnostics_zig_382f4e78;
     _ = test_src_backend_vulkan_vk_shader_source_zig_d25a569b;
+    _ = test_src_backend_d3d12_commands_d3d12_dispatch_zig_793febe7;
+    _ = test_src_backend_d3d12_d3d12_native_runtime_zig_55270130;
 }

@@ -10,6 +10,7 @@ const builtin = @import("builtin");
 const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
 const abi_feature = @import("../../core/abi/wgpu_feature_base_types.zig");
 const model_gpu_types = @import("../../contracts/model/model_texture_value_types.zig");
+const dc = @import("d3d12_constants.zig");
 const bridge = @import("d3d12_bridge_decls.zig");
 
 // D3D12 is only available on Windows.
@@ -81,7 +82,7 @@ const D3D12_LIMITS_STATIC = abi_callback.WGPULimits{
     .maxComputeWorkgroupSizeX = 1024,
     .maxComputeWorkgroupSizeY = 1024,
     .maxComputeWorkgroupSizeZ = 64,
-    .maxComputeWorkgroupsPerDimension = 65535,
+    .maxComputeWorkgroupsPerDimension = dc.MAX_DISPATCH_DIMENSION,
     .maxImmediateSize = 0,
 };
 

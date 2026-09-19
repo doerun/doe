@@ -9,6 +9,7 @@ const model_texture_types = @import("../../contracts/model/model_texture_types.z
 const model_surface_control_types = @import("../../contracts/model/model_surface_control_types.zig");
 const model_async_types = @import("../../contracts/model/model_async_types.zig");
 const bridge = @import("d3d12_bridge_decls.zig");
+const common_timing = @import("../common/timing.zig");
 
 const d3d12_texture = @import("resources/d3d12_texture.zig");
 const d3d12_sampler = @import("resources/d3d12_sampler.zig");
@@ -254,22 +255,46 @@ pub const NativeD3D12Runtime = struct {
     }
 
     pub fn execute_compute_dispatch(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchCommand, queue_sync_mode: webgpu.QueueSyncMode) !d3d12_dispatch.DispatchMetrics {
-        const submission = try self.dispatch_state.execute_dispatch(self.device, self.queue, self.fence, &self.fence_value, cmd, queue_sync_mode);
-        if (submission.cmd_allocator != null or submission.cmd_list != null) {
-            try self.trackDeferredCommandBatch(submission.cmd_allocator, submission.cmd_list);
-        }
-        const metrics = submission.metrics;
-        if (metrics.submit_wait_ns != 0) self.noteCompletedFenceWait();
-        return metrics;
+        return self.executeDispatch(cmd, queue_sync_mode, false);
     }
 
     pub fn execute_dispatch_indirect(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchIndirectCommand, queue_sync_mode: webgpu.QueueSyncMode) !d3d12_dispatch.DispatchMetrics {
-        const submission = try self.dispatch_state.execute_dispatch_indirect(self.device, self.queue, self.fence, &self.fence_value, cmd, queue_sync_mode);
-        if (submission.cmd_allocator != null or submission.cmd_list != null) {
-            try self.trackDeferredCommandBatch(submission.cmd_allocator, submission.cmd_list);
+        return self.executeDispatch(cmd, queue_sync_mode, true);
+    }
+
+    fn executeDispatch(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchCommand, queue_sync_mode: webgpu.QueueSyncMode, indirect: bool) !d3d12_dispatch.DispatchMetrics {
+        try d3d12_dispatch.validate(cmd, self.fence_value);
+        const setup_start = common_timing.now_ns();
+        if (self.dispatch_state.noop_pipeline == null) {
+            const bytecode = try self.load_kernel_cso(self.allocator, "dispatch_noop.wgsl");
+            defer self.allocator.free(bytecode);
+            try self.dispatch_state.prepare_pipeline(self.device, bytecode);
         }
-        const metrics = submission.metrics;
-        if (metrics.submit_wait_ns != 0) self.noteCompletedFenceWait();
+        var retained_handles: std.ArrayListUnmanaged(?*anyopaque) = .{};
+        errdefer retained_handles.deinit(self.allocator);
+        if (queue_sync_mode != .per_command) {
+            try self.pending_submit_batches.ensureUnusedCapacity(self.allocator, 1);
+            if (indirect) try retained_handles.ensureTotalCapacity(self.allocator, 1);
+        }
+        const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
+        const submission = if (indirect)
+            try self.dispatch_state.execute_dispatch_indirect(self.device, self.queue, self.fence, &self.fence_value, cmd, queue_sync_mode)
+        else
+            try self.dispatch_state.execute_dispatch(self.device, self.queue, self.fence, &self.fence_value, cmd, queue_sync_mode);
+        if (queue_sync_mode != .per_command) {
+            if (submission.indirect_arg_buffer) |buffer| retained_handles.appendAssumeCapacity(buffer);
+            self.pending_submit_batches.appendAssumeCapacity(.{
+                .fence_value = self.fence_value,
+                .cmd_allocator = submission.cmd_allocator,
+                .cmd_list = submission.cmd_list,
+                .retained_handles = retained_handles,
+            });
+            self.has_deferred_submissions = true;
+        } else {
+            self.noteCompletedFenceWait();
+        }
+        var metrics = submission.metrics;
+        metrics.setup_ns +|= setup_ns;
         return metrics;
     }
 
@@ -412,3 +437,32 @@ pub const NativeD3D12Runtime = struct {
         }
     }
 };
+
+test "D3D12 dispatch reserves retirement storage before submitting and unwinds allocation failure" {
+    if (@import("builtin").os.tag == .windows) return error.SkipZigTest;
+    const Probe = struct {
+        fn run(allocator: std.mem.Allocator) !void {
+            var external: u8 = 0;
+            var runtime = NativeD3D12Runtime{
+                .allocator = allocator,
+                .device = &external,
+                .queue = &external,
+                .fence = &external,
+                .dispatch_state = .{ .noop_pipeline = &external },
+            };
+            // Non-Windows native creation fails after the retirement allocations.
+            defer runtime.pending_submit_batches.deinit(allocator);
+            const result = runtime.execute_dispatch_indirect(.{ .x = 7, .y = 3, .z = 2 }, .deferred);
+            if (result) |_| {
+                return error.TestUnexpectedResult;
+            } else |err| {
+                if (err == error.OutOfMemory) return err;
+                try std.testing.expectEqual(error.InvalidState, err);
+            }
+            try std.testing.expectEqual(@as(u64, 0), runtime.fence_value);
+            try std.testing.expectEqual(@as(usize, 0), runtime.pending_submit_batches.items.len);
+            try std.testing.expect(!runtime.has_deferred_submissions);
+        }
+    };
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, Probe.run, .{});
+}

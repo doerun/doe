@@ -118,9 +118,13 @@ void d3d12_bridge_command_list_copy_buffer(D3D12Handle cmd_list_h, D3D12Handle d
     cmd_list->lpVtbl->CopyBufferRegion(cmd_list, dst, 0, src, 0, (UINT64)size);
 }
 
-void d3d12_bridge_command_list_close(D3D12Handle cmd_list_h) {
+int d3d12_bridge_command_list_close_checked(D3D12Handle cmd_list_h) {
     ID3D12GraphicsCommandList* cmd_list = (ID3D12GraphicsCommandList*)cmd_list_h;
-    cmd_list->lpVtbl->Close(cmd_list);
+    return (int)cmd_list->lpVtbl->Close(cmd_list);
+}
+
+void d3d12_bridge_command_list_close(D3D12Handle cmd_list_h) {
+    (void)d3d12_bridge_command_list_close_checked(cmd_list_h);
 }
 
 void d3d12_bridge_queue_execute_command_list(D3D12Handle queue_h, D3D12Handle cmd_list_h) {

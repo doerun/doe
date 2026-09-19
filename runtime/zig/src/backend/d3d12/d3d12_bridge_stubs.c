@@ -24,6 +24,7 @@ uint64_t    d3d12_bridge_buffer_get_size(D3D12Handle buffer) { (void)buffer; ret
 /* Buffer copy */
 void d3d12_bridge_command_list_copy_buffer(D3D12Handle cmd_list, D3D12Handle dst, D3D12Handle src, size_t size) { (void)cmd_list; (void)dst; (void)src; (void)size; }
 void d3d12_bridge_command_list_close(D3D12Handle cmd_list) { (void)cmd_list; }
+int d3d12_bridge_command_list_close_checked(D3D12Handle cmd_list) { (void)cmd_list; return -1; }
 
 /* Queue execution and synchronization */
 void d3d12_bridge_queue_execute_command_list(D3D12Handle queue, D3D12Handle cmd_list) { (void)queue; (void)cmd_list; }

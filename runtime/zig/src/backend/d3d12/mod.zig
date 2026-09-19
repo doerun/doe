@@ -258,10 +258,11 @@ fn execute_kernel_dispatch(self: *ZigD3D12Backend, setup_ns: u64, kd: model.Kern
 fn execute_compute_dispatch_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.DispatchCommand) !webgpu.NativeExecutionResult {
     const rt = try ensure_runtime_bootstrapped(self);
     const metrics = try rt.execute_compute_dispatch(cmd, self.queue_sync_mode);
+    self.telemetry.last_submit_count = metrics.submit_count;
     return .{
         .status = .ok,
         .status_message = "",
-        .setup_ns = setup_ns,
+        .setup_ns = setup_ns +| metrics.setup_ns,
         .encode_ns = metrics.encode_ns,
         .submit_wait_ns = metrics.submit_wait_ns,
         .dispatch_count = metrics.dispatch_count,
@@ -271,10 +272,11 @@ fn execute_compute_dispatch_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: mode
 fn execute_dispatch_indirect_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.DispatchIndirectCommand) !webgpu.NativeExecutionResult {
     const rt = try ensure_runtime_bootstrapped(self);
     const metrics = try rt.execute_dispatch_indirect(cmd, self.queue_sync_mode);
+    self.telemetry.last_submit_count = metrics.submit_count;
     return .{
         .status = .ok,
         .status_message = "",
-        .setup_ns = setup_ns,
+        .setup_ns = setup_ns +| metrics.setup_ns,
         .encode_ns = metrics.encode_ns,
         .submit_wait_ns = metrics.submit_wait_ns,
         .dispatch_count = metrics.dispatch_count,
@@ -389,6 +391,7 @@ fn execute_native_command(
     command: model.Command,
     promoted_dispatch: ?compute_contract.DispatchRequest,
 ) !webgpu.NativeExecutionResult {
+    self.telemetry.last_submit_count = null;
     const requirements = command_requirements.requirements(command);
     if (self.capability_set.missing(requirements.required_capabilities)) |missing_cap| {
         return .{

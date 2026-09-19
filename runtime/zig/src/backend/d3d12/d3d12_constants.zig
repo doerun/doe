@@ -1,5 +1,7 @@
 pub const formats = @import("d3d12_formats.zig");
 
+pub const MAX_DISPATCH_DIMENSION: u32 = 65535;
+
 pub const HEAP_TYPE_UPLOAD: c_int = 2;
 pub const HEAP_TYPE_READBACK: c_int = 3;
 

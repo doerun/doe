@@ -12273,6 +12273,122 @@
       "targets": [
         "src/backend/d3d12/commands/d3d12_async_diagnostics.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/kernels/dispatch_noop.wgsl",
+          "sha256": "d51b69e09c71649b2266dc6f0538ee66a84ed7e433baf613ce71ef68320a8db8"
+        },
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "f0590d633ba87769d89d872b95ffccdffdd3af3ab20858bf67761794fb673c4d"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "20d62d18c6994192f009fcb807e39a61775f1f57a103d29d385481355017b9bd"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.h",
+          "sha256": "6002ec2c66e9ae1a1eb00b230647036824baee0bfb1a6bc47e3c017046c9a13a"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge_decls.zig",
+          "sha256": "a81e674abc9470481010d89e5c4e2f38c5e24026a8d012102ef816e0d61e843b"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge_stubs.c",
+          "sha256": "f3be1c147e830dfea768c62a0dd1e2a6550ab64ac671a1984e665b54c6fa952f"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+          "sha256": "638197701120590d724bfbf550eaba97878c1a658ac0dde33c32c9019ebe9140"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_device_caps.zig",
+          "sha256": "90f25f0a54459bee474f3ae6978af2d4ee7f2a6a6a2512024e54dd9ad9565ce1"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "736d90c35e539028a81c3b05635c0306e35ebed51fd9c79d3724309d76f8851c"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_compute.zig",
+          "sha256": "03968f8ae4d47fcbed6a5504d553936a0efcfd9f979259c23a0d2a7c17662cfa"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_upload.zig",
+          "sha256": "aeab9f0cbfcb449f3a077259295bc6cfee98895db3e4c78f86c6c77063e7b7df"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "c7e0fc32ff9074311787a0c7adab6f466c3b8a9bcad76f9c78821b132ead21e9"
+        },
+        {
+          "path": "runtime/zig/src/contracts/execution.zig",
+          "sha256": "648dc2c443fd47ebf04c8e2111ea4f9dd0b32b48d247a21d845c2547e3cda6fd"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_configuration.zig",
+          "sha256": "45c3191e8ce14f96a55bbf92682f66f8a9373bb4825851fcfe2aabf7ecd1ad89"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_telemetry.zig",
+          "sha256": "e9e910fd2441e86b3916a48f4d02ac290ba81f92690da8dfc5d7d9ef179e436f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-dispatch/README.md",
+          "sha256": "e13859645afb3f86b29d494345a9d56b29bf47baa7a31dc385a2623ed897f1b4"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-dispatch/aggregate.log",
+          "sha256": "3ed3163f399bc8e3eb8e14880f83917925fa7a725eecb87dce7820d4ba2342d5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-dispatch/doc-links.log",
+          "sha256": "0c1444824fd71eec878a61b61872df1e891b1aacd98843caec2dfe110aef03c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-dispatch/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-dispatch/targeted-third.log",
+          "sha256": "1024008f33d7de661652f46bcdafd4e9ea314587058e8117e79cb141d75a0a5f"
+        }
+      ],
+      "findings": [
+        "d3d12_bridge_queue_signal discards HRESULT; d3d12_bridge_fence_wait returns on event creation failure, ignores registration/wait errors, and treats the device-removal sentinel as completion. Dispatch cached reuse, upload.flushQueue, and NativeD3D12Runtime.deinit can therefore reuse or release GPU resources without established completion. Add checked outcomes and preserve submitted ownership across unknown completion before closing this scope.",
+        "The shared trackDropinSubmission append-failure branch frees copied retained_handles without clearing the caller copy. This dispatch path now reserves and transfers without that branch, but the shared completion repair must audit the remaining callers and failure ownership."
+      ],
+      "inputHash": "64051fbc7e5a43b7d9c989d3a1ff19b755e44128439195b2c0c69d310871fd3f",
+      "level": "file",
+      "nextAction": "Continue this scope through d3d12_bridge.c checked signal/wait, d3d12_runtime_upload.zig flush, and d3d12_native_runtime.zig retirement/teardown. Preserve ownership after submission when completion fails; distinguish device loss; test signal/event/wait/OOM failure paths and append a new verdict. Do not advance verified credit or claim Windows hardware qualification.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Indirect commands now serialize canonical x/y/z into initialized upload storage; each deferred submission transfers its own argument buffer. Recording tests preserve earlier argument bytes across a later submission and check decoded dimensions.",
+        "Removed handwritten placeholder DXBC. The runtime uses the existing dispatch_noop.wgsl kernel loader/compiler path and passes actual loaded bytecode to transactional pipeline creation; compile/native failures remain errors.",
+        "Transactional command and pipeline acquisition plus function-scope cleanup release every pre-submission acquisition/reset/map/close failure. Recording tests inject each failing operation and verify retry and final release.",
+        "Added checked command-list Close to the C adapter and unsupported-host stub. Dispatch aborts and unwinds before ExecuteCommandLists on Close failure.",
+        "Reserved batch/retained-handle storage before GPU execution and transferred deferred handles with infallible appends. Runtime allocator-failure tests verify no submission or retained batch on failure.",
+        "Admission shares the advertised baseline dispatch bound and rejects exhausted/reserved fence IDs before execution. Submission time includes execute/signal and optional wait, setup includes preparation, and existing telemetry receives the actual dispatch submission count. Synchronous retirement no longer depends on a nonzero measured duration."
+      ],
+      "reviewId": "d3d12_dispatch_20260919_001",
+      "reviewedAt": "2026-09-19T21:45:05.128811+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ce9d88e0d0fcbe692fb4b09424bc0870f09b1651",
+      "status": "needs_changes",
+      "summary": "Examined the complete direct/indirect command dispatch owner and traced provider routing, kernel compilation, ABI encoding, ownership transfer, submission accounting, completion, and teardown. Repaired indirect payloads, real pipeline loading, transactional acquisition, checked close, pre-submission retirement reservation, and metrics. Shared native synchronization failures still prevent verified status; supporting edits earn no separate scope credit.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_dispatch.zig"
+      ]
     }
   ],
   "schemaVersion": 1

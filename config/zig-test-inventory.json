@@ -359,6 +359,14 @@
         {
           "path": "src/backend/vulkan/vk_shader_source.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/commands/d3d12_dispatch.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/d3d12_native_runtime.zig",
+          "kind": "inline"
         }
       ]
     },
@@ -563,6 +571,14 @@
         {
           "path": "src/backend/vulkan/vk_shader_source.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/commands/d3d12_dispatch.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/d3d12_native_runtime.zig",
+          "kind": "inline"
         }
       ]
     },
@@ -624,6 +640,14 @@
         {
           "path": "tests/d3d12/d3d12_native_unit_test.zig",
           "kind": "backend"
+        },
+        {
+          "path": "src/backend/d3d12/commands/d3d12_dispatch.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/d3d12_native_runtime.zig",
+          "kind": "inline"
         }
       ]
     },
