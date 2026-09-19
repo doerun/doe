@@ -4,11 +4,7 @@ Parent: none
 
 ## Target
 
-Earn voluntary DoeRuntime adoption through measured application advantage on
-qualified hardware. Prove ordinary provider substitution first, then safe reuse
-and agent-assisted acceleration. Keep compatibility and declared-program
-treatments distinct. DoeProof evaluates providers impartially; browser
-distribution is optional.
+Earn voluntary DoeRuntime adoption through measured application advantage on qualified hardware. Prove ordinary provider substitution first, then safe reuse and acceleration. DoeProof evaluates providers impartially; browser distribution is optional.
 
 ## Authority
 
@@ -22,7 +18,8 @@ distribution is optional.
 ## Contracts
 
 Inputs:
-- Mission and durable goals: [`GOALS.md`](GOALS.md).
+- Strategic goals: [`GOALS.md`](GOALS.md).
+- System intent and invariants: [`INTENT.md`](INTENT.md).
 - Product strategy: [`docs/thesis.md`](docs/thesis.md).
 - Process law: [`docs/process.md`](docs/process.md).
 
@@ -34,15 +31,14 @@ Outputs:
 
 - Provider, backend, program, hardware, fallback, and result identity remain explicit.
 - Unsupported or unproved behavior fails closed at its declared boundary.
-- Package, native, browser, simulator, and hardware evidence never inherit one another's claims.
-- Runtime ownership receives credit only through the governed ownership comparison.
-- Qualification, receipts, and interoperability alone do not prove application adoption.
-- Reuse preserves frozen source and resource assumptions; changing shape,
-  shader, resource, or device invalidates the affected prepared state.
+- Package, native, browser, simulator, and hardware evidence never inherit cross-tier claims.
+- Runtime ownership requires governed ownership comparison; receipts alone do not prove adoption.
+- Reuse preserves frozen source and resource assumptions; device or shape changes invalidate prepared state.
 
 ## Acceptance
 
 - Component charters and their generated index pass the blocking CATSCAN gate.
+- Acceptance evidence verifies that [INTENT.md](INTENT.md) and [GOALS.md](GOALS.md) remain supported.
 - Evidence: [`bench/gates/catscan_gate.py`](bench/gates/catscan_gate.py).
 
 ## Non-goals
