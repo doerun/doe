@@ -1,0 +1,13 @@
+runtime/zig/src/backend/d3d12/d3d12_bridge.c:110:62: error: too few arguments to function call, expected 2, have 1
+  110 |     D3D12_RESOURCE_DESC desc = buffer->lpVtbl->GetDesc(buffer);
+      |                                ~~~~~~~~~~~~~~~~~~~~~~~       ^
+runtime/zig/src/backend/d3d12/d3d12_bridge.c:1077:62: error: too few arguments to function call, expected 2, have 1
+ 1077 |     D3D12_RESOURCE_DESC desc = buffer->lpVtbl->GetDesc(buffer);
+      |                                ~~~~~~~~~~~~~~~~~~~~~~~       ^
+runtime/zig/src/backend/d3d12/d3d12_bridge.c:1097:62: error: too few arguments to function call, expected 2, have 1
+ 1097 |     D3D12_RESOURCE_DESC desc = buffer->lpVtbl->GetDesc(buffer);
+      |                                ~~~~~~~~~~~~~~~~~~~~~~~       ^
+runtime/zig/src/backend/d3d12/d3d12_bridge.c:1255:54: error: too few arguments to function call, expected 2, have 1
+ 1255 |     LUID luid = device->lpVtbl->GetAdapterLuid(device);
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~       ^
+4 errors generated.

@@ -1,0 +1,2 @@
+PASS: actual bridge synchronization bodies; injected COM outcomes, no Windows/GPU execution
+{"bridgeSha256": "eb690d0812b9b1c7b262b535d20cbf022097be08a87bc4a5a5c625cac51b8759", "scope": "host control flow with injected COM methods; not Windows ABI or GPU qualification", "synchronizationBodiesSha256": "3fc29900ad285abe7d98a17059de03781cd9e8c2544fdc298f4dafb60ee9bb60"}

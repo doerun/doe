@@ -65,9 +65,8 @@ pub fn submit_d3d12_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*an
     bridge.c.d3d12_bridge_queue_execute_command_list(rt.queue, cmd_list);
     rt.fence_value +|= 1;
     bridge.c.d3d12_bridge_queue_signal(rt.queue, rt.fence, rt.fence_value);
-    rt.trackDropinSubmission(cmd_allocator, cmd_list, &retained_handles) catch {
-        bridge.c.d3d12_bridge_fence_wait(rt.fence, rt.fence_value);
-        rt.noteCompletedFenceWait();
+    rt.trackDropinSubmission(cmd_allocator, cmd_list, &retained_handles) catch |err| {
+        shared.deliverInternalError(q.dev, "doe_queue_submit: d3d12 retirement: {s}", .{@errorName(err)});
         return;
     };
     owns_cmd_allocator = false;

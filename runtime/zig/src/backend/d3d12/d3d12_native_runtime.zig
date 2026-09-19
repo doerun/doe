@@ -71,11 +71,15 @@ pub const NativeD3D12Runtime = struct {
     device: ?*anyopaque = null,
     queue: ?*anyopaque = null,
     fence: ?*anyopaque = null,
+    retirement_fence: ?*anyopaque = null,
+    device_lost: bool = false,
+    last_dispatch_submit_count: u32 = 0,
     fence_value: u64 = 0,
     completed_fence_value: u64 = 0,
 
     has_device: bool = false,
     pending_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
+    submitted_upload_count: usize = 0,
     has_deferred_submissions: bool = false,
     pending_submit_batches: std.ArrayListUnmanaged(PendingSubmitBatch) = .{},
 
@@ -116,9 +120,14 @@ pub const NativeD3D12Runtime = struct {
     }
 
     pub fn deinit(self: *NativeD3D12Runtime) void {
-        _ = self.flush_queue() catch {};
-        self.completed_fence_value = self.fence_value;
-        self.releaseCompletedSubmitBatches();
+        if (self.has_device) {
+            // Teardown recovers a failed flush with the blocking ownership barrier.
+            if (self.flush_queue()) |_| {} else |_| {
+                _ = self.drainForRetirement();
+            }
+        }
+        for (self.pending_submit_batches.items) |*batch| batch.deinit(self.allocator);
+        self.pending_submit_batches.clearRetainingCapacity();
         self.pending_submit_batches.deinit(self.allocator);
         upload.releasePendingUploads(self);
         self.pending_uploads.deinit(self.allocator);
@@ -141,6 +150,10 @@ pub const NativeD3D12Runtime = struct {
             self.has_dispatch_info_cbv = false;
         }
         d3d12_texture.release_all(&self.texture_map);
+        if (self.retirement_fence) |f| {
+            bridge.c.d3d12_bridge_release(f);
+            self.retirement_fence = null;
+        }
         if (self.fence) |f| {
             bridge.c.d3d12_bridge_release(f);
             self.fence = null;
@@ -159,6 +172,10 @@ pub const NativeD3D12Runtime = struct {
     pub fn upload_bytes(self: *NativeD3D12Runtime, bytes: u64, _mode: webgpu.UploadBufferUsageMode) !void {
         _ = _mode;
         return upload.uploadBytes(self, bytes, MAX_UPLOAD_BYTES, HEAP_TYPE_DEFAULT);
+    }
+
+    pub fn releaseCompletedUploads(self: *NativeD3D12Runtime) void {
+        upload.releasePendingUploads(self);
     }
 
     pub fn flush_queue(self: *NativeD3D12Runtime) !u64 {
@@ -190,7 +207,8 @@ pub const NativeD3D12Runtime = struct {
     }
 
     pub fn flush_before_dropin_submit_if_needed(self: *NativeD3D12Runtime) !void {
-        if (self.pending_uploads.items.len == 0 and !self.has_deferred_submissions and !self.streaming_copy_state.has_pending()) {
+        if (self.device_lost) return error.DeviceLost;
+        if (self.pending_uploads.items.len == 0 and self.pending_submit_batches.items.len == 0 and !self.has_deferred_submissions and !self.streaming_copy_state.has_pending()) {
             return;
         }
         _ = try self.flush_queue();
@@ -202,19 +220,39 @@ pub const NativeD3D12Runtime = struct {
         cmd_list: ?*anyopaque,
         retained_handles: *std.ArrayListUnmanaged(?*anyopaque),
     ) !void {
-        var batch = PendingSubmitBatch{
+        return self.trackSubmissionWithBridge(cmd_allocator, cmd_list, retained_handles, bridge.c);
+    }
+
+    fn trackSubmissionWithBridge(self: *NativeD3D12Runtime, cmd_allocator: ?*anyopaque, cmd_list: ?*anyopaque, retained_handles: *std.ArrayListUnmanaged(?*anyopaque), comptime native: type) !void {
+        const batch = PendingSubmitBatch{
             .fence_value = self.fence_value,
             .cmd_allocator = cmd_allocator,
             .cmd_list = cmd_list,
             .retained_handles = retained_handles.*,
         };
         self.pending_submit_batches.append(self.allocator, batch) catch |err| {
-            bridge.c.d3d12_bridge_fence_wait(self.fence, self.fence_value);
-            self.noteCompletedFenceWait();
-            batch.deinit(self.allocator);
+            // Failure leaves every handle with the caller, after safe retirement.
+            _ = self.drainWithBridge(native);
             return err;
         };
         retained_handles.* = .{};
+    }
+
+    pub const RetirementOutcome = enum { completed, device_lost };
+
+    pub fn drainForRetirement(self: *NativeD3D12Runtime) RetirementOutcome {
+        return self.drainWithBridge(bridge.c);
+    }
+
+    fn drainWithBridge(self: *NativeD3D12Runtime, comptime native: type) RetirementOutcome {
+        const outcome: RetirementOutcome = switch (native.d3d12_bridge_queue_drain(self.device, self.queue, self.retirement_fence)) {
+            bridge.c.D3D12_SYNC_OK => .completed,
+            bridge.c.D3D12_SYNC_DEVICE_LOST => .device_lost,
+            else => @panic("D3D12 blocking retirement returned without completion or device loss"),
+        };
+        if (outcome == .device_lost) self.device_lost = true;
+        if (outcome == .completed) self.dispatch_state.pending_fence = null;
+        return outcome;
     }
 
     pub fn trackDeferredCommandBatch(
@@ -224,11 +262,24 @@ pub const NativeD3D12Runtime = struct {
     ) !void {
         var retained_handles: std.ArrayListUnmanaged(?*anyopaque) = .{};
         errdefer retained_handles.deinit(self.allocator);
+        errdefer if (cmd_allocator) |handle| bridge.c.d3d12_bridge_release(handle);
+        errdefer if (cmd_list) |handle| bridge.c.d3d12_bridge_release(handle);
         try self.trackDropinSubmission(cmd_allocator, cmd_list, &retained_handles);
     }
 
     pub fn noteCompletedFenceWait(self: *NativeD3D12Runtime) void {
-        self.completed_fence_value = self.fence_value;
+        self.observeCompletion(bridge.c.d3d12_bridge_fence_completed_value(self.fence));
+    }
+
+    fn observeCompletion(self: *NativeD3D12Runtime, completed: u64) void {
+        if (completed == std.math.maxInt(u64)) {
+            self.device_lost = true;
+            return;
+        }
+        self.completed_fence_value = @max(self.completed_fence_value, completed);
+        if (self.dispatch_state.pending_fence) |pending| {
+            if (pending <= completed) self.dispatch_state.pending_fence = null;
+        }
         self.releaseCompletedSubmitBatches();
     }
 
@@ -263,7 +314,10 @@ pub const NativeD3D12Runtime = struct {
     }
 
     fn executeDispatch(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchCommand, queue_sync_mode: webgpu.QueueSyncMode, indirect: bool) !d3d12_dispatch.DispatchMetrics {
+        self.last_dispatch_submit_count = 0;
+        if (self.device_lost) return error.DeviceLost;
         try d3d12_dispatch.validate(cmd, self.fence_value);
+        const recovery_wait_ns = if (self.dispatch_state.pending_fence != null) try self.flush_queue() else 0;
         const setup_start = common_timing.now_ns();
         if (self.dispatch_state.noop_pipeline == null) {
             const bytecode = try self.load_kernel_cso(self.allocator, "dispatch_noop.wgsl");
@@ -281,21 +335,35 @@ pub const NativeD3D12Runtime = struct {
             try self.dispatch_state.execute_dispatch_indirect(self.device, self.queue, self.fence, &self.fence_value, cmd, queue_sync_mode)
         else
             try self.dispatch_state.execute_dispatch(self.device, self.queue, self.fence, &self.fence_value, cmd, queue_sync_mode);
+        var metrics = try self.finishDispatch(submission, queue_sync_mode, &retained_handles);
+        metrics.setup_ns +|= setup_ns;
+        metrics.submit_wait_ns +|= recovery_wait_ns;
+        return metrics;
+    }
+
+    fn finishDispatch(self: *NativeD3D12Runtime, submission: d3d12_dispatch.DispatchSubmission, queue_sync_mode: webgpu.QueueSyncMode, retained_handles: *std.ArrayListUnmanaged(?*anyopaque)) !d3d12_dispatch.DispatchMetrics {
         if (queue_sync_mode != .per_command) {
             if (submission.indirect_arg_buffer) |buffer| retained_handles.appendAssumeCapacity(buffer);
             self.pending_submit_batches.appendAssumeCapacity(.{
                 .fence_value = self.fence_value,
                 .cmd_allocator = submission.cmd_allocator,
                 .cmd_list = submission.cmd_list,
-                .retained_handles = retained_handles,
+                .retained_handles = retained_handles.*,
             });
+            retained_handles.* = .{};
             self.has_deferred_submissions = true;
-        } else {
+        } else if (submission.completed) {
             self.noteCompletedFenceWait();
+        } else {
+            self.has_deferred_submissions = true;
         }
-        var metrics = submission.metrics;
-        metrics.setup_ns +|= setup_ns;
-        return metrics;
+        self.last_dispatch_submit_count = submission.metrics.submit_count;
+        if (self.device_lost) return error.DeviceLost;
+        if (submission.completion_error) |err| {
+            if (err == error.DeviceLost) self.device_lost = true;
+            return err;
+        }
+        return submission.metrics;
     }
 
     pub fn execute_copy(self: *NativeD3D12Runtime, cmd: model_resource_types.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !d3d12_streaming_copy.CopyMetrics {
@@ -421,6 +489,7 @@ pub const NativeD3D12Runtime = struct {
         self.device = bridge.c.d3d12_bridge_create_device() orelse return error.UnsupportedFeature;
         self.queue = bridge.c.d3d12_bridge_device_create_command_queue(self.device) orelse return error.InvalidState;
         self.fence = bridge.c.d3d12_bridge_device_create_fence(self.device) orelse return error.InvalidState;
+        self.retirement_fence = bridge.c.d3d12_bridge_device_create_fence(self.device) orelse return error.InvalidState;
         self.has_device = true;
         self.device_caps = d3d12_device_caps.query_device_caps(self.device);
     }
@@ -465,4 +534,74 @@ test "D3D12 dispatch reserves retirement storage before submitting and unwinds a
         }
     };
     try std.testing.checkAllAllocationFailures(std.testing.allocator, Probe.run, .{});
+}
+
+test "D3D12 retirement allocation failure leaves caller ownership after a terminal barrier" {
+    const Native = struct {
+        var result: c_int = 0;
+        var calls: usize = 0;
+        fn d3d12_bridge_queue_drain(_: ?*anyopaque, _: ?*anyopaque, _: ?*anyopaque) c_int {
+            calls += 1;
+            return result;
+        }
+    };
+    for ([_]c_int{ bridge.c.D3D12_SYNC_OK, bridge.c.D3D12_SYNC_DEVICE_LOST }) |outcome| {
+        Native.result = outcome;
+        Native.calls = 0;
+        var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
+        var runtime = NativeD3D12Runtime{ .allocator = failing.allocator(), .fence_value = 7 };
+        var handles: std.ArrayListUnmanaged(?*anyopaque) = .{};
+        defer handles.deinit(std.testing.allocator);
+        var external: u8 = 0;
+        try handles.append(std.testing.allocator, &external);
+        const original = handles.items.ptr;
+        try std.testing.expectError(error.OutOfMemory, runtime.trackSubmissionWithBridge(&external, &external, &handles, Native));
+        try std.testing.expectEqual(@as(usize, 1), Native.calls);
+        try std.testing.expectEqual(original, handles.items.ptr);
+        try std.testing.expectEqual(@as(usize, 1), handles.items.len);
+        try std.testing.expectEqual(@as(usize, 0), runtime.pending_submit_batches.items.len);
+        try std.testing.expectEqual(@as(u64, 0), runtime.completed_fence_value);
+        try std.testing.expectEqual(outcome == bridge.c.D3D12_SYNC_DEVICE_LOST, runtime.device_lost);
+    }
+}
+
+test "D3D12 completion observations never promote device loss or an earlier fence" {
+    var runtime = NativeD3D12Runtime{ .allocator = std.testing.allocator, .fence_value = 9 };
+    runtime.dispatch_state.pending_fence = 9;
+    runtime.observeCompletion(3);
+    try std.testing.expectEqual(@as(u64, 3), runtime.completed_fence_value);
+    try std.testing.expectEqual(@as(?u64, 9), runtime.dispatch_state.pending_fence);
+    runtime.observeCompletion(std.math.maxInt(u64));
+    try std.testing.expect(runtime.device_lost);
+    try std.testing.expectEqual(@as(u64, 3), runtime.completed_fence_value);
+    try std.testing.expectEqual(@as(?u64, 9), runtime.dispatch_state.pending_fence);
+    try std.testing.expectError(error.DeviceLost, runtime.execute_compute_dispatch(.{ .x = 1, .y = 1, .z = 1 }, .per_command));
+}
+
+test "D3D12 submitted handles transfer before reporting synchronization failure" {
+    var runtime = NativeD3D12Runtime{ .allocator = std.testing.allocator, .fence_value = 1 };
+    defer runtime.pending_submit_batches.deinit(std.testing.allocator);
+    var handles: std.ArrayListUnmanaged(?*anyopaque) = .{};
+    defer handles.deinit(std.testing.allocator);
+    try runtime.pending_submit_batches.ensureUnusedCapacity(std.testing.allocator, 1);
+    try handles.ensureTotalCapacity(std.testing.allocator, 1);
+    const original_storage = handles.items.ptr;
+    var external: u8 = 0;
+    try std.testing.expectError(error.QueueSignalFailed, runtime.finishDispatch(.{
+        .metrics = .{ .dispatch_count = 1, .submit_count = 1 },
+        .completion_error = error.QueueSignalFailed,
+        .cmd_allocator = &external,
+        .cmd_list = &external,
+        .indirect_arg_buffer = &external,
+    }, .deferred, &handles));
+    try std.testing.expectEqual(@as(usize, 0), handles.capacity);
+    try std.testing.expectEqual(@as(usize, 1), runtime.pending_submit_batches.items.len);
+    const batch = &runtime.pending_submit_batches.items[0];
+    try std.testing.expectEqual(original_storage, batch.retained_handles.items.ptr);
+    try std.testing.expectEqual(@as(usize, 1), batch.retained_handles.items.len);
+    try std.testing.expectEqual(@as(u64, 0), runtime.completed_fence_value);
+    try std.testing.expectEqual(@as(u32, 1), runtime.last_dispatch_submit_count);
+    try std.testing.expect(runtime.has_deferred_submissions);
+    // Only storage is allocated in this test; native handles are identity markers.
+    batch.retained_handles.deinit(std.testing.allocator);
 }

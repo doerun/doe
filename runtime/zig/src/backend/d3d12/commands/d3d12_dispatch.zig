@@ -14,6 +14,8 @@ pub const DispatchMetrics = execution_contract.DispatchMetrics;
 
 pub const DispatchSubmission = struct {
     metrics: DispatchMetrics = .{},
+    completion_error: ?bridge.SynchronizationError = null,
+    completed: bool = false,
     cmd_allocator: ?*anyopaque = null,
     cmd_list: ?*anyopaque = null,
     indirect_arg_buffer: ?*anyopaque = null,
@@ -33,6 +35,7 @@ fn State(comptime native: type) type {
     return struct {
         const Self = @This();
 
+        pending_fence: ?u64 = null,
         root_signature: ?*anyopaque = null,
         noop_pipeline: ?*anyopaque = null,
         cmd_allocator: ?*anyopaque = null,
@@ -60,6 +63,7 @@ fn State(comptime native: type) type {
 
         fn execute(self: *Self, device: ?*anyopaque, queue: ?*anyopaque, fence: ?*anyopaque, fence_value: *u64, cmd: model_compute_types.DispatchCommand, queue_sync_mode: webgpu.QueueSyncMode, indirect: bool) !DispatchSubmission {
             try validate(cmd, fence_value.*);
+            if (self.pending_fence != null) return error.InvalidState;
             if (device == null or queue == null or fence == null or self.noop_pipeline == null) return error.InvalidState;
             const setup_start = common_timing.now_ns();
             const deferred = queue_sync_mode != .per_command;
@@ -118,9 +122,20 @@ fn State(comptime native: type) type {
             const submit_start = common_timing.now_ns();
             native.d3d12_bridge_queue_execute_command_list(queue, commands.list);
             fence_value.* += 1;
-            native.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
-            if (!deferred) native.d3d12_bridge_fence_wait(fence, fence_value.*);
+            if (!deferred) self.pending_fence = fence_value.*;
+            var completion_error: ?bridge.SynchronizationError = null;
+            bridge.check_signal(native.d3d12_bridge_queue_signal_checked(queue, fence, fence_value.*)) catch |err| {
+                completion_error = err;
+            };
+            if (!deferred and completion_error == null) {
+                bridge.check_wait(native.d3d12_bridge_fence_wait_checked(fence, fence_value.*)) catch |err| {
+                    completion_error = err;
+                };
+                if (completion_error == null) self.pending_fence = null;
+            }
             return .{
+                .completion_error = completion_error,
+                .completed = !deferred and completion_error == null,
                 .metrics = .{
                     .setup_ns = setup_ns,
                     .encode_ns = encode_ns,
@@ -185,6 +200,8 @@ const RecordingNative = struct {
         fail_at = failure;
         submissions = 0;
         waits = 0;
+        signal_result = 0;
+        wait_result = 0;
         last_dimensions = .{ 0, 0, 0 };
     }
     fn fails() bool {
@@ -262,9 +279,14 @@ const RecordingNative = struct {
     fn d3d12_bridge_queue_execute_command_list(_: ?*anyopaque, _: ?*anyopaque) void {
         submissions += 1;
     }
-    fn d3d12_bridge_queue_signal(_: ?*anyopaque, _: ?*anyopaque, _: u64) void {}
-    fn d3d12_bridge_fence_wait(_: ?*anyopaque, _: u64) void {
+    var signal_result: c_int = 0;
+    var wait_result: c_int = 0;
+    fn d3d12_bridge_queue_signal_checked(_: ?*anyopaque, _: ?*anyopaque, _: u64) c_int {
+        return signal_result;
+    }
+    fn d3d12_bridge_fence_wait_checked(_: ?*anyopaque, _: u64) c_int {
         waits += 1;
+        return wait_result;
     }
     fn retire(submission: DispatchSubmission) void {
         if (submission.indirect_arg_buffer) |buffer| d3d12_bridge_release(buffer);
@@ -381,4 +403,38 @@ test "D3D12 synchronous dispatch reuses completed commands and updates arguments
     try testing.expectEqual(@as(usize, 2), RecordingNative.waits);
     state.deinit();
     try testing.expectEqual(@as(usize, 0), RecordingNative.live_count());
+}
+
+test "D3D12 post-submit failure preserves resources and forbids cached reuse" {
+    const testing = std.testing;
+    for ([_]webgpu.QueueSyncMode{ .per_command, .deferred }) |mode| {
+        for ([_]c_int{ bridge.c.D3D12_SYNC_FAILED, bridge.c.D3D12_SYNC_DEVICE_LOST }) |failure| {
+            for ([_]bool{ false, true }) |fail_signal| {
+                if (mode == .deferred and !fail_signal) continue;
+                RecordingNative.reset(0);
+                var state: State(RecordingNative) = .{};
+                const handle = &RecordingNative.external;
+                try state.prepare_pipeline(handle, "compiled-test-fixture");
+                if (fail_signal) RecordingNative.signal_result = failure else RecordingNative.wait_result = failure;
+                var fence_value: u64 = 0;
+                const result = try state.execute_dispatch_indirect(handle, handle, handle, &fence_value, .{ .x = 2, .y = 3, .z = 5 }, mode);
+                try testing.expectEqual(@as(usize, 1), RecordingNative.submissions);
+                try testing.expectEqual(@as(u32, 1), result.metrics.submit_count);
+                try testing.expect(!result.completed);
+                try testing.expectEqual(if (failure == bridge.c.D3D12_SYNC_DEVICE_LOST) error.DeviceLost else if (fail_signal) error.QueueSignalFailed else error.FenceWaitFailed, result.completion_error.?);
+                try testing.expectEqual(RecordingNative.count, RecordingNative.live_count());
+                if (mode == .per_command) {
+                    try testing.expectEqual(@as(?u64, 1), state.pending_fence);
+                    try testing.expectError(error.InvalidState, state.execute_dispatch(handle, handle, handle, &fence_value, .{ .x = 1, .y = 1, .z = 1 }, mode));
+                } else {
+                    try testing.expect(result.cmd_allocator != null and result.cmd_list != null and result.indirect_arg_buffer != null);
+                }
+                // The caller's completion/terminal-loss barrier authorizes release.
+                RecordingNative.retire(result);
+                state.pending_fence = null;
+                state.deinit();
+                try testing.expectEqual(@as(usize, 0), RecordingNative.live_count());
+            }
+        }
+    }
 }

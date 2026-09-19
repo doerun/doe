@@ -153,3 +153,8 @@ D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue, uint32_t width, ui
 int  d3d12_bridge_swap_chain_present(D3D12Handle swap_chain, uint32_t sync_interval) { (void)swap_chain; (void)sync_interval; return -1; }
 D3D12Handle d3d12_bridge_swap_chain_get_buffer(D3D12Handle swap_chain, uint32_t index) { (void)swap_chain; (void)index; return NULL; }
 int  d3d12_bridge_swap_chain_resize(D3D12Handle swap_chain, uint32_t width, uint32_t height, uint32_t format) { (void)swap_chain; (void)width; (void)height; (void)format; return -1; }
+
+int d3d12_bridge_queue_signal_checked(D3D12Handle queue, D3D12Handle fence, uint64_t value) { (void)queue; (void)fence; (void)value; return D3D12_SYNC_FAILED; }
+int d3d12_bridge_fence_wait_checked(D3D12Handle fence, uint64_t value) { (void)fence; (void)value; return D3D12_SYNC_FAILED; }
+uint64_t d3d12_bridge_fence_completed_value(D3D12Handle fence) { (void)fence; return 0; }
+int d3d12_bridge_queue_drain(D3D12Handle device, D3D12Handle queue, D3D12Handle fence) { (void)device; (void)queue; (void)fence; return D3D12_SYNC_FAILED; }

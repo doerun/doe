@@ -67,6 +67,13 @@ int d3d12_bridge_command_list_close_checked(D3D12Handle cmd_list);
 
 /* Queue execution and synchronization */
 void d3d12_bridge_queue_execute_command_list(D3D12Handle queue, D3D12Handle cmd_list);
+enum { D3D12_SYNC_OK = 0, D3D12_SYNC_DEVICE_LOST = 1, D3D12_SYNC_FAILED = -1 };
+int d3d12_bridge_queue_signal_checked(D3D12Handle queue, D3D12Handle fence, uint64_t value);
+int d3d12_bridge_fence_wait_checked(D3D12Handle fence, uint64_t value);
+uint64_t d3d12_bridge_fence_completed_value(D3D12Handle fence);
+/* Blocking ownership barrier: returns only after completion or terminal device loss.
+   retirement_fence is private to this barrier; calls require serialized queue ownership. */
+int d3d12_bridge_queue_drain(D3D12Handle device, D3D12Handle queue, D3D12Handle retirement_fence);
 void d3d12_bridge_queue_signal(D3D12Handle queue, D3D12Handle fence, uint64_t value);
 void d3d12_bridge_fence_wait(D3D12Handle fence, uint64_t value);
 

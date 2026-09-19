@@ -1,0 +1,5 @@
+Command: /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig cc -target x86_64-windows-gnu -c runtime/zig/src/backend/d3d12/d3d12_bridge.c -I runtime/zig/src/backend/d3d12 -o /home/x/deco/doe/bench/out/maintenance/20260919-zig-d3d12-synchronization/bridge-windows.obj
+Exit: 0
+Source SHA256: 06a8f7c87024bf31d11c5f5c48a93441c96363578754de79ff3f2e6a16b72870
+Object SHA256: 2525e9ef33cce2f8d9d42d9509a69493792ed25b15213b017503145e36d71242
+Scope: cross-compiled object; not linked, run, or GPU-qualified.

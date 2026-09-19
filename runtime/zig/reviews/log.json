@@ -12389,6 +12389,147 @@
       "targets": [
         "src/backend/d3d12/commands/d3d12_dispatch.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/kernels/dispatch_noop.wgsl",
+          "sha256": "d51b69e09c71649b2266dc6f0538ee66a84ed7e433baf613ce71ef68320a8db8"
+        },
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "eb8485a97527f867aaffc89154ab7a10929e45119ac2b43ff4b19f43b0d33cb1"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_streaming_copy.zig",
+          "sha256": "57c8cf8a5071dfa8d70d59ffa9bf1b5f918671fbcdda5cf828136aca34dffa7b"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "06a8f7c87024bf31d11c5f5c48a93441c96363578754de79ff3f2e6a16b72870"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.h",
+          "sha256": "8c1a65285b1ea15bac659809e87ba9aea4dd12486d0e5723bc4d53f07fbaaed3"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge_decls.zig",
+          "sha256": "036207e6791097450f3d3d62b423b360102586b712d77b7e7cdb6bdab5dc1695"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge_stubs.c",
+          "sha256": "ab76906fc8296050ce6460271b47fc46cc9b7efd0c8d75e320a29bd9b50b41ed"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+          "sha256": "638197701120590d724bfbf550eaba97878c1a658ac0dde33c32c9019ebe9140"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_device_caps.zig",
+          "sha256": "90f25f0a54459bee474f3ae6978af2d4ee7f2a6a6a2512024e54dd9ad9565ce1"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "fa7b6ac265ad3f1a2d43e8a785c73cc55cab78cf90d2099d5ab21d4b70544ffe"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_compute.zig",
+          "sha256": "df0878e56941f4d00a73181546d9513ee7e92f685ef8e3348e836d52973a33f2"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_upload.zig",
+          "sha256": "dd2bc8714efa53829eaf574c2f2c7f4859451db1f524eb6ad3da33fcf8cf5eee"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "0063865ed51f19d6a0d9378eadd915366a7764374cd46d6f747bcbc07cff5710"
+        },
+        {
+          "path": "runtime/zig/src/contracts/execution.zig",
+          "sha256": "648dc2c443fd47ebf04c8e2111ea4f9dd0b32b48d247a21d845c2547e3cda6fd"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_configuration.zig",
+          "sha256": "45c3191e8ce14f96a55bbf92682f66f8a9373bb4825851fcfe2aabf7ecd1ad89"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_telemetry.zig",
+          "sha256": "e9e910fd2441e86b3916a48f4d02ac290ba81f92690da8dfc5d7d9ef179e436f"
+        },
+        {
+          "path": "runtime/zig/src/native/queue/doe_queue_submit_d3d12.zig",
+          "sha256": "67a1f4602941f9e85c8a33e3ecc96be360ca1e9bc5433259d048c5838e5320c6"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-synchronization/README.md",
+          "sha256": "49bb38574293af52f361efd88dc5778fc89a70268c4855250bd58afe6d78b50c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-synchronization/aggregate-accepted.log",
+          "sha256": "b25abdf4589345c8d2ec75ec958622bfe0eba3c37d8f9660a552c82dd782a7b2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-synchronization/bridge-probe-accepted.log",
+          "sha256": "8183b93ed9019d7f8c830260392bb2eb62b5319841799bfe35bb331cd277f092"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-synchronization/bridge-probe-main.c",
+          "sha256": "d10c512288c65c3cf1ee89935f7405a7739c67c95f400886ed2c1c26d84219e0"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-synchronization/bridge-probe-prefix.c",
+          "sha256": "5be007780c2d021c0277dc7948d74dd2dfc77083453c5df5b95cb0dfa25bc54d"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-synchronization/bridge-windows.obj",
+          "sha256": "2525e9ef33cce2f8d9d42d9509a69493792ed25b15213b017503145e36d71242"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-synchronization/doc-links-final.log",
+          "sha256": "0c1444824fd71eec878a61b61872df1e891b1aacd98843caec2dfe110aef03c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-synchronization/probe-bridge.py",
+          "sha256": "d31c4324aba86bfd7ed179b69ff64c9751b604d5a73d49c4fb8abfa3b7942d5f"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-synchronization/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-d3d12-synchronization/windows-compile-receipt.txt",
+          "sha256": "ede87548a60a55b4e6195346d739ce42d6050de2491c83cb6062fb60f69568c5"
+        }
+      ],
+      "findings": [],
+      "inputHash": "40eadcbed595e397ca981c0be20ee4ace7c8e7c7e1e93e759132542a66acd45b",
+      "level": "file",
+      "nextAction": "Review file:src/backend/d3d12/commands/d3d12_gpu_timestamps.zig. Trace query availability, encoding/submission order, fence completion, readback ownership, timestamp frequency/conversion, failure handling, and timing scope. Preserve separate physical Windows qualification and do not grant supporting-file review credit.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Checked C signal/wait return phase-specific failure or terminal device loss. Synchronous SetEventOnCompletion with a null event removes manual event ownership. The production C-body probe injects registration failure, signaling failure, delayed completion, and removal before/during drain; device loss cannot become a numeric completed fence.",
+        "DispatchSubmission carries a narrow synchronization error together with actual submission metrics and owned deferred handles. Runtime adoption clears the local owner before returning the error. Cached command/argument storage records a pending fence and rejects reuse until checked recovery. Tests verify retained handles, ownership transfer, no premature reset, and observed submission count on failure.",
+        "Upload and streaming-copy flush retain submitted work after signal/wait failure and retry completion without replaying GPU commands. Native fence observations alone advance completed-work counters; the removal sentinel records terminal loss instead. Registered regressions exercise failed flush, retry, loss, and earlier-fence observations.",
+        "Teardown recovers failed flush through a private preallocated retirement fence. Its blocking barrier returns only confirmed completion or terminal device loss before destruction. Unknown completion cannot authorize release; a permanently unresponsive device can keep this failure-path barrier blocked. Probe tests exercise signaling/reset retries, polling, fence reuse, and terminal loss.",
+        "Tracking allocation failure no longer frees a copied retained-handle list. It establishes safe retirement, leaves the caller owner intact, and returns OutOfMemory. Compute/deferred/native-queue callers release exactly their retained ownership on failure. Allocation-failure tests verify caller storage survives and no batch is published.",
+        "Cross-compilation found native struct-return calls incompatible with the pinned Windows headers. Using the headers COM aggregate-return wrappers allows the complete C bridge to cross-compile; retained object and source hashes identify that compile-only evidence. No Windows GPU behavior is inferred."
+      ],
+      "reviewId": "d3d12_dispatch_20260919_002",
+      "reviewedAt": "2026-09-19T22:35:56.407515+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e727aa663252526f32d54e4d2b9242c7653e5142",
+      "status": "verified",
+      "summary": "Reexamined the complete dispatch owner and its changed preparation, execution, retained-resource, metrics, failure, completion, and teardown handoffs. Checked synchronization reports unknown completion without releasing submitted resources; runtime transfer occurs before error propagation; cached commands cannot reset while pending. Shared flush/retirement repairs and native bridge checks close the prior findings. Coverage is source/host testing and Windows bridge cross-compilation, not physical Windows qualification or review credit for supporting files.",
+      "supersedes": "d3d12_dispatch_20260919_001",
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_dispatch.zig"
+      ]
     }
   ],
   "schemaVersion": 1

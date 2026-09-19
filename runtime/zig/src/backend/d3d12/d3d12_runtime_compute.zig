@@ -79,8 +79,8 @@ pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32, queue_syn
     if (!self.has_compute_pipeline) return error.Unsupported;
 
     const run_count: u32 = if (repeat == 0) 1 else repeat;
-    var compute_allocator = self.compute_allocator;
-    var compute_cmd_list = self.compute_cmd_list;
+    var compute_allocator = if (queue_sync_mode == .per_command) self.compute_allocator else null;
+    var compute_cmd_list = if (queue_sync_mode == .per_command) self.compute_cmd_list else null;
     var retained_handles: std.ArrayListUnmanaged(?*anyopaque) = .{};
     var owns_retained_handles = true;
     defer if (owns_retained_handles) {
@@ -89,11 +89,13 @@ pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32, queue_syn
         }
         retained_handles.deinit(self.allocator);
     };
+    errdefer if (queue_sync_mode != .per_command) {
+        if (compute_cmd_list) |handle| bridge.c.d3d12_bridge_release(handle);
+        if (compute_allocator) |handle| bridge.c.d3d12_bridge_release(handle);
+    };
     if (queue_sync_mode != .per_command) {
         compute_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(self.device) orelse return error.InvalidState;
-        errdefer bridge.c.d3d12_bridge_release(compute_allocator);
         compute_cmd_list = bridge.c.d3d12_bridge_device_create_command_list(self.device, compute_allocator) orelse return error.InvalidState;
-        errdefer bridge.c.d3d12_bridge_release(compute_cmd_list);
         bridge.c.d3d12_bridge_command_list_close(compute_cmd_list);
     }
     const encode_start = common_timing.now_ns();

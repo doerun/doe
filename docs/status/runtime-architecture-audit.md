@@ -12,14 +12,15 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
-The [D3D12 dispatch examination](../../bench/out/maintenance/20260919-zig-d3d12-dispatch/README.md)
-remains `needs_changes`. Indirect argument ownership, real pipeline loading,
-pre-submission cleanup, retirement reservation, and timing/accounting are repaired
-with host-side regressions. The shared signal/wait bridge still hides failure,
-and teardown can retire resources without established completion. Resume that
-explicit completion/ownership repair before closing this file; Linux checks do
-not establish Windows GPU execution. Supporting edits receive no extra review
-credit, and accepted runtime packages remain unchanged.
+The [D3D12 synchronization follow-up](../../bench/out/maintenance/20260919-zig-d3d12-synchronization/README.md)
+closes the dispatch file's retained-resource and completion findings. Submitted
+handles transfer before errors propagate; checked waits distinguish device loss,
+failed flushes preserve ownership, and teardown uses an explicit retirement
+barrier. Host failure injection and Windows bridge cross-compilation are retained
+separately from physical qualification. The next scope is the D3D12 timestamp
+command file. Earlier [dispatch evidence](../../bench/out/maintenance/20260919-zig-d3d12-dispatch/README.md)
+remains intact; supporting edits grant no additional scope credit, and accepted
+runtime packages are unchanged.
 
 The [common-backend batch](../../bench/out/maintenance/20260919-zig-common-audit/README.md)
 records current file, directory, and relationship coverage separately. Artifact

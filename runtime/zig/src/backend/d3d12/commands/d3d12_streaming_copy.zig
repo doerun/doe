@@ -23,6 +23,7 @@ pub const StreamingCopyState = struct {
     cmd_list: ?*anyopaque = null,
     has_cmd: bool = false,
     is_recording: bool = false,
+    submitted_fence: ?u64 = null,
     pending_count: u32 = 0,
 
     /// Ensure the persistent command allocator and list exist. Created once,
@@ -42,6 +43,7 @@ pub const StreamingCopyState = struct {
 
     /// Open (or keep open) the command list for recording copy commands.
     fn ensure_recording(self: *StreamingCopyState, device: ?*anyopaque) !void {
+        if (self.submitted_fence != null) return error.InvalidState;
         try self.ensure_cmd(device);
         if (self.is_recording) return;
         if (bridge.c.d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
@@ -101,25 +103,31 @@ pub const StreamingCopyState = struct {
         fence: ?*anyopaque,
         fence_value: *u64,
     ) !u64 {
-        if (!self.is_recording) return 0;
+        return self.flushWithBridge(queue, fence, fence_value, bridge.c);
+    }
 
-        bridge.c.d3d12_bridge_command_list_close(self.cmd_list);
-        self.is_recording = false;
-
+    fn flushWithBridge(self: *StreamingCopyState, queue: ?*anyopaque, fence: ?*anyopaque, fence_value: *u64, comptime native: type) !u64 {
+        if (!self.has_pending()) return 0;
         const submit_start = common_timing.now_ns();
-        bridge.c.d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
-        fence_value.* +|= 1;
-        bridge.c.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
-        bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
-        const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
-
+        if (self.submitted_fence == null) {
+            if (fence_value.* >= std.math.maxInt(u64) - 1) return error.InvalidState;
+            if (native.d3d12_bridge_command_list_close_checked(self.cmd_list) != 0) return error.InvalidState;
+            self.is_recording = false;
+            native.d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
+            fence_value.* += 1;
+            self.submitted_fence = fence_value.*;
+        }
+        const submitted = self.submitted_fence.?;
+        try bridge.check_signal(native.d3d12_bridge_queue_signal_checked(queue, fence, submitted));
+        try bridge.check_wait(native.d3d12_bridge_fence_wait_checked(fence, submitted));
+        self.submitted_fence = null;
         self.pending_count = 0;
-        return submit_wait_ns;
+        return common_timing.ns_delta(common_timing.now_ns(), submit_start);
     }
 
     /// Returns true when there are copy commands recorded but not yet flushed.
     pub fn has_pending(self: *const StreamingCopyState) bool {
-        return self.is_recording and self.pending_count > 0;
+        return self.submitted_fence != null or (self.is_recording and self.pending_count > 0);
     }
 
     pub fn deinit(self: *StreamingCopyState) void {
@@ -131,6 +139,7 @@ pub const StreamingCopyState = struct {
             self.has_cmd = false;
             self.is_recording = false;
             self.pending_count = 0;
+            self.submitted_fence = null;
         }
     }
 };
@@ -162,4 +171,36 @@ fn resolve_resource(
         return tex;
     }
     return bridge.c.d3d12_bridge_device_create_buffer(device, if (res.offset > 0) @intCast(res.offset) else 256, HEAP_TYPE_DEFAULT);
+}
+
+test "D3D12 streaming copy retains submitted commands across a failed wait" {
+    const Native = struct {
+        var executions: usize = 0;
+        var result: c_int = bridge.c.D3D12_SYNC_FAILED;
+        fn d3d12_bridge_command_list_close_checked(_: ?*anyopaque) c_int {
+            return 0;
+        }
+        fn d3d12_bridge_queue_execute_command_list(_: ?*anyopaque, _: ?*anyopaque) void {
+            executions += 1;
+        }
+        fn d3d12_bridge_queue_signal_checked(_: ?*anyopaque, _: ?*anyopaque, _: u64) c_int {
+            return bridge.c.D3D12_SYNC_OK;
+        }
+        fn d3d12_bridge_fence_wait_checked(_: ?*anyopaque, _: u64) c_int {
+            return result;
+        }
+    };
+    Native.executions = 0;
+    Native.result = bridge.c.D3D12_SYNC_FAILED;
+    var state = StreamingCopyState{ .is_recording = true, .pending_count = 1 };
+    var value: u64 = 0;
+    try std.testing.expectError(error.FenceWaitFailed, state.flushWithBridge(null, null, &value, Native));
+    try std.testing.expect(state.has_pending());
+    try std.testing.expectEqual(@as(?u64, 1), state.submitted_fence);
+    try std.testing.expectError(error.InvalidState, state.ensure_recording(null));
+    Native.result = bridge.c.D3D12_SYNC_OK;
+    _ = try state.flushWithBridge(null, null, &value, Native);
+    try std.testing.expectEqual(@as(usize, 1), Native.executions);
+    try std.testing.expectEqual(@as(u64, 1), value);
+    try std.testing.expect(!state.has_pending());
 }

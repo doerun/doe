@@ -1,4 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
+#define COBJMACROS
+#define WIDL_C_INLINE_WRAPPERS
 #include <windows.h>
 #include <d3d12.h>
 #include <d3dcompiler.h>
@@ -107,7 +109,7 @@ D3D12Handle d3d12_bridge_device_create_buffer(D3D12Handle device_h, size_t size,
 uint64_t d3d12_bridge_buffer_get_size(D3D12Handle buffer_h) {
     ID3D12Resource* buffer = (ID3D12Resource*)buffer_h;
     if (buffer == NULL) return 0;
-    D3D12_RESOURCE_DESC desc = buffer->lpVtbl->GetDesc(buffer);
+    D3D12_RESOURCE_DESC desc = ID3D12Resource_GetDesc(buffer);
     return (uint64_t)desc.Width;
 }
 
@@ -135,20 +137,59 @@ void d3d12_bridge_queue_execute_command_list(D3D12Handle queue_h, D3D12Handle cm
     queue->lpVtbl->ExecuteCommandLists(queue, 1, lists);
 }
 
-void d3d12_bridge_queue_signal(D3D12Handle queue_h, D3D12Handle fence_h, uint64_t value) {
+/* Only failed synchronization/retirement retries poll; ordinary waits use the
+   blocking native API. No timeout may grant permission to release GPU objects. */
+static const DWORD D3D12_DRAIN_RETRY_MS = 1;
+
+uint64_t d3d12_bridge_fence_completed_value(D3D12Handle fence_h) {
+    ID3D12Fence* fence = (ID3D12Fence*)fence_h;
+    return fence->lpVtbl->GetCompletedValue(fence);
+}
+
+int d3d12_bridge_queue_signal_checked(D3D12Handle queue_h, D3D12Handle fence_h, uint64_t value) {
     ID3D12CommandQueue* queue = (ID3D12CommandQueue*)queue_h;
     ID3D12Fence* fence = (ID3D12Fence*)fence_h;
-    queue->lpVtbl->Signal(queue, fence, value);
+    HRESULT hr = queue->lpVtbl->Signal(queue, fence, value);
+    if (fence->lpVtbl->GetCompletedValue(fence) == UINT64_MAX) return D3D12_SYNC_DEVICE_LOST;
+    return SUCCEEDED(hr) ? D3D12_SYNC_OK : D3D12_SYNC_FAILED;
+}
+
+int d3d12_bridge_fence_wait_checked(D3D12Handle fence_h, uint64_t value) {
+    ID3D12Fence* fence = (ID3D12Fence*)fence_h;
+    UINT64 completed = fence->lpVtbl->GetCompletedValue(fence);
+    if (completed == UINT64_MAX) return D3D12_SYNC_DEVICE_LOST;
+    if (completed >= value) return D3D12_SYNC_OK;
+    /* A null event requests a synchronous wait, removing event handle ownership. */
+    HRESULT hr = fence->lpVtbl->SetEventOnCompletion(fence, value, NULL);
+    completed = fence->lpVtbl->GetCompletedValue(fence);
+    if (completed == UINT64_MAX) return D3D12_SYNC_DEVICE_LOST;
+    return SUCCEEDED(hr) && completed >= value ? D3D12_SYNC_OK : D3D12_SYNC_FAILED;
+}
+
+void d3d12_bridge_queue_signal(D3D12Handle queue_h, D3D12Handle fence_h, uint64_t value) {
+    while (d3d12_bridge_queue_signal_checked(queue_h, fence_h, value) == D3D12_SYNC_FAILED)
+        Sleep(D3D12_DRAIN_RETRY_MS);
 }
 
 void d3d12_bridge_fence_wait(D3D12Handle fence_h, uint64_t value) {
+    if (d3d12_bridge_fence_wait_checked(fence_h, value) != D3D12_SYNC_FAILED) return;
+    while (d3d12_bridge_fence_completed_value(fence_h) < value)
+        Sleep(D3D12_DRAIN_RETRY_MS);
+}
+
+int d3d12_bridge_queue_drain(D3D12Handle device_h, D3D12Handle queue_h, D3D12Handle fence_h) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
     ID3D12Fence* fence = (ID3D12Fence*)fence_h;
-    if (fence->lpVtbl->GetCompletedValue(fence) >= value) return;
-    HANDLE event = CreateEventW(NULL, FALSE, FALSE, NULL);
-    if (event == NULL) return;
-    fence->lpVtbl->SetEventOnCompletion(fence, value, event);
-    WaitForSingleObject(event, INFINITE);
-    CloseHandle(event);
+    /* This fence has no other users. Its preceding marker completed before any
+       reuse, so resetting it cannot erase an outstanding completion observation. */
+    for (;;) {
+        if (FAILED(device->lpVtbl->GetDeviceRemovedReason(device))) return D3D12_SYNC_DEVICE_LOST;
+        if (SUCCEEDED(fence->lpVtbl->Signal(fence, 0))) break;
+        Sleep(D3D12_DRAIN_RETRY_MS);
+    }
+    d3d12_bridge_queue_signal(queue_h, fence_h, 1);
+    d3d12_bridge_fence_wait(fence_h, 1);
+    return d3d12_bridge_fence_completed_value(fence_h) == UINT64_MAX ? D3D12_SYNC_DEVICE_LOST : D3D12_SYNC_OK;
 }
 
 D3D12Handle d3d12_bridge_device_create_root_signature_empty(D3D12Handle device_h) {
@@ -1035,7 +1076,7 @@ void d3d12_bridge_command_list_ia_set_vertex_buffers(D3D12Handle cmd_list_h, uin
     ID3D12Resource* buffer = (ID3D12Resource*)buffer_h;
     if (cmd == NULL || buffer == NULL || num_views == 0) return;
 
-    D3D12_RESOURCE_DESC desc = buffer->lpVtbl->GetDesc(buffer);
+    D3D12_RESOURCE_DESC desc = ID3D12Resource_GetDesc(buffer);
     UINT64 total_size = desc.Width;
     if (offset >= total_size) return;
 
@@ -1055,7 +1096,7 @@ void d3d12_bridge_command_list_ia_set_index_buffer(D3D12Handle cmd_list_h, D3D12
     ID3D12Resource* buffer = (ID3D12Resource*)buffer_h;
     if (cmd == NULL || buffer == NULL) return;
 
-    D3D12_RESOURCE_DESC desc = buffer->lpVtbl->GetDesc(buffer);
+    D3D12_RESOURCE_DESC desc = ID3D12Resource_GetDesc(buffer);
     UINT64 total_size = desc.Width;
     if (offset >= total_size) return;
 
@@ -1213,7 +1254,7 @@ void d3d12_bridge_device_get_adapter_desc(D3D12Handle device_h, char* desc_out, 
     if (dedicated_vram_out) *dedicated_vram_out = 0;
 
     ID3D12Device* device = (ID3D12Device*)device_h;
-    LUID luid = device->lpVtbl->GetAdapterLuid(device);
+    LUID luid = ID3D12Device_GetAdapterLuid(device);
 
     IDXGIFactory4* factory = NULL;
     if (FAILED(CreateDXGIFactory1(&IID_IDXGIFactory4, (void**)&factory))) return;
