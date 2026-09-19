@@ -1,0 +1,22 @@
+const std = @import("std");
+const state = @import("src/backend/common/artifact_state.zig");
+const artifact = @import("src/contracts/artifact.zig");
+const vulkan = @import("src/backend/vulkan/artifact_emit.zig");
+const metal = @import("src/backend/metal/artifact_emit.zig");
+const d3d12 = @import("src/backend/d3d12/artifact_emit.zig");
+
+pub fn main() !void {
+    const output = state.Output{ .directory = "bench/out/maintenance/20260919-zig-common-audit/manifests", .toolchain_path = "config/shader-toolchain.json" };
+    var vk = state.State{ .allocator = std.heap.page_allocator, .output = output };
+    defer vk.deinit();
+    try vk.capture("schema-only probe", artifact.classify(.native_vulkan, false, false), "ok", "test bytes, not SPIR-V", null);
+    try vulkan.flushPending(&vk);
+    var mt = state.State{ .allocator = std.heap.page_allocator, .output = output };
+    defer mt.deinit();
+    try mt.capture("schema-only probe", artifact.classify(.native_metal, false, false), "ok", null, null);
+    try metal.flushPending(&mt);
+    var dx = state.State{ .allocator = std.heap.page_allocator, .output = output };
+    defer dx.deinit();
+    try dx.capture("schema-only probe", artifact.classify(.native_d3d12, false, false), "ok", null, null);
+    try d3d12.flushPending(&dx);
+}

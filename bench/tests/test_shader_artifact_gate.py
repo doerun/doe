@@ -512,6 +512,59 @@ class ShaderArtifactGateTests(unittest.TestCase):
             finally:
                 sys.argv = old_argv
 
+    def test_v3_requires_explicit_hash_kinds_and_content_paths(self) -> None:
+        schema = json.loads(
+            (REPO_ROOT / "config/shader-artifact.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        payload = {
+            "schemaVersion": 3,
+            "backendId": "doe_vulkan",
+            "module": "shader",
+            "pipelineHash": "a" * 64,
+            "wgslSha256": "b" * 64,
+            "wgslHashKind": "module_label",
+            "irSha256": "c" * 64,
+            "spirvSha256": "d" * 64,
+            "toolchainSha256": "e" * 64,
+            "taxonomyCode": "ok",
+            "previousHash": "0" * 64,
+            "hash": "f" * 64,
+            "stages": [{
+                "stage": "ir_to_spirv",
+                "implementation": "native_zig",
+                "artifactSha256": "d" * 64,
+                "hashKind": "content",
+                "artifactPath": "shader.spv",
+            }],
+        }
+        with tempfile.TemporaryDirectory(prefix="doe-artifact-v3-") as temp:
+            root = Path(temp)
+            def errors(value: dict) -> list[str]:
+                return self.module.contracts.validate_manifest(
+                    self.write_manifest(root, value), schema
+                )
+            self.assertEqual(errors(payload), [])
+            missing_kind = json.loads(json.dumps(payload))
+            del missing_kind["stages"][0]["hashKind"]
+            self.assertTrue(errors(missing_kind))
+            missing_path = json.loads(json.dumps(payload))
+            del missing_path["stages"][0]["artifactPath"]
+            self.assertTrue(errors(missing_path))
+            derived = json.loads(json.dumps(payload))
+            derived["stages"][0]["hashKind"] = "derived"
+            self.assertTrue(errors(derived))
+            del derived["stages"][0]["artifactPath"]
+            self.assertEqual(errors(derived), [])
+            del derived["wgslHashKind"]
+            self.assertTrue(errors(derived))
+            legacy = json.loads(json.dumps(payload))
+            legacy["schemaVersion"] = 2
+            del legacy["wgslHashKind"]
+            del legacy["stages"][0]["hashKind"]
+            self.assertEqual(errors(legacy), [])
+
     def test_main_missing_report_fails_without_traceback(self) -> None:
         old_argv = sys.argv
         sys.argv = [

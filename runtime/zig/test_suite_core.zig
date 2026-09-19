@@ -44,6 +44,12 @@ const test_tests_backend_backend_runtime_config_policy_test_zig_a6480ea9 = @impo
 const test_tests_backend_backend_runtime_policy_test_zig_f04cc8a6 = @import("tests/backend/backend_runtime_policy_test.zig");
 const test_tests_backend_backend_vulkan_doe_app_lane_policy_test_zig_6d3b28d3 = @import("tests/backend/backend_vulkan_doe_app_lane_policy_test.zig");
 const test_src_native_vulkan_vulkan_compute_bindings_zig_1960bb33 = if (builtin.os.tag == .linux) @import("src/native/vulkan/vulkan_compute_bindings.zig") else struct {};
+const test_src_backend_common_artifact_policy_zig_9e2f6c8b = @import("src/backend/common/artifact_policy.zig");
+const test_src_backend_common_path_utils_zig_f73d496c = @import("src/backend/common/path_utils.zig");
+const test_src_backend_common_shader_artifact_manifest_zig_cb43fe13 = @import("src/backend/common/shader_artifact_manifest.zig");
+const test_src_backend_common_submit_count_policy_zig_3141e5eb = @import("src/backend/common/submit_count_policy.zig");
+const test_src_backend_d3d12_commands_d3d12_async_diagnostics_zig_382f4e78 = @import("src/backend/d3d12/commands/d3d12_async_diagnostics.zig");
+const test_src_backend_vulkan_vk_shader_source_zig_d25a569b = @import("src/backend/vulkan/vk_shader_source.zig");
 
 comptime {
     _ = test_tests_backend_common_artifact_meta_test_zig_80b3c4bd;
@@ -89,4 +95,10 @@ comptime {
     _ = test_tests_backend_backend_runtime_policy_test_zig_f04cc8a6;
     _ = test_tests_backend_backend_vulkan_doe_app_lane_policy_test_zig_6d3b28d3;
     _ = test_src_native_vulkan_vulkan_compute_bindings_zig_1960bb33;
+    _ = test_src_backend_common_artifact_policy_zig_9e2f6c8b;
+    _ = test_src_backend_common_path_utils_zig_f73d496c;
+    _ = test_src_backend_common_shader_artifact_manifest_zig_cb43fe13;
+    _ = test_src_backend_common_submit_count_policy_zig_3141e5eb;
+    _ = test_src_backend_d3d12_commands_d3d12_async_diagnostics_zig_382f4e78;
+    _ = test_src_backend_vulkan_vk_shader_source_zig_d25a569b;
 }

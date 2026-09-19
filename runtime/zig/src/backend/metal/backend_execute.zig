@@ -386,19 +386,17 @@ fn execute_native_command(
     result.setup_ns +|= flush_setup_ns;
     result.submit_wait_ns +|= pending_submit_wait_ns;
 
-    if (artifact_policy.should_emit_shader_artifact(command)) {
+    if (result.status == .ok and artifact_policy.should_emit_shader_artifact(command)) {
         const meta = artifact_meta.classify(
             .native_metal,
             result.gpu_timestamp_valid,
             result.gpu_timestamp_attempted,
         );
         const status_code = artifact_policy.artifact_status_code(result);
-        const copy_len = @min(status_code.len, self.pending_artifact_status_storage.len);
-        std.mem.copyForwards(u8, self.pending_artifact_status_storage[0..copy_len], status_code[0..copy_len]);
-        self.pending_artifact_status_len = copy_len;
-        self.pending_artifact_module = command_info.shader_artifact_module(command);
-        self.pending_artifact_meta = meta;
-        self.pending_artifact_write = true;
+        self.artifacts.capture(command_info.shader_artifact_module(command), meta, status_code, null, null) catch |err| {
+            result.status = .@"error";
+            result.status_message = @errorName(err);
+        };
     }
 
     return result;

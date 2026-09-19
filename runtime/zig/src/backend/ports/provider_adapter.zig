@@ -147,6 +147,7 @@ pub fn fromDriver(
         const telemetry: telemetry_port.TelemetryPortVTable = .{
             .get_gpu_timestamp_ns = Bridge.timestamp,
             .snapshot = Driver.telemetrySnapshot,
+            .collect_artifacts = if (@hasDecl(Driver, "collectArtifacts")) Driver.collectArtifacts else null,
         };
     };
 

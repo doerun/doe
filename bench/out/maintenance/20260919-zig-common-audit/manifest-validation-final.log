@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/x/deco/doe/bench/out/maintenance/20260919-zig-common-audit/verify-evidence.py", line 7, in <module>
+    from native_compare_modules import contracts
+  File "/home/x/deco/doe/bench/native_compare_modules/contracts.py", line 17, in <module>
+    from bench.lib.bench_utils import load_json_object as load_json
+ModuleNotFoundError: No module named 'bench'

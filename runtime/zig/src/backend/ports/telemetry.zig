@@ -6,6 +6,7 @@ const runtime_telemetry = @import("../../contracts/runtime_telemetry.zig");
 pub const TelemetryPortVTable = struct {
     get_gpu_timestamp_ns: *const fn (ctx: *anyopaque) anyerror!u64,
     snapshot: *const fn (ctx: *anyopaque) runtime_telemetry.RuntimeTelemetry,
+    collect_artifacts: ?*const fn (ctx: *anyopaque) anyerror!void = null,
 };
 
 pub const TelemetryPort = struct {
@@ -14,6 +15,11 @@ pub const TelemetryPort = struct {
 
     pub fn getGpuTimestampNs(self: TelemetryPort) !u64 {
         return self.vtable.get_gpu_timestamp_ns(self.context);
+    }
+
+    /// Explicit I/O boundary. Snapshot reads never trigger artifact collection.
+    pub fn collectArtifacts(self: TelemetryPort) !void {
+        if (self.vtable.collect_artifacts) |collect| try collect(self.context);
     }
 
     pub fn snapshot(self: TelemetryPort) runtime_telemetry.RuntimeTelemetry {

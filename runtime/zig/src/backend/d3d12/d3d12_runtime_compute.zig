@@ -27,23 +27,23 @@ pub fn loadKernelCso(self: anytype, alloc: std.mem.Allocator, kernel_name: []con
 
     const dxil_path = try std.fmt.allocPrint(alloc, "{s}/{s}.dxil", .{ root, stripExtension(kernel_name) });
     defer alloc.free(dxil_path);
-    if (path_utils.file_exists(dxil_path)) {
+    if (try path_utils.file_exists(dxil_path)) {
         return std.fs.cwd().readFileAlloc(alloc, dxil_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
     }
 
     const cso_path = try std.fmt.allocPrint(alloc, "{s}/{s}.cso", .{ root, stripExtension(kernel_name) });
     defer alloc.free(cso_path);
-    if (path_utils.file_exists(cso_path)) {
+    if (try path_utils.file_exists(cso_path)) {
         return std.fs.cwd().readFileAlloc(alloc, cso_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
     }
 
     const dxbc_path = try std.fmt.allocPrint(alloc, "{s}/{s}.dxbc", .{ root, stripExtension(kernel_name) });
     defer alloc.free(dxbc_path);
-    if (path_utils.file_exists(dxbc_path)) {
+    if (try path_utils.file_exists(dxbc_path)) {
         return std.fs.cwd().readFileAlloc(alloc, dxbc_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
     }
 
-    const source_path = resolveKernelSourcePath(self, alloc, kernel_name) catch return error.ShaderCompileFailed;
+    const source_path = try resolveKernelSourcePath(self, alloc, kernel_name);
     defer alloc.free(source_path);
 
     const source = std.fs.cwd().readFileAlloc(alloc, source_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
@@ -150,25 +150,37 @@ pub fn destroyComputeObjects(self: anytype) void {
 }
 
 fn resolveKernelSourcePath(self: anytype, alloc: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
-    const direct = try alloc.dupe(u8, kernel_name);
-    if (path_utils.file_exists(direct)) return direct;
-    alloc.free(direct);
+    {
+        const direct = try alloc.dupe(u8, kernel_name);
+        errdefer alloc.free(direct);
+        if (try path_utils.file_exists(direct)) return direct;
+        alloc.free(direct);
+    }
 
     const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
-    const rooted = try std.fmt.allocPrint(alloc, "{s}/{s}", .{ root, kernel_name });
-    if (path_utils.file_exists(rooted)) return rooted;
-    alloc.free(rooted);
+    {
+        const rooted = try std.fmt.allocPrint(alloc, "{s}/{s}", .{ root, kernel_name });
+        errdefer alloc.free(rooted);
+        if (try path_utils.file_exists(rooted)) return rooted;
+        alloc.free(rooted);
+    }
 
     if (!std.mem.endsWith(u8, kernel_name, ".wgsl")) {
-        const wgsl_path = try std.fmt.allocPrint(alloc, "{s}/{s}.wgsl", .{ root, kernel_name });
-        if (path_utils.file_exists(wgsl_path)) return wgsl_path;
-        alloc.free(wgsl_path);
+        {
+            const wgsl_path = try std.fmt.allocPrint(alloc, "{s}/{s}.wgsl", .{ root, kernel_name });
+            errdefer alloc.free(wgsl_path);
+            if (try path_utils.file_exists(wgsl_path)) return wgsl_path;
+            alloc.free(wgsl_path);
+        }
     }
 
     if (!std.mem.endsWith(u8, kernel_name, ".hlsl")) {
-        const hlsl_path = try std.fmt.allocPrint(alloc, "{s}/{s}.hlsl", .{ root, kernel_name });
-        if (path_utils.file_exists(hlsl_path)) return hlsl_path;
-        alloc.free(hlsl_path);
+        {
+            const hlsl_path = try std.fmt.allocPrint(alloc, "{s}/{s}.hlsl", .{ root, kernel_name });
+            errdefer alloc.free(hlsl_path);
+            if (try path_utils.file_exists(hlsl_path)) return hlsl_path;
+            alloc.free(hlsl_path);
+        }
     }
 
     return error.ShaderCompileFailed;
@@ -339,7 +351,7 @@ fn compileHlslToBytecode(alloc: std.mem.Allocator, hlsl_source: []const u8) ![]u
     const cso_path = try std.fmt.allocPrint(alloc, "{s}.generated.cso", .{stem});
     defer alloc.free(cso_path);
 
-    if (!path_utils.file_exists(cso_path)) {
+    if (!try path_utils.file_exists(cso_path)) {
         const file = std.fs.cwd().createFile(hlsl_path, .{ .truncate = true }) catch return error.ShaderCompileFailed;
         defer file.close();
         file.writeAll(hlsl_source) catch return error.ShaderCompileFailed;

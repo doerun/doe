@@ -1,0 +1,30 @@
+[
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "sentinel.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 19001,
+        "buffer_size": 16,
+        "visibility": "compute"
+      }
+    ],
+    "output_oracle": {
+      "schema_version": 1,
+      "kind": "sha256_exact_v1",
+      "initialization": "zero_fill_v1",
+      "binding_group": 0,
+      "binding": 0,
+      "dispatch_count": 1,
+      "expected_sha256": "76108f84396dc2d72ce275fdb0e0ef37b229b2898bf5a31d576fea11a766a42b",
+      "reference_id": "independent scalar result [7,0,0,0]"
+    }
+  }
+]

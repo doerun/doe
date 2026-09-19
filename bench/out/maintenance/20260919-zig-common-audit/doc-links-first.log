@@ -1,0 +1,22 @@
+F
+======================================================================
+FAIL: test_markdown_links_in_docs_resolve_to_existing_paths (bench.tests.test_doc_link_coverage.DocLinkCoverage.test_markdown_links_in_docs_resolve_to_existing_paths)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/x/deco/doe/bench/tests/test_doc_link_coverage.py", line 122, in test_markdown_links_in_docs_resolve_to_existing_paths
+    self.fail(
+    ~~~~~~~~~^
+        "markdown links to missing in-repo paths "
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        f"({len(broken)} broken):\n" + "\n".join(lines)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: markdown links to missing in-repo paths (2 broken):
+  docs/process.md: `../bench/out/maintenance/20260919-zig-common-audit/README.md` → bench/out/maintenance/20260919-zig-common-audit/README.md
+  docs/status/runtime-architecture-audit.md: `../../bench/out/maintenance/20260919-zig-common-audit/README.md` → bench/out/maintenance/20260919-zig-common-audit/README.md
+
+----------------------------------------------------------------------
+Ran 1 test in 0.015s
+
+FAILED (failures=1)

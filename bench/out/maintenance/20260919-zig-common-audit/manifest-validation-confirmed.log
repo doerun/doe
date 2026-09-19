@@ -1,0 +1,4 @@
+PASS schema-only backend probe: d3d12_shader_artifact_10e9a5e89bdf833aa798cfaa0439fd0f7f75fa67de1f1ffdc166586d6d027ce2.json
+PASS schema-only backend probe: metal_shader_artifact_08a58fbf68f2f9c5aa796a3c15c405cca56f60a9519309756adb4f8829c51daa.json
+PASS schema-only backend probe: vulkan_shader_artifact_427da53c36c1a3be5266bf529c12f2b07293317360c76c0040768f4057e4c8e7.json
+PASS physical output oracle, manifest prehash, source observation, content digest, Vulkan 1.1 validation

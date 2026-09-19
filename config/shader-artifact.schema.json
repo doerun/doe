@@ -2,10 +2,27 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Fawn Shader Artifact Manifest",
   "oneOf": [
-    { "$ref": "#/$defs/legacyManifest" },
-    { "$ref": "#/$defs/v2MetalManifest" },
-    { "$ref": "#/$defs/v2VulkanManifest" },
-    { "$ref": "#/$defs/v2D3D12Manifest" }
+    {
+      "$ref": "#/$defs/legacyManifest"
+    },
+    {
+      "$ref": "#/$defs/v2MetalManifest"
+    },
+    {
+      "$ref": "#/$defs/v2VulkanManifest"
+    },
+    {
+      "$ref": "#/$defs/v2D3D12Manifest"
+    },
+    {
+      "$ref": "#/$defs/v3MetalManifest"
+    },
+    {
+      "$ref": "#/$defs/v3VulkanManifest"
+    },
+    {
+      "$ref": "#/$defs/v3D3D12Manifest"
+    }
   ],
   "$defs": {
     "sha256": {
@@ -14,12 +31,20 @@
     },
     "backendId": {
       "type": "string",
-      "enum": ["doe_metal", "doe_vulkan", "doe_d3d12"]
+      "enum": [
+        "doe_metal",
+        "doe_vulkan",
+        "doe_d3d12"
+      ]
     },
     "stageRecord": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["stage", "implementation", "artifactSha256"],
+      "required": [
+        "stage",
+        "implementation",
+        "artifactSha256"
+      ],
       "properties": {
         "stage": {
           "type": "string",
@@ -39,21 +64,52 @@
         },
         "implementation": {
           "type": "string",
-          "enum": ["native_zig", "external_tool"]
+          "enum": [
+            "native_zig",
+            "external_tool"
+          ]
         },
-        "artifactSha256": { "$ref": "#/$defs/sha256" },
-        "artifactPath": { "type": "string", "minLength": 1 },
-        "tool": { "type": "string", "minLength": 1 },
-        "version": { "type": "string", "minLength": 1 },
-        "args": { "type": "array", "items": { "type": "string" } }
+        "artifactSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "artifactPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tool": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       },
       "allOf": [
         {
           "if": {
-            "properties": { "implementation": { "const": "external_tool" } },
-            "required": ["implementation"]
+            "properties": {
+              "implementation": {
+                "const": "external_tool"
+              }
+            },
+            "required": [
+              "implementation"
+            ]
           },
-          "then": { "required": ["tool", "version", "args"] }
+          "then": {
+            "required": [
+              "tool",
+              "version",
+              "args"
+            ]
+          }
         }
       ]
     },
@@ -74,17 +130,45 @@
         "hash"
       ],
       "properties": {
-        "schemaVersion": { "type": "integer", "const": 1 },
-        "backendId": { "$ref": "#/$defs/backendId" },
-        "module": { "type": "string", "minLength": 1 },
-        "pipelineHash": { "type": "string", "minLength": 1 },
-        "wgslSha256": { "$ref": "#/$defs/sha256" },
-        "mslSha256": { "$ref": "#/$defs/sha256" },
-        "metallibSha256": { "$ref": "#/$defs/sha256" },
-        "toolchainSha256": { "$ref": "#/$defs/sha256" },
-        "taxonomyCode": { "type": "string", "pattern": "^[a-z0-9_]+$" },
-        "previousHash": { "type": "string", "minLength": 1 },
-        "hash": { "type": "string", "minLength": 1 }
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "backendId": {
+          "$ref": "#/$defs/backendId"
+        },
+        "module": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pipelineHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "wgslSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "mslSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "metallibSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "toolchainSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "taxonomyCode": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "previousHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "v2ManifestCommon": {
@@ -104,40 +188,91 @@
         "stages"
       ],
       "properties": {
-        "schemaVersion": { "type": "integer", "const": 2 },
-        "backendId": { "$ref": "#/$defs/backendId" },
-        "module": { "type": "string", "minLength": 1 },
-        "pipelineHash": { "type": "string", "minLength": 1 },
-        "wgslSha256": { "$ref": "#/$defs/sha256" },
-        "irSha256": { "$ref": "#/$defs/sha256" },
-        "mslSha256": { "$ref": "#/$defs/sha256" },
-        "metallibSha256": { "$ref": "#/$defs/sha256" },
-        "spirvSha256": { "$ref": "#/$defs/sha256" },
-        "dxilSha256": { "$ref": "#/$defs/sha256" },
-        "toolchainSha256": { "$ref": "#/$defs/sha256" },
-        "taxonomyCode": { "type": "string", "pattern": "^[a-z0-9_]+$" },
-        "previousHash": { "type": "string", "minLength": 1 },
-        "hash": { "type": "string", "minLength": 1 },
+        "schemaVersion": {
+          "type": "integer",
+          "const": 2
+        },
+        "backendId": {
+          "$ref": "#/$defs/backendId"
+        },
+        "module": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pipelineHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "wgslSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "irSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "mslSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "metallibSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "spirvSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "dxilSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "toolchainSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "taxonomyCode": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "previousHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "minLength": 1
+        },
         "stages": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/stageRecord" }
+          "items": {
+            "$ref": "#/$defs/stageRecord"
+          }
         }
       }
     },
     "v2MetalManifest": {
       "allOf": [
-        { "$ref": "#/$defs/v2ManifestCommon" },
+        {
+          "$ref": "#/$defs/v2ManifestCommon"
+        },
         {
           "type": "object",
-          "required": ["mslSha256", "metallibSha256"],
+          "required": [
+            "mslSha256",
+            "metallibSha256"
+          ],
           "properties": {
-            "backendId": { "const": "doe_metal" }
+            "backendId": {
+              "const": "doe_metal"
+            }
           },
           "not": {
             "anyOf": [
-              { "required": ["spirvSha256"] },
-              { "required": ["dxilSha256"] }
+              {
+                "required": [
+                  "spirvSha256"
+                ]
+              },
+              {
+                "required": [
+                  "dxilSha256"
+                ]
+              }
             ]
           }
         }
@@ -145,18 +280,36 @@
     },
     "v2VulkanManifest": {
       "allOf": [
-        { "$ref": "#/$defs/v2ManifestCommon" },
+        {
+          "$ref": "#/$defs/v2ManifestCommon"
+        },
         {
           "type": "object",
-          "required": ["spirvSha256"],
+          "required": [
+            "spirvSha256"
+          ],
           "properties": {
-            "backendId": { "const": "doe_vulkan" }
+            "backendId": {
+              "const": "doe_vulkan"
+            }
           },
           "not": {
             "anyOf": [
-              { "required": ["mslSha256"] },
-              { "required": ["metallibSha256"] },
-              { "required": ["dxilSha256"] }
+              {
+                "required": [
+                  "mslSha256"
+                ]
+              },
+              {
+                "required": [
+                  "metallibSha256"
+                ]
+              },
+              {
+                "required": [
+                  "dxilSha256"
+                ]
+              }
             ]
           }
         }
@@ -164,18 +317,332 @@
     },
     "v2D3D12Manifest": {
       "allOf": [
-        { "$ref": "#/$defs/v2ManifestCommon" },
+        {
+          "$ref": "#/$defs/v2ManifestCommon"
+        },
         {
           "type": "object",
-          "required": ["dxilSha256"],
+          "required": [
+            "dxilSha256"
+          ],
           "properties": {
-            "backendId": { "const": "doe_d3d12" }
+            "backendId": {
+              "const": "doe_d3d12"
+            }
           },
           "not": {
             "anyOf": [
-              { "required": ["mslSha256"] },
-              { "required": ["metallibSha256"] },
-              { "required": ["spirvSha256"] }
+              {
+                "required": [
+                  "mslSha256"
+                ]
+              },
+              {
+                "required": [
+                  "metallibSha256"
+                ]
+              },
+              {
+                "required": [
+                  "spirvSha256"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "v3ManifestCommon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "backendId",
+        "module",
+        "pipelineHash",
+        "wgslSha256",
+        "irSha256",
+        "toolchainSha256",
+        "taxonomyCode",
+        "previousHash",
+        "hash",
+        "stages",
+        "wgslHashKind"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 3
+        },
+        "backendId": {
+          "$ref": "#/$defs/backendId"
+        },
+        "module": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pipelineHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "wgslSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "irSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "mslSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "metallibSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "spirvSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "dxilSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "toolchainSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "taxonomyCode": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "previousHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/v3StageRecord"
+          }
+        },
+        "wgslHashKind": {
+          "enum": [
+            "source_observation",
+            "module_label"
+          ]
+        }
+      }
+    },
+    "v3StageRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "implementation",
+        "artifactSha256",
+        "hashKind"
+      ],
+      "properties": {
+        "stage": {
+          "type": "string",
+          "enum": [
+            "wgsl_parse",
+            "sema",
+            "ir_build",
+            "ir_validate",
+            "ir_to_msl",
+            "msl_compile",
+            "metallib_link",
+            "ir_to_spirv",
+            "spirv_validate",
+            "ir_to_dxil",
+            "dxil_validate"
+          ]
+        },
+        "implementation": {
+          "type": "string",
+          "enum": [
+            "unobserved",
+            "native_zig",
+            "external_tool"
+          ]
+        },
+        "artifactSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "artifactPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tool": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hashKind": {
+          "enum": [
+            "content",
+            "derived"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "implementation": {
+                "const": "external_tool"
+              }
+            },
+            "required": [
+              "implementation"
+            ]
+          },
+          "then": {
+            "required": [
+              "tool",
+              "version",
+              "args"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "hashKind": {
+                "const": "content"
+              }
+            },
+            "required": [
+              "hashKind"
+            ]
+          },
+          "then": {
+            "required": [
+              "artifactPath"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "artifactPath"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "v3MetalManifest": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/v3ManifestCommon"
+        },
+        {
+          "type": "object",
+          "required": [
+            "mslSha256",
+            "metallibSha256"
+          ],
+          "properties": {
+            "backendId": {
+              "const": "doe_metal"
+            }
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "spirvSha256"
+                ]
+              },
+              {
+                "required": [
+                  "dxilSha256"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "v3VulkanManifest": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/v3ManifestCommon"
+        },
+        {
+          "type": "object",
+          "required": [
+            "spirvSha256"
+          ],
+          "properties": {
+            "backendId": {
+              "const": "doe_vulkan"
+            }
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "mslSha256"
+                ]
+              },
+              {
+                "required": [
+                  "metallibSha256"
+                ]
+              },
+              {
+                "required": [
+                  "dxilSha256"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "v3D3D12Manifest": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/v3ManifestCommon"
+        },
+        {
+          "type": "object",
+          "required": [
+            "dxilSha256"
+          ],
+          "properties": {
+            "backendId": {
+              "const": "doe_d3d12"
+            }
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "mslSha256"
+                ]
+              },
+              {
+                "required": [
+                  "metallibSha256"
+                ]
+              },
+              {
+                "required": [
+                  "spirvSha256"
+                ]
+              }
             ]
           }
         }

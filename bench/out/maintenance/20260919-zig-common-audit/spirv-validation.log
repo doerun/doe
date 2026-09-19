@@ -1,0 +1,1 @@
+spirv-val --target-env vulkan1.1 bench/out/maintenance/20260919-zig-common-audit/physical-artifacts/vulkan_shader_artifact_1ca3a1655df553b85ff1564c06289a5f3e945ae83d76d0c47a98dd2f9de2bc15.spv

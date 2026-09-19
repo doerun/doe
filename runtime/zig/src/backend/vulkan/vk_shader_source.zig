@@ -21,6 +21,7 @@ pub fn ensure_kernel_spirv_cached(self: anytype, kernel_name: []const u8) ![]con
     if (kernel_name.len == 0) return error.InvalidArgument;
     if (self.kernel_spirv_cache.get(kernel_name)) |cached| return cached;
     const words = try load_kernel_spirv_uncached(self, self.allocator, kernel_name);
+    errdefer self.allocator.free(words);
     const owned_kernel_name = try self.allocator.dupe(u8, kernel_name);
     errdefer self.allocator.free(owned_kernel_name);
     try self.kernel_spirv_cache.put(self.allocator, owned_kernel_name, words);
@@ -44,7 +45,7 @@ fn load_kernel_spirv_uncached(self: anytype, allocator: std.mem.Allocator, kerne
     };
     defer allocator.free(path);
 
-    const bytes = std.fs.cwd().readFileAlloc(allocator, path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
+    const bytes = try std.fs.cwd().readFileAlloc(allocator, path, MAX_KERNEL_SOURCE_BYTES);
     defer allocator.free(bytes);
     return try words_from_spirv_bytes(allocator, bytes);
 }
@@ -82,19 +83,28 @@ pub fn words_from_spirv_bytes(allocator: std.mem.Allocator, bytes: []const u8) !
 }
 
 fn resolve_kernel_path(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
-    const direct = try allocator.dupe(u8, kernel_name);
-    if (path_utils.file_exists(direct)) return direct;
-    allocator.free(direct);
+    {
+        const direct = try allocator.dupe(u8, kernel_name);
+        errdefer allocator.free(direct);
+        if (try path_utils.file_exists(direct)) return direct;
+        allocator.free(direct);
+    }
 
     const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
-    const rooted = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ root, kernel_name });
-    if (path_utils.file_exists(rooted)) return rooted;
-    allocator.free(rooted);
+    {
+        const rooted = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ root, kernel_name });
+        errdefer allocator.free(rooted);
+        if (try path_utils.file_exists(rooted)) return rooted;
+        allocator.free(rooted);
+    }
 
     if (!std.mem.endsWith(u8, kernel_name, ".wgsl")) {
-        const with_suffix = try std.fmt.allocPrint(allocator, "{s}/{s}.wgsl", .{ root, kernel_name });
-        if (path_utils.file_exists(with_suffix)) return with_suffix;
-        allocator.free(with_suffix);
+        {
+            const with_suffix = try std.fmt.allocPrint(allocator, "{s}/{s}.wgsl", .{ root, kernel_name });
+            errdefer allocator.free(with_suffix);
+            if (try path_utils.file_exists(with_suffix)) return with_suffix;
+            allocator.free(with_suffix);
+        }
     }
     return error.ShaderToolchainUnavailable;
 }
@@ -107,15 +117,44 @@ fn resolve_kernel_spirv_path(self: anytype, allocator: std.mem.Allocator, kernel
         return try allocator.dupe(u8, source_path);
     }
 
-    const sibling_spv = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path});
-    if (path_utils.file_exists(sibling_spv)) return sibling_spv;
-    allocator.free(sibling_spv);
+    {
+        const sibling_spv = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path});
+        errdefer allocator.free(sibling_spv);
+        if (try path_utils.file_exists(sibling_spv)) return sibling_spv;
+        allocator.free(sibling_spv);
+    }
 
     if (std.mem.lastIndexOfScalar(u8, source_path, '.')) |idx| {
-        const replaced = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path[0..idx]});
-        if (path_utils.file_exists(replaced)) return replaced;
-        allocator.free(replaced);
+        {
+            const replaced = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path[0..idx]});
+            errdefer allocator.free(replaced);
+            if (try path_utils.file_exists(replaced)) return replaced;
+            allocator.free(replaced);
+        }
     }
 
     return error.UnsupportedFeature;
+}
+
+fn exerciseCacheAllocation(allocator: std.mem.Allocator) !void {
+    var temporary = std.testing.tmpDir(.{});
+    defer temporary.cleanup();
+    const root = try temporary.dir.realpathAlloc(std.testing.allocator, ".");
+    defer std.testing.allocator.free(root);
+    try temporary.dir.writeFile(.{ .sub_path = "probe.spv", .data = &.{ 3, 2, 35, 7 } });
+    const Fixture = struct {
+        allocator: std.mem.Allocator,
+        kernel_root: ?[]const u8,
+        kernel_spirv_cache: std.StringHashMapUnmanaged([]u32) = .{},
+    };
+    var fixture = Fixture{ .allocator = allocator, .kernel_root = root };
+    defer release_kernel_spirv_cache(&fixture);
+    const first = try ensure_kernel_spirv_cached(&fixture, "probe.spv");
+    const second = try ensure_kernel_spirv_cached(&fixture, "probe.spv");
+    try std.testing.expectEqual(@as(u32, SPIRV_MAGIC), first[0]);
+    try std.testing.expect(first.ptr == second.ptr);
+}
+
+test "SPIR-V cache admission releases loaded words on allocation failure" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseCacheAllocation, .{});
 }

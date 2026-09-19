@@ -17,14 +17,14 @@ file	src/app/request.zig	stale	app_request_file_002		Continue with src/backend/c
 file	src/app/runner.zig	stale	app_runner_file_002		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
 file	src/backend/backend_policy.zig	stale	backend_policy_file_001		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
 file	src/backend/backend_telemetry.zig	stale	backend_telemetry_file_001		Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
-file	src/backend/common/artifact_policy.zig	pending			Read and review the complete scope.
-file	src/backend/common/artifact_state.zig	pending			Read and review the complete scope.
-file	src/backend/common/path_utils.zig	pending			Read and review the complete scope.
-file	src/backend/common/shader_artifact_manifest.zig	pending			Read and review the complete scope.
-file	src/backend/common/submit_count_policy.zig	pending			Read and review the complete scope.
-file	src/backend/common/timing.zig	pending			Read and review the complete scope.
-file	src/backend/d3d12/artifact_emit.zig	pending			Read and review the complete scope.
-file	src/backend/d3d12/commands/d3d12_async_diagnostics.zig	pending			Read and review the complete scope.
+file	src/backend/common/artifact_policy.zig	verified	common_audit_20260919_artifact_policy		Continue file:src/backend/common/artifact_state.zig as its own examination.
+file	src/backend/common/artifact_state.zig	verified	common_audit_20260919_artifact_state		Continue file:src/backend/common/path_utils.zig as its own examination.
+file	src/backend/common/path_utils.zig	verified	common_audit_20260919_path_utils		Continue file:src/backend/common/shader_artifact_manifest.zig as its own examination.
+file	src/backend/common/shader_artifact_manifest.zig	verified	common_audit_20260919_shader_artifact_manifest		Continue file:src/backend/common/submit_count_policy.zig as its own examination.
+file	src/backend/common/submit_count_policy.zig	verified	common_audit_20260919_submit_count_policy		Continue file:src/backend/common/timing.zig as its own examination.
+file	src/backend/common/timing.zig	verified	common_audit_20260919_timing		Continue directory:src/backend/common as its own examination.
+file	src/backend/d3d12/artifact_emit.zig	verified	common_audit_20260919_d3d12_artifact_emit		Continue file:src/backend/d3d12/commands/d3d12_async_diagnostics.zig as its own examination.
+file	src/backend/d3d12/commands/d3d12_async_diagnostics.zig	verified	common_audit_20260919_d3d12_async_diagnostics		Stop at this batch checkpoint. Next: file:src/backend/d3d12/commands/d3d12_dispatch.zig; read the full file, contracts, callers and lifetime/error paths, then append its own findings and evidence.
 file	src/backend/d3d12/commands/d3d12_dispatch.zig	pending			Read and review the complete scope.
 file	src/backend/d3d12/commands/d3d12_gpu_timestamps.zig	pending			Read and review the complete scope.
 file	src/backend/d3d12/commands/d3d12_map_async.zig	pending			Read and review the complete scope.
@@ -99,7 +99,7 @@ file	src/backend/ports/transfer.zig	pending			Read and review the complete scope
 file	src/backend/vulkan/artifact_emit.zig	pending			Read and review the complete scope.
 file	src/backend/vulkan/backend_execute.zig	pending			Read and review the complete scope.
 file	src/backend/vulkan/mod.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/native_runtime.zig	in_progress	shader_semantics_runtime_20260919_evidence		Review remaining dispatch entrypoints and their distinct contracts, allocation/cleanup paths and full runtime responsibility.
+file	src/backend/vulkan/native_runtime.zig	stale	shader_semantics_runtime_20260919_evidence		Review remaining dispatch entrypoints and their distinct contracts, allocation/cleanup paths and full runtime responsibility.
 file	src/backend/vulkan/vk_adapter_probe.zig	pending			Read and review the complete scope.
 file	src/backend/vulkan/vk_async_dispatch.zig	pending			Read and review the complete scope.
 file	src/backend/vulkan/vk_async_probes.zig	pending			Read and review the complete scope.
@@ -282,7 +282,7 @@ file	src/compiler/wgsl/emit/msl/emit_msl_texture.zig	pending			Read and review t
 file	src/compiler/wgsl/emit/msl/emit_msl_vertex.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/msl/emit_msl_workgroup_zero.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/operator_text.zig	pending			Read and review the complete scope.
-file	src/compiler/wgsl/emit/spirv/emit_spirv.zig	in_progress	shader_semantics_spirv_20260919_evidence		Review all type lowering and decoration identities, allocation-failure cleanup and entrypoint emission; this focused storage-block repair does not complete the emitter review.
+file	src/compiler/wgsl/emit/spirv/emit_spirv.zig	stale	shader_semantics_spirv_20260919_evidence		Review all type lowering and decoration identities, allocation-failure cleanup and entrypoint emission; this focused storage-block repair does not complete the emitter review.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig	pending			Read and review the complete scope.
@@ -525,7 +525,7 @@ file	src/native/render/doe_render_native.zig	pending			Read and review the compl
 file	src/native/render/doe_render_pass_controls_native.zig	pending			Read and review the complete scope.
 file	src/native/render/doe_render_pipeline_native.zig	pending			Read and review the complete scope.
 file	src/native/render/doe_render_state_native.zig	pending			Read and review the complete scope.
-file	src/native/resource/doe_bind_group_native.zig	in_progress	shader_semantics_bind_group_20260919_evidence		Examine the remaining binding validation, duplicate bindings, device ownership and external-texture paths throughout the file.
+file	src/native/resource/doe_bind_group_native.zig	stale	shader_semantics_bind_group_20260919_evidence		Examine the remaining binding validation, duplicate bindings, device ownership and external-texture paths throughout the file.
 file	src/native/resource/doe_buffer_ops_native.zig	pending			Read and review the complete scope.
 file	src/native/resource/doe_command_texture_native.zig	pending			Read and review the complete scope.
 file	src/native/resource/doe_external_texture_native.zig	pending			Read and review the complete scope.
@@ -544,12 +544,12 @@ file	src/native/support/doe_label_store.zig	pending			Read and review the comple
 file	src/native/support/doe_native_command_types.zig	pending			Read and review the complete scope.
 file	src/native/support/doe_native_exports.zig	pending			Read and review the complete scope.
 file	src/native/support/doe_native_object_helpers.zig	pending			Read and review the complete scope.
-file	src/native/support/doe_native_object_types.zig	in_progress	shader_semantics_objects_20260919_evidence		Review each object family and backend payload ownership; the single layout field change is not a whole-file or backend-state review.
+file	src/native/support/doe_native_object_types.zig	stale	shader_semantics_objects_20260919_evidence		Review each object family and backend payload ownership; the single layout field change is not a whole-file or backend-state review.
 file	src/native/support/doe_native_runtime_helpers.zig	pending			Read and review the complete scope.
 file	src/native/support/doe_native_shared_types.zig	pending			Read and review the complete scope.
 file	src/native/surface/doe_surface_native.zig	pending			Read and review the complete scope.
-file	src/native/vulkan/vulkan_compute_bindings.zig	in_progress	shader_semantics_bindings_20260919_evidence		Read every binding collection path, compare dynamic offsets and recorded bindings, and inspect validation assumptions and consumers.
-file	src/native/vulkan/vulkan_compute_native.zig	in_progress	shader_semantics_compute_20260919_evidence		Complete examination of compilation, pipeline caching, dispatch preparation and ownership across all paths.
+file	src/native/vulkan/vulkan_compute_bindings.zig	stale	shader_semantics_bindings_20260919_evidence		Read every binding collection path, compare dynamic offsets and recorded bindings, and inspect validation assumptions and consumers.
+file	src/native/vulkan/vulkan_compute_native.zig	stale	shader_semantics_compute_20260919_evidence		Complete examination of compilation, pipeline caching, dispatch preparation and ownership across all paths.
 file	src/native/vulkan/vulkan_feature_cache.zig	pending			Read and review the complete scope.
 file	src/native/vulkan/vulkan_lifetime.zig	pending			Read and review the complete scope.
 file	src/native/vulkan/vulkan_pipeline_hash.zig	pending			Read and review the complete scope.
@@ -648,7 +648,7 @@ file	tests/core/doe_shader_native_test.zig	pending			Read and review the complet
 file	tests/core/error_scope_test.zig	pending			Read and review the complete scope.
 file	tests/core/execution_test.zig	pending			Read and review the complete scope.
 file	tests/core/gpu_timeline_test.zig	pending			Read and review the complete scope.
-file	tests/core/handle_safety_test.zig	in_progress	shader_semantics_lifetime_tests_20260919_evidence		Review the existing tests and their oracle sensitivity across all handle families.
+file	tests/core/handle_safety_test.zig	stale	shader_semantics_lifetime_tests_20260919_evidence		Review the existing tests and their oracle sensitivity across all handle families.
 file	tests/core/hexagonal_architecture_test.zig	pending			Read and review the complete scope.
 file	tests/core/hexagonal_composition_test.zig	pending			Read and review the complete scope.
 file	tests/core/hlsl_subsystem_test.zig	pending			Read and review the complete scope.
@@ -720,7 +720,7 @@ file	tests/wgsl/emit_hlsl_stage_test.zig	pending			Read and review the complete 
 file	tests/wgsl/emit_spirv_builder_test.zig	pending			Read and review the complete scope.
 file	tests/wgsl/emit_spirv_builtin_test.zig	pending			Read and review the complete scope.
 file	tests/wgsl/emit_spirv_if_termination_test.zig	pending			Read and review the complete scope.
-file	tests/wgsl/emit_spirv_mixed_binary_test.zig	in_progress	shader_semantics_spirv_tests_20260919_evidence		Review all pre-existing emission cases and structural oracles; evaluate a responsibility-based split if the test module no longer has a coherent scope.
+file	tests/wgsl/emit_spirv_mixed_binary_test.zig	stale	shader_semantics_spirv_tests_20260919_evidence		Review all pre-existing emission cases and structural oracles; evaluate a responsibility-based split if the test module no longer has a coherent scope.
 file	tests/wgsl/emit_spirv_stage_test.zig	pending			Read and review the complete scope.
 file	tests/wgsl/exec_v1_paired_gate_canary_test.zig	pending			Read and review the complete scope.
 file	tests/wgsl/ir_transform_float_fusion_test.zig	pending			Read and review the complete scope.
@@ -767,7 +767,7 @@ directory	bench/host_hotpath	pending		file:bench/host_hotpath/host_hotpath_bench
 directory	src	pending		file:src/mod.zig	Read and review the complete scope.
 directory	src/app	stale	app_directory_002	file:src/app/mod.zig;file:src/app/prepare.zig;file:src/app/request.zig;file:src/app/runner.zig	Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
 directory	src/backend	pending		file:src/backend/backend_policy.zig;file:src/backend/backend_telemetry.zig;file:src/backend/dawn_delegate_backend.zig;file:src/backend/dropin_capabilities.zig;file:src/backend/dropin_external_texture.zig;file:src/backend/dropin_lifecycle.zig;file:src/backend/dropin_pipeline_cache.zig;file:src/backend/dropin_queue_submit.zig;file:src/backend/dropin_render_state.zig;file:src/backend/dropin_resource_ops.zig;file:src/backend/dropin_surface_ops.zig;file:src/backend/metal_package_pipeline_cache.zig;file:src/backend/webgpu_backend.zig;file:src/backend/webgpu_backend_lifecycle.zig;file:src/backend/webgpu_backend_ops.zig;file:src/backend/webgpu_backend_support.zig;file:src/backend/webgpu_backend_types.zig	Read and review the complete scope.
-directory	src/backend/common	pending		file:src/backend/common/artifact_policy.zig;file:src/backend/common/artifact_state.zig;file:src/backend/common/path_utils.zig;file:src/backend/common/shader_artifact_manifest.zig;file:src/backend/common/submit_count_policy.zig;file:src/backend/common/timing.zig	Read and review the complete scope.
+directory	src/backend/common	verified	common_audit_20260919_common_directory	file:src/backend/common/artifact_policy.zig;file:src/backend/common/artifact_state.zig;file:src/backend/common/path_utils.zig;file:src/backend/common/shader_artifact_manifest.zig;file:src/backend/common/submit_count_policy.zig;file:src/backend/common/timing.zig	Continue within_directory:src/backend/common as its own examination.
 directory	src/backend/d3d12	pending		file:src/backend/d3d12/artifact_emit.zig;file:src/backend/d3d12/d3d12_bridge_decls.zig;file:src/backend/d3d12/d3d12_constants.zig;file:src/backend/d3d12/d3d12_descriptors.zig;file:src/backend/d3d12/d3d12_device_caps.zig;file:src/backend/d3d12/d3d12_formats.zig;file:src/backend/d3d12/d3d12_native_runtime.zig;file:src/backend/d3d12/d3d12_query_set.zig;file:src/backend/d3d12/d3d12_runtime_compute.zig;file:src/backend/d3d12/d3d12_runtime_upload.zig;file:src/backend/d3d12/mod.zig	Read and review the complete scope.
 directory	src/backend/d3d12/commands	pending		file:src/backend/d3d12/commands/d3d12_async_diagnostics.zig;file:src/backend/d3d12/commands/d3d12_dispatch.zig;file:src/backend/d3d12/commands/d3d12_gpu_timestamps.zig;file:src/backend/d3d12/commands/d3d12_map_async.zig;file:src/backend/d3d12/commands/d3d12_native_render_pass.zig;file:src/backend/d3d12/commands/d3d12_render.zig;file:src/backend/d3d12/commands/d3d12_render_bind_groups.zig;file:src/backend/d3d12/commands/d3d12_render_vertex.zig;file:src/backend/d3d12/commands/d3d12_streaming_copy.zig	Read and review the complete scope.
 directory	src/backend/d3d12/resources	pending		file:src/backend/d3d12/resources/d3d12_depth_stencil.zig;file:src/backend/d3d12/resources/d3d12_sampler.zig;file:src/backend/d3d12/resources/d3d12_texture.zig;file:src/backend/d3d12/resources/d3d12_texture_view.zig	Read and review the complete scope.
@@ -872,7 +872,7 @@ within_directory	bench/host_hotpath	pending		directory:bench/host_hotpath	Read a
 within_directory	src	pending		directory:src;within_directory:src/app;within_directory:src/backend;within_directory:src/cli;within_directory:src/command;within_directory:src/compat;within_directory:src/compiler;within_directory:src/composition;within_directory:src/contracts;within_directory:src/core;within_directory:src/dropin;within_directory:src/evidence;within_directory:src/full;within_directory:src/integrations;within_directory:src/native;within_directory:src/plan;within_directory:src/quirk;within_directory:src/runtime;within_directory:src/spatial;within_directory:src/tooling;within_directory:src/verification	Read and review the complete scope.
 within_directory	src/app	stale	app_within_directory_002	directory:src/app	Continue with src/backend/common/artifact_policy.zig in TSV file order; parent directory and cross-directory passes remain separate.
 within_directory	src/backend	pending		directory:src/backend;within_directory:src/backend/common;within_directory:src/backend/d3d12;within_directory:src/backend/metal;within_directory:src/backend/ports;within_directory:src/backend/vulkan	Read and review the complete scope.
-within_directory	src/backend/common	pending		directory:src/backend/common	Read and review the complete scope.
+within_directory	src/backend/common	verified	common_audit_20260919_common_relationships	directory:src/backend/common	Continue file:src/backend/d3d12/artifact_emit.zig as its own examination.
 within_directory	src/backend/d3d12	pending		directory:src/backend/d3d12;within_directory:src/backend/d3d12/commands;within_directory:src/backend/d3d12/resources;within_directory:src/backend/d3d12/surface	Read and review the complete scope.
 within_directory	src/backend/d3d12/commands	pending		directory:src/backend/d3d12/commands	Read and review the complete scope.
 within_directory	src/backend/d3d12/resources	pending		directory:src/backend/d3d12/resources	Read and review the complete scope.

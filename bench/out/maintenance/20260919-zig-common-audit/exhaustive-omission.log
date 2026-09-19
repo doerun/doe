@@ -1,0 +1,12 @@
+/tmp/doe-artifact-coverage-vm455squ/src/backend/common/artifact_policy.zig:6:12: error: switch must handle all possibilities
+    return switch (command) {
+           ^~~~~~
+/tmp/doe-artifact-coverage-vm455squ/src/contracts/command.zig:47:5: note: unhandled enumeration value: 'map_async'
+    map_async,
+    ^~~~~~~~~
+/tmp/doe-artifact-coverage-vm455squ/src/contracts/command.zig:22:18: note: enum 'src.contracts.command.Kind' declared here
+pub const Kind = enum(u8) {
+                 ^~~~
+referenced by:
+    test.artifact policy selects shader commands and preserves explicit errors: /tmp/doe-artifact-coverage-vm455squ/src/backend/common/artifact_policy.zig:61:74
+    test_0: /tmp/doe-artifact-coverage-vm455squ/probe.zig:1:20

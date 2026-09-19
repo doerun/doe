@@ -1,14 +1,11 @@
 const std = @import("std");
-const model_commands = @import("../../contracts/command.zig");
+const model = @import("../../contracts/command.zig");
 const runtime_types = @import("../../contracts/runtime_types.zig");
-
-const model = struct {
-    pub const Command = model_commands.Command;
-    pub const CommandKind = model_commands.CommandKind;
-};
 
 const NativeExecutionResult = runtime_types.NativeExecutionResult;
 
+/// Logical selected-command accounting; deferred physical submissions are
+/// observed separately by the queue backend. Failed work has no count.
 pub fn selectedCommandSubmitCount(command: model.Command, result: NativeExecutionResult) ?u32 {
     return selectedKindSubmitCount(std.meta.activeTag(command), result);
 }

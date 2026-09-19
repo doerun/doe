@@ -18,22 +18,18 @@ const backend_policy = @import("../backend_policy.zig");
 const common_errors = @import("../../contracts/execution.zig");
 const command_info = @import("../../contracts/command.zig");
 const capabilities = @import("../../contracts/capability.zig");
+const HASH_HEX_SIZE = @import("../../contracts/artifact.zig").SHA256_HEX_SIZE;
+const MAX_SHADER_SOURCE_BYTES: usize = 16 * 1024 * 1024;
+const hash_utils = @import("../../contracts/artifact.zig");
 const artifact_meta = @import("../../contracts/artifact.zig");
 const artifact_policy = @import("../common/artifact_policy.zig");
-const hash_utils = @import("../../contracts/artifact.zig");
+const artifact_state = @import("../common/artifact_state.zig");
 const artifact_emit = @import("artifact_emit.zig");
 const backend_execute = @import("backend_execute.zig");
 const native_runtime = @import("native_runtime.zig");
 const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 
-const MANIFEST_PATH_CAPACITY: usize = 256;
-const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
-const MANIFEST_MODULE_CAPACITY: usize = 64;
-const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
-const MAX_SHADER_SOURCE_BYTES: usize = 16 * 1024 * 1024;
-const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
-const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
 const model = struct {
     pub const AsyncDiagnosticsCommand = model_async_types.AsyncDiagnosticsCommand;
@@ -73,23 +69,8 @@ pub const ZigVulkanBackend = struct {
     capability_set: capabilities.CapabilitySet,
 
     status_message_storage: [STATUS_MESSAGE_BYTES]u8 = [_]u8{0} ** STATUS_MESSAGE_BYTES,
-    status_message_len: usize = 0,
 
-    manifest_emit_count: u64 = 0,
-    manifest_path_storage: [MANIFEST_PATH_CAPACITY]u8 = std.mem.zeroes([MANIFEST_PATH_CAPACITY]u8),
-    manifest_path_len: usize = 0,
-    manifest_hash_storage: [HASH_HEX_SIZE]u8 = std.mem.zeroes([HASH_HEX_SIZE]u8),
-    manifest_hash_len: usize = 0,
-    last_manifest_meta: ?artifact_meta.ArtifactMeta = null,
-    last_manifest_module_storage: [MANIFEST_MODULE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
-    last_manifest_module_len: usize = 0,
-    last_manifest_status_storage: [MANIFEST_STATUS_CODE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
-    last_manifest_status_len: usize = 0,
-    pending_artifact_write: bool = false,
-    pending_artifact_module: []const u8 = "",
-    pending_artifact_meta: artifact_meta.ArtifactMeta = undefined,
-    pending_artifact_status_storage: [MANIFEST_STATUS_CODE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
-    pending_artifact_status_len: usize = 0,
+    artifacts: artifact_state.State,
 
     pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !*ZigVulkanBackend {
         return init_with_upload_path_policy(allocator, profile, kernel_root, .allow_mapped_shortcuts);
@@ -180,29 +161,8 @@ pub const ZigVulkanBackend = struct {
             .telemetry = backend_telemetry.default_telemetry(),
             .capability_set = native_capability_set(),
             .status_message_storage = [_]u8{0} ** STATUS_MESSAGE_BYTES,
-            .status_message_len = 0,
-            .manifest_emit_count = 0,
-            .manifest_path_storage = std.mem.zeroes([MANIFEST_PATH_CAPACITY]u8),
-            .manifest_path_len = 0,
-            .manifest_hash_storage = std.mem.zeroes([HASH_HEX_SIZE]u8),
-            .manifest_hash_len = 0,
-            .last_manifest_meta = null,
-            .last_manifest_module_storage = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
-            .last_manifest_module_len = 0,
-            .last_manifest_status_storage = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
-            .last_manifest_status_len = 0,
-            .pending_artifact_write = false,
-            .pending_artifact_module = "",
-            .pending_artifact_meta = undefined,
-            .pending_artifact_status_storage = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
-            .pending_artifact_status_len = 0,
+            .artifacts = .{ .allocator = allocator },
         };
-
-        ptr.emit_shader_artifact_manifest_for_signature(
-            BOOTSTRAP_MANIFEST_MODULE,
-            artifact_meta.classify(.native_vulkan, false, false),
-            BOOTSTRAP_MANIFEST_STATUS_CODE,
-        ) catch {};
 
         return ptr;
     }
@@ -212,31 +172,8 @@ pub const ZigVulkanBackend = struct {
         return provider_adapter.fromDriver(PortDriver, self, .doe_vulkan);
     }
 
-    fn manifest_path(self: *const ZigVulkanBackend) ?[]const u8 {
-        return artifact_emit.manifest_path(self);
-    }
-
-    fn manifest_hash(self: *const ZigVulkanBackend) ?[]const u8 {
-        return artifact_emit.manifest_hash(self);
-    }
-
-    fn flush_pending_artifact(self: *ZigVulkanBackend) void {
-        artifact_emit.flush_pending_artifact(self);
-    }
-
-    fn emit_shader_artifact_manifest_for_signature(
-        self: *ZigVulkanBackend,
-        module: []const u8,
-        meta: artifact_meta.ArtifactMeta,
-        status_code: []const u8,
-    ) common_errors.BackendNativeError!void {
-        return artifact_emit.emit_shader_artifact_manifest_for_signature(self, module, meta, status_code);
-    }
-
     pub fn write_status(self: *ZigVulkanBackend, comptime fmt: []const u8, args: anytype) []const u8 {
-        const rendered = std.fmt.bufPrint(&self.status_message_storage, fmt, args) catch "status_format_error";
-        self.status_message_len = rendered.len;
-        return self.status_message_storage[0..self.status_message_len];
+        return artifact_policy.formatStatus(&self.status_message_storage, fmt, args);
     }
 
     pub fn ensure_runtime_bootstrapped(self: *ZigVulkanBackend) !*native_runtime.NativeVulkanRuntime {
@@ -256,31 +193,20 @@ pub const ZigVulkanBackend = struct {
         return &self.runtime.?;
     }
 
-    fn reset_last_submit_count(self: *ZigVulkanBackend) void {
+    fn beginCommand(self: *ZigVulkanBackend) void {
+        if (self.takePendingSpirv()) |stale| self.allocator.free(stale);
         if (self.runtime) |*runtime| {
             runtime.last_submit_count = null;
         }
     }
 
-    /// Shader-artifact-manifest integration: expose the most recently compiled
-    /// SPIR-V bytes so the manifest emitter can write a sibling .spv file and
-    /// record its path in the ir_to_spirv stage record. Declared on the struct
-    /// so `@hasDecl` on the backend type resolves to this method.
-    pub fn pending_spirv_bytes_view(self: *ZigVulkanBackend) ?[]const u8 {
-        const runtime = &(self.runtime orelse return null);
-        const bytes = runtime.pending_spirv_bytes_owned orelse return null;
-        if (bytes.len == 0) return null;
-        return bytes;
-    }
-
-    /// Frees the SPIR-V bytes stashed on the runtime. Ownership of the allocation
-    /// stays with the backend's allocator; the runtime only holds the slice.
-    pub fn release_pending_spirv_bytes(self: *ZigVulkanBackend) void {
-        const runtime = &(self.runtime orelse return);
-        if (runtime.pending_spirv_bytes_owned) |bytes| {
-            self.allocator.free(bytes);
+    pub fn takePendingSpirv(self: *ZigVulkanBackend) ?[]u8 {
+        if (self.runtime) |*runtime| {
+            const bytes = runtime.pending_spirv_bytes_owned;
             runtime.pending_spirv_bytes_owned = null;
+            return bytes;
         }
+        return null;
     }
 
     pub fn shader_source_hash_for_module(self: *ZigVulkanBackend, module: []const u8) ?[HASH_HEX_SIZE]u8 {
@@ -317,14 +243,14 @@ pub const ZigVulkanBackend = struct {
             );
         }
 
-        if (artifact_policy.should_emit_shader_artifact(command)) {
+        if (out.status == .ok and artifact_policy.should_emit_shader_artifact(command)) {
             const status_code = artifact_policy.artifact_status_code(out);
-            const copy_len = @min(status_code.len, self.pending_artifact_status_storage.len);
-            std.mem.copyForwards(u8, self.pending_artifact_status_storage[0..copy_len], status_code[0..copy_len]);
-            self.pending_artifact_status_len = copy_len;
-            self.pending_artifact_module = command_info.shader_artifact_module(command);
-            self.pending_artifact_meta = meta;
-            self.pending_artifact_write = true;
+            const spirv = self.takePendingSpirv();
+            defer if (spirv) |bytes| self.allocator.free(bytes);
+            self.artifacts.capture(command_info.shader_artifact_module(command), meta, status_code, spirv, self.shader_source_hash_for_module(command_info.shader_artifact_module(command))) catch |err| {
+                out.status = .@"error";
+                out.status_message = @errorName(err);
+            };
         }
 
         return out;
@@ -370,12 +296,11 @@ fn cast(ctx: *anyopaque) *ZigVulkanBackend {
 
 pub fn manifest_path_from_context(ctx: *anyopaque) ?[]const u8 {
     const self = cast(ctx);
-    self.flush_pending_artifact();
-    return self.manifest_path();
+    return self.artifacts.path();
 }
 
 pub fn manifest_hash_from_context(ctx: *anyopaque) ?[]const u8 {
-    return cast(ctx).manifest_hash();
+    return cast(ctx).artifacts.hash();
 }
 
 pub fn adapter_ordinal_from_context(ctx: *anyopaque) ?u32 {
@@ -465,6 +390,7 @@ pub fn last_submit_count_from_context(ctx: *anyopaque) ?u32 {
 
 fn deinit(ctx: *anyopaque) void {
     const self = cast(ctx);
+    self.artifacts.deinit();
     const allocator = self.allocator;
     if (self.runtime) |*runtime| {
         runtime.deinit();
@@ -485,7 +411,7 @@ fn deinit(ctx: *anyopaque) void {
 
 fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.NativeExecutionResult {
     const self = cast(ctx);
-    self.reset_last_submit_count();
+    self.beginCommand();
     return backend_execute.execute_command(self, command);
 }
 
@@ -515,14 +441,14 @@ fn execute_prepared_lifecycle(ctx: *anyopaque, operation: prepared.PreparedLifec
 
 fn execute_dispatch(context: compute_contract.ComputeContext, request: compute_contract.DispatchRequest) anyerror!compute_contract.DispatchReport {
     const self = cast(context.state);
-    self.reset_last_submit_count();
+    self.beginCommand();
     const result = try backend_execute.execute_dispatch(ZigVulkanBackend, self, request);
     return .{ .execution = result };
 }
 
 fn execute_buffer_write_bytes_iface(ctx: *anyopaque, handle: u64, offset: u64, buffer_size: u64, data: []const u8) anyerror!webgpu.NativeExecutionResult {
     const self = cast(ctx);
-    self.reset_last_submit_count();
+    self.beginCommand();
     return backend_execute.execute_buffer_write_bytes_iface(self, handle, offset, buffer_size, data);
 }
 
@@ -604,7 +530,12 @@ pub fn destroyContext(ctx: *anyopaque) void {
     deinit(ctx);
 }
 
+fn collect_artifacts(ctx: *anyopaque) !void {
+    try artifact_emit.flushPending(&cast(ctx).artifacts);
+}
+
 const PortDriver = struct {
+    pub const collectArtifacts = collect_artifacts;
     pub const backendId = backend_id;
     pub const executePreparedCompute = execute_prepared_compute;
     pub const executePreparedTransfer = execute_prepared_transfer;
@@ -636,4 +567,49 @@ test "extensionless artifact module resolves the executed WGSL source" {
     const explicit_hash = backend.shader_source_hash_for_module("concurrent_execution_runsingle_u32.wgsl");
     try std.testing.expect(extensionless_hash != null);
     try std.testing.expectEqual(explicit_hash, extensionless_hash);
+}
+
+test "Vulkan telemetry snapshots never collect pending artifacts" {
+    const backend = try ZigVulkanBackend.init(std.testing.allocator, .{
+        .vendor = "amd",
+        .api = .vulkan,
+        .driver_version = .{ .major = 0, .minor = 0, .patch = 0 },
+    }, null);
+    defer destroyContext(backend);
+    var temp = std.testing.tmpDir(.{});
+    defer temp.cleanup();
+    const root = try temp.dir.realpathAlloc(std.testing.allocator, ".");
+    defer std.testing.allocator.free(root);
+    const missing = try std.fs.path.join(std.testing.allocator, &.{ root, "missing-toolchain.json" });
+    defer std.testing.allocator.free(missing);
+    backend.artifacts.output = .{ .directory = root, .toolchain_path = missing };
+    try backend.artifacts.capture("module", artifact_meta.classify(.native_vulkan, false, false), "ok", null, null);
+    const ports = backend.asPorts("test", "test", false);
+    try std.testing.expect(ports.telemetry.snapshot().shader_artifact_manifest_path == null);
+    try std.testing.expect(ports.telemetry.snapshot().shader_artifact_manifest_hash == null);
+    try std.testing.expectEqual(@as(u64, 0), backend.artifacts.manifest_emit_count);
+    try std.testing.expectError(error.FileNotFound, ports.telemetry.collectArtifacts());
+    try std.testing.expect(backend.artifacts.pending != null);
+}
+
+test "new command discards prewarm or failed-command artifact staging" {
+    const backend = try ZigVulkanBackend.init(std.testing.allocator, .{
+        .vendor = "amd",
+        .api = .vulkan,
+        .driver_version = .{ .major = 0, .minor = 0, .patch = 0 },
+    }, null);
+    defer destroyContext(backend);
+    backend.capability_set = .{};
+    // Capability rejection must not access native device fields.
+    backend.runtime = @as(native_runtime.NativeVulkanRuntime, undefined);
+    backend.runtime.?.last_submit_count = 1;
+    backend.runtime.?.pending_spirv_bytes_owned = try std.testing.allocator.dupe(u8, "stale prewarm bytes");
+    defer {
+        if (backend.takePendingSpirv()) |bytes| std.testing.allocator.free(bytes);
+        backend.runtime = null;
+    }
+    const result = try execute_command(backend, .{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } });
+    try std.testing.expectEqual(@TypeOf(result.status).unsupported, result.status);
+    try std.testing.expect(backend.runtime.?.pending_spirv_bytes_owned == null);
+    try std.testing.expect(backend.runtime.?.last_submit_count == null);
 }

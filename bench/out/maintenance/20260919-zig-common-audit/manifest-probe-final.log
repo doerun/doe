@@ -1,0 +1,13 @@
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/builtin.zig:5:22: error: no module named 'root' available within module 'std'
+const root = @import("root");
+                     ^~~~~~
+referenced by:
+    panic: /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/builtin.zig:1086:18
+    assert: /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/debug.zig:559:14
+    8 reference(s) hidden; use '-freference-trace=10' to see all references
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:3:22: error: no module named 'root' available within module 'std'
+const root = @import("root");
+                     ^~~~~~
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/std.zig:112:22: error: no module named 'root' available within module 'std'
+const root = @import("root");
+                     ^~~~~~

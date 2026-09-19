@@ -384,6 +384,15 @@ classified and cannot be promoted by benchmark results.
   coherence and supported memory-type requirements remain mandatory. Validate
   the selection regression and physical ordinary/prepared application controls
   before interpreting an allocation-policy change as an improvement.
+- Backend artifact telemetry snapshots perform no collection. The command
+  execution boundary explicitly collects after measuring execution, preserves
+  capture/output errors, and retains actual execution counts on collection
+  failure. Validate copied-input lifetimes, allocation failure, retry, deduplication,
+  and side-effect-free reads. Artifact manifest version 3 distinguishes content
+  digests from derived identities and observed source from module labels;
+  unobserved stage implementations cannot establish a compiler invocation.
+  Historical manifests retain their original meaning. Migration and reproducible
+  evidence are in the [common-backend audit](../bench/out/maintenance/20260919-zig-common-audit/README.md).
 - Backend selection defaults are generated during the Zig build from
   `config/backend-runtime-policy.json`. Every canonical lane must resolve before
   consumers compile. Validate config admission, compiled/file-loaded parity,

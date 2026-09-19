@@ -1,0 +1,3 @@
+PASS: all schema-only backend probes and physical Vulkan manifest conform to schema v3.
+PASS: physical output oracle matched, one successful dispatch, no fallback.
+PASS: retained SPIR-V content digest matches and spirv-val --target-env vulkan1.1 accepts actual bytes.

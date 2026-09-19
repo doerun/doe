@@ -12,6 +12,14 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [common-backend batch](../../bench/out/maintenance/20260919-zig-common-audit/README.md)
+records current file, directory, and relationship coverage separately. Artifact
+collection is explicit and fallible; telemetry reads preserve stored state.
+Manifest identity kinds are versioned, and unsupported D3D12 diagnostic modes
+remain unsupported. Accepted release binaries and calibration remain separate.
+Resume the next named scope in the [queue](../../runtime/zig/reviews/queue.tsv);
+Metal and D3D12 source reviews do not establish physical host qualification.
+
 The [backend-policy review](../../bench/out/maintenance/20260915-zig-file-reviews/backend-policy/README.md)
 repairs divergence between compiled defaults and the versioned runtime policy.
 The build now requires complete lane coverage and emits typed immutable defaults;

@@ -1,0 +1,7 @@
+1/6 probe.test_0...OK
+2/6 src.backend.common.artifact_policy.test.artifact policy selects shader commands and preserves explicit errors...OK
+3/6 src.backend.common.artifact_policy.test.status formatting overflow returns initialized fallback bytes...OK
+4/6 src.contracts.command.test.command registry covers stable names, scope, capabilities, and counts...OK
+5/6 src.contracts.execution.test.backend errors have one unsupported classification...OK
+6/6 src.contracts.capability.test.capability names and set bits share the canonical enum...OK
+All 6 tests passed.

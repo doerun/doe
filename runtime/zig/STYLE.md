@@ -66,6 +66,18 @@ characterization or parity test in the same change.
   forced inlining, and vector variants require application, binary-size, and build
   evidence before adoption.
 
+- Telemetry snapshots read existing state. File output and configuration reads
+  belong to an explicit fallible collection boundary outside the measured
+  operation. Deferred capture owns its inputs until publication or cleanup.
+- Content hashes require actual artifact bytes. Derived identifiers, observed
+  source hashes, and unobserved compiler stages must remain distinguishable in
+  versioned evidence; a configured tool is not evidence that it executed.
+- Elapsed-time measurements use a suitable elapsed clock rather than calendar
+  time. Preserve unavailable timing explicitly; legacy zero sentinels must never
+  become a duration measured from the clock's epoch.
+- Filesystem lookup may continue on absence. Permission, allocation, and other
+  access failures retain their causes instead of selecting another candidate.
+
 ## Repository conventions
 
 - Shared command/profile contracts belong to `contracts/`; parsing belongs to

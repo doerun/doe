@@ -10,12 +10,12 @@ const dc = @import("../../src/backend/d3d12/d3d12_constants.zig");
 // ============================================================
 
 test "d3d12: file_exists returns false for nonexistent path" {
-    const exists = path_utils.file_exists("/tmp/definitely_nonexistent_doe_test_file_12345.xyz");
+    const exists = try path_utils.file_exists("/tmp/definitely_nonexistent_doe_test_file_12345.xyz");
     try std.testing.expect(!exists);
 }
 
 test "d3d12: file_exists returns false for empty path" {
-    const exists = path_utils.file_exists("");
+    const exists = try path_utils.file_exists("");
     try std.testing.expect(!exists);
 }
 

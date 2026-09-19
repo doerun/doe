@@ -335,6 +335,30 @@
           "platforms": [
             "linux"
           ]
+        },
+        {
+          "path": "src/backend/common/artifact_policy.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/common/path_utils.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/common/shader_artifact_manifest.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/common/submit_count_policy.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/commands/d3d12_async_diagnostics.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/vk_shader_source.zig",
+          "kind": "inline"
         }
       ]
     },
@@ -515,6 +539,30 @@
           "platforms": [
             "linux"
           ]
+        },
+        {
+          "path": "src/backend/common/artifact_policy.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/common/path_utils.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/common/shader_artifact_manifest.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/common/submit_count_policy.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/d3d12/commands/d3d12_async_diagnostics.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/vk_shader_source.zig",
+          "kind": "inline"
         }
       ]
     },

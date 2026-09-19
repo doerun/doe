@@ -11344,6 +11344,935 @@
       "targets": [
         "tests/wgsl/emit_spirv_mixed_binary_test.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "13a2380f806f8bf39faccf22dad391fc010df3e55111922b4c0855d47f3202b5"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "f1ac4509ea2d3ef0e96f41411dd612bc82c74267b217978c29c91c5441672a66"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/backend_execute.zig",
+          "sha256": "d4249d4f3179eaf5ffae7a6a1fe50a42fdbf95f6715206d1d13f153565b51a8c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/mod.zig",
+          "sha256": "541c756c5bd21493dcc338ad1c1589e30f006924f0c0f319a66cb234f9b846b7"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/mod.zig",
+          "sha256": "175ecea289fedded340002e805fba713cd052bb80eea6dd28be2530d735cdbc9"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_types.zig",
+          "sha256": "78c0f8da356755bc78bbc02427d3e4db9b1861d23b1c6b4484f9c9267c2fd33a"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "c3905c6208c3d8b679c314b161d4eac9cd17cda729dbcbedd3c888f4e80f8048"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "1c296a467b0395821f4b12cb97f9d67560fc25382c768aa0e50449b4f6226e41"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/README.md",
+          "sha256": "814cdaf4c8a7789d23ef473aae897c4676bfce3cc4819278b3a3a654fcc7b134"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/aggregate-accepted.log",
+          "sha256": "07417b9c5928b4efcca43c9df9f4af61f9d5162f60ce8ad67b92f6c6b2bc1153"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/check-exhaustiveness.py",
+          "sha256": "96216f3604998199ba0424e8994d1345f58d8b0735236dad60745e5b7db0f930"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/exhaustive-check.log",
+          "sha256": "10bc212c1325c91727bc06f96271d3c340ce4e71e66187d520c421a3dff098d5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/exhaustive-omission.log",
+          "sha256": "7fd8e2ecf7a3d69670fda9ad970468af9f69b52f32883bcacab560d737e4e350"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/exhaustive-original.log",
+          "sha256": "6b5a4cd4cbcfd3b09341189bf8e9c756efb9a1355ac607b763b949b60c0b5278"
+        }
+      ],
+      "findings": [],
+      "inputHash": "3b48e515f14278fa4202b08e7975fc4b8eaf4180b0d994b3c2cf21e7777f2f43",
+      "level": "file",
+      "nextAction": "Continue file:src/backend/common/artifact_state.zig as its own examination.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Replaced the catch-all false arm with explicit canonical command tags; a private-source compilation mutation proves omitting map_async is rejected.",
+        "Centralized status formatting so all backend callers return initialized fallback bytes instead of an unwritten original-buffer prefix. Overflow and explicit-error preservation regressions pass."
+      ],
+      "reviewId": "common_audit_20260919_artifact_policy",
+      "reviewedAt": "2026-09-19T20:53:07.879220+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e24ffcd74b5a04ba819b7f0f338dbacbdd3da726",
+      "status": "verified",
+      "summary": "Complete file examination: retain the canonical-command artifact selection and shared status rendering owner. Exhaustive positive and negative decisions cover every current command kind; the helper borrows its input and returns either caller storage or a static error slice. No allocation or resource retention occurs.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/common/artifact_policy.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "13a2380f806f8bf39faccf22dad391fc010df3e55111922b4c0855d47f3202b5"
+        },
+        {
+          "path": "runtime/zig/src/backend/common/shader_artifact_manifest.zig",
+          "sha256": "2d349cbe3644f96fbefd85db23b8465d64212a0e4f8c318c0447dd6fffd9fb7f"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "f1ac4509ea2d3ef0e96f41411dd612bc82c74267b217978c29c91c5441672a66"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/backend_execute.zig",
+          "sha256": "d4249d4f3179eaf5ffae7a6a1fe50a42fdbf95f6715206d1d13f153565b51a8c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/mod.zig",
+          "sha256": "541c756c5bd21493dcc338ad1c1589e30f006924f0c0f319a66cb234f9b846b7"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/mod.zig",
+          "sha256": "175ecea289fedded340002e805fba713cd052bb80eea6dd28be2530d735cdbc9"
+        },
+        {
+          "path": "runtime/zig/src/contracts/artifact.zig",
+          "sha256": "77932d4f9c1efc749cdb3f5326b102f5fc3474e4ad091156b4ee4d0501c9cf1b"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "c3905c6208c3d8b679c314b161d4eac9cd17cda729dbcbedd3c888f4e80f8048"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "1c296a467b0395821f4b12cb97f9d67560fc25382c768aa0e50449b4f6226e41"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/README.md",
+          "sha256": "814cdaf4c8a7789d23ef473aae897c4676bfce3cc4819278b3a3a654fcc7b134"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/aggregate-accepted.log",
+          "sha256": "07417b9c5928b4efcca43c9df9f4af61f9d5162f60ce8ad67b92f6c6b2bc1153"
+        }
+      ],
+      "findings": [],
+      "inputHash": "2afe34e104ff4681fa81f4f3fa9bd35b4cbc4b10d3d58161e6ad532ca8e0c49b",
+      "level": "file",
+      "nextAction": "Continue file:src/backend/common/path_utils.zig as its own examination.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Replaced borrowed/truncated pending fields and parallel backend storage with allocator-owned module, status, and artifact bytes.",
+        "Pending overwrite is rejected; failed capture hides previous identity; every partial allocation unwinds and teardown releases retained data."
+      ],
+      "reviewId": "common_audit_20260919_artifact_state",
+      "reviewedAt": "2026-09-19T20:53:08.926302+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e24ffcd74b5a04ba819b7f0f338dbacbdd3da726",
+      "status": "verified",
+      "summary": "Complete file examination: a provider-owned State retains one copied pending snapshot and the latest published identity. Capture/retry/clear/deinit and borrowed path/hash views have explicit lifetimes; output paths outlive the owner, operations are serialized by the owning command session, and owning structs must not be copied. Allocation-failure and source-mutation coverage establish the tested ownership boundary.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/common/artifact_state.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "13a2380f806f8bf39faccf22dad391fc010df3e55111922b4c0855d47f3202b5"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_compute.zig",
+          "sha256": "03968f8ae4d47fcbed6a5504d553936a0efcfd9f979259c23a0d2a7c17662cfa"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_shader_source.zig",
+          "sha256": "ff3a1fea216965ff6b6fa3c19c175c88eaf35b118fa3b68a95de74e19d4ce09b"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "c3905c6208c3d8b679c314b161d4eac9cd17cda729dbcbedd3c888f4e80f8048"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "1c296a467b0395821f4b12cb97f9d67560fc25382c768aa0e50449b4f6226e41"
+        },
+        {
+          "path": "runtime/zig/tests/d3d12/d3d12_native_unit_test.zig",
+          "sha256": "96366cd23ab00eb663a54c516d9fc990742b2fa9ddeede9ce027e974639b966e"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/README.md",
+          "sha256": "814cdaf4c8a7789d23ef473aae897c4676bfce3cc4819278b3a3a654fcc7b134"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/aggregate-accepted.log",
+          "sha256": "07417b9c5928b4efcca43c9df9f4af61f9d5162f60ce8ad67b92f6c6b2bc1153"
+        }
+      ],
+      "findings": [],
+      "inputHash": "b9f94f6605878e0519f7f9f07d1df174f24e5065321b2f5bf870971488458ff8",
+      "level": "file",
+      "nextAction": "Continue file:src/backend/common/shader_artifact_manifest.zig as its own examination.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Made file_exists fallible and migrated all production/test call sites; long invalid paths are no longer misreported as absence.",
+        "Added error cleanup around allocated candidate paths. The related Vulkan cache admission leak is repaired and allocation-injected without granting the consumer whole-file review credit."
+      ],
+      "reviewId": "common_audit_20260919_path_utils",
+      "reviewedAt": "2026-09-19T20:53:09.968102+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e24ffcd74b5a04ba819b7f0f338dbacbdd3da726",
+      "status": "verified",
+      "summary": "Complete file examination: retain the small shared existence probe. FileNotFound alone permits another candidate; permission, invalid-path, and other access failures remain errors. The probe owns no allocation and makes no guarantee that a subsequent open cannot race. Its Vulkan/D3D12 callers own and unwind candidate paths.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/common/path_utils.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/gates/shader_artifact_gate.py",
+          "sha256": "6da8afd8aa5919b1520375b29725d132e35dc9dd383d8c7bbff052d3fb3b58d3"
+        },
+        {
+          "path": "bench/native_compare_modules/contracts.py",
+          "sha256": "d94b5d6cfa62020fe0fa30ac5c08a5c0570847d14f686ba4fba6e4cee214836c"
+        },
+        {
+          "path": "bench/tests/test_shader_artifact_gate.py",
+          "sha256": "2f0690416a260aaca1f9764a3b4f0739b46b7de5f43045c1a893b06ed0c61b5e"
+        },
+        {
+          "path": "config/shader-artifact.schema.json",
+          "sha256": "9125c9e578a3212b871a77631fdac8f18fae69d4b4f68a7ba61efcdf9cc17bde"
+        },
+        {
+          "path": "config/shader-toolchain.json",
+          "sha256": "b4a83c97b9401325462879109d5cc37a58d0fc78a430496b7fdbc74931d2d8bf"
+        },
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "13a2380f806f8bf39faccf22dad391fc010df3e55111922b4c0855d47f3202b5"
+        },
+        {
+          "path": "runtime/zig/src/backend/common/artifact_state.zig",
+          "sha256": "dabf582598425430aef4054439b0b16bc241a8925919d650360106e844ffda29"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/artifact_emit.zig",
+          "sha256": "b629d6e08ae190f352241f3efc9b22d5b2a40106a14e1e2a0f1422e430d9405b"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "f1ac4509ea2d3ef0e96f41411dd612bc82c74267b217978c29c91c5441672a66"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/artifact_emit.zig",
+          "sha256": "d52cde419178c3b95b6ba98763c4010a8fa54ca39cf87bd4a11ff309b205505e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/mod.zig",
+          "sha256": "541c756c5bd21493dcc338ad1c1589e30f006924f0c0f319a66cb234f9b846b7"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/telemetry.zig",
+          "sha256": "29b453d78e41522623bda898fa4fc0b73ed2872b7e790b34349347e66e70e30a"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/artifact_emit.zig",
+          "sha256": "ebb1f5e915055aa277530bd786b3580f7f4fb830730e60f2efbf0152e41d9e22"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/mod.zig",
+          "sha256": "175ecea289fedded340002e805fba713cd052bb80eea6dd28be2530d735cdbc9"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_pipeline.zig",
+          "sha256": "7fcc450ef0aa78130f27aef5289b82dd9fdb768e1ee59f60b5342c7880f64739"
+        },
+        {
+          "path": "runtime/zig/src/contracts/artifact.zig",
+          "sha256": "77932d4f9c1efc749cdb3f5326b102f5fc3474e4ad091156b4ee4d0501c9cf1b"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "c9f8b9322b804b1ba169b26388ad776d92af931cc4da3eac7a8fda2def8f1e78"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "c3905c6208c3d8b679c314b161d4eac9cd17cda729dbcbedd3c888f4e80f8048"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "1c296a467b0395821f4b12cb97f9d67560fc25382c768aa0e50449b4f6226e41"
+        },
+        {
+          "path": "runtime/zig/tests/core/execution_test.zig",
+          "sha256": "ee6969139e2ba72464e6f46ffa784e733b0d87a761d3eb9b12c29f998dd2fb5f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/README.md",
+          "sha256": "814cdaf4c8a7789d23ef473aae897c4676bfce3cc4819278b3a3a654fcc7b134"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/aggregate-accepted.log",
+          "sha256": "07417b9c5928b4efcca43c9df9f4af61f9d5162f60ce8ad67b92f6c6b2bc1153"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/artifact-gate-final.log",
+          "sha256": "5d5f98070a572fd5d4ee1464a060ef068999634aa3ad506fdd356354b4c20927"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/environment.txt",
+          "sha256": "67c89f2378d6ec44d41b2484ffee9dcff00a94147ccd2f621b20b4d7fa602f5f"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/expected.bin",
+          "sha256": "76108f84396dc2d72ce275fdb0e0ef37b229b2898bf5a31d576fea11a766a42b"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/manifest-probe.zig.txt",
+          "sha256": "4b5fbe6d010b587eabc14221acb0b753e96d326599a3115b5d5b562bd686b44a"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/manifest-validation-confirmed.log",
+          "sha256": "4fdfb6fd8bb00feba2bc8fe5cd470a445e6ddc6beeddf2e26abb8f6f22778453"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/physical-accepted.log",
+          "sha256": "a3b5fce2501a8afe38d932bc98bdb1c9398537571ef083e72bce6329703b2ef6"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/physical-artifacts/vulkan_shader_artifact_1ca3a1655df553b85ff1564c06289a5f3e945ae83d76d0c47a98dd2f9de2bc15.spv",
+          "sha256": "1ca3a1655df553b85ff1564c06289a5f3e945ae83d76d0c47a98dd2f9de2bc15"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/physical-artifacts/vulkan_shader_artifact_d70c5a4212f054ef4cbed4294f900cc5aba4c2dd825e50422c1f8e0d065608f6.json",
+          "sha256": "1c9c3f9f290e7f1224d4d7dddd0c7cb6d3d7a8f607168d7b4c011fdf5553b14a"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/physical.meta.json",
+          "sha256": "3a27fd505fb36eaaae3e9dbab381c6a743e5b5eb39067872a3199d37854944ff"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/physical.trace.jsonl",
+          "sha256": "514881c2ee99d13ce9981f3b251a0638122a2559c0b932c66229d8c34ce41e4c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/schema-confirmed.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/sentinel.wgsl",
+          "sha256": "da58665ad5c0d7d3a36d7d065ec4a4c4ee62499dcafa26e5edaa9ee18076c7aa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/verify-evidence.py",
+          "sha256": "2cdb13b4a7af679ba3cc31ed04c3e704d68f84673e5bbd10ef255ebeb4233b1e"
+        }
+      ],
+      "findings": [],
+      "inputHash": "3dc27e14270aa75a3a20e1223da2f4a990dbaa1de752cda696ad30076fb99268",
+      "level": "file",
+      "nextAction": "Continue file:src/backend/common/submit_count_policy.zig as its own examination.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed generic backend field reflection, telemetry-triggered I/O, swallowed errors, and bootstrap shader receipts; callers now collect explicitly after measured execution.",
+        "Versioned content/derived and source-observation/module-label identities, removed fabricated external-tool invocation metadata, and bound deduplication to actual content, observed source, metadata, stage description, and policy identity.",
+        "Atomic publication prevents partial replacement; allocation injection exposed and repaired JSON OutOfMemory erasure. Vulkan staging is cleared at command boundaries so previous work cannot supply current receipt bytes."
+      ],
+      "reviewId": "common_audit_20260919_shader_artifact_manifest",
+      "reviewedAt": "2026-09-19T20:53:11.014134+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e24ffcd74b5a04ba819b7f0f338dbacbdd3da726",
+      "status": "verified",
+      "summary": "Complete file examination: explicit collection owns JSON serialization, stage identities, deduplication, and atomic publication, while State owns retained inputs. Dynamic JSON is escaped; complete hash inputs replace bounded formatting fallbacks. Filesystem/configuration/allocation errors preserve pending work for retry. Schema-only Metal/D3D12 output and physical Vulkan output are distinguished; derived identities and unobserved stages are not binary or compiler-execution proof.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/common/shader_artifact_manifest.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "13a2380f806f8bf39faccf22dad391fc010df3e55111922b4c0855d47f3202b5"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "f1ac4509ea2d3ef0e96f41411dd612bc82c74267b217978c29c91c5441672a66"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/mod.zig",
+          "sha256": "541c756c5bd21493dcc338ad1c1589e30f006924f0c0f319a66cb234f9b846b7"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/mod.zig",
+          "sha256": "175ecea289fedded340002e805fba713cd052bb80eea6dd28be2530d735cdbc9"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_types.zig",
+          "sha256": "78c0f8da356755bc78bbc02427d3e4db9b1861d23b1c6b4484f9c9267c2fd33a"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution_receipt.zig",
+          "sha256": "0ff5dd77bec0e5167e3ca5e917bbb382a3dfe21868fbb690560af0dff353c4f0"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "c3905c6208c3d8b679c314b161d4eac9cd17cda729dbcbedd3c888f4e80f8048"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "1c296a467b0395821f4b12cb97f9d67560fc25382c768aa0e50449b4f6226e41"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/README.md",
+          "sha256": "814cdaf4c8a7789d23ef473aae897c4676bfce3cc4819278b3a3a654fcc7b134"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/aggregate-accepted.log",
+          "sha256": "07417b9c5928b4efcca43c9df9f4af61f9d5162f60ce8ad67b92f6c6b2bc1153"
+        }
+      ],
+      "findings": [],
+      "inputHash": "8e73353722a2f793aade19406ab82db7a301554b9044f3494e121c24ed644076",
+      "level": "file",
+      "nextAction": "Continue file:src/backend/common/timing.zig as its own examination.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed the redundant local model wrapper and explicitly registered existing behavioral tests in core and aggregate roots; documented the logical-versus-physical accounting contract."
+      ],
+      "reviewId": "common_audit_20260919_submit_count_policy",
+      "reviewedAt": "2026-09-19T20:53:12.068979+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e24ffcd74b5a04ba819b7f0f338dbacbdd3da726",
+      "status": "verified",
+      "summary": "Complete file examination: retain the existing exhaustive selected-command submission policy. It reports logical command accounting, not physical queue submissions: errors have no selected count, dispatch/draw work requires a nonzero work count, and barriers do not claim waited work as new submission. Pure scalar inputs/results have no allocation or ownership boundary.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/common/submit_count_policy.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "13a2380f806f8bf39faccf22dad391fc010df3e55111922b4c0855d47f3202b5"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_async_diagnostics.zig",
+          "sha256": "b2fc1dfe3368c0f8269937cb486fe940db9bd0e97724a3992fbff929af59b64c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_pipeline_cache.zig",
+          "sha256": "ea46b766351bc13a6623489dc82c99dfb60de9adb6e5ecd92216eda22501a4b6"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vulkan_timing.zig",
+          "sha256": "68b1e0b084ae4929fa3665fea9c4737a865c8dff7b6c999f1c55a868111277c5"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "c3905c6208c3d8b679c314b161d4eac9cd17cda729dbcbedd3c888f4e80f8048"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "1c296a467b0395821f4b12cb97f9d67560fc25382c768aa0e50449b4f6226e41"
+        },
+        {
+          "path": "runtime/zig/tests/backend/common_timing_test.zig",
+          "sha256": "835b34c417a414de500f51e77bf8fbd3a8362de96344e27732d6d2c0bc84f002"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/README.md",
+          "sha256": "814cdaf4c8a7789d23ef473aae897c4676bfce3cc4819278b3a3a654fcc7b134"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/aggregate-accepted.log",
+          "sha256": "07417b9c5928b4efcca43c9df9f4af61f9d5162f60ce8ad67b92f6c6b2bc1153"
+        }
+      ],
+      "findings": [],
+      "inputHash": "19cec37bdbda11d1449877ad294a6d3be6895b2b1cc64b8cd0c06642a1dc1f09",
+      "level": "file",
+      "nextAction": "Continue directory:src/backend/common as its own examination.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Replaced calendar timestamp sampling with elapsed-clock Instant sampling and explicit unsupported errors.",
+        "Prevented a missing start sample from becoming an epoch-sized duration; tests cover forward, reversed, equal, and zero samples plus repeated elapsed samples."
+      ],
+      "reviewId": "common_audit_20260919_timing",
+      "reviewedAt": "2026-09-19T20:53:13.101602+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e24ffcd74b5a04ba819b7f0f338dbacbdd3da726",
+      "status": "verified",
+      "summary": "Complete file examination: retain a small elapsed-clock sampling/conversion boundary with no persistent state or allocations. Zig Instant provides the platform clock and units; operation_timing_ns propagates unavailable clocks. The compatibility now_ns API reserves zero, and ns_delta saturates reversal/unavailability. Samples are not calendar timestamps or a guarantee against OS/hardware clock faults.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/common/timing.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/shader-artifact.schema.json",
+          "sha256": "9125c9e578a3212b871a77631fdac8f18fae69d4b4f68a7ba61efcdf9cc17bde"
+        },
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "13a2380f806f8bf39faccf22dad391fc010df3e55111922b4c0855d47f3202b5"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/artifact_emit.zig",
+          "sha256": "b629d6e08ae190f352241f3efc9b22d5b2a40106a14e1e2a0f1422e430d9405b"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/artifact_emit.zig",
+          "sha256": "d52cde419178c3b95b6ba98763c4010a8fa54ca39cf87bd4a11ff309b205505e"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/telemetry.zig",
+          "sha256": "29b453d78e41522623bda898fa4fc0b73ed2872b7e790b34349347e66e70e30a"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/artifact_emit.zig",
+          "sha256": "ebb1f5e915055aa277530bd786b3580f7f4fb830730e60f2efbf0152e41d9e22"
+        },
+        {
+          "path": "runtime/zig/src/contracts/artifact.zig",
+          "sha256": "77932d4f9c1efc749cdb3f5326b102f5fc3474e4ad091156b4ee4d0501c9cf1b"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "c9f8b9322b804b1ba169b26388ad776d92af931cc4da3eac7a8fda2def8f1e78"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "c3905c6208c3d8b679c314b161d4eac9cd17cda729dbcbedd3c888f4e80f8048"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "1c296a467b0395821f4b12cb97f9d67560fc25382c768aa0e50449b4f6226e41"
+        },
+        {
+          "path": "runtime/zig/tests/core/execution_test.zig",
+          "sha256": "ee6969139e2ba72464e6f46ffa784e733b0d87a761d3eb9b12c29f998dd2fb5f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/README.md",
+          "sha256": "814cdaf4c8a7789d23ef473aae897c4676bfce3cc4819278b3a3a654fcc7b134"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/aggregate-accepted.log",
+          "sha256": "07417b9c5928b4efcca43c9df9f4af61f9d5162f60ce8ad67b92f6c6b2bc1153"
+        }
+      ],
+      "findings": [],
+      "inputHash": "9279c192c9edc44084d5574bf28aadab4f310122fd7e72c523b4d7e40f7d249a",
+      "level": "directory",
+      "nextAction": "Continue within_directory:src/backend/common as its own examination.",
+      "prerequisites": [
+        "common_audit_20260919_artifact_policy",
+        "common_audit_20260919_artifact_state",
+        "common_audit_20260919_path_utils",
+        "common_audit_20260919_shader_artifact_manifest",
+        "common_audit_20260919_submit_count_policy",
+        "common_audit_20260919_timing"
+      ],
+      "resolvedFindings": [
+        "Made the public artifact boundary a named state plus explicit collector, preserving platform descriptions outside common and keeping filesystem I/O out of ordinary telemetry reads."
+      ],
+      "reviewId": "common_audit_20260919_common_directory",
+      "reviewedAt": "2026-09-19T20:53:14.141687+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e24ffcd74b5a04ba819b7f0f338dbacbdd3da726",
+      "status": "verified",
+      "summary": "Separate directory-organization examination after the direct file reviews: retain the existing semantic split. Command artifact decisions, capture ownership, and file publication are separate public surfaces; path admission, selected-submit accounting, and elapsed sampling are small independent backend services. Backend stage descriptions remain under their platform directories. No extra forwarding registry, universal executor, or generic utility bucket is needed. Existing directory membership is sufficient.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/common"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/gates/shader_artifact_gate.py",
+          "sha256": "6da8afd8aa5919b1520375b29725d132e35dc9dd383d8c7bbff052d3fb3b58d3"
+        },
+        {
+          "path": "bench/native_compare_modules/contracts.py",
+          "sha256": "d94b5d6cfa62020fe0fa30ac5c08a5c0570847d14f686ba4fba6e4cee214836c"
+        },
+        {
+          "path": "config/shader-artifact.schema.json",
+          "sha256": "9125c9e578a3212b871a77631fdac8f18fae69d4b4f68a7ba61efcdf9cc17bde"
+        },
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "13a2380f806f8bf39faccf22dad391fc010df3e55111922b4c0855d47f3202b5"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/artifact_emit.zig",
+          "sha256": "b629d6e08ae190f352241f3efc9b22d5b2a40106a14e1e2a0f1422e430d9405b"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "f1ac4509ea2d3ef0e96f41411dd612bc82c74267b217978c29c91c5441672a66"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/artifact_emit.zig",
+          "sha256": "d52cde419178c3b95b6ba98763c4010a8fa54ca39cf87bd4a11ff309b205505e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/backend_execute.zig",
+          "sha256": "d4249d4f3179eaf5ffae7a6a1fe50a42fdbf95f6715206d1d13f153565b51a8c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/mod.zig",
+          "sha256": "541c756c5bd21493dcc338ad1c1589e30f006924f0c0f319a66cb234f9b846b7"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/telemetry.zig",
+          "sha256": "29b453d78e41522623bda898fa4fc0b73ed2872b7e790b34349347e66e70e30a"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/artifact_emit.zig",
+          "sha256": "ebb1f5e915055aa277530bd786b3580f7f4fb830730e60f2efbf0152e41d9e22"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/mod.zig",
+          "sha256": "175ecea289fedded340002e805fba713cd052bb80eea6dd28be2530d735cdbc9"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_pipeline.zig",
+          "sha256": "7fcc450ef0aa78130f27aef5289b82dd9fdb768e1ee59f60b5342c7880f64739"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_shader_source.zig",
+          "sha256": "ff3a1fea216965ff6b6fa3c19c175c88eaf35b118fa3b68a95de74e19d4ce09b"
+        },
+        {
+          "path": "runtime/zig/src/contracts/artifact.zig",
+          "sha256": "77932d4f9c1efc749cdb3f5326b102f5fc3474e4ad091156b4ee4d0501c9cf1b"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/runtime/execution.zig",
+          "sha256": "c9f8b9322b804b1ba169b26388ad776d92af931cc4da3eac7a8fda2def8f1e78"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "c3905c6208c3d8b679c314b161d4eac9cd17cda729dbcbedd3c888f4e80f8048"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "1c296a467b0395821f4b12cb97f9d67560fc25382c768aa0e50449b4f6226e41"
+        },
+        {
+          "path": "runtime/zig/tests/core/execution_test.zig",
+          "sha256": "ee6969139e2ba72464e6f46ffa784e733b0d87a761d3eb9b12c29f998dd2fb5f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/README.md",
+          "sha256": "814cdaf4c8a7789d23ef473aae897c4676bfce3cc4819278b3a3a654fcc7b134"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/aggregate-accepted.log",
+          "sha256": "07417b9c5928b4efcca43c9df9f4af61f9d5162f60ce8ad67b92f6c6b2bc1153"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/environment.txt",
+          "sha256": "67c89f2378d6ec44d41b2484ffee9dcff00a94147ccd2f621b20b4d7fa602f5f"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/expected.bin",
+          "sha256": "76108f84396dc2d72ce275fdb0e0ef37b229b2898bf5a31d576fea11a766a42b"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/manifest-validation-confirmed.log",
+          "sha256": "4fdfb6fd8bb00feba2bc8fe5cd470a445e6ddc6beeddf2e26abb8f6f22778453"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/physical-accepted.log",
+          "sha256": "a3b5fce2501a8afe38d932bc98bdb1c9398537571ef083e72bce6329703b2ef6"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/physical-artifacts/vulkan_shader_artifact_1ca3a1655df553b85ff1564c06289a5f3e945ae83d76d0c47a98dd2f9de2bc15.spv",
+          "sha256": "1ca3a1655df553b85ff1564c06289a5f3e945ae83d76d0c47a98dd2f9de2bc15"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/physical-artifacts/vulkan_shader_artifact_d70c5a4212f054ef4cbed4294f900cc5aba4c2dd825e50422c1f8e0d065608f6.json",
+          "sha256": "1c9c3f9f290e7f1224d4d7dddd0c7cb6d3d7a8f607168d7b4c011fdf5553b14a"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/physical.meta.json",
+          "sha256": "3a27fd505fb36eaaae3e9dbab381c6a743e5b5eb39067872a3199d37854944ff"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/physical.trace.jsonl",
+          "sha256": "514881c2ee99d13ce9981f3b251a0638122a2559c0b932c66229d8c34ce41e4c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/sentinel.wgsl",
+          "sha256": "da58665ad5c0d7d3a36d7d065ec4a4c4ee62499dcafa26e5edaa9ee18076c7aa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/verify-evidence.py",
+          "sha256": "2cdb13b4a7af679ba3cc31ed04c3e704d68f84673e5bbd10ef255ebeb4233b1e"
+        }
+      ],
+      "findings": [],
+      "inputHash": "d15e2ab9d16ab8b1d845c113d224f4757027daba1d06e838e3e340e5cf9e1488",
+      "level": "within_directory",
+      "nextAction": "Continue file:src/backend/d3d12/artifact_emit.zig as its own examination.",
+      "prerequisites": [
+        "common_audit_20260919_common_directory"
+      ],
+      "resolvedFindings": [
+        "Removed repeated backend artifact-storage layouts and hidden telemetry collection; capture, publish, retry, and teardown now share one typed lifetime contract.",
+        "Verified source/content identity changes invalidate deduplication, allocation errors unwind, and stale Vulkan prewarm staging cannot cross the next command boundary. Execution receipt tests preserve dispatch counts on collection failure."
+      ],
+      "reviewId": "common_audit_20260919_common_relationships",
+      "reviewedAt": "2026-09-19T20:53:15.193467+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e24ffcd74b5a04ba819b7f0f338dbacbdd3da726",
+      "status": "verified",
+      "summary": "Separate relationship examination: canonical command tags drive artifact eligibility; State copies invocation inputs; collection reads pending data and commits published identity before clearing ownership. Publication failure retains pending inputs and suppresses stale current identity. Timing and logical-submit accounting are independent of artifact output. Provider/runtime adapters collect explicitly after measurement and preserve original execution failure and actual work counters. These consumer checks do not complete a cross-directory or ordinary-WebGPU execution-path review.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/common"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/tests/test_shader_artifact_gate.py",
+          "sha256": "2f0690416a260aaca1f9764a3b4f0739b46b7de5f43045c1a893b06ed0c61b5e"
+        },
+        {
+          "path": "config/shader-artifact.schema.json",
+          "sha256": "9125c9e578a3212b871a77631fdac8f18fae69d4b4f68a7ba61efcdf9cc17bde"
+        },
+        {
+          "path": "config/shader-toolchain.json",
+          "sha256": "b4a83c97b9401325462879109d5cc37a58d0fc78a430496b7fdbc74931d2d8bf"
+        },
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "13a2380f806f8bf39faccf22dad391fc010df3e55111922b4c0855d47f3202b5"
+        },
+        {
+          "path": "runtime/zig/src/backend/common/artifact_state.zig",
+          "sha256": "dabf582598425430aef4054439b0b16bc241a8925919d650360106e844ffda29"
+        },
+        {
+          "path": "runtime/zig/src/backend/common/shader_artifact_manifest.zig",
+          "sha256": "2d349cbe3644f96fbefd85db23b8465d64212a0e4f8c318c0447dd6fffd9fb7f"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_compute.zig",
+          "sha256": "03968f8ae4d47fcbed6a5504d553936a0efcfd9f979259c23a0d2a7c17662cfa"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "f1ac4509ea2d3ef0e96f41411dd612bc82c74267b217978c29c91c5441672a66"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "c3905c6208c3d8b679c314b161d4eac9cd17cda729dbcbedd3c888f4e80f8048"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "1c296a467b0395821f4b12cb97f9d67560fc25382c768aa0e50449b4f6226e41"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/README.md",
+          "sha256": "814cdaf4c8a7789d23ef473aae897c4676bfce3cc4819278b3a3a654fcc7b134"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/aggregate-accepted.log",
+          "sha256": "07417b9c5928b4efcca43c9df9f4af61f9d5162f60ce8ad67b92f6c6b2bc1153"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/artifact-gate-final.log",
+          "sha256": "5d5f98070a572fd5d4ee1464a060ef068999634aa3ad506fdd356354b4c20927"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/manifest-probe.zig.txt",
+          "sha256": "4b5fbe6d010b587eabc14221acb0b753e96d326599a3115b5d5b562bd686b44a"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/manifest-validation-confirmed.log",
+          "sha256": "4fdfb6fd8bb00feba2bc8fe5cd470a445e6ddc6beeddf2e26abb8f6f22778453"
+        }
+      ],
+      "findings": [],
+      "inputHash": "224fabad7c7b91cfdf5ee6c035d7db8b3173a5e5bc55153e4b71c24c08ba8801",
+      "level": "file",
+      "nextAction": "Continue file:src/backend/d3d12/commands/d3d12_async_diagnostics.zig as its own examination.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed borrowed/generic forwarding operations and the invented dxv validation record; named-state collection is explicit and failures are observable."
+      ],
+      "reviewId": "common_audit_20260919_d3d12_artifact_emit",
+      "reviewedAt": "2026-09-19T20:53:16.248076+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e24ffcd74b5a04ba819b7f0f338dbacbdd3da726",
+      "status": "verified",
+      "summary": "Complete file examination: retain a D3D12-owned stage description with a typed State collector call. It owns no allocation/native handles and propagates collection errors. Derived DXIL identities explicitly lack binary bytes; unobserved implementation metadata does not certify stage execution. Linux producer/schema validation covers this source contract, not Windows/D3D12 hardware execution.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/artifact_emit.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "13a2380f806f8bf39faccf22dad391fc010df3e55111922b4c0855d47f3202b5"
+        },
+        {
+          "path": "runtime/zig/src/backend/common/timing.zig",
+          "sha256": "f314b434f97a9a88eba57a75423c02dbeec33c823caf05038a145d01d267873f"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "7cc7eb627398b953cb3e087303b11c90bf512b75d0f3666b2f205dc961e9cd72"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.h",
+          "sha256": "14b29a1199c0cd8ab225116c72d3d55d01cab060635c8fcde1c327fff3aa3e89"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge_decls.zig",
+          "sha256": "a81e674abc9470481010d89e5c4e2f38c5e24026a8d012102ef816e0d61e843b"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge_stubs.c",
+          "sha256": "c57fc7e410e374a4501b1de33e4e68b669d0726364a93462e3ab971451fc97aa"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "388bfecbe10751a79f1ca24c976c875449f32f4b3b57b4a36e46927b9ced9362"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "f1ac4509ea2d3ef0e96f41411dd612bc82c74267b217978c29c91c5441672a66"
+        },
+        {
+          "path": "runtime/zig/src/contracts/command.zig",
+          "sha256": "e59388891ba3f944699f86c69f2c0e11129d7f8d73ff97409c22f822de90faf1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_async_types.zig",
+          "sha256": "ecfe312c25232b1da11ccee650285f4bfff80a5d3d876710123f46e695ed4685"
+        },
+        {
+          "path": "runtime/zig/test_suite.zig",
+          "sha256": "c3905c6208c3d8b679c314b161d4eac9cd17cda729dbcbedd3c888f4e80f8048"
+        },
+        {
+          "path": "runtime/zig/test_suite_core.zig",
+          "sha256": "1c296a467b0395821f4b12cb97f9d67560fc25382c768aa0e50449b4f6226e41"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/README.md",
+          "sha256": "814cdaf4c8a7789d23ef473aae897c4676bfce3cc4819278b3a3a654fcc7b134"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-common-audit/aggregate-accepted.log",
+          "sha256": "07417b9c5928b4efcca43c9df9f4af61f9d5162f60ce8ad67b92f6c6b2bc1153"
+        }
+      ],
+      "findings": [],
+      "inputHash": "b13e56fcce85fbb70891834a3cbab7705f800f94c4828da329677a5940f6e3fb",
+      "level": "file",
+      "nextAction": "Stop at this batch checkpoint. Next: file:src/backend/d3d12/commands/d3d12_dispatch.zig; read the full file, contracts, callers and lifetime/error paths, then append its own findings and evidence.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Deleted empty-loop capability/resource-table/pixel-local probes and the fabricated synchronous pipeline bytecode path; unsupported modes return UnsupportedFeature.",
+        "Aligned D3D12 capability advertisement with admitted native work, and used fallible elapsed sampling so unavailable clocks cannot produce successful fabricated diagnostic timing."
+      ],
+      "reviewId": "common_audit_20260919_d3d12_async_diagnostics",
+      "reviewedAt": "2026-09-19T20:53:17.306194+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "e24ffcd74b5a04ba819b7f0f338dbacbdd3da726",
+      "status": "verified",
+      "summary": "Complete file examination: preserve the native root-signature create/release lifecycle probe, releasing each successfully acquired handle and propagating native/timing failure; a missing device is rejected before entering the C adapter. Exhaustive mode admission rejects modes without native work before entering any loop. Canonical mode/iteration contracts and platform C handles remain unchanged. CPU admission/compilation checks establish source behavior; no Windows lifecycle qualification is claimed.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_async_diagnostics.zig"
+      ]
     }
   ],
   "schemaVersion": 1

@@ -18,6 +18,7 @@ test "ns_delta computes positive difference" {
 test "ns_delta returns zero when after <= before" {
     try std.testing.expectEqual(@as(u64, 0), common_timing.ns_delta(1000, 1500));
     try std.testing.expectEqual(@as(u64, 0), common_timing.ns_delta(1000, 1000));
+    try std.testing.expectEqual(@as(u64, 0), common_timing.ns_delta(1000, 0));
 }
 
 test "vulkan timing alias resolves to common" {
@@ -26,4 +27,13 @@ test "vulkan timing alias resolves to common" {
     const vk_ts = try vulkan_timing.operation_timing_ns();
 
     try std.testing.expect(vk_ts > 0);
+}
+
+test "operation timing samples share a monotonic epoch" {
+    var previous = try common_timing.operation_timing_ns();
+    for (0..100) |_| {
+        const current = try common_timing.operation_timing_ns();
+        try std.testing.expect(current >= previous);
+        previous = current;
+    }
 }

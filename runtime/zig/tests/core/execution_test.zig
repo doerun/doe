@@ -833,3 +833,50 @@ test "CopyTextureResource defaults to 1x1x1 buffer resource" {
     try testing.expectEqual(@as(u32, 0), resource.mip_level);
     try testing.expectEqual(@as(u32, 1), resource.sample_count);
 }
+
+test "artifact collection failure is reported after successful execution" {
+    const prepared = @import("../../src/contracts/prepared_operation.zig");
+    const report = @import("../../src/contracts/execution_report.zig");
+    const telemetry_contract = @import("../../src/contracts/runtime_telemetry.zig");
+    const configuration = @import("../../src/contracts/runtime_configuration.zig");
+    const Fixture = struct {
+        executed: bool = false,
+        collections: usize = 0,
+        fail_execution: bool = false,
+
+        fn execute(ctx: *anyopaque, _: prepared.PreparedComputeOperation) !report.ExecutionReport {
+            const self: *@This() = @ptrCast(@alignCast(ctx));
+            self.executed = true;
+            if (self.fail_execution) return report.ExecutionReport.fail("execution failed first");
+            return .{ .dispatch_count = 1 };
+        }
+        fn collect(ctx: *anyopaque) !void {
+            const self: *@This() = @ptrCast(@alignCast(ctx));
+            try testing.expect(self.executed);
+            self.collections += 1;
+            return error.AccessDenied;
+        }
+        fn snapshot(_: *anyopaque) telemetry_contract.RuntimeTelemetry {
+            return telemetry_contract.defaultTelemetry();
+        }
+        fn timestamp(_: *anyopaque) !u64 {
+            return error.Unsupported;
+        }
+        fn prewarm(_: *anyopaque, _: []const u8, _: ?[]const u8, _: ?[]const compute.KernelBinding, _: bool) !void {}
+        fn setTiming(_: *anyopaque, _: configuration.GpuTimestampMode) void {}
+    };
+    var fixture = Fixture{};
+    var ports: @import("../../src/backend/ports/factory.zig").PortBundle = undefined;
+    ports.id = .doe_vulkan;
+    ports.compute = .{ .context = &fixture, .vtable = &.{ .execute_compute = Fixture.execute, .prewarm_kernel = Fixture.prewarm, .set_gpu_timestamp_mode = Fixture.setTiming } };
+    ports.telemetry = .{ .context = &fixture, .vtable = &.{ .get_gpu_timestamp_ns = Fixture.timestamp, .snapshot = Fixture.snapshot, .collect_artifacts = Fixture.collect } };
+    var context = execution.ExecutionContext.initNative(.vulkan_doe_comparable, ports);
+    const result = try context.execute(.{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } });
+    try testing.expectEqual(execution.ExecutionStatus.@"error", result.status);
+    try testing.expectEqualStrings("AccessDenied", result.status_code);
+    try testing.expectEqual(@as(u32, 1), result.dispatch_count);
+    try testing.expectEqual(@as(usize, 1), fixture.collections);
+    fixture.fail_execution = true;
+    const failed = try context.execute(.{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } });
+    try testing.expectEqualStrings("execution failed first", failed.status_code);
+}

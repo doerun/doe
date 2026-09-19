@@ -136,10 +136,7 @@ pub fn sha256_digest_hex(digest: [32]u8) Sha256Hex {
 }
 
 pub fn jsonStringifyAlloc(allocator: std.mem.Allocator, value: anytype) ![]u8 {
-    var out: std.io.Writer.Allocating = .init(allocator);
-    errdefer out.deinit();
-    try std.json.Stringify.value(value, .{}, &out.writer);
-    return try out.toOwnedSlice();
+    return std.json.Stringify.valueAlloc(allocator, value, .{});
 }
 
 pub fn sha256HexAlloc(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {

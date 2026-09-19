@@ -21,18 +21,14 @@ const command_requirements = @import("../../contracts/command.zig");
 const capabilities = @import("../../contracts/capability.zig");
 const artifact_meta = @import("../../contracts/artifact.zig");
 const artifact_policy = @import("../common/artifact_policy.zig");
-const hash_utils = @import("../../contracts/artifact.zig");
+const artifact_state = @import("../common/artifact_state.zig");
 const artifact_emit = @import("artifact_emit.zig");
 const native_runtime = @import("d3d12_native_runtime.zig");
-
-const MANIFEST_PATH_CAPACITY: usize = 256;
 
 // Uploads accumulate and flush lazily: flush_pending_uploads_if_required fires
 // once before the first non-upload command that needs to see the written data.
 // This matches Dawn's batched-upload behavior and eliminates per-upload fence overhead.
 const UPLOAD_BATCH_LAZY: u32 = std.math.maxInt(u32);
-const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
-const MANIFEST_MODULE_CAPACITY: usize = 64;
 
 const model = struct {
     pub const AsyncDiagnosticsCommand = model_async_types.AsyncDiagnosticsCommand;
@@ -52,10 +48,7 @@ const model = struct {
     pub const TextureWriteCommand = model_texture_types.TextureWriteCommand;
     pub const UploadCommand = model_resource_types.UploadCommand;
 };
-const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
-const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
-const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
 pub const ZigD3D12Backend = struct {
     allocator: std.mem.Allocator,
@@ -72,23 +65,8 @@ pub const ZigD3D12Backend = struct {
 
     capability_set: capabilities.CapabilitySet,
     status_message_storage: [STATUS_MESSAGE_BYTES]u8 = [_]u8{0} ** STATUS_MESSAGE_BYTES,
-    status_message_len: usize = 0,
 
-    manifest_emit_count: u64 = 0,
-    manifest_path_storage: [MANIFEST_PATH_CAPACITY]u8 = std.mem.zeroes([MANIFEST_PATH_CAPACITY]u8),
-    manifest_path_len: usize = 0,
-    manifest_hash_storage: [HASH_HEX_SIZE]u8 = std.mem.zeroes([HASH_HEX_SIZE]u8),
-    manifest_hash_len: usize = 0,
-    last_manifest_meta: ?artifact_meta.ArtifactMeta = null,
-    last_manifest_module_storage: [MANIFEST_MODULE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
-    last_manifest_module_len: usize = 0,
-    last_manifest_status_storage: [MANIFEST_STATUS_CODE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
-    last_manifest_status_len: usize = 0,
-    pending_artifact_write: bool = false,
-    pending_artifact_module: []const u8 = "",
-    pending_artifact_meta: artifact_meta.ArtifactMeta = undefined,
-    pending_artifact_status_storage: [MANIFEST_STATUS_CODE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
-    pending_artifact_status_len: usize = 0,
+    artifacts: artifact_state.State,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -117,29 +95,8 @@ pub const ZigD3D12Backend = struct {
             .telemetry = backend_telemetry.default_telemetry(),
             .capability_set = native_capability_set(),
             .status_message_storage = [_]u8{0} ** STATUS_MESSAGE_BYTES,
-            .status_message_len = 0,
-            .manifest_emit_count = 0,
-            .manifest_path_storage = std.mem.zeroes([MANIFEST_PATH_CAPACITY]u8),
-            .manifest_path_len = 0,
-            .manifest_hash_storage = std.mem.zeroes([HASH_HEX_SIZE]u8),
-            .manifest_hash_len = 0,
-            .last_manifest_meta = null,
-            .last_manifest_module_storage = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
-            .last_manifest_module_len = 0,
-            .last_manifest_status_storage = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
-            .last_manifest_status_len = 0,
-            .pending_artifact_write = false,
-            .pending_artifact_module = "",
-            .pending_artifact_meta = undefined,
-            .pending_artifact_status_storage = std.mem.zeroes([MANIFEST_STATUS_CODE_CAPACITY]u8),
-            .pending_artifact_status_len = 0,
+            .artifacts = .{ .allocator = allocator },
         };
-
-        ptr.emit_shader_artifact_manifest_for_signature(
-            BOOTSTRAP_MANIFEST_MODULE,
-            artifact_meta.classify(.native_d3d12, false, false),
-            BOOTSTRAP_MANIFEST_STATUS_CODE,
-        ) catch {};
 
         return ptr;
     }
@@ -152,27 +109,6 @@ pub const ZigD3D12Backend = struct {
     ) port_factory.PortBundle {
         self.telemetry = backend_telemetry.forSelection(.doe_d3d12, reason, fallback_used, policy_hash);
         return provider_adapter.fromDriver(PortDriver, self, .doe_d3d12);
-    }
-
-    fn manifest_path(self: *const ZigD3D12Backend) ?[]const u8 {
-        return artifact_emit.manifest_path(self);
-    }
-
-    fn manifest_hash(self: *const ZigD3D12Backend) ?[]const u8 {
-        return artifact_emit.manifest_hash(self);
-    }
-
-    fn flush_pending_artifact(self: *ZigD3D12Backend) void {
-        artifact_emit.flush_pending_artifact(self);
-    }
-
-    fn emit_shader_artifact_manifest_for_signature(
-        self: *ZigD3D12Backend,
-        module: []const u8,
-        meta: artifact_meta.ArtifactMeta,
-        status_code: []const u8,
-    ) common_errors.BackendNativeError!void {
-        return artifact_emit.emit_shader_artifact_manifest_for_signature(self, module, meta, status_code);
     }
 };
 
@@ -191,11 +127,7 @@ fn native_capability_set() capabilities.CapabilitySet {
         .texture_destroy,
         .surface_lifecycle,
         .surface_present,
-        .async_pipeline_diagnostics,
-        .async_capability_introspection,
-        .async_resource_table_immediates,
         .async_lifecycle_refcount,
-        .async_pixel_local_storage,
         .map_async,
         .gpu_timestamps,
         .timestamp_inside_passes,
@@ -216,9 +148,7 @@ fn native_capability_set() capabilities.CapabilitySet {
 }
 
 fn write_status(self: *ZigD3D12Backend, comptime fmt: []const u8, args: anytype) []const u8 {
-    const rendered = std.fmt.bufPrint(&self.status_message_storage, fmt, args) catch "status_format_error";
-    self.status_message_len = rendered.len;
-    return self.status_message_storage[0..self.status_message_len];
+    return artifact_policy.formatStatus(&self.status_message_storage, fmt, args);
 }
 
 fn cast(ctx: *anyopaque) *ZigD3D12Backend {
@@ -227,16 +157,16 @@ fn cast(ctx: *anyopaque) *ZigD3D12Backend {
 
 pub fn manifest_path_from_context(ctx: *anyopaque) ?[]const u8 {
     const self = cast(ctx);
-    self.flush_pending_artifact();
-    return self.manifest_path();
+    return self.artifacts.path();
 }
 
 pub fn manifest_hash_from_context(ctx: *anyopaque) ?[]const u8 {
-    return cast(ctx).manifest_hash();
+    return cast(ctx).artifacts.hash();
 }
 
 fn deinit(ctx: *anyopaque) void {
     const self = cast(ctx);
+    self.artifacts.deinit();
     const allocator = self.allocator;
     if (self.runtime) |*rt| {
         rt.deinit();
@@ -506,19 +436,17 @@ fn execute_native_command(
     };
     result.submit_wait_ns +|= pending_submit_wait_ns;
 
-    if (artifact_policy.should_emit_shader_artifact(command)) {
+    if (result.status == .ok and artifact_policy.should_emit_shader_artifact(command)) {
         const meta = artifact_meta.classify(
             .native_d3d12,
             result.gpu_timestamp_valid,
             result.gpu_timestamp_attempted,
         );
         const status_code = artifact_policy.artifact_status_code(result);
-        const copy_len = @min(status_code.len, self.pending_artifact_status_storage.len);
-        std.mem.copyForwards(u8, self.pending_artifact_status_storage[0..copy_len], status_code[0..copy_len]);
-        self.pending_artifact_status_len = copy_len;
-        self.pending_artifact_module = command_info.shader_artifact_module(command);
-        self.pending_artifact_meta = meta;
-        self.pending_artifact_write = true;
+        self.artifacts.capture(command_info.shader_artifact_module(command), meta, status_code, null, null) catch |err| {
+            result.status = .@"error";
+            result.status_message = @errorName(err);
+        };
     }
 
     return result;
@@ -674,7 +602,12 @@ pub fn destroyContext(ctx: *anyopaque) void {
     deinit(ctx);
 }
 
+fn collect_artifacts(ctx: *anyopaque) !void {
+    try artifact_emit.flushPending(&cast(ctx).artifacts);
+}
+
 const PortDriver = struct {
+    pub const collectArtifacts = collect_artifacts;
     pub const backendId = backend_id;
     pub const executePreparedCompute = execute_prepared_compute;
     pub const executePreparedTransfer = execute_prepared_transfer;

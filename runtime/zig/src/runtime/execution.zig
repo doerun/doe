@@ -180,6 +180,14 @@ pub const ExecutionContext = struct {
             );
         };
         const duration_ns = elapsedSince(command_start);
+        ports.telemetry.collectArtifacts() catch |err| {
+            if (native.status == .ok) {
+                var failed = execution_receipt.success(identity, ports.telemetry.snapshot(), duration_ns, native);
+                failed.status = .@"error";
+                failed.status_code = @errorName(err);
+                return failed;
+            }
+        };
         const command_telemetry = ports.telemetry.snapshot();
         return execution_receipt.success(
             identity,
