@@ -221,6 +221,7 @@ pub const DoeBindGroup = struct {
     pub const TYPE_MAGIC = MAGIC_BIND_GROUP;
     magic: u32 = TYPE_MAGIC,
     ref_count: u32 = 1,
+    layout: ?*DoeBindGroupLayout = null,
     buffers: [shared.MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** shared.MAX_BIND,
     textures: [shared.MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** shared.MAX_BIND,
     texture_views: [shared.MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** shared.MAX_BIND,

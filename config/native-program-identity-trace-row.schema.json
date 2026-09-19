@@ -131,20 +131,21 @@
               "prefixItems": [
                 {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 0
                 },
                 {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 0
                 },
                 {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 0
                 }
               ],
               "items": false,
               "minItems": 3,
-              "maxItems": 3
+              "maxItems": 3,
+              "description": "Encoded workgroup counts; a zero dimension records a valid dispatch with no shader invocations."
             },
             "repeatIndex": {
               "type": "integer",

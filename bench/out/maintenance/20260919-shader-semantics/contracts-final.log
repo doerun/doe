@@ -1,0 +1,63 @@
+ok: concurrent completion retains ownership through either callback order and failures
+ok: compute program identity, invalidation keys, strict schema, shipped schema parity
+ok: timestamp calibration preserves large epochs, fractional periods, wraparound and explicit support
+ok: resident schema migration, partial-input lease rollback, foreign device and stale generation
+ok: strict state formats and exact-edit approvals reject stale, cloned and foreign authority
+ok: frozen live-simulation policy, independent stencil, and byte-view acceptance
+ok: checked heat view, preparation, explicit reset routing, close/reopen, and cleanup during initialization
+ok: cleanup failure rejects terminal completion instead of acknowledging success
+ok: bounded request processes preserve errors, cancel work, and exit after parent disconnect
+browser-runtime-identity.test: ok
+node-webgpu provider-v1 contracts: ok
+node-webgpu governed execution contracts: ok
+node-webgpu loader contracts: ok
+build metadata permission contracts: ok
+platform package root contracts: ok
+node-webgpu governed process contracts: ok
+node-webgpu governed process CLI contracts: ok
+root runtime/declaration export parity: ok
+program-bundle runner contracts: ok
+full-surface-lifecycle.test: ok
+compute-buffer-identity.test: ok
+one-shot-resources.test: exact output, complete temporary release, injected failures, recovery, and borrowed input preservation
+capability-publication.test: ok
+provider-diagnostics.test: ok
+stage-platform-freshness.test: ok
+plan-contracts: ok
+plan-refactor-receipt: ok
+transparent WebGPU observer contracts: ok
+native device test helper contract: ok
+TAP version 13
+# Subtest: retains and reuses exact candidate package bytes
+ok 1 - retains and reuses exact candidate package bytes
+  ---
+  duration_ms: 2.794508
+  type: 'test'
+  ...
+# Subtest: rejects conflicting retained candidate bytes
+ok 2 - rejects conflicting retained candidate bytes
+  ---
+  duration_ms: 2.104061
+  type: 'test'
+  ...
+# Subtest: rejects evidence paths outside the candidate bundle
+ok 3 - rejects evidence paths outside the candidate bundle
+  ---
+  duration_ms: 0.157298
+  type: 'test'
+  ...
+# Subtest: source checkout permits only untracked evidence-bundle outputs
+ok 4 - source checkout permits only untracked evidence-bundle outputs
+  ---
+  duration_ms: 0.111121
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9.077085

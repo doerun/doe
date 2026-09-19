@@ -15,6 +15,18 @@
 const std = @import("std");
 const native = @import("../../src/native/mod.zig");
 
+// Filtered lifetime tests still need the C exports used by their release graph.
+comptime {
+    _ = native.doeNativeBufferRelease;
+    _ = native.doeNativeInstanceRelease;
+    _ = native.doeNativeDeviceRelease;
+    _ = native.doeNativeDeviceCreateCommandEncoder;
+    _ = native.doeNativeCommandEncoderFinish;
+    _ = native.doeNativeCommandEncoderRelease;
+    _ = native.doeNativeCommandBufferRelease;
+    _ = native.doeNativeComputePipelineRelease;
+}
+
 // ============================================================
 // Contract 1: cast rejects corrupted magic without crashing
 // ============================================================
@@ -255,4 +267,79 @@ test "C ABI null safety: bind group lifecycle" {
     native.doeNativePipelineLayoutRelease(null);
     try std.testing.expect(bg.doeNativeDeviceCreateBindGroup(null, null) == null);
     try std.testing.expect(bg.doeNativeDeviceCreateBindGroupLayout(null, null) == null);
+}
+
+test "bind group retains its layout and releases partial resources on rejection" {
+    const groups = @import("../../src/native/resource/doe_bind_group_native.zig");
+    const abi = @import("../../src/core/abi/wgpu_pipeline_descriptor_types.zig");
+    var layout = native.DoeBindGroupLayout{};
+    var buffer = native.DoeBuffer{ .size = 16 };
+    var entries = [_]abi.WGPUBindGroupEntry{
+        std.mem.zeroes(abi.WGPUBindGroupEntry),
+        std.mem.zeroes(abi.WGPUBindGroupEntry),
+    };
+    entries[0].buffer = @ptrCast(&buffer);
+    entries[0].size = 16;
+    entries[1].binding = 1;
+    entries[1].buffer = @ptrCast(&buffer);
+    entries[1].offset = 16;
+    entries[1].size = 4;
+    var descriptor = std.mem.zeroes(abi.WGPUBindGroupDescriptor);
+    descriptor.layout = @ptrCast(&layout);
+    descriptor.entries = &entries;
+    descriptor.entryCount = entries.len;
+    try std.testing.expect(groups.doeNativeDeviceCreateBindGroup(null, &descriptor) == null);
+    try std.testing.expectEqual(@as(u32, 1), layout.ref_count);
+    try std.testing.expectEqual(@as(u32, 1), buffer.ref_count);
+
+    descriptor.entryCount = 1;
+    const raw = groups.doeNativeDeviceCreateBindGroup(null, &descriptor) orelse return error.TestUnexpectedResult;
+    try std.testing.expectEqual(@as(u32, 2), layout.ref_count);
+    try std.testing.expectEqual(@as(u32, 2), buffer.ref_count);
+    groups.doeNativeBindGroupRelease(raw);
+    try std.testing.expectEqual(@as(u32, 1), layout.ref_count);
+    try std.testing.expectEqual(@as(u32, 1), buffer.ref_count);
+}
+
+test "flat bind group retains layout through successful and rejected construction" {
+    const groups = @import("../../src/native/resource/doe_bind_group_native.zig");
+    var layout = native.DoeBindGroupLayout{};
+    const raw = groups.doeNativeDeviceCreateBufferBindGroupFlat4(
+        null,
+        @ptrCast(&layout),
+        0,
+        0,
+        null,
+        0,
+        0,
+        null,
+        0,
+        0,
+        null,
+        0,
+        0,
+        null,
+        0,
+    ) orelse return error.TestUnexpectedResult;
+    try std.testing.expectEqual(@as(u32, 2), layout.ref_count);
+    groups.doeNativeBindGroupRelease(raw);
+    try std.testing.expectEqual(@as(u32, 1), layout.ref_count);
+    try std.testing.expect(groups.doeNativeDeviceCreateBufferBindGroupFlat4(
+        null,
+        @ptrCast(&layout),
+        1,
+        0,
+        null,
+        0,
+        0,
+        null,
+        0,
+        0,
+        null,
+        0,
+        0,
+        null,
+        0,
+    ) == null);
+    try std.testing.expectEqual(@as(u32, 1), layout.ref_count);
 }

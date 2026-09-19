@@ -1,0 +1,48 @@
+{"provider":{"module":"doe-gpu","loaded":true,"loadError":"","defaultCreateArgs":[],"doeNative":true,"libraryFlavor":"doe-dropin","doeLibraryPath":"/home/x/deco/doe/bench/out/maintenance/20260919-shader-semantics/build/lib/libwebgpu_doe.so","buildMetadataSource":"workspace","buildMetadataPath":"/home/x/deco/doe/bench/out/maintenance/20260919-shader-semantics/build/share/doe-build-metadata.json","leanVerifiedBuild":false,"proofArtifactSha256":null,"nativeFastPaths":{"appleFastPathCompiled":false,"queueFlush":true,"queueFlushBreakdown":true,"queueWriteBufferBatch":true,"queueWriteBufferBatchDataPtrs":true,"computeDispatchFlush":true,"computeDispatchFlushBreakdown":true,"computeDispatchBatchFlush":true,"computeDispatchBatchCopyFlush":true,"computeDispatchBatchCopyFlushBreakdown":true,"computePrewarmDispatchBindings":true,"bufferMapReadCopyUnmap":true}},"adapter":{"vendor":"AMD","architecture":"vulkan","device":"Radeon 8060S Graphics (RADV STRIX_HALO)","description":"Radeon 8060S Graphics (RADV STRIX_HALO)","isFallbackAdapter":false,"subgroupMinSize":32,"subgroupMaxSize":32,"vendorID":4098,"deviceID":5510,"driverVersion":109051907}}
+{"label":"clear followed by write","sourceSha256":"aab25ec82745804847dc7435700dca8d3db26614e9662b9d388d09e02e539b72","entryPoint":"main","dispatch":1,"actual":[7,0,0,0],"expected":[7,0,0,0]}
+ok: clear followed by write
+{"label":"additional writes","sourceSha256":"40c45e3ad7ab297b7d0a0fd91570423c8f927ecedf0b1cb88110dde1b54dc332","entryPoint":"main","dispatch":1,"actual":[7,0,0,19],"expected":[7,0,0,19]}
+ok: additional writes
+{"label":"selected alternate entry point","sourceSha256":"be932588a1c3e584d59de72f4642f5b46197bc56e469f8629384b41b7cf0d069","entryPoint":"other","dispatch":1,"actual":[31,5,5,5],"expected":[31,5,5,5]}
+ok: selected alternate entry point
+{"label":"zero dispatch","sourceSha256":"aab25ec82745804847dc7435700dca8d3db26614e9662b9d388d09e02e539b72","entryPoint":"main","dispatch":0,"actual":[5,5,5,5],"expected":[5,5,5,5]}
+ok: zero dispatch
+{"label":"comment match is not executable","sourceSha256":"18c1e20029627b726898a22e0497c286fed62212410d7d210427a51fdd7eb73c","entryPoint":"main","dispatch":1,"actual":[23,5,5,5],"expected":[23,5,5,5]}
+ok: comment match is not executable
+{"label":"generated fill preserves extra operation","sourceSha256":"ceca3c820804fde745d14ad296ae25260e3fe67e0a229e1fe03f8c06c84a0fe2","entryPoint":"main","dispatch":4,"actual":[13,13,13,13],"expected":[13,13,13,13]}
+ok: generated fill preserves extra operation
+{"label":"texture dimensions preserve arithmetic and partial dispatch","sourceSha256":"b4c035941adfbd2c41b833ff4de01d01ad4c713ecbb012a8056c01d960447f62","entryPoint":"main","dispatch":1,"actual":[3,2,8,10,5,5,5,5],"expected":[9,5,8,10,5,5,5,5]}
+FAIL: texture dimensions preserve arithmetic and partial dispatch: AssertionError [ERR_ASSERTION]: texture dimensions preserve arithmetic and partial dispatch
++ actual - expected
+
+  [
++   3,
++   2,
+-   9,
+-   5,
+    8,
+    10,
+    5,
+    5,
+    5,
+
+    at runCase (file:///home/x/deco/doe/packages/doe-gpu/test/integration/test-integration-shader-semantics.js:118:12)
+    at async file:///home/x/deco/doe/packages/doe-gpu/test/integration/test-integration-shader-semantics.js:131:7
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: ordinary native shader semantics
+
+1 !== 0
+
+    at file:///home/x/deco/doe/packages/doe-gpu/test/integration/test-integration-shader-semantics.js:142:8 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 1,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.1

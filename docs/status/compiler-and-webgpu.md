@@ -3,6 +3,24 @@
 This is the live status front door for the non-TSIR WGSL compiler and WebGPU
 runtime path. Artifacts and executable tests own pass/fail state.
 
+## Ordinary Node shader semantics
+
+The Node provider no longer substitutes host-generated clear, fill, or texture
+dimension results, and native bytes own buffer readback. Vulkan automatic-layout
+dispatch retains bind-group layout metadata; failed construction releases partial
+references. The public regression exercises adversarial sources, submission paths,
+mapped writes, rendering, and caller layout release. SPIR-V storage structs with
+runtime-sized arrays now form direct blocks; independent artifact validation
+caught the invalid nesting despite correct results on the observed driver.
+
+Current diagnosis, acceptance commands, original failures, and native identities:
+[`shader semantics evidence`](../../bench/out/maintenance/20260919-shader-semantics/README.md).
+This repair does not replace accepted package binaries, establish performance,
+qualify non-Vulkan hardware, or complete the architecture review queue. The next
+bounded Zig review remains `src/backend/common/artifact_policy.zig`; native object
+state separation, artifact output ownership, and strict installed resolution remain
+separate architecture work.
+
 ## Immediate-data admission
 
 Native immediate-data calls now reject unsupported shader-visible payloads

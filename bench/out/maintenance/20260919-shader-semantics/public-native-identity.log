@@ -1,0 +1,4 @@
+PASS: Vulkan-target SPIR-V artifacts validated: 8
+PASS: public/native compute invocations matched: 28
+PASS: render source and draw identity matched
+PASS: diagnostic and ordinary outputs matched independent byte oracles

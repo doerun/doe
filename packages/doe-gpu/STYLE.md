@@ -8,6 +8,11 @@ This guide is the JavaScript style contract for `packages/doe-gpu`.
 - Runtime validation over static types. Use JSDoc for public API intent.
 - Fail fast with path-based error context.
 - Freeze constant objects. Prefer `Object.freeze()` for enum-like tables.
+- The checked-in `src/vendor/` is maintained source; its name grants no review exemption.
+- WGSL execution belongs to the native compiler and runtime. Never replace shader
+  work with host results selected from source patterns, names, or comments.
+- Readback obtains native resource contents. Host staging may copy mapped bytes
+  for JavaScript access, but cannot simulate execution or become a readback oracle.
 
 ## Modules
 

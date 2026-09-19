@@ -113,6 +113,25 @@ class NativeProgramIdentityTraceValidatorTests(unittest.TestCase):
         self.assertEqual(result["counts"]["rows"], 3)
         self.assertEqual(result["counts"]["artifacts"], 3)
 
+    def test_zero_workgroups_preserve_completion_requirement(self) -> None:
+        for axis in range(3):
+            with self.subTest(axis=axis):
+                self.rows[0]["workgroups"] = [1, 1, 1]
+                self.rows[0]["workgroups"][axis] = 0
+                self._write_rows()
+                self.assertEqual(self._validate()["verdict"]["status"], "passed")
+        self.rows.pop(1)
+        self._write_rows()
+        self.assertIn(
+            "compute_dispatch_lacks_later_submission",
+            self._validate()["verdict"]["failureCodes"],
+        )
+
+    def test_negative_workgroups_fail_schema(self) -> None:
+        self.rows[0]["workgroups"] = [-1, 1, 1]
+        self._write_rows()
+        self.assertFalse(self._validate()["checks"]["rowSchemaValid"])
+
     def test_missing_compute_submission_fails_closed(self) -> None:
         self.rows.pop(1)
         self._write_rows()

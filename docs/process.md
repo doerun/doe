@@ -596,6 +596,10 @@ remain only while an exercised consumer requires them.
 
 - Diagnostics observe execution; they do not silently select different
   semantics.
+- Ordinary package shader execution follows the native ownership requirement in
+  `config/package-execution-policy.json`. Adversarial source tests must exercise
+  native dispatch/draw and mapped readback; host-generated output cannot stand in
+  for execution. Preserve original failing receipts when removing such a path.
 - Traces use stable operation codes, monotonic ordering, hash chaining, and
   explicit artifact identity.
 - Diagnostic and claim-bearing outputs remain partitioned.

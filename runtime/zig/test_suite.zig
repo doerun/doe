@@ -77,6 +77,7 @@ const test_src_backend_backend_policy_zig_263ee77d = @import("src/backend/backen
 const test_tests_backend_backend_runtime_config_policy_test_zig_a6480ea9 = @import("tests/backend/backend_runtime_config_policy_test.zig");
 const test_tests_backend_backend_runtime_policy_test_zig_f04cc8a6 = @import("tests/backend/backend_runtime_policy_test.zig");
 const test_tests_backend_backend_vulkan_doe_app_lane_policy_test_zig_6d3b28d3 = @import("tests/backend/backend_vulkan_doe_app_lane_policy_test.zig");
+const test_src_native_vulkan_vulkan_compute_bindings_zig_1960bb33 = if (builtin.os.tag == .linux) @import("src/native/vulkan/vulkan_compute_bindings.zig") else struct {};
 
 comptime {
     _ = test_tests_metal_metal_mod_integration_test_zig_6f53b3ec;
@@ -155,4 +156,5 @@ comptime {
     _ = test_tests_backend_backend_runtime_config_policy_test_zig_a6480ea9;
     _ = test_tests_backend_backend_runtime_policy_test_zig_f04cc8a6;
     _ = test_tests_backend_backend_vulkan_doe_app_lane_policy_test_zig_6d3b28d3;
+    _ = test_src_native_vulkan_vulkan_compute_bindings_zig_1960bb33;
 }

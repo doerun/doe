@@ -1,5 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "ordinaryExecution": {
+    "shaderSemantics": "native-compiler",
+    "readbackSource": "native-buffer",
+    "hostShaderSubstitution": false
+  },
   "writeBatching": [
     {
       "id": "node-doe-pointer-batch-min-count",

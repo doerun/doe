@@ -137,14 +137,16 @@ pub fn collectRecordedBindings(
     };
 }
 
-fn pipelineLayoutEntry(
+fn dispatchLayoutEntry(
     pip: *const DoeComputePipeline,
+    group: *const DoeBindGroup,
     group_index: usize,
     binding: u32,
 ) ?DoeBindGroupLayoutEntry {
-    const layout = pip.layout orelse return null;
-    if (group_index >= layout.bind_group_layout_count) return null;
-    const group_layout = layout.bind_group_layouts[group_index] orelse return null;
+    const group_layout = if (pip.layout) |layout| blk: {
+        if (group_index >= layout.bind_group_layout_count) return null;
+        break :blk layout.bind_group_layouts[group_index] orelse return null;
+    } else group.layout orelse return null;
     const entries = group_layout.entries orelse return null;
     for (entries) |entry| {
         if (entry.binding == binding) return entry;
@@ -164,7 +166,7 @@ fn bindingAtSlot(
     if (binding_index >= group.count) return null;
     const group_u32: u32 = @intCast(group_index);
     const binding_u32: u32 = @intCast(binding_index);
-    const layout_entry = pipelineLayoutEntry(pip, group_index, binding_u32);
+    const layout_entry = dispatchLayoutEntry(pip, group, group_index, binding_u32);
     const binding_bit = @as(u64, 1) << @intCast(binding_index);
 
     if ((group.vk_buffer_binding_mask & binding_bit) != 0 or
@@ -369,6 +371,16 @@ test "collectBindGroupBindings includes readonly storage textures" {
         model_compute_types.KernelBindingResourceKind.storage_texture,
         storage[0].resource_kind,
     );
+    try std.testing.expectEqual(@as(u64, 99), storage[0].resource_handle);
+    try std.testing.expectEqual(
+        model_binding_types.WGPUStorageTextureAccess_ReadOnly,
+        storage[0].storage_texture_access,
+    );
+
+    pipeline.layout = null;
+    group.layout = &group_layout;
+    const inferred = collectBindGroupBindings(&pipeline, groups[0..], &storage);
+    try std.testing.expectEqual(result, inferred);
     try std.testing.expectEqual(@as(u64, 99), storage[0].resource_handle);
     try std.testing.expectEqual(
         model_binding_types.WGPUStorageTextureAccess_ReadOnly,

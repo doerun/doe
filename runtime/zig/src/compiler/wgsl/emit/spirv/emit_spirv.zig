@@ -137,7 +137,7 @@ pub const Emitter = struct {
 
             if (self.is_bound_buffer_global(global)) {
                 self.global_ids[index] = try self.emit_bound_buffer_global(global);
-                self.global_buffer_wrapped[index] = true;
+                self.global_buffer_wrapped[index] = self.buffer_needs_wrapper(global.ty);
                 continue;
             }
             if (self.is_bound_handle_global(global)) {
@@ -195,6 +195,18 @@ pub const Emitter = struct {
         return var_id;
     }
 
+    fn buffer_needs_wrapper(self: *const Emitter, ty: ir.TypeId) bool {
+        const fields = switch (self.module.types.get(ty)) {
+            .struct_ => |id| self.module.structs.items[id].fields.items,
+            else => return true,
+        };
+        if (fields.len == 0) return true;
+        return switch (self.module.types.get(fields[fields.len - 1].ty)) {
+            .array => |array| array.len != null,
+            else => true,
+        };
+    }
+
     fn emit_bound_buffer_global(self: *Emitter, global: ir.Global) EmitError!u32 {
         const binding = global.binding orelse return error.InvalidIr;
         if (global.initializer != null) return error.UnsupportedConstruct;
@@ -203,12 +215,18 @@ pub const Emitter = struct {
 
         _ = try self.decorate_memory_type(global.ty, addr_space);
         const block_member_type = try self.lower_type(global.ty);
-        // Emit a distinct block struct per storage-buffer binding so the
-        // driver's alias analysis does not treat same-type bindings as
-        // potentially aliased.
-        const block_type = try self.builder.type_struct_fresh(&.{block_member_type});
-        try self.builder.emit_block_decoration(block_type);
-        try self.builder.emit_member_offset_decoration(block_type, 0, 0);
+        const block_type = if (self.buffer_needs_wrapper(global.ty)) blk: {
+            // Keep binding-specific wrappers for fixed-size payloads and bare
+            // arrays. A struct containing a runtime array must itself be Block.
+            const wrapper = try self.builder.type_struct_fresh(&.{block_member_type});
+            try self.builder.emit_block_decoration(wrapper);
+            try self.builder.emit_member_offset_decoration(wrapper, 0, 0);
+            break :blk wrapper;
+        } else blk: {
+            const entry = try self.decorated_block_types.getOrPut(self.alloc, block_member_type);
+            if (!entry.found_existing) try self.builder.emit_block_decoration(block_member_type);
+            break :blk block_member_type;
+        };
 
         const storage_class = try self.global_storage_class(global);
         const ptr_type = try self.builder.type_pointer(storage_class, block_type);

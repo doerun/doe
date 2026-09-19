@@ -293,6 +293,10 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
     const bg = make(DoeBindGroup) orelse return null;
     bg.* = .{};
     const layout = cast(DoeBindGroupLayout, d.layout);
+    if (layout) |bgl| {
+        native_helpers.object_add_ref(DoeBindGroupLayout, toOpaque(bgl));
+        bg.layout = bgl;
+    }
 
     // For Vulkan devices, store the DoeBuffer* opaque pointer in buffers[] instead
     // of the MTL handle, so the compute dispatch can look up the vk_id at submit time.
@@ -307,41 +311,41 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                 buffer_binding_type = layout_entry.buffer_binding_type;
                 if (layout_entry.resource_kind == RESOURCE_KIND_TEXTURE) {
                     const view = cast(DoeTextureView, e.textureView) orelse {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     };
                     if (view.tex.error_object) {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     }
                     if (!texture_view_matches_layout(layout_entry, view)) {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     }
                 } else if (layout_entry.resource_kind == RESOURCE_KIND_STORAGE_TEXTURE) {
                     const view = cast(DoeTextureView, e.textureView) orelse {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     };
                     if (view.tex.error_object) {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     }
                     if (!storage_texture_matches_layout(layout_entry, view)) {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     }
                 } else if (layout_entry.resource_kind == RESOURCE_KIND_EXTERNAL_TEXTURE) {
                     const external_texture = resolve_external_texture(e) orelse {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     };
                     const ext = native_helpers.cast(DoeExternalTexture, external_texture) orelse {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     };
                     if (ext.expired or ext.plane0 == null) {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     }
                 }
@@ -350,7 +354,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
         if (cast(DoeBuffer, e.buffer)) |doe_buf| {
             if (e.binding < MAX_BIND) {
                 if (doe_buf.error_object or doe_buf.destroyed) {
-                    alloc.destroy(bg);
+                    doeNativeBindGroupRelease(toOpaque(bg));
                     return null;
                 }
                 if (is_vulkan) {
@@ -362,7 +366,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                     bg.buffers[e.binding] = doe_buf.mtl;
                 }
                 const binding_size = resolve_buffer_binding_size(doe_buf, e.offset, e.size) orelse {
-                    alloc.destroy(bg);
+                    doeNativeBindGroupRelease(toOpaque(bg));
                     return null;
                 };
                 bg.offsets[e.binding] = e.offset;
@@ -373,7 +377,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
             }
         } else if (cast(DoeTextureView, e.textureView)) |view| {
             if (view.tex.error_object or !append_render_texture_binding(bg, e.binding, resource_kind, view)) {
-                alloc.destroy(bg);
+                doeNativeBindGroupRelease(toOpaque(bg));
                 return null;
             }
             if (e.binding < MAX_BIND) {
@@ -384,7 +388,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
             }
         } else if (cast(DoeSampler, e.sampler)) |sampler| {
             if (!append_render_sampler_binding(bg, e.binding, sampler)) {
-                alloc.destroy(bg);
+                doeNativeBindGroupRelease(toOpaque(bg));
                 return null;
             }
             if (e.binding < MAX_BIND) {
@@ -398,11 +402,11 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                 const ext = native_helpers.cast(DoeExternalTexture, external_texture) orelse continue;
                 if (is_vulkan) {
                     const plane0_view = texture_sampler.registeredTextureView(ext.plane0) orelse {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     };
                     if (plane0_view.tex.error_object or plane0_view.tex.vk_id == 0) {
-                        alloc.destroy(bg);
+                        doeNativeBindGroupRelease(toOpaque(bg));
                         return null;
                     }
                     bg.textures[e.binding] = toOpaque(plane0_view.tex);
@@ -417,11 +421,11 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                     if (next_slot < MAX_BIND) {
                         if (is_vulkan) {
                             const plane1_view = texture_sampler.registeredTextureView(ext.plane1) orelse {
-                                alloc.destroy(bg);
+                                doeNativeBindGroupRelease(toOpaque(bg));
                                 return null;
                             };
                             if (plane1_view.tex.error_object or plane1_view.tex.vk_id == 0) {
-                                alloc.destroy(bg);
+                                doeNativeBindGroupRelease(toOpaque(bg));
                                 return null;
                             }
                             bg.textures[next_slot] = toOpaque(plane1_view.tex);
@@ -468,7 +472,10 @@ pub export fn doeNativeDeviceCreateBufferBindGroupFlat4(
     if (entry_count > FLAT_BUFFER_BIND_GROUP_ENTRY_LIMIT) return null;
     const bg = make(DoeBindGroup) orelse return null;
     bg.* = .{};
-    _ = layout_raw;
+    if (cast(DoeBindGroupLayout, layout_raw)) |layout| {
+        native_helpers.object_add_ref(DoeBindGroupLayout, toOpaque(layout));
+        bg.layout = layout;
+    }
     const is_vulkan = if (cast(DoeDevice, dev_raw)) |dev| dev.backend == .vulkan else false;
     const bindings = [_]u32{ b0, b1, b2, b3 };
     const buffers = [_]?*anyopaque{ buffer0_raw, buffer1_raw, buffer2_raw, buffer3_raw };
@@ -500,6 +507,7 @@ pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBindGroup, raw)) |g| {
         if (!native_helpers.object_should_destroy(g)) return;
         label_store.remove(raw);
+        if (g.layout) |layout| doeNativeBindGroupLayoutRelease(toOpaque(layout));
         for (g.retained_buffers) |maybe_buffer| {
             if (maybe_buffer) |buffer| native_exports.doeNativeBufferRelease(toOpaque(buffer));
         }

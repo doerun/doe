@@ -328,6 +328,13 @@
         {
           "path": "tests/backend/backend_vulkan_doe_app_lane_policy_test.zig",
           "kind": "backend"
+        },
+        {
+          "path": "src/native/vulkan/vulkan_compute_bindings.zig",
+          "kind": "inline",
+          "platforms": [
+            "linux"
+          ]
         }
       ]
     },
@@ -501,6 +508,13 @@
         {
           "path": "tests/backend/backend_vulkan_doe_app_lane_policy_test.zig",
           "kind": "backend"
+        },
+        {
+          "path": "src/native/vulkan/vulkan_compute_bindings.zig",
+          "kind": "inline",
+          "platforms": [
+            "linux"
+          ]
         }
       ]
     },

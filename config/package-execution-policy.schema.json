@@ -1,8 +1,30 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Package execution policy",
   "type": "object",
-  "required": ["schemaVersion", "unsupportedExecutions"],
+  "required": ["schemaVersion", "ordinaryExecution", "unsupportedExecutions"],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
+    "schemaVersion": { "type": "integer", "const": 2 },
+    "ordinaryExecution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shaderSemantics",
+        "readbackSource",
+        "hostShaderSubstitution"
+      ],
+      "properties": {
+        "shaderSemantics": {
+          "const": "native-compiler"
+        },
+        "readbackSource": {
+          "const": "native-buffer"
+        },
+        "hostShaderSubstitution": {
+          "const": false
+        }
+      }
+    },
     "writeBatching": {
       "type": "array",
       "items": {

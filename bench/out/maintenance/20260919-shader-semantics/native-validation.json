@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_native_program_identity_trace_validation",
+  "inputs": {
+    "trace": {
+      "path": "bench/out/maintenance/20260919-shader-semantics/validated-native.jsonl",
+      "sha256": "82bd798bd1272f806603262c786f7c312d78ab7768bff19019ecc517ca550c1b"
+    },
+    "rowSchema": {
+      "path": "config/native-program-identity-trace-row.schema.json",
+      "sha256": "be3ea941326cc1c3420b65cbb3a70410d5cb764022d978cf66b43ebc7af52e76"
+    },
+    "artifactRoot": "bench/out/maintenance/20260919-shader-semantics",
+    "spirvValidator": "/usr/bin/spirv-val",
+    "requireRenderCompletion": true
+  },
+  "counts": {
+    "rows": 326,
+    "processes": 1,
+    "dispatches": 28,
+    "renderDraws": 1,
+    "submissions": 51,
+    "artifacts": 8
+  },
+  "checks": {
+    "rowSchemaValid": false,
+    "processSequenceValid": true,
+    "computeSubmissionValid": true,
+    "renderCompletionValid": true,
+    "backendArtifactsValid": true
+  },
+  "artifacts": [
+    {
+      "stage": "compute",
+      "path": "bench/out/maintenance/20260919-shader-semantics/doe-native-vulkan-16f69a971d61e5663f4ddad83f07ba3ac617bb0e3935af08e2090d95dc0eed7e.spv",
+      "expectedSha256": "16f69a971d61e5663f4ddad83f07ba3ac617bb0e3935af08e2090d95dc0eed7e",
+      "actualSha256": "16f69a971d61e5663f4ddad83f07ba3ac617bb0e3935af08e2090d95dc0eed7e",
+      "spirvValPassed": true
+    },
+    {
+      "stage": "compute",
+      "path": "bench/out/maintenance/20260919-shader-semantics/doe-native-vulkan-a5242edc17218818dfd93a6085bdb296a357fb2e67bec8150e465169268ab054.spv",
+      "expectedSha256": "a5242edc17218818dfd93a6085bdb296a357fb2e67bec8150e465169268ab054",
+      "actualSha256": "a5242edc17218818dfd93a6085bdb296a357fb2e67bec8150e465169268ab054",
+      "spirvValPassed": true
+    },
+    {
+      "stage": "compute",
+      "path": "bench/out/maintenance/20260919-shader-semantics/doe-native-vulkan-dcd49ffde4eabf1ac9df23f278dfeb0081f5b0c16cf9ebddbd5cd369693bf8b2.spv",
+      "expectedSha256": "dcd49ffde4eabf1ac9df23f278dfeb0081f5b0c16cf9ebddbd5cd369693bf8b2",
+      "actualSha256": "dcd49ffde4eabf1ac9df23f278dfeb0081f5b0c16cf9ebddbd5cd369693bf8b2",
+      "spirvValPassed": true
+    },
+    {
+      "stage": "compute",
+      "path": "bench/out/maintenance/20260919-shader-semantics/doe-native-vulkan-db4a8b553f46facac3fb58cd0e4a2971b10b4071d7dc8009d8888329a7a148e1.spv",
+      "expectedSha256": "db4a8b553f46facac3fb58cd0e4a2971b10b4071d7dc8009d8888329a7a148e1",
+      "actualSha256": "db4a8b553f46facac3fb58cd0e4a2971b10b4071d7dc8009d8888329a7a148e1",
+      "spirvValPassed": true
+    },
+    {
+      "stage": "compute",
+      "path": "bench/out/maintenance/20260919-shader-semantics/doe-native-vulkan-6167a499f08cc5ead080d1deaa3a64bdee1c5e268bacf134d95650adb94b51f6.spv",
+      "expectedSha256": "6167a499f08cc5ead080d1deaa3a64bdee1c5e268bacf134d95650adb94b51f6",
+      "actualSha256": "6167a499f08cc5ead080d1deaa3a64bdee1c5e268bacf134d95650adb94b51f6",
+      "spirvValPassed": true
+    },
+    {
+      "stage": "compute",
+      "path": "bench/out/maintenance/20260919-shader-semantics/doe-native-vulkan-714dfe3fb1dcf05dcbf3917f06bd0945bc09e8a74d6c0c45275a216e5f865c22.spv",
+      "expectedSha256": "714dfe3fb1dcf05dcbf3917f06bd0945bc09e8a74d6c0c45275a216e5f865c22",
+      "actualSha256": "714dfe3fb1dcf05dcbf3917f06bd0945bc09e8a74d6c0c45275a216e5f865c22",
+      "spirvValPassed": true
+    },
+    {
+      "stage": "vertex",
+      "path": "bench/out/maintenance/20260919-shader-semantics/doe-native-vulkan-550e78f7f052e9bed316c80a9c32edcc2393b4441cc5d1c00c890913aa661306.spv",
+      "expectedSha256": "550e78f7f052e9bed316c80a9c32edcc2393b4441cc5d1c00c890913aa661306",
+      "actualSha256": "550e78f7f052e9bed316c80a9c32edcc2393b4441cc5d1c00c890913aa661306",
+      "spirvValPassed": true
+    },
+    {
+      "stage": "fragment",
+      "path": "bench/out/maintenance/20260919-shader-semantics/doe-native-vulkan-c532d1ebf1b4a577bd92f206732f280037bd0dfed55e0bc70c967ead6d75ae0f.spv",
+      "expectedSha256": "c532d1ebf1b4a577bd92f206732f280037bd0dfed55e0bc70c967ead6d75ae0f",
+      "actualSha256": "c532d1ebf1b4a577bd92f206732f280037bd0dfed55e0bc70c967ead6d75ae0f",
+      "spirvValPassed": true
+    }
+  ],
+  "verdict": {
+    "status": "failed",
+    "failureCodes": [
+      "row_133_schema_invalid:0 is less than the minimum of 1",
+      "row_144_schema_invalid:0 is less than the minimum of 1",
+      "row_155_schema_invalid:0 is less than the minimum of 1",
+      "row_165_schema_invalid:0 is less than the minimum of 1"
+    ],
+    "claimBoundary": "native journal schema, event sequence, completion, and exact SPIR-V bytes; not public-observer identity, output correctness, driver identity, or performance"
+  },
+  "validationSha256": "ab2c89c8c275846385d2b6e9bba82375ba0dc82bf466c8fb4bc8e4d3d77bfc52"
+}

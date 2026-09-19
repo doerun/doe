@@ -338,3 +338,67 @@ test "vector compound assignment accepts scalar broadcast" {
     const len = try translateToSpirv(allocator, source, &out);
     try expect_spirv_magic(out[0..len]);
 }
+
+test "runtime array structs are direct blocks across bindings" {
+    const source =
+        \\struct Data { header: u32, values: array<u32>, }
+        \\@group(0) @binding(0) var<storage, read> input: Data;
+        \\@group(0) @binding(1) var<storage, read_write> output: Data;
+        \\@compute @workgroup_size(1) fn main() {
+        \\    output.header = arrayLength(&input.values);
+        \\    output.values[0] = input.values[0] + 2u;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+    const bound = read_u32_le(binary, 12);
+    const runtime_arrays = try allocator.alloc(bool, bound);
+    defer allocator.free(runtime_arrays);
+    @memset(runtime_arrays, false);
+    const blocks = try allocator.alloc(bool, bound);
+    defer allocator.free(blocks);
+    @memset(blocks, false);
+    var i: usize = 5;
+    while (i < len / 4) {
+        const word = read_u32_le(binary, i * 4);
+        const opcode: u16 = @truncate(word);
+        if (opcode == spirv.Opcode.TypeRuntimeArray) {
+            runtime_arrays[read_u32_le(binary, (i + 1) * 4)] = true;
+        }
+        if (opcode == spirv.Opcode.Decorate and
+            read_u32_le(binary, (i + 2) * 4) == spirv.Decoration.Block)
+        {
+            const id = read_u32_le(binary, (i + 1) * 4);
+            try testing.expect(!blocks[id]);
+            blocks[id] = true;
+        }
+        i += word >> 16;
+    }
+    var runtime_blocks: usize = 0;
+    i = 5;
+    while (i < len / 4) {
+        const word = read_u32_le(binary, i * 4);
+        const opcode: u16 = @truncate(word);
+        const words = word >> 16;
+        if (opcode == spirv.Opcode.TypeStruct) {
+            const id = read_u32_le(binary, (i + 1) * 4);
+            var member: usize = 2;
+            while (member < words) : (member += 1) {
+                const member_type = read_u32_le(binary, (i + member) * 4);
+                try testing.expect(!blocks[member_type]);
+                if (runtime_arrays[member_type]) {
+                    try testing.expect(blocks[id]);
+                    try testing.expectEqual(words - 1, member);
+                    runtime_blocks += 1;
+                }
+            }
+        }
+        if (opcode == spirv.Opcode.ArrayLength) {
+            try testing.expectEqual(@as(u32, 1), read_u32_le(binary, (i + 4) * 4));
+        }
+        i += words;
+    }
+    try testing.expectEqual(@as(usize, 1), runtime_blocks);
+    try testing.expect(count_spirv_opcode(binary, spirv.Opcode.ArrayLength) >= 1);
+}

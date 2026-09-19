@@ -10136,6 +10136,1214 @@
       "targets": [
         "src/backend/backend_telemetry.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/bridge/webgpu-addon/doe_napi_pipeline.c",
+          "sha256": "202d87d4568daacd5926660db47b70dda546044a08a6c9512de695b3ce772085"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+          "sha256": "66e19d9214ec17c19639972d9d1f9ad52465981541acb9f3393c30ecffbe5e93"
+        },
+        {
+          "path": "runtime/zig/tests/core/handle_safety_test.zig",
+          "sha256": "be8b154198653bc293d395be8aca5ea3c8e90a309465091ef1c3dc75fbb298ed"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "7ffac6f5c2bb27b6d4380c7805387c7c229b0c3b8315ca65a2dc13bd33045d6c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "bfa39dcf10d65847f4a3fc19c6ee198e2b2a27de41cdbf20c208c7c267846eea",
+      "level": "file",
+      "nextAction": "Examine the remaining binding validation, duplicate bindings, device ownership and external-texture paths throughout the file.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Constructors retain the layout; rejection unwinds partially retained buffers, views, samplers and external resources through final release. Native lifetime tests and caller-layout release in the physical regression pass."
+      ],
+      "reviewId": "shader_semantics_bind_group_20260919",
+      "reviewedAt": "2026-09-19T19:16:25.707280+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Partial shader-semantics investigation and repair; whole-file examination remains unfinished.",
+      "supersedes": null,
+      "targets": [
+        "src/native/resource/doe_bind_group_native.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_bind_group_native.zig",
+          "sha256": "66f9576e2e13e99ba6798eef8fbe697105be1f78d036cc2876986db9048242d3"
+        },
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_compute_bindings.zig",
+          "sha256": "ac57a5ae2e5e7666a8445a397ab0fac0bf9dfd3131d07285a5f3e7ef429267e9"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "7ffac6f5c2bb27b6d4380c7805387c7c229b0c3b8315ca65a2dc13bd33045d6c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "44cffa0972f919b9f3cc9900c657d3768d64ec568aa5b92b575cb78786253a62",
+      "level": "file",
+      "nextAction": "Review each object family and backend payload ownership; the single layout field change is not a whole-file or backend-state review.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "DoeBindGroup now carries the explicitly retained layout consumed by Vulkan automatic-layout dispatch; physical and reference-count tests cover release."
+      ],
+      "reviewId": "shader_semantics_objects_20260919",
+      "reviewedAt": "2026-09-19T19:16:26.694925+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Partial shader-semantics investigation and repair; whole-file examination remains unfinished.",
+      "supersedes": null,
+      "targets": [
+        "src/native/support/doe_native_object_types.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "92bd24536e5d81e29023c8f4cf1935d7f46d0048480f3834ea7d23ad3d2614d4"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_bind_group_native.zig",
+          "sha256": "66f9576e2e13e99ba6798eef8fbe697105be1f78d036cc2876986db9048242d3"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+          "sha256": "66e19d9214ec17c19639972d9d1f9ad52465981541acb9f3393c30ecffbe5e93"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "7ffac6f5c2bb27b6d4380c7805387c7c229b0c3b8315ca65a2dc13bd33045d6c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "64592289d3acba493c0f1f63df8a7920b985cabe1fb489d634e79e61056d006c",
+      "level": "file",
+      "nextAction": "Read every binding collection path, compare dynamic offsets and recorded bindings, and inspect validation assumptions and consumers.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Automatic pipeline layouts now obtain texture descriptor metadata from the retained bind-group layout. Explicit layouts retain their existing owner. Inline collector tests are registered in core and aggregate suites."
+      ],
+      "reviewId": "shader_semantics_bindings_20260919",
+      "reviewedAt": "2026-09-19T19:16:27.683450+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Partial shader-semantics investigation and repair; whole-file examination remains unfinished.",
+      "supersedes": null,
+      "targets": [
+        "src/native/vulkan/vulkan_compute_bindings.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_compute_bindings.zig",
+          "sha256": "ac57a5ae2e5e7666a8445a397ab0fac0bf9dfd3131d07285a5f3e7ef429267e9"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "7ffac6f5c2bb27b6d4380c7805387c7c229b0c3b8315ca65a2dc13bd33045d6c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "6eac0e409c2fa81470577bcf78c1c51a8b0777f3b88041820fde4a90a4078641",
+      "level": "file",
+      "nextAction": "Complete examination of compilation, pipeline caching, dispatch preparation and ownership across all paths.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed obsolete parallel descriptor collectors; recorded buffer callers use the canonical vulkan_compute_bindings collector. Physical submission and texture regressions pass."
+      ],
+      "reviewId": "shader_semantics_compute_20260919",
+      "reviewedAt": "2026-09-19T19:16:28.661381+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Partial shader-semantics investigation and repair; whole-file examination remains unfinished.",
+      "supersedes": null,
+      "targets": [
+        "src/native/vulkan/vulkan_compute_native.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_compute_native.zig",
+          "sha256": "c93114f2797ce41a495ec2bf0a74b071cf18f96903b5f90ba3fb9ce7d65e81fc"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "7ffac6f5c2bb27b6d4380c7805387c7c229b0c3b8315ca65a2dc13bd33045d6c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "ca8020d1b90d901c0753f585e2b6ddeb65a6b48f593fa6be030fea70fe494cc0",
+      "level": "file",
+      "nextAction": "Review remaining dispatch entrypoints and their distinct contracts, allocation/cleanup paths and full runtime responsibility.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Prepared dispatch replay records zero-sized workgroups while retaining pipeline and command-buffer admission; public empty-dispatch outputs remain unchanged and native completion is evidenced."
+      ],
+      "reviewId": "shader_semantics_runtime_20260919",
+      "reviewedAt": "2026-09-19T19:16:29.687506+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Partial shader-semantics investigation and repair; whole-file examination remains unfinished.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/native_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig",
+          "sha256": "c42c13184d62811aaf480a9f3f7b884a00947862c5716aa8d4b65826b390f3a3"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig",
+          "sha256": "03800bd885a95bb1338a511acb42df974ea8078245fc845229ddc571508bdd70"
+        },
+        {
+          "path": "runtime/zig/tests/wgsl/emit_spirv_mixed_binary_test.zig",
+          "sha256": "1ce8b57cc091dd9df2059b2904400719acf5362d309e087c0ef32049e1054c16"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "7ffac6f5c2bb27b6d4380c7805387c7c229b0c3b8315ca65a2dc13bd33045d6c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "133095654bb8e18664612f9c26d9942c75a2218d23ba36cf630ebb72b0ce8ba7",
+      "level": "file",
+      "nextAction": "Review all type lowering and decoration identities, allocation-failure cleanup and entrypoint emission; this focused storage-block repair does not complete the emitter review.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Storage structs containing runtime arrays form direct decorated blocks instead of invalid nested wrappers. The structural regression, WGSL suite, native numerical checks and spirv-val on exact emitted bytes pass."
+      ],
+      "reviewId": "shader_semantics_spirv_20260919",
+      "reviewedAt": "2026-09-19T19:16:30.688321+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Partial shader-semantics investigation and repair; whole-file examination remains unfinished.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/emit/spirv/emit_spirv.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_bind_group_native.zig",
+          "sha256": "66f9576e2e13e99ba6798eef8fbe697105be1f78d036cc2876986db9048242d3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "7ffac6f5c2bb27b6d4380c7805387c7c229b0c3b8315ca65a2dc13bd33045d6c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "8fadab52b98febbf1fd228b9ccd74953df439d596b955d8cb1f88246d8236a9b",
+      "level": "file",
+      "nextAction": "Review the existing tests and their oracle sensitivity across all handle families.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Added general and flat bind-group tests covering layout references, buffer references and partial-construction rejection cleanup; required native exports are explicitly linked."
+      ],
+      "reviewId": "shader_semantics_lifetime_tests_20260919",
+      "reviewedAt": "2026-09-19T19:16:31.711481+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Partial shader-semantics investigation and repair; whole-file examination remains unfinished.",
+      "supersedes": null,
+      "targets": [
+        "tests/core/handle_safety_test.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig",
+          "sha256": "94d8b374f9204167b89e8dcaa644336c1f15599b6bbe0721695e02eb338ebf2f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "7ffac6f5c2bb27b6d4380c7805387c7c229b0c3b8315ca65a2dc13bd33045d6c"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "45208730ae08fb487cb0fb0ca016a56fa6cd826bb9d485aca86f99736a3f6419",
+      "level": "file",
+      "nextAction": "Review all pre-existing emission cases and structural oracles; evaluate a responsibility-based split if the test module no longer has a coherent scope.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Added runtime-array block shape, decoration uniqueness, multiple binding and arrayLength member-index checks; accepts additional robustness-generated length instructions."
+      ],
+      "reviewId": "shader_semantics_spirv_tests_20260919",
+      "reviewedAt": "2026-09-19T19:16:32.753074+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Partial shader-semantics investigation and repair; whole-file examination remains unfinished.",
+      "supersedes": null,
+      "targets": [
+        "tests/wgsl/emit_spirv_mixed_binary_test.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/bridge/webgpu-addon/doe_napi_pipeline.c",
+          "sha256": "202d87d4568daacd5926660db47b70dda546044a08a6c9512de695b3ce772085"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+          "sha256": "66e19d9214ec17c19639972d9d1f9ad52465981541acb9f3393c30ecffbe5e93"
+        },
+        {
+          "path": "runtime/zig/tests/core/handle_safety_test.zig",
+          "sha256": "be8b154198653bc293d395be8aca5ea3c8e90a309465091ef1c3dc75fbb298ed"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "b5af4cec46bf85f19af14de687954f4ac25cbe9342eb4924a2879489dd1eb762"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/pre-spirv-vulkan-validation.log",
+          "sha256": "5ce48949351e8f2a81b5e0261eeff70c897a304d667bdb446f91a41a79778ad0"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/public-native-identity.log",
+          "sha256": "8ee474cc9606bf948fd523b5367852a94153c5a6af3d1e17d1532409e497b7f5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/vulkan-artifact-validation.log",
+          "sha256": "dce48c1f0686be404901f26b602acf52d5b52f387f20dedfc07d000c14e6ffcd"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "bfa39dcf10d65847f4a3fc19c6ee198e2b2a27de41cdbf20c208c7c267846eea",
+      "level": "file",
+      "nextAction": "Examine the remaining binding validation, duplicate bindings, device ownership and external-texture paths throughout the file.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Constructors retain the layout; rejection unwinds partially retained buffers, views, samplers and external resources through final release. Native lifetime tests and caller-layout release in the physical regression pass."
+      ],
+      "reviewId": "shader_semantics_bind_group_20260919_evidence",
+      "reviewedAt": "2026-09-19T19:17:46.781569+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Evidence correction: journal validation uses universal SPIR-V rules; retained Vulkan-target validation independently rejects the old runtime-array artifact and accepts corrected artifacts. Whole-file review remains unfinished.",
+      "supersedes": "shader_semantics_bind_group_20260919",
+      "targets": [
+        "src/native/resource/doe_bind_group_native.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_bind_group_native.zig",
+          "sha256": "66f9576e2e13e99ba6798eef8fbe697105be1f78d036cc2876986db9048242d3"
+        },
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_compute_bindings.zig",
+          "sha256": "ac57a5ae2e5e7666a8445a397ab0fac0bf9dfd3131d07285a5f3e7ef429267e9"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "b5af4cec46bf85f19af14de687954f4ac25cbe9342eb4924a2879489dd1eb762"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/pre-spirv-vulkan-validation.log",
+          "sha256": "5ce48949351e8f2a81b5e0261eeff70c897a304d667bdb446f91a41a79778ad0"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/public-native-identity.log",
+          "sha256": "8ee474cc9606bf948fd523b5367852a94153c5a6af3d1e17d1532409e497b7f5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/vulkan-artifact-validation.log",
+          "sha256": "dce48c1f0686be404901f26b602acf52d5b52f387f20dedfc07d000c14e6ffcd"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "44cffa0972f919b9f3cc9900c657d3768d64ec568aa5b92b575cb78786253a62",
+      "level": "file",
+      "nextAction": "Review each object family and backend payload ownership; the single layout field change is not a whole-file or backend-state review.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "DoeBindGroup now carries the explicitly retained layout consumed by Vulkan automatic-layout dispatch; physical and reference-count tests cover release."
+      ],
+      "reviewId": "shader_semantics_objects_20260919_evidence",
+      "reviewedAt": "2026-09-19T19:17:47.834759+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Evidence correction: journal validation uses universal SPIR-V rules; retained Vulkan-target validation independently rejects the old runtime-array artifact and accepts corrected artifacts. Whole-file review remains unfinished.",
+      "supersedes": "shader_semantics_objects_20260919",
+      "targets": [
+        "src/native/support/doe_native_object_types.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "92bd24536e5d81e29023c8f4cf1935d7f46d0048480f3834ea7d23ad3d2614d4"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_bind_group_native.zig",
+          "sha256": "66f9576e2e13e99ba6798eef8fbe697105be1f78d036cc2876986db9048242d3"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+          "sha256": "66e19d9214ec17c19639972d9d1f9ad52465981541acb9f3393c30ecffbe5e93"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "b5af4cec46bf85f19af14de687954f4ac25cbe9342eb4924a2879489dd1eb762"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/pre-spirv-vulkan-validation.log",
+          "sha256": "5ce48949351e8f2a81b5e0261eeff70c897a304d667bdb446f91a41a79778ad0"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/public-native-identity.log",
+          "sha256": "8ee474cc9606bf948fd523b5367852a94153c5a6af3d1e17d1532409e497b7f5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/vulkan-artifact-validation.log",
+          "sha256": "dce48c1f0686be404901f26b602acf52d5b52f387f20dedfc07d000c14e6ffcd"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "64592289d3acba493c0f1f63df8a7920b985cabe1fb489d634e79e61056d006c",
+      "level": "file",
+      "nextAction": "Read every binding collection path, compare dynamic offsets and recorded bindings, and inspect validation assumptions and consumers.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Automatic pipeline layouts now obtain texture descriptor metadata from the retained bind-group layout. Explicit layouts retain their existing owner. Inline collector tests are registered in core and aggregate suites."
+      ],
+      "reviewId": "shader_semantics_bindings_20260919_evidence",
+      "reviewedAt": "2026-09-19T19:17:48.870984+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Evidence correction: journal validation uses universal SPIR-V rules; retained Vulkan-target validation independently rejects the old runtime-array artifact and accepts corrected artifacts. Whole-file review remains unfinished.",
+      "supersedes": "shader_semantics_bindings_20260919",
+      "targets": [
+        "src/native/vulkan/vulkan_compute_bindings.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_compute_bindings.zig",
+          "sha256": "ac57a5ae2e5e7666a8445a397ab0fac0bf9dfd3131d07285a5f3e7ef429267e9"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "b5af4cec46bf85f19af14de687954f4ac25cbe9342eb4924a2879489dd1eb762"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/pre-spirv-vulkan-validation.log",
+          "sha256": "5ce48949351e8f2a81b5e0261eeff70c897a304d667bdb446f91a41a79778ad0"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/public-native-identity.log",
+          "sha256": "8ee474cc9606bf948fd523b5367852a94153c5a6af3d1e17d1532409e497b7f5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/vulkan-artifact-validation.log",
+          "sha256": "dce48c1f0686be404901f26b602acf52d5b52f387f20dedfc07d000c14e6ffcd"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "6eac0e409c2fa81470577bcf78c1c51a8b0777f3b88041820fde4a90a4078641",
+      "level": "file",
+      "nextAction": "Complete examination of compilation, pipeline caching, dispatch preparation and ownership across all paths.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed obsolete parallel descriptor collectors; recorded buffer callers use the canonical vulkan_compute_bindings collector. Physical submission and texture regressions pass."
+      ],
+      "reviewId": "shader_semantics_compute_20260919_evidence",
+      "reviewedAt": "2026-09-19T19:17:49.878140+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Evidence correction: journal validation uses universal SPIR-V rules; retained Vulkan-target validation independently rejects the old runtime-array artifact and accepts corrected artifacts. Whole-file review remains unfinished.",
+      "supersedes": "shader_semantics_compute_20260919",
+      "targets": [
+        "src/native/vulkan/vulkan_compute_native.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_compute_native.zig",
+          "sha256": "c93114f2797ce41a495ec2bf0a74b071cf18f96903b5f90ba3fb9ce7d65e81fc"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "b5af4cec46bf85f19af14de687954f4ac25cbe9342eb4924a2879489dd1eb762"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/pre-spirv-vulkan-validation.log",
+          "sha256": "5ce48949351e8f2a81b5e0261eeff70c897a304d667bdb446f91a41a79778ad0"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/public-native-identity.log",
+          "sha256": "8ee474cc9606bf948fd523b5367852a94153c5a6af3d1e17d1532409e497b7f5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/vulkan-artifact-validation.log",
+          "sha256": "dce48c1f0686be404901f26b602acf52d5b52f387f20dedfc07d000c14e6ffcd"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "ca8020d1b90d901c0753f585e2b6ddeb65a6b48f593fa6be030fea70fe494cc0",
+      "level": "file",
+      "nextAction": "Review remaining dispatch entrypoints and their distinct contracts, allocation/cleanup paths and full runtime responsibility.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Prepared dispatch replay records zero-sized workgroups while retaining pipeline and command-buffer admission; public empty-dispatch outputs remain unchanged and native completion is evidenced."
+      ],
+      "reviewId": "shader_semantics_runtime_20260919_evidence",
+      "reviewedAt": "2026-09-19T19:17:50.941246+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Evidence correction: journal validation uses universal SPIR-V rules; retained Vulkan-target validation independently rejects the old runtime-array artifact and accepts corrected artifacts. Whole-file review remains unfinished.",
+      "supersedes": "shader_semantics_runtime_20260919",
+      "targets": [
+        "src/backend/vulkan/native_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig",
+          "sha256": "c42c13184d62811aaf480a9f3f7b884a00947862c5716aa8d4b65826b390f3a3"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig",
+          "sha256": "03800bd885a95bb1338a511acb42df974ea8078245fc845229ddc571508bdd70"
+        },
+        {
+          "path": "runtime/zig/tests/wgsl/emit_spirv_mixed_binary_test.zig",
+          "sha256": "1ce8b57cc091dd9df2059b2904400719acf5362d309e087c0ef32049e1054c16"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "b5af4cec46bf85f19af14de687954f4ac25cbe9342eb4924a2879489dd1eb762"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/pre-spirv-vulkan-validation.log",
+          "sha256": "5ce48949351e8f2a81b5e0261eeff70c897a304d667bdb446f91a41a79778ad0"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/public-native-identity.log",
+          "sha256": "8ee474cc9606bf948fd523b5367852a94153c5a6af3d1e17d1532409e497b7f5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/vulkan-artifact-validation.log",
+          "sha256": "dce48c1f0686be404901f26b602acf52d5b52f387f20dedfc07d000c14e6ffcd"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "133095654bb8e18664612f9c26d9942c75a2218d23ba36cf630ebb72b0ce8ba7",
+      "level": "file",
+      "nextAction": "Review all type lowering and decoration identities, allocation-failure cleanup and entrypoint emission; this focused storage-block repair does not complete the emitter review.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Storage structs containing runtime arrays form direct decorated blocks instead of invalid nested wrappers. The structural regression, WGSL suite, native numerical checks and spirv-val on exact emitted bytes pass."
+      ],
+      "reviewId": "shader_semantics_spirv_20260919_evidence",
+      "reviewedAt": "2026-09-19T19:17:51.956176+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Evidence correction: journal validation uses universal SPIR-V rules; retained Vulkan-target validation independently rejects the old runtime-array artifact and accepts corrected artifacts. Whole-file review remains unfinished.",
+      "supersedes": "shader_semantics_spirv_20260919",
+      "targets": [
+        "src/compiler/wgsl/emit/spirv/emit_spirv.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_bind_group_native.zig",
+          "sha256": "66f9576e2e13e99ba6798eef8fbe697105be1f78d036cc2876986db9048242d3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "b5af4cec46bf85f19af14de687954f4ac25cbe9342eb4924a2879489dd1eb762"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/pre-spirv-vulkan-validation.log",
+          "sha256": "5ce48949351e8f2a81b5e0261eeff70c897a304d667bdb446f91a41a79778ad0"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/public-native-identity.log",
+          "sha256": "8ee474cc9606bf948fd523b5367852a94153c5a6af3d1e17d1532409e497b7f5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/vulkan-artifact-validation.log",
+          "sha256": "dce48c1f0686be404901f26b602acf52d5b52f387f20dedfc07d000c14e6ffcd"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "8fadab52b98febbf1fd228b9ccd74953df439d596b955d8cb1f88246d8236a9b",
+      "level": "file",
+      "nextAction": "Review the existing tests and their oracle sensitivity across all handle families.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Added general and flat bind-group tests covering layout references, buffer references and partial-construction rejection cleanup; required native exports are explicitly linked."
+      ],
+      "reviewId": "shader_semantics_lifetime_tests_20260919_evidence",
+      "reviewedAt": "2026-09-19T19:17:53.002452+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Evidence correction: journal validation uses universal SPIR-V rules; retained Vulkan-target validation independently rejects the old runtime-array artifact and accepts corrected artifacts. Whole-file review remains unfinished.",
+      "supersedes": "shader_semantics_lifetime_tests_20260919",
+      "targets": [
+        "tests/core/handle_safety_test.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/native-program-identity-trace-row.schema.json",
+          "sha256": "4f654d30b94eeac0c9e5d8a7ed47822bec9f00e0445ecf01b43919a8270bfaac"
+        },
+        {
+          "path": "config/package-execution-policy.json",
+          "sha256": "7ff0963655aac3dbaff94071a3b02b4619677e530d48066b656f22835f2ec1fc"
+        },
+        {
+          "path": "packages/doe-gpu/src/vendor/webgpu/index.js",
+          "sha256": "1940c7ddc3fb4b54fb30b043b1da646094f722e201db8b40d5ab9ec7b9180439"
+        },
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "b5d69062ff0f2be9b422b059f03cd4019f40cf7e3a838e0155f582cc9e0d1513"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig",
+          "sha256": "94d8b374f9204167b89e8dcaa644336c1f15599b6bbe0721695e02eb338ebf2f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/README.md",
+          "sha256": "b5af4cec46bf85f19af14de687954f4ac25cbe9342eb4924a2879489dd1eb762"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/core-suite-final.log",
+          "sha256": "dc212f6e64414e9254aab5639dbff446ddb34ce03787e8a5012fe138b6a51192"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/native-validation-fixed.json",
+          "sha256": "975288543912818628b780f89bd80d02f5bd68d6d596c0e4e7a5ac1476f01b35"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/pre-spirv-vulkan-validation.log",
+          "sha256": "5ce48949351e8f2a81b5e0261eeff70c897a304d667bdb446f91a41a79778ad0"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/public-native-identity.log",
+          "sha256": "8ee474cc9606bf948fd523b5367852a94153c5a6af3d1e17d1532409e497b7f5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/validated-ordinary.log",
+          "sha256": "4dd60c03f58e8fca5337a026dd40925cc9ee40cb118797971d640f54796891c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/vulkan-artifact-validation.log",
+          "sha256": "dce48c1f0686be404901f26b602acf52d5b52f387f20dedfc07d000c14e6ffcd"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-shader-semantics/wgsl-suite-fixed.log",
+          "sha256": "5c033d7beef9d8e79bc1a2acb1861473c7af50eefce69068c1924144fce47809"
+        }
+      ],
+      "findings": [
+        "Complete file-level review is pending; targeted correctness evidence does not grant file, directory or relationship completion."
+      ],
+      "inputHash": "45208730ae08fb487cb0fb0ca016a56fa6cd826bb9d485aca86f99736a3f6419",
+      "level": "file",
+      "nextAction": "Review all pre-existing emission cases and structural oracles; evaluate a responsibility-based split if the test module no longer has a coherent scope.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Added runtime-array block shape, decoration uniqueness, multiple binding and arrayLength member-index checks; accepts additional robustness-generated length instructions."
+      ],
+      "reviewId": "shader_semantics_spirv_tests_20260919_evidence",
+      "reviewedAt": "2026-09-19T19:17:54.027629+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c799399fbf9b2ca751bfb88cb827013d637b6d52",
+      "status": "in_progress",
+      "summary": "Evidence correction: journal validation uses universal SPIR-V rules; retained Vulkan-target validation independently rejects the old runtime-array artifact and accepts corrected artifacts. Whole-file review remains unfinished.",
+      "supersedes": "shader_semantics_spirv_tests_20260919",
+      "targets": [
+        "tests/wgsl/emit_spirv_mixed_binary_test.zig"
+      ]
     }
   ],
   "schemaVersion": 1

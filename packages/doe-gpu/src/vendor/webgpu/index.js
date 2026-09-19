@@ -92,20 +92,8 @@ const TEXTURE_DIMENSION_MAP = Object.freeze({
   '2d': 2,
   '3d': 3,
 });
-const NODE_SPECIALIZED_CLEAR_MAX_BYTES = 64 * 1024 * 1024;
-const NODE_SPECIALIZED_STORAGE_FILL_MAX_BYTES = 64 * 1024 * 1024;
 const NODE_ZERO_SIZE_BUFFER_NATIVE_BYTES = 4;
-const NODE_BUFFER_HOST_SHADOW_MAX_BYTES = 1 * 1024 * 1024;
 const nodeBufferSizes = new WeakMap();
-const nodeBufferWrappers = new WeakMap();
-const nodeTextureWrappers = new WeakMap();
-const nodeTextureViewDescriptors = new WeakMap();
-const nodeShaderSources = new WeakMap();
-const nodeComputePipelineSources = new WeakMap();
-const nodeBindGroupEntries = new WeakMap();
-const NODE_FALLBACK_SHADER_MODULE = Symbol('nodeFallbackShaderModule');
-const NODE_FALLBACK_PIPELINE = Symbol('nodeFallbackPipeline');
-const NODE_FALLBACK_TEXTURE_DIMENSIONS = 'textureDimensions';
 const TEXTURE_VIEW_DIMENSION_MAP = Object.freeze({
   '1d': 1,
   '2d': 2,
@@ -795,7 +783,6 @@ function materializeNodeCommandEncoderCommands(encoder) {
   if (!Array.isArray(encoder._commands) || encoder._commands.length === 0) {
     return;
   }
-  invalidateLazyDispatchCommandBufferShadows(encoder._commands);
   for (const cmd of encoder._commands) {
     if (cmd.t === 0) {
       const pass = addon.beginComputePass(encoder._native, cmd.d ?? undefined);
@@ -827,390 +814,6 @@ function applyNodeLazyDispatchBindGroups(passNative, cmd) {
   }
 }
 
-function isStorageClearLoopShader(code) {
-  return typeof code === 'string'
-    && code.includes('var<storage, read_write>')
-    && code.includes('arrayLength(&')
-    && /\bfor\s*\(/.test(code)
-    && /\]\s*=\s*0u?\s*;/.test(code);
-}
-
-function parseWgslU32Literal(raw) {
-  if (typeof raw !== 'string' || raw.length === 0) {
-    return null;
-  }
-  const normalized = raw.replaceAll('_', '');
-  const value = Number.parseInt(
-    normalized,
-    normalized.startsWith('0x') || normalized.startsWith('0X') ? 16 : 10,
-  );
-  if (!Number.isSafeInteger(value) || value < 0 || value > UINT32_MAX) {
-    return null;
-  }
-  return value >>> 0;
-}
-
-function textureDimensionsViewDimensionFromType(textureType) {
-  const normalized = String(textureType ?? '').trim();
-  let match = /^texture_storage_(1d|2d_array|2d|3d)\s*</.exec(normalized);
-  if (match) return match[1].replace('_', '-');
-  match = /^texture_depth_multisampled_2d\b/.exec(normalized);
-  if (match) return '2d';
-  match = /^texture_multisampled_2d\s*</.exec(normalized);
-  if (match) return '2d';
-  match = /^texture_depth_(2d_array|2d|cube_array|cube)\b/.exec(normalized);
-  if (match) return match[1].replace('_', '-');
-  match = /^texture_(1d|2d_array|2d|3d|cube_array|cube)\s*</.exec(normalized);
-  if (match) return match[1].replace('_', '-');
-  if (/^texture_external\b/.test(normalized)) return '2d';
-  return null;
-}
-
-function textureDimensionsComponentCount(viewDimension) {
-  if (viewDimension === '1d') return 1;
-  if (viewDimension === '3d') return 3;
-  return 2;
-}
-
-function analyzeTextureDimensionsShader(code) {
-  if (
-    typeof code !== 'string'
-    || !code.includes('fn getValue')
-    || !code.includes('textureDimensions(')
-    || !code.includes('@group(0) @binding(0) var texture')
-  ) {
-    return null;
-  }
-  const textureMatch = /@group\s*\(\s*0\s*\)\s*@binding\s*\(\s*0\s*\)\s*var\s+texture\s*:\s*([^;]+);/.exec(code);
-  if (!textureMatch) {
-    return null;
-  }
-  const textureType = textureMatch[1].trim();
-  const viewDimension = textureDimensionsViewDimensionFromType(textureType);
-  if (!viewDimension) {
-    return null;
-  }
-  const levelMatch = /textureDimensions\s*\(\s*(?:texture|t)\s*,\s*([0-9A-Fa-f_xX]+)u?\s*\)/.exec(code);
-  const levelArg = levelMatch ? parseWgslU32Literal(levelMatch[1]) : null;
-  if (levelMatch && levelArg == null) {
-    return null;
-  }
-  const hasCompute = /@compute\b/.test(code) && /\bvar<storage,\s*read_write>\s+results\s*:\s*array\s*<\s*vec4\s*<\s*u32\s*>\s*>/.test(code);
-  const hasRender = /@vertex\b/.test(code) && /@fragment\b/.test(code) && /->\s*@location\s*\(\s*0\s*\)\s*vec4u/.test(code);
-  if (!hasCompute && !hasRender) {
-    return null;
-  }
-  return {
-    kind: NODE_FALLBACK_TEXTURE_DIMENSIONS,
-    stage: hasCompute ? 'compute' : 'render',
-    textureType,
-    viewDimension,
-    componentCount: textureDimensionsComponentCount(viewDimension),
-    levelArg,
-  };
-}
-
-function isNodeFallbackShader(native, kind = null) {
-  return Boolean(
-    native
-    && typeof native === 'object'
-    && native[NODE_FALLBACK_SHADER_MODULE] === true
-    && (kind == null || native.kind === kind),
-  );
-}
-
-function isNodeFallbackPipeline(native, kind = null) {
-  return Boolean(
-    native
-    && typeof native === 'object'
-    && native[NODE_FALLBACK_PIPELINE] === true
-    && (kind == null || native.kind === kind),
-  );
-}
-
-function makeNodeFallbackShaderModule(code, analysis) {
-  return {
-    [NODE_FALLBACK_SHADER_MODULE]: true,
-    kind: analysis.kind,
-    code,
-    analysis,
-  };
-}
-
-function makeNodeFallbackPipeline(shaderNative, stage, entryPoint) {
-  return {
-    [NODE_FALLBACK_PIPELINE]: true,
-    kind: shaderNative.kind,
-    stage,
-    entryPoint,
-    shader: shaderNative,
-    analysis: shaderNative.analysis,
-  };
-}
-
-function dimensionsForTextureView(texture, descriptor, analysis) {
-  if (!texture || !analysis) {
-    return null;
-  }
-  const viewDimension = descriptor?.dimension ?? analysis.viewDimension;
-  const baseMipLevel = descriptor?.baseMipLevel ?? 0;
-  const level = baseMipLevel + (analysis.levelArg ?? 0);
-  const shift = Number.isInteger(level) && level > 0 ? level : 0;
-  const width = Math.max(1, texture.width >>> shift);
-  const height = Math.max(1, texture.height >>> shift);
-  const depth = Math.max(1, texture.depthOrArrayLayers >>> shift);
-  if (viewDimension === '1d') return [width];
-  if (viewDimension === '3d') return [width, height, depth];
-  return [width, height];
-}
-
-function writeTextureDimensionsWords(queueNative, bufferNative, offset, byteLength, values) {
-  if (!Number.isInteger(byteLength) || byteLength <= 0) {
-    return false;
-  }
-  const words = new Uint32Array(Math.ceil(byteLength / Uint32Array.BYTES_PER_ELEMENT));
-  for (let index = 0; index < words.length; index += 4) {
-    words[index] = values[0] ?? 0;
-    words[index + 1] = values[1] ?? 0;
-    words[index + 2] = values[2] ?? 0;
-    words[index + 3] = values[3] ?? 0;
-  }
-  const bytes = new Uint8Array(words.buffer, 0, byteLength);
-  addon.queueWriteBuffer(queueNative, bufferNative, offset, bytes);
-  writeBufferHostShadowByNative(bufferNative, offset, bytes);
-  return true;
-}
-
-function applyTextureDimensionsDispatch(queueNative, commands) {
-  if (!Array.isArray(commands) || commands.length === 0 || commands.length > 2) {
-    return false;
-  }
-  const dispatch = commands[0];
-  if (dispatch?.t !== 0 || !isNodeFallbackPipeline(dispatch.p, NODE_FALLBACK_TEXTURE_DIMENSIONS)) {
-    return false;
-  }
-  const analysis = dispatch.p.analysis;
-  const bindGroups = Array.isArray(dispatch.bg)
-    ? dispatch.bg
-    : [dispatch.b ?? null];
-  const textureEntries = bindGroups[0] ? nodeBindGroupEntries.get(bindGroups[0]) : null;
-  const outputEntries = bindGroups[1] ? nodeBindGroupEntries.get(bindGroups[1]) : null;
-  const textureEntry = Array.isArray(textureEntries) ? textureEntries.find(entry => entry.binding === 0 && entry.textureView) : null;
-  const outputEntry = Array.isArray(outputEntries) ? outputEntries.find(entry => entry.binding === 0 && entry.buffer) : null;
-  const viewInfo = textureEntry?.textureView ? nodeTextureViewDescriptors.get(textureEntry.textureView) : null;
-  const texture = viewInfo?.texture ?? null;
-  const values = dimensionsForTextureView(texture, viewInfo?.descriptor, analysis);
-  if (!values || !outputEntry?.buffer) {
-    return false;
-  }
-  if (commands.length === 2) {
-    const copy = commands[1];
-    if (copy?.t !== 1 || copy.s !== outputEntry.buffer) {
-      return false;
-    }
-  }
-  const outputSize = outputEntry.size
-    ?? Math.max(0, (nodeBufferSizes.get(outputEntry.buffer) ?? 0) - (outputEntry.offset ?? 0));
-  if (!writeTextureDimensionsWords(queueNative, outputEntry.buffer, outputEntry.offset ?? 0, outputSize, values)) {
-    return false;
-  }
-  if (commands.length === 1) {
-    return true;
-  }
-  const copy = commands[1];
-  const copyBytes = readBufferHostShadowByNative(copy.s, copy.so, copy.sz);
-  if (copyBytes == null) {
-    return false;
-  }
-  const copyView = new Uint8Array(copyBytes);
-  addon.queueWriteBuffer(queueNative, copy.d, copy.do, copyView);
-  writeBufferHostShadowByNative(copy.d, copy.do, copyView);
-  return true;
-}
-
-function parseStorageFillExtent(code, axis) {
-  const match = new RegExp(`\\bvar\\s+${axis}Extent\\s*:\\s*u32\\s*=\\s*([0-9A-Fa-f_xX]+)u\\s*\\*\\s*([0-9A-Fa-f_xX]+)u\\s*;`).exec(code);
-  if (!match) {
-    return null;
-  }
-  const workgroups = parseWgslU32Literal(match[1]);
-  const workgroupSize = parseWgslU32Literal(match[2]);
-  if (workgroups == null || workgroupSize == null) {
-    return null;
-  }
-  return { workgroups, workgroupSize };
-}
-
-function storageGeneratedFillShader(code) {
-  if (
-    typeof code !== 'string'
-    || !code.includes('@builtin(global_invocation_id)')
-    || !code.includes('var<storage, read_write> dst : OutputBuffer')
-    || !/\bvalue\s*:\s*array\s*<\s*u32\s*>/.test(code)
-    || !/\bdst\s*\.\s*value\s*\[\s*index\s*\]\s*=\s*val\s*;/.test(code)
-    || !code.includes('GlobalInvocationID.x > xExtent')
-    || !code.includes('GlobalInvocationID.y > yExtent')
-    || !code.includes('GlobalInvocationID.z > zExtent')
-  ) {
-    return null;
-  }
-  const valueMatch = /\bvar\s+val\s*:\s*u32\s*=\s*([0-9A-Fa-f_xX]+)u\s*;/.exec(code);
-  const value = valueMatch ? parseWgslU32Literal(valueMatch[1]) : null;
-  const x = parseStorageFillExtent(code, 'x');
-  const y = parseStorageFillExtent(code, 'y');
-  const z = parseStorageFillExtent(code, 'z');
-  if (value == null || x == null || y == null || z == null) {
-    return null;
-  }
-  const elementCount = x.workgroups * x.workgroupSize * y.workgroups * y.workgroupSize * z.workgroups * z.workgroupSize;
-  const byteLength = elementCount * Uint32Array.BYTES_PER_ELEMENT;
-  if (!Number.isSafeInteger(byteLength) || byteLength <= 0) {
-    return null;
-  }
-  return {
-    value,
-    byteLength,
-    workgroups: [x.workgroups, y.workgroups, z.workgroups],
-  };
-}
-
-function bindGroupForLazyCommand(cmd) {
-  if (cmd.b) {
-    return cmd.b;
-  }
-  if (Array.isArray(cmd.bg)) {
-    return cmd.bg[0] ?? null;
-  }
-  return null;
-}
-
-function bufferWrapperForNative(native) {
-  return native == null ? null : (nodeBufferWrappers.get(native) ?? null);
-}
-
-function ensureBufferHostShadow(buffer) {
-  if (!buffer || typeof buffer !== 'object') {
-    return null;
-  }
-  if (buffer.size > NODE_BUFFER_HOST_SHADOW_MAX_BYTES) {
-    buffer._hostShadow = null;
-    buffer._hostShadowValid = false;
-    return null;
-  }
-  if (!(buffer._hostShadow instanceof Uint8Array) || buffer._hostShadow.byteLength !== buffer.size) {
-    buffer._hostShadow = new Uint8Array(buffer.size);
-  }
-  return buffer._hostShadow;
-}
-
-function bufferHostShadowView(buffer, offset, size) {
-  const shadow = ensureBufferHostShadow(buffer);
-  if (shadow == null || !buffer._hostShadowValid) {
-    return null;
-  }
-  if (!Number.isInteger(offset) || !Number.isInteger(size) || offset < 0 || size < 0 || offset + size > shadow.byteLength) {
-    return null;
-  }
-  return shadow.subarray(offset, offset + size);
-}
-
-function readBufferHostShadow(buffer, offset, size) {
-  const view = bufferHostShadowView(buffer, offset, size);
-  return view == null ? null : view.slice().buffer;
-}
-
-function writeBufferHostShadow(buffer, offset, view) {
-  const shadow = ensureBufferHostShadow(buffer);
-  const bytes = ArrayBuffer.isView(view)
-    ? new Uint8Array(view.buffer, view.byteOffset, view.byteLength)
-    : new Uint8Array(view);
-  if (shadow == null || !Number.isInteger(offset) || offset < 0 || offset + bytes.byteLength > shadow.byteLength) {
-    if (buffer && typeof buffer === 'object') {
-      buffer._hostShadowValid = false;
-    }
-    return false;
-  }
-  shadow.set(bytes, offset);
-  buffer._hostShadowValid = buffer._hostShadowValid || (offset === 0 && bytes.byteLength === buffer.size);
-  return true;
-}
-
-function writeBufferHostShadowByNative(native, offset, view) {
-  const buffer = bufferWrapperForNative(native);
-  return buffer == null ? false : writeBufferHostShadow(buffer, offset, view);
-}
-
-function readBufferHostShadowByNative(native, offset, size) {
-  const buffer = bufferWrapperForNative(native);
-  return buffer == null ? null : readBufferHostShadow(buffer, offset, size);
-}
-
-function invalidateBufferHostShadowByNative(native) {
-  const buffer = bufferWrapperForNative(native);
-  if (buffer != null) {
-    buffer._hostShadowValid = false;
-  }
-}
-
-const encodedBufferWrites = new WeakMap();
-const recordedBufferWrites = new WeakMap();
-
-function recordBufferWrite(encoder, native) {
-  let writes = encodedBufferWrites.get(encoder);
-  if (!writes) { writes = new Set(); encodedBufferWrites.set(encoder, writes); }
-  writes.add(native);
-  invalidateBufferHostShadowByNative(native);
-}
-
-function invalidateSubmittedBufferWrites(commandBuffer) {
-  for (const native of recordedBufferWrites.get(commandBuffer._native) ?? []) {
-    invalidateBufferHostShadowByNative(native);
-  }
-  invalidateLazyDispatchCommandBufferShadows(commandBuffer._commands);
-}
-
-function invalidateBindGroupHostShadows(bindGroup, encoder = null) {
-  const entries = bindGroup == null ? null : nodeBindGroupEntries.get(bindGroup);
-  if (!Array.isArray(entries)) {
-    return;
-  }
-  for (const entry of entries) {
-    if (entry?.buffer != null) {
-      if (encoder) recordBufferWrite(encoder, entry.buffer);
-      else invalidateBufferHostShadowByNative(entry.buffer);
-    }
-    if (entry?.textureView != null) {
-      const viewInfo = nodeTextureViewDescriptors.get(entry.textureView);
-      if (viewInfo?.texture) {
-        viewInfo.texture._hostShadowValid = false;
-      }
-    }
-  }
-}
-
-function invalidateComputePassHostShadows(pass) {
-  for (const bindGroup of pass._bindGroups) {
-    invalidateBindGroupHostShadows(bindGroup, pass._encoder);
-  }
-}
-
-function invalidateLazyDispatchCommandBufferShadows(commands) {
-  if (!Array.isArray(commands)) {
-    return;
-  }
-  for (const cmd of commands) {
-    if (cmd?.t === 1 && cmd.d != null) {
-      invalidateBufferHostShadowByNative(cmd.d);
-      continue;
-    }
-    if (cmd?.t !== 0) {
-      continue;
-    }
-    const bindGroup = bindGroupForLazyCommand(cmd);
-    invalidateBindGroupHostShadows(bindGroup);
-  }
-}
-
 function lazyCopyBufferValidationMessage(srcNative, srcOffset, dstNative, dstOffset, size) {
   const srcSize = nodeBufferSizes.get(srcNative);
   const dstSize = nodeBufferSizes.get(dstNative);
@@ -1221,162 +824,6 @@ function lazyCopyBufferValidationMessage(srcNative, srcOffset, dstNative, dstOff
     return `GPUCommandEncoder.copyBufferToBuffer: destination range ${dstOffset}+${size} exceeds buffer size ${dstSize}`;
   }
   return null;
-}
-
-function textureWrapperForNative(native) {
-  return native == null ? null : (nodeTextureWrappers.get(native) ?? null);
-}
-
-function textureBytesPerTexel(format) {
-  if (format === 'rgba8uint' || format === 'rgba8unorm' || format === 'rgba8sint') {
-    return 4;
-  }
-  if (format === 'rgba32uint' || format === 'rgba32sint' || format === 'rgba32float') {
-    return 16;
-  }
-  return 0;
-}
-
-function textureShadowIndex(texture, x, y, z) {
-  const bytesPerTexel = textureBytesPerTexel(texture?.format);
-  if (bytesPerTexel <= 0) {
-    return -1;
-  }
-  return ((z * texture.height * texture.width) + (y * texture.width) + x) * bytesPerTexel;
-}
-
-function ensureTextureHostShadow(texture) {
-  const bytesPerTexel = textureBytesPerTexel(texture?.format);
-  if (bytesPerTexel <= 0) {
-    return null;
-  }
-  const byteLength = texture.width * texture.height * texture.depthOrArrayLayers * bytesPerTexel;
-  if (!(texture._hostShadow instanceof Uint8Array) || texture._hostShadow.byteLength !== byteLength) {
-    texture._hostShadow = new Uint8Array(byteLength);
-    texture._hostShadowValid = false;
-  }
-  return texture._hostShadow;
-}
-
-function copyBufferToTextureHostShadow(source, destination, copySize) {
-  const src = bufferWrapperForNative(source.buffer);
-  const texture = textureWrapperForNative(destination.texture);
-  const srcShadow = src == null ? null : bufferHostShadowView(src, source.offset ?? 0, src.size - (source.offset ?? 0));
-  const dstShadow = texture == null ? null : ensureTextureHostShadow(texture);
-  const bytesPerTexel = textureBytesPerTexel(texture?.format);
-  if (srcShadow == null || dstShadow == null || bytesPerTexel <= 0) {
-    if (texture != null) texture._hostShadowValid = false;
-    return false;
-  }
-  const origin = destination.origin ?? {};
-  const widthBytes = copySize.width * bytesPerTexel;
-  const bytesPerRow = source.bytesPerRow || widthBytes;
-  const rowsPerImage = source.rowsPerImage || copySize.height;
-  for (let z = 0; z < (copySize.depthOrArrayLayers ?? 1); z += 1) {
-    for (let y = 0; y < copySize.height; y += 1) {
-      const srcOffset = (z * rowsPerImage * bytesPerRow) + (y * bytesPerRow);
-      const dstOffset = textureShadowIndex(texture, (origin.x ?? 0), (origin.y ?? 0) + y, (origin.z ?? 0) + z);
-      if (dstOffset < 0 || srcOffset + widthBytes > srcShadow.byteLength || dstOffset + widthBytes > dstShadow.byteLength) {
-        texture._hostShadowValid = false;
-        return false;
-      }
-      dstShadow.set(srcShadow.subarray(srcOffset, srcOffset + widthBytes), dstOffset);
-    }
-  }
-  texture._hostShadowValid = true;
-  return true;
-}
-
-function copyTextureToTextureHostShadow(source, destination, copySize) {
-  const src = textureWrapperForNative(source.texture);
-  const dst = textureWrapperForNative(destination.texture);
-  const srcShadow = src == null || src._hostShadowValid === false ? null : ensureTextureHostShadow(src);
-  const dstShadow = dst == null ? null : ensureTextureHostShadow(dst);
-  const bytesPerTexel = textureBytesPerTexel(src?.format);
-  if (srcShadow == null || dstShadow == null || bytesPerTexel <= 0 || src.format !== dst.format) {
-    if (dst != null) dst._hostShadowValid = false;
-    return false;
-  }
-  const srcOrigin = source.origin ?? {};
-  const dstOrigin = destination.origin ?? {};
-  const widthBytes = copySize.width * bytesPerTexel;
-  for (let z = 0; z < (copySize.depthOrArrayLayers ?? 1); z += 1) {
-    for (let y = 0; y < copySize.height; y += 1) {
-      const srcOffset = textureShadowIndex(src, (srcOrigin.x ?? 0), (srcOrigin.y ?? 0) + y, (srcOrigin.z ?? 0) + z);
-      const dstOffset = textureShadowIndex(dst, (dstOrigin.x ?? 0), (dstOrigin.y ?? 0) + y, (dstOrigin.z ?? 0) + z);
-      if (srcOffset < 0 || dstOffset < 0 || srcOffset + widthBytes > srcShadow.byteLength || dstOffset + widthBytes > dstShadow.byteLength) {
-        dst._hostShadowValid = false;
-        return false;
-      }
-      dstShadow.set(srcShadow.subarray(srcOffset, srcOffset + widthBytes), dstOffset);
-    }
-  }
-  dst._hostShadowValid = true;
-  return true;
-}
-
-function copyTextureToBufferHostShadow(source, destination, copySize) {
-  const texture = textureWrapperForNative(source.texture);
-  const dst = bufferWrapperForNative(destination.buffer);
-  const srcShadow = texture == null || texture._hostShadowValid === false ? null : ensureTextureHostShadow(texture);
-  const dstShadow = dst == null ? null : ensureBufferHostShadow(dst);
-  const bytesPerTexel = textureBytesPerTexel(texture?.format);
-  if (srcShadow == null || dstShadow == null || bytesPerTexel <= 0) {
-    if (dst != null) dst._hostShadowValid = false;
-    return false;
-  }
-  const origin = source.origin ?? {};
-  const widthBytes = copySize.width * bytesPerTexel;
-  const bytesPerRow = destination.bytesPerRow || widthBytes;
-  const rowsPerImage = destination.rowsPerImage || copySize.height;
-  const baseOffset = destination.offset ?? 0;
-  for (let z = 0; z < (copySize.depthOrArrayLayers ?? 1); z += 1) {
-    for (let y = 0; y < copySize.height; y += 1) {
-      const srcOffset = textureShadowIndex(texture, (origin.x ?? 0), (origin.y ?? 0) + y, (origin.z ?? 0) + z);
-      const dstOffset = baseOffset + (z * rowsPerImage * bytesPerRow) + (y * bytesPerRow);
-      if (srcOffset < 0 || srcOffset + widthBytes > srcShadow.byteLength || dstOffset + widthBytes > dstShadow.byteLength) {
-        dst._hostShadowValid = false;
-        return false;
-      }
-      dstShadow.set(srcShadow.subarray(srcOffset, srcOffset + widthBytes), dstOffset);
-    }
-  }
-  dst._hostShadowValid = true;
-  return true;
-}
-
-function writeTextureDimensionsRenderTarget(pass, firstInstance = 0) {
-  const pipeline = pass?._nodeFallbackPipeline;
-  if (!isNodeFallbackPipeline(pipeline, NODE_FALLBACK_TEXTURE_DIMENSIONS)) {
-    return false;
-  }
-  const bindGroup = pass._bindGroups[0] ?? null;
-  const textureEntries = bindGroup ? nodeBindGroupEntries.get(bindGroup) : null;
-  const textureEntry = Array.isArray(textureEntries) ? textureEntries.find(entry => entry.binding === 0 && entry.textureView) : null;
-  const sourceViewInfo = textureEntry?.textureView ? nodeTextureViewDescriptors.get(textureEntry.textureView) : null;
-  const values = dimensionsForTextureView(sourceViewInfo?.texture, sourceViewInfo?.descriptor, pipeline.analysis);
-  const targetAttachment = Array.isArray(pass._colorAttachments) ? pass._colorAttachments[0] : null;
-  const targetViewInfo = targetAttachment?.view ? nodeTextureViewDescriptors.get(targetAttachment.view) : null;
-  const target = targetViewInfo?.texture ?? null;
-  const targetShadow = target == null ? null : ensureTextureHostShadow(target);
-  if (!values || targetShadow == null || textureBytesPerTexel(target.format) < 16) {
-    return false;
-  }
-  const viewportX = pass._viewport && Number.isFinite(pass._viewport.x)
-    ? Math.floor(pass._viewport.x)
-    : firstInstance;
-  const x = Math.max(0, Math.min(target.width - 1, viewportX));
-  const offset = textureShadowIndex(target, x, 0, 0);
-  if (offset < 0 || offset + 16 > targetShadow.byteLength) {
-    return false;
-  }
-  const view = new DataView(targetShadow.buffer, targetShadow.byteOffset + offset, 16);
-  view.setUint32(0, values[0] ?? 0, true);
-  view.setUint32(4, values[1] ?? 0, true);
-  view.setUint32(8, values[2] ?? 0, true);
-  view.setUint32(12, values[3] ?? 0, true);
-  target._hostShadowValid = true;
-  return true;
 }
 
 function hasDeferredValidationCommand(commands) {
@@ -1417,69 +864,6 @@ function captureDeferredValidationCommand(queue, commands, commandBuffers) {
   return false;
 }
 
-function canSpecializeClearDispatchCommands(commands) {
-  if (!Array.isArray(commands) || commands.length !== 1) {
-    return false;
-  }
-  const cmd = commands[0];
-  if (cmd?.t !== 0 || !isStorageClearLoopShader(nodeComputePipelineSources.get(cmd.p))) {
-    return false;
-  }
-  const bindGroup = bindGroupForLazyCommand(cmd);
-  const entries = bindGroup == null ? null : nodeBindGroupEntries.get(bindGroup);
-  return Array.isArray(entries) && entries.length === 1 && entries[0]?.binding === 0 && entries[0]?.buffer != null;
-}
-
-function canSpecializeStorageFillDispatchCommands(commands) {
-  if (!Array.isArray(commands) || commands.length !== 1) {
-    return false;
-  }
-  const cmd = commands[0];
-  const fill = cmd?.t === 0 ? storageGeneratedFillShader(nodeComputePipelineSources.get(cmd.p)) : null;
-  if (
-    fill == null
-    || cmd.x !== fill.workgroups[0]
-    || cmd.y !== fill.workgroups[1]
-    || cmd.z !== fill.workgroups[2]
-  ) {
-    return false;
-  }
-  const bindGroup = bindGroupForLazyCommand(cmd);
-  const entries = bindGroup == null ? null : nodeBindGroupEntries.get(bindGroup);
-  return Array.isArray(entries) && entries.length === 1 && entries[0]?.binding === 0 && entries[0]?.buffer != null;
-}
-
-function canSpecializeTextureDimensionsDispatchCommands(commands) {
-  if (!Array.isArray(commands) || commands.length === 0 || commands.length > 2) {
-    return false;
-  }
-  const dispatch = commands[0];
-  if (dispatch?.t !== 0 || !isNodeFallbackPipeline(dispatch.p, NODE_FALLBACK_TEXTURE_DIMENSIONS)) {
-    return false;
-  }
-  const bindGroups = Array.isArray(dispatch.bg)
-    ? dispatch.bg
-    : [dispatch.b ?? null];
-  const textureEntries = bindGroups[0] ? nodeBindGroupEntries.get(bindGroups[0]) : null;
-  const outputEntries = bindGroups[1] ? nodeBindGroupEntries.get(bindGroups[1]) : null;
-  const textureEntry = Array.isArray(textureEntries) ? textureEntries.find(entry => entry.binding === 0 && entry.textureView) : null;
-  const outputEntry = Array.isArray(outputEntries) ? outputEntries.find(entry => entry.binding === 0 && entry.buffer) : null;
-  if (!textureEntry?.textureView || !outputEntry?.buffer) {
-    return false;
-  }
-  if (commands.length === 1) {
-    return true;
-  }
-  const copy = commands[1];
-  return copy?.t === 1 && copy.s === outputEntry.buffer;
-}
-
-function canSpecializeNodeDispatchCommands(commands) {
-  return canSpecializeClearDispatchCommands(commands)
-    || canSpecializeStorageFillDispatchCommands(commands)
-    || canSpecializeTextureDimensionsDispatchCommands(commands);
-}
-
 function isNodeLazyDispatchCommand(command) {
   return command?.t === 0 && command.d === undefined;
 }
@@ -1495,60 +879,6 @@ function canSubmitNodeLazyCommandsBatched(commands) {
     return false;
   }
   return commands.slice(0, -1).every(isNodeLazyDispatchCommand);
-}
-
-function tryApplySpecializedClearDispatch(queueNative, commands) {
-  if (!canSpecializeClearDispatchCommands(commands)) return false;
-  const cmd = commands[0];
-  const bindGroup = bindGroupForLazyCommand(cmd);
-  const entries = nodeBindGroupEntries.get(bindGroup);
-  const entry = entries[0];
-  if (entry.binding !== 0 || entry.buffer == null) {
-    return false;
-  }
-  const bufferSize = nodeBufferSizes.get(entry.buffer);
-  const offset = entry.offset ?? 0;
-  const size = entry.size ?? (typeof bufferSize === 'number' ? Math.max(0, bufferSize - offset) : 0);
-  if (!Number.isInteger(size) || size <= 0 || size > NODE_SPECIALIZED_CLEAR_MAX_BYTES) {
-    return false;
-  }
-  const bytes = new Uint8Array(size);
-  addon.queueWriteBuffer(queueNative, entry.buffer, offset, bytes);
-  writeBufferHostShadowByNative(entry.buffer, offset, bytes);
-  return true;
-}
-
-function tryApplySpecializedStorageFillDispatch(queueNative, commands) {
-  if (!canSpecializeStorageFillDispatchCommands(commands)) return false;
-  const cmd = commands[0];
-  const fill = storageGeneratedFillShader(nodeComputePipelineSources.get(cmd.p));
-  const bindGroup = bindGroupForLazyCommand(cmd);
-  const entries = nodeBindGroupEntries.get(bindGroup);
-  const entry = entries[0];
-  const bufferSize = nodeBufferSizes.get(entry.buffer);
-  const offset = entry.offset ?? 0;
-  const size = entry.size ?? (typeof bufferSize === 'number' ? Math.max(0, bufferSize - offset) : 0);
-  if (
-    fill == null
-    || !Number.isInteger(size)
-    || size !== fill.byteLength
-    || size > NODE_SPECIALIZED_STORAGE_FILL_MAX_BYTES
-    || size % Uint32Array.BYTES_PER_ELEMENT !== 0
-  ) {
-    return false;
-  }
-  const words = new Uint32Array(size / Uint32Array.BYTES_PER_ELEMENT);
-  words.fill(fill.value);
-  const bytes = new Uint8Array(words.buffer);
-  addon.queueWriteBuffer(queueNative, entry.buffer, offset, bytes);
-  writeBufferHostShadowByNative(entry.buffer, offset, bytes);
-  return true;
-}
-
-function tryApplySpecializedNodeDispatch(queueNative, commands) {
-  return tryApplySpecializedClearDispatch(queueNative, commands)
-    || tryApplySpecializedStorageFillDispatch(queueNative, commands)
-    || applyTextureDimensionsDispatch(queueNative, commands);
 }
 
 function canFinishNodeLazyDispatchCopyCommandsAsNativeBuffer(commands) {
@@ -1961,7 +1291,6 @@ const nodeEncoderBackend = {
     );
   },
   computePassDispatchWorkgroups(pass, x, y, z) {
-    invalidateComputePassHostShadows(pass);
     if (pass._lazy) {
       if (pass._pipeline == null) {
         failValidation('GPUComputePassEncoder.dispatchWorkgroups', 'setPipeline() must be called before dispatch');
@@ -2005,7 +1334,6 @@ const nodeEncoderBackend = {
     addon.computePassDispatchWorkgroups(nativePass, x, y, z);
   },
   computePassDispatchBound(pass, pipelineNative, bindGroupNative, x, y, z) {
-    invalidateBindGroupHostShadows(bindGroupNative);
     if (pass._lazy) {
       pass._pipeline = pipelineNative;
       pass._bindGroups[0] = bindGroupNative;
@@ -2038,7 +1366,6 @@ const nodeEncoderBackend = {
     clearPendingBoundDispatchState(pass);
   },
   computePassDispatchWorkgroupsIndirect(pass, indirectBufferNative, indirectOffset) {
-    invalidateComputePassHostShadows(pass);
     materializeLazyComputePass(pass);
     const nativePass = assertLiveResource(
       pass,
@@ -2069,13 +1396,10 @@ const nodeEncoderBackend = {
   renderPassInit(pass, native) {
     pass._native = native;
     pass._pipeline = null;
-    pass._nodeFallbackPipeline = null;
     pass._bindGroups = [];
     pass._immediates = [];
     pass._vertexBuffers = [];
     pass._indexBuffer = null;
-    pass._viewport = null;
-    pass._colorAttachments = [];
     pass._ended = false;
   },
   renderPassAssertOpen(pass, path) {
@@ -2090,11 +1414,6 @@ const nodeEncoderBackend = {
     if (!updatePassPipelineState(pass, pipelineNative)) {
       return;
     }
-    if (isNodeFallbackPipeline(pipelineNative, NODE_FALLBACK_TEXTURE_DIMENSIONS)) {
-      pass._nodeFallbackPipeline = pipelineNative;
-      return;
-    }
-    pass._nodeFallbackPipeline = null;
     addon.renderPassSetPipeline(
       assertLiveResource(pass, 'GPURenderPassEncoder.setPipeline', 'GPURenderPassEncoder'),
       pipelineNative,
@@ -2102,9 +1421,6 @@ const nodeEncoderBackend = {
   },
   renderPassSetBindGroup(pass, index, bindGroupNative) {
     if (!updatePassBindGroupState(pass, index, bindGroupNative)) {
-      return;
-    }
-    if (pass._nodeFallbackPipeline) {
       return;
     }
     addon.renderPassSetBindGroup(
@@ -2148,9 +1464,6 @@ const nodeEncoderBackend = {
     );
   },
   renderPassDraw(pass, vertexCount, instanceCount, firstVertex, firstInstance) {
-    if (writeTextureDimensionsRenderTarget(pass, firstInstance)) {
-      return;
-    }
     addon.renderPassDraw(pass._native, vertexCount, instanceCount, firstVertex, firstInstance);
   },
   renderPassDrawIndexed(pass, indexCount, instanceCount, firstIndex, baseVertex, firstInstance) {
@@ -2169,10 +1482,6 @@ const nodeEncoderBackend = {
     addon.renderPassDrawIndexedIndirect(pass._native, indirectBufferNative, indirectOffset);
   },
   renderPassSetViewport(pass, x, y, width, height, minDepth, maxDepth) {
-    pass._viewport = { x, y, width, height, minDepth, maxDepth };
-    if (pass._nodeFallbackPipeline) {
-      return;
-    }
     addon.renderPassSetViewport(pass._native, x, y, width, height, minDepth, maxDepth);
   },
   renderPassSetScissorRect(pass, x, y, width, height) {
@@ -2439,7 +1748,6 @@ const nodeEncoderBackend = {
       addon.beginRenderPass(encoder._native, normalizedDescriptor),
       encoder,
     );
-    pass._colorAttachments = colorAttachments;
     encoder._activePass = pass;
     return pass;
   },
@@ -2451,14 +1759,12 @@ const nodeEncoderBackend = {
         return;
       }
       encoder._commands.push({ t: 1, s: srcNative, so: srcOffset, d: dstNative, do: dstOffset, sz: size });
-      recordBufferWrite(encoder, dstNative);
       return;
     }
     if (validationMessage) {
       failValidation('GPUCommandEncoder.copyBufferToBuffer', validationMessage);
     }
     addon.commandEncoderCopyBufferToBuffer(encoder._native, srcNative, srcOffset, dstNative, dstOffset, size);
-    recordBufferWrite(encoder, dstNative);
   },
   commandEncoderWriteTimestamp(encoder, querySetNative, queryIndex) {
     ensureNodeCommandEncoderNative(encoder);
@@ -2467,10 +1773,8 @@ const nodeEncoderBackend = {
   commandEncoderResolveQuerySet(encoder, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset) {
     ensureNodeCommandEncoderNative(encoder);
     addon.commandEncoderResolveQuerySet(encoder._native, querySetNative, firstQuery, queryCount, destinationNative, destinationOffset);
-    recordBufferWrite(encoder, destinationNative);
   },
   commandEncoderCopyBufferToTexture(encoder, source, destination, copySize) {
-    copyBufferToTextureHostShadow(source, destination, copySize);
     ensureNodeCommandEncoderNative(encoder);
     addon.commandEncoderCopyBufferToTexture(
       encoder._native,
@@ -2490,7 +1794,6 @@ const nodeEncoderBackend = {
     );
   },
   commandEncoderCopyTextureToBuffer(encoder, source, destination, copySize) {
-    copyTextureToBufferHostShadow(source, destination, copySize);
     ensureNodeCommandEncoderNative(encoder);
     addon.commandEncoderCopyTextureToBuffer(
       encoder._native,
@@ -2510,7 +1813,6 @@ const nodeEncoderBackend = {
     );
   },
   commandEncoderClearBuffer(encoder, bufferNative, offset, size) {
-    recordBufferWrite(encoder, bufferNative);
     ensureNodeCommandEncoderNative(encoder);
     addon.commandEncoderClearBuffer(
       encoder._native,
@@ -2538,7 +1840,6 @@ const nodeEncoderBackend = {
     }
   },
   commandEncoderCopyTextureToTexture(encoder, source, destination, copySize) {
-    copyTextureToTextureHostShadow(source, destination, copySize);
     ensureNodeCommandEncoderNative(encoder);
     addon.commandEncoderCopyTextureToTexture(
       encoder._native,
@@ -2567,19 +1868,16 @@ const nodeEncoderBackend = {
       if (
         commands.length > 0
         && !hasDeferredValidationCommand(commands)
-        && !canSpecializeNodeDispatchCommands(commands)
         && !canSubmitNodeLazyCommandsBatched(commands)
       ) {
         const nativeCommandBuffer = finishNodeLazyCommandsAsNativeCommandBuffer(encoder, commands);
         if (nativeCommandBuffer) {
-          invalidateLazyDispatchCommandBufferShadows(commands);
           return { _native: nativeCommandBuffer, _batched: false, _commands: commands };
         }
       }
       return { _commands: commands, _batched: true };
     }
     const cmd = addon.commandEncoderFinish(encoder._native);
-    if (encodedBufferWrites.has(encoder)) recordedBufferWrites.set(cmd, encodedBufferWrites.get(encoder));
     addon.commandEncoderRelease(encoder._native);
     encoder._native = null;
     return { _native: cmd, _batched: false };
@@ -2606,16 +1904,9 @@ const nodeEncoderBackend = {
  * - Texture views are created through `createView(...)`.
  */
 const fullSurfaceBackend = {
-  initTextureState(texture) {
-    ensureTextureHostShadow(texture);
-    nodeTextureWrappers.set(texture._native, texture);
-  },
   initBufferState(buffer) {
     buffer._mapMode = 0;
     buffer._mappedWriteRanges = [];
-    buffer._hostShadow = null;
-    buffer._hostShadowValid = buffer.size <= NODE_BUFFER_HOST_SHADOW_MAX_BYTES;
-    nodeBufferWrappers.set(buffer._native, buffer);
   },
   bufferMarkMappedAtCreation(buffer) {
     buffer._mapMode = globals.GPUMapMode.WRITE;
@@ -2662,13 +1953,6 @@ const fullSurfaceBackend = {
       wrapper._mapMode = 0;
       wrapper._mappedWriteRanges = [];
       return new ArrayBuffer(0);
-    }
-    const shadowCopy = readBufferHostShadow(wrapper, offset, size);
-    if (shadowCopy != null) {
-      wrapper.__doe_readback_breakdown_ns = ZERO_READBACK_BREAKDOWN_NS;
-      wrapper._mapMode = 0;
-      wrapper._mappedWriteRanges = [];
-      return shadowCopy;
     }
     if (typeof addon.bufferMapReadCopyUnmap === 'function') {
       const shouldFlush = Boolean(wrapper._queue?.hasPendingSubmissions());
@@ -2762,25 +2046,15 @@ const fullSurfaceBackend = {
       return new ArrayBuffer(0);
     }
     if (wrapper._mapMode === globals.GPUMapMode.WRITE) {
-      const existing = bufferHostShadowView(wrapper, offset, size);
-      const staged = existing == null ? new Uint8Array(size) : existing.slice();
-      wrapper._mappedWriteRanges.push({ buf: staged, native, offset, size });
-      return staged.buffer;
+      const staged = addon.bufferGetMappedRange(native, offset, size).slice(0);
+      wrapper._mappedWriteRanges.push({ buf: staged, offset, size });
+      return staged;
     }
-    const shadowCopy = readBufferHostShadow(wrapper, offset, size);
-    if (shadowCopy != null) {
-      return shadowCopy;
-    }
-    const mapped = addon.bufferGetMappedRange(native, offset, size);
-    return mapped ?? new ArrayBuffer(size);
+    return addon.bufferGetMappedRange(native, offset, size);
   },
   bufferReadCopy(wrapper, native, offset, size) {
     if (size === 0) {
       return new ArrayBuffer(0);
-    }
-    const shadowCopy = readBufferHostShadow(wrapper, offset, size);
-    if (shadowCopy != null) {
-      return shadowCopy;
     }
     if (typeof addon.bufferReadCopy === 'function') {
       return addon.bufferReadCopy(native, offset, size);
@@ -2804,19 +2078,13 @@ const fullSurfaceBackend = {
       const bytes = ArrayBuffer.isView(range.buf)
         ? new Uint8Array(range.buf.buffer, range.buf.byteOffset, range.buf.byteLength)
         : new Uint8Array(range.buf);
-      writeBufferHostShadow(wrapper, range.offset, bytes);
       if (range.size <= 0) {
         continue;
       }
-      if (wrapper._queue) {
-        addon.queueWriteBuffer(
-          assertLiveResource(wrapper._queue, 'GPUBuffer.unmap', 'GPUQueue'),
-          native,
-          range.offset,
-          bytes,
-        );
-      } else if (typeof addon.bufferFlushStagedRange === 'function') {
-        addon.bufferFlushStagedRange(range.native, bytes, range.offset, range.size);
+      if (typeof addon.bufferFlushStagedRange === 'function') {
+        addon.bufferFlushStagedRange(native, range.buf, range.offset, range.size);
+      } else {
+        new Uint8Array(addon.bufferGetMappedRange(native, range.offset, range.size)).set(bytes);
       }
     }
     wrapper._mappedWriteRanges = [];
@@ -2826,12 +2094,11 @@ const fullSurfaceBackend = {
     }
   },
   bufferDestroy(native) {
-    nodeBufferWrappers.delete(native);
     addon.bufferDestroy(native);
     addon.bufferRelease(native);
   },
   computePipelineRelease(native) {
-    if (!native?.[NODE_FALLBACK_PIPELINE]) addon.computePipelineRelease(native);
+    addon.computePipelineRelease(native);
   },
   bindGroupLayoutRelease(native) { addon.bindGroupLayoutRelease(native); },
   bindGroupRelease(native) { addon.bindGroupRelease(native); },
@@ -2853,7 +2120,6 @@ const fullSurfaceBackend = {
     providerDiagnosticStats.queueSubmitCalls += 1;
     providerDiagnosticStats.submittedCommandBuffers += buffers.length;
     for (const commandBuffer of buffers) {
-      invalidateSubmittedBufferWrites(commandBuffer);
       if (commandBuffer?._batched && Array.isArray(commandBuffer._commands)) {
         providerDiagnosticStats.submittedBatchedCommands += commandBuffer._commands.length;
       }
@@ -2875,16 +2141,7 @@ const fullSurfaceBackend = {
         accumulateQueueSubmitBreakdown(queue, 'submitPostSubmitBookkeepingTotalNs', bookkeepingStartedAt);
         return;
       }
-      if (tryApplySpecializedNodeDispatch(queueNative, cmds)) {
-        const bookkeepingStartedAt = submitTimingStart();
-        queue.markSubmittedWorkDone();
-        consumeSubmittedCommandBuffers(buffers);
-        presentPendingCanvasContexts(queue);
-        accumulateQueueSubmitBreakdown(queue, 'submitPostSubmitBookkeepingTotalNs', bookkeepingStartedAt);
-        return;
-      }
       const addonStartedAt = submitTimingStart();
-      invalidateLazyDispatchCommandBufferShadows(cmds);
       const addonBreakdown = addon.submitBatched(deviceNative, queueNative, cmds);
       accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
       accumulateAddonSubmitBreakdown(queue, addonBreakdown);
@@ -2920,16 +2177,7 @@ const fullSurfaceBackend = {
         accumulateQueueSubmitBreakdown(queue, 'submitPostSubmitBookkeepingTotalNs', bookkeepingStartedAt);
         return;
       }
-      if (tryApplySpecializedNodeDispatch(queueNative, allCommands)) {
-        const bookkeepingStartedAt = submitTimingStart();
-        queue.markSubmittedWorkDone();
-        consumeSubmittedCommandBuffers(buffers);
-        presentPendingCanvasContexts(queue);
-        accumulateQueueSubmitBreakdown(queue, 'submitPostSubmitBookkeepingTotalNs', bookkeepingStartedAt);
-        return;
-      }
       const addonStartedAt = submitTimingStart();
-      invalidateLazyDispatchCommandBufferShadows(allCommands);
       const addonBreakdown = addon.submitBatched(deviceNative, queueNative, allCommands);
       accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
       accumulateAddonSubmitBreakdown(queue, addonBreakdown);
@@ -2963,7 +2211,6 @@ const fullSurfaceBackend = {
         accumulateQueueSubmitBreakdown(queue, 'submitCommandPrepTotalNs', prepStartedAt);
         return;
       }
-      invalidateLazyDispatchCommandBufferShadows(submissionCommands);
       accumulateQueueSubmitBreakdown(queue, 'submitCommandPrepTotalNs', prepStartedAt);
 
       let segmentStart = 0;
@@ -2982,7 +2229,7 @@ const fullSurfaceBackend = {
         const segment = buffers.slice(segmentStart, segmentEnd);
         if (segmentIsBatched) {
           const commands = flattenBatchedCommands(segment);
-          if (commands.length > 0 && !tryApplySpecializedNodeDispatch(queueNative, commands)) {
+          if (commands.length > 0) {
             const addonStartedAt = submitTimingStart();
             const addonBreakdown = addon.submitBatched(deviceNative, queueNative, commands);
             accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
@@ -3054,7 +2301,6 @@ const fullSurfaceBackend = {
     providerDiagnosticStats.queueWriteBufferBytes += view.byteLength;
     const writeStartedAt = submitTimingStart();
     addon.queueWriteBuffer(queueNative, bufferNative, bufferOffset, view);
-    writeBufferHostShadowByNative(bufferNative, bufferOffset, view);
     accumulateProviderDiagnosticTime('queueWriteBufferTotalNs', writeStartedAt);
   },
   queueWriteBufferBatch(_queue, queueNative, entries) {
@@ -3075,7 +2321,6 @@ const fullSurfaceBackend = {
       for (const entry of entries) {
         if (entry.view.byteLength > 0) {
           addon.queueWriteBuffer(queueNative, entry.bufferNative, entry.bufferOffset, entry.view);
-          writeBufferHostShadowByNative(entry.bufferNative, entry.bufferOffset, entry.view);
         }
       }
       accumulateProviderDiagnosticTime('queueWriteBufferBatchTotalNs', batchStartedAt);
@@ -3107,7 +2352,6 @@ const fullSurfaceBackend = {
         offsets[index] = BigInt(entry.bufferOffset);
         sizes[index] = entry.view.byteLength;
         dataViews[index] = entry.view;
-        writeBufferHostShadowByNative(entry.bufferNative, entry.bufferOffset, entry.view);
       }
       addon.queueWriteBufferBatchDataPtrs(queueNative, buffers, offsets, sizes, dataViews);
       accumulateProviderDiagnosticTime('queueWriteBufferBatchTotalNs', batchStartedAt);
@@ -3122,7 +2366,6 @@ const fullSurfaceBackend = {
       sizes[index] = entry.view.byteLength;
       data.set(entry.view, dataOffset);
       dataOffset += entry.view.byteLength;
-      writeBufferHostShadowByNative(entry.bufferNative, entry.bufferOffset, entry.view);
     }
     addon.queueWriteBufferBatch(queueNative, buffers, offsets, sizes, data);
     accumulateProviderDiagnosticTime('queueWriteBufferBatchTotalNs', batchStartedAt);
@@ -3143,10 +2386,6 @@ const fullSurfaceBackend = {
       size.height,
       size.depthOrArrayLayers ?? 1,
     );
-    const texture = textureWrapperForNative(destination.texture);
-    if (texture != null) {
-      texture._hostShadowValid = false;
-    }
   },
   async queueOnSubmittedWorkDone(queue, queueNative) {
     if (!queue.hasPendingSubmissions()) {
@@ -3170,17 +2409,6 @@ const fullSurfaceBackend = {
   textureCreateView(_texture, native, descriptor) {
     if (!descriptor) {
       const view = addon.textureCreateView(native);
-      nodeTextureViewDescriptors.set(view, {
-        texture: _texture,
-        descriptor: {
-          dimension: _texture?.dimension ?? '2d',
-          baseMipLevel: 0,
-          mipLevelCount: _texture?.mipLevelCount ?? 1,
-          baseArrayLayer: 0,
-          arrayLayerCount: _texture?.depthOrArrayLayers ?? 1,
-          aspect: 'all',
-        },
-      });
       return view;
     }
     const viewDescriptor = { ...descriptor };
@@ -3202,11 +2430,9 @@ const fullSurfaceBackend = {
       viewDescriptor.swizzleA = TEXTURE_SWIZZLE_COMPONENT_MAP[descriptor.swizzle[3]] ?? 0;
     }
     const view = addon.textureCreateView(native, viewDescriptor);
-    nodeTextureViewDescriptors.set(view, { texture: _texture, descriptor });
     return view;
   },
   textureDestroy(native, texture) {
-    nodeTextureWrappers.delete(native);
     if (texture?._externallyOwned) {
       if (typeof texture?._nativeCanvasRelease === 'function') {
         texture._nativeCanvasRelease(native, texture);
@@ -3216,15 +2442,9 @@ const fullSurfaceBackend = {
     addon.textureRelease(native);
   },
   shaderModuleDestroy(native) {
-    if (isNodeFallbackShader(native)) {
-      return;
-    }
     addon.shaderModuleRelease(native);
   },
   shaderModuleGetCompilationInfo(_shaderModule, native) {
-    if (isNodeFallbackShader(native)) {
-      return { messages: [] };
-    }
     return addon.shaderModuleGetCompilationInfo(native);
   },
   computePipelineGetBindGroupLayout(pipeline, index, classes) {
@@ -3292,13 +2512,6 @@ const fullSurfaceBackend = {
     return native;
   },
   deviceCreateShaderModule(device, code, compilationHints, label = null) {
-    const fallback = analyzeTextureDimensionsShader(code);
-    if (fallback) {
-      assertLiveResource(device, 'GPUDevice.createShaderModule', 'GPUDevice');
-      const native = makeNodeFallbackShaderModule(code, fallback);
-      nodeShaderSources.set(native, code);
-      return native;
-    }
     try {
       const native = addon.createShaderModule(
         assertLiveResource(device, 'GPUDevice.createShaderModule', 'GPUDevice'),
@@ -3306,7 +2519,6 @@ const fullSurfaceBackend = {
         compilationHints ?? null,
         label,
       );
-      nodeShaderSources.set(native, code);
       return native;
     } catch (error) {
       throw enrichNativeCompilerError(error, 'GPUDevice.createShaderModule', readLastErrorFields());
@@ -3314,12 +2526,6 @@ const fullSurfaceBackend = {
   },
   deviceCreateComputePipeline(device, shaderNative, entryPoint, layoutNative, constants, label) {
     try {
-      if (isNodeFallbackShader(shaderNative, NODE_FALLBACK_TEXTURE_DIMENSIONS)) {
-        assertLiveResource(device, 'GPUDevice.createComputePipeline', 'GPUDevice');
-        const native = makeNodeFallbackPipeline(shaderNative, 'compute', entryPoint);
-        nodeComputePipelineSources.set(native, nodeShaderSources.get(shaderNative) ?? '');
-        return native;
-      }
       const native = addon.createComputePipeline(
         assertLiveResource(device, 'GPUDevice.createComputePipeline', 'GPUDevice'),
         shaderNative,
@@ -3328,7 +2534,6 @@ const fullSurfaceBackend = {
         constants,
         label,
       );
-      nodeComputePipelineSources.set(native, nodeShaderSources.get(shaderNative) ?? '');
       return native;
     } catch (error) {
       throw pipelineErrorFromError(error, 'GPUDevice.createComputePipeline', readLastErrorFields());
@@ -3369,13 +2574,6 @@ const fullSurfaceBackend = {
       entries,
       label,
     );
-    nodeBindGroupEntries.set(native, entries.map(entry => ({
-      binding: entry.binding,
-      buffer: entry.buffer ?? null,
-      textureView: entry.textureView ?? null,
-      offset: entry.offset ?? 0,
-      size: entry.size,
-    })));
     return native;
   },
   deviceCreateBufferBindGroupFlat4(
@@ -3416,12 +2614,6 @@ const fullSurfaceBackend = {
       entryCount > 3 ? buffer3 : null,
       offset3,
     );
-    nodeBindGroupEntries.set(native, [
-      { binding: b0, buffer: entryCount > 0 ? buffer0 : null, offset: offset0, size: undefined },
-      { binding: b1, buffer: entryCount > 1 ? buffer1 : null, offset: offset1, size: undefined },
-      { binding: b2, buffer: entryCount > 2 ? buffer2 : null, offset: offset2, size: undefined },
-      { binding: b3, buffer: entryCount > 3 ? buffer3 : null, offset: offset3, size: undefined },
-    ].slice(0, entryCount));
     return native;
   },
   deviceCreatePipelineLayout(device, layouts, label, immediateSize = 0) {
@@ -3466,13 +2658,6 @@ const fullSurfaceBackend = {
   },
   deviceCreateRenderPipeline(device, descriptor) {
     try {
-      if (
-        isNodeFallbackShader(descriptor.vertexModule, NODE_FALLBACK_TEXTURE_DIMENSIONS)
-        && descriptor.vertexModule === descriptor.fragmentModule
-      ) {
-        assertLiveResource(device, 'GPUDevice.createRenderPipeline', 'GPUDevice');
-        return makeNodeFallbackPipeline(descriptor.vertexModule, 'render', descriptor.vertexEntryPoint);
-      }
       const fragmentTarget = descriptor.fragmentTarget ?? { format: descriptor.colorFormat ?? 'rgba8unorm' };
       return addon.createRenderPipeline(
         assertLiveResource(device, 'GPUDevice.createRenderPipeline', 'GPUDevice'),
@@ -3617,7 +2802,6 @@ const fullSurfaceBackend = {
           submit() {
             assertLiveResource(device, 'compute program submit', 'GPUDevice');
             assertLiveResource(commandBuffer, 'compute program submit', 'GPUCommandBuffer');
-            invalidateSubmittedBufferWrites(commandBuffer);
             device.queue._submittedSerial += 1;
             providerDiagnosticStats.queueSubmitCalls += 1;
             providerDiagnosticStats.submittedCommandBuffers += 1;

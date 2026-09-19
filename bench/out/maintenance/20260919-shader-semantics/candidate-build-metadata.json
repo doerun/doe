@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "artifact": "libwebgpu_doe",
+  "leanVerifiedBuild": false,
+  "proofArtifactSha256": null,
+  "wgslCompilerSourceSha256": "a1752738d118d93f874d0a417f2197a36f39c86cbf2291e5e1e6f6e95f2fc208",
+  "shaderTranslationCacheSourceSha256": "80c92ed793440096df74cd04851f8c4a18aca6363535acb45e36126a4f2c0edb",
+  "pipelineCacheSourceSha256": "eb10699a0de97452d281dc6629eda1fa8b0b7b0b9dc42f5a09e14a43553378df"
+}

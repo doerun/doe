@@ -4,6 +4,39 @@ Doe owns device acquisition, compute helpers, and lifecycle. Doppler owns the
 portable Program Bundle. The boundary between them consists of two versioned,
 fail-closed contracts.
 
+## Ordinary shader execution
+
+The Node adapter submits the caller's shader, entry point, bindings, and dispatch
+to the native runtime. It does not recognize clear, fill, or texture-dimension
+source patterns to manufacture results. Buffer readback obtains native bytes;
+writable mapped ranges stage those bytes and flush changes into the mapped
+native allocation on unmap. Staging is not an execution implementation.
+
+Package execution policy version 2 adds the required `ordinaryExecution` contract
+in `config/package-execution-policy.json`. Its only admitted values require native
+shader semantics and native-buffer readback, with host shader substitution
+forbidden. This is a fixed ownership requirement, not a runtime mode selector.
+Existing write-batching and workload readback-mode policies retain their meaning.
+No WebGPU descriptors, exported API names, or trace fields change. The native
+identity row schema admits zero workgroup dimensions as a backward-compatible
+correction to version 1: `dispatch_encoded` records an encoded command, not a
+promise of shader invocations. Negative dimensions remain invalid, and empty
+dispatches still require submission evidence. Historical
+receipts keep their original bytes and cannot inherit corrected execution evidence.
+
+Vulkan bind groups retain their layout until final release, including automatic
+pipeline layouts. Failed construction releases every acquired reference. Native
+dispatch recording accepts zero workgroup counts while keeping pipeline and
+command-buffer checks. Acceptance is exercised by
+`packages/doe-gpu/test/integration/test-integration-shader-semantics.js` and the
+registered native bind-group lifetime and descriptor-collection tests.
+
+SPIR-V emission makes a storage struct containing a runtime-sized array the
+block itself, preserving its member offsets and array-length indexing. Affected
+shader binaries change identity and require recompilation; their WGSL meaning
+and public buffer layout remain unchanged. Retained native shader artifacts are
+checked with `spirv-val` in addition to numerical application tests.
+
 ## Provider v1
 
 Import the provider contract from `doe-gpu/node-webgpu`:

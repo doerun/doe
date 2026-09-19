@@ -589,7 +589,6 @@ pub const NativeVulkanRuntime = struct {
         y: u32,
         z: u32,
     ) !void {
-        if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
         if (!self.has_pipeline) return error.Unsupported;
         if (command_buffer == null) return error.InvalidState;
         vk_compute_sync.make_replay_compute_writes_visible(self, command_buffer);
