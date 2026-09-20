@@ -1,0 +1,1478 @@
+[
+  {
+    "hash": "8abbacb95d8304f413cd38c98309c883bb6daccc5cbd885728a5d194b600c64a",
+    "path": "/home/x/deco/doe/bench/gates/__init__.py"
+  },
+  {
+    "hash": "a9d6745f55407416f4301689ff998dd4a6f775091a5dd9e4b9ca59eebc0a886b",
+    "path": "/home/x/deco/doe/bench/gates/backend_selection_gate.py"
+  },
+  {
+    "hash": "926adb5c2c9fc7669afe6f00333d587b1ea35fd509513f0d82d1caaad7b97396",
+    "path": "/home/x/deco/doe/bench/gates/catscan_gate.py"
+  },
+  {
+    "hash": "b3853229d12fe20fc6f55e233a96809e0d4f3fedb380d75c7470129890d68376",
+    "path": "/home/x/deco/doe/bench/gates/cerebras_artifact_gate.py"
+  },
+  {
+    "hash": "f0b61c9cac75da3d05106a87780b6becec66d894eace3b17892bf72ba9204aba",
+    "path": "/home/x/deco/doe/bench/gates/check_correctness.py"
+  },
+  {
+    "hash": "61cb513e5bbb82bb7adfad6c8aebd908aba776063f3f1656b9b27d819652748c",
+    "path": "/home/x/deco/doe/bench/gates/claim_backend_telemetry.py"
+  },
+  {
+    "hash": "c8742222a3ece6d9fd0f9d03155e3cae142769049453c34651b2ec73605bf47c",
+    "path": "/home/x/deco/doe/bench/gates/claim_comparability.py"
+  },
+  {
+    "hash": "b3cc68b464dd7a049c06203f31e927062ecbbedd9f1cb3172360d877e898fa86",
+    "path": "/home/x/deco/doe/bench/gates/claim_discipline_gate.py"
+  },
+  {
+    "hash": "bb949d83c7c53e8505184dd6ccf559c9009178eaa94e562c8a62d1071f965736",
+    "path": "/home/x/deco/doe/bench/gates/claim_gate.py"
+  },
+  {
+    "hash": "42628afefe4241f69d6e30cbec192da0c830b27cbd4fdc753b1b1386f79e86b6",
+    "path": "/home/x/deco/doe/bench/gates/claim_index_browser_release.py"
+  },
+  {
+    "hash": "71d4da2c61bac7f0f9355cf4df7d3a9fe1debaa9d5704fe6551aa6a52f6633be",
+    "path": "/home/x/deco/doe/bench/gates/claim_index_browser_release_proof.py"
+  },
+  {
+    "hash": "5560c7a6a2ea1b2308189444b272e96e4ceeb5e317f70e4e8240a8684b78be5e",
+    "path": "/home/x/deco/doe/bench/gates/claim_index_gate.py"
+  },
+  {
+    "hash": "87d4636b1e900c27cb645de8d4248184b1c28250b63965c86e10262a881bb147",
+    "path": "/home/x/deco/doe/bench/gates/claim_package_telemetry.py"
+  },
+  {
+    "hash": "7404ca73357e768f6ffd947a94a38ea3b61de3ae7fe2cd9d8b1de79507104cfe",
+    "path": "/home/x/deco/doe/bench/gates/claim_speed_policy.py"
+  },
+  {
+    "hash": "66a4246f3c36a00d91a807602c267ed9e823ad2fab483eb03456c0af589204b0",
+    "path": "/home/x/deco/doe/bench/gates/cluster_b_fixture_regen_gate.py"
+  },
+  {
+    "hash": "b89774164ebaa8b4c3f3df6a64566e53158a801067e9836f1459ec85d2d2bf93",
+    "path": "/home/x/deco/doe/bench/gates/command_storage_experiment_gate.py"
+  },
+  {
+    "hash": "820d8d52789362ec3058f08fe30f5cb94ff88cc4ec67ed86a72b32f37cd0cd29",
+    "path": "/home/x/deco/doe/bench/gates/command_storage_review_gate.py"
+  },
+  {
+    "hash": "794d5ed8eb9f2379f57ad5fd6d14ecee2e176c522d0b45d1fc611e616cfd5769",
+    "path": "/home/x/deco/doe/bench/gates/comparability_coherence_gate.py"
+  },
+  {
+    "hash": "c240d085bcae8864dcd6006333b306d160333bab639d2dc969f35d4c409d4d86",
+    "path": "/home/x/deco/doe/bench/gates/comparability_obligation_parity_gate.py"
+  },
+  {
+    "hash": "db43711287fa916cc413ab61aad9a986acd4a8d08000b70941590c3048745e69",
+    "path": "/home/x/deco/doe/bench/gates/comparable_runtime_invariants_gate.py"
+  },
+  {
+    "hash": "ef1e82b55129011d50756542b1ffbc8bd0c7282ae18e28a0f5faeb62f3c687aa",
+    "path": "/home/x/deco/doe/bench/gates/compare_output_partition_gate.py"
+  },
+  {
+    "hash": "87a087fa20bc2a94c73212ec8c09e8ef22826eb16d6b95239d0837c1b8d403d2",
+    "path": "/home/x/deco/doe/bench/gates/compute_program_calibration_gate.py"
+  },
+  {
+    "hash": "98ae97b9ad863257737cf4f9bdf6435c6e1713967567c116e82467d52a12999e",
+    "path": "/home/x/deco/doe/bench/gates/compute_program_gate.py"
+  },
+  {
+    "hash": "1dbab0b1e4c8960d65ebe721abf0ae86cd61b3f9d9c4d5081cb5db37e1b7ccfe",
+    "path": "/home/x/deco/doe/bench/gates/compute_program_resolution_gate.py"
+  },
+  {
+    "hash": "1103793870effba48127236139e44cb2beb18cea362dc28c65da22147d7ab8be",
+    "path": "/home/x/deco/doe/bench/gates/csl_emulator_accuracy_gate.py"
+  },
+  {
+    "hash": "85351f5b349bdbdbf2756e160a17ee928cf720f5b8f7f0e8d2a28424ec333607",
+    "path": "/home/x/deco/doe/bench/gates/csl_fixture_mirror_gate.py"
+  },
+  {
+    "hash": "402fcf8161b1d058077106b50fe6d949fb9a6dffbc7e720edd3066a7eb15d61f",
+    "path": "/home/x/deco/doe/bench/gates/csl_governed_lane_gate.py"
+  },
+  {
+    "hash": "f47ecc4688c1f5989fdcc5bd3ae59dd28c67b70cfbddf83d06b302b54d31f78d",
+    "path": "/home/x/deco/doe/bench/gates/csl_host_plan_gate.py"
+  },
+  {
+    "hash": "5681057b316c2ac7240f372f378313b422be0e4ee56be79eae6c6ce099b328c8",
+    "path": "/home/x/deco/doe/bench/gates/csl_operation_graph_gate.py"
+  },
+  {
+    "hash": "7cac38c1b2bbd593f147840dae14d244813e368a2b3e1ac445094620b713c117",
+    "path": "/home/x/deco/doe/bench/gates/csl_reference_parity_gate.py"
+  },
+  {
+    "hash": "3aab97c62c8fa424879fdd29d140a95869e95bd02478b74e5bbb80d908bc2ee2",
+    "path": "/home/x/deco/doe/bench/gates/csl_runtime_fixture_gate.py"
+  },
+  {
+    "hash": "9c44e6c2bf5ff533a031933764daab7e53967589de403149513a092cd754d7bb",
+    "path": "/home/x/deco/doe/bench/gates/csl_simulator_evidence_gate.py"
+  },
+  {
+    "hash": "63427a515b0b1e17eb4e8ca84a3e05ffb3e79c75ed6c581ad5c1df5b880257e6",
+    "path": "/home/x/deco/doe/bench/gates/csl_simulator_gate.py"
+  },
+  {
+    "hash": "4ef389a06c5beb74018fc6b71f967086ddf4b49af6cb89cecb4f4e73700ea2e8",
+    "path": "/home/x/deco/doe/bench/gates/csl_trace_hygiene_gate.py"
+  },
+  {
+    "hash": "6a5ff5af7e087e17cd4d4138fc2bac926fa166da0726eb0ed962c440c346aefc",
+    "path": "/home/x/deco/doe/bench/gates/cycle_gate.py"
+  },
+  {
+    "hash": "c16dd71a69b92a14c601509f8efd4cabe47ec48a172b0c10ce07f722574822c2",
+    "path": "/home/x/deco/doe/bench/gates/dawn_replacement_frontier_gate.py"
+  },
+  {
+    "hash": "25dff4243f4d0824be54caf3e86d76f54620d7f33830b33638eaeec7d57e77e4",
+    "path": "/home/x/deco/doe/bench/gates/doe_csl_int4ple_hardware_receipt_gate.py"
+  },
+  {
+    "hash": "2da62067a0d036fa0f3e83be8d867ca3ed09986f0ca8eb262367470246adda48",
+    "path": "/home/x/deco/doe/bench/gates/doe_csl_int4ple_transcript_gate.py"
+  },
+  {
+    "hash": "8513d9f18bd70a802606640bf7c58dee51950c4d995387a78d4c1b841d837924",
+    "path": "/home/x/deco/doe/bench/gates/doe_gpu_native_release_candidate_gate.py"
+  },
+  {
+    "hash": "0ec3437e282fc30f8bded538387a4a0b91e1a12664a1f1775155e00ec03e0e3b",
+    "path": "/home/x/deco/doe/bench/gates/doe_private_strategy_leak_gate.py"
+  },
+  {
+    "hash": "293506579a48a265a8084e24f99bee66f7232cfa94e23003c26fe376ed1eb3c4",
+    "path": "/home/x/deco/doe/bench/gates/doppler_int4ple_reference_export_gate.py"
+  },
+  {
+    "hash": "3358e9ce4ad27606ecfa5f8354aa2d188203bd4dc73a3d95eb4752c9ec09b5ef",
+    "path": "/home/x/deco/doe/bench/gates/dxil_validate_gate.py"
+  },
+  {
+    "hash": "7ea890949344d951f1fe9341aee3f6fe886ee1524dd944e3781c5ee186a2d574",
+    "path": "/home/x/deco/doe/bench/gates/ecosystem_registry_gate.py"
+  },
+  {
+    "hash": "ac6bf01a97682ed330c3380b82911de8cefc2edf7416c1f0a1fd4b5749eb566f",
+    "path": "/home/x/deco/doe/bench/gates/evidence_blocker_taxonomy_gate.py"
+  },
+  {
+    "hash": "5f28867da18363b91414fa279d0c4a9da239e076a6f9a38154d636fda6fe0330",
+    "path": "/home/x/deco/doe/bench/gates/external_project_release_gate.py"
+  },
+  {
+    "hash": "71c80bbdb1b02e252e23464dd5afdba918d8087e804f55412a6da77c9991d485",
+    "path": "/home/x/deco/doe/bench/gates/fawn_matrix_release_passport.py"
+  },
+  {
+    "hash": "65dd6ac461f92d8de16eeac8c5c355fdde2bd0680270120f8fd606474836501c",
+    "path": "/home/x/deco/doe/bench/gates/file_size_gate.py"
+  },
+  {
+    "hash": "b26f4111c8582a256603117bb096fb3818eed59ce5845af252f0ab4490494a20",
+    "path": "/home/x/deco/doe/bench/gates/int4ple_manifest_compile_params_gate.py"
+  },
+  {
+    "hash": "16c960cdfa84d0e28e3ff750656de7b0b30031e4e9d0cd732859dd7d41013b51",
+    "path": "/home/x/deco/doe/bench/gates/int4ple_worker3_freshness_gate.py"
+  },
+  {
+    "hash": "620ff96ed958a991b198734b2dfc1b19b6f1b051404725b2f023314a2f33e3b0",
+    "path": "/home/x/deco/doe/bench/gates/kernel_chain_parity_gate.py"
+  },
+  {
+    "hash": "8a9868d91ba229fcfca43e70eec46adfb3925e8f5100728c7676f5b51315eb1b",
+    "path": "/home/x/deco/doe/bench/gates/model_runtime_receipt_gate.py"
+  },
+  {
+    "hash": "24d4ae6aa9dcbf1608cb24d81499023907bc03e6fb0b7e74a3b05c734fa567ca",
+    "path": "/home/x/deco/doe/bench/gates/module_gate.py"
+  },
+  {
+    "hash": "68fce9d868fa1b6f6e67b457b07bf8fd8d995e5bab3b8692da3c4e493a50b892",
+    "path": "/home/x/deco/doe/bench/gates/nightly_tsir_parity_canary.py"
+  },
+  {
+    "hash": "729828e3ed7ca4cb9e2bf177c48fa3db31dae019a644dd5c14d20c89b491f76e",
+    "path": "/home/x/deco/doe/bench/gates/pilot_evidence_gate.py"
+  },
+  {
+    "hash": "33a30401d5a0030cc1f48af165f3cb0e8bc50ad6df1b0a6a13a267d4905023ad",
+    "path": "/home/x/deco/doe/bench/gates/run_receipt_proof_gate.py"
+  },
+  {
+    "hash": "ffd530163f5dd36d59423386f40c6b8b047fa0fcc0680e78a6e7204f65512170",
+    "path": "/home/x/deco/doe/bench/gates/schema_gate.py"
+  },
+  {
+    "hash": "088b1a1ba923ca77fdbdd5796b9dd9e5c4b8e91fd201511cf9f46b6a6519c805",
+    "path": "/home/x/deco/doe/bench/gates/sdklayout_streaming_hardening_gate.py"
+  },
+  {
+    "hash": "6da8afd8aa5919b1520375b29725d132e35dc9dd383d8c7bbff052d3fb3b58d3",
+    "path": "/home/x/deco/doe/bench/gates/shader_artifact_gate.py"
+  },
+  {
+    "hash": "63ea4ff90bf9b2b3ac742095187eb1e4b39de845363b8075e73270e4c0bc9174",
+    "path": "/home/x/deco/doe/bench/gates/spec_diff_gate.py"
+  },
+  {
+    "hash": "f715496e278e6c2fbdad94f4ce9e2a29b8b67095f933990f2568ec9c6237677b",
+    "path": "/home/x/deco/doe/bench/gates/spirv_val_gate.py"
+  },
+  {
+    "hash": "6dcd1fc70d801c36402ebfe1f87c61d19b22b336e9acfda90aa55aa59defbfb1",
+    "path": "/home/x/deco/doe/bench/gates/split_coverage_gate.py"
+  },
+  {
+    "hash": "2ac3fce3e248f3250286a9ed405c4c05691d3ab7c243605b3bd199e12c6699a5",
+    "path": "/home/x/deco/doe/bench/gates/structural_equivalence_gate.py"
+  },
+  {
+    "hash": "6439d56a596d9bbd8d0239705c6a29b9da050fc307470c4bc2923d77605977e7",
+    "path": "/home/x/deco/doe/bench/gates/substantiation_gate.py"
+  },
+  {
+    "hash": "94e0823643d16a491141054a0bf7c1ac3523948476b832e6eb3146be452cb7a8",
+    "path": "/home/x/deco/doe/bench/gates/sync_conformance_gate.py"
+  },
+  {
+    "hash": "57c2c6c12dd8008bbbbe2b7e40a40c08a223463d8698bd027e034abbc510ab90",
+    "path": "/home/x/deco/doe/bench/gates/timing_policy_gate.py"
+  },
+  {
+    "hash": "dee78307a4685f7d026765d530e844ee63e1c78a617c9bb727039644b32bdcd2",
+    "path": "/home/x/deco/doe/bench/gates/tint_compiler_evidence_gate.py"
+  },
+  {
+    "hash": "cfb364ace5f6e12169b3ad997826478866442c031916ec28cfff83444a758634",
+    "path": "/home/x/deco/doe/bench/gates/tool_surface_gate.py"
+  },
+  {
+    "hash": "33cda6f2b571a8f9b82e69d7b52bd5f33d15b9678d0dc935ce13ae01d4c48f72",
+    "path": "/home/x/deco/doe/bench/gates/trace_gate.py"
+  },
+  {
+    "hash": "08df6e047916ac678af7519770d7ff1cd3e5023970d3da870038aa6a52f6769c",
+    "path": "/home/x/deco/doe/bench/gates/verify_smoke_gpu_usage.py"
+  },
+  {
+    "hash": "62468d7f63aaa1758833ae276fbece96d678a1048194fcddf07718dd8b3634ad",
+    "path": "/home/x/deco/doe/bench/gates/wgsl_backend_matrix_gate.py"
+  },
+  {
+    "hash": "8776ea993cb0ab419a8a119373d68eb4fc234222d6831a4668a71609078e0a72",
+    "path": "/home/x/deco/doe/bench/gates/wgsl_compiler_coverage_gate.py"
+  },
+  {
+    "hash": "8a30c81619692c9eb5e3bb78857a718264d598580a3fbc9776e2b704ff27850b",
+    "path": "/home/x/deco/doe/bench/lib/__init__.py"
+  },
+  {
+    "hash": "38440f007cac8e10edf88288f218a66e3a8e9893b80e1c219d709c9dabcef60c",
+    "path": "/home/x/deco/doe/bench/lib/adhoc_claim_gating.py"
+  },
+  {
+    "hash": "713d9b16104c3cf8617e9acdee53e496b2cc9608eadad77008f62fd0c8d33430",
+    "path": "/home/x/deco/doe/bench/lib/bench_utils.py"
+  },
+  {
+    "hash": "c34ffca3b1ac2681a757d821802c3b64d985031469f152201bdabe6306970913",
+    "path": "/home/x/deco/doe/bench/lib/benchmark_cube_dashboard_html.py"
+  },
+  {
+    "hash": "a87f4146eb3c9c36154c984eb1bb760dc3b573549d0bb4992e47113dac58814a",
+    "path": "/home/x/deco/doe/bench/lib/benchmark_cube_reports.py"
+  },
+  {
+    "hash": "5bbf69d91141b5e4237727e39f8ca2dcb5e73560b890622cf9ff20ae07521e86",
+    "path": "/home/x/deco/doe/bench/lib/benchmark_ir.py"
+  },
+  {
+    "hash": "7f9ee1cade5cf3056aba4f1004ed5f761cfaf1433a9d6204635105cc367e0d0e",
+    "path": "/home/x/deco/doe/bench/lib/comparability_coherence.py"
+  },
+  {
+    "hash": "554f83b6d2ce2bfb8274c8885c716a92d41c06e1d87b7326f0ccb2b82ba368c4",
+    "path": "/home/x/deco/doe/bench/lib/compare_axes.py"
+  },
+  {
+    "hash": "dc89ff6a045f4552b0e1c807ab44127ee144a2679d857903294db77ebd81a0ae",
+    "path": "/home/x/deco/doe/bench/lib/compare_claim_artifacts.py"
+  },
+  {
+    "hash": "44b2aea70bc3b1dedb9e37b8fc9288971d36ba835e2fb484fa083289cd8008bc",
+    "path": "/home/x/deco/doe/bench/lib/compute_program_fixture.py"
+  },
+  {
+    "hash": "49136a1a26bfe28a2cc66c56a9cf817e8872f0ec262b6a883888777ef19afb70",
+    "path": "/home/x/deco/doe/bench/lib/compute_program_gpu_activity.py"
+  },
+  {
+    "hash": "399afe5eb19a96dbf0d34ed01c355ddb4cca42758172697e9458511aa00389e5",
+    "path": "/home/x/deco/doe/bench/lib/compute_program_host.py"
+  },
+  {
+    "hash": "32f94326f8d94d08b402447ad24793cc17741acac1deac66c1e8922c349cd881",
+    "path": "/home/x/deco/doe/bench/lib/compute_program_package.py"
+  },
+  {
+    "hash": "e4f326fa947071b981f864dae1c965b3c51bc2add5a359edd1dd490420ea35c0",
+    "path": "/home/x/deco/doe/bench/lib/compute_program_process.py"
+  },
+  {
+    "hash": "1acc37db3f1939634e27623dbc26ed480e9a3f97942ef380074ccb8116b0b35a",
+    "path": "/home/x/deco/doe/bench/lib/compute_program_resolution.py"
+  },
+  {
+    "hash": "880f5b3f4c3d4e48d580b1b7c215478b9f31e821d9f0b57f4750f987b3130b50",
+    "path": "/home/x/deco/doe/bench/lib/compute_program_retention.py"
+  },
+  {
+    "hash": "e198acdd82cf4fb0450b8854d2c2aaf29c7cf5cc301a2c133917d8cbc9936358",
+    "path": "/home/x/deco/doe/bench/lib/compute_program_uncertainty.py"
+  },
+  {
+    "hash": "65287e89c50201b392c86928e469243b492c2ab0a65a0cfdf6fc3879e52903f4",
+    "path": "/home/x/deco/doe/bench/lib/config_validation.py"
+  },
+  {
+    "hash": "56e34680fb4960e17bd1c1844172982693f5bbd90a6d86e4c5f4d2dadf54d261",
+    "path": "/home/x/deco/doe/bench/lib/ecosystem_registry.py"
+  },
+  {
+    "hash": "d9f0aaa9b827373246c77fae1ca793ee435a321d1394b546f8483bc09f90ef95",
+    "path": "/home/x/deco/doe/bench/lib/hash_utils.py"
+  },
+  {
+    "hash": "3ac42ae4890417940dc0651d22c77badba28c0ff1a4e2f728c9d886fc64cd98e",
+    "path": "/home/x/deco/doe/bench/lib/inventory_dashboard_html.py"
+  },
+  {
+    "hash": "c977799589794b41da816a96d8595ac0fc0a3b2ca02ba2d724cac45f7a286592",
+    "path": "/home/x/deco/doe/bench/lib/metal_pipeline_cache_manifest.py"
+  },
+  {
+    "hash": "8f4fd1aa3ea725d3def13743c06fd77c46da90327f1b39639fa5cec18c98efd3",
+    "path": "/home/x/deco/doe/bench/lib/native_program_replay.py"
+  },
+  {
+    "hash": "5a17d9d63ba865b6b7ff6f99c7d46e5fc480f835a220631954513cca7e57bb6a",
+    "path": "/home/x/deco/doe/bench/lib/output_paths.py"
+  },
+  {
+    "hash": "3e06a0aa6a5aa7eb31f6e3b33b8876655ecac7e8200727c02612ad318a68145c",
+    "path": "/home/x/deco/doe/bench/lib/program_candidate.py"
+  },
+  {
+    "hash": "9554eecfbf8133e19f5072e669fff993bd12283cbd59f0bb2bf1b4571fe9c2f8",
+    "path": "/home/x/deco/doe/bench/lib/program_candidate_evidence.py"
+  },
+  {
+    "hash": "0e376320e8adcf6d7ddf97a1c105b0ec280687c9dc13818e7587ef36faeb964e",
+    "path": "/home/x/deco/doe/bench/lib/program_candidate_isolation.py"
+  },
+  {
+    "hash": "137c76381f81fd00f952ed34232fb482dd681beb8c9727dfe8ca54012bb72c6c",
+    "path": "/home/x/deco/doe/bench/lib/python_import_boundaries.py"
+  },
+  {
+    "hash": "a71ec2ff175f18a666a27412cb4591ec3553e800a74e55fa7fabf88b3d370b2f",
+    "path": "/home/x/deco/doe/bench/lib/report_conformance.py"
+  },
+  {
+    "hash": "c3c18408bda08abe2f58225b3dc67230bc68aea79874c7ea12d71e6b6a0a6947",
+    "path": "/home/x/deco/doe/bench/lib/sampled_decode_fragility.py"
+  },
+  {
+    "hash": "709a086c98d85f48aac35ca6b9c469d67db583d8eeb61f8838be5cf9bcf5c636",
+    "path": "/home/x/deco/doe/bench/lib/synthetic_assets.py"
+  },
+  {
+    "hash": "cffa25f032b913de39ff8ff0db8677200746a162b92a031cc37bfe40efb318cb",
+    "path": "/home/x/deco/doe/bench/lib/visual_report_theme.py"
+  },
+  {
+    "hash": "3d214c6fc8032bcbf988ba22cd915df9351c942ab6c257027605c1ce9fb2bac8",
+    "path": "/home/x/deco/doe/bench/lib/visualization_pipeline_html.py"
+  },
+  {
+    "hash": "728e354bb948ad1f86b0ec54ce71273daab3fd46af5f2aebcd51520530f9a2f2",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/__init__.py"
+  },
+  {
+    "hash": "01065c125ca59334645f6cc2f47f69f0cf00146c71fb970d5d8aa908a1bd1696",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/artifact_benchmarking.py"
+  },
+  {
+    "hash": "d12c612cd30f48deca62c537fd920c3eb5bbd137c6ce25ae0c8ad03464947e39",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/claim_from_config.py"
+  },
+  {
+    "hash": "77aebf0dcefa34280bbdece9c500d75e33375722e7ffada4e78dc0a3d1798c39",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/claim_report.py"
+  },
+  {
+    "hash": "4456d72c9a98b7b24856c99eedc755ee9d010020e46a950f3a60de39d752771e",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/claimability.py"
+  },
+  {
+    "hash": "1a1e26603ed42a3c70ca05248040e36287e6688920940a07b7aabb6c85518449",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/comparability.py"
+  },
+  {
+    "hash": "92e4bdd658c2004130b55cf29eefc533a1232abd033a8f448526e7f00ed6707c",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/comparability_runtime.py"
+  },
+  {
+    "hash": "135497d4eba84f9ae1cb4e2c686dbe1df07bb4ddc3629033ef30e00797d659ab",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/comparability_upload_contract.py"
+  },
+  {
+    "hash": "3b8ea132fd221a0977b93e5b1d1e59014e9d5d0f949262651303cb93e129e185",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/compare_assessment.py"
+  },
+  {
+    "hash": "a362fa1af31b748963359fae451a12128acc5d042bf393a1bc42d50f7d1c9caa",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/compare_assessment_helpers.py"
+  },
+  {
+    "hash": "41f58163edc57e12ca738035ba1bf0d523468b0d1c3e408547a67b198a4a42d5",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/compare_doe_vs_tint_support.py"
+  },
+  {
+    "hash": "1832ade6bfda969c1dfcc2abfe6e594006fcb8173560bfeade5a62e557dc87bb",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/compare_from_artifacts.py"
+  },
+  {
+    "hash": "343da8e7dd786f0cd8cf845ab14049cb3c6b91b1832781e786aceb34fe9f536e",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/compare_hardware_assessment.py"
+  },
+  {
+    "hash": "a4196e5c29b28d0965b9de04d538e485bd701cb71db2459fc8ebd3ea9ca9166f",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/compilation_runner.py"
+  },
+  {
+    "hash": "f9ad7fb966b143427ba8efa47b6d1d3425ae8cb4957a57acc161c69815e08f67",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/config_support.py"
+  },
+  {
+    "hash": "9a153fcb9ff637dcf300ca5d61e70e89a779a55ae05717a87061eaeb4ce05804",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/config_support_defaults.py"
+  },
+  {
+    "hash": "d94b5d6cfa62020fe0fa30ac5c08a5c0570847d14f686ba4fba6e4cee214836c",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/contracts.py"
+  },
+  {
+    "hash": "47e476cf4d6664094a024ca2c2339f59e37cfd376c850564eb65c8a545176f5e",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/executor_registry.py"
+  },
+  {
+    "hash": "4f56763918c7c7157b81b0927e035784573a985d3332e581a9b2be3cf2fb4fd7",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/normalization.py"
+  },
+  {
+    "hash": "1f72090adbb0c3c79fff7d5fc28922cf20176111e902d642431d44c6ad64fa51",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/operator_diff.py"
+  },
+  {
+    "hash": "73bb15050f3281bfd5b53de99f301e51fdfc940a4a3044710b399d21cbf528f5",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/promoted_compare.py"
+  },
+  {
+    "hash": "29cab93ea99750113695f688ea95b10ccf52b0eec59e442401d22f2c06e435d0",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/reporting.py"
+  },
+  {
+    "hash": "e88872139de4d2a93bce063e84c3e8bece4e1f45800b8631d5afd6d3cdd29429",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/run_artifact.py"
+  },
+  {
+    "hash": "ac91e91e2e806f63b176478b6e4278cc57e44411e44c60107552838df1cdf6b8",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/run_receipts_from_config.py"
+  },
+  {
+    "hash": "b0378b6400752295c5e4cda69f706503ec699d75ecf8a32d80f554f8a178ba3d",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/runner.py"
+  },
+  {
+    "hash": "b9bc244da2aac60d500ccc67200574c73638eee96a195d36720f796cec8a1ace",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/timing_interpretation.py"
+  },
+  {
+    "hash": "1375b11bc3902b55fdaa7c93038f9ae5901d3ec5a7126f4bfed524fc64c5b511",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/timing_sanity.py"
+  },
+  {
+    "hash": "73d8e48e092d3a10f2e46a8184bbc96f9d85c12a21c55d06f2bf1d7dda9e9ade",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/timing_selection.py"
+  },
+  {
+    "hash": "da53699909acf74ec2c801fecf16316f65381825106f37220f16e0b296dba0c3",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/workload_provenance.py"
+  },
+  {
+    "hash": "10568d97cdda14a27cf0cc91aa6b9526cd6f3be9735f2b6b0e8c67ae243af234",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/workload_spec.py"
+  },
+  {
+    "hash": "e24036221a8b159e95a555ae41f275cc28239177c8d78ee03791e74dac94a90c",
+    "path": "/home/x/deco/doe/bench/native_compare_modules/workload_validation.py"
+  },
+  {
+    "hash": "1576e25956f5050df9f39d650a1db9356491dd817d6f1a7c80d22d4d2225094a",
+    "path": "/home/x/deco/doe/bench/oracles/compute-programs.mjs"
+  },
+  {
+    "hash": "6c6af74640994cc41fcc7f46bb5204a50da679adc2dee96cb05aa97867baf7e1",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-source-audit/Cargo.lock"
+  },
+  {
+    "hash": "f62497fffecc0852960c8d3e6934b9db86d16396e9b604072e923892cae3a588",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-source-audit/LICENSE.md"
+  },
+  {
+    "hash": "29305366cafc7735e7d73cfea7927b3c617d18313ecdeebc84d793c5b66ebc4e",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-source-audit/SHA256SUMS"
+  },
+  {
+    "hash": "2bb2b82bdbef147cc0b7b8680cd5b3b30faf2a75d6688f8681bded5a71bd04df",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-source-audit/ext_webgpu_command_encoder.rs"
+  },
+  {
+    "hash": "9fab7a73690e5c8c9354007ad2dd46997166630531f8a8f5166fa51498b35a72",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-source-audit/ext_webgpu_queue.rs"
+  },
+  {
+    "hash": "ab2052225f5c52de17b0009a6aff8834177c58c9c755d0134316f812cd9ac58b",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/SHA256SUMS"
+  },
+  {
+    "hash": "1e80ac6cf1895df6342f87d975162108f9d98772a0d74bc404ab7304ac29469e",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-core-29.0.1.crate"
+  },
+  {
+    "hash": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-core_LICENSE.APACHE"
+  },
+  {
+    "hash": "dc0d97139e8205818c703741c7be7cb3b96888bd5917b8d6fc6133731e403c21",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-core_LICENSE.MIT"
+  },
+  {
+    "hash": "753bdd238bd88ca4f8ea5dff2f0796ab923b8cb0ba81c36a327fc5ca95116818",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-core_src_command_query.rs"
+  },
+  {
+    "hash": "31f8e1a9e7a8512f276f7c62e018c7fa8d60954303fed2e5750114332049193f",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-hal-29.0.3.crate"
+  },
+  {
+    "hash": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-hal_LICENSE.APACHE"
+  },
+  {
+    "hash": "dc0d97139e8205818c703741c7be7cb3b96888bd5917b8d6fc6133731e403c21",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-hal_LICENSE.MIT"
+  },
+  {
+    "hash": "65586beb28db45edf4d5169eceb77ffa42af1383be4498736c22bfd0df647ab0",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-hal_src_vulkan_command.rs"
+  },
+  {
+    "hash": "ec2675540fb1a5cfa5ef122d3d5f390e2c75711a0b946410f2d6ac3a0f77d1f6",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-types-29.0.1.crate"
+  },
+  {
+    "hash": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-types_LICENSE.APACHE"
+  },
+  {
+    "hash": "dc0d97139e8205818c703741c7be7cb3b96888bd5917b8d6fc6133731e403c21",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-types_LICENSE.MIT"
+  },
+  {
+    "hash": "af153576bce090b101f05d3d4fc35523d82e8f7fd2f935bd60d12956af50cb3b",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260905-timestamp-wgpu-source-audit/wgpu-types_src_lib.rs"
+  },
+  {
+    "hash": "5e83770891f5a562753bd7e7128e3a48246a608f0574faa9435746f00ceb6955",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/contract/lif-determinism.harness.json"
+  },
+  {
+    "hash": "2b0b69c8e5dd14c2f85189fc2714c0f0e6cf8872d5852804784e101658f5d192",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/contract/lif-determinism.inputs.json"
+  },
+  {
+    "hash": "a22e434b41fe7888a6a5b2b547e8bc0cdf60d88e9be208a6161fc5f6221a4bb9",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/contract/lif-determinism.oracle.md"
+  },
+  {
+    "hash": "fa14b41ac015b0fa0e7a66059034d94e3177d5845f4b217fd4b55119a16392b6",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/expected.f64"
+  },
+  {
+    "hash": "6ff6a64583720ce2ccc7bb35be728ad2ba2a92c19a9bb140cb9159e3323c2e98",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/fixture.json"
+  },
+  {
+    "hash": "109a0c58df4fd034ff2e925475edceeae6a3157f3dba026112b1f900c497fcae",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/generator.mjs"
+  },
+  {
+    "hash": "5513379e5cabcc2becfcc3d7b9f208bdb7b217795623d6ac5ff8cc49eec1ea47",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/inputs/membrane.bin"
+  },
+  {
+    "hash": "085139150e9aaa3286c137f09545aae8f42497dfdda4a86af5524c76ed1abf97",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/inputs/params.bin"
+  },
+  {
+    "hash": "069663e39b39b1451739ca71e254292adb5d6ebaa4013ef6a13f14b37a74a1ef",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/inputs/stimulus.bin"
+  },
+  {
+    "hash": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/oracle/package.json"
+  },
+  {
+    "hash": "bbb408961fa98d692189f529c38601c11f1a9dd67de21eca27a6f2a689436e20",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/oracle/poc/cpu-reference.js"
+  },
+  {
+    "hash": "1a637deba10f045ccb3166e6ddd6f4646f73034a6dd971089a24b1c415000dd8",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/oracle/types.js"
+  },
+  {
+    "hash": "e1d0cf2a1fd9da5ab8668cf5e3cbfab4cd4d200e28f35f5efde2a0d476fe760e",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/program.json"
+  },
+  {
+    "hash": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/toolchain/typescript.LICENSE.txt"
+  },
+  {
+    "hash": "3ae902c92cc44dace175c0e69e13a4b0899f6983c6121d76b9ab8dd5795e7675",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/toolchain/typescript.cjs"
+  },
+  {
+    "hash": "44004175873df8faf3d8135e1d7f80a5820e7b4d562344d5ddfa76cc4b915564",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/upstream/LICENSE"
+  },
+  {
+    "hash": "cc3fe8e5f4be16eb0207416ec2de2d3a46c4b62714a93105323cb42831691f8b",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/upstream/packages/snn-webgpu/package.json"
+  },
+  {
+    "hash": "b1b1b1078702e702950d25b9edcce6ed5e8c482daaa9d84d8c68b304e2242f23",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/upstream/packages/snn-webgpu/src/poc/cpu-reference.ts"
+  },
+  {
+    "hash": "269f7201fb527f3e0a44e21fd382aa4878597f7de2e9c598fd5eb324183af89a",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/upstream/packages/snn-webgpu/src/shaders/lif-neuron.wgsl"
+  },
+  {
+    "hash": "187dad4150adba6cf3726cb5371bc1199b3fc77b132f2e624ecf7e5579b68881",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260907-command-storage-applications/fixtures/holoscript_lif/upstream/packages/snn-webgpu/src/types.ts"
+  },
+  {
+    "hash": "208bb97923f7ebb7dce96c1a45071e2f0f6f22f7e7373232ab6484eedc0b6840",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260908-helper-cleanup/qualified-final/summary.json"
+  },
+  {
+    "hash": "98246884ccd63fe43cb478cacbd25299fadf92c7caae8b1399113ff79447cefe",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260912-warmup-calibration-v1/procedure/calibration.json"
+  },
+  {
+    "hash": "4d88d1c68f1fabce55e8dc5023644f521311c3c1df18314ffbbd17873bb3a2fe",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260912-warmup-calibration-v1/procedure/evaluation.json"
+  },
+  {
+    "hash": "1ea8ede94f5ac2615612c40494e87d7386bf0efeba24d2cb4dd87d7da1bcab70",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260912-warmup-calibration-v1/procedure/startup.json"
+  },
+  {
+    "hash": "424bc79151cbe86a35f1f72eca3c5f263ee1558423a6ddea9eed4b733a75bcf2",
+    "path": "/home/x/deco/doe/bench/out/compute-program/20260912-warmup-calibration-v1/procedure/tail.json"
+  },
+  {
+    "hash": "07b84290b2e6192f80d6204144683cc489a8589fe4ce75adc5daa5af7fe49319",
+    "path": "/home/x/deco/doe/bench/runners/__init__.py"
+  },
+  {
+    "hash": "9c37cd74d5b96f80989e3764873a33003878faeaf434c8c9bf0049ddb3e6220d",
+    "path": "/home/x/deco/doe/bench/runners/_reduction_order_probe_support.py"
+  },
+  {
+    "hash": "cdf8b43fd6be53583a52ad0ed0b60fc2726c7a59e87310d0684f6c9bf50041a8",
+    "path": "/home/x/deco/doe/bench/runners/_render_node_slot_lock.py"
+  },
+  {
+    "hash": "b075868971c730ded56d7aacb64e5d09c8b1de6451f79afafdd1e821d5d17b61",
+    "path": "/home/x/deco/doe/bench/runners/assess_compute_program_startup.py"
+  },
+  {
+    "hash": "d3786566e8ba0185700db9e15a3fd00b4da6e781ccfec00fd453e0bd3cb26512",
+    "path": "/home/x/deco/doe/bench/runners/blocking_gates_args.py"
+  },
+  {
+    "hash": "b5dc72784d3c7051ab7fd6b4f854c9ccd73cc02bc07044a104ddebfbe9deff9a",
+    "path": "/home/x/deco/doe/bench/runners/blocking_gates_optional.py"
+  },
+  {
+    "hash": "f2c7409cf4f24ad04381894f9810be80ce673df053f096c317a4476783a6cc51",
+    "path": "/home/x/deco/doe/bench/runners/compute-program-diagnostics.mjs"
+  },
+  {
+    "hash": "f99562351e09cf53121f29cc13f2185c45eae0eb013296924513df8afa27e09f",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/_e2b_layer_block_compute.py"
+  },
+  {
+    "hash": "c3f9c01aff61b63f2f5e510b25ba4afea67ebe48fc077b36917782d1b5ab0154",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/attention_decode_sim_runner.py"
+  },
+  {
+    "hash": "3ee6339ad9248d1784aa2549bcc8e28aede8aaa4c442c9b7063241290559c8e6",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/attention_head256_f16kv_sim_runner.py"
+  },
+  {
+    "hash": "6b1f3ec368c389b1e2b748f0940feb9b694ea7a1fab5d450c3d55536deae60d4",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/attention_head256_f16kv_tsir_sim_runner.py"
+  },
+  {
+    "hash": "bc6d48d801aeb3724878dbd3c867b6bebd9cd193b208058ad15616546bd026c7",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/attention_head512_f16kv_sim_runner.py"
+  },
+  {
+    "hash": "ea9e4845c52f17cbc14443c00bc3a729ff30f1f40e8b5e15e4dfad90d20b6178",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/attention_head512_f16kv_tsir_sim_runner.py"
+  },
+  {
+    "hash": "64f43ceee00f06611bb3146c27b8bbae65103df0d1312e69a506988dbb3467c5",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/attention_linear_sim_runner.py"
+  },
+  {
+    "hash": "b8717aabc6748f40982cbc3d4ae09547705ccca383029e0d06971f9b57cc0455",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/attention_tiled_sim_runner.py"
+  },
+  {
+    "hash": "88a6b5774cbb06ebd28a77d32f04f8606c50662cf71c22e7b2b3b0440659e8c5",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/attention_tiled_streaming_sim_runner.py"
+  },
+  {
+    "hash": "151fca6847094c6ca826caeffc7af4738010684a474280c77a96824e54ae8f17",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py"
+  },
+  {
+    "hash": "839c5a04dda4885de9d317e2931f384b0db6e3f43c1e0c285ef9be940c2ce8bc",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/common.py"
+  },
+  {
+    "hash": "ce4df63c413bc276713501206a86be342722d51876d8e127820a19889dd9ce78",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/e2b_layer_block_smoke.py"
+  },
+  {
+    "hash": "76bc094a993a2fc8875bd1a40798124009962a50c0c736342ef34ecc577d87d1",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/elementwise_chain_sim_runner.py"
+  },
+  {
+    "hash": "ca8f4f24fa48e6a2b39bf4e1014b900fc1f368551b8257b5900fff28dacd3c6c",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/elementwise_double_sim_runner.py"
+  },
+  {
+    "hash": "efbe09304b8fbba53ed19d377316b39269002d3b877e05ea9585dff69a0f1907",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/embed_sim_runner.py"
+  },
+  {
+    "hash": "a00413baa9361dc62b1a222d741e21ede779322ff6f5931fc9763c3967d06cc9",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/fused_gemv_dequant_sim_runner.py"
+  },
+  {
+    "hash": "17ab4f5a284024f8125644003f9efa5a2375942830f184a9be8d6f8320cb20a3",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/fused_gemv_sim_runner.py"
+  },
+  {
+    "hash": "a8925ea500a894719d3dc49714ad141f35c2169c9e36d6b45e154d9f20d533ca",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gather_sim_runner.py"
+  },
+  {
+    "hash": "f92e16b684c5e2a0c68e84b9d49d161a1413774788a5b295eccb9f532a555d33",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gelu_sim_runner.py"
+  },
+  {
+    "hash": "fe0e17430cc3a9b9f2bce5dff29e1989352960d59da9593126ea25b81f694d12",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma-4-31b-af16-cells/lm_head_prefill_run.py"
+  },
+  {
+    "hash": "b4fb0b31f05390dfc811108a1f4042b578cbf30d2dcf48906924dfb8d9b3e739",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma4_31b_af16_hostplan_common.py"
+  },
+  {
+    "hash": "107c50cadc76cd6eaccbd2d349ddb5c7d5391f73b6d5487b1283984ea8b51daa",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma4_31b_af16_hostplan_planning.py"
+  },
+  {
+    "hash": "82f24a327c0a00f4407f929a2841de90c028c2de3857a3e0e106d43383c308f6",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma4_31b_af16_hostplan_streaming_runner.py"
+  },
+  {
+    "hash": "b67c4f8e9881585e70633a9a5f4c410811391dffcb67bf0b57340735e07edb63",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma4_31b_af16_session_common.py"
+  },
+  {
+    "hash": "759d3a2752b6bc4e906d819cdde048027392430d2ed880ee5b62c0fdb95a32ff",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma4_31b_af16_session_runtime.py"
+  },
+  {
+    "hash": "7beab5fb8681d828a3c624820798f06f96fd5442d51e3260324a93244ba60ed3",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma4_31b_af16_session_runtime_exec.py"
+  },
+  {
+    "hash": "51278e045f37d554cd31a40c85c889871adeefc1ecf979120b39911cb9463ea5",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma4_31b_af16_session_scheduler.py"
+  },
+  {
+    "hash": "2db5e7a4f1748718f35fecad0e5b8ea7eb1c59d352d2d687036d369d5844ba7f",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma4_31b_af16_session_weights.py"
+  },
+  {
+    "hash": "2c924a2d25a1bfb1e4f994de3dc2204eb352bbb98a6d9272ac7cdba1cd1eddfd",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma4_e2b_manifest_attention_core.py"
+  },
+  {
+    "hash": "1d4e7ab844b52700b4774dab1d0f9504b84943175c05196926dba898634781eb",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py"
+  },
+  {
+    "hash": "0c4306d2b309575294eb67c2c8bbfa9393a2b633fce1e5385826fcb3977e05cb",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_binding_metadata.py"
+  },
+  {
+    "hash": "d823930bdeb5e312834105196956dcf3c0945edfcf53e59a9fbe3e95e6152282",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_checkpoint.py"
+  },
+  {
+    "hash": "6a9891a03f457ad1ef3fa4658547c2530e1a7025ed5416d6207b947e45660ee3",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_compact_session_runtime.py"
+  },
+  {
+    "hash": "bba8f8a63e6fd3612c3bb7e4c77f5f2705e0805128ea7834703e5bec1fdbfa63",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_compile_target_cli.py"
+  },
+  {
+    "hash": "782914ec7fccc5057f79c520cfb34a37ba568e80e9fc52a1c2540301d2176d20",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_compile_target_core.py"
+  },
+  {
+    "hash": "c0dd9a12bbea3c70404d8fa722adc21eab3be6eb9f19ccf30594431070a8a9c4",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_compile_target_materialization.py"
+  },
+  {
+    "hash": "3f110386806e2cc425907da4a5fae9b1b0288966446172847d6d2e62f8a8d941",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_compile_target_planning.py"
+  },
+  {
+    "hash": "811036f00a67dcc56451ca8925b2bf8c7c874442aed5e9807e1d8548db8dacad",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_compile_target_predicates.py"
+  },
+  {
+    "hash": "9d2b24410d0a51ec3d5e5f3ee855326e1cd5d06233e49c090d7c725ecb323af6",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_compile_target_sim_runner.py"
+  },
+  {
+    "hash": "66a1ff8e1dff6f35cc5853a35717f237977ccd347b2e52f582103ff034b91b22",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_embed_roi.py"
+  },
+  {
+    "hash": "23de1a81db81987962bfca45943591ca023fd98e65678ff7602f80b71dba06a2",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_embed_roi_adapter.py"
+  },
+  {
+    "hash": "4e26c168c64e5f1a9656e65956c5381da347eab17e783b5003a20e60bcbdaddf",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_hostplan_execution_buffers.py"
+  },
+  {
+    "hash": "bdf94837406d44889b6fb1d9f71da8f141bd2ec0e8a9395e0d267fd785d29b0a",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_hostplan_execution_common.py"
+  },
+  {
+    "hash": "d9232925ebb09510bdec6583a3c744fdd8c0223c8238c487a881f81011e8a35e",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_hostplan_execution_materialization.py"
+  },
+  {
+    "hash": "7726a0d78d79641edbe7998dd32f25b85b0634d8cb8b6dd350339969fec32c30",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_hostplan_execution_plan.py"
+  },
+  {
+    "hash": "0583b8316cd931f3e1615be6260f7723ec9452aad706df9b4a39924ee3b356e8",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_hostplan_execution_transforms.py"
+  },
+  {
+    "hash": "61b0be514ecab327115f6441d62260d4c8c35ace076fe0c0e29f8241f7a6820f",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_hostplan_executor_validator.py"
+  },
+  {
+    "hash": "6ec914876e081ceda05cede9c209aa5e53b4f0304b1dc7576a17bafa80134b25",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_launch_step_adapter.py"
+  },
+  {
+    "hash": "5970f5c3f4797227e70e8818dddb201debf25ae4eff6141d349817a0826c4198",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_prefill_q4k_gemv_runtime.py"
+  },
+  {
+    "hash": "8f8d69e94b82b5d8cee230e0db0321c803dc4b47feb39bd78f0e0424da00d5e6",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_prefill_q4k_gemv_tiles.py"
+  },
+  {
+    "hash": "7c7ffd384c14c0b8dc4121df10defe919641dc8391940402e9a9ae60f27ad7a2",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_roi_session_runtime.py"
+  },
+  {
+    "hash": "81a7fda3dc4e4b0d72e9909e72720318fa21ccaf5c37d74590e581d1619e7550",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_runtime_launch.py"
+  },
+  {
+    "hash": "99d8cd59e4fc37a4cf5c3c3a92a73739ecd2b2d6858019e536b743507ffe3d00",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_runtime_scheduler.py"
+  },
+  {
+    "hash": "6651ce4b263e8be8fd16d3f5f9cae1c25fc64b947372aa90b1e9cb922427c00a",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_summa_layout.py"
+  },
+  {
+    "hash": "7d7894c38c5bcab13ddf53b559214ace7d1f39546c85f695d49708ebbdbe203e",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/int4ple_target_session_probe.py"
+  },
+  {
+    "hash": "302c1deb84f7cdf058d6f8f8893661399e3ace85d357d8c2370a20dd9d44a77d",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/kv_write_sim_runner.py"
+  },
+  {
+    "hash": "6b3d5acd7c469c9b050657a9316963309e19637896871b19f56b386bbacbf072",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/lm_head_gemv_sim_runner.py"
+  },
+  {
+    "hash": "58b6fdb5638ee6c352c358d103c2fc0350bd21c412109d7de98047899d30054c",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/lmhead_gemv_2d_sim_runner.py"
+  },
+  {
+    "hash": "800019887cc795ff98d6afd7bfe5ab8f5361778ba7b98574da253b218844059f",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/manifest_dense_gemv_tiles.py"
+  },
+  {
+    "hash": "ebcd9c8860efbc01a549a692a656ac334e7c747c736af04181071e050afb5658",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/manifest_kernel_probe_runner.py"
+  },
+  {
+    "hash": "8db7ae14c39dbc4f5efd0c2af6bac528c2d6a285a48abfba238845025568974c",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/multi_token_decode_orchestrator.py"
+  },
+  {
+    "hash": "8365f954e6fbe2c9056899fd612051c5af13f790ff6d1827211be66823cc504c",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/multi_token_decode_orchestrator_qwen.py"
+  },
+  {
+    "hash": "3169efbd3ad45b93a2f33c06e3748752a8880eff65f237d63e4ef410bbb50028",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen-3-6-27b-cells/attn_decode_run.py"
+  },
+  {
+    "hash": "f293014fba2959bb4c687e6b28f0f3068eeb791f47e9c96c0c098eef947108ea",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen-3-6-27b-cells/embed_run.py"
+  },
+  {
+    "hash": "b16cc053794fbc385c19d9e88e854fd5b35b5e84681ba71590da14934d91d6b4",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen-3-6-27b-cells/gemv_run.py"
+  },
+  {
+    "hash": "5553bc8d2c55536bff350376d7b3fce02a69279449ae4f7a36bd91551d2e5260",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen-3-6-27b-cells/kv_write_run.py"
+  },
+  {
+    "hash": "425887d3544e8be99b9d965e5972c267f15b23d04bdcc2973cc8354817e05af2",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen-3-6-27b-cells/residual_run.py"
+  },
+  {
+    "hash": "aff4df602be5a44330685448c2bcdbe43cf96c650e68eea1b4d6b6675b47b616",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen-3-6-27b-cells/rmsnorm_run.py"
+  },
+  {
+    "hash": "e98687c94808a06a782187be8affc088fb78f468ac1dcf44333f5a47f5d6743f",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen-3-6-27b-cells/rope_partial_run.py"
+  },
+  {
+    "hash": "489e5ca09b97655fb892e9b49fb8ae746ef3512cc251bdc588fdbe335b09ad73",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen-3-6-27b-cells/sample_run.py"
+  },
+  {
+    "hash": "ec14ed153b5c1678308c8ab343c6636d98cb8d475665141dd7a937c1ae745553",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen-3-6-27b-cells/silu_run.py"
+  },
+  {
+    "hash": "c04c321698e175efc38ce2b365e443e463274acf290fb9995e4b35ca80ed0a60",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen-3-6-27b-cells/tiled_run.py"
+  },
+  {
+    "hash": "7d84b9b94c2ae80420760281e2d38f4d838d2fec4d299bc5fd9aba995ecee3d4",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/qwen3_6_27b_af16_hostplan_streaming_runner.py"
+  },
+  {
+    "hash": "71d77b1da15a6858c9217fc15711672b7b6c725837c9f85f1b534ac108b25ead",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/reduce_sum_workgroup_sim_runner.py"
+  },
+  {
+    "hash": "bf8350640e38ab3a97975d1df019a9dea04c9efd778f6336767e8ad34b16a728",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/rms_norm_sim_runner.py"
+  },
+  {
+    "hash": "cfe21b309d0f278c493f37aa6673f402f1ad49b2c13f29a9c649d00fbba04cb5",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/rope_sim_runner.py"
+  },
+  {
+    "hash": "fb90795a162dba96ef6b632a04d05832a4c4fbec2b5279c07c1aeac63600e02a",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/sample_sim_runner.py"
+  },
+  {
+    "hash": "38a8cc8610613ac8f9eae4c456d090f33f5eed665733ea8c09beac9b861e308e",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor.py"
+  },
+  {
+    "hash": "f8632fc67603b3daa4342d59a27f97c5d37aca9d2d879d6d311f2a3a16e728b5",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_add.py"
+  },
+  {
+    "hash": "1f602f883c60ae8b555ea01bc10b8c2fc9b29a6efd969f0eb46a389c89d2eca8",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_gather.py"
+  },
+  {
+    "hash": "5548b887b03f70be83074269f269d83d5bf3894c17688feb44d0c3175b43eaba",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_iter2.py"
+  },
+  {
+    "hash": "ba3bb3db46178fe9bb0627022044f5290ed6ab6acaa853171358369996468ca7",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_iter3.py"
+  },
+  {
+    "hash": "d949070b5b29b544aad84b12ca4eb26798dc0029600f6405c934beecdbd515e9",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_iter4.py"
+  },
+  {
+    "hash": "8856458d77afdecd9c8fcb61d526bebe0e453d73b9aba2611d4fb5a82fdde2ba",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_iter5.py"
+  },
+  {
+    "hash": "3f858d5a89903fb79ce9cdb8b15fc927ade464786de8cdfddf7af811059f4190",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_iter6.py"
+  },
+  {
+    "hash": "84eed379c424580abf4271af562655a614be32bdceb55fab7afc2ce1d7ad4fc2",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_iter6_phase.py"
+  },
+  {
+    "hash": "c483c85831f0544b1ac27800e9a50dffffd60fd40977d3307feead771309e840",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_iter7.py"
+  },
+  {
+    "hash": "0f85de38a620ed976d535a27d0b6c5ee5f16eea33250778b0a48d54ddd9b2007",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_reduce_sum.py"
+  },
+  {
+    "hash": "2d3882f24e720c287987d3e3147b565effa7e4ccc9d9cb9454e2ebe465652c98",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/streaming_executor_sigmoid.py"
+  },
+  {
+    "hash": "6c4723a65eac1e8becc6777b3a49a0f0128179fd3f6a68332b094546d576945f",
+    "path": "/home/x/deco/doe/bench/runners/csl-runners/tiled_matmul_sim_runner.py"
+  },
+  {
+    "hash": "3a905f77d57851e2413bb5d1ad14dab980561faef82c17a27b6f90a835ee66f6",
+    "path": "/home/x/deco/doe/bench/runners/determinism_search_helpers.py"
+  },
+  {
+    "hash": "29df344c9dec7971cb85e6c2bd341f6f7171502eaac912c6a51a10efecb68b2c",
+    "path": "/home/x/deco/doe/bench/runners/enrich_sampled_decode_rows.py"
+  },
+  {
+    "hash": "8e1099badb82fda55f0bb4a1d1bd55630af3fdf7a9a5c5879b6c5d50d9967dfa",
+    "path": "/home/x/deco/doe/bench/runners/exercise_cross_domain_flips.py"
+  },
+  {
+    "hash": "3d78545b0fd50c3b0e5330c989a00c58f6566e719edf52b855e7588e3832138a",
+    "path": "/home/x/deco/doe/bench/runners/exercise_in_path_numeric_stability.py"
+  },
+  {
+    "hash": "2277a8ffc70e72b06bef16a134f1c08d45f89091885cd6b3cc024ab6a9ac281c",
+    "path": "/home/x/deco/doe/bench/runners/exercise_runtime_numeric_stability.py"
+  },
+  {
+    "hash": "793c8218a3266a81a9444f46cd0d5caaab3c8bafac9182521252527bd5bdb7fa",
+    "path": "/home/x/deco/doe/bench/runners/export_numeric_fragility_corpus.py"
+  },
+  {
+    "hash": "2b6dfc93d43da0988ba3fdf361904a35ad39676daa7063b896b5ed891465d8d4",
+    "path": "/home/x/deco/doe/bench/runners/harvest_sampled_decode_fragility.py"
+  },
+  {
+    "hash": "571356454870136cd9c8f45fa11a824cf4ea17fdcdf868cfc021765fc3861fa4",
+    "path": "/home/x/deco/doe/bench/runners/normalize_decode_fragility_rows.py"
+  },
+  {
+    "hash": "a7aef2c704c760003781622d3a5a51dccb0054af499f4322f35753a4490d5c53",
+    "path": "/home/x/deco/doe/bench/runners/overnight_evidence_matrix.py"
+  },
+  {
+    "hash": "dfee602fc861b4c11ce776fa40b6d1727196afe3dfaa4182bbbab66b80f50073",
+    "path": "/home/x/deco/doe/bench/runners/preflight_bench_host.py"
+  },
+  {
+    "hash": "75a06df60781819be4e5d409f1f3df2f17f75757c09df70e1d6e52c32f54b359",
+    "path": "/home/x/deco/doe/bench/runners/preflight_d3d12_host.py"
+  },
+  {
+    "hash": "86806c8af8557f785aea726ce559c3c50bb099321c09096f25641d0813685b1e",
+    "path": "/home/x/deco/doe/bench/runners/preflight_metal_host.py"
+  },
+  {
+    "hash": "a3c3c24fd47b950459d18c3352bd0178a59d85dc0058d55dc637a98fe5abaeef",
+    "path": "/home/x/deco/doe/bench/runners/preflight_vulkan_host.py"
+  },
+  {
+    "hash": "4a9bb677ae05c6c22474943094871078c84782e4514902076ea64d0764ddc77e",
+    "path": "/home/x/deco/doe/bench/runners/probe_vulkan_host_profile.py"
+  },
+  {
+    "hash": "b1579667133744f1d6ce1ae0371c0b723964d654a802501c47c647940cf92ecb",
+    "path": "/home/x/deco/doe/bench/runners/program-candidate-isolation.py"
+  },
+  {
+    "hash": "b29199aa71f3c06fb2256a0f9caa4e755165c3e4bfbd4d66100eee2d2ec9ffc7",
+    "path": "/home/x/deco/doe/bench/runners/program-candidate-worker.mjs"
+  },
+  {
+    "hash": "264c7ec4ae42bf647d158044cccd3499bb787629dab4bcf40bc16cfb855f90f7",
+    "path": "/home/x/deco/doe/bench/runners/promote_numeric_fragility_signatures.py"
+  },
+  {
+    "hash": "953152d34da4d95161394724e909d60777d8711b37275d6b537e28afaef0433e",
+    "path": "/home/x/deco/doe/bench/runners/promote_sampled_decode_fragility.py"
+  },
+  {
+    "hash": "4a642ed8341ae82d2a6fe11bd344bbac243bbc5130890e943f6460c27dcf6686",
+    "path": "/home/x/deco/doe/bench/runners/publish_apple_runtime_release.py"
+  },
+  {
+    "hash": "0c8268290bf7b1386af3b70ab0af73c6ce25cd62433a7859bd051fdcbe7d5480",
+    "path": "/home/x/deco/doe/bench/runners/qualify_compute_program_package.py"
+  },
+  {
+    "hash": "b0baffe573ec14cf2f94585969ae49545e717f0bbd9fd4d15a9d43d4187c223b",
+    "path": "/home/x/deco/doe/bench/runners/r2_4_summa_sweep.py"
+  },
+  {
+    "hash": "9192ef0781187d4c91df0d2eb8790a06d76347b6c73640636ee5499edf39626d",
+    "path": "/home/x/deco/doe/bench/runners/rank_decode_fragility_states.py"
+  },
+  {
+    "hash": "ef7685220c2fd8c173dbc221810081bf3e4fe9184eda6fb0e1df43af91e8f0ac",
+    "path": "/home/x/deco/doe/bench/runners/release_pipeline_receipts.py"
+  },
+  {
+    "hash": "5989bb4d157a39736642c498a62f307a6905b4311775471805fac3fb279501d6",
+    "path": "/home/x/deco/doe/bench/runners/replay_promoted_sampled_decode_vulkan.py"
+  },
+  {
+    "hash": "b6a3004e10f82f6b8fe6df92dfa1180d3d0136be00dde1b2dc44becfabe8fc64",
+    "path": "/home/x/deco/doe/bench/runners/run-compute-program.mjs"
+  },
+  {
+    "hash": "f11f4594aa8684ec4970175f6acb2017bca5f4124236e671391bdb7272e0eaf4",
+    "path": "/home/x/deco/doe/bench/runners/run-program-candidate.mjs"
+  },
+  {
+    "hash": "2d29086533cdc1c7278b1672a47b6f3eca0e79b3cd384d3b80914ff6627bf3ca",
+    "path": "/home/x/deco/doe/bench/runners/run_31b_full_graph_lane.py"
+  },
+  {
+    "hash": "03862b634b582ccae4082489338b4d75bc49da94e4ca7625785876ce79b809ac",
+    "path": "/home/x/deco/doe/bench/runners/run_blocking_gates.py"
+  },
+  {
+    "hash": "74648904bb92e8a177c341f18a6dde50ecf52ae31db28865fd0ff90d0dae246d",
+    "path": "/home/x/deco/doe/bench/runners/run_cascade_divergence_tracker.py"
+  },
+  {
+    "hash": "8b09fc2c3d0273bf16697f140dcb19789e9c393bb11cdef0c60edecc403a4c62",
+    "path": "/home/x/deco/doe/bench/runners/run_command_storage_experiment.py"
+  },
+  {
+    "hash": "88f262a11ab05e2f095bc8ed4cd7d655061a304f0e1ba704b753811f8c2bf06d",
+    "path": "/home/x/deco/doe/bench/runners/run_compute_program_calibration.py"
+  },
+  {
+    "hash": "edaa9877a41830b2a3888bb1719d9cdfb2c8db6930c678abbebf6d5274e35aa1",
+    "path": "/home/x/deco/doe/bench/runners/run_compute_program_evidence.py"
+  },
+  {
+    "hash": "164edb98a7d148cc08aef00e3d949d0a4749ca0cc19539a36fa0f1e3afcb520d",
+    "path": "/home/x/deco/doe/bench/runners/run_compute_program_resolution.py"
+  },
+  {
+    "hash": "34b158563680ad2b499dc7644821987b0737b202ff1847c6ce1c7d5999fc2e24",
+    "path": "/home/x/deco/doe/bench/runners/run_compute_program_tail_experiment.py"
+  },
+  {
+    "hash": "7f343693a1b918c7eee990aed4d3d78b47dd9b1ec739e901f39e6273ffbb42ff",
+    "path": "/home/x/deco/doe/bench/runners/run_csl_governed_lane.py"
+  },
+  {
+    "hash": "0f36f5efb07ea31dcdf79eba412659d9bd5b12f5e4f4e01543c2eee64c528c54",
+    "path": "/home/x/deco/doe/bench/runners/run_csl_smoke_lane.py"
+  },
+  {
+    "hash": "655c5efe825ac172e69864542ed2386942ce5404b7a0e128f0ed145a7023948d",
+    "path": "/home/x/deco/doe/bench/runners/run_cts_subset.py"
+  },
+  {
+    "hash": "9a2bab1f60d77c134c3ed36b2f00b40a005584be4f9a1d150da19217a6765c13",
+    "path": "/home/x/deco/doe/bench/runners/run_determinism_probe.py"
+  },
+  {
+    "hash": "5bced5ebfeb1882ff7d7c885617613563509ad8a005f08506fa4c37b495e1ff3",
+    "path": "/home/x/deco/doe/bench/runners/run_e2b_full_graph_lane.py"
+  },
+  {
+    "hash": "79d77338004fca0b797b75cd91a45ba682cea603f96dfa02adeaf56729e67af5",
+    "path": "/home/x/deco/doe/bench/runners/run_external_project_release_suite.py"
+  },
+  {
+    "hash": "9bd681ae1b68c4649f17f3096a51816b3aa3e8a7b27d8fa50ce2343fe28e659a",
+    "path": "/home/x/deco/doe/bench/runners/run_local_d3d12_lane.py"
+  },
+  {
+    "hash": "e848fefd5a736c1f902aa133da078f6d575302e9dd051d73401734d7351ccf95",
+    "path": "/home/x/deco/doe/bench/runners/run_market_readiness_bundle.py"
+  },
+  {
+    "hash": "b1c4e853c3922e62997d2f256292b20b9e4dc6cc16c908b1f27dc1adba8e5a5e",
+    "path": "/home/x/deco/doe/bench/runners/run_package_determinism_receipt.py"
+  },
+  {
+    "hash": "b27a3133c08dd5c3b6c6a708ca07341fa1f46639d3437396d48811ccc659dbec",
+    "path": "/home/x/deco/doe/bench/runners/run_pair_agnostic_pair_miner.py"
+  },
+  {
+    "hash": "d862c1976f9867e2d4c44ca54a027a81aa9f9e0cbab0397128dd95bf3623f82e",
+    "path": "/home/x/deco/doe/bench/runners/run_precision_escalation_cost.py"
+  },
+  {
+    "hash": "77fb70f93247bd18d1b9e6852e9141152c308d27f0549b0fbf0aab2e5f1a1de3",
+    "path": "/home/x/deco/doe/bench/runners/run_program_candidate.py"
+  },
+  {
+    "hash": "22046ecfc205e11d83fb600d5457e4cd9ec0898c7624fc117cc9fd2239a9d0e9",
+    "path": "/home/x/deco/doe/bench/runners/run_real_lm_head_slice_frontier_sweep.py"
+  },
+  {
+    "hash": "232bb322b880bec5029de1c710bd24155b4753417c3702d2f7b5c267f9c8be22",
+    "path": "/home/x/deco/doe/bench/runners/run_real_lm_head_slice_hunt.py"
+  },
+  {
+    "hash": "8269bf33d72375b59c04ea23510695c047bb9c7668f502b36bb12579f89b3dff",
+    "path": "/home/x/deco/doe/bench/runners/run_real_logit_hunt.py"
+  },
+  {
+    "hash": "26d10f10bcb8648da8d0e3a21b2422b3c2a225f6d03f31235d939f6027a4fd0d",
+    "path": "/home/x/deco/doe/bench/runners/run_recomposition_backend_evidence.py"
+  },
+  {
+    "hash": "f6ff276059ceb8f1ca621dcb66c2723f060b1551713eb38a21e29e395b130118",
+    "path": "/home/x/deco/doe/bench/runners/run_reduction_order_counterexample.py"
+  },
+  {
+    "hash": "448bff867d84156b3dbd97c57224bb66c5c98b909b6688ac1e20452d6b892f82",
+    "path": "/home/x/deco/doe/bench/runners/run_reduction_order_logit_flip.py"
+  },
+  {
+    "hash": "06ebfa4698fb9cd212d3e54562d227817d0136c63b3ef55601ea9a6989409a24",
+    "path": "/home/x/deco/doe/bench/runners/run_release_claim_windows.py"
+  },
+  {
+    "hash": "f64ca71cc389003246ad51cdc6a7789698086f38ee8835d6e31c0ff93b48bb50",
+    "path": "/home/x/deco/doe/bench/runners/run_release_pipeline.py"
+  },
+  {
+    "hash": "8ba7469c0914108b86cba288a1b77436c5226efacc4ee410a413c89127e7858f",
+    "path": "/home/x/deco/doe/bench/runners/run_route_branch_continuation.py"
+  },
+  {
+    "hash": "ea7a22a0250350c08ed96c2347536b6663af1a58484ce8ab35a81c7bae0e3c0a",
+    "path": "/home/x/deco/doe/bench/runners/run_sample_only_tie_break_probe.py"
+  },
+  {
+    "hash": "b5696d344b207171a4a18c57a77f44bc3a40f65cd3fdde4349736e694f69c008",
+    "path": "/home/x/deco/doe/bench/runners/run_selective_stable_rerun_probe.py"
+  },
+  {
+    "hash": "a450cc45288faa85e9c170d0f7fa28c46b6fbd91db8d00da482f054c6dc167e4",
+    "path": "/home/x/deco/doe/bench/runners/run_semantic_pair_hunt.py"
+  },
+  {
+    "hash": "c5a37d6a6381bce8fa670278960171504d465c0375d5ec28b21e490f74ba5b38",
+    "path": "/home/x/deco/doe/bench/runners/run_semantic_pair_mutation_search.py"
+  },
+  {
+    "hash": "a2dcdfaa6f7a7bfdb286fed523f98a73f54ad3335d36e99769d99e389b0fe14a",
+    "path": "/home/x/deco/doe/bench/runners/run_single_workload_sweep.py"
+  },
+  {
+    "hash": "8c38162a8475cc811f189dfde7ff57ab645036602aff8959f861af0ba9def39b",
+    "path": "/home/x/deco/doe/bench/runners/run_visualization_pipeline.py"
+  },
+  {
+    "hash": "03bc3d8b02e6aea6cb0f010b20accbe8033e42047cf316a41752e3761e9f894e",
+    "path": "/home/x/deco/doe/bench/runners/run_workgroup_topology_sweep.py"
+  },
+  {
+    "hash": "76891e5fe77a88047ad8e2958b28706c0446acb258f9e348c5a563cf29765fb7",
+    "path": "/home/x/deco/doe/bench/runners/scan_f16_flip_exhaustive.py"
+  },
+  {
+    "hash": "9520878850e35699c7f41c5e56200449174e3d78756da6068c40a5f206c5e852",
+    "path": "/home/x/deco/doe/bench/runners/search_sampled_decode_prompts.py"
+  },
+  {
+    "hash": "c9c7c31394e1460668d8af7fcea59b5e0bcf61f58229416743ac71f8ab354121",
+    "path": "/home/x/deco/doe/bench/runners/simulate_sampled_sensitivity.py"
+  },
+  {
+    "hash": "7ca72ac541e04ba9681661ec887e13b44d50d31514fc924a8b8ff2cf28dd5368",
+    "path": "/home/x/deco/doe/bench/shared/lib/constants.js"
+  },
+  {
+    "hash": "1cf5fa741227cc9a7eb138dbb61684ce31ed265a0b6d7983d93ee0a42a2989aa",
+    "path": "/home/x/deco/doe/bench/shared/lib/doe_util.js"
+  },
+  {
+    "hash": "57dba0cd41d6fec9f407db7b0638e758faf39e7d71fde6ea7408c8507cd51a5d",
+    "path": "/home/x/deco/doe/bench/shared/lib/format.js"
+  },
+  {
+    "hash": "c5622b055311eb4aa13fa9bff2af4e0b1033123cbe4792499915c935b2b5a41d",
+    "path": "/home/x/deco/doe/bench/shared/lib/runner_io.js"
+  },
+  {
+    "hash": "6a198a66bbb5a191c359029246dc226389f80863906561c29d6db88b36468029",
+    "path": "/home/x/deco/doe/bench/shared/lib/stats.js"
+  },
+  {
+    "hash": "12c066c708f697a5ff2a508f4a240bc4a2da711051a58184b3cd31c1112c2981",
+    "path": "/home/x/deco/doe/config/benchmark-methodology-thresholds.json"
+  },
+  {
+    "hash": "ddf66cd19ac7fa77f0ae9189be3b52ba86317e837016c423895f0cfd5c2ccd43",
+    "path": "/home/x/deco/doe/config/command-storage-candidate.schema.json"
+  },
+  {
+    "hash": "4f914f49c95af4210f09863c3790b9f6606f928e680bb8aaaec88e23119257ec",
+    "path": "/home/x/deco/doe/config/command-storage-experiment.schema.json"
+  },
+  {
+    "hash": "d414eecb7c9a8639a7b1a52b88bbc3c7e6d0dda053f6698a7201975856e1860a",
+    "path": "/home/x/deco/doe/config/compute-program-calibration-report.schema.json"
+  },
+  {
+    "hash": "7ee40745c63787f9e8ee4f5c7e919cd27bfaf7116f1892238d767cb452a9f2de",
+    "path": "/home/x/deco/doe/config/compute-program-calibration.schema.json"
+  },
+  {
+    "hash": "ce90e45f02bc9995033fe67f008dbb87b29fed21d498f8c0b05d78cf4292a614",
+    "path": "/home/x/deco/doe/config/compute-program-decision.json"
+  },
+  {
+    "hash": "9a115a108cf21cd62df92b7ff1e7a79850a9ff629aeb9d800e9c89a1fbd517b6",
+    "path": "/home/x/deco/doe/config/compute-program-decision.schema.json"
+  },
+  {
+    "hash": "74c2051dae30b4568bf27d166e6bfaa8f546ad8de44eaad4fc74fe35aff8ab15",
+    "path": "/home/x/deco/doe/config/compute-program-evaluation.schema.json"
+  },
+  {
+    "hash": "fab015135651f6a970654f8dda1a7d7992f98deae6023ba42c43ea4b27c85560",
+    "path": "/home/x/deco/doe/config/compute-program-fixture.schema.json"
+  },
+  {
+    "hash": "f509d2b23a596e477010c337f754c23f52d07a68e64d2674e3b45c06bdf34716",
+    "path": "/home/x/deco/doe/config/compute-program-gpu-activity.schema.json"
+  },
+  {
+    "hash": "c0c5ece3c9975f1cf6f87b93725a4023d442e5c5c3821f170191f6aedee752b2",
+    "path": "/home/x/deco/doe/config/compute-program-host-observation.schema.json"
+  },
+  {
+    "hash": "9e1f908e2aa00269d4fcb6de103597443d2cceca495ffd4e24673c464c27e498",
+    "path": "/home/x/deco/doe/config/compute-program-matrix.schema.json"
+  },
+  {
+    "hash": "4808e269ccd87d39fa55748d493b4458cd1f06f81ecdb5a44abaa8d6ce58f167",
+    "path": "/home/x/deco/doe/config/compute-program-output-retention.schema.json"
+  },
+  {
+    "hash": "dc323b889cc7cd1655cc7318555c042316839aafb3a999b0e15fa96ec47a3d03",
+    "path": "/home/x/deco/doe/config/compute-program-package.schema.json"
+  },
+  {
+    "hash": "633b119c3ff22e51b1329af2bf50da74674c51430d2e8ae656595189ac445c52",
+    "path": "/home/x/deco/doe/config/compute-program-preparation.schema.json"
+  },
+  {
+    "hash": "2f7f43c6d8067050d80a6f3e8303cc54467b604bdc125c94986e8f00deb8b750",
+    "path": "/home/x/deco/doe/config/compute-program-process.schema.json"
+  },
+  {
+    "hash": "66e4ba02cfd2cd5de55aaadc0c113489cd45cd2e97be6d2e67df9695f87c5033",
+    "path": "/home/x/deco/doe/config/compute-program-resolution-report.schema.json"
+  },
+  {
+    "hash": "187d29b98f8207141535b0c39ed095cb726c5787056eef023a4c5e4b08389768",
+    "path": "/home/x/deco/doe/config/compute-program-resolution.schema.json"
+  },
+  {
+    "hash": "db0906644335d4ab2a7e36fc392a7ac26443058e42a27ce570bda6c16e7bc513",
+    "path": "/home/x/deco/doe/config/compute-program-run.schema.json"
+  },
+  {
+    "hash": "52eb78a40035b94243a882b72e1a6974e73ba5ec975e701064d8979579f26fc6",
+    "path": "/home/x/deco/doe/config/compute-program-startup-experiment.schema.json"
+  },
+  {
+    "hash": "56a4a838a0340519bcbd6c1e5ad81f14c23eefaf78cfc2f8b9bbce27fdd7c8a8",
+    "path": "/home/x/deco/doe/config/compute-program-tail-experiment.schema.json"
+  },
+  {
+    "hash": "c1e95b2d318bf8c5eb3df9072e8795850997229bbc8249423a76c7b254e2999d",
+    "path": "/home/x/deco/doe/config/compute-program-uncertainty.schema.json"
+  },
+  {
+    "hash": "02cc368a0e45f4e2731ae0c61fa3084ffa2927373b45403d120d78a46890ed79",
+    "path": "/home/x/deco/doe/config/compute-program.schema.json"
+  }
+]

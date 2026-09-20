@@ -1,65 +1,22 @@
 # Reusable compute programs
 
-## GPU interference attribution
+## Completed A/A series and unresolved precision
 
-The [latest calibration retry](../../bench/out/compute-program/20260920-calibration-retry-02/README.md)
-started after observed GPU inactivity, then stopped on renewed Chrome GPU work
-attributed to the Doppler checkout through matching process and boot identity.
-The retained hash and observation replay confirms the rejection; admission
-remains unavailable and no final precision assessment exists. An
-[idle-window watcher](../../bench/out/compute-program/20260920-calibration-retry-04/watch_and_run.py)
-waits for sustained observed inactivity before a fresh complete attempt. Its
-launch guard is scheduling only, not proof of exclusive access; per-process
-interference admission remains unchanged. Accepted packages, evaluator,
-workloads, and thresholds remain unchanged, and interrupted cohorts cannot be
-combined into an accepted series.
+The [quiet-window calibration](../../bench/out/compute-program/20260920-calibration-retry-04/README.md)
+completed the frozen procedure after sustained observed inactivity. Its report
+classifies the identical-package observations as consistent, while the retained
+uncertainty assessment leaves regression bands unresolved. Independent admission
+replay passed against the raw evidence; the checkpoint retains its command and
+output.
 
-The [preceding coverage-loss retry](../../bench/out/compute-program/20260914-calibration-retry/README.md)
-started after quiet preflight and unchanged input/storage checks, then stopped
-when a foreign `chrome-headless` DRM client disappeared between observation
-boundaries. Its boot-scoped task identity is retained; the departed client
-cannot be attributed to a project. This is a coverage-loss rejection, not a
-measurement of concurrent engine work. The series remains incomplete and
-provides no final consistency or precision assessment. A complete shared-GPU
-window must also exclude competing headless-browser clients. New profiling and
-candidate work remain dependent on completed calibration; accepted packages,
-thresholds, and earlier evidence remain unchanged.
-
-The [preceding attributed continuation](../../bench/out/compute-program/20260913-warmup-calibration-continued/README.md)
-retains an incomplete calibration rejected on observed Chrome GPU work from the
-Doppler consumer-streaming worktree. Its raw sidecar and matching live process
-inspection bind the interference to the same boot, PID, and start identity. The
-[observer repair](../../bench/out/compute-program/20260913-gpu-activity-attribution/README.md)
-retains boot-scoped task identity alongside raw counters, preserving null
-attribution for visibility gaps and process races. Earlier departed clients
-without captured task identity remain unattributed. Counter admission, accepted
-runtime bytes, and measurement thresholds remain unchanged. A complete
-calibration requires a window without the competing browser GPU work;
-interrupted cohorts cannot qualify the procedure or authorize a candidate.
-
-## Process-boundary evidence retention
-
-The [retention repair](../../bench/out/compute-program/20260912-process-output-retention/README.md)
-responds to a warmup cohort exhausting disk before end-of-cohort sharing.
-Calibration and candidate execution now apply the declared space bound before
-each child and retain identical outputs immediately afterward, including failed
-children. Observer receipts use atomic replacement. The interrupted files remain
-failure evidence; accepted archives, warmup settings, and thresholds are
-unchanged. The fresh physical continuation retained outputs successfully but
-stopped in its final cohort on observed foreign GPU work. Its incomplete receipt
-fails candidate admission and supplies no final precision assessment. A complete
-fresh calibration remains required before procedure promotion.
-
-## Explicit measurement policy and warmup qualification
-
-The [warmup revision](../../bench/out/compute-program/20260912-warmup-calibration-v1/README.md)
-retains a separately generated procedure with unchanged accepted archives and
-thresholds. Calibration now passes its selected policy through execution;
-replay rejects differing experiment policies, invocation settings, or child
-policy identities. The first A/A attempt stopped on observed foreign GPU
-activity; the later continuation is recorded above. Neither interrupted attempt
-qualifies the revised procedure or authorizes a candidate. The accepted runtime
-and original measurement procedure remain unchanged.
+Null consistency does not establish enough precision to judge a small benefit.
+Candidate evaluation and promotion are separate decisions; this series accepts
+no optimization. The next measurement work is diagnosing the unresolved CPU and
+tail intervals, with any procedure revision versioned before a fresh baseline.
+Accepted packages, evaluator, workloads, reference outputs, and thresholds remain
+unchanged. The observer bounds what was visible; it does not prove exclusive GPU
+access. Interrupted attempts remain separate historical evidence and were not
+combined into this series.
 
 ## Ordinary measurement warmup and cost attribution
 
@@ -72,9 +29,11 @@ whole-process numerical checking and file writing cannot be counted as native
 runtime work. The [diagnostic contract](../compute-program-resolution.md)
 preserves ordered samples, unavailable observations, signed profiler deltas,
 and the original acceptance policy. This establishes no accepted optimization
-or resolved calibration precision. Fresh A/A qualification of any revised
-measurement procedure remains required before promotion.
-Later physical attempts retain observed foreign-GPU admission failures; the
+or resolved calibration precision. The completed A/A series above supplies a
+current consistency assessment;
+its unresolved precision still limits promotion. Any further procedure revision
+requires a fresh baseline series.
+Earlier interrupted attempts retain observed foreign-GPU admission failures; the
 completed cohort's frozen inputs and separate stricter reviewer remain available
 for read-only evidence replay.
 
@@ -83,7 +42,7 @@ for read-only evidence replay.
 The [command-storage record](../../bench/out/compute-program/20260912-command-storage-completion/README.md)
 connects build-checked policy, derived diagnostics, package qualification, and
 ordinary application evaluation. The accepted Linux library remains unchanged.
-The [fresh calibration](../../bench/out/compute-program/20260912-command-storage-calibration-uncertainty/report.json)
+The [earlier calibration](../../bench/out/compute-program/20260912-command-storage-calibration-uncertainty/report.json)
 separates A/A null consistency from precision adequate for promotion. Unresolved
 regression bands still prevent accepting small improvements. The
 [bounded experiment](../../bench/out/compute-program/20260912-command-storage-experiment-ordinary/report.json)

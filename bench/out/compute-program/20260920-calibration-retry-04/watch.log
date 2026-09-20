@@ -1,0 +1,8 @@
+{"observation": 0, "quietSeconds": 30.013129312, "rejection": null}
+{"observation": 1, "quietSeconds": 60.043230744, "rejection": null}
+{"observation": 2, "quietSeconds": 90.073045593, "rejection": null}
+{"observation": 3, "quietSeconds": 120.103246974, "rejection": null}
+{"observation": 4, "quietSeconds": 150.133678519, "rejection": null}
+{"observation": 5, "quietSeconds": 180.157599228, "rejection": null}
+Quiet launch guard passed; starting complete calibration
+Calibration finished: exit 0

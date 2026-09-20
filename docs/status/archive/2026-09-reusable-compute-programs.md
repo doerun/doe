@@ -442,3 +442,69 @@ the application measurements diagnostic.
 These are repeated physical tests on the same AMD host, not independent
 reproduction or registry publication. The matrix retains raw outputs, native
 journals, SPIR-V, install records, source snapshots, and diagnostic comparisons.
+
+## Interrupted calibration status before the completed quiet-window series
+
+Preserved on 2026-09-20. The completed series is routed from the live
+status shard; the incomplete-attempt conclusions below retain their original scope.
+
+### GPU interference attribution
+
+The [latest calibration retry](../../../bench/out/compute-program/20260920-calibration-retry-02/README.md)
+started after observed GPU inactivity, then stopped on renewed Chrome GPU work
+attributed to the Doppler checkout through matching process and boot identity.
+The retained hash and observation replay confirms the rejection; admission
+remains unavailable and no final precision assessment exists. An
+[idle-window watcher](../../../bench/out/compute-program/20260920-calibration-retry-04/watch_and_run.py)
+waits for sustained observed inactivity before a fresh complete attempt. Its
+launch guard is scheduling only, not proof of exclusive access; per-process
+interference admission remains unchanged. Accepted packages, evaluator,
+workloads, and thresholds remain unchanged, and interrupted cohorts cannot be
+combined into an accepted series.
+
+The [preceding coverage-loss retry](../../../bench/out/compute-program/20260914-calibration-retry/README.md)
+started after quiet preflight and unchanged input/storage checks, then stopped
+when a foreign `chrome-headless` DRM client disappeared between observation
+boundaries. Its boot-scoped task identity is retained; the departed client
+cannot be attributed to a project. This is a coverage-loss rejection, not a
+measurement of concurrent engine work. The series remains incomplete and
+provides no final consistency or precision assessment. A complete shared-GPU
+window must also exclude competing headless-browser clients. New profiling and
+candidate work remain dependent on completed calibration; accepted packages,
+thresholds, and earlier evidence remain unchanged.
+
+The [preceding attributed continuation](../../../bench/out/compute-program/20260913-warmup-calibration-continued/README.md)
+retains an incomplete calibration rejected on observed Chrome GPU work from the
+Doppler consumer-streaming worktree. Its raw sidecar and matching live process
+inspection bind the interference to the same boot, PID, and start identity. The
+[observer repair](../../../bench/out/compute-program/20260913-gpu-activity-attribution/README.md)
+retains boot-scoped task identity alongside raw counters, preserving null
+attribution for visibility gaps and process races. Earlier departed clients
+without captured task identity remain unattributed. Counter admission, accepted
+runtime bytes, and measurement thresholds remain unchanged. A complete
+calibration requires a window without the competing browser GPU work;
+interrupted cohorts cannot qualify the procedure or authorize a candidate.
+
+### Process-boundary evidence retention
+
+The [retention repair](../../../bench/out/compute-program/20260912-process-output-retention/README.md)
+responds to a warmup cohort exhausting disk before end-of-cohort sharing.
+Calibration and candidate execution now apply the declared space bound before
+each child and retain identical outputs immediately afterward, including failed
+children. Observer receipts use atomic replacement. The interrupted files remain
+failure evidence; accepted archives, warmup settings, and thresholds are
+unchanged. The fresh physical continuation retained outputs successfully but
+stopped in its final cohort on observed foreign GPU work. Its incomplete receipt
+fails candidate admission and supplies no final precision assessment. A complete
+fresh calibration remains required before procedure promotion.
+
+### Explicit measurement policy and warmup qualification
+
+The [warmup revision](../../../bench/out/compute-program/20260912-warmup-calibration-v1/README.md)
+retains a separately generated procedure with unchanged accepted archives and
+thresholds. Calibration now passes its selected policy through execution;
+replay rejects differing experiment policies, invocation settings, or child
+policy identities. The first A/A attempt stopped on observed foreign GPU
+activity; the later continuation is recorded above. Neither interrupted attempt
+qualifies the revised procedure or authorizes a candidate. The accepted runtime
+and original measurement procedure remain unchanged.

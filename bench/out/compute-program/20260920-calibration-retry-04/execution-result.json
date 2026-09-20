@@ -1,0 +1,14 @@
+{
+  "command": [
+    "/usr/bin/python3",
+    "-m",
+    "bench.runners.run_compute_program_calibration",
+    "--policy",
+    "/home/x/deco/doe/bench/out/compute-program/20260912-warmup-calibration-v1/procedure/calibration.json",
+    "--output",
+    "/home/x/deco/doe/bench/out/compute-program/20260920-command-storage-calibration-window-03"
+  ],
+  "completedMonotonicNs": 2974843428273634,
+  "exitCode": 0,
+  "startedMonotonicNs": 2973294607382452
+}

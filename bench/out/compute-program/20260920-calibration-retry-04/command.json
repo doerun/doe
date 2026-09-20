@@ -1,0 +1,9 @@
+[
+  "/usr/bin/python3",
+  "-m",
+  "bench.runners.run_compute_program_calibration",
+  "--policy",
+  "/home/x/deco/doe/bench/out/compute-program/20260912-warmup-calibration-v1/procedure/calibration.json",
+  "--output",
+  "/home/x/deco/doe/bench/out/compute-program/20260920-command-storage-calibration-window-03"
+]

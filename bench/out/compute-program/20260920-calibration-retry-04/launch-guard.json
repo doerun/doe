@@ -1,0 +1,13 @@
+{
+  "bootId": "3ce46712-27bc-4199-8e48-e2b3d23926cb",
+  "exclusiveGpuAccessEstablished": false,
+  "pollSeconds": 30,
+  "purpose": "launch scheduling only; frozen evaluator unchanged",
+  "quietSeconds": 180,
+  "target": {
+    "deviceId": 5510,
+    "pciDevice": "0000:c2:00.0",
+    "renderNode": "/dev/dri/renderD128",
+    "vendorId": 4098
+  }
+}
