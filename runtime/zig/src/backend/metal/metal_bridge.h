@@ -66,8 +66,9 @@ MetalHandle metal_bridge_encode_blit_copy(
 
 void metal_bridge_command_buffer_commit(MetalHandle cmd_buf);
 void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf);
-// Wait for a committed buffer, including failed completion. Returns 1 only for
-// Completed; otherwise returns 0 and preserves NSError.code (0 if unavailable).
+// Returns 1 for successful completion, 0 for terminal failure, and -1 when
+// completion is unknown. Only terminal results permit resource retirement.
+// Preserves NSError.code for failure (0 if unavailable).
 int metal_bridge_command_buffer_wait_result(MetalHandle cmd_buf, int64_t* error_code);
 void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf);
 // Keep an Objective-C object alive until this command buffer completes.
@@ -853,3 +854,10 @@ MetalHandle metal_bridge_device_new_render_pipeline_with_archive(
     MetalHandle archive,
     char*       error_buf,
     size_t      error_cap);
+
+// Validates all native arguments before changing encoder state.
+int metal_bridge_compute_encoder_dispatch_checked(
+    MetalHandle encoder, MetalHandle pipeline, const MetalHandle* buffers,
+    const uint64_t* offsets, const uint32_t* sizes, uint32_t buffer_count,
+    uint32_t sizes_slot, const uint32_t* dimensions,
+    const uint32_t* workgroup, uint32_t repeat_count);

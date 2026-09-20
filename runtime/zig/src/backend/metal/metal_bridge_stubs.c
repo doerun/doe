@@ -994,3 +994,15 @@ MetalHandle metal_render_state_cmd_buf_msaa_render_encoder(MetalHandle cmd_buf, 
     (void)resolve_target;
     return NULL;
 }
+
+int metal_bridge_compute_encoder_dispatch_checked(
+    MetalHandle encoder, MetalHandle pipeline, const MetalHandle* buffers,
+    const uint64_t* offsets, const uint32_t* sizes, uint32_t buffer_count,
+    uint32_t sizes_slot, const uint32_t* dimensions,
+    const uint32_t* workgroup, uint32_t repeat_count)
+{
+    (void)encoder; (void)pipeline; (void)buffers; (void)offsets; (void)sizes;
+    (void)buffer_count; (void)sizes_slot; (void)dimensions; (void)workgroup;
+    (void)repeat_count;
+    return 0;
+}

@@ -33,6 +33,7 @@ pub fn release_kernel_pipelines(self: anytype) void {
     var it = self.kernel_pipelines.iterator();
     while (it.next()) |e| {
         self.allocator.free(e.key_ptr.*);
+        self.allocator.free(e.value_ptr.source);
         metal_bridge_release(e.value_ptr.library);
         metal_bridge_release(e.value_ptr.pipeline);
     }

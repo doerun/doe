@@ -18,6 +18,8 @@ pub const BackendNativeError = error{
     InvalidState,
     Unsupported,
     UnsupportedFeature,
+    UnsupportedKernelLanguage,
+    UnsupportedBindingLayout,
     ShaderToolchainUnavailable,
     ShaderCompileFailed,
     SyncUnavailable,
@@ -55,6 +57,8 @@ pub fn classifyBackendError(err: anyerror) NativeExecutionStatus {
     return switch (err) {
         error.Unsupported,
         error.UnsupportedFeature,
+        error.UnsupportedKernelLanguage,
+        error.UnsupportedBindingLayout,
         error.ShaderToolchainUnavailable,
         error.SyncUnavailable,
         error.TimingPolicyMismatch,
@@ -86,6 +90,8 @@ pub const error_code = errorCode;
 test "backend errors have one unsupported classification" {
     const std = @import("std");
     try std.testing.expectEqual(NativeExecutionStatus.unsupported, classifyBackendError(error.Unsupported));
+    try std.testing.expectEqual(NativeExecutionStatus.unsupported, classifyBackendError(error.UnsupportedKernelLanguage));
+    try std.testing.expectEqual(NativeExecutionStatus.unsupported, classifyBackendError(error.UnsupportedBindingLayout));
     try std.testing.expectEqual(NativeExecutionStatus.unsupported, classifyBackendError(error.SyncUnavailable));
     try std.testing.expectEqual(NativeExecutionStatus.@"error", classifyBackendError(error.InvalidState));
     try std.testing.expectEqual(ExecutionStatus.unsupported, fromNativeStatus(.unsupported));

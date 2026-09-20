@@ -566,9 +566,9 @@ test "Metal capture checks native bounds and waits before copying; failed flush 
 }
 
 fn failureMessage(self: anytype, err: anyerror) []const u8 {
-    if (err == error.MetalCommandFailed) {
+    if (err == error.MetalCommandFailed or err == error.MetalCompletionUnknown) {
         if (self.get_runtime().completion.failure_code) |code| {
-            return self.write_status("MetalCommandFailed: native error code {d}", .{code});
+            return self.write_status("{s}: first native error code {d}", .{ common_errors.error_code(err), code });
         }
     }
     return self.write_status("{s}", .{common_errors.error_code(err)});

@@ -1,0 +1,3 @@
+Local host: Linux; Apple SDK unavailable.
+ssh -o BatchMode=yes -o ConnectTimeout=5 mac.lan: port 22 connection timed out (exit 255).
+No physical Metal qualification performed.

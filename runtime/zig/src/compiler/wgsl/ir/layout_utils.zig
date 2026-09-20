@@ -5,7 +5,35 @@
 // Used by arrayLength lowering when the runtime-sized array is a struct
 // member rather than a direct global.
 
+const std = @import("std");
 const ir = @import("ir.zig");
+
+/// Minimum shader-visible storage includes one element of a runtime array.
+/// Reject layouts whose byte extent cannot be represented by runtime metadata.
+pub fn minimumBindingSize(module: *const ir.Module, ty: ir.TypeId) error{InvalidIr}!u32 {
+    const size: u64 = switch (module.types.get(ty)) {
+        .array => |array| blk: {
+            const element = try minimumBindingSize(module, array.elem);
+            const alignment = type_alignment(module, array.elem);
+            const stride = std.mem.alignForward(u64, element, alignment);
+            break :blk stride * @as(u64, array.len orelse 1);
+        },
+        .struct_ => |id| blk: {
+            var end: u64 = 0;
+            var alignment: u32 = 1;
+            for (module.structs.items[id].fields.items) |field| {
+                const field_alignment = type_alignment(module, field.ty);
+                alignment = @max(alignment, field_alignment);
+                end = std.mem.alignForward(u64, end, field_alignment);
+                end += try minimumBindingSize(module, field.ty);
+                if (end > std.math.maxInt(u32)) return error.InvalidIr;
+            }
+            break :blk std.mem.alignForward(u64, end, alignment);
+        },
+        else => type_size(module, ty),
+    };
+    return std.math.cast(u32, size) orelse error.InvalidIr;
+}
 
 /// Walk a chain of member/load expressions to find the root global_ref index.
 pub fn resolve_member_global(function: ir.Function, expr_id: ir.ExprId) ?ir.GlobalId {

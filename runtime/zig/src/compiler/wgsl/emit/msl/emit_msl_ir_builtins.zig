@@ -378,7 +378,7 @@ fn emit_array_length(self: anytype, function: ir.Function, call: @FieldType(ir.E
                     if (arr.len != null) return error.InvalidIr;
                     const binding = global.binding orelse return error.InvalidIr;
                     try self.write("uint(_doe_sizes[");
-                    try self.write_u32(self.msl_binding_slot(binding));
+                    try self.write_u32(try self.msl_binding_slot(binding));
                     try self.write("] / sizeof(");
                     try self.emit_type(arr.elem);
                     try self.write("))");
@@ -410,7 +410,7 @@ fn emit_array_length(self: anytype, function: ir.Function, call: @FieldType(ir.E
             const field_offset = layout.struct_field_offset(self.module, struct_def, member.field_index);
             // (_doe_sizes[slot] - field_offset) / sizeof(elem)
             try self.write("uint((_doe_sizes[");
-            try self.write_u32(self.msl_binding_slot(binding));
+            try self.write_u32(try self.msl_binding_slot(binding));
             try self.write("] - ");
             try self.write_u32(field_offset);
             try self.write(") / sizeof(");

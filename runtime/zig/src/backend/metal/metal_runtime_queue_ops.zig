@@ -82,6 +82,7 @@ pub fn flush_queue_timed(self: anytype) !FlushResult {
     var gpu_timestamps_attempted = false;
     var gpu_elapsed_ns: u64 = 0;
     if (has_streaming) {
+        try self.completion.reserve(self.allocator);
         finalize_streaming_encoders(self);
 
         const cmd_buf = self.streaming_cmd_buf.?;
@@ -93,20 +94,19 @@ pub fn flush_queue_timed(self: anytype) !FlushResult {
 
         self.fence_value +%= 1;
         bridge.metal_bridge_command_buffer_commit(cmd_buf);
-        self.completion.retire();
-        self.completion.retireOne(cmd_buf);
-        if (gpu_timestamps_attempted and self.completion.failure_code == null) {
-            gpu_elapsed_ns = self.timestamp_state.resolve_elapsed_ns();
-        }
-
+        self.completion.retainSubmitted(cmd_buf);
         self.streaming_cmd_buf = null;
         self.streaming_compute_dispatch_count = 0;
         self.streaming_has_render = false;
         self.streaming_has_copy = false;
         self.streaming_max_upload_bytes = 0;
         self.streaming_gpu_timestamps_active = false;
+        try self.completion.retire();
+        if (gpu_timestamps_attempted and self.completion.failure_code == null) {
+            gpu_elapsed_ns = self.timestamp_state.resolve_elapsed_ns();
+        }
     } else {
-        self.completion.retire();
+        try self.completion.retire();
     }
 
     recycle_streaming_uploads(self);
@@ -142,7 +142,7 @@ pub fn barrier(self: anytype, queue_wait_mode: webgpu.QueueWaitMode, queue_sync_
     if (self.streaming_cmd_buf != null or self.has_deferred_submissions) {
         _ = try flush_queue(self);
     }
-    self.completion.retire();
+    try self.completion.retire();
     try self.completion.check();
     const end_ns = common_timing.now_ns();
     return common_timing.ns_delta(end_ns, start_ns);

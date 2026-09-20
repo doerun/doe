@@ -11,16 +11,16 @@ const metal_bridge_cmd_buf_encode_compute_dispatch = bridge.metal_bridge_cmd_buf
 const metal_bridge_cmd_buf_encode_compute_dispatch_indirect = bridge.metal_bridge_cmd_buf_encode_compute_dispatch_indirect;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 
-const DEFAULT_DISPATCH_KERNEL = "dispatch_noop.metal";
+const DEFAULT_DISPATCH_KERNEL = "dispatch_noop.wgsl";
 const DISPATCH_INDIRECT_ARGS_BYTES = @sizeOf([3]u32);
-const DEFAULT_WORKGROUP_SIZE: u32 = 0;
 
 pub const DispatchRunMetrics = execution_contract.DispatchMetrics;
 
 pub fn run_dispatch(runtime: anytype, x: u32, y: u32, z: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchRunMetrics {
     if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
     try prepare_dispatch_submission(runtime, queue_sync_mode);
-    const pipeline = try runtime.ensure_kernel_pipeline(DEFAULT_DISPATCH_KERNEL, null);
+    const program = try runtime.ensure_kernel_pipeline_info(DEFAULT_DISPATCH_KERNEL, null);
+    const pipeline = program.pipeline;
     const encode_start = common_timing.now_ns();
     const cmd_buf = metal_bridge_create_command_buffer(runtime.queue) orelse return error.InvalidState;
     metal_bridge_cmd_buf_encode_compute_dispatch(
@@ -31,9 +31,9 @@ pub fn run_dispatch(runtime: anytype, x: u32, y: u32, z: u32, queue_sync_mode: w
         x,
         y,
         z,
-        DEFAULT_WORKGROUP_SIZE,
-        DEFAULT_WORKGROUP_SIZE,
-        DEFAULT_WORKGROUP_SIZE,
+        program.workgroup_size[0],
+        program.workgroup_size[1],
+        program.workgroup_size[2],
     );
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
     const submit_wait_ns = try finalize_dispatch_submission(runtime, cmd_buf, queue_sync_mode);
@@ -45,7 +45,8 @@ pub fn run_dispatch_indirect(runtime: anytype, x: u32, y: u32, z: u32, queue_syn
     // The shared indirect argument bytes cannot change until earlier users retire.
     const retirement_ns = try runtime.flush_queue();
     try prepare_dispatch_submission(runtime, queue_sync_mode);
-    const pipeline = try runtime.ensure_kernel_pipeline(DEFAULT_DISPATCH_KERNEL, null);
+    const program = try runtime.ensure_kernel_pipeline_info(DEFAULT_DISPATCH_KERNEL, null);
+    const pipeline = program.pipeline;
     const indirect_buffer = try ensure_dispatch_indirect_args_buffer(runtime);
     try write_dispatch_indirect_args(indirect_buffer, x, y, z);
     const encode_start = common_timing.now_ns();
@@ -57,9 +58,9 @@ pub fn run_dispatch_indirect(runtime: anytype, x: u32, y: u32, z: u32, queue_syn
         0,
         indirect_buffer,
         0,
-        DEFAULT_WORKGROUP_SIZE,
-        DEFAULT_WORKGROUP_SIZE,
-        DEFAULT_WORKGROUP_SIZE,
+        program.workgroup_size[0],
+        program.workgroup_size[1],
+        program.workgroup_size[2],
     );
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
     const submit_wait_ns = try finalize_dispatch_submission(runtime, cmd_buf, queue_sync_mode);
@@ -105,9 +106,14 @@ fn finalize_dispatch_submission(runtime: anytype, cmd_buf: ?*anyopaque, queue_sy
         runtime.completion.retainSubmitted(cmd_buf.?);
         return 0;
     }
+    runtime.completion.reserve(runtime.allocator) catch |err| {
+        bridge.metal_bridge_release(cmd_buf);
+        return err;
+    };
     metal_bridge_command_buffer_commit(cmd_buf);
+    runtime.completion.retainSubmitted(cmd_buf.?);
     const submit_start = common_timing.now_ns();
-    runtime.completion.retireOne(cmd_buf.?);
+    try runtime.completion.retire();
     const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
     try runtime.completion.check();
     return submit_wait_ns;

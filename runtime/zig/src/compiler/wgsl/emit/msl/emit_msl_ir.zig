@@ -19,6 +19,11 @@ const BINDINGS_PER_GROUP: u32 = 16;
 // Must match MSL_SIZES_SLOT in doe_queue_submit_native.zig.
 pub const MSL_SIZES_SLOT: u32 = 30;
 
+pub fn bindingSlot(binding: ir.BindingPoint) error{InvalidIr}!u32 {
+    const base = std.math.mul(u32, binding.group, BINDINGS_PER_GROUP) catch return error.InvalidIr;
+    return std.math.add(u32, base, binding.binding) catch return error.InvalidIr;
+}
+
 pub fn emit(module: *const ir.Module, out: []u8) EmitError!usize {
     var emitter = Emitter{ .module = module, .buf = out };
     try emitter.emit_root();
@@ -39,8 +44,8 @@ const Emitter = struct {
     pos: usize = 0,
     indent: usize = 0,
 
-    pub fn msl_binding_slot(_: *Emitter, binding: ir.BindingPoint) u32 {
-        return binding.group * BINDINGS_PER_GROUP + binding.binding;
+    pub fn msl_binding_slot(_: *Emitter, binding: ir.BindingPoint) EmitError!u32 {
+        return bindingSlot(binding);
     }
 
     // Returns true if any global runtime array uses arrayLength — signals that
@@ -282,13 +287,13 @@ const Emitter = struct {
         try self.write(" = uint(");
         if (field_index) |_| {
             try self.write("(_doe_sizes[");
-            try self.write_u32(self.msl_binding_slot(binding));
+            try self.write_u32(try self.msl_binding_slot(binding));
             try self.write("] - ");
             try self.write_u32(field_offset);
             try self.write(")");
         } else {
             try self.write("_doe_sizes[");
-            try self.write_u32(self.msl_binding_slot(binding));
+            try self.write_u32(try self.msl_binding_slot(binding));
             try self.write("]");
         }
         try self.write(" / sizeof(");
@@ -335,7 +340,7 @@ const Emitter = struct {
                 try self.write("& ");
                 try self.write(global.name);
                 try self.write(" [[buffer(");
-                try self.write_u32(self.msl_binding_slot(binding));
+                try self.write_u32(try self.msl_binding_slot(binding));
                 try self.write(")]]");
                 return;
             },
@@ -358,7 +363,7 @@ const Emitter = struct {
                 }
                 try self.write(global.name);
                 try self.write(" [[buffer(");
-                try self.write_u32(self.msl_binding_slot(binding));
+                try self.write_u32(try self.msl_binding_slot(binding));
                 try self.write(")]]");
                 return;
             },
@@ -369,7 +374,7 @@ const Emitter = struct {
                 try self.write("sampler ");
                 try self.write(global.name);
                 try self.write(" [[sampler(");
-                try self.write_u32(self.msl_binding_slot(binding));
+                try self.write_u32(try self.msl_binding_slot(binding));
                 try self.write(")]]");
             },
             .texture_1d, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d => {
@@ -377,7 +382,7 @@ const Emitter = struct {
                 try self.write(" ");
                 try self.write(global.name);
                 try self.write(" [[texture(");
-                try self.write_u32(self.msl_binding_slot(binding));
+                try self.write_u32(try self.msl_binding_slot(binding));
                 try self.write(")]]");
             },
             else => return error.InvalidIr,
@@ -392,7 +397,7 @@ const Emitter = struct {
 
     pub fn emit_runtime_array_length_local_name(self: *Emitter, binding: ir.BindingPoint, field_index: ?u32) EmitError!void {
         try self.write("_doe_len_");
-        try self.write_u32(self.msl_binding_slot(binding));
+        try self.write_u32(try self.msl_binding_slot(binding));
         if (field_index) |index| {
             try self.write("_");
             try self.write_u32(index);

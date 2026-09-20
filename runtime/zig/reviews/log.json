@@ -19371,6 +19371,513 @@
       "targets": [
         "src/backend/ports/surface.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "4c6058f99a6f3065ee40a5503bd6a303eedc41c710e3d982fedbafbec1c07285"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "bfb88086241ffbef8f87ec7fc0f9834338b95f6bd14115d09eee019ac140db6c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "b2a574e182971570e468b6589a9648a2ebe048902a574d31cf94c48c7496b12d"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "64f5ff4ba8ed796a88a5b592d3897889a28cbc12fca42e0938d1a1214a84af6e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_stubs.c",
+          "sha256": "ccd4ba0fc6e1d4c31654719e57324df9d77152fc364fe12ad089bacee80ea9b4"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_cleanup.zig",
+          "sha256": "3167bbd14a471aeb634eff0ab0826188ade7239e8d9ea1c0fd60122634d52dfc"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "cf806308ac560ec7108df34d875d372125d9fdeac4c342c540a30ad7762d99ee"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "a59722937f97583257f324dea8a7ef0086fe194f87a4317fa8bae201d87803fe"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_native_unit_test.zig",
+          "sha256": "a9cbe1871532d29345825c2ca8c279b70654b329c9bf4f068e5b300aa8c70591"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_repair_proof_test.zig",
+          "sha256": "715de024c98c1378ff85e51c09a6c2d7fd77ae4ae88753e6ecf86ee838eb506a"
+        },
+        {
+          "path": "runtime/zig/tools/bridge_manifests/metal_bridge_manifest.json",
+          "sha256": "82acf9632a78148f1a99dfca3d624ad4cef8be38b4de39e38bf034023bab9ad1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/README.md",
+          "sha256": "9bca25e028793176c7d9955d39b08eb54d11c29e3857045cb25d259c1b09c790"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/acceptance-final.log",
+          "sha256": "2f405e88d4024e7613a3d0f8ad0032ceb8cccce5f32f80a06f8b7bb19d919687"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/acceptance.md",
+          "sha256": "7870f05d34908972b7830913316f4e3b610f8cbb8f9f3ba142c63c91c8fb7fa4"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/doc-links.log",
+          "sha256": "0c1444824fd71eec878a61b61872df1e891b1aacd98843caec2dfe110aef03c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/file-reviews.md",
+          "sha256": "79add26115dd2af3fb67ee8880c95ab945a9be32aff431929cf2b7bce5671040"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/physical-availability.log",
+          "sha256": "5c9c765aa9d1d2532eab1e08e7d1358ef5e3f12e75dc1da1c195e48585735ec8"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/physical-fixtures.log",
+          "sha256": "c629fa99a7c4ff90da8f7f92ece941c52a8679fe9100b6f303e56fca3020553e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "deinit waits indefinitely when completion remains unknown and cannot safely return through a reentrant destructor. The supported wait/timeout and lifetime-transfer contract remains unresolved."
+      ],
+      "inputHash": "b23ae2be4238a52b5e35e4fbde93cd641ae3c205dcb68189a4682a5ab69054f1",
+      "level": "file",
+      "nextAction": "Implement declared timeout/cancellation behavior with retained ownership; qualify native failure and teardown on Metal.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Unknown completion now retains references and prevents reuse; terminal failures retire but preserve their original code. Native-wait reentry cannot mutate pending storage. Allocation failure remains before submission. Host probes cover each outcome."
+      ],
+      "reviewId": "metal_completion_program_contract_20260920",
+      "reviewedAt": "2026-09-20T04:01:14.269704+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "df3385ca131596218b1534c83c1503ca95b05585",
+      "status": "needs_changes",
+      "summary": "Whole completion owner re-examined: terminal and unknown status, reserve/transfer ownership, compaction, latched failure, reentrant waiting and void teardown.",
+      "supersedes": "metal_completion_20260920",
+      "targets": [
+        "src/backend/metal/metal_completion.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "4c6058f99a6f3065ee40a5503bd6a303eedc41c710e3d982fedbafbec1c07285"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "bfb88086241ffbef8f87ec7fc0f9834338b95f6bd14115d09eee019ac140db6c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "b2a574e182971570e468b6589a9648a2ebe048902a574d31cf94c48c7496b12d"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "64f5ff4ba8ed796a88a5b592d3897889a28cbc12fca42e0938d1a1214a84af6e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_stubs.c",
+          "sha256": "ccd4ba0fc6e1d4c31654719e57324df9d77152fc364fe12ad089bacee80ea9b4"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_cleanup.zig",
+          "sha256": "3167bbd14a471aeb634eff0ab0826188ade7239e8d9ea1c0fd60122634d52dfc"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_completion.zig",
+          "sha256": "809a06e8c930ed84184cbc997d8bf27dd0c3ebec569d609c13e826cf91cc88ff"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "cf806308ac560ec7108df34d875d372125d9fdeac4c342c540a30ad7762d99ee"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_pipeline_cache.zig",
+          "sha256": "6f3b9ab4460671905f16ae9bf2dac02debb2891e7fba84491575bb32d5a770a3"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "a59722937f97583257f324dea8a7ef0086fe194f87a4317fa8bae201d87803fe"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/msl/emit_msl_ir.zig",
+          "sha256": "e3a2b1ca8fef336cb29ac0804f456fb3747aaae247e84b5dee9823d530d9de19"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/msl/emit_msl_ir_builtins.zig",
+          "sha256": "448e0f3371d02165319e85d886bfca917642953beec9550bfd75b08282046b50"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/ir/layout_utils.zig",
+          "sha256": "d870e3bb714c83e461baf88d97a8f2b503209ebb04e8c40c35fb7ca38b2043c7"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/pipeline/binding_reflection.zig",
+          "sha256": "ceb1aa1bb99349d5f5efa85d7f89f69db7ddbc66c8db81b6dcd25e255fde4bb7"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig",
+          "sha256": "48baad604f929cb5da210291cd499969f8dfb7027b8bceb4aaa44ff1480c763f"
+        },
+        {
+          "path": "runtime/zig/src/contracts/execution.zig",
+          "sha256": "a1c44a092e212819c165f16d94d9f43d2e519eef7f8eb56e2c4b2b681200362b"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_native_unit_test.zig",
+          "sha256": "a9cbe1871532d29345825c2ca8c279b70654b329c9bf4f068e5b300aa8c70591"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_repair_proof_test.zig",
+          "sha256": "715de024c98c1378ff85e51c09a6c2d7fd77ae4ae88753e6ecf86ee838eb506a"
+        },
+        {
+          "path": "runtime/zig/tools/bridge_manifests/metal_bridge_manifest.json",
+          "sha256": "82acf9632a78148f1a99dfca3d624ad4cef8be38b4de39e38bf034023bab9ad1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/README.md",
+          "sha256": "9bca25e028793176c7d9955d39b08eb54d11c29e3857045cb25d259c1b09c790"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/acceptance-final.log",
+          "sha256": "2f405e88d4024e7613a3d0f8ad0032ceb8cccce5f32f80a06f8b7bb19d919687"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/acceptance.md",
+          "sha256": "7870f05d34908972b7830913316f4e3b610f8cbb8f9f3ba142c63c91c8fb7fa4"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/doc-links.log",
+          "sha256": "0c1444824fd71eec878a61b61872df1e891b1aacd98843caec2dfe110aef03c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/file-reviews.md",
+          "sha256": "79add26115dd2af3fb67ee8880c95ab945a9be32aff431929cf2b7bce5671040"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/physical-availability.log",
+          "sha256": "5c9c765aa9d1d2532eab1e08e7d1358ef5e3f12e75dc1da1c195e48585735ec8"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/physical-fixtures.log",
+          "sha256": "c629fa99a7c4ff90da8f7f92ece941c52a8679fe9100b6f303e56fca3020553e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "Pipeline and compute-buffer maps still lack an aggregate capacity/full policy. Examine that policy with the existing pool/cache owners before expansion.",
+        "Native library/pipeline error text is discarded while only ShaderCompileFailed propagates. Archive observations and broad structural runtime dependencies remain separate owner work."
+      ],
+      "inputHash": "08fbf9aba32ff2e6bbb91f0292c352694524553da379019150926c11bbcc2ab7",
+      "level": "file",
+      "nextAction": "Qualify selected-entrypoint/source-replacement fixtures on Metal; preserve native diagnostic text and examine total retained cache capacity.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Pipeline lookup now reads exact WGSL source before reuse and binds selected entrypoint plus compiler identity. Sibling MSL and alternate translation fallback are removed. Workgroups and binding metadata come from the same analysis. Replacement failures preserve the prior owner; raw MSL returns explicit unsupported status."
+      ],
+      "reviewId": "metal_runtime_resources_program_contract_20260920",
+      "reviewedAt": "2026-09-20T04:01:15.555594+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "df3385ca131596218b1534c83c1503ca95b05585",
+      "status": "needs_changes",
+      "summary": "Whole resource helper re-examined: exact program selection/cache ownership, compute-buffer publication, render/ICB replacement and acquisition rollback.",
+      "supersedes": "metal_ports_20260920_18",
+      "targets": [
+        "src/backend/metal/metal_runtime_resources.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "4c6058f99a6f3065ee40a5503bd6a303eedc41c710e3d982fedbafbec1c07285"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "bfb88086241ffbef8f87ec7fc0f9834338b95f6bd14115d09eee019ac140db6c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "b2a574e182971570e468b6589a9648a2ebe048902a574d31cf94c48c7496b12d"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "64f5ff4ba8ed796a88a5b592d3897889a28cbc12fca42e0938d1a1214a84af6e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_stubs.c",
+          "sha256": "ccd4ba0fc6e1d4c31654719e57324df9d77152fc364fe12ad089bacee80ea9b4"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_cleanup.zig",
+          "sha256": "3167bbd14a471aeb634eff0ab0826188ade7239e8d9ea1c0fd60122634d52dfc"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_completion.zig",
+          "sha256": "809a06e8c930ed84184cbc997d8bf27dd0c3ebec569d609c13e826cf91cc88ff"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_dispatch_runtime.zig",
+          "sha256": "f32d92d1dd8d8656ec72d25bef7b4254ac5cd730d4274e6a1fd3e7d3749083dc"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "cf806308ac560ec7108df34d875d372125d9fdeac4c342c540a30ad7762d99ee"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "a59722937f97583257f324dea8a7ef0086fe194f87a4317fa8bae201d87803fe"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_resources.zig",
+          "sha256": "fdff7cb9951545e93ba496bfa5ae9173e4ce17711911a16a5b18cd8fa4ca2d0b"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/msl/emit_msl_ir.zig",
+          "sha256": "e3a2b1ca8fef336cb29ac0804f456fb3747aaae247e84b5dee9823d530d9de19"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/msl/emit_msl_ir_builtins.zig",
+          "sha256": "448e0f3371d02165319e85d886bfca917642953beec9550bfd75b08282046b50"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/ir/layout_utils.zig",
+          "sha256": "d870e3bb714c83e461baf88d97a8f2b503209ebb04e8c40c35fb7ca38b2043c7"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/pipeline/binding_reflection.zig",
+          "sha256": "ceb1aa1bb99349d5f5efa85d7f89f69db7ddbc66c8db81b6dcd25e255fde4bb7"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig",
+          "sha256": "48baad604f929cb5da210291cd499969f8dfb7027b8bceb4aaa44ff1480c763f"
+        },
+        {
+          "path": "runtime/zig/src/contracts/execution.zig",
+          "sha256": "a1c44a092e212819c165f16d94d9f43d2e519eef7f8eb56e2c4b2b681200362b"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_binding_value_types.zig",
+          "sha256": "95510abe424255499a3bc0a5d6750bf91855274fca5bfe7930875487ec1be7a4"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_native_unit_test.zig",
+          "sha256": "a9cbe1871532d29345825c2ca8c279b70654b329c9bf4f068e5b300aa8c70591"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_repair_proof_test.zig",
+          "sha256": "715de024c98c1378ff85e51c09a6c2d7fd77ae4ae88753e6ecf86ee838eb506a"
+        },
+        {
+          "path": "runtime/zig/tools/bridge_manifests/metal_bridge_manifest.json",
+          "sha256": "82acf9632a78148f1a99dfca3d624ad4cef8be38b4de39e38bf034023bab9ad1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/README.md",
+          "sha256": "9bca25e028793176c7d9955d39b08eb54d11c29e3857045cb25d259c1b09c790"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/acceptance-final.log",
+          "sha256": "2f405e88d4024e7613a3d0f8ad0032ceb8cccce5f32f80a06f8b7bb19d919687"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/acceptance.md",
+          "sha256": "7870f05d34908972b7830913316f4e3b610f8cbb8f9f3ba142c63c91c8fb7fa4"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/doc-links.log",
+          "sha256": "0c1444824fd71eec878a61b61872df1e891b1aacd98843caec2dfe110aef03c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/file-reviews.md",
+          "sha256": "79add26115dd2af3fb67ee8880c95ab945a9be32aff431929cf2b7bce5671040"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/physical-availability.log",
+          "sha256": "5c9c765aa9d1d2532eab1e08e7d1358ef5e3f12e75dc1da1c195e48585735ec8"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/physical-fixtures.log",
+          "sha256": "c629fa99a7c4ff90da8f7f92ece941c52a8679fe9100b6f303e56fca3020553e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "The new Objective-C checked encoder has no Apple SDK or physical Metal acceptance on this host. Pipeline creation still precedes full binding validation because pipeline info supplies reflection.",
+        "Streaming rollover retains a local policy constant; its declared policy owner remains unresolved. Separate legacy direct/indirect and render encoders retain void failure boundaries."
+      ],
+      "inputHash": "b3dc6f2830932abe383fd4d6faef2f471176a86d7332dffc8623e47e631ae22c",
+      "level": "file",
+      "nextAction": "Run Apple SDK and grouped/offset readback fixtures, extend checked encoding to remaining consumers, and separate analyzed admission from native acquisition where required.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Group, binding, offset, extent, resource kind and duplicate/reserved slots are validated before buffer acquisition/encoding. Unsupported requests no longer disappear. Shared MSL slot mapping and checked native encoding preserve visible ranges. Unknown completion cannot return successful timing."
+      ],
+      "reviewId": "metal_kernel_dispatch_program_contract_20260920",
+      "reviewedAt": "2026-09-20T04:01:16.918474+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "df3385ca131596218b1534c83c1503ca95b05585",
+      "status": "needs_changes",
+      "summary": "Whole kernel dispatch re-examined: compiler metadata, complete buffer binding planning, warmup/streaming/timestamp execution and checked submission ownership.",
+      "supersedes": "metal_ports_20260920_10",
+      "targets": [
+        "src/backend/metal/metal_kernel_dispatch.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "4c6058f99a6f3065ee40a5503bd6a303eedc41c710e3d982fedbafbec1c07285"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/backend_execute.zig",
+          "sha256": "a288b4506090fe9825ce8c97089cd7f2315ab71727173c5c6fc699e1aa12a445"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "bfb88086241ffbef8f87ec7fc0f9834338b95f6bd14115d09eee019ac140db6c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "b2a574e182971570e468b6589a9648a2ebe048902a574d31cf94c48c7496b12d"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "64f5ff4ba8ed796a88a5b592d3897889a28cbc12fca42e0938d1a1214a84af6e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_stubs.c",
+          "sha256": "ccd4ba0fc6e1d4c31654719e57324df9d77152fc364fe12ad089bacee80ea9b4"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_cleanup.zig",
+          "sha256": "3167bbd14a471aeb634eff0ab0826188ade7239e8d9ea1c0fd60122634d52dfc"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_completion.zig",
+          "sha256": "809a06e8c930ed84184cbc997d8bf27dd0c3ebec569d609c13e826cf91cc88ff"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_dispatch_runtime.zig",
+          "sha256": "f32d92d1dd8d8656ec72d25bef7b4254ac5cd730d4274e6a1fd3e7d3749083dc"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_kernel_dispatch.zig",
+          "sha256": "a2f4a30102c2c58ab4e40d9afd140405c6ddfb19d408d03451ef44c9b00e9746"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "cf806308ac560ec7108df34d875d372125d9fdeac4c342c540a30ad7762d99ee"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_surface_runtime.zig",
+          "sha256": "89a2be23474b80f7233d0a479cfa8d34601028a60561e17852f214d315ac8090"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_types.zig",
+          "sha256": "78c0f8da356755bc78bbc02427d3e4db9b1861d23b1c6b4484f9c9267c2fd33a"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_native_unit_test.zig",
+          "sha256": "a9cbe1871532d29345825c2ca8c279b70654b329c9bf4f068e5b300aa8c70591"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_repair_proof_test.zig",
+          "sha256": "715de024c98c1378ff85e51c09a6c2d7fd77ae4ae88753e6ecf86ee838eb506a"
+        },
+        {
+          "path": "runtime/zig/tools/bridge_manifests/metal_bridge_manifest.json",
+          "sha256": "82acf9632a78148f1a99dfca3d624ad4cef8be38b4de39e38bf034023bab9ad1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/README.md",
+          "sha256": "9bca25e028793176c7d9955d39b08eb54d11c29e3857045cb25d259c1b09c790"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/acceptance-final.log",
+          "sha256": "2f405e88d4024e7613a3d0f8ad0032ceb8cccce5f32f80a06f8b7bb19d919687"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/acceptance.md",
+          "sha256": "7870f05d34908972b7830913316f4e3b610f8cbb8f9f3ba142c63c91c8fb7fa4"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/doc-links.log",
+          "sha256": "0c1444824fd71eec878a61b61872df1e891b1aacd98843caec2dfe110aef03c8"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/file-reviews.md",
+          "sha256": "79add26115dd2af3fb67ee8880c95ab945a9be32aff431929cf2b7bce5671040"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/physical-availability.log",
+          "sha256": "5c9c765aa9d1d2532eab1e08e7d1358ef5e3f12e75dc1da1c195e48585735ec8"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/physical-fixtures.log",
+          "sha256": "c629fa99a7c4ff90da8f7f92ece941c52a8679fe9100b6f303e56fca3020553e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-program-contract/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "barrier still ignores queue_wait_mode and checked native waiting does not enforce a timeout. Implement or reject declared choices without retiring unknown resources.",
+        "Remaining native encoder/finalization methods expose void failure boundaries, and total deferred/upload retention has no explicit aggregate budget. Physical failure and concurrent-device retirement remain unqualified."
+      ],
+      "inputHash": "d24ca2adc4f00ed9d5139814900240f9f1a4d0f6e544e5ebb2c78703fd97759b",
+      "level": "file",
+      "nextAction": "Implement the explicit wait/timeout contract, finish encoder-error propagation and run native failure/retirement checks on Metal.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Synchronous streaming references enter the completion owner before waiting and leave streaming state. Unknown retirement exits before uploads, deferred references or pooled resources are recycled. Terminal failure cleans up and remains an error; later success cannot erase it."
+      ],
+      "reviewId": "metal_runtime_queue_ops_program_contract_20260920",
+      "reviewedAt": "2026-09-20T04:01:18.231752+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "df3385ca131596218b1534c83c1503ca95b05585",
+      "status": "needs_changes",
+      "summary": "Whole queue helper re-examined: streaming transitions, submission reservation, terminal retirement, recycling, deferred barriers and timing.",
+      "supersedes": "metal_queue_completion_20260920",
+      "targets": [
+        "src/backend/metal/metal_runtime_queue_ops.zig"
+      ]
     }
   ],
   "schemaVersion": 1

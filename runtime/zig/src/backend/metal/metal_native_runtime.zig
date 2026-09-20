@@ -48,11 +48,7 @@ pub const PendingUpload = struct {
     byte_count: usize,
 };
 
-pub const KernelPipeline = struct {
-    library: ?*anyopaque,
-    pipeline: ?*anyopaque,
-    workgroup_size: [3]u32 = .{ 0, 0, 0 },
-};
+pub const KernelPipeline = resource_runtime.KernelPipeline;
 
 pub const IcbKey = struct {
     draw_count: u32,

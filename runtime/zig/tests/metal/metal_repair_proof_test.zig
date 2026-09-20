@@ -17,6 +17,48 @@ fn expectBytes(runtime: *metal.NativeMetalRuntime, handle: u64, length: usize, e
     for (bytes) |byte| try std.testing.expectEqual(expected, byte);
 }
 
+test "Metal repair proof: selected WGSL entrypoint bindings and source replacement preserve guards" {
+    try requireMetal();
+    const source =
+        \\@group(1) @binding(0) var<storage, read_write> data: array<u32>;
+        \\@compute @workgroup_size(1) fn main() { data[0] = 999u; }
+        \\@compute @workgroup_size(7) fn selected(@builtin(local_invocation_id) id: vec3<u32>) {
+        \\    data[id.x] = arrayLength(&data);
+        \\}
+    ;
+    var directory = std.testing.tmpDir(.{});
+    defer directory.cleanup();
+    try directory.dir.writeFile(.{ .sub_path = "selected.wgsl", .data = source });
+    try directory.dir.writeFile(.{ .sub_path = "selected.metal", .data = "invalid sibling must never be selected" });
+    const root = try directory.dir.realpathAlloc(std.testing.allocator, ".");
+    defer std.testing.allocator.free(root);
+    var runtime = try metal.NativeMetalRuntime.init(std.testing.allocator, root, "", false);
+    defer runtime.deinit();
+    const prefix = 256;
+    const words = 7;
+    const guard = [_]u8{211} ** (prefix + words * @sizeOf(u32) + 16);
+    try runtime.write_buffer_bytes(1, 0, guard.len, &guard);
+    var bindings = [_]compute.KernelBinding{.{ .group = 1, .binding = 0, .resource_kind = .buffer, .resource_handle = 1, .buffer_offset = prefix, .buffer_size = words * @sizeOf(u32) }};
+    _ = try runtime.run_kernel_dispatch("selected.wgsl", "selected", 1, 1, 1, 1, 1, false, &bindings);
+    const buffer = runtime.compute_buffers.get(1).?;
+    const bytes = bridge.metal_bridge_buffer_contents(buffer).?[0..guard.len];
+    try std.testing.expectEqualSlices(u8, guard[0..prefix], bytes[0..prefix]);
+    try std.testing.expectEqualSlices(u8, guard[prefix + words * 4 ..], bytes[prefix + words * 4 ..]);
+    for (0..words) |i| try std.testing.expectEqual(@as(u32, words), std.mem.readInt(u32, bytes[prefix + i * 4 ..][0..4], .little));
+    bindings[0].buffer_size = 2;
+    try std.testing.expectError(error.InvalidBindingRange, runtime.run_kernel_dispatch("selected", "selected", 1, 1, 1, 1, 0, false, &bindings));
+    bindings[0].buffer_size = words * 4;
+    const replacement =
+        \\@group(1) @binding(0) var<storage, read_write> data: array<u32>;
+        \\@compute @workgroup_size(7) fn selected(@builtin(local_invocation_id) id: vec3<u32>) {
+        \\    data[id.x] = 42u;
+        \\}
+    ;
+    try directory.dir.writeFile(.{ .sub_path = "selected.wgsl", .data = replacement });
+    _ = try runtime.run_kernel_dispatch("selected", "selected", 1, 1, 1, 1, 0, false, &bindings);
+    for (0..words) |i| try std.testing.expectEqual(@as(u32, 42), std.mem.readInt(u32, bytes[prefix + i * 4 ..][0..4], .little));
+}
+
 test "Metal repair proof: staged writes preserve interleaved snapshots across size boundaries" {
     try requireMetal();
     var runtime = try metal.NativeMetalRuntime.init(std.testing.allocator, null, "", false);
@@ -53,12 +95,11 @@ test "Metal repair proof: caller allocation dies before write and dispatch compl
     try requireMetal();
     var temporary = std.testing.tmpDir(.{});
     defer temporary.cleanup();
-    try temporary.dir.writeFile(.{ .sub_path = "increment.metal", .data = 
-        \\#include <metal_stdlib>
-        \\using namespace metal;
-        \\[[max_total_threads_per_threadgroup(1)]]
-        \\kernel void main_kernel(device uint* data [[buffer(0)]]) { data[0] += 1; }
-    });
+    const source_code =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;
+        \\@compute @workgroup_size(1) fn main() { data[0] += 1u; }
+    ;
+    try temporary.dir.writeFile(.{ .sub_path = "increment.wgsl", .data = source_code });
     const root = try temporary.dir.realpathAlloc(std.testing.allocator, ".");
     defer std.testing.allocator.free(root);
     var runtime = try metal.NativeMetalRuntime.init(std.testing.allocator, root, "", false);

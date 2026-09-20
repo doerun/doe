@@ -12,8 +12,18 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [Metal program and completion checkpoint](../../bench/out/maintenance/20260920-metal-program-contract/README.md)
+continues checked retirement with an explicit unknown outcome and retained native
+references. Command kernels bind actual WGSL bytes, selected entrypoint and
+compiler identity; checked dispatch preserves binding groups, offsets and ranges.
+Its acceptance receipt separates host suites and the Linux executable from the
+unexecuted Apple SDK and physical Metal fixture. Bounded waiting, remaining void
+encoder paths, transactional surfaces and corrected-package qualification remain
+open. Supporting edits confer no automatic review credit; continue these owners
+before the next never-examined telemetry port.
+
 The [Metal completion checkpoint](../../bench/out/maintenance/20260920-zig-metal-completion/README.md)
-is the current continuation of the texture and resource reviews. Remaining
+records the preceding continuation of the texture and resource reviews. Remaining
 boundaries are native encoder failure reporting, explicit wait/timeout policy,
 transactional surface state and physical Metal qualification. The command-runtime
 completion owner does not qualify the ordinary native callback path. Continue

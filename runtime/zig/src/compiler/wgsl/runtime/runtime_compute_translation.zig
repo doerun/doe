@@ -7,12 +7,42 @@ const emit_msl = @import("../emit/msl/emit_msl.zig");
 const emit_spirv = @import("../emit/spirv/emit_spirv.zig");
 const translate_spirv = @import("../pipeline/translate_spirv.zig");
 const translation_info = @import("runtime_translation_info.zig");
+const reflection = @import("../pipeline/binding_reflection.zig");
 
 pub const TranslationInfo = translation_info.TranslationInfo;
 pub const TranslationResult = translation_info.TranslationResult;
 pub const TimedTranslationResult = translation_info.TimedTranslationResult;
 
 const MIN_RECORDED_PHASE_NS: u64 = 1;
+
+pub const EntryPointTranslation = struct {
+    len: usize,
+    info: TranslationInfo,
+    bindings: [reflection.MAX_BINDINGS]reflection.BindingMeta,
+    binding_count: usize,
+};
+
+/// The emitted program and metadata come from the same analyzed source and
+/// selected compute entry point. The caller owns info; bindings are values.
+pub fn translateMslEntryPoint(allocator: std.mem.Allocator, wgsl: []const u8, entry_point: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!EntryPointTranslation {
+    var module_ir = try analysis.analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, compute_runtime_robustness_config(), diagnostic);
+    defer module_ir.deinit();
+    const workgroup_size = for (module_ir.entry_points.items) |entry| {
+        if (entry.stage == .compute and std.mem.eql(u8, module_ir.functions.items[entry.function].name, entry_point)) break entry.workgroup_size;
+    } else {
+        diagnostic.setLastError(.sema, error.UnknownIdentifier, wgsl, null);
+        return error.UnknownIdentifier;
+    };
+    var bindings: [reflection.MAX_BINDINGS]reflection.BindingMeta = undefined;
+    const binding_count = try reflection.extractEntryPointBindings(allocator, &module_ir, entry_point, &bindings);
+    const len = emit_msl.emit(&module_ir, out) catch |err| {
+        diagnostic.setLastError(.msl_emit, err, null, null);
+        return err;
+    };
+    var info = try translation_info.buildTranslationInfo(allocator, &module_ir);
+    info.workgroup_size = workgroup_size;
+    return .{ .len = len, .info = info, .bindings = bindings, .binding_count = binding_count };
+}
 
 fn nowNs() i128 {
     return std.time.nanoTimestamp();

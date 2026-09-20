@@ -1,0 +1,9 @@
+{
+  "reason": "Pause own idle watcher during authorized Metal correctness build; restart with fresh observations afterward",
+  "process": {
+    "name": "python3",
+    "parentPid": 526079,
+    "startTicks": 297077825
+  },
+  "monotonicNs": 2971549929697826
+}

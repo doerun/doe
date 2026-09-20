@@ -1,6 +1,7 @@
 const std = @import("std");
 const analysis = @import("analysis.zig");
 const ir = @import("../ir/ir.zig");
+const layout = @import("../ir/layout_utils.zig");
 const binding_contract = @import("../../../contracts/binding.zig");
 
 pub const MAX_BINDINGS: usize = binding_contract.MAX_SHADER_BINDINGS;
@@ -12,9 +13,10 @@ pub const BindingMeta = struct {
     kind: BindingKind,
     addr_space: ir.AddressSpace,
     access: ir.AccessMode,
+    min_binding_size: u32 = 0,
 };
 
-fn bindingMeta(module_ir: *const ir.Module, global: ir.Global) BindingMeta {
+fn bindingMeta(module_ir: *const ir.Module, global: ir.Global) error{InvalidIr}!BindingMeta {
     const binding_type, const binding_access = switch (module_ir.types.get(global.ty)) {
         .sampler, .sampler_comparison => .{ BindingKind.sampler, ir.AccessMode.read },
         .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d => .{ BindingKind.texture, ir.AccessMode.read },
@@ -31,6 +33,7 @@ fn bindingMeta(module_ir: *const ir.Module, global: ir.Global) BindingMeta {
         .kind = binding_type,
         .addr_space = global.addr_space orelse .handle,
         .access = binding_access,
+        .min_binding_size = if (binding_type == .buffer) try layout.minimumBindingSize(module_ir, global.ty) else 0,
     };
 }
 
@@ -55,6 +58,10 @@ fn markFunctionResources(module_ir: *const ir.Module, function_id: usize, visite
 pub fn extractBindingsForEntryPointWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, entry_point: []const u8, out: []BindingMeta, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
     var module_ir = try analysis.analyzeToIrWithDiagnostic(allocator, wgsl, diagnostic);
     defer module_ir.deinit();
+    return extractEntryPointBindings(allocator, &module_ir, entry_point, out);
+}
+
+pub fn extractEntryPointBindings(allocator: std.mem.Allocator, module_ir: *const ir.Module, entry_point: []const u8, out: []BindingMeta) analysis.TranslateError!usize {
     const visited = try allocator.alloc(bool, module_ir.functions.items.len);
     defer allocator.free(visited);
     @memset(visited, false);
@@ -66,7 +73,7 @@ pub fn extractBindingsForEntryPointWithDiagnostic(allocator: std.mem.Allocator, 
     for (module_ir.functions.items, 0..) |function, function_id| {
         if (std.mem.eql(u8, function.name, entry_point)) {
             found_entry_point = true;
-            markFunctionResources(&module_ir, function_id, visited, globals);
+            markFunctionResources(module_ir, function_id, visited, globals);
             break;
         }
     }
@@ -76,7 +83,7 @@ pub fn extractBindingsForEntryPointWithDiagnostic(allocator: std.mem.Allocator, 
     for (module_ir.globals.items, globals) |global, used| {
         if (!used or global.binding == null) continue;
         if (count >= out.len) return error.OutputTooLarge;
-        out[count] = bindingMeta(&module_ir, global);
+        out[count] = try bindingMeta(module_ir, global);
         count += 1;
     }
     return count;
@@ -89,7 +96,7 @@ pub fn extractBindingsWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const
     for (module_ir.globals.items) |global| {
         if (global.binding == null) continue;
         if (count >= out.len) return error.OutputTooLarge;
-        out[count] = bindingMeta(&module_ir, global);
+        out[count] = try bindingMeta(&module_ir, global);
         count += 1;
     }
     return count;

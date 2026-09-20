@@ -593,10 +593,12 @@ void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf_h) {
 
 int metal_bridge_command_buffer_wait_result(MetalHandle cmd_buf_h, int64_t* error_code) {
     if (error_code != NULL) *error_code = 0;
-    if (cmd_buf_h == NULL) return 0;
+    if (cmd_buf_h == NULL) return -1;
     id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    if (cmd_buf.status < MTLCommandBufferStatusCommitted) return -1;
     [cmd_buf waitUntilCompleted];
     if (cmd_buf.status == MTLCommandBufferStatusCompleted) return 1;
+    if (cmd_buf.status != MTLCommandBufferStatusError) return -1;
     if (error_code != NULL && cmd_buf.error != nil) *error_code = (int64_t)cmd_buf.error.code;
     return 0;
 }
@@ -3257,4 +3259,47 @@ MetalHandle metal_bridge_device_new_render_pipeline_with_archive(
     (void)device_h; (void)pixel_format; (void)support_icb; (void)archive_h;
     (void)error_buf; (void)error_cap;
     return NULL;
+}
+
+int metal_bridge_compute_encoder_dispatch_checked(
+    MetalHandle encoder, MetalHandle pipeline, const MetalHandle* buffers,
+    const uint64_t* offsets, const uint32_t* sizes, uint32_t buffer_count,
+    uint32_t sizes_slot, const uint32_t* dimensions,
+    const uint32_t* workgroup, uint32_t repeat_count)
+{
+    if (encoder == NULL || pipeline == NULL || buffers == NULL || offsets == NULL ||
+        sizes == NULL || dimensions == NULL || workgroup == NULL) return 0;
+    const uint32_t buffer_slot_count = 31;
+    if (buffer_count > buffer_slot_count ||
+        (sizes_slot != UINT32_MAX && sizes_slot >= buffer_slot_count)) return 0;
+    id<MTLComputePipelineState> pso = (__bridge id<MTLComputePipelineState>)pipeline;
+    const MTLSize max_threads = pso.device.maxThreadsPerThreadgroup;
+    if (workgroup[0] == 0 || workgroup[1] == 0 || workgroup[2] == 0 ||
+        workgroup[0] > max_threads.width || workgroup[1] > max_threads.height ||
+        workgroup[2] > max_threads.depth) return 0;
+    NSUInteger remaining = pso.maxTotalThreadsPerThreadgroup;
+    for (uint32_t i = 0; i < 3; ++i) {
+        if (workgroup[i] > remaining) return 0;
+        remaining /= workgroup[i];
+    }
+    for (uint32_t i = 0; i < buffer_count; ++i) {
+        if (buffers[i] == NULL) continue;
+        id<MTLBuffer> buffer = (__bridge id<MTLBuffer>)buffers[i];
+        if (buffer.device != pso.device || offsets[i] > buffer.length ||
+            sizes[i] > buffer.length - offsets[i] || i == sizes_slot) return 0;
+    }
+    id<MTLComputeCommandEncoder> enc = (__bridge id<MTLComputeCommandEncoder>)encoder;
+    [enc setComputePipelineState:pso];
+    for (uint32_t i = 0; i < buffer_count; ++i) {
+        [enc setBuffer:(__bridge id<MTLBuffer>)buffers[i] offset:offsets[i] atIndex:i];
+    }
+    if (sizes_slot != UINT32_MAX) {
+        [enc setBytes:sizes length:(sizes_slot + 1) * sizeof(uint32_t) atIndex:sizes_slot];
+    }
+    const MTLSize group = MTLSizeMake(workgroup[0], workgroup[1], workgroup[2]);
+    const MTLSize grid = MTLSizeMake(dimensions[0], dimensions[1], dimensions[2]);
+    for (uint32_t i = 0; i < repeat_count; ++i) {
+        [enc dispatchThreadgroups:grid threadsPerThreadgroup:group];
+    }
+    return 1;
 }

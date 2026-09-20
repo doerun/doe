@@ -4,6 +4,8 @@ const bridge = @import("metal_bridge_decls.zig");
 const metal_buffer_pool = @import("metal_buffer_pool.zig");
 const metal_pipeline_cache = @import("metal_pipeline_cache.zig");
 const msl_translation = @import("../../compiler/wgsl/pipeline/translate_msl.zig");
+const analysis = @import("../../compiler/wgsl/pipeline/analysis.zig");
+const reflection = @import("../../compiler/wgsl/pipeline/binding_reflection.zig");
 const emit_msl_maps = @import("../../compiler/wgsl/emit/msl/emit_msl_maps.zig");
 const wgsl_runtime_compile = @import("../../compiler/wgsl/runtime/runtime_compute_translation.zig");
 const HAS_PIPELINE_CACHE = builtin.os.tag == .macos;
@@ -23,235 +25,222 @@ const metal_bridge_release = bridge.metal_bridge_release;
 
 const DEFAULT_KERNEL_ROOT: []const u8 = "bench/kernels";
 const DEFAULT_COMPUTE_ENTRY_POINT: []const u8 = "main";
-const PIPELINE_KEY_SEPARATOR: []const u8 = "#";
 const BRIDGE_ERROR_CAP: usize = 512;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
-const MAX_PIPELINE_KEY_BYTES: usize = 512;
-const SINGLE_THREADGROUP_ANNOTATION = "[[max_total_threads_per_threadgroup(1)]]";
 
-const PipelineRequest = struct {
-    base: []const u8,
-    requested_entry_point: []const u8,
-    cache_key: []const u8,
-};
-
-fn normalizeComputeEntryPoint(entry_point: ?[]const u8) []const u8 {
-    if (entry_point) |value| {
-        if (value.len != 0) return value;
-    }
-    return DEFAULT_COMPUTE_ENTRY_POINT;
-}
-
-fn appendPipelineCacheKey(
-    base: []const u8,
-    requested_entry_point: []const u8,
-    key_buf: []u8,
-) ![]const u8 {
-    if (std.mem.eql(u8, requested_entry_point, DEFAULT_COMPUTE_ENTRY_POINT)) return base;
-    return std.fmt.bufPrint(key_buf, "{s}{s}{s}", .{ base, PIPELINE_KEY_SEPARATOR, requested_entry_point });
-}
-
-fn parsePipelineRequest(
-    kernel: []const u8,
-    entry_point: ?[]const u8,
-    key_buf: []u8,
-) !PipelineRequest {
-    if (entry_point) |requested| {
-        const base = metal_buffer_pool.strip_extension(kernel);
-        const normalized = normalizeComputeEntryPoint(requested);
-        return .{
-            .base = base,
-            .requested_entry_point = normalized,
-            .cache_key = try appendPipelineCacheKey(base, normalized, key_buf),
-        };
-    }
-
-    if (std.mem.indexOf(u8, kernel, PIPELINE_KEY_SEPARATOR)) |separator_index| {
-        const requested = normalizeComputeEntryPoint(kernel[separator_index + PIPELINE_KEY_SEPARATOR.len ..]);
-        return .{
-            .base = kernel[0..separator_index],
-            .requested_entry_point = requested,
-            .cache_key = kernel,
-        };
-    }
-
-    const base = metal_buffer_pool.strip_extension(kernel);
-    return .{
-        .base = base,
-        .requested_entry_point = DEFAULT_COMPUTE_ENTRY_POINT,
-        .cache_key = base,
-    };
-}
-
-fn resolveMslComputeFunctionName(requested_entry_point: []const u8) []const u8 {
-    return emit_msl_maps.msl_function_name(requested_entry_point, .compute);
-}
-
-fn workgroupSizeForRawMetalSource(source: []const u8) [3]u32 {
-    if (std.mem.indexOf(u8, source, SINGLE_THREADGROUP_ANNOTATION) != null) {
-        return .{ 1, 1, 1 };
-    }
-    return .{ 0, 0, 0 };
-}
-
-const CompiledKernelLibrary = struct {
-    library: ?*anyopaque,
-    workgroup_size: [3]u32 = .{ 0, 0, 0 },
+pub const KernelInterface = struct {
+    bindings: [reflection.MAX_BINDINGS]reflection.BindingMeta = undefined,
+    binding_count: usize = 0,
+    needs_sizes_buf: bool = false,
 };
 
 pub const KernelPipelineInfo = struct {
     pipeline: ?*anyopaque,
     workgroup_size: [3]u32,
+    interface: KernelInterface = .{},
 };
 
-pub fn ensure_kernel_pipeline_info(
-    self: anytype,
-    pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache,
-    kernel: []const u8,
-    entry_point: ?[]const u8,
-) !KernelPipelineInfo {
-    var key_buf: [MAX_PIPELINE_KEY_BYTES]u8 = undefined;
-    const request = try parsePipelineRequest(kernel, entry_point, &key_buf);
-    if (self.kernel_pipelines.get(request.cache_key)) |kp| {
-        return .{
-            .pipeline = kp.pipeline,
-            .workgroup_size = kp.workgroup_size,
-        };
+pub const KernelPipeline = struct {
+    library: ?*anyopaque,
+    pipeline: ?*anyopaque,
+    workgroup_size: [3]u32,
+    interface: KernelInterface,
+    source: []const u8,
+    compiler_identity: []const u8,
+};
+
+const PipelineRequest = struct {
+    path: []const u8,
+    entry_point: []const u8,
+    key: []const u8,
+
+    fn deinit(self: PipelineRequest, allocator: std.mem.Allocator) void {
+        allocator.free(self.path);
+        allocator.free(self.key);
     }
+};
 
-    const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
-    var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
-    const compiled = try compile_kernel_library(self, root, request.base, &err_buf);
-    errdefer metal_bridge_release(compiled.library);
-
-    const function_name = resolveMslComputeFunctionName(request.requested_entry_point);
-    const function_name_z = try self.allocator.dupeZ(u8, function_name);
-    defer self.allocator.free(function_name_z);
-
-    const func = metal_bridge_library_new_function(compiled.library, function_name_z.ptr) orelse return error.ShaderCompileFailed;
-    defer metal_bridge_release(func);
-
-    const pso = try resolve_compute_pso_for(self.device, pipeline_cache, func, &err_buf);
-    errdefer metal_bridge_release(pso);
-
-    const key = try self.allocator.dupe(u8, request.cache_key);
-    errdefer self.allocator.free(key);
-    try self.kernel_pipelines.put(self.allocator, key, .{
-        .library = compiled.library,
-        .pipeline = pso,
-        .workgroup_size = compiled.workgroup_size,
-    });
-
-    if (builtin.os.tag == .macos and HAS_PIPELINE_CACHE) {
-        if (pipeline_cache) |cache| {
-            cache.register_compute_key(request.cache_key);
-        }
-    }
-
-    return .{
-        .pipeline = pso,
-        .workgroup_size = compiled.workgroup_size,
-    };
+fn parsePipelineRequest(allocator: std.mem.Allocator, root: []const u8, kernel: []const u8, entry_point: ?[]const u8) !PipelineRequest {
+    const separator = std.mem.indexOfScalar(u8, kernel, '#');
+    const name = kernel[0 .. separator orelse kernel.len];
+    const requested = entry_point orelse if (separator) |i| kernel[i + 1 ..] else DEFAULT_COMPUTE_ENTRY_POINT;
+    const entry = if (requested.len == 0) DEFAULT_COMPUTE_ENTRY_POINT else requested;
+    if (name.len == 0 or std.mem.indexOfScalar(u8, entry, 0) != null or std.mem.indexOfScalar(u8, entry, '#') != null) return error.InvalidArgument;
+    const extension = std.fs.path.extension(name);
+    // Command WGSL must never be replaced by a sibling native shader. Raw MSL
+    // needs a separate reflected layout contract before this path can execute it.
+    if (extension.len != 0 and !std.mem.eql(u8, extension, ".wgsl")) return error.UnsupportedKernelLanguage;
+    const suffix = if (extension.len == 0) ".wgsl" else "";
+    const requested_path = if (std.fs.path.isAbsolute(name)) try std.fmt.allocPrint(allocator, "{s}{s}", .{ name, suffix }) else try std.fmt.allocPrint(allocator, "{s}/{s}{s}", .{ root, name, suffix });
+    defer allocator.free(requested_path);
+    const path = try std.fs.cwd().realpathAlloc(allocator, requested_path);
+    errdefer allocator.free(path);
+    const key = try std.fmt.allocPrint(allocator, "{s}#{s}", .{ path, entry });
+    return .{ .path = path, .entry_point = entry, .key = key };
 }
 
-pub fn ensure_kernel_pipeline(
-    self: anytype,
-    pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache,
-    kernel: []const u8,
-    entry_point: ?[]const u8,
-) !?*anyopaque {
-    const info = try ensure_kernel_pipeline_info(self, pipeline_cache, kernel, entry_point);
-    return info.pipeline;
+fn pipelineInfo(pipeline: KernelPipeline) KernelPipelineInfo {
+    return .{ .pipeline = pipeline.pipeline, .workgroup_size = pipeline.workgroup_size, .interface = pipeline.interface };
+}
+
+pub fn ensure_kernel_pipeline_info(self: anytype, pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache, kernel: []const u8, entry_point: ?[]const u8) !KernelPipelineInfo {
+    return ensureKernelPipelineWithBridge(self, pipeline_cache, kernel, entry_point, bridge);
+}
+
+fn ensureKernelPipelineWithBridge(self: anytype, pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache, kernel: []const u8, entry_point: ?[]const u8, comptime native: type) !KernelPipelineInfo {
+    const request = try parsePipelineRequest(self.allocator, self.kernel_root orelse DEFAULT_KERNEL_ROOT, kernel, entry_point);
+    defer request.deinit(self.allocator);
+    const source = try std.fs.cwd().readFileAlloc(self.allocator, request.path, MAX_KERNEL_SOURCE_BYTES);
+    errdefer self.allocator.free(source);
+    const compiler_identity = @import("build_options").wgsl_compiler_source_sha256;
+    if (self.kernel_pipelines.get(request.key)) |cached| {
+        if (std.mem.eql(u8, source, cached.source) and std.mem.eql(u8, compiler_identity, cached.compiler_identity)) {
+            self.allocator.free(source);
+            return pipelineInfo(cached);
+        }
+    }
+    const output = try self.allocator.alloc(u8, msl_translation.MAX_OUTPUT);
+    defer self.allocator.free(output);
+    var diagnostic = analysis.Diagnostic{};
+    var translation = try wgsl_runtime_compile.translateMslEntryPoint(self.allocator, source, request.entry_point, output, &diagnostic);
+    defer translation.info.deinit(self.allocator);
+    var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
+    const library = native.metal_bridge_device_new_library_msl(self.device, output.ptr, translation.len, &err_buf, BRIDGE_ERROR_CAP) orelse return error.ShaderCompileFailed;
+    errdefer native.metal_bridge_release(library);
+    const function_name = try self.allocator.dupeZ(u8, emit_msl_maps.msl_function_name(request.entry_point, .compute));
+    defer self.allocator.free(function_name);
+    const function = native.metal_bridge_library_new_function(library, function_name.ptr) orelse return error.ShaderCompileFailed;
+    defer native.metal_bridge_release(function);
+    const pipeline = if (native == bridge) try resolve_compute_pso_for(self.device, pipeline_cache, function, &err_buf) else native.metal_bridge_device_new_compute_pipeline(self.device, function, &err_buf, BRIDGE_ERROR_CAP) orelse return error.ShaderCompileFailed;
+    errdefer native.metal_bridge_release(pipeline);
+    const replacement = KernelPipeline{
+        .library = library,
+        .pipeline = pipeline,
+        .source = source,
+        .compiler_identity = compiler_identity,
+        .workgroup_size = translation.info.workgroup_size,
+        .interface = .{ .bindings = translation.bindings, .binding_count = translation.binding_count, .needs_sizes_buf = translation.info.needs_sizes_buf },
+    };
+    if (self.kernel_pipelines.getPtr(request.key)) |existing| {
+        // Queued work may still reference the previous native program. Failed
+        // compilation or retirement leaves that owner unchanged.
+        _ = try self.flush_queue();
+        native.metal_bridge_release(existing.library);
+        native.metal_bridge_release(existing.pipeline);
+        self.allocator.free(existing.source);
+        existing.* = replacement;
+    } else {
+        const key = try self.allocator.dupe(u8, request.key);
+        errdefer self.allocator.free(key);
+        try self.kernel_pipelines.put(self.allocator, key, replacement);
+    }
+    if (builtin.os.tag == .macos and HAS_PIPELINE_CACHE) {
+        if (pipeline_cache) |cache| cache.register_compute_key(request.key);
+    }
+    return pipelineInfo(replacement);
+}
+
+pub fn ensure_kernel_pipeline(self: anytype, pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache, kernel: []const u8, entry_point: ?[]const u8) !?*anyopaque {
+    return (try ensure_kernel_pipeline_info(self, pipeline_cache, kernel, entry_point)).pipeline;
 }
 
 pub fn get_kernel_workgroup_size(self: anytype, kernel: []const u8, entry_point: ?[]const u8) ![3]u32 {
-    var key_buf: [MAX_PIPELINE_KEY_BYTES]u8 = undefined;
-    const request = try parsePipelineRequest(kernel, entry_point, &key_buf);
-    if (self.kernel_pipelines.get(request.cache_key)) |kp| return kp.workgroup_size;
-    return .{ 0, 0, 0 };
-}
-
-fn compile_kernel_library(
-    self: anytype,
-    root: []const u8,
-    base: []const u8,
-    err_buf: *[BRIDGE_ERROR_CAP]u8,
-) !CompiledKernelLibrary {
-    const metal_path = try std.fmt.allocPrint(self.allocator, "{s}/{s}.metal", .{ root, base });
-    defer self.allocator.free(metal_path);
-
-    const metal_source = std.fs.cwd().readFileAlloc(self.allocator, metal_path, MAX_KERNEL_SOURCE_BYTES) catch |err| switch (err) {
-        error.FileNotFound => null,
-        else => return error.ShaderCompileFailed,
-    };
-    if (metal_source) |source| {
-        defer self.allocator.free(source);
-        const library = metal_bridge_device_new_library_msl(
-            self.device,
-            source.ptr,
-            source.len,
-            err_buf,
-            BRIDGE_ERROR_CAP,
-        ) orelse return error.ShaderCompileFailed;
-        return .{
-            .library = library,
-            .workgroup_size = workgroupSizeForRawMetalSource(source),
-        };
-    }
-
-    const wgsl_path = try std.fmt.allocPrint(self.allocator, "{s}/{s}.wgsl", .{ root, base });
-    defer self.allocator.free(wgsl_path);
-
-    const wgsl_source = std.fs.cwd().readFileAlloc(self.allocator, wgsl_path, MAX_KERNEL_SOURCE_BYTES) catch {
-        return error.ShaderCompileFailed;
-    };
-    defer self.allocator.free(wgsl_source);
-
-    const msl_buf = try self.allocator.alloc(u8, msl_translation.MAX_OUTPUT);
-    defer self.allocator.free(msl_buf);
-
-    const translated_len = blk: {
-        var translation = wgsl_runtime_compile.translateToMslForComputeRuntime(
-            self.allocator,
-            wgsl_source,
-            msl_buf,
-            null,
-            0,
-        ) catch {
-            break :blk msl_translation.translateToMsl(self.allocator, wgsl_source, msl_buf) catch {
-                return error.ShaderCompileFailed;
-            };
-        };
-        const workgroup_size = translation.info.workgroup_size;
-        defer translation.info.deinit(self.allocator);
-        const library = metal_bridge_device_new_library_msl(
-            self.device,
-            msl_buf.ptr,
-            translation.len,
-            err_buf,
-            BRIDGE_ERROR_CAP,
-        ) orelse return error.ShaderCompileFailed;
-        return .{
-            .library = library,
-            .workgroup_size = workgroup_size,
-        };
-    };
-
-    const library = metal_bridge_device_new_library_msl(
-        self.device,
-        msl_buf.ptr,
-        translated_len,
-        err_buf,
-        BRIDGE_ERROR_CAP,
-    ) orelse return error.ShaderCompileFailed;
-    return .{
-        .library = library,
-        .workgroup_size = .{ 0, 0, 0 },
-    };
+    return (try self.ensure_kernel_pipeline_info(kernel, entry_point)).workgroup_size;
 }
 
 fn zeroBufferBytes(bytes: []u8) void {
     @memset(bytes, 0);
+}
+
+test "Metal program cache reads exact source and preserves the old owner after failed replacement" {
+    const Probe = struct {
+        var objects: [3]u8 = .{ 0, 0, 0 };
+        var libraries: usize = 0;
+        var releases: usize = 0;
+        pub fn metal_bridge_device_new_library_msl(_: ?*anyopaque, _: [*]const u8, _: usize, _: ?[*]u8, _: usize) ?*anyopaque {
+            libraries += 1;
+            return &objects[0];
+        }
+        pub fn metal_bridge_library_new_function(_: ?*anyopaque, name: [*:0]const u8) ?*anyopaque {
+            std.testing.expectEqualStrings("selected", std.mem.span(name)) catch @panic("wrong entrypoint");
+            return &objects[1];
+        }
+        pub fn metal_bridge_device_new_compute_pipeline(_: ?*anyopaque, _: ?*anyopaque, _: ?[*]u8, _: usize) ?*anyopaque {
+            return &objects[2];
+        }
+        pub fn metal_bridge_release(_: ?*anyopaque) void {
+            releases += 1;
+        }
+    };
+    const Runtime = struct {
+        allocator: std.mem.Allocator,
+        kernel_root: ?[]const u8,
+        device: ?*anyopaque = null,
+        kernel_pipelines: std.StringHashMapUnmanaged(KernelPipeline) = .{},
+        flushes: usize = 0,
+        pub fn flush_queue(self: *@This()) !u64 {
+            self.flushes += 1;
+            return 0;
+        }
+    };
+    const source = "@compute @workgroup_size(1) fn main() {} @compute @workgroup_size(7) fn selected() {}";
+    var directory = std.testing.tmpDir(.{});
+    defer directory.cleanup();
+    try directory.dir.writeFile(.{ .sub_path = "kernel.wgsl", .data = source });
+    try directory.dir.writeFile(.{ .sub_path = "kernel.metal", .data = "must not select this sibling" });
+    const root = try directory.dir.realpathAlloc(std.testing.allocator, ".");
+    defer std.testing.allocator.free(root);
+    var runtime = Runtime{ .allocator = std.testing.allocator, .kernel_root = root };
+    defer {
+        var it = runtime.kernel_pipelines.iterator();
+        while (it.next()) |entry| {
+            runtime.allocator.free(entry.key_ptr.*);
+            runtime.allocator.free(entry.value_ptr.source);
+            Probe.metal_bridge_release(entry.value_ptr.library);
+            Probe.metal_bridge_release(entry.value_ptr.pipeline);
+        }
+        runtime.kernel_pipelines.deinit(runtime.allocator);
+    }
+    Probe.libraries = 0;
+    Probe.releases = 0;
+    const first = try ensureKernelPipelineWithBridge(&runtime, null, "kernel.wgsl", "selected", Probe);
+    try std.testing.expectEqualDeep(@as([3]u32, .{ 7, 1, 1 }), first.workgroup_size);
+    _ = try ensureKernelPipelineWithBridge(&runtime, null, "kernel", "selected", Probe);
+    try std.testing.expectEqual(@as(usize, 1), Probe.libraries);
+    try directory.dir.writeFile(.{ .sub_path = "kernel.wgsl", .data = source ++ "\n" });
+    _ = try ensureKernelPipelineWithBridge(&runtime, null, "kernel.wgsl", "selected", Probe);
+    try std.testing.expectEqual(@as(usize, 2), Probe.libraries);
+    try std.testing.expectEqual(@as(usize, 1), runtime.flushes);
+    try directory.dir.writeFile(.{ .sub_path = "kernel.wgsl", .data = "@compute @workgroup_size(1) fn missing() {}" });
+    try std.testing.expectError(error.UnknownIdentifier, ensureKernelPipelineWithBridge(&runtime, null, "kernel.wgsl", "selected", Probe));
+    try std.testing.expectEqual(@as(usize, 2), Probe.libraries);
+    try std.testing.expectEqual(@as(usize, 1), runtime.kernel_pipelines.count());
+    try directory.dir.deleteFile("kernel.wgsl");
+    try std.testing.expectError(error.FileNotFound, ensureKernelPipelineWithBridge(&runtime, null, "kernel.wgsl", "selected", Probe));
+    try std.testing.expectError(error.UnsupportedKernelLanguage, ensureKernelPipelineWithBridge(&runtime, null, "kernel.metal", "selected", Probe));
+}
+
+test "Metal compiler metadata binds the selected entrypoint and minimum buffer extent" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> unused: array<u32, 2>;
+        \\@group(1) @binding(2) var<storage, read_write> selected_data: array<u32, 7>;
+        \\@compute @workgroup_size(1) fn main() { unused[0] = 1u; }
+        \\@compute @workgroup_size(7) fn selected() { selected_data[0] = 2u; }
+        \\fn helper() {}
+    ;
+    const output = try std.testing.allocator.alloc(u8, msl_translation.MAX_OUTPUT);
+    defer std.testing.allocator.free(output);
+    var diagnostic = analysis.Diagnostic{};
+    var translated = try wgsl_runtime_compile.translateMslEntryPoint(std.testing.allocator, source, "selected", output, &diagnostic);
+    defer translated.info.deinit(std.testing.allocator);
+    try std.testing.expectEqualDeep(@as([3]u32, .{ 7, 1, 1 }), translated.info.workgroup_size);
+    try std.testing.expectEqual(@as(usize, 1), translated.binding_count);
+    const binding = translated.bindings[0];
+    try std.testing.expectEqual(@as(u32, 1), binding.group);
+    try std.testing.expectEqual(@as(u32, 2), binding.binding);
+    try std.testing.expectEqual(@as(u32, 28), binding.min_binding_size);
+    try std.testing.expectError(error.UnknownIdentifier, wgsl_runtime_compile.translateMslEntryPoint(std.testing.allocator, source, "helper", output, &diagnostic));
+    try std.testing.expectEqual(@as(?analysis.TranslateError, error.UnknownIdentifier), diagnostic.last_error_kind);
 }
 
 pub fn ensure_compute_buffer(self: anytype, handle: u64, size: u64, initialize_buffers_on_create: bool) !?*anyopaque {
@@ -302,72 +291,6 @@ test "zeroBufferBytes clears mapped storage" {
     for (bytes) |value| {
         try std.testing.expectEqual(@as(u8, 0), value);
     }
-}
-
-test "parsePipelineRequest keeps default entrypoint on base key" {
-    var key_buf: [MAX_PIPELINE_KEY_BYTES]u8 = undefined;
-    const request = try parsePipelineRequest("rmsnorm.wgsl", null, &key_buf);
-    try std.testing.expectEqualStrings("rmsnorm", request.base);
-    try std.testing.expectEqualStrings("main", request.requested_entry_point);
-    try std.testing.expectEqualStrings("rmsnorm", request.cache_key);
-}
-
-test "parsePipelineRequest keys non-default compute entrypoints separately" {
-    var key_buf: [MAX_PIPELINE_KEY_BYTES]u8 = undefined;
-    const request = try parsePipelineRequest("matmul_gemv_subgroup.wgsl", "main_vec4", &key_buf);
-    try std.testing.expectEqualStrings("matmul_gemv_subgroup", request.base);
-    try std.testing.expectEqualStrings("main_vec4", request.requested_entry_point);
-    try std.testing.expectEqualStrings("matmul_gemv_subgroup#main_vec4", request.cache_key);
-}
-
-test "resolveMslComputeFunctionName maps main to main_kernel" {
-    try std.testing.expectEqualStrings("main_kernel", resolveMslComputeFunctionName("main"));
-    try std.testing.expectEqualStrings("main_vec4", resolveMslComputeFunctionName("main_vec4"));
-}
-
-test "workgroupSizeForRawMetalSource preserves explicit single-threadgroup kernels" {
-    try std.testing.expectEqualDeep(
-        @as([3]u32, .{ 1, 1, 1 }),
-        workgroupSizeForRawMetalSource(
-            \\[[max_total_threads_per_threadgroup(1)]]
-            \\kernel void main_kernel(device uint* data [[buffer(0)]]) {}
-        ),
-    );
-    try std.testing.expectEqualDeep(
-        @as([3]u32, .{ 0, 0, 0 }),
-        workgroupSizeForRawMetalSource(
-            \\[[max_total_threads_per_threadgroup(64)]]
-            \\kernel void main_kernel(uint gid [[thread_position_in_grid]]) {}
-        ),
-    );
-}
-
-test "get_kernel_workgroup_size returns cached metadata for normalized default entrypoint" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
-
-    const FakePipeline = struct {
-        library: ?*anyopaque,
-        pipeline: ?*anyopaque,
-        workgroup_size: [3]u32,
-    };
-    const FakeRuntime = struct {
-        kernel_pipelines: std.StringHashMapUnmanaged(FakePipeline) = .{},
-    };
-
-    var fake = FakeRuntime{};
-    const key = try alloc.dupe(u8, "matmul_f16w_f32a_tiled");
-    try fake.kernel_pipelines.put(alloc, key, .{
-        .library = null,
-        .pipeline = null,
-        .workgroup_size = .{ 16, 16, 1 },
-    });
-
-    const wg = try get_kernel_workgroup_size(&fake, "matmul_f16w_f32a_tiled.wgsl", "main");
-    try std.testing.expectEqual(@as(u32, 16), wg[0]);
-    try std.testing.expectEqual(@as(u32, 16), wg[1]);
-    try std.testing.expectEqual(@as(u32, 1), wg[2]);
 }
 
 pub fn ensure_render_pipeline(

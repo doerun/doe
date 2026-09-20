@@ -90,6 +90,10 @@ test "metal: KernelPipeline holds library and pipeline refs" {
     const kp = metal_runtime.KernelPipeline{
         .library = null,
         .pipeline = null,
+        .workgroup_size = .{ 1, 1, 1 },
+        .interface = .{},
+        .source = "@compute @workgroup_size(1) fn main() {}",
+        .compiler_identity = "test",
     };
     try std.testing.expectEqual(@as(?*anyopaque, null), kp.library);
     try std.testing.expectEqual(@as(?*anyopaque, null), kp.pipeline);

@@ -7,7 +7,7 @@ started after observed GPU inactivity, then stopped on renewed Chrome GPU work
 attributed to the Doppler checkout through matching process and boot identity.
 The retained hash and observation replay confirms the rejection; admission
 remains unavailable and no final precision assessment exists. An
-[idle-window watcher](../../bench/out/compute-program/20260920-calibration-retry-03/watch_and_run.py)
+[idle-window watcher](../../bench/out/compute-program/20260920-calibration-retry-04/watch_and_run.py)
 waits for sustained observed inactivity before a fresh complete attempt. Its
 launch guard is scheduling only, not proof of exclusive access; per-process
 interference admission remains unchanged. Accepted packages, evaluator,

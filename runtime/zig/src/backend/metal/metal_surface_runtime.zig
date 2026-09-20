@@ -43,6 +43,7 @@ pub fn surface_capabilities(self: anytype, cmd: model_surface_control_types.Surf
 
 pub fn attach_canvas_layer(self: anytype, handle: u64, layer: ?*anyopaque) !void {
     if (layer == null) return error.InvalidArgument;
+    _ = try self.flush_queue();
     var entry = try surface_entry(self, handle);
     if (entry.drawable) |drawable| {
         doe_surface_discard_drawable(drawable);
@@ -64,6 +65,7 @@ pub fn attach_canvas_layer(self: anytype, handle: u64, layer: ?*anyopaque) !void
 
 pub fn update_surface_size(self: anytype, handle: u64, width: u32, height: u32, dpi_scale: f32) !void {
     if (width == 0 or height == 0) return error.InvalidArgument;
+    _ = try self.flush_queue();
     var entry = try surface_entry(self, handle);
     const host = entry.surface_host orelse return error.SurfaceUnavailable;
     doe_surface_resize(host, width, height, dpi_scale);
@@ -72,6 +74,7 @@ pub fn update_surface_size(self: anytype, handle: u64, width: u32, height: u32, 
 }
 
 pub fn configure_surface(self: anytype, cmd: model_surface_control_types.SurfaceConfigureCommand) !void {
+    _ = try self.flush_queue();
     var entry = try surface_entry(self, cmd.handle);
     if (cmd.width == 0 or cmd.height == 0) return error.InvalidArgument;
     if (!surface_configuration_supported(cmd.format, cmd.tone_mapping_mode)) return error.UnsupportedFeature;
@@ -116,6 +119,7 @@ pub fn configure_surface(self: anytype, cmd: model_surface_control_types.Surface
 }
 
 pub fn acquire_surface(self: anytype, cmd: model_surface_control_types.SurfaceAcquireCommand) !void {
+    _ = try self.flush_queue();
     var entry = try surface_entry(self, cmd.handle);
     if (!entry.configured) return error.SurfaceUnavailable;
     const host = entry.surface_host orelse return error.SurfaceUnavailable;
@@ -148,8 +152,14 @@ pub fn present_surface(self: anytype, cmd: model_surface_control_types.SurfacePr
         entry.acquired = false;
         return error.InvalidState;
     };
+    self.completion.reserve(self.allocator) catch |err| {
+        metal_bridge_release(cmd_buf);
+        return err;
+    };
     doe_surface_present_drawable(cmd_buf, entry.drawable);
-    self.completion.retireOne(cmd_buf);
+    self.completion.retainSubmitted(cmd_buf);
+    entry.acquired = false;
+    try self.completion.retire();
     doe_surface_discard_drawable(entry.drawable);
     metal_bridge_release(entry.texture);
     entry.drawable = null;
@@ -160,6 +170,7 @@ pub fn present_surface(self: anytype, cmd: model_surface_control_types.SurfacePr
 }
 
 pub fn unconfigure_surface(self: anytype, cmd: model_surface_control_types.SurfaceUnconfigureCommand) !void {
+    _ = try self.flush_queue();
     var entry = try surface_entry(self, cmd.handle);
     if (entry.drawable) |drawable| {
         doe_surface_discard_drawable(drawable);
@@ -183,6 +194,7 @@ pub fn unconfigure_surface(self: anytype, cmd: model_surface_control_types.Surfa
 }
 
 pub fn release_surface(self: anytype, cmd: model_surface_control_types.SurfaceReleaseCommand) !void {
+    _ = try self.flush_queue();
     if (self.surfaces.fetchRemove(cmd.handle)) |removed| {
         var surface = removed.value;
         releaseSurfaceState(&surface);
