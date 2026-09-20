@@ -10,6 +10,7 @@ pub const ReadbackPort = struct {
     context: *anyopaque,
     vtable: *const ReadbackPortVTable,
 
+    /// Returns an independent snapshot owned by the supplied allocator.
     pub fn captureBuffer(self: ReadbackPort, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) ![]u8 {
         return self.vtable.capture_buffer(self.context, allocator, handle, offset, size);
     }

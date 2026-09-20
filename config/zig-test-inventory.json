@@ -431,6 +431,26 @@
         {
           "path": "src/backend/d3d12/resources/d3d12_sampler.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_upload.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_copy_runtime.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_runtime_resources.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_native_runtime.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_surface_runtime.zig",
+          "kind": "inline"
         }
       ]
     },
@@ -706,6 +726,26 @@
         },
         {
           "path": "src/backend/d3d12/resources/d3d12_sampler.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_upload.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_copy_runtime.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_runtime_resources.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_native_runtime.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_surface_runtime.zig",
           "kind": "inline"
         }
       ]

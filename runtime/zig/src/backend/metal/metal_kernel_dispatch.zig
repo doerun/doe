@@ -60,8 +60,11 @@ pub fn run_kernel_dispatch_timed(
     queue_sync_mode: webgpu.QueueSyncMode,
     record_timestamps: bool,
 ) !KernelDispatchResult {
-    // Setup: pipeline compile, buffer allocation, warmup dispatches.
     const setup_start = common_timing.now_ns();
+    if (warmup > 0 or record_timestamps or queue_sync_mode != .deferred) {
+        _ = try runtime.flush_queue();
+    }
+    // Setup includes retiring prior work before standalone or warmup dispatches.
     const pipeline_info = try runtime.ensure_kernel_pipeline_info(kernel, entry_point);
     const pipeline = pipeline_info.pipeline;
     const workgroup_size = pipeline_info.workgroup_size;

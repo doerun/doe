@@ -26,6 +26,7 @@ pub fn render_draw(self: anytype, cmd: model_render_types.RenderDrawCommand, que
     var temp_texture: ?*anyopaque = null;
     var saved_target: ?*anyopaque = null;
     if (needs_temp_texture) {
+        try self.deferred_releases.ensureUnusedCapacity(self.allocator, 1);
         saved_target = self.render_target;
         temp_texture = bridge.metal_bridge_device_new_render_target(
             self.device,
@@ -33,6 +34,7 @@ pub fn render_draw(self: anytype, cmd: model_render_types.RenderDrawCommand, que
             cmd.target_height,
             fmt,
         ) orelse return error.InvalidState;
+        self.deferred_releases.appendAssumeCapacity(temp_texture);
         self.render_target = temp_texture;
         if (self.streaming_render_encoder) |enc| {
             bridge.metal_bridge_render_encoder_end(enc);
@@ -41,6 +43,9 @@ pub fn render_draw(self: anytype, cmd: model_render_types.RenderDrawCommand, que
         }
     }
 
+    defer if (saved_target) |target| {
+        self.render_target = target;
+    };
     try self.ensure_streaming_render_encoder();
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
 
@@ -94,7 +99,7 @@ pub fn render_draw(self: anytype, cmd: model_render_types.RenderDrawCommand, que
             cmd.target_height,
             1,
         );
-        bridge.metal_bridge_release(temp_texture.?);
+
         self.streaming_has_copy = true;
     }
 

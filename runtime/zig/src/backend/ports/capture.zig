@@ -11,10 +11,12 @@ pub const CapturePort = struct {
     context: *anyopaque,
     vtable: *const CapturePortVTable,
 
+    /// Returns an independent snapshot owned by the supplied allocator.
     pub fn captureBuffer(self: CapturePort, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) ![]u8 {
         return self.vtable.capture_buffer(self.context, allocator, handle, offset, size);
     }
 
+    /// Returns an independent snapshot owned by the supplied allocator.
     pub fn captureTexture2d(self: CapturePort, allocator: std.mem.Allocator, handle: u64, mip_level: u32, layer: u32) ![]u8 {
         return self.vtable.capture_texture_2d(self.context, allocator, handle, mip_level, layer);
     }

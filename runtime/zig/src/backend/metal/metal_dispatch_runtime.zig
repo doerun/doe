@@ -44,6 +44,8 @@ pub fn run_dispatch(runtime: anytype, x: u32, y: u32, z: u32, queue_sync_mode: w
 
 pub fn run_dispatch_indirect(runtime: anytype, x: u32, y: u32, z: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchRunMetrics {
     if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
+    // The shared indirect argument bytes cannot change until earlier users retire.
+    const retirement_ns = try runtime.flush_queue();
     try prepare_dispatch_submission(runtime, queue_sync_mode);
     const pipeline = try runtime.ensure_kernel_pipeline(DEFAULT_DISPATCH_KERNEL, null);
     const indirect_buffer = try ensure_dispatch_indirect_args_buffer(runtime);
@@ -63,7 +65,7 @@ pub fn run_dispatch_indirect(runtime: anytype, x: u32, y: u32, z: u32, queue_syn
     );
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
     const submit_wait_ns = finalize_dispatch_submission(runtime, cmd_buf, queue_sync_mode);
-    return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = 1 };
+    return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns +| retirement_ns, .dispatch_count = 1 };
 }
 
 fn ensure_dispatch_indirect_args_buffer(runtime: anytype) !?*anyopaque {

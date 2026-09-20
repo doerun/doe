@@ -27,7 +27,7 @@ file	src/backend/d3d12/artifact_emit.zig	stale	common_audit_20260919_d3d12_artif
 file	src/backend/d3d12/commands/d3d12_async_diagnostics.zig	stale	common_audit_20260919_d3d12_async_diagnostics		Stop at this batch checkpoint. Next: file:src/backend/d3d12/commands/d3d12_dispatch.zig; read the full file, contracts, callers and lifetime/error paths, then append its own findings and evidence.
 file	src/backend/d3d12/commands/d3d12_dispatch.zig	stale	d3d12_dispatch_20260919_002		Review file:src/backend/d3d12/commands/d3d12_gpu_timestamps.zig. Trace query availability, encoding/submission order, fence completion, readback ownership, timestamp frequency/conversion, failure handling, and timing scope. Preserve separate physical Windows qualification and do not grant supporting-file review credit.
 file	src/backend/d3d12/commands/d3d12_gpu_timestamps.zig	stale	d3d12_gpu_timestamps_20260919_001		Review file:src/backend/d3d12/commands/d3d12_map_async.zig: resource selection, map admission, callbacks/completion, error propagation, and retained lifetime. Keep file, directory, relationship, and physical Windows qualification verdicts separate; do not refresh stale dispatch evidence automatically.
-file	src/backend/d3d12/commands/d3d12_map_async.zig	verified	batch32_20260919_01		Retain the repaired implementation; ordinary map callbacks and physical D3D12 execution retain separate review/qualification obligations.
+file	src/backend/d3d12/commands/d3d12_map_async.zig	stale	batch32_20260919_01		Retain the repaired implementation; ordinary map callbacks and physical D3D12 execution retain separate review/qualification obligations.
 file	src/backend/d3d12/commands/d3d12_native_render_pass.zig	needs_changes	batch32_20260919_02		Repair the pipeline-layout and recorded-pass contract together; preserve vertex strides and load/store/dynamic state through encoding, then test native command traces and physical output.
 file	src/backend/d3d12/commands/d3d12_render.zig	needs_changes	batch32_20260919_03_revalidated		Replace the fixed shader/attachment assumptions with the declared render contract and shared pipeline layout, then verify state replacement and deferred execution on D3D12.
 file	src/backend/d3d12/commands/d3d12_render_bind_groups.zig	needs_changes	batch32_20260919_04		Define one typed binding snapshot carrying native resources and actual register positions; allocate descriptor tables against the pipeline-owned layout and retire them with submissions.
@@ -37,13 +37,13 @@ file	src/backend/d3d12/d3d12_bridge_decls.zig	verified	batch32_20260919_07		Reta
 file	src/backend/d3d12/d3d12_constants.zig	verified	batch32_20260919_08		Retain centralized native constants and run the existing spec-drift checks when the pinned headers change.
 file	src/backend/d3d12/d3d12_descriptors.zig	needs_changes	batch32_20260919_09		Build tables from actual binding/register identities and make retirement part of descriptor reuse; test sparse groups, sampler-only groups, failure rollback and in-flight allocations.
 file	src/backend/d3d12/d3d12_device_caps.zig	needs_changes	batch32_20260919_10_revalidated		Replace bridge placeholders with actual CheckFeatureSupport results, propagate required cache failures, and qualify advertised features against native/compiler implementation tests.
-file	src/backend/d3d12/d3d12_formats.zig	verified	batch32_20260919_11		Retain the pure format mapping and pinned-value tests; plane-specific copy legality remains owned by the copy contract and native adapter.
+file	src/backend/d3d12/d3d12_formats.zig	stale	batch32_20260919_11		Retain the pure format mapping and pinned-value tests; plane-specific copy legality remains owned by the copy contract and native adapter.
 file	src/backend/d3d12/d3d12_native_runtime.zig	needs_changes	batch32_20260919_12_revalidated		Apply the completion/retirement contract to compute pipeline and surface replacement, then exercise mixed copy/render/compute resource lifetimes with injected failures and native validation.
 file	src/backend/d3d12/d3d12_query_set.zig	needs_changes	batch32_20260919_13_revalidated		Establish a real consumer and typed query recording/availability contract, then repair transactional creation, readback lifetime and checked conversion; do not inherit dispatch timestamp qualification.
 file	src/backend/d3d12/d3d12_runtime_compute.zig	needs_changes	batch32_20260919_14_revalidated		Bind source and compiled artifacts explicitly, make pipeline replacement transactional after retirement, and implement request entrypoint/resource layouts before qualifying general kernel execution.
 file	src/backend/d3d12/d3d12_runtime_upload.zig	needs_changes	batch32_20260919_15_revalidated		Define an explicit total retention policy for both upload/default pools and test varied sizes, allocator failures, budget exhaustion and cleanup without changing measured work.
 file	src/backend/d3d12/mod.zig	needs_changes	batch32_20260919_16_revalidated		Propagate complete kernel requests into real pipeline/binding execution and validate per-command capabilities against repaired native work; retain non-claimable physical evidence boundaries.
-file	src/backend/d3d12/resources/d3d12_depth_stencil.zig	verified	batch32_20260919_17		Retain this single-sample owner; the render caller must resolve its separate multisample attachment finding rather than treating this helper as multisample support.
+file	src/backend/d3d12/resources/d3d12_depth_stencil.zig	stale	batch32_20260919_17		Retain this single-sample owner; the render caller must resolve its separate multisample attachment finding rather than treating this helper as multisample support.
 file	src/backend/d3d12/resources/d3d12_sampler.zig	needs_changes	batch32_20260919_18_revalidated		Apply shared sampler semantic validation before descriptor writes and test invalid enums, LOD ranges and anisotropic filtering combinations through the command/native boundary.
 file	src/backend/d3d12/resources/d3d12_texture.zig	needs_changes	batch32_20260919_19_revalidated		Unify registry resource/state ownership with real copy execution, honor all query expectations, and verify upload/readback across mips, compressed layouts and native failure cleanup.
 file	src/backend/d3d12/resources/d3d12_texture_view.zig	needs_changes	batch32_20260919_20		Carry the actual texture descriptor and binding role into view creation, implement the native dimension variants, and validate ranges before publishing descriptors.
@@ -58,39 +58,39 @@ file	src/backend/dropin_render_state.zig	verified	batch32_20260919_28		Retain th
 file	src/backend/dropin_resource_ops.zig	needs_changes	batch32_20260919_29		Carry the full validated write region through the adapter and native Vulkan copy operation; add public-path readback tests for partial, layered and nonzero-origin writes.
 file	src/backend/dropin_surface_ops.zig	verified	batch32_20260919_30		Retain the gateway; platform surface creation, presentation and destruction require the dedicated native/backend execution-path review.
 file	src/backend/metal/artifact_emit.zig	verified	batch32_20260919_31		Retain this backend specification and shared publication owner; actual compiler-stage byte capture needs independent evidence before changing identity kinds.
-file	src/backend/metal/backend_execute.zig	needs_changes	batch32_20260919_32		Implement the requested asynchronous diagnostic operations with measured callback/completion events and a named execution dependency contract; retain capture/flush regressions and validate on Metal hardware.
-file	src/backend/metal/metal_async_runtime.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_bridge_decls.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_buffer_pool.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_cleanup.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_copy_runtime.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_deferred_release.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_dispatch_runtime.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_external_texture.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_gpu_timestamps.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_kernel_dispatch.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_native_runtime.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_pipeline_cache.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_render_state_bridge_decls.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_resource_commands.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_runtime_limits.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_runtime_queue_ops.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_runtime_render_ops.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_runtime_resources.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_surface_runtime.zig	pending			Read and review the complete scope.
-file	src/backend/metal/metal_upload.zig	pending			Read and review the complete scope.
-file	src/backend/metal/mod.zig	pending			Read and review the complete scope.
-file	src/backend/metal/render_state.zig	pending			Read and review the complete scope.
-file	src/backend/metal_package_pipeline_cache.zig	pending			Read and review the complete scope.
-file	src/backend/ports/capture.zig	pending			Read and review the complete scope.
-file	src/backend/ports/compute.zig	pending			Read and review the complete scope.
-file	src/backend/ports/factory.zig	pending			Read and review the complete scope.
-file	src/backend/ports/lifecycle.zig	pending			Read and review the complete scope.
-file	src/backend/ports/mod.zig	pending			Read and review the complete scope.
-file	src/backend/ports/provider_adapter.zig	pending			Read and review the complete scope.
-file	src/backend/ports/queue.zig	pending			Read and review the complete scope.
-file	src/backend/ports/readback.zig	pending			Read and review the complete scope.
-file	src/backend/ports/render.zig	pending			Read and review the complete scope.
+file	src/backend/metal/backend_execute.zig	stale	batch32_20260919_32		Implement the requested asynchronous diagnostic operations with measured callback/completion events and a named execution dependency contract; retain capture/flush regressions and validate on Metal hardware.
+file	src/backend/metal/metal_async_runtime.zig	verified	metal_ports_20260920_01		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/metal/metal_bridge_decls.zig	verified	metal_ports_20260920_02		Retain declarations; extend signature/layout parity checks alongside native changes. Native sampler and completion semantics remain findings in their owning scopes.
+file	src/backend/metal/metal_buffer_pool.zig	needs_changes	metal_ports_20260920_03		Give the pool a versioned total retention policy and owned accounting, test full/OOM/reuse paths, then move shader normalization with its tests to its actual owner.
+file	src/backend/metal/metal_cleanup.zig	verified	metal_ports_20260920_04		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/metal/metal_copy_runtime.zig	needs_changes	metal_ports_20260920_05		Implement canonical format-aware copy footprints and validate both source/destination resources before encoding; add padded-row, compressed/aspect and native readback oracles.
+file	src/backend/metal/metal_deferred_release.zig	needs_changes	metal_ports_20260920_06		Repair sampler meaning and descriptor ownership across the bridge and ordinary native sampler caller; add comparison/filter/address and concurrent-device tests.
+file	src/backend/metal/metal_dispatch_runtime.zig	needs_changes	metal_ports_20260920_07		Propagate native encode/completion status and exercise repeated indirect dispatch argument preservation on Metal.
+file	src/backend/metal/metal_external_texture.zig	needs_changes	metal_ports_20260920_08		Bind native pixel format and exact supported plane layout to import admission; add unsupported-layout and second-plane failure tests on the bridge.
+file	src/backend/metal/metal_gpu_timestamps.zig	needs_changes	metal_ports_20260920_09		Return sampling success/generation from the bridge and bind validity to both samples from the completed invocation; test encoder failure and reuse.
+file	src/backend/metal/metal_kernel_dispatch.zig	needs_changes	metal_ports_20260920_10		Lower validated binding groups/offsets and resource kinds through compiler metadata, reject unrepresentable requests before work, and add delayed-submission ordering tests.
+file	src/backend/metal/metal_native_runtime.zig	needs_changes	metal_ports_20260920_11		Complete native completion/error retirement first; separate the cache and transfer owners using that lifetime contract without moving unrelated objects.
+file	src/backend/metal/metal_pipeline_cache.zig	needs_changes	metal_ports_20260920_12		Use observed cache-result metadata, transactional fingerprint/archive persistence and explicit configuration; test missing fingerprint, failed writes, source changes and caller string lifetime.
+file	src/backend/metal/metal_render_state_bridge_decls.zig	verified	metal_ports_20260920_13		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/metal/metal_resource_commands.zig	needs_changes	metal_ports_20260920_14		Validate complete texture footprint and descriptor semantics before publication; fix exact-depth queries and repair sampler translation end to end.
+file	src/backend/metal/metal_runtime_limits.zig	needs_changes	metal_ports_20260920_15		Move supported staging/wait policy into the existing versioned backend policy and derive immutable typed values, with limits validated before use.
+file	src/backend/metal/metal_runtime_queue_ops.zig	needs_changes	metal_ports_20260920_16		Make command-buffer completion/error/timeout observable and thread it through flush/barrier before releasing retained work; test failed signal and device loss.
+file	src/backend/metal/metal_runtime_render_ops.zig	needs_changes	metal_ports_20260920_17		Implement command-declared bundle/state behavior and propagate native failures, then validate temporary render/blit output on Metal.
+file	src/backend/metal/metal_runtime_resources.zig	needs_changes	metal_ports_20260920_18		Make exact source, entrypoint and compiler metadata the pipeline identity and remove fallback translation/zero-metadata execution; add multi-entrypoint and source-change regressions.
+file	src/backend/metal/metal_surface_runtime.zig	needs_changes	metal_ports_20260920_19		Make configure/layer replacement transactional and add failure/resize/presentation ordering tests against the actual surface bridge.
+file	src/backend/metal/metal_upload.zig	needs_changes	metal_ports_20260920_20		Add native OOM/completion failure and bounded-retention tests for prewarm; move policy to its configuration owner and measure any cost only on ordinary physical workloads.
+file	src/backend/metal/mod.zig	needs_changes	metal_ports_20260920_21		Connect each advertised capability to real execution and validate wait policy through a fallible configuration boundary; preserve ordinary-provider selection.
+file	src/backend/metal/render_state.zig	needs_changes	metal_ports_20260920_22		Trace the public callers and migrate values to the canonical ABI without silently breaking private consumers; test independent native constants and exact sample-count behavior.
+file	src/backend/metal_package_pipeline_cache.zig	verified	metal_ports_20260920_23		Retain the adapter; the cache owner has independent unresolved persistence and observation findings.
+file	src/backend/ports/capture.zig	verified	metal_ports_20260920_24		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/ports/compute.zig	verified	metal_ports_20260920_25		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/ports/factory.zig	verified	metal_ports_20260920_26		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/ports/lifecycle.zig	verified	metal_ports_20260920_27		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/ports/mod.zig	verified	metal_ports_20260920_28		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/ports/provider_adapter.zig	verified	metal_ports_20260920_29		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/ports/queue.zig	verified	metal_ports_20260920_30		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/ports/readback.zig	verified	metal_ports_20260920_31		Retain this file; re-examine when its bound contract or consumer changes.
+file	src/backend/ports/render.zig	verified	metal_ports_20260920_32		Retain this file; re-examine when its bound contract or consumer changes.
 file	src/backend/ports/resource.zig	pending			Read and review the complete scope.
 file	src/backend/ports/spatial.zig	pending			Read and review the complete scope.
 file	src/backend/ports/surface.zig	pending			Read and review the complete scope.

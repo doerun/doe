@@ -129,10 +129,10 @@ pub fn ensure_kernel_pipeline_info(
     defer self.allocator.free(function_name_z);
 
     const func = metal_bridge_library_new_function(compiled.library, function_name_z.ptr) orelse return error.ShaderCompileFailed;
-    errdefer metal_bridge_release(func);
+    defer metal_bridge_release(func);
 
     const pso = try resolve_compute_pso_for(self.device, pipeline_cache, func, &err_buf);
-    metal_bridge_release(func);
+    errdefer metal_bridge_release(pso);
 
     const key = try self.allocator.dupe(u8, request.cache_key);
     errdefer self.allocator.free(key);
@@ -254,18 +254,30 @@ fn zeroBufferBytes(bytes: []u8) void {
     @memset(bytes, 0);
 }
 
-fn zeroComputeBufferContents(buffer: ?*anyopaque, size: u64) !void {
-    if (size == 0) return;
-    const mapped = metal_bridge_buffer_contents(buffer) orelse return error.InvalidState;
-    zeroBufferBytes(@as([*]u8, @ptrCast(mapped))[0..@intCast(size)]);
+pub fn ensure_compute_buffer(self: anytype, handle: u64, size: u64, initialize_buffers_on_create: bool) !?*anyopaque {
+    return ensureComputeBufferWithBridge(self, handle, size, initialize_buffers_on_create, bridge);
 }
 
-pub fn ensure_compute_buffer(self: anytype, handle: u64, size: u64, initialize_buffers_on_create: bool) !?*anyopaque {
-    if (self.compute_buffers.get(handle)) |b| return b;
-    const buf = metal_bridge_device_new_buffer_shared(self.device, @intCast(size)) orelse return error.InvalidState;
-    if (initialize_buffers_on_create) try zeroComputeBufferContents(buf, size);
-    try self.compute_buffers.put(self.allocator, handle, buf);
-    return buf;
+fn ensureComputeBufferWithBridge(self: anytype, handle: u64, size: u64, initialize: bool, comptime native: type) !?*anyopaque {
+    if (size == 0) return error.InvalidArgument;
+    const length = std.math.cast(usize, size) orelse return error.InvalidArgument;
+    if (self.compute_buffers.get(handle)) |buffer| {
+        if (native.metal_bridge_buffer_length(buffer) < length) return error.InvalidArgument;
+        return buffer;
+    }
+    const buffer = native.metal_bridge_device_new_buffer_shared(self.device, length) orelse return error.InvalidState;
+    errdefer native.metal_bridge_release(buffer);
+    if (initialize) {
+        const mapped = native.metal_bridge_buffer_contents(buffer) orelse return error.InvalidState;
+        zeroBufferBytes(mapped[0..length]);
+    }
+    try self.compute_buffers.put(self.allocator, handle, buffer);
+    return buffer;
+}
+
+pub fn requiredWriteSize(offset: u64, size: u64, length: usize) !u64 {
+    const end = std.math.add(u64, offset, length) catch return error.InvalidArgument;
+    return @max(size, end);
 }
 
 pub fn write_compute_buffer_words(self: anytype, handle: u64, offset: u64, buffer_size: u64, data: []const u32) !void {
@@ -276,11 +288,9 @@ pub fn write_compute_buffer_words(self: anytype, handle: u64, offset: u64, buffe
 
 pub fn write_compute_buffer_bytes(self: anytype, handle: u64, offset: u64, buffer_size: u64, data_bytes: []const u8) !void {
     if (data_bytes.len == 0) return error.InvalidArgument;
-    const required_size = if (buffer_size > 0)
-        @max(buffer_size, offset + data_bytes.len)
-    else
-        offset + data_bytes.len;
+    const required_size = try requiredWriteSize(offset, buffer_size, data_bytes.len);
     const buffer = try ensure_compute_buffer(self, handle, required_size, false);
+    _ = try self.flush_queue();
     const mapped = metal_bridge_buffer_contents(buffer) orelse return error.InvalidState;
     const dst = @as([*]u8, @ptrCast(mapped));
     @memcpy(dst[@intCast(offset)..][0..data_bytes.len], data_bytes);
@@ -366,13 +376,15 @@ pub fn ensure_render_pipeline(
     fmt: u32,
 ) !void {
     if (self.render_pipeline != null and self.render_pipeline_format == fmt) return;
+    _ = try self.flush_queue();
+    var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
+    const replacement = try resolve_render_pso_for(self.device, pipeline_cache, fmt, &err_buf);
     if (self.render_pipeline) |pipeline| metal_bridge_release(pipeline);
     if (self.cached_icb) |icb| {
         metal_bridge_release(icb);
         self.cached_icb = null;
     }
-    var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
-    self.render_pipeline = try resolve_render_pso_for(self.device, pipeline_cache, fmt, &err_buf);
+    self.render_pipeline = replacement;
     self.render_pipeline_format = fmt;
 }
 
@@ -381,8 +393,10 @@ pub fn ensure_render_target(self: anytype, width: u32, height: u32, fmt: u32) !v
         self.render_target_width == width and
         self.render_target_height == height and
         self.render_target_format == fmt) return;
+    _ = try self.flush_queue();
+    const replacement = metal_bridge_device_new_render_target(self.device, width, height, fmt) orelse return error.InvalidState;
     if (self.render_target) |target| metal_bridge_release(target);
-    self.render_target = metal_bridge_device_new_render_target(self.device, width, height, fmt) orelse return error.InvalidState;
+    self.render_target = replacement;
     self.render_target_width = width;
     self.render_target_height = height;
     self.render_target_format = fmt;
@@ -439,9 +453,10 @@ pub fn ensure_icb(self: anytype, draw_count: u32, vertex_count: u32, instance_co
         .redundant = redundant_pl != 0,
     };
     if (self.cached_icb != null and std.meta.eql(self.cached_icb_key, key)) return self.cached_icb;
-    if (self.cached_icb) |icb| metal_bridge_release(icb);
+    _ = try self.flush_queue();
     const icb = metal_bridge_device_new_icb(self.device, self.render_pipeline, draw_count, redundant_pl) orelse return error.InvalidState;
     metal_bridge_icb_encode_draws(icb, self.render_pipeline, draw_count, vertex_count, instance_count, redundant_pl);
+    if (self.cached_icb) |previous| metal_bridge_release(previous);
     self.cached_icb = icb;
     self.cached_icb_key = key;
     return icb;
@@ -477,4 +492,46 @@ fn resolve_render_pso_for(
         }
     }
     return metal_bridge_device_new_render_pipeline(device, fmt, 1, err_buf, BRIDGE_ERROR_CAP) orelse error.ShaderCompileFailed;
+}
+
+test "compute buffer publication releases failed allocations and rejects growing an existing handle" {
+    const Probe = struct {
+        var bytes: [8]u8 = @splat(9);
+        var releases: usize = 0;
+        var fail_mapping = false;
+        fn metal_bridge_buffer_length(_: ?*anyopaque) usize {
+            return bytes.len;
+        }
+        fn metal_bridge_device_new_buffer_shared(_: ?*anyopaque, _: usize) ?*anyopaque {
+            return &bytes;
+        }
+        fn metal_bridge_buffer_contents(_: ?*anyopaque) ?[*]u8 {
+            return if (fail_mapping) null else &bytes;
+        }
+        fn metal_bridge_release(_: ?*anyopaque) void {
+            releases += 1;
+        }
+    };
+    const Owner = struct {
+        allocator: std.mem.Allocator,
+        device: ?*anyopaque = null,
+        compute_buffers: std.AutoHashMapUnmanaged(u64, ?*anyopaque) = .{},
+    };
+    Probe.releases = 0;
+    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
+    var failed: Owner = .{ .allocator = failing.allocator() };
+    try std.testing.expectError(error.OutOfMemory, ensureComputeBufferWithBridge(&failed, 1, 8, true, Probe));
+    try std.testing.expectEqual(@as(usize, 1), Probe.releases);
+    try std.testing.expectEqual(@as(u32, 0), failed.compute_buffers.count());
+    var owner: Owner = .{ .allocator = std.testing.allocator };
+    defer owner.compute_buffers.deinit(owner.allocator);
+    Probe.fail_mapping = true;
+    try std.testing.expectError(error.InvalidState, ensureComputeBufferWithBridge(&owner, 1, 8, true, Probe));
+    Probe.fail_mapping = false;
+    try std.testing.expectEqual(@as(usize, 2), Probe.releases);
+    _ = try ensureComputeBufferWithBridge(&owner, 1, 8, true, Probe);
+    try std.testing.expectEqualSlices(u8, &(@as([8]u8, @splat(0))), &Probe.bytes);
+    try std.testing.expectError(error.InvalidArgument, ensureComputeBufferWithBridge(&owner, 1, 9, false, Probe));
+    try std.testing.expectError(error.InvalidArgument, requiredWriteSize(std.math.maxInt(u64), 0, 1));
+    try std.testing.expectEqual(@as(u64, 12), try requiredWriteSize(4, 12, 3));
 }

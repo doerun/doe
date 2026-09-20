@@ -1,6 +1,5 @@
 //! Narrow outbound port interface for queue submission and synchronization.
 
-const std = @import("std");
 const configuration = @import("../../contracts/runtime_configuration.zig");
 
 pub const QueuePortVTable = struct {

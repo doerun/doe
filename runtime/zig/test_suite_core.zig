@@ -68,6 +68,11 @@ const test_src_backend_d3d12_resources_d3d12_texture_zig_6dbb3c7c = @import("src
 const test_src_backend_d3d12_surface_d3d12_surface_zig_cd114ba3 = @import("src/backend/d3d12/surface/d3d12_surface.zig");
 const test_src_backend_metal_backend_execute_zig_a56db399 = @import("src/backend/metal/backend_execute.zig");
 const test_src_backend_d3d12_resources_d3d12_sampler_zig_81874f49 = @import("src/backend/d3d12/resources/d3d12_sampler.zig");
+const test_src_backend_metal_metal_upload_zig_6795f7fe = @import("src/backend/metal/metal_upload.zig");
+const test_src_backend_metal_metal_copy_runtime_zig_d4954a63 = @import("src/backend/metal/metal_copy_runtime.zig");
+const test_src_backend_metal_metal_runtime_resources_zig_f8ac26b8 = @import("src/backend/metal/metal_runtime_resources.zig");
+const test_src_backend_metal_metal_native_runtime_zig_2247fa05 = @import("src/backend/metal/metal_native_runtime.zig");
+const test_src_backend_metal_metal_surface_runtime_zig_5c72526c = @import("src/backend/metal/metal_surface_runtime.zig");
 
 comptime {
     _ = test_tests_backend_common_artifact_meta_test_zig_80b3c4bd;
@@ -137,4 +142,9 @@ comptime {
     _ = test_src_backend_d3d12_surface_d3d12_surface_zig_cd114ba3;
     _ = test_src_backend_metal_backend_execute_zig_a56db399;
     _ = test_src_backend_d3d12_resources_d3d12_sampler_zig_81874f49;
+    _ = test_src_backend_metal_metal_upload_zig_6795f7fe;
+    _ = test_src_backend_metal_metal_copy_runtime_zig_d4954a63;
+    _ = test_src_backend_metal_metal_runtime_resources_zig_f8ac26b8;
+    _ = test_src_backend_metal_metal_native_runtime_zig_2247fa05;
+    _ = test_src_backend_metal_metal_surface_runtime_zig_5c72526c;
 }

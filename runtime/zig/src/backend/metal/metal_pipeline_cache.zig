@@ -143,7 +143,6 @@ pub const MetalPipelineCache = struct {
 
         // Resolve cache directory: explicit arg > env var > default.
         const resolved_dir = resolve_cache_dir(cache_dir);
-        self.cache_dir = resolved_dir;
 
         // Ensure directory exists before opening the archive file.
         std.fs.cwd().makePath(resolved_dir) catch {};
@@ -155,6 +154,7 @@ pub const MetalPipelineCache = struct {
             .{ resolved_dir, ARCHIVE_FILENAME },
         );
         self.archive_path = path;
+        self.cache_dir = path[0..resolved_dir.len];
 
         // Validate device fingerprint; discard stale archive on mismatch.
         validate_or_discard_archive(allocator, device, resolved_dir);
@@ -332,7 +332,8 @@ pub const MetalPipelineCache = struct {
         if (!self.dirty) return;
         var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
         const ok = bridge.metal_bridge_binary_archive_serialize(archive, &err_buf, BRIDGE_ERROR_CAP);
-        if (ok != 0) self.telemetry.serialize_count +%= 1;
+        if (ok == 0) return;
+        self.telemetry.serialize_count +%= 1;
         self.dirty = false;
         self.last_flush_ns = common_timing.now_ns();
         write_warmup_manifest(self);

@@ -5,11 +5,11 @@ const bridge = @import("metal_bridge_decls.zig");
 
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
-const metal_bridge_query_device_max_buffer_length = bridge.metal_bridge_query_device_max_buffer_length;
+const metal_bridge_device_max_buffer_length = bridge.metal_bridge_device_max_buffer_length;
 const metal_bridge_release = bridge.metal_bridge_release;
 
 pub fn execute_map_async(runtime: anytype, cmd: model_async_types.MapAsyncCommand) !u64 {
-    try validate_map_async_size(cmd.bytes, metal_bridge_query_device_max_buffer_length());
+    try validate_map_async_size(cmd.bytes, metal_bridge_device_max_buffer_length(runtime.device));
     if (runtime.streaming_cmd_buf != null or runtime.has_deferred_submissions or runtime.outstanding_cmd_buf != null) {
         _ = try runtime.flush_queue();
     }

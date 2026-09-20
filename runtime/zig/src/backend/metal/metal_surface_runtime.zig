@@ -184,17 +184,23 @@ pub fn unconfigure_surface(self: anytype, cmd: model_surface_control_types.Surfa
 
 pub fn release_surface(self: anytype, cmd: model_surface_control_types.SurfaceReleaseCommand) !void {
     if (self.surfaces.fetchRemove(cmd.handle)) |removed| {
-        if (removed.value.drawable) |drawable| {
-            doe_surface_discard_drawable(drawable);
-        }
-        if (removed.value.texture) |texture| {
-            metal_bridge_release(texture);
-        }
-        if (removed.value.surface_host) |host| {
-            doe_surface_unconfigure(host);
-            doe_surface_release(host);
-        }
+        var surface = removed.value;
+        releaseSurfaceState(&surface);
     }
+}
+
+pub fn releaseSurfaceState(surface: *SurfaceState) void {
+    releaseSurfaceStateWithBridge(surface, bridge);
+}
+
+fn releaseSurfaceStateWithBridge(surface: *SurfaceState, comptime native: type) void {
+    if (surface.drawable) |drawable| native.doe_surface_discard_drawable(drawable);
+    if (surface.texture) |texture| native.metal_bridge_release(texture);
+    if (surface.surface_host) |host| {
+        native.doe_surface_unconfigure(host);
+        native.doe_surface_release(host);
+    }
+    surface.* = .{};
 }
 
 fn surface_entry(self: anytype, handle: u64) !*SurfaceState {
@@ -247,4 +253,35 @@ test "tone_mapping_mode_compatible_with_format accepts extended tone mapping on 
         model_texture_types.WGPUTextureFormat_RGBA16Float,
         model_surface_control_types.WGPUCanvasToneMappingMode_Extended,
     ));
+}
+
+test "surface cleanup discards the drawable and releases texture and host exactly once" {
+    const Probe = struct {
+        var events: [4]u8 = undefined;
+        var count: usize = 0;
+        fn record(event: u8) void {
+            events[count] = event;
+            count += 1;
+        }
+        fn doe_surface_discard_drawable(_: ?*anyopaque) void {
+            record(1);
+        }
+        fn metal_bridge_release(_: ?*anyopaque) void {
+            record(2);
+        }
+        fn doe_surface_unconfigure(_: ?*anyopaque) void {
+            record(3);
+        }
+        fn doe_surface_release(_: ?*anyopaque) void {
+            record(4);
+        }
+    };
+    Probe.count = 0;
+    var token: u8 = 0;
+    var surface: SurfaceState = .{ .drawable = &token, .texture = &token, .surface_host = &token, .configured = true, .acquired = true };
+    releaseSurfaceStateWithBridge(&surface, Probe);
+    releaseSurfaceStateWithBridge(&surface, Probe);
+    try std.testing.expectEqualSlices(u8, &.{ 1, 2, 3, 4 }, &Probe.events);
+    try std.testing.expectEqual(@as(usize, 4), Probe.count);
+    try std.testing.expectEqualDeep(SurfaceState{}, surface);
 }

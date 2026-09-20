@@ -3,7 +3,6 @@
 //! Replaces broad monolithic backend vtables with a focused, single-responsibility
 //! contract for executing prepared compute operations.
 
-const std = @import("std");
 const prepared = @import("../../contracts/prepared_operation.zig");
 const report = @import("../../contracts/execution_report.zig");
 const configuration = @import("../../contracts/runtime_configuration.zig");

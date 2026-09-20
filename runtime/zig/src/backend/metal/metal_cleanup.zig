@@ -2,10 +2,11 @@
 // Sharded from metal_native_runtime.zig to stay under the line-limit policy.
 
 const std = @import("std");
+const surface_runtime = @import("metal_surface_runtime.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_release = bridge.metal_bridge_release;
 
-pub const BufferPoolMap = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque));
+pub const BufferPoolMap = @import("metal_buffer_pool.zig").BufferPool;
 
 pub inline fn release_ref(ref: *?*anyopaque) void {
     if (ref.*) |obj| {
@@ -23,8 +24,7 @@ pub fn release_buffer_pool(allocator: std.mem.Allocator, pool: *BufferPoolMap) v
     var it = pool.valueIterator();
     while (it.next()) |list| {
         for (list.items) |buf| metal_bridge_release(buf);
-        var m = list.*;
-        m.deinit(allocator);
+        list.deinit(allocator);
     }
     pool.deinit(allocator);
 }
@@ -67,7 +67,7 @@ pub fn release_samplers(self: anytype) void {
 pub fn release_surfaces(self: anytype) void {
     var it = self.surfaces.valueIterator();
     while (it.next()) |state| {
-        if (state.texture) |texture| metal_bridge_release(texture);
+        surface_runtime.releaseSurfaceState(state);
     }
     self.surfaces.deinit(self.allocator);
 }

@@ -1,6 +1,5 @@
 //! Outbound backend port interface factory contracts.
 
-const std = @import("std");
 const backend_contract = @import("../../contracts/backend.zig");
 const compute_port = @import("compute.zig");
 const transfer_port = @import("transfer.zig");
@@ -14,6 +13,8 @@ const lifecycle_port = @import("lifecycle.zig");
 const resource_port = @import("resource.zig");
 const surface_port = @import("surface.zig");
 
+/// Borrowed views of one provider. The context owner must outlive every port
+/// call and retained copy of this bundle; ports do not acquire resource lifetimes.
 pub const PortBundle = struct {
     id: backend_contract.BackendId,
     compute: compute_port.ComputePort,

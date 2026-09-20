@@ -85,6 +85,10 @@ pub fn activate_gpu_timestamps(self: anytype) !void {
         self.streaming_blit_encoder = encoder;
     }
     // End any active encoder before sampling (one encoder per cmd buf).
+    if (self.streaming_compute_encoder) |enc| {
+        bridge.metal_bridge_end_compute_encoding(enc);
+        self.streaming_compute_encoder = null;
+    }
     if (self.streaming_render_encoder) |enc| {
         metal_bridge_render_encoder_end(enc);
         metal_bridge_release(enc);

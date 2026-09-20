@@ -1,6 +1,5 @@
 //! Outbound port interface for graphics render pass execution.
 
-const std = @import("std");
 const prepared = @import("../../contracts/prepared_operation.zig");
 const report_contract = @import("../../contracts/execution_report.zig");
 

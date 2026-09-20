@@ -15477,6 +15477,1968 @@
       "targets": [
         "src/backend/dropin_lifecycle.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_async_types.zig",
+          "sha256": "ecfe312c25232b1da11ccee650285f4bfff80a5d3d876710123f46e695ed4685"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "afc26f2a4b19a77e7c7d70e25cd4ba55f592bab454476d767c1497da1adf45c8",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The maximum-buffer-length query now receives runtime.device instead of querying the default device. The host failure-route test exercises acquisition failure and safe teardown; existing pure tests cover maximum/unknown-limit admission."
+      ],
+      "reviewId": "metal_ports_20260920_01",
+      "reviewedAt": "2026-09-20T00:57:31.180258+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read the complete temporary-buffer mapping command, size admission, queue retirement and scoped native release. This is a command probe, not the ordinary WebGPU mapAsync callback implementation. Exhaustive read/write handling and checked zero/maximum size admission remain; device selection now uses the runtime device.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_async_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "bed0e79aae498ca0e52109c72efcfbcecb9d83d2d37115c494041ece58f60555"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_stubs.c",
+          "sha256": "d95f4ec07a9e59868a6a852dd28fa474ae877ccf0022a70071b9018cc9728986"
+        },
+        {
+          "path": "runtime/zig/tools/bridge_manifests/metal_bridge_manifest.json",
+          "sha256": "ff01cbcbd8ced8929a58c55204e33314ccddea0faf9fc13fdfe5adfb205aaff5"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "32ccc99feb76d74d0ba3515f31d332384248441c2e91eb6c988e74bf3c52beff",
+      "level": "file",
+      "nextAction": "Retain declarations; extend signature/layout parity checks alongside native changes. Native sampler and completion semantics remain findings in their owning scopes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_02",
+      "reviewedAt": "2026-09-20T00:57:32.363486+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read the extern declarations and C-layout records against the bridge header and native callers. Retain the ABI boundary: optional native handles and C calling conventions are explicit, and layouts use extern structs. Symbol-manifest checks and host linking establish declared linkage, not Apple runtime semantics.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_bridge_decls.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_resources.zig",
+          "sha256": "8c713fe2ecc18f91ed3a36d3da772380519d53837dd272517164c9c2e4086111"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_resources_test.zig",
+          "sha256": "69363d893cd4b3969aa6d3f992ae62231bafb86a0b43ed63e040debb545c8dc9"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "BufferPool limits each size class but not the number of size classes or total retained bytes; empty keys persist after pop. There is no overall retained-memory bound.",
+        "strip_extension owns shader request normalization in a buffer-storage module, with an external test dependency that must migrate with any move."
+      ],
+      "inputHash": "10ef6291fc23b3de6d9274c51175ac2b17ec0a23df1540205c7cf710d4209d6f",
+      "level": "file",
+      "nextAction": "Give the pool a versioned total retention policy and owned accounting, test full/OOM/reuse paths, then move shader normalization with its tests to its actual owner.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_03",
+      "reviewedAt": "2026-09-20T00:57:33.614995+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read exact-size lookup, ownership transfer on return, per-size saturation, allocator failure release and shader-name normalization. Pop transfers a handle; insertion failure releases it; cleanup owns list/map deallocation.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_buffer_pool.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_deferred_release.zig",
+          "sha256": "9f6ad1227fb320207345c438c9555fc1f74a75d93ac17a1c6e6479fcad7ebf64"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_surface_runtime.zig",
+          "sha256": "47e2f44efab72ff2e45d403226c17ead8bbf788f492d0373bbd36fbfb38a5ff4"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "113e0ff2abf6ca4d70595b561600a947ba74965b801399230698f6ebad1e7e67",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Runtime surface-map cleanup previously released only textures, leaking drawable and host ownership. It now delegates to releaseSurfaceState; a recording test verifies discard, texture release, unconfigure, host release and idempotent reset."
+      ],
+      "reviewId": "metal_ports_20260920_04",
+      "reviewedAt": "2026-09-20T00:57:34.826935+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read every teardown helper, map key allocation owner, native handle release and sampler-cache coordination. The caller must retire outstanding work before invoking these helpers. Surface cleanup now uses the same complete release operation as explicit surface destruction.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_cleanup.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_resources.zig",
+          "sha256": "8c713fe2ecc18f91ed3a36d3da772380519d53837dd272517164c9c2e4086111"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_resource_types.zig",
+          "sha256": "7f6089bd35aac69f43af7d99ad4bedd3fa7a95b6b716cfc52e1cd4ae80d9cb41"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Texture footprints still assume four bytes per pixel and staging size can be smaller than padded rows/images; format/block/aspect-aware layout and payload bounds are not established.",
+        "Existing texture handles bypass descriptor compatibility checks; copy geometry/mip/sample restrictions need validation before any native recording."
+      ],
+      "inputHash": "6627e0051d6408b47d0833afb6e52ba6e4c67080de8f3d48daa9d490fa17451b",
+      "level": "file",
+      "nextAction": "Implement canonical format-aware copy footprints and validate both source/destination resources before encoding; add padded-row, compressed/aspect and native readback oracles.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Buffer offset addition, default pitch multiplication and temporary-size rounding now reject overflow.",
+        "Texture publication releases on allocator failure; buffer publication uses the shared transactional owner. Temporary storage is retained until queue retirement instead of immediate CFRelease.",
+        "Buffer/texture bridge calls now supply the missing origin and aspect arguments. Host failure-route compilation instantiates the real copy function."
+      ],
+      "reviewId": "metal_ports_20260920_05",
+      "reviewedAt": "2026-09-20T00:57:36.093851+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read all copy directions, implicit resource creation, encoder transitions, temporary staging and timing. Shared buffer admission now uses actual native lengths, and temporary staging belongs to deferred retirement.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_copy_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_resource_commands.zig",
+          "sha256": "3a75d8ff4c7937b99de5655f068c8626074f1bd9144e562b34de9f63899a6cd1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_render_types.zig",
+          "sha256": "596a984301f25c33a47d132fb71abe5e64a85b7da97341ee27d21aa1f3739644"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "SamplerDescKey and native creation omit SamplerCreateCommand.compare, allowing distinct comparison descriptors to alias. The native bridge also uses a process-global mutable sampler descriptor and divergent filter/address mappings.",
+        "The ring has no completion token of its own and relies on caller retirement; current lifecycle callers now flush before release/eviction, but this contract needs a complete native retirement test."
+      ],
+      "inputHash": "16dab53fd07d3c71dcc01d4d18fd5b5cd3018aefbcbdf6758e7b9cc34f09b9ac",
+      "level": "file",
+      "nextAction": "Repair sampler meaning and descriptor ownership across the bridge and ordinary native sampler caller; add comparison/filter/address and concurrent-device tests.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Cache reference increments now detect overflow. Native lifecycle commands retire pending queue work before sampler eviction or resource destruction."
+      ],
+      "reviewId": "metal_ports_20260920_06",
+      "reviewedAt": "2026-09-20T00:57:37.282096+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read ring saturation/drain, descriptor equality, logical reference accounting, full-cache eviction and uncached ownership. Removed unsupported performance narrative and clarified retirement preconditions and uncached-handle release ownership.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_deferred_release.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Bridge dispatch recording and completion return void, so failed encoding or command-buffer execution cannot reach the result. Required native status must survive both deferred and immediate paths."
+      ],
+      "inputHash": "f3a65cd47446c29865dc922590d0e6dddf2479d77ba784b55f77cff897fbe61c",
+      "level": "file",
+      "nextAction": "Propagate native encode/completion status and exercise repeated indirect dispatch argument preservation on Metal.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Indirect dispatch retires earlier users before overwriting the shared argument buffer; the returned submit/wait time includes this retirement."
+      ],
+      "reviewId": "metal_ports_20260920_07",
+      "reviewedAt": "2026-09-20T00:57:38.458593+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read direct/indirect allocation, pipeline selection, shared argument writes, queue transitions and result accounting. Standalone command buffers own their handles through completion or transfer to outstanding state.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_dispatch_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_external_texture_native.zig",
+          "sha256": "9619554b22e8ec53b3bbf4f640d2c731429304fa1e0e5f814ece58818b5c1607"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Every plane_count greater than one follows the two-plane NV12 interpretation; more planes and incompatible two-plane pixel formats are not rejected or described by the input contract."
+      ],
+      "inputHash": "03af755ab3b6b92e5898fa939562c3b4d22b2e02b9ee03b0b617140b17b0d155",
+      "level": "file",
+      "nextAction": "Bind native pixel format and exact supported plane layout to import admission; add unsupported-layout and second-plane failure tests on the bridge.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_08",
+      "reviewedAt": "2026-09-20T00:57:39.635173+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read IOSurface/CVPixelBuffer admission, plane acquisition, partial-failure rollback and retained PlaneLayout release. Non-macOS/null acquisition is explicit and successful planes transfer native references.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_external_texture.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_kernel_dispatch.zig",
+          "sha256": "ffff9ca25b8377e8e22a070b717bb086797f479b1601fc4a02ebc2ce4708151f"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "record_begin/record_end call a void sampling bridge, so activation can be marked successful even if the sample encoder was not created; stale sample contents are not distinguished by generation."
+      ],
+      "inputHash": "4268ac3ff99c3f4dc2b575c7e5555b7f4172616ea47ca2f35780cda3acd3edd9",
+      "level": "file",
+      "nextAction": "Return sampling success/generation from the bridge and bind validity to both samples from the completed invocation; test encoder failure and reuse.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Timestamp activation now closes an active compute encoder as well as render/blit encoders before creating the sample encoder."
+      ],
+      "reviewId": "metal_ports_20260920_09",
+      "reviewedAt": "2026-09-20T00:57:40.845442+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read capability probing, counter owner, begin/end recording, resolution and streaming activation. Deinit resets state; resolved nonpositive/failed samples remain unavailable through zero plus validity flags.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_gpu_timestamps.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_compute_types.zig",
+          "sha256": "82725cf0634913fa227d99b5b7ea11ad00b2b3961c2d5db1149c434793644352"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Binding packing silently skips non-buffer resources and out-of-range slots, ignores group and buffer_offset, and has no duplicate-slot admission. Requested binding semantics can differ from encoded work.",
+        "Fixed rollover policy and void native execution status remain outside an explicit validated dispatch contract."
+      ],
+      "inputHash": "094fd7936e805fab4adc9ba41fcd0418b5abed425fd1616c89680a4b0c235f7b",
+      "level": "file",
+      "nextAction": "Lower validated binding groups/offsets and resource kinds through compiler metadata, reject unrepresentable requests before work, and add delayed-submission ordering tests.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Prior streaming work is flushed before warmup, timestamped or immediate command buffers are submitted, preventing newer standalone work overtaking uncommitted work."
+      ],
+      "reviewId": "metal_ports_20260920_10",
+      "reviewedAt": "2026-09-20T00:57:42.023875+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read pipeline/workgroup resolution, binding packing, warmup, repeated/deferred dispatch and timestamp accounting. Pending work now retires before standalone/warmup submissions, preserving the queue order; this retirement remains in setup cost.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_kernel_dispatch.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_resources.zig",
+          "sha256": "8c713fe2ecc18f91ed3a36d3da772380519d53837dd272517164c9c2e4086111"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_upload.zig",
+          "sha256": "c026d7ced497adebcc8430158a393642af8af9683049140d8efaf7a35b36cb66"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/mod.zig",
+          "sha256": "541c756c5bd21493dcc338ad1c1589e30f006924f0c0f319a66cb234f9b846b7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Teardown suppresses flush errors and native waits cannot report completion failure; the resource retirement guarantee remains incomplete on device/command-buffer failure.",
+        "Configuration/cache/scratch policy and many anytype implementation shards remain coupled through the full runtime field layout; narrow state ownership is still needed where it removes ambiguous lifetime dependencies."
+      ],
+      "inputHash": "5b13c347aee22f8ec93afd50e30abfdf5d9d8d4f6513569e8ef004c3633f9441",
+      "level": "file",
+      "nextAction": "Complete native completion/error retirement first; separate the cache and transfer owners using that lifetime contract without moving unrelated objects.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Staged writes use checked required-size arithmetic. A new non-Metal failure-route test instantiates actual mapping, copy, texture allocation and teardown paths and checks maps remain unpublished on failure."
+      ],
+      "reviewId": "metal_ports_20260920_11",
+      "reviewedAt": "2026-09-20T00:57:43.239571+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read initialization rollback, runtime-owned native maps, scratch/pool/cache state, forwarding operations and teardown order. Allocator and borrowed configuration are supplied by the backend owner; teardown retires work before releasing maps.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_native_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/runtime/process_roots.zig",
+          "sha256": "ff45eb7da0d08ea9fce22613817d24ac5442a034c1e8ad966b7358a3cbd9fd1a"
+        },
+        {
+          "path": "runtime/zig/tests/backend/metal_pipeline_cache_test.zig",
+          "sha256": "b0995432317a3f1722b83e9ead68238e12706d27044108dd7be57a40ba86a76b"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Null compile results are accumulated as total_hit_ns while successful archive calls count as misses; no observed native hit/miss signal justifies these labels.",
+        "A missing/unreadable fingerprint writes a new sidecar but retains any existing archive. Device name/registry ID does not identify driver/toolchain changes, and failed invalidation is silently ignored.",
+        "Warmup limits and lazy flush policy remain handwritten; sidecar writes are non-atomic and compute keys/source identity need stronger validation and retention bounds."
+      ],
+      "inputHash": "6b730f4c50ade521326d98631021a73bc7197b621643c4d0fccde231c572c593",
+      "level": "file",
+      "nextAction": "Use observed cache-result metadata, transactional fingerprint/archive persistence and explicit configuration; test missing fingerprint, failed writes, source changes and caller string lifetime.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "cache_dir now borrows the cache-owned archive path rather than caller/environment bytes. Failed archive serialization preserves dirty state for retry."
+      ],
+      "reviewId": "metal_ports_20260920_12",
+      "reviewedAt": "2026-09-20T00:57:44.442174+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read cache creation/destruction, path resolution, archive calls, telemetry, persistence, fingerprint invalidation, warmup manifests and every C export. Cache objects own allocations and sidecar lists; bridge-native archive ownership is scoped to deinit.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_pipeline_cache.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_render_state_bridge.h",
+          "sha256": "9e49541ec6c9077d78fb9c3910e198ff375c82349f41178ef1a4a08e68b71479"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_render_state_bridge.m",
+          "sha256": "72ce0e6344b93b65bec225ac27898b0888a1ac81b4a1cdc2f3be4bdd04e2cd0e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/render_state.zig",
+          "sha256": "01eef43abd8b288bfd7ad0a7f3f6d2e51d97a45256fffa6132e715c804c03794"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_render_state_test.zig",
+          "sha256": "f3b756fc9502b992968010cb2677aa764b7f0beadf43e411a3780eacc1b8e697"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "8bf4b22fce2c18f3bc850aac7146c892d27170426ab4a4ccdd4742c2226ae709",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_13",
+      "reviewedAt": "2026-09-20T00:57:45.632834+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read render-state extern signatures and C-layout blend/depth records against the matching header and Objective-C consumer. Retain the narrow ABI declaration owner; it allocates nothing and does not choose render semantics. Existing conversion tests exercise all record fields, but native execution remains unqualified.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_render_state_bridge_decls.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_deferred_release.zig",
+          "sha256": "9f6ad1227fb320207345c438c9555fc1f74a75d93ac17a1c6e6479fcad7ebf64"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_types.zig",
+          "sha256": "0267eafe3b61d8ba3d595c0dd186f1b8da3a1195136eb86167f8214290881d07"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "texture_write does not validate data length, bytes-per-row/image products, shift/mip range or descriptor compatibility before native memory access.",
+        "texture_query ignores an expected depth of one, and sampler compare/filter/address interpretation remains incomplete in the cache/native bridge."
+      ],
+      "inputHash": "4cd5860adc16b9786c50adc33dba07cbccd9a1cc6bb240ef06b8030baee2f917",
+      "level": "file",
+      "nextAction": "Validate complete texture footprint and descriptor semantics before publication; fix exact-depth queries and repair sampler translation end to end.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Failed sampler-map insertion releases its acquired logical/native reference. New texture entries are initialized and removed on creation failure; host failure-route tests verify the map remains empty.",
+        "Sampler creation/destruction and texture destruction flush pending uses before cached eviction or deferred release."
+      ],
+      "reviewId": "metal_ports_20260920_14",
+      "reviewedAt": "2026-09-20T00:57:46.820177+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read sampler create/replace/destroy and texture write/query/destroy including native map publication. Lifecycle retirement now precedes release/eviction; insertion failures no longer leave an undefined texture value or an extra sampler reference.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_resource_commands.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_upload.zig",
+          "sha256": "c026d7ced497adebcc8430158a393642af8af9683049140d8efaf7a35b36cb66"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Staging capacity and the wait-path threshold are handwritten policy values; the declared build/runtime configuration does not own or identify these meaningful choices."
+      ],
+      "inputHash": "35d1981f1165d4f65cf33803b4458fd933a3e515cfb47586130ccb18fcbe359b",
+      "level": "file",
+      "nextAction": "Move supported staging/wait policy into the existing versioned backend policy and derive immutable typed values, with limits validated before use.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_15",
+      "reviewedAt": "2026-09-20T00:57:47.996960+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read both constants and upload/queue consumers. This is a shared owner for staging capacity and scoped-wait selection, without allocation or executable state.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_runtime_limits.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_upload.zig",
+          "sha256": "c026d7ced497adebcc8430158a393642af8af9683049140d8efaf7a35b36cb66"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_configuration.zig",
+          "sha256": "45c3191e8ce14f96a55bbf92682f66f8a9373bb4825851fcfe2aabf7ecd1ad89"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Native completion waits and shared-event waits report no failure and have no enforced timeout; failed GPU work can appear successfully retired or wait indefinitely.",
+        "barrier ignores queue_wait_mode and changes behavior with deferred policy without an explicit wait-capability result."
+      ],
+      "inputHash": "50a32c5a4981fb55354791442411abd89730813602dd947976ce30ec08fa9288",
+      "level": "file",
+      "nextAction": "Make command-buffer completion/error/timeout observable and thread it through flush/barrier before releasing retained work; test failed signal and device loss.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_16",
+      "reviewedAt": "2026-09-20T00:57:49.170848+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read streaming encoder finalization, ordered submit rollover, outstanding retirement, uploads recycling, timestamps, barriers and prewarm delegation. Array storage is recycled only after the selected queue wait; source snapshots remain owned across rollover.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_runtime_queue_ops.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_resources.zig",
+          "sha256": "8c713fe2ecc18f91ed3a36d3da772380519d53837dd272517164c9c2e4086111"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_render_types.zig",
+          "sha256": "596a984301f25c33a47d132fb71abe5e64a85b7da97341ee27d21aa1f3739644"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "render_bundle and ordinary draw branches record identical direct draws, without implementing bundle recording/replay semantics. Several RenderDrawCommand state fields are not applied by this narrow path.",
+        "Void bridge encoding/completion cannot report a failed render submission."
+      ],
+      "inputHash": "63bf560af08d157e0bce3f81be75591ab7455cd6740916e1266890d69878c6e8",
+      "level": "file",
+      "nextAction": "Implement command-declared bundle/state behavior and propagate native failures, then validate temporary render/blit output on Metal.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Temporary render storage is registered with deferred retirement instead of immediate release; the saved target is restored by defer on every exit."
+      ],
+      "reviewId": "metal_ports_20260920_17",
+      "reviewedAt": "2026-09-20T00:57:50.354855+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read target/pipeline setup, temporary-target swap, draw recording, blit-back and queue-sync result. Temporary target restoration now occurs on failure as well as success, and its native reference lasts through retirement.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_runtime_render_ops.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_buffer_pool.zig",
+          "sha256": "f69ff0aec3955a27ffc472acbaa23d4bd628dcc2336039b4a383e68e91ba8a2a"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_pipeline_cache.zig",
+          "sha256": "6f3b9ab4460671905f16ae9bf2dac02debb2891e7fba84491575bb32d5a770a3"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig",
+          "sha256": "945d3e8979882d41cbc2e0cd01b5d97faca1cc578d76246de5b924e12a3d9020"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Pipeline identity strips file extensions and prefers .metal over .wgsl; cached keys omit source contents and compilation metadata. Selected entrypoint is not passed into runtime WGSL translation.",
+        "Translation failure falls back to a different compiler entry and zero workgroup metadata; raw-MSL workgroup recognition uses source-text matching instead of a declared/analyzed invariant."
+      ],
+      "inputHash": "69b2b77d24b3d246ad36eae5c1ffc2174b7638326ab91ef548bd8ee29d3535f4",
+      "level": "file",
+      "nextAction": "Make exact source, entrypoint and compiler metadata the pipeline identity and remove fallback translation/zero-metadata execution; add multi-entrypoint and source-change regressions.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Compute pipeline insertion failure now releases its PSO and releases function handles exactly once.",
+        "Buffer creation releases on mapping/publication failure; reused handles check actual native length, and write-size arithmetic rejects overflow. Recording tests cover OOM, null mapping, initialization and oversized reuse.",
+        "Mapped writes retire preceding GPU uses. Render pipeline/target/ICB replacement retires old uses and constructs the replacement before releasing current state."
+      ],
+      "reviewId": "metal_ports_20260920_18",
+      "reviewedAt": "2026-09-20T00:57:51.530005+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read shader request normalization, source selection/translation, pipeline publication, compute storage, mapped writes, render target/pipeline and ICB reuse. Native references now have single rollback/replacement paths.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_runtime_resources.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_cleanup.zig",
+          "sha256": "d11957b6b29e6beb306a13d1e538f9f986778a6dd9894f6bd6e2c8cb619c7ded"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_surface_control_types.zig",
+          "sha256": "915e430a6d7a86260627905ac5e406ac2e0e453211481d315c042f67ed2fd98f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Failed reconfiguration or layer replacement can leave configured/acquired flags describing released previous state. Validate and transact state changes before admitting acquisition.",
+        "surface_capabilities only creates an entry; it does not examine native surface capabilities. Presentation ordering relative to pending streaming work still needs an explicit contract."
+      ],
+      "inputHash": "6ee874f8623041727f468ab7338a22c95bc0e7af515f458a24ee0e03897ef677",
+      "level": "file",
+      "nextAction": "Make configure/layer replacement transactional and add failure/resize/presentation ordering tests against the actual surface bridge.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "releaseSurfaceState owns drawable discard, texture release, host unconfigure/release and state reset; a recording test verifies order and exactly-once behavior."
+      ],
+      "reviewId": "metal_ports_20260920_19",
+      "reviewedAt": "2026-09-20T00:57:52.700785+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read every create/configure/acquire/present/resize/unconfigure/release transition and surface-state ownership. Explicit release and runtime teardown now share a complete idempotent cleanup operation.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_surface_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_buffer_pool.zig",
+          "sha256": "f69ff0aec3955a27ffc472acbaa23d4bd628dcc2336039b4a383e68e91ba8a2a"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Staging and scoped-wait choices still depend on handwritten policy; no native allocation-failure campaign or physical retention/reuse check establishes the complete prewarm contract.",
+        "Full pool retention and native completion failure are not bounded/observable by this helper; those owners retain separate findings."
+      ],
+      "inputHash": "c42a51631c6756f3498ad1d0a59a47e130881e7dbbb1c122088cd29e445225f6",
+      "level": "file",
+      "nextAction": "Add native OOM/completion failure and bounded-retention tests for prewarm; move policy to its configuration owner and measure any cost only on ordinary physical workloads.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Consecutive staged writes no longer reuse mutable prewarmed source bytes. A recording test delays both copies, mutates caller storage and checks independent output.",
+        "Retention capacity is reserved before native acquisition; null mapping/encoder and allocation failures release acquired sources and leave no published pending upload.",
+        "Destination range/overflow checks are explicit, upload source/destination acquisition has rollback, and zero scratch initialization covers future larger uploads. Scratch prewarm now acquires both buffers and mapping before replacing previous state, and releases both on failure."
+      ],
+      "reviewId": "metal_ports_20260920_20",
+      "reviewedAt": "2026-09-20T00:57:53.875355+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read staging prewarm, scratch reuse, pool checkout/return, submission ownership and failure paths. Arbitrary user writes now own independent byte snapshots until completion; constant-zero upload scratch is initialized across its full capacity.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_upload.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/backend_policy.zig",
+          "sha256": "94e1c39d7e3337d359003493e963e529c2138f9e360cd4631a2bf960f033d248"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/backend_execute.zig",
+          "sha256": "bf234f5fac75cc185debeb305e6fc3f12bdce32b82105067c58c00752393e7cc"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "native_capability_set advertises async diagnostic capabilities whose backend_execute branches run render-pipeline setup instead of the requested operation.",
+        "Queue timeout setter silently ignores the requested timeout; required waits cannot currently report unsupported policy."
+      ],
+      "inputHash": "e65557dfe51aeb573a64cad7f57497f572beb00963064f05e854d901fd755120",
+      "level": "file",
+      "nextAction": "Connect each advertised capability to real execution and validate wait policy through a fallible configuration boundary; preserve ordinary-provider selection.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_21",
+      "reviewedAt": "2026-09-20T00:57:55.078961+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read backend construction/config ownership, capability declarations, driver adapter, telemetry/artifact collection and destruction. Root forwarding preserves explicit fallible collection and device-owned configuration.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/mod.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_render_state_bridge.m",
+          "sha256": "72ce0e6344b93b65bec225ac27898b0888a1ac81b4a1cdc2f3be4bdd04e2cd0e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_render_state_bridge_decls.zig",
+          "sha256": "8b0cbdecbceca86f30cf5095c60a6ca53d2e5266fbe52841003df7160463e3a3"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_render_state_test.zig",
+          "sha256": "f3b756fc9502b992968010cb2677aa764b7f0beadf43e411a3780eacc1b8e697"
+        },
+        {
+          "path": "runtime/zig/vendor/webgpu-headers/webgpu.h",
+          "sha256": "7691d76ceb67056f89e97b9ff0b62163eacf19a8e0e09a8fa7dbb32069b7978c"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [
+        "Blend/stencil constants are a private zero-based vocabulary labeled WebGPU-compatible; the canonical WebGPU header has a different vocabulary. Current tests repeat local values rather than establish public/native parity.",
+        "MSAA export maps sample_count below two to four, despite documentation admitting one; descriptor and dynamic-state admission is delegated to void native APIs."
+      ],
+      "inputHash": "98933bfb42b118f1e7aa7c36147b1f07a7ceb439ca432f2b23468f2ca00af91e",
+      "level": "file",
+      "nextAction": "Trace the public callers and migrate values to the canonical ABI without silently breaking private consumers; test independent native constants and exact sample-count behavior.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_22",
+      "reviewedAt": "2026-09-20T00:57:56.286875+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "needs_changes",
+      "summary": "Read descriptor types, conversion helpers, dynamic setters and every C export against the native render-state bridge and package callers. Conversion lifetime is synchronous; created handles transfer a native reference.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/render_state.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_pipeline_cache.zig",
+          "sha256": "6f3b9ab4460671905f16ae9bf2dac02debb2891e7fba84491575bb32d5a770a3"
+        },
+        {
+          "path": "runtime/zig/src/native/cache/doe_package_metal_pipeline_cache.zig",
+          "sha256": "ecdb3924e92799f7dba1621728560296462a434aaf724be4bdd33ca9ef45c3a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "c37f090841e4b45b974f4782a2674d87cddaa9ea5cea0c2d4cf44853cecc65a7",
+      "level": "file",
+      "nextAction": "Retain the adapter; the cache owner has independent unresolved persistence and observation findings.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_23",
+      "reviewedAt": "2026-09-20T00:57:57.483699+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read the complete package cache adapter and native device-owner usage. Retain a narrow construction seam: allocator/device/path pass directly to the backend-owned cache, with no parallel policy or mutable wrapper state.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal_package_pipeline_cache.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/backend_execute.zig",
+          "sha256": "bf234f5fac75cc185debeb305e6fc3f12bdce32b82105067c58c00752393e7cc"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "fc23b89aba66ed0ca2fd311de1b259fbd42404123f993539bce82e594225a0c3",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_24",
+      "reviewedAt": "2026-09-20T00:57:58.675467+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read buffer/texture capture signatures and delegation. Allocator ownership of returned independent bytes is now explicit; context/vtable remain borrowed and errors propagate without defaults.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/capture.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "32eb60d875102aa085b41bae30bf2605ab0afdb64326dba767427f18ebb10fd7",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_25",
+      "reviewedAt": "2026-09-20T00:57:59.866338+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read prepared dispatch, prewarm and timestamp-mode operations with their prepared/compute contracts. Inputs are synchronously borrowed and results/errors forwarded; removed an unused std import. No shader meaning or binding rewrite belongs here.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/compute.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "7171d2682d3acef0bbe5b8fd64c816d76032d31441abc586e2aa5402de468fb0",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_26",
+      "reviewedAt": "2026-09-20T00:58:01.046987+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read every required port and optional capture slot, composition construction and owner teardown. Documented that the bundle borrows one provider context and does not retain resources; removed an unused std import.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/factory.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "3615b4053edd0529fc95d7ebd70825509f28851e4439a34efc891977a2a39400",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_27",
+      "reviewedAt": "2026-09-20T00:58:02.253577+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read the prepared lifecycle operation and report forwarding. The vtable requires an implementation and propagates its result; capability correctness belongs to the provider and is not inferred from this interface.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/lifecycle.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "cbed5acff125f623e22f4e5b947e569405a1c5511a665ed4107d583a0670f054",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_28",
+      "reviewedAt": "2026-09-20T00:58:03.492721+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read every re-export and alias. Retain the aggregation root unchanged: it adds no state, fallbacks, allocation or command interpretation. Reachability was checked through the runner and provider construction.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/mod.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/mod.zig",
+          "sha256": "541c756c5bd21493dcc338ad1c1589e30f006924f0c0f319a66cb234f9b846b7"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        },
+        {
+          "path": "runtime/zig/tests/core/execution_test.zig",
+          "sha256": "ee6969139e2ba72464e6f46ffa784e733b0d87a761d3eb9b12c29f998dd2fb5f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "0883c897478132c433fd56dfcddeb18db1675f21b8024aa4253b1369c2bfa8b4",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_29",
+      "reviewedAt": "2026-09-20T00:58:04.678966+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read the full concrete-driver adapter and all vtables. Dispatch conversion uses the canonical prepared contract; direct-buffer-write adaptation preserves bytes/offset/size, sync propagates flush errors, and unsupported spatial/timestamp behavior remains explicit. Optional artifact collection is distinct from snapshots.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/provider_adapter.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "b0954ee2d68b776861e358b41f3105a1de7005f8792ccb762c52fe696d825e7b",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_30",
+      "reviewedAt": "2026-09-20T00:58:05.888427+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read flush/sync and policy setters through the driver adapter. Delegation preserves native errors and nanosecond returns; removed an unused import. Setter capability/admission limitations remain in the provider scopes, not evidence that every wait mode is supported.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/queue.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/backend_execute.zig",
+          "sha256": "bf234f5fac75cc185debeb305e6fc3f12bdce32b82105067c58c00752393e7cc"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "bd4f760427c134855ca144cbe3b470b80838e9ccb02347fbcd7dce43cdfec67c",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_31",
+      "reviewedAt": "2026-09-20T00:58:07.163400+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read capture-buffer signature and delegation with the native capture caller. The supplied allocator owns the independent returned snapshot; missing/invalid handles remain provider errors and no host execution shadow is introduced.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/readback.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "85649445451e3055500b4f0f1f22bb49b97061d3083368c5df086b0e17102764"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/README.md",
+          "sha256": "deac5cdf4fbb0630ea2ff3f5b6baa96db90ee394edef203dd437d80bdb42ea22"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/aggregate-acceptance.log",
+          "sha256": "718a99d1f1b2d0bfe93e5234d0ad6fe7991654668e473b428bc0985de04bd584"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/core-release-fast-acceptance.log",
+          "sha256": "f27c4b0b42744d3bc10f94ac13f39f179e10eaa4cf091f2668193db88a40c165"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-ports-audit/file-reviews.md",
+          "sha256": "49653e03b3001d757c4d8d3748f1db7e1159b6e46d4cf3f604c681a43a7b277a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "1fffbb749fad57a871e301645c92eca1e1f0f61c80935af86a8e785301d8dc09",
+      "level": "file",
+      "nextAction": "Retain this file; re-examine when its bound contract or consumer changes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_ports_20260920_32",
+      "reviewedAt": "2026-09-20T00:58:08.368317+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a825aa79c062d8a939f8246924e56625fb5d4b9c",
+      "status": "verified",
+      "summary": "Read prepared render/report types and direct delegate. No resource retention, state policy or fallback is added; removed an unused std import. Backend completeness remains its own scope.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/render.zig"
+      ]
     }
   ],
   "schemaVersion": 1

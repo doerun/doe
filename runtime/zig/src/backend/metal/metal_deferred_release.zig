@@ -1,20 +1,5 @@
-// metal_deferred_release.zig — Batch deferred release pool for Metal objects.
-//
-// Doe's explicit reference counting releases Metal objects synchronously via
-// CFRelease on each sampler_destroy/texture_destroy call. Under aggregate lane
-// pressure (e.g. texture_sampler_write_query_destroy workload with repeat=10),
-// per-call CFRelease serializes against Metal's internal ARC machinery, causing
-// tail-negative timing versus Dawn's deferred GC.
-//
-// This module collects pending releases in a fixed-capacity ring buffer and
-// batch-drains them at command buffer boundaries (flush_queue_timed). This
-// amortizes the Obj-C ARC overhead into a single tight loop at a safe point
-// where no encoder holds a reference to the released objects.
-//
-// Additionally, a sampler descriptor cache avoids redundant MTLSamplerState
-// allocations: identical sampler parameter tuples share a single Metal object
-// with a reference count, eliminating create/destroy round-trips entirely for
-// the common case of repeated identical sampler descriptors.
+//! Batched release of retired native references and runtime-owned sampler reuse.
+//! The caller must retire GPU uses before enqueue, release, eviction, or deinit.
 
 const std = @import("std");
 const bridge = @import("metal_bridge_decls.zig");
@@ -84,7 +69,7 @@ pub const DeferredReleasePool = struct {
 // ============================================================
 
 /// Compact representation of a sampler descriptor for cache keying.
-/// Packed into 20 bytes to allow cheap equality comparison.
+/// Equality compares fields, independently of struct padding.
 pub const SamplerDescKey = struct {
     min_filter: u32,
     mag_filter: u32,
@@ -132,14 +117,15 @@ pub const SamplerCache = struct {
     /// Look up or create a Metal sampler matching the given descriptor.
     /// Returns the cached handle (shared, NOT +1 retained for the caller —
     /// the cache owns the single Metal reference). The caller must call
-    /// release() with the same key when done.
+    /// release() with the returned handle when done. Uncached handles transfer
+    /// a native reference: release() returns false and the caller releases it.
     pub fn acquire(self: *SamplerCache, device: ?*anyopaque, cmd: model.SamplerCreateCommand) !?*anyopaque {
         const key = SamplerDescKey.from_cmd(cmd);
 
         // Scan for existing entry with matching key.
         for (self.entries[0..self.len]) |*entry| {
             if (std.meta.eql(entry.key, key)) {
-                entry.ref_count += 1;
+                entry.ref_count = std.math.add(u32, entry.ref_count, 1) catch return error.InvalidState;
                 return entry.handle;
             }
         }

@@ -12,6 +12,14 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [Metal and port batch](../../bench/out/maintenance/20260920-zig-metal-ports-audit/README.md)
+records the next file examinations, ownership repairs and host checks. Open
+sampler semantics, texture footprints, binding translation, completion errors,
+cache identity/observations and render ABI findings remain in the ledger; no
+physical Metal qualification follows from host tests. Use its per-file actions
+for repairs and its named continuation for never-examined scopes. Accepted
+packages and performance qualification remain unchanged.
+
 The [backend review batch](../../bench/out/maintenance/20260919-zig-batch32/README.md)
 records file examinations separately from verified coverage. Mapping, allocation
 rollback, texture staging, descriptor bounds/reuse and Metal capture have concrete

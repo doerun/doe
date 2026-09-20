@@ -307,10 +307,7 @@ pub const NativeMetalRuntime = struct {
     }
 
     pub fn stage_buffer_write_bytes(self: *NativeMetalRuntime, handle: u64, offset: u64, buffer_size: u64, data: []const u8) !void {
-        const required_size = if (buffer_size > 0)
-            @max(buffer_size, offset + data.len)
-        else
-            offset + data.len;
+        const required_size = try resource_runtime.requiredWriteSize(offset, buffer_size, data.len);
         const dst_buffer = try resource_runtime.ensure_compute_buffer(self, handle, required_size, false);
         try metal_upload.stage_buffer_write_bytes(self, dst_buffer, offset, data);
     }
@@ -464,4 +461,23 @@ pub const release_ref = cleanup.release_ref;
 
 pub fn pool_pop(pool: *BufferPool, size: usize) ?*anyopaque {
     return metal_buffer_pool.pool_pop(pool, size);
+}
+
+test "non-Metal native acquisition failures leave the runtime safe to destroy" {
+    if (builtin.os.tag == .macos) return error.SkipZigTest;
+    var runtime: NativeMetalRuntime = .{ .allocator = std.testing.allocator };
+    defer runtime.deinit();
+    try std.testing.expectError(error.InvalidState, runtime.execute_map_async(.{ .bytes = 8 }));
+    try std.testing.expectError(error.InvalidState, runtime.copy_command(.{
+        .direction = .buffer_to_buffer,
+        .src = .{ .handle = 1 },
+        .dst = .{ .handle = 2 },
+        .bytes = 8,
+    }, .per_command));
+    try std.testing.expectError(error.InvalidState, runtime.texture_write(.{
+        .texture = .{ .handle = 3 },
+        .data = &.{},
+    }));
+    try std.testing.expectEqual(@as(u32, 0), runtime.textures.count());
+    try std.testing.expectEqual(@as(u32, 0), runtime.compute_buffers.count());
 }

@@ -3,14 +3,13 @@ const common_timing = @import("../common/timing.zig");
 const model_resource_types = @import("../../contracts/model/model_resource_types.zig");
 const model_gpu_types = @import("../../contracts/model/model_texture_value_types.zig");
 const webgpu = @import("../../contracts/runtime_types.zig");
+const resources = @import("metal_runtime_resources.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_blit_encoder_copy_buffer_to_texture = bridge.metal_bridge_blit_encoder_copy_buffer_to_texture;
 const metal_bridge_blit_encoder_copy_region = bridge.metal_bridge_blit_encoder_copy_region;
 const metal_bridge_blit_encoder_copy_texture_to_buffer = bridge.metal_bridge_blit_encoder_copy_texture_to_buffer;
 const metal_bridge_blit_encoder_copy_texture_to_texture = bridge.metal_bridge_blit_encoder_copy_texture_to_texture;
-const metal_bridge_begin_blit_encoding = bridge.metal_bridge_begin_blit_encoding;
 const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
-const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_device_new_texture = bridge.metal_bridge_device_new_texture;
@@ -29,11 +28,11 @@ pub const CopyMetrics = struct {
 pub fn execute_copy(self: anytype, cmd: model_resource_types.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !CopyMetrics {
     const setup_start = common_timing.now_ns();
     const src_buffer = if (cmd.direction == .buffer_to_buffer or cmd.direction == .buffer_to_texture)
-        try ensure_buffer(self, cmd.src.handle, required_buffer_size(cmd.bytes, cmd.src.offset))
+        try ensure_buffer(self, cmd.src.handle, try required_buffer_size(cmd.bytes, cmd.src.offset))
     else
         null;
     const dst_buffer = if (cmd.direction == .buffer_to_buffer or cmd.direction == .texture_to_buffer)
-        try ensure_buffer(self, cmd.dst.handle, required_buffer_size(cmd.bytes, cmd.dst.offset))
+        try ensure_buffer(self, cmd.dst.handle, try required_buffer_size(cmd.bytes, cmd.dst.offset))
     else
         null;
     const src_texture = if (cmd.direction == .texture_to_buffer or cmd.direction == .texture_to_texture)
@@ -64,13 +63,17 @@ pub fn execute_copy(self: anytype, cmd: model_resource_types.CopyCommand, queue_
             self.streaming_blit_encoder,
             src_buffer,
             cmd.src.offset,
-            normalize_copy_pitch(cmd.src.bytes_per_row, cmd.dst.width, 4),
+            try normalize_copy_pitch(cmd.src.bytes_per_row, cmd.dst.width, 4),
             normalize_copy_rows(cmd.src.rows_per_image, cmd.dst.height),
             dst_texture,
             cmd.dst.mip_level,
             cmd.dst.width,
             cmd.dst.height,
             normalize_copy_depth(cmd.dst.depth_or_array_layers),
+            0,
+            0,
+            0,
+            cmd.dst.aspect,
         ),
         .texture_to_buffer => metal_bridge_blit_encoder_copy_texture_to_buffer(
             self.streaming_blit_encoder,
@@ -78,24 +81,29 @@ pub fn execute_copy(self: anytype, cmd: model_resource_types.CopyCommand, queue_
             cmd.src.mip_level,
             dst_buffer,
             cmd.dst.offset,
-            normalize_copy_pitch(cmd.dst.bytes_per_row, cmd.src.width, 4),
+            try normalize_copy_pitch(cmd.dst.bytes_per_row, cmd.src.width, 4),
             normalize_copy_rows(cmd.dst.rows_per_image, cmd.src.height),
             cmd.src.width,
             cmd.src.height,
             normalize_copy_depth(cmd.src.depth_or_array_layers),
+            0,
+            0,
+            0,
+            cmd.src.aspect,
         ),
         .texture_to_texture => {
             if (cmd.uses_temporary_buffer) {
                 // Quirk workaround: stage texture-to-texture through a temporary
                 // buffer to avoid driver bugs on certain GPU/driver combinations.
-                const staging_size = alignedStagingSize(cmd);
+                const staging_size = try alignedStagingSize(cmd);
+                try self.deferred_releases.ensureUnusedCapacity(self.allocator, 1);
                 const staging_buf = metal_bridge_device_new_buffer_shared(self.device, staging_size) orelse return error.InvalidState;
-                defer metal_bridge_release(staging_buf);
+                self.deferred_releases.appendAssumeCapacity(staging_buf);
 
                 const width = if (cmd.src.width > 0) cmd.src.width else 1;
                 const height = if (cmd.src.height > 0) cmd.src.height else 1;
                 const depth = normalize_copy_depth(cmd.src.depth_or_array_layers);
-                const bpr = normalize_copy_pitch(cmd.src.bytes_per_row, width, 4);
+                const bpr = try normalize_copy_pitch(cmd.src.bytes_per_row, width, 4);
                 const rpi = normalize_copy_rows(cmd.src.rows_per_image, height);
 
                 metal_bridge_blit_encoder_copy_texture_to_buffer(
@@ -109,6 +117,10 @@ pub fn execute_copy(self: anytype, cmd: model_resource_types.CopyCommand, queue_
                     width,
                     height,
                     depth,
+                    0,
+                    0,
+                    0,
+                    cmd.src.aspect,
                 );
                 metal_bridge_blit_encoder_copy_buffer_to_texture(
                     self.streaming_blit_encoder,
@@ -121,6 +133,10 @@ pub fn execute_copy(self: anytype, cmd: model_resource_types.CopyCommand, queue_
                     if (cmd.dst.width > 0) cmd.dst.width else width,
                     if (cmd.dst.height > 0) cmd.dst.height else height,
                     depth,
+                    0,
+                    0,
+                    0,
+                    cmd.dst.aspect,
                 );
             } else {
                 metal_bridge_blit_encoder_copy_texture_to_texture(
@@ -155,16 +171,13 @@ pub fn execute_copy(self: anytype, cmd: model_resource_types.CopyCommand, queue_
 }
 
 fn ensure_buffer(self: anytype, handle: u64, size: u64) !?*anyopaque {
-    if (self.compute_buffers.get(handle)) |buf| return buf;
-    const buffer = metal_bridge_device_new_buffer_shared(self.device, @intCast(size)) orelse return error.InvalidState;
-    try self.compute_buffers.put(self.allocator, handle, buffer);
-    return buffer;
+    return resources.ensure_compute_buffer(self, handle, size, false);
 }
 
 fn ensure_texture(self: anytype, resource: model_resource_types.CopyTextureResource, required_usage: model_gpu_types.WGPUFlags) !?*anyopaque {
     if (self.textures.get(resource.handle)) |tex| return tex;
     const usage = if (resource.usage != 0) resource.usage else required_usage;
-    const mip_levels: u32 = if (resource.mip_level > 0) resource.mip_level + 1 else 1;
+    const mip_levels = std.math.add(u32, resource.mip_level, 1) catch return error.InvalidArgument;
     const texture = metal_bridge_device_new_texture(
         self.device,
         max_dim(resource.width),
@@ -176,6 +189,7 @@ fn ensure_texture(self: anytype, resource: model_resource_types.CopyTextureResou
         @intCast(usage),
         resource.dimension,
     ) orelse return error.InvalidState;
+    errdefer metal_bridge_release(texture);
     try self.textures.put(self.allocator, resource.handle, texture);
     return texture;
 }
@@ -197,16 +211,16 @@ fn ensure_blit_encoder(self: anytype) !void {
     self.streaming_blit_encoder = metal_bridge_cmd_buf_blit_encoder(self.streaming_cmd_buf) orelse return error.InvalidState;
 }
 
-fn required_buffer_size(bytes: usize, offset: u64) u64 {
-    return @as(u64, @intCast(bytes)) + offset;
+fn required_buffer_size(bytes: usize, offset: u64) !u64 {
+    return std.math.add(u64, offset, bytes) catch error.InvalidArgument;
 }
 
 fn max_dim(value: u32) u32 {
     return if (value == 0) 1 else value;
 }
 
-fn normalize_copy_pitch(value: u32, width: u32, bytes_per_pixel: u32) u32 {
-    return if (value == 0) width * bytes_per_pixel else value;
+fn normalize_copy_pitch(value: u32, width: u32, bytes_per_pixel: u32) !u32 {
+    return if (value == 0) std.math.mul(u32, width, bytes_per_pixel) catch error.InvalidArgument else value;
 }
 
 fn normalize_copy_rows(value: u32, height: u32) u32 {
@@ -217,13 +231,23 @@ fn normalize_copy_depth(value: u32) u32 {
     return if (value == 0) 1 else value;
 }
 
-fn alignedStagingSize(cmd: model_resource_types.CopyCommand) u64 {
+fn alignedStagingSize(cmd: model_resource_types.CopyCommand) !u64 {
     const raw: u64 = if (cmd.bytes > 0) @intCast(cmd.bytes) else blk: {
         const w: u64 = if (cmd.src.width > 0) cmd.src.width else 1;
         const h: u64 = if (cmd.src.height > 0) cmd.src.height else 1;
         const d: u64 = if (cmd.src.depth_or_array_layers > 0) cmd.src.depth_or_array_layers else 1;
-        break :blk w * h * d * 4;
+        const pixels = std.math.mul(u64, w, h) catch return error.InvalidArgument;
+        const volume = std.math.mul(u64, pixels, d) catch return error.InvalidArgument;
+        break :blk std.math.mul(u64, volume, 4) catch return error.InvalidArgument;
     };
     const a: u64 = if (cmd.temporary_buffer_alignment > 1) cmd.temporary_buffer_alignment else 1;
-    return (raw + a - 1) / a * a;
+    const rounded = std.math.add(u64, raw, a - 1) catch return error.InvalidArgument;
+    return rounded / a * a;
+}
+
+test "copy range and row pitch arithmetic rejects overflow" {
+    try std.testing.expectError(error.InvalidArgument, required_buffer_size(1, std.math.maxInt(u64)));
+    try std.testing.expectError(error.InvalidArgument, normalize_copy_pitch(0, std.math.maxInt(u32), 4));
+    try std.testing.expectEqual(@as(u64, 24), try required_buffer_size(8, 16));
+    try std.testing.expectEqual(@as(u32, 256), try normalize_copy_pitch(256, 4, 4));
 }

@@ -25,7 +25,9 @@ const model = struct {
 };
 
 pub fn sampler_create(self: anytype, cmd: model.SamplerCreateCommand) !void {
+    _ = try self.flush_queue();
     const h = try self.sampler_cache.acquire(self.device, cmd);
+    errdefer if (!self.sampler_cache.release(h)) bridge.metal_bridge_release(h);
     const gop = try self.samplers.getOrPut(self.allocator, cmd.handle);
     if (gop.found_existing) {
         // Release old sampler — try cache first, fall back to deferred pool.
@@ -38,6 +40,7 @@ pub fn sampler_create(self: anytype, cmd: model.SamplerCreateCommand) !void {
 }
 
 pub fn sampler_destroy(self: anytype, cmd: model.SamplerDestroyCommand) !void {
+    _ = try self.flush_queue();
     if (self.samplers.fetchRemove(cmd.handle)) |e| {
         // Try returning to sampler cache first (decrements ref count).
         // If not cache-managed, enqueue for batch release at next flush.
@@ -53,7 +56,11 @@ pub fn texture_write(self: anytype, cmd: model.TextureWriteCommand) !void {
     const mip_h = @max(t.height >> @intCast(t.mip_level), 1);
 
     const gop = try self.textures.getOrPut(self.allocator, t.handle);
-    if (!gop.found_existing or gop.value_ptr.* == null) {
+    if (!gop.found_existing) gop.value_ptr.* = null;
+    errdefer if (!gop.found_existing) {
+        _ = self.textures.remove(t.handle);
+    };
+    if (gop.value_ptr.* == null) {
         const mip_count: u32 = if (t.mip_level > 0) t.mip_level + 1 else 1;
         const tex = metal_bridge_device_new_texture(
             self.device,
@@ -99,6 +106,7 @@ pub fn texture_query(self: anytype, cmd: model.TextureQueryCommand) !void {
 }
 
 pub fn texture_destroy(self: anytype, cmd: model.TextureDestroyCommand) !void {
+    _ = try self.flush_queue();
     if (self.textures.fetchRemove(cmd.handle)) |e| {
         self.deferred_pool.enqueue(e.value);
     }
