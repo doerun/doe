@@ -275,7 +275,12 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
     if (is_pack_builtin(name)) {
         return try self.module.types.intern(.{ .scalar = .u32 });
     }
-    // Unpack builtins return vec2f or vec4f.
+    if (std.mem.eql(u8, name, "unpack4xU8")) {
+        if (arg_types.len != 1) return error.UnsupportedBuiltin;
+        if (arg_types[0] != self.module.u32_type and arg_types[0] != self.module.abstract_int_type) return error.TypeMismatch;
+        return try self.module.types.intern(.{ .vector = .{ .elem = self.module.u32_type, .len = 4 } });
+    }
+    // Normalized and floating-point unpack builtins return vec2f or vec4f.
     if (is_unpack_2_builtin(name)) {
         const f32_ty = try self.module.types.intern(.{ .scalar = .f32 });
         return try self.module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 2 } });

@@ -6,6 +6,16 @@ history remains in the archive.
 
 ## Current boundary
 
+The retained Node-qualified Qwen reranker executes through Doppler's installed
+public Capsule API on an isolated Doe AMD/Vulkan build. Its frozen source oracle,
+resident repeated execution, compiler repair, and cleanup observations are
+indexed at `bench/out/doppler-search/20260920-admission/README.md`.
+The retained embedding Capsule remains browser-qualified and correctly rejects
+Node admission. Complete document search, package release, browser/Fawn,
+Metal/D3D12, and performance qualification remain separate work. The broader
+shader-semantics suite retains a render-output failure reproduced with an
+unchanged-source control; its passing compute cases do not clear that failure.
+
 CTS readiness now shares the receipt builder's published-artifact selection for
 receipt version 2, verifies the retained bytes, and rejects altered artifact
 identities or query coverage. Legacy receipts keep their original contract.

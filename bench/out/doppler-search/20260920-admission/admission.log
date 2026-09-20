@@ -1,0 +1,19 @@
+node:internal/modules/esm/resolve:314
+  return new ERR_PACKAGE_PATH_NOT_EXPORTED(
+         ^
+
+Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './host' is not defined by "exports" in /var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/package.json
+    at exportsNotFound (node:internal/modules/esm/resolve:314:10)
+    at packageExportsResolve (node:internal/modules/esm/resolve:604:13)
+    at resolveExports (node:internal/modules/cjs/loader:650:36)
+    at Module._findPath (node:internal/modules/cjs/loader:717:31)
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1369:27)
+    at Function.resolve (node:internal/modules/helpers:157:19)
+    at file:///home/x/deco/doe/[eval1]:7:56
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:272:26) {
+  code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+}
+
+Node.js v22.22.1

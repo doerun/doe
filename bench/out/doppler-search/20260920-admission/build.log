@@ -1,0 +1,9 @@
+
+Build Summary: 6/6 steps succeeded
+dropin success
++- install webgpu_doe success
+|  +- compile lib webgpu_doe ReleaseFast native success 28s MaxRSS:715M
+|     +- options cached
++- install generated to share/doe-build-metadata.json success
+   +- WriteFile doe-build-metadata.json success
+

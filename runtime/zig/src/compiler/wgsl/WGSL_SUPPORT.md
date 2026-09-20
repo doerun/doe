@@ -17,6 +17,15 @@ label below is not promotable when that generated view is partial or failing.
 
 ## Feature coverage
 
+`unpack4xU8` function expressions lower to shared unsigned vector shifts and
+masks, with one evaluation of the argument. Frontend checks reject wrong
+argument types and arity; abstract integer inputs must fit `u32`. MSL, HLSL,
+and SPIR-V translation fixtures cover this path. Module initializer evaluation
+remains the explicit subset described below. Physical byte-output checks and
+the retained Doppler reranker diagnostic are indexed in
+[`bench/out/doppler-search/20260920-admission/README.md`](../../../../../bench/out/doppler-search/20260920-admission/README.md).
+This does not qualify Metal, D3D12, or the complete Doppler model catalog.
+
 | Category              | Status              | Notes                                              |
 |-----------------------|---------------------|----------------------------------------------------|
 | Compute shaders       | Full                | Covers Doppler's full compute feature set          |

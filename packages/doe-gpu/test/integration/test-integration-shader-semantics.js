@@ -19,6 +19,26 @@ const CLEAR = `
   data[0] = 7u;
 }`;
 const CASES = [
+  {
+    label: 'unsigned byte unpack preserves order, zero extension, and single evaluation',
+    code: `@group(0) @binding(0) var<storage, read_write> data: array<u32>;
+      var<private> calls: u32;
+      fn nextWord() -> u32 { calls += 1u; return 0x80ff017fu; }
+      @compute @workgroup_size(1) fn main() {
+        let mixed = unpack4xU8(nextWord());
+        let zero = unpack4xU8(0u);
+        let full = unpack4xU8(0xffffffffu);
+        let low = unpack4xU8(0xf1e2d3c4u & 0x0f0f0f0fu);
+        let high = unpack4xU8((0xf1e2d3c4u >> 4u) & 0x0f0f0f0fu);
+        for (var i = 0u; i < 4u; i++) {
+          data[i] = mixed[i]; data[4u + i] = zero[i]; data[8u + i] = full[i];
+          data[12u + i] = low[i]; data[16u + i] = high[i];
+        }
+        data[20] = calls;
+      }`,
+    expected: [127, 1, 255, 128, 0, 0, 0, 0, 255, 255, 255, 255,
+      4, 3, 2, 1, 12, 13, 14, 15, 1],
+  },
   { label: 'clear followed by write', code: CLEAR, expected: [7, 0, 0, 0] },
   {
     label: 'additional writes', code: CLEAR.replace('data[0] = 7u;',

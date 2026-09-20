@@ -1,0 +1,42 @@
+PROVIDER {"module":"doe-gpu","loaded":true,"loadError":"","defaultCreateArgs":[],"doeNative":true,"libraryFlavor":"doe-dropin","doeLibraryPath":"/home/x/deco/doe/bench/out/doppler-search/20260920-admission/native-final/lib/libwebgpu_doe.so","buildMetadataSource":"workspace","buildMetadataPath":"/home/x/deco/doe/bench/out/doppler-search/20260920-admission/native-final/share/doe-build-metadata.json","leanVerifiedBuild":false,"proofArtifactSha256":null,"nativeFastPaths":{"appleFastPathCompiled":false,"queueFlush":true,"queueFlushBreakdown":true,"queueWriteBufferBatch":true,"queueWriteBufferBatchDataPtrs":true,"computeDispatchFlush":true,"computeDispatchFlushBreakdown":true,"computeDispatchBatchFlush":true,"computeDispatchBatchCopyFlush":true,"computeDispatchBatchCopyFlushBreakdown":true,"computePrewarmDispatchBindings":true,"bufferMapReadCopyUnmap":true}} {"vendor":"AMD","architecture":"vulkan","device":"Radeon 8060S Graphics (RADV STRIX_HALO)","description":"Radeon 8060S Graphics (RADV STRIX_HALO)","isFallbackAdapter":false,"subgroupMinSize":32,"subgroupMaxSize":32,"vendorID":4098,"deviceID":5510,"driverVersion":109051907}
+[463.7ms][Platform] No specific platform matched for adapter (vendor=AMD, arch=vulkan), falling back to generic
+[GPU] AMD vulkan, f16/subgroups, 4.0GB, submit probe: 1.6ms
+[16719.0ms][doppler] Resolving model
+[16723.9ms][doppler] Fetching manifest
+[16737.0ms][doppler] Loading weights
+[16742.0ms][Pipeline] Execution v1 enabled (steps=35, kernelPathInline=yes, pipelineInline=no)
+[16742.1ms][Config] Using manifest-first config (source of truth)
+[16744.6ms][Pipeline] Resolved session applied (qwen-3-reranker-0-6b-q4k-ehf16-af32): batchSize=4, stopCheckMode=batch, readbackInterval=1, disableCommandBatching=false
+[16745.1ms][Pipeline] KernelPath: qwen-3-reranker-0-6b-q4k-ehf16-af32-execution-inline (15 decode steps, 12 kernels, source=execution-v1)
+[16745.3ms][Pipeline] 28L/1024H/16heads (128dim), kernelPath=qwen-3-reranker-0-6b-q4k-ehf16-af32-execution-inline
+[16745.7ms][Tokenizer] Loading bundled tokenizer from tokenizer.json
+[16810.4ms][Tokenizer] HuggingFace model.type="BPE", using type="bpe"
+[16882.9ms][Tokenizer] Loaded HuggingFace 151669 tokens (bpe), 26 special patterns, 151387 merges
+[16892.3ms][Pipeline] KV cache allocated: kvDtype=f16, maxSeqLen=1024, layout=contiguous, modelMaxSeqLen=40960, requestedKvDtype=f16, requestedMaxSeqLen=1024
+[16892.8ms][Pipeline] Execution plan: active=primary, dtype=f32, kernelPath=qwen-3-reranker-0-6b-q4k-ehf16-af32-execution-inline
+[16907.5ms][ShardCache] Custom shard loader configured
+[16907.6ms][Loader] Initializing...
+[16973.1ms][HeapManager] Allocated segment 0: 1024MB
+[16973.2ms][HeapManager] Segmented heap: 1GB per segment
+[16973.2ms][HeapManager] Initialized with strategy: SEGMENTED
+[16973.3ms][Loader] Initialized (f16, subgroups)
+[16973.7ms][Loader] Loading: qwen-3-reranker-0-6b-q4k-ehf16-af32
+[16974.9ms][Loader] [0.0s] Memory (start): | RSS=1.12 GB (heap=57.45 MB/103.52 MB, external=2.89 GB, arrayBuffers=2.89 GB) | GPU=0 B (0 active, 0 pooled, peak=0 B) | ShardCache=0 B (0 shards) | Layers=0, GPUBuffers=0
+[16975.5ms][Loader] Dense model on discrete GPU - performance limited. Consider MoE model.
+[16984.8ms][Loader] Embedding "model.embed_tokens.weight" GPU-resident: shouldStreamLargeWeight returned false.
+[21762.0ms][Loader] Embeddings tensor loaded: name=model.embed_tokens.weight, hasShape=true, shape=[151669,1024], isWeightBuffer=true
+[21762.5ms][Loader] Layers: 0-27
+[30662.1ms][Loader] Layers: 28 complete (8.90s)
+[30663.2ms][Loader] Complete: 894.91 MB in 13.68s (65.42 MB/s)
+[30663.8ms][Loader] [13.7s] Memory (complete): | RSS=1.17 GB (heap=58.60 MB/92.02 MB, external=1.92 GB, arrayBuffers=1.90 GB) | GPU=1.20 GB (450 active, 0 pooled, peak=1.20 GB) | ShardCache=0 B (0 shards) | Layers=28, GPUBuffers=450
+[30682.2ms][Pipeline] Model loaded successfully (13943ms)
+[30684.7ms][doppler] Model ready
+OPENED sha256:49a7f647fdc13fdc0c81b15e6dc0e0248a2c69d5883c1adb1eeedcba7034c932
+[30712.5ms][KernelSelect] matmul variant=q4_fused_widetile reason=path_override
+[30722.9ms][KernelSelect] attention variant=prefill_small_f16kv reason=path_override:tiled_small
+[30730.1ms][KernelSelect] matmul variant=f16w_f32a reason=path_override
+COMPARISON 0 {"passed":true,"checks":[{"id":"document.0.tokens","passed":true},{"id":"document.0.trueLogit","passed":true,"expected":20.728845596313477,"actual":20.80515480041504,"absoluteError":0.0763092041015625,"tolerance":1},{"id":"document.0.falseLogit","passed":true,"expected":13.806695938110352,"actual":14.374336242675781,"absoluteError":0.5676403045654297,"tolerance":1},{"id":"document.0.score","passed":true,"expected":20.728845596313477,"actual":20.80515480041504,"absoluteError":0.0763092041015625,"tolerance":1},{"id":"document.0.probability","passed":true,"expected":0.9999999990055641,"actual":0.9999999990786257,"absoluteError":7.30615568045323e-11,"tolerance":0.05},{"id":"document.1.tokens","passed":true},{"id":"document.1.trueLogit","passed":true,"expected":4.002742290496826,"actual":3.8263931274414062,"absoluteError":0.17634916305541992,"tolerance":1},{"id":"document.1.falseLogit","passed":true,"expected":12.97671127319336,"actual":12.962911605834961,"absoluteError":0.013799667358398438,"tolerance":1},{"id":"document.1.score","passed":true,"expected":4.002742290496826,"actual":3.8263931274414062,"absoluteError":0.17634916305541992,"tolerance":1},{"id":"document.1.probability","passed":true,"expected":0.982062162339427,"actual":0.9786765360960985,"absoluteError":0.003385626243328499,"tolerance":0.05},{"id":"document.2.tokens","passed":true},{"id":"document.2.trueLogit","passed":true,"expected":3.1006674766540527,"actual":2.8279871940612793,"absoluteError":0.27268028259277344,"tolerance":1},{"id":"document.2.falseLogit","passed":true,"expected":13.337125778198242,"actual":12.909036636352539,"absoluteError":0.4280891418457031,"tolerance":1},{"id":"document.2.score","passed":true,"expected":3.1006674766540527,"actual":2.8279871940612793,"absoluteError":0.27268028259277344,"tolerance":1},{"id":"document.2.probability","passed":true,"expected":0.9569202694214454,"actual":0.9441695950944614,"absoluteError":0.012750674326983957,"tolerance":0.05},{"id":"ranking.exact","passed":true,"expected":[0,1,2],"actual":[0,1,2]}]}
+COMPARISON 1 {"passed":true,"checks":[{"id":"document.0.tokens","passed":true},{"id":"document.0.trueLogit","passed":true,"expected":20.728845596313477,"actual":20.80515480041504,"absoluteError":0.0763092041015625,"tolerance":1},{"id":"document.0.falseLogit","passed":true,"expected":13.806695938110352,"actual":14.374336242675781,"absoluteError":0.5676403045654297,"tolerance":1},{"id":"document.0.score","passed":true,"expected":20.728845596313477,"actual":20.80515480041504,"absoluteError":0.0763092041015625,"tolerance":1},{"id":"document.0.probability","passed":true,"expected":0.9999999990055641,"actual":0.9999999990786257,"absoluteError":7.30615568045323e-11,"tolerance":0.05},{"id":"document.1.tokens","passed":true},{"id":"document.1.trueLogit","passed":true,"expected":4.002742290496826,"actual":3.8263931274414062,"absoluteError":0.17634916305541992,"tolerance":1},{"id":"document.1.falseLogit","passed":true,"expected":12.97671127319336,"actual":12.962911605834961,"absoluteError":0.013799667358398438,"tolerance":1},{"id":"document.1.score","passed":true,"expected":4.002742290496826,"actual":3.8263931274414062,"absoluteError":0.17634916305541992,"tolerance":1},{"id":"document.1.probability","passed":true,"expected":0.982062162339427,"actual":0.9786765360960985,"absoluteError":0.003385626243328499,"tolerance":0.05},{"id":"document.2.tokens","passed":true},{"id":"document.2.trueLogit","passed":true,"expected":3.1006674766540527,"actual":2.8279871940612793,"absoluteError":0.27268028259277344,"tolerance":1},{"id":"document.2.falseLogit","passed":true,"expected":13.337125778198242,"actual":12.909036636352539,"absoluteError":0.4280891418457031,"tolerance":1},{"id":"document.2.score","passed":true,"expected":3.1006674766540527,"actual":2.8279871940612793,"absoluteError":0.27268028259277344,"tolerance":1},{"id":"document.2.probability","passed":true,"expected":0.9569202694214454,"actual":0.9441695950944614,"absoluteError":0.012750674326983957,"tolerance":0.05},{"id":"ranking.exact","passed":true,"expected":[0,1,2],"actual":[0,1,2]}]}
+[32337.4ms][ExpertCache] Cache cleared
+[32345.1ms][Pipeline] Unloaded
+CLOSED []

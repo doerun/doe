@@ -2404,9 +2404,9 @@
       },
       "src/compiler/wgsl/frontend/sema_attrs.zig": {
         "decision": "Keep",
-        "moduleSha256": "ab41862026718875a5e371601a6a1eac0a2869d303e22e47af657ae51bf092a9",
-        "reason": "Keep: reachable compiler implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-world-labs-compatibility/2026-08-16"
+        "moduleSha256": "2609450290962058ab6963f9bbdb844eaea1d44d48dd6d4ec84ff4eb4cde7f77",
+        "reason": "Keep: builtin argument and result typing remains frontend-owned; unsigned byte unpacking adds no runtime or backend dependency.",
+        "reviewer": "codex-doppler-unpack/2026-09-20"
       },
       "src/compiler/wgsl/frontend/sema_expr.zig": {
         "decision": "Keep",
@@ -2458,9 +2458,9 @@
       },
       "src/compiler/wgsl/ir/ir_builder.zig": {
         "decision": "Keep",
-        "moduleSha256": "e93693161a485af2af7983b23dcd15d2057b2557aa4900219929e740bab90e9d",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-constant-initializers/2026-09-07"
+        "moduleSha256": "a439fec0abdb2d2e3507566f4ab7a94abece07127599ca392160f7f589c32e8f",
+        "reason": "Keep: typed WGSL lowering owns unsigned byte unpacking as shared vector arithmetic, preserving a single argument evaluation without target-specific semantic copies.",
+        "reviewer": "codex-doppler-unpack/2026-09-20"
       },
       "src/compiler/wgsl/ir/ir_const_eval.zig": {
         "decision": "Keep",

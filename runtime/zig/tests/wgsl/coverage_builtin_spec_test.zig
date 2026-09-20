@@ -24,6 +24,63 @@ fn expectMslContains(source: []const u8, needles: []const []const u8) !void {
     }
 }
 
+test "builtins: unpack4xU8 lowers once to unsigned vector arithmetic across targets" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> output: array<vec4<u32>>;
+        \\var<private> calls: u32;
+        \\fn next_word() -> u32 { calls += 1u; return 0x80ff017fu; }
+        \\@compute @workgroup_size(1) fn main() {
+        \\    output[0] = unpack4xU8(next_word());
+        \\    output[1] = vec4<u32>(calls);
+        \\}
+    ;
+    var text: [MAX_OUTPUT]u8 = undefined;
+    inline for (.{ mod.translateToMsl, mod.translateToHlsl }) |translate| {
+        const len = try translate(std.testing.allocator, source, &text);
+        try std.testing.expect(!contains(text[0..len], "unpack4xU8"));
+        try std.testing.expect(contains(text[0..len], ">>"));
+        try std.testing.expect(contains(text[0..len], "255"));
+        // One definition and one evaluation, even when the input mutates state.
+        try std.testing.expectEqual(@as(usize, 2), std.mem.count(u8, text[0..len], "next_word("));
+    }
+    var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(std.testing.allocator, source, &binary);
+    const opcode = @import("../../src/compiler/wgsl/emit/spirv/spirv_builder.zig").Opcode;
+    var offset: usize = 20;
+    var calls: usize = 0;
+    while (offset < len) {
+        const instruction = std.mem.readInt(u32, binary[offset..][0..4], .little);
+        if (@as(u16, @truncate(instruction)) == opcode.FunctionCall) calls += 1;
+        offset += (instruction >> 16) * 4;
+    }
+    // The entry wrapper calls main; main calls next_word once.
+    try std.testing.expectEqual(@as(usize, 2), calls);
+}
+
+test "builtins: unpack4xU8 rejects wrong arity and non-unsigned arguments" {
+    inline for (.{
+        .{ "", error.UnsupportedBuiltin },
+        .{ "1u, 2u", error.UnsupportedBuiltin },
+        .{ "1i", error.TypeMismatch },
+        .{ "1.0f", error.TypeMismatch },
+        .{ "vec2<u32>(1u)", error.TypeMismatch },
+        .{ "-1", error.InvalidIr },
+        .{ "0x100000000", error.InvalidIr },
+    }) |case| {
+        var output: [MAX_SPIRV_OUTPUT]u8 = undefined;
+        try std.testing.expectError(case[1], translateToSpirv(std.testing.allocator, "@compute @workgroup_size(1) fn main() { let value = unpack4xU8(" ++ case[0] ++ "); }", &output));
+    }
+}
+
+test "builtins: unpack4xU8 materializes representable abstract unsigned input" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> output: array<vec4<u32>>;
+        \\@compute @workgroup_size(1) fn main() { output[0] = unpack4xU8(0xffffffff); }
+    ;
+    var output: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    try std.testing.expect(try translateToSpirv(std.testing.allocator, source, &output) > 0);
+}
+
 test "builtins: atomicCompareExchangeWeak result members through MSL and SPIR-V" {
     const source =
         \\struct Counters { value: atomic<u32>, }

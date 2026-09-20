@@ -466,11 +466,61 @@ const FunctionBuilder = struct {
                 try args.append(self.allocator, try self.lower_value_expr(arg_node));
             }
         }
+        if (!is_constructor and kind == .builtin and std.mem.eql(u8, name, "unpack4xU8")) {
+            if (args.items.len != 1) return error.InvalidIr;
+            if (self.function.exprs.items[args.items[0]].ty == self.semantic.abstract_int_type) {
+                var value = try constant_from_node(self.allocator, self.tree, self.semantic, self.failure, self.tree.extra_data.items[node.data.lhs], 0) orelse return error.UnsupportedConstruct;
+                defer value.deinit(self.allocator);
+                if (value != .int or value.int > std.math.maxInt(u32)) return error.InvalidIr;
+                args.items[0] = try self.function.append_expr(self.allocator, .{
+                    .ty = self.semantic.u32_type,
+                    .category = .value,
+                    .data = .{ .int_lit = value.int },
+                });
+            }
+            return try self.lower_unpack_bytes(args.items[0], self.semantic.nodeType(node_idx));
+        }
         const range = try self.function.append_expr_args(self.allocator, args.items);
         if (is_constructor) {
             return .{ .construct = .{ .ty = self.semantic.nodeType(node_idx), .args = range } };
         }
         return .{ .call = .{ .name = try ir.dup_string(self.allocator, name), .kind = kind, .args = range } };
+    }
+
+    fn lower_unpack_bytes(self: *FunctionBuilder, argument: ir.ExprId, result_ty: ir.TypeId) !ir.Expr {
+        const byte_bits = @bitSizeOf(u8);
+        const byte_mask = std.math.maxInt(u8);
+        var shifts: [@sizeOf(u32)]ir.ExprId = undefined;
+        for (&shifts, 0..) |*shift, lane| {
+            shift.* = try self.function.append_expr(self.allocator, .{
+                .ty = self.semantic.u32_type,
+                .category = .value,
+                .data = .{ .int_lit = lane * byte_bits },
+            });
+        }
+        const mask = try self.function.append_expr(self.allocator, .{
+            .ty = self.semantic.u32_type,
+            .category = .value,
+            .data = .{ .int_lit = byte_mask },
+        });
+        // A scalar splat evaluates the source once, including calls with side effects.
+        const splat = try self.append_vector_construct(result_ty, &.{argument});
+        const offsets = try self.append_vector_construct(result_ty, &shifts);
+        const masks = try self.append_vector_construct(result_ty, &.{mask});
+        const shifted = try self.function.append_expr(self.allocator, .{
+            .ty = result_ty,
+            .category = .value,
+            .data = .{ .binary = .{ .op = .shift_right, .lhs = splat, .rhs = offsets } },
+        });
+        return .{ .binary = .{ .op = .bit_and, .lhs = shifted, .rhs = masks } };
+    }
+
+    fn append_vector_construct(self: *FunctionBuilder, ty: ir.TypeId, args: []const ir.ExprId) !ir.ExprId {
+        return try self.function.append_expr(self.allocator, .{
+            .ty = ty,
+            .category = .value,
+            .data = .{ .construct = .{ .ty = ty, .args = try self.function.append_expr_args(self.allocator, args) } },
+        });
     }
 
     fn lower_generic_call(self: *FunctionBuilder, _: u32, node: Node) !ir.Expr {

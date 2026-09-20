@@ -1,0 +1,54 @@
+NATIVE {"module":"doe-gpu","loaded":true,"loadError":"","defaultCreateArgs":[],"doeNative":true,"libraryFlavor":"doe-dropin","doeLibraryPath":"/home/x/deco/doe/runtime/zig/zig-out/lib/libwebgpu_doe.so","buildMetadataSource":"workspace","buildMetadataPath":"/home/x/deco/doe/runtime/zig/zig-out/share/doe-build-metadata.json","leanVerifiedBuild":false,"proofArtifactSha256":null,"nativeFastPaths":{"appleFastPathCompiled":false,"queueFlush":true,"queueFlushBreakdown":true,"queueWriteBufferBatch":true,"queueWriteBufferBatchDataPtrs":true,"computeDispatchFlush":true,"computeDispatchFlushBreakdown":true,"computeDispatchBatchFlush":true,"computeDispatchBatchCopyFlush":true,"computeDispatchBatchCopyFlushBreakdown":true,"computePrewarmDispatchBindings":true,"bufferMapReadCopyUnmap":true}}
+ADAPTER {"vendor":"AMD","architecture":"vulkan","device":"Radeon 8060S Graphics (RADV STRIX_HALO)","description":"Radeon 8060S Graphics (RADV STRIX_HALO)","isFallbackAdapter":false,"subgroupMinSize":32,"subgroupMaxSize":32,"vendorID":4098,"deviceID":5510,"driverVersion":109051907}
+CHECKPOINT {"sequence":2,"digest":"sha256:9cea2ee357ffc68714298a6ce58e56e78e22b339f6bb92ac985b5f161777cb1f"}
+[550.7ms][Platform] No specific platform matched for adapter (vendor=AMD, arch=vulkan), falling back to generic
+[GPU] AMD vulkan, f16/subgroups, 4.0GB, submit probe: 1.9ms
+[17939.4ms][doppler] Resolving model
+[17944.4ms][doppler] Fetching manifest
+[17957.6ms][doppler] Loading weights
+[17962.8ms][Pipeline] Execution v1 enabled (steps=35, kernelPathInline=yes, pipelineInline=no)
+[17962.8ms][Config] Using manifest-first config (source of truth)
+[17965.4ms][Pipeline] Resolved session applied (qwen-3-reranker-0-6b-q4k-ehf16-af32): batchSize=4, stopCheckMode=batch, readbackInterval=1, disableCommandBatching=false
+[17965.9ms][Pipeline] KernelPath: qwen-3-reranker-0-6b-q4k-ehf16-af32-execution-inline (15 decode steps, 12 kernels, source=execution-v1)
+[17966.1ms][Pipeline] 28L/1024H/16heads (128dim), kernelPath=qwen-3-reranker-0-6b-q4k-ehf16-af32-execution-inline
+[17966.5ms][Tokenizer] Loading bundled tokenizer from tokenizer.json
+[18033.9ms][Tokenizer] HuggingFace model.type="BPE", using type="bpe"
+[18108.2ms][Tokenizer] Loaded HuggingFace 151669 tokens (bpe), 26 special patterns, 151387 merges
+[18132.6ms][Pipeline] KV cache allocated: kvDtype=f16, maxSeqLen=1024, layout=contiguous, modelMaxSeqLen=40960, requestedKvDtype=f16, requestedMaxSeqLen=1024
+[18133.2ms][Pipeline] Execution plan: active=primary, dtype=f32, kernelPath=qwen-3-reranker-0-6b-q4k-ehf16-af32-execution-inline
+[18148.4ms][ShardCache] Custom shard loader configured
+[18148.6ms][Loader] Initializing...
+[18216.5ms][HeapManager] Allocated segment 0: 1024MB
+[18216.6ms][HeapManager] Segmented heap: 1GB per segment
+[18216.7ms][HeapManager] Initialized with strategy: SEGMENTED
+[18216.7ms][Loader] Initialized (f16, subgroups)
+[18217.1ms][Loader] Loading: qwen-3-reranker-0-6b-q4k-ehf16-af32
+[18218.0ms][Loader] [0.0s] Memory (start): | RSS=1.11 GB (heap=57.40 MB/104.02 MB, external=1.89 GB, arrayBuffers=1.89 GB) | GPU=0 B (0 active, 0 pooled, peak=0 B) | ShardCache=0 B (0 shards) | Layers=0, GPUBuffers=0
+[18218.7ms][Loader] Dense model on discrete GPU - performance limited. Consider MoE model.
+[18228.7ms][Loader] Embedding "model.embed_tokens.weight" GPU-resident: shouldStreamLargeWeight returned false.
+[22962.9ms][Loader] Embeddings tensor loaded: name=model.embed_tokens.weight, hasShape=true, shape=[151669,1024], isWeightBuffer=true
+[22963.5ms][Loader] Layers: 0-27
+[31813.2ms][Loader] Layers: 28 complete (8.85s)
+[31814.5ms][Loader] Complete: 894.91 MB in 13.59s (65.87 MB/s)
+[31815.1ms][Loader] [13.6s] Memory (complete): | RSS=1.15 GB (heap=59.15 MB/92.27 MB, external=1.93 GB, arrayBuffers=1.92 GB) | GPU=1.20 GB (450 active, 0 pooled, peak=1.20 GB) | ShardCache=0 B (0 shards) | Layers=28, GPUBuffers=450
+[31834.5ms][Pipeline] Model loaded successfully (13874ms)
+[31836.7ms][doppler] Model ready
+OPENED sha256:49a7f647fdc13fdc0c81b15e6dc0e0248a2c69d5883c1adb1eeedcba7034c932
+[31866.0ms][KernelSelect] matmul variant=q4_fused_widetile reason=path_override
+[31867.0ms][compileShader] matmul_q4_fused_widetile: Vulkan WGSL→SPIR-V compilation failed: sema: UnsupportedBuiltin at 137:57 near `                    let lower_u32 = unpack4xU8(packed & 0x0F0F0F0Fu);` (line 137:57)
+FAILURE Error: Shader compilation failed for matmul_q4_fused_widetile
+    at compileShader (file:///var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/src/gpu/kernels/shader-cache.js:223:13)
+    at async file:///var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/src/gpu/kernels/shader-cache.js:247:20
+    at async getShaderModule (file:///var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/src/gpu/kernels/shader-cache.js:258:20)
+    at async createPipeline (file:///var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/src/gpu/kernels/pipeline-cache.js:317:24)
+    at async getMatmulPipeline (file:///var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/src/gpu/kernels/matmul-dispatch.js:115:16)
+    at async executeMatmul (file:///var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/src/gpu/kernels/matmul.js:467:16)
+    at async projectSingleQkvTensor (file:///var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/src/inference/pipelines/text/attention/projection-executor.js:115:17)
+    at async projectQueryWithOptionalGate (file:///var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/src/inference/pipelines/text/attention/projection-executor.js:232:21)
+    at async projectAttentionQKV (file:///var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/src/inference/pipelines/text/attention/projections.js:673:33)
+    at async interpretAttentionWithRecorder (file:///var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu/src/inference/pipelines/text/attention/interpreter.js:347:127)
+[31873.1ms][ExpertCache] Cache cleared
+[31883.3ms][Pipeline] Unloaded
+[31883.8ms][GPU] Device lost: GPUDevice.destroy() was called, Reason: destroyed
+CLOSED
+[31884.0ms][BufferPool] Deferred destruction failed: GPUQueue.onSubmittedWorkDone: GPUQueue was destroyed

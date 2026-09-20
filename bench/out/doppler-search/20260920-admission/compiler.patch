@@ -1,0 +1,185 @@
+diff --git a/packages/doe-gpu/test/integration/test-integration-shader-semantics.js b/packages/doe-gpu/test/integration/test-integration-shader-semantics.js
+index a2590665e..d14498d17 100644
+--- a/packages/doe-gpu/test/integration/test-integration-shader-semantics.js
++++ b/packages/doe-gpu/test/integration/test-integration-shader-semantics.js
+@@ -19,6 +19,26 @@ const CLEAR = `
+   data[0] = 7u;
+ }`;
+ const CASES = [
++  {
++    label: 'unsigned byte unpack preserves order, zero extension, and single evaluation',
++    code: `@group(0) @binding(0) var<storage, read_write> data: array<u32>;
++      var<private> calls: u32;
++      fn nextWord() -> u32 { calls += 1u; return 0x80ff017fu; }
++      @compute @workgroup_size(1) fn main() {
++        let mixed = unpack4xU8(nextWord());
++        let zero = unpack4xU8(0u);
++        let full = unpack4xU8(0xffffffffu);
++        let low = unpack4xU8(0xf1e2d3c4u & 0x0f0f0f0fu);
++        let high = unpack4xU8((0xf1e2d3c4u >> 4u) & 0x0f0f0f0fu);
++        for (var i = 0u; i < 4u; i++) {
++          data[i] = mixed[i]; data[4u + i] = zero[i]; data[8u + i] = full[i];
++          data[12u + i] = low[i]; data[16u + i] = high[i];
++        }
++        data[20] = calls;
++      }`,
++    expected: [127, 1, 255, 128, 0, 0, 0, 0, 255, 255, 255, 255,
++      4, 3, 2, 1, 12, 13, 14, 15, 1],
++  },
+   { label: 'clear followed by write', code: CLEAR, expected: [7, 0, 0, 0] },
+   {
+     label: 'additional writes', code: CLEAR.replace('data[0] = 7u;',
+diff --git a/runtime/zig/src/compiler/wgsl/frontend/sema_attrs.zig b/runtime/zig/src/compiler/wgsl/frontend/sema_attrs.zig
+index 72250d50d..10583732b 100644
+--- a/runtime/zig/src/compiler/wgsl/frontend/sema_attrs.zig
++++ b/runtime/zig/src/compiler/wgsl/frontend/sema_attrs.zig
+@@ -275,7 +275,12 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
+     if (is_pack_builtin(name)) {
+         return try self.module.types.intern(.{ .scalar = .u32 });
+     }
+-    // Unpack builtins return vec2f or vec4f.
++    if (std.mem.eql(u8, name, "unpack4xU8")) {
++        if (arg_types.len != 1) return error.UnsupportedBuiltin;
++        if (arg_types[0] != self.module.u32_type and arg_types[0] != self.module.abstract_int_type) return error.TypeMismatch;
++        return try self.module.types.intern(.{ .vector = .{ .elem = self.module.u32_type, .len = 4 } });
++    }
++    // Normalized and floating-point unpack builtins return vec2f or vec4f.
+     if (is_unpack_2_builtin(name)) {
+         const f32_ty = try self.module.types.intern(.{ .scalar = .f32 });
+         return try self.module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 2 } });
+diff --git a/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig b/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig
+index 472ac3b4c..c4224ff32 100644
+--- a/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig
++++ b/runtime/zig/src/compiler/wgsl/ir/ir_builder.zig
+@@ -466,6 +466,20 @@ const FunctionBuilder = struct {
+                 try args.append(self.allocator, try self.lower_value_expr(arg_node));
+             }
+         }
++        if (!is_constructor and kind == .builtin and std.mem.eql(u8, name, "unpack4xU8")) {
++            if (args.items.len != 1) return error.InvalidIr;
++            if (self.function.exprs.items[args.items[0]].ty == self.semantic.abstract_int_type) {
++                var value = try constant_from_node(self.allocator, self.tree, self.semantic, self.failure, self.tree.extra_data.items[node.data.lhs], 0) orelse return error.UnsupportedConstruct;
++                defer value.deinit(self.allocator);
++                if (value != .int or value.int > std.math.maxInt(u32)) return error.InvalidIr;
++                args.items[0] = try self.function.append_expr(self.allocator, .{
++                    .ty = self.semantic.u32_type,
++                    .category = .value,
++                    .data = .{ .int_lit = value.int },
++                });
++            }
++            return try self.lower_unpack_bytes(args.items[0], self.semantic.nodeType(node_idx));
++        }
+         const range = try self.function.append_expr_args(self.allocator, args.items);
+         if (is_constructor) {
+             return .{ .construct = .{ .ty = self.semantic.nodeType(node_idx), .args = range } };
+@@ -473,6 +487,42 @@ const FunctionBuilder = struct {
+         return .{ .call = .{ .name = try ir.dup_string(self.allocator, name), .kind = kind, .args = range } };
+     }
+ 
++    fn lower_unpack_bytes(self: *FunctionBuilder, argument: ir.ExprId, result_ty: ir.TypeId) !ir.Expr {
++        const byte_bits = @bitSizeOf(u8);
++        const byte_mask = std.math.maxInt(u8);
++        var shifts: [@sizeOf(u32)]ir.ExprId = undefined;
++        for (&shifts, 0..) |*shift, lane| {
++            shift.* = try self.function.append_expr(self.allocator, .{
++                .ty = self.semantic.u32_type,
++                .category = .value,
++                .data = .{ .int_lit = lane * byte_bits },
++            });
++        }
++        const mask = try self.function.append_expr(self.allocator, .{
++            .ty = self.semantic.u32_type,
++            .category = .value,
++            .data = .{ .int_lit = byte_mask },
++        });
++        // A scalar splat evaluates the source once, including calls with side effects.
++        const splat = try self.append_vector_construct(result_ty, &.{argument});
++        const offsets = try self.append_vector_construct(result_ty, &shifts);
++        const masks = try self.append_vector_construct(result_ty, &.{mask});
++        const shifted = try self.function.append_expr(self.allocator, .{
++            .ty = result_ty,
++            .category = .value,
++            .data = .{ .binary = .{ .op = .shift_right, .lhs = splat, .rhs = offsets } },
++        });
++        return .{ .binary = .{ .op = .bit_and, .lhs = shifted, .rhs = masks } };
++    }
++
++    fn append_vector_construct(self: *FunctionBuilder, ty: ir.TypeId, args: []const ir.ExprId) !ir.ExprId {
++        return try self.function.append_expr(self.allocator, .{
++            .ty = ty,
++            .category = .value,
++            .data = .{ .construct = .{ .ty = ty, .args = try self.function.append_expr_args(self.allocator, args) } },
++        });
++    }
++
+     fn lower_generic_call(self: *FunctionBuilder, _: u32, node: Node) !ir.Expr {
+         const name = self.tree.tokenSlice(node.main_token);
+         const span = sema_helpers.decode_packed_span(node.data.rhs);
+diff --git a/runtime/zig/tests/wgsl/coverage_builtin_spec_test.zig b/runtime/zig/tests/wgsl/coverage_builtin_spec_test.zig
+index 91a9e9a10..9311ec789 100644
+--- a/runtime/zig/tests/wgsl/coverage_builtin_spec_test.zig
++++ b/runtime/zig/tests/wgsl/coverage_builtin_spec_test.zig
+@@ -24,6 +24,63 @@ fn expectMslContains(source: []const u8, needles: []const []const u8) !void {
+     }
+ }
+ 
++test "builtins: unpack4xU8 lowers once to unsigned vector arithmetic across targets" {
++    const source =
++        \\@group(0) @binding(0) var<storage, read_write> output: array<vec4<u32>>;
++        \\var<private> calls: u32;
++        \\fn next_word() -> u32 { calls += 1u; return 0x80ff017fu; }
++        \\@compute @workgroup_size(1) fn main() {
++        \\    output[0] = unpack4xU8(next_word());
++        \\    output[1] = vec4<u32>(calls);
++        \\}
++    ;
++    var text: [MAX_OUTPUT]u8 = undefined;
++    inline for (.{ mod.translateToMsl, mod.translateToHlsl }) |translate| {
++        const len = try translate(std.testing.allocator, source, &text);
++        try std.testing.expect(!contains(text[0..len], "unpack4xU8"));
++        try std.testing.expect(contains(text[0..len], ">>"));
++        try std.testing.expect(contains(text[0..len], "255"));
++        // One definition and one evaluation, even when the input mutates state.
++        try std.testing.expectEqual(@as(usize, 2), std.mem.count(u8, text[0..len], "next_word("));
++    }
++    var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
++    const len = try translateToSpirv(std.testing.allocator, source, &binary);
++    const opcode = @import("../../src/compiler/wgsl/emit/spirv/spirv_builder.zig").Opcode;
++    var offset: usize = 20;
++    var calls: usize = 0;
++    while (offset < len) {
++        const instruction = std.mem.readInt(u32, binary[offset..][0..4], .little);
++        if (@as(u16, @truncate(instruction)) == opcode.FunctionCall) calls += 1;
++        offset += (instruction >> 16) * 4;
++    }
++    // The entry wrapper calls main; main calls next_word once.
++    try std.testing.expectEqual(@as(usize, 2), calls);
++}
++
++test "builtins: unpack4xU8 rejects wrong arity and non-unsigned arguments" {
++    inline for (.{
++        .{ "", error.UnsupportedBuiltin },
++        .{ "1u, 2u", error.UnsupportedBuiltin },
++        .{ "1i", error.TypeMismatch },
++        .{ "1.0f", error.TypeMismatch },
++        .{ "vec2<u32>(1u)", error.TypeMismatch },
++        .{ "-1", error.InvalidIr },
++        .{ "0x100000000", error.InvalidIr },
++    }) |case| {
++        var output: [MAX_SPIRV_OUTPUT]u8 = undefined;
++        try std.testing.expectError(case[1], translateToSpirv(std.testing.allocator, "@compute @workgroup_size(1) fn main() { let value = unpack4xU8(" ++ case[0] ++ "); }", &output));
++    }
++}
++
++test "builtins: unpack4xU8 materializes representable abstract unsigned input" {
++    const source =
++        \\@group(0) @binding(0) var<storage, read_write> output: array<vec4<u32>>;
++        \\@compute @workgroup_size(1) fn main() { output[0] = unpack4xU8(0xffffffff); }
++    ;
++    var output: [MAX_SPIRV_OUTPUT]u8 = undefined;
++    try std.testing.expect(try translateToSpirv(std.testing.allocator, source, &output) > 0);
++}
++
+ test "builtins: atomicCompareExchangeWeak result members through MSL and SPIR-V" {
+     const source =
+         \\struct Counters { value: atomic<u32>, }
