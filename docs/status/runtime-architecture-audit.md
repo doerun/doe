@@ -12,9 +12,18 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [sampler and resource-port follow-up](../../bench/out/maintenance/20260920-zig-metal-sampler-resource/README.md)
+consolidates open Metal findings by responsible owner. Canonical sampler
+translation, comparison identity and call-local descriptor ownership are repaired
+across command and ordinary native creation. Host regressions and the predecessor
+reproduction are retained separately from the unexecuted physical Metal checks.
+The resource-port examination preserves texture admission, submission reporting
+and completion findings; supporting edits grant no extra file-review credit.
+Continue the named repair actions before another broad examination batch.
+
 The [Metal and port batch](../../bench/out/maintenance/20260920-zig-metal-ports-audit/README.md)
 records the next file examinations, ownership repairs and host checks. Open
-sampler semantics, texture footprints, binding translation, completion errors,
+texture footprints, binding translation, completion errors,
 cache identity/observations and render ABI findings remain in the ledger; no
 physical Metal qualification follows from host tests. Use its per-file actions
 for repairs and its named continuation for never-examined scopes. Accepted

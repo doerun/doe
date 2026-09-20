@@ -1,0 +1,7 @@
+translation/admission failures: 5
+FAIL: wgpu_to_mtl_filter(WGPUFilterMode_Nearest) == MTLSamplerMinMagFilterNearest
+FAIL: wgpu_to_mtl_filter(WGPUFilterMode_Linear) == MTLSamplerMinMagFilterLinear
+FAIL: wgpu_to_mtl_mip_filter(WGPUMipmapFilterMode_Nearest) == MTLSamplerMipFilterNearest
+FAIL: wgpu_to_mtl_mip_filter(WGPUMipmapFilterMode_Linear) == MTLSamplerMipFilterLinear
+FAIL: wgpu_to_mtl_addr(WGPUAddressMode_ClampToEdge) == MTLSamplerAddressModeClampToEdge
+exitCode=1

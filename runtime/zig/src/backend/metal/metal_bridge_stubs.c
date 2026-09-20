@@ -576,6 +576,21 @@ MetalHandle metal_bridge_device_new_sampler(MetalHandle device, uint32_t min_fil
     return NULL;
 }
 
+MetalHandle metal_bridge_device_new_sampler_with_compare(MetalHandle device, uint32_t min_filter, uint32_t mag_filter, uint32_t mipmap_filter, uint32_t addr_u, uint32_t addr_v, uint32_t addr_w, float lod_min, float lod_max, uint32_t compare, uint16_t max_aniso) {
+    (void)compare;
+    (void)device;
+    (void)min_filter;
+    (void)mag_filter;
+    (void)mipmap_filter;
+    (void)addr_u;
+    (void)addr_v;
+    (void)addr_w;
+    (void)lod_min;
+    (void)lod_max;
+    (void)max_aniso;
+    return NULL;
+}
+
 MetalHandle metal_bridge_device_new_render_pipeline(MetalHandle device, uint32_t pixel_format, int support_icb, char* error_buf, size_t error_cap) {
     (void)device;
     (void)pixel_format;

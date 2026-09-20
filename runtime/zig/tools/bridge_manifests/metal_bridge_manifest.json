@@ -70,6 +70,7 @@
         "metal_bridge_texture_depth",
         "metal_bridge_texture_sample_count",
         "metal_bridge_device_new_sampler",
+        "metal_bridge_device_new_sampler_with_compare",
         "metal_bridge_device_new_render_pipeline",
         "metal_bridge_device_new_render_pipeline_functions",
         "metal_bridge_device_new_render_pipeline_full",

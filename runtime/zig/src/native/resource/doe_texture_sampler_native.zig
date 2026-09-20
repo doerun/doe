@@ -75,7 +75,7 @@ extern fn d3d12_bridge_device_create_sampler(
 ) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, depth_or_array_layers: u32, mip_levels: u32, sample_count: u32, pixel_format: u32, usage: u32, dimension: u32) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_texture_new_view(texture: ?*anyopaque, pixel_format: u32, dimension: u32, base_mip_level: u32, mip_level_count: u32, base_array_layer: u32, array_layer_count: u32, swizzle_r: u32, swizzle_g: u32, swizzle_b: u32, swizzle_a: u32) callconv(.c) ?*anyopaque;
-extern fn metal_bridge_device_new_sampler(device: ?*anyopaque, min_f: u32, mag_f: u32, mip_f: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, max_aniso: u16) callconv(.c) ?*anyopaque;
+extern fn metal_bridge_device_new_sampler_with_compare(device: ?*anyopaque, min_f: u32, mag_f: u32, mip_f: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, compare: u32, max_aniso: u16) callconv(.c) ?*anyopaque;
 
 pub const OpaqueRegistry = struct {
     map: std.AutoHashMapUnmanaged(usize, void) = .{},
@@ -792,7 +792,7 @@ fn createSampler(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUSamplerDes
         return result;
     }
     // Metal path.
-    const mtl = metal_bridge_device_new_sampler(dev.mtl_device, d.minFilter, d.magFilter, d.mipmapFilter, d.addressModeU, d.addressModeV, d.addressModeW, d.lodMinClamp, d.lodMaxClamp, d.maxAnisotropy) orelse {
+    const mtl = metal_bridge_device_new_sampler_with_compare(dev.mtl_device, d.minFilter, d.magFilter, d.mipmapFilter, d.addressModeU, d.addressModeV, d.addressModeW, d.lodMinClamp, d.lodMaxClamp, d.compare, d.maxAnisotropy) orelse {
         alloc.destroy(s);
         return null;
     };

@@ -6,6 +6,7 @@
 #include "metal_bridge.h"
 #include "../../../vendor/webgpu-headers/webgpu.h"
 #include <string.h>
+#include <math.h>
 #include <dispatch/dispatch.h>
 #include <mach/mach_time.h>
 #include <CommonCrypto/CommonDigest.h>
@@ -2004,53 +2005,107 @@ uint32_t metal_bridge_texture_sample_count(MetalHandle h)    { return (uint32_t)
 // ============================================================
 
 static MTLSamplerMinMagFilter wgpu_to_mtl_filter(uint32_t f) {
-    return (f == 1) ? MTLSamplerMinMagFilterLinear : MTLSamplerMinMagFilterNearest;
+    return f == WGPUFilterMode_Linear ? MTLSamplerMinMagFilterLinear : MTLSamplerMinMagFilterNearest;
 }
 
 static MTLSamplerMipFilter wgpu_to_mtl_mip_filter(uint32_t f) {
-    return (f == 1) ? MTLSamplerMipFilterLinear : MTLSamplerMipFilterNearest;
+    return f == WGPUMipmapFilterMode_Linear ? MTLSamplerMipFilterLinear : MTLSamplerMipFilterNearest;
 }
 
 static MTLSamplerAddressMode wgpu_to_mtl_addr(uint32_t a) {
     switch (a) {
-        case 0: return MTLSamplerAddressModeClampToEdge;
-        case 1: return MTLSamplerAddressModeMirrorClampToEdge;
-        case 3: return MTLSamplerAddressModeMirrorRepeat;
-        default: return MTLSamplerAddressModeRepeat;
+        case WGPUAddressMode_Repeat: return MTLSamplerAddressModeRepeat;
+        case WGPUAddressMode_MirrorRepeat: return MTLSamplerAddressModeMirrorRepeat;
+        default: return MTLSamplerAddressModeClampToEdge;
     }
 }
 
-static MTLSamplerDescriptor* _cachedSamplerDesc = nil;
-
-MetalHandle metal_bridge_device_new_sampler(
+static MetalHandle new_sampler(
     MetalHandle device_h,
-    uint32_t    min_filter,
-    uint32_t    mag_filter,
-    uint32_t    mipmap_filter,
-    uint32_t    addr_u,
-    uint32_t    addr_v,
-    uint32_t    addr_w,
-    float       lod_min,
-    float       lod_max,
-    uint16_t    max_aniso)
+    MTLSamplerMinMagFilter min_filter,
+    MTLSamplerMinMagFilter mag_filter,
+    MTLSamplerMipFilter mipmap_filter,
+    MTLSamplerAddressMode addr_u,
+    MTLSamplerAddressMode addr_v,
+    MTLSamplerAddressMode addr_w,
+    float lod_min,
+    float lod_max,
+    MTLCompareFunction compare,
+    uint16_t max_aniso)
 {
     id<MTLDevice> device = (__bridge id<MTLDevice>)device_h;
-    if (_cachedSamplerDesc == nil) {
-        _cachedSamplerDesc = [MTLSamplerDescriptor new];
-    }
-    _cachedSamplerDesc.minFilter       = wgpu_to_mtl_filter(min_filter);
-    _cachedSamplerDesc.magFilter       = wgpu_to_mtl_filter(mag_filter);
-    _cachedSamplerDesc.mipFilter       = wgpu_to_mtl_mip_filter(mipmap_filter);
-    _cachedSamplerDesc.sAddressMode    = wgpu_to_mtl_addr(addr_u);
-    _cachedSamplerDesc.tAddressMode    = wgpu_to_mtl_addr(addr_v);
-    _cachedSamplerDesc.rAddressMode    = wgpu_to_mtl_addr(addr_w);
-    _cachedSamplerDesc.lodMinClamp     = lod_min;
-    _cachedSamplerDesc.lodMaxClamp     = lod_max;
-    _cachedSamplerDesc.maxAnisotropy   = max_aniso > 0 ? max_aniso : 1;
-
-    id<MTLSamplerState> sampler = [device newSamplerStateWithDescriptor:_cachedSamplerDesc];
+    // Construction is call-local: concurrent devices must not share mutable descriptors.
+    MTLSamplerDescriptor* desc = [MTLSamplerDescriptor new];
+    desc.minFilter = min_filter;
+    desc.magFilter = mag_filter;
+    desc.mipFilter = mipmap_filter;
+    desc.sAddressMode = addr_u;
+    desc.tAddressMode = addr_v;
+    desc.rAddressMode = addr_w;
+    desc.lodMinClamp = lod_min;
+    desc.lodMaxClamp = lod_max;
+    desc.compareFunction = compare;
+    desc.maxAnisotropy = max_aniso;
+    id<MTLSamplerState> sampler = [device newSamplerStateWithDescriptor:desc];
     if (sampler == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(sampler);
+}
+
+MetalHandle metal_bridge_device_new_sampler_with_compare(
+    MetalHandle device_h,
+    uint32_t min_filter,
+    uint32_t mag_filter,
+    uint32_t mipmap_filter,
+    uint32_t addr_u,
+    uint32_t addr_v,
+    uint32_t addr_w,
+    float lod_min,
+    float lod_max,
+    uint32_t compare,
+    uint16_t max_aniso)
+{
+    if (min_filter > WGPUFilterMode_Linear || mag_filter > WGPUFilterMode_Linear ||
+        mipmap_filter > WGPUMipmapFilterMode_Linear ||
+        addr_u > WGPUAddressMode_MirrorRepeat || addr_v > WGPUAddressMode_MirrorRepeat ||
+        addr_w > WGPUAddressMode_MirrorRepeat || compare > WGPUCompareFunction_Always) return NULL;
+    enum { MAX_SAMPLER_ANISOTROPY = 16 };
+    if (!isfinite(lod_min) || !isfinite(lod_max) || lod_min < 0 || lod_max < lod_min ||
+        max_aniso == 0 || max_aniso > MAX_SAMPLER_ANISOTROPY) return NULL;
+    if (max_aniso > 1 && (min_filter != WGPUFilterMode_Linear ||
+        mag_filter != WGPUFilterMode_Linear || mipmap_filter != WGPUMipmapFilterMode_Linear)) return NULL;
+    return new_sampler(device_h,
+        wgpu_to_mtl_filter(min_filter), wgpu_to_mtl_filter(mag_filter),
+        wgpu_to_mtl_mip_filter(mipmap_filter),
+        wgpu_to_mtl_addr(addr_u), wgpu_to_mtl_addr(addr_v), wgpu_to_mtl_addr(addr_w),
+        lod_min, lod_max,
+        compare == WGPUCompareFunction_Undefined ? MTLCompareFunctionNever : wgpu_to_mtl_compare(compare),
+        max_aniso);
+}
+
+// Preserve the older bridge's private numeric vocabulary for external bridge callers.
+// Product callers use the canonical WebGPU descriptor entry above.
+MetalHandle metal_bridge_device_new_sampler(
+    MetalHandle device_h,
+    uint32_t min_filter,
+    uint32_t mag_filter,
+    uint32_t mipmap_filter,
+    uint32_t addr_u,
+    uint32_t addr_v,
+    uint32_t addr_w,
+    float lod_min,
+    float lod_max,
+    uint16_t max_aniso)
+{
+    const MTLSamplerAddressMode addresses[] = {
+        MTLSamplerAddressModeClampToEdge, MTLSamplerAddressModeMirrorClampToEdge,
+        MTLSamplerAddressModeRepeat, MTLSamplerAddressModeMirrorRepeat,
+    };
+    return new_sampler(device_h,
+        min_filter == 1 ? MTLSamplerMinMagFilterLinear : MTLSamplerMinMagFilterNearest,
+        mag_filter == 1 ? MTLSamplerMinMagFilterLinear : MTLSamplerMinMagFilterNearest,
+        mipmap_filter == 1 ? MTLSamplerMipFilterLinear : MTLSamplerMipFilterNearest,
+        addresses[addr_u < 4 ? addr_u : 2], addresses[addr_v < 4 ? addr_v : 2], addresses[addr_w < 4 ? addr_w : 2],
+        lod_min, lod_max, MTLCompareFunctionNever, max_aniso > 0 ? max_aniso : 1);
 }
 
 // ============================================================

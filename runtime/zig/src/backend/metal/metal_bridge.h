@@ -464,6 +464,14 @@ MetalHandle metal_bridge_device_new_sampler(
     float       lod_max,
     uint16_t    max_aniso);
 
+// Canonical WebGPU enum values, including Undefined default sentinels.
+// The descriptor is local to this call; the returned sampler transfers +1 ownership.
+MetalHandle metal_bridge_device_new_sampler_with_compare(
+    MetalHandle device,
+    uint32_t min_filter, uint32_t mag_filter, uint32_t mipmap_filter,
+    uint32_t addr_u, uint32_t addr_v, uint32_t addr_w,
+    float lod_min, float lod_max, uint32_t compare, uint16_t max_aniso);
+
 // === Render Pipeline ===
 
 // Create a render pipeline with built-in noop vertex/fragment shaders.

@@ -451,6 +451,14 @@
         {
           "path": "src/backend/metal/metal_surface_runtime.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_deferred_release.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "tests/metal/metal_repair_proof_test.zig",
+          "kind": "backend"
         }
       ]
     },
@@ -747,6 +755,14 @@
         {
           "path": "src/backend/metal/metal_surface_runtime.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_deferred_release.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "tests/metal/metal_repair_proof_test.zig",
+          "kind": "backend"
         }
       ]
     },

@@ -82,6 +82,7 @@ pub extern fn metal_bridge_texture_height(texture: ?*anyopaque) callconv(.c) u32
 pub extern fn metal_bridge_texture_depth(texture: ?*anyopaque) callconv(.c) u32;
 pub extern fn metal_bridge_texture_sample_count(texture: ?*anyopaque) callconv(.c) u32;
 pub extern fn metal_bridge_device_new_sampler(device: ?*anyopaque, min_filter: u32, mag_filter: u32, mipmap_filter: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, max_aniso: u16) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_device_new_sampler_with_compare(device: ?*anyopaque, min_filter: u32, mag_filter: u32, mipmap_filter: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, compare: u32, max_aniso: u16) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_device_new_render_pipeline(device: ?*anyopaque, pixel_format: u32, support_icb: c_int, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_device_new_render_pipeline_functions(device: ?*anyopaque, vertex_function: ?*anyopaque, fragment_function: ?*anyopaque, pixel_format: u32, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_device_new_render_pipeline_full(device: ?*anyopaque, vertex_function: ?*anyopaque, fragment_function: ?*anyopaque, pixel_format: u32, depth_format: u32, vertex_layouts: ?[*]const MetalVertexBufferLayout, vertex_layout_count: u32, vertex_attributes: ?[*]const MetalVertexAttributeDesc, vertex_attribute_count: u32, error_buf: ?[*]u8, error_cap: usize) callconv(.c) ?*anyopaque;

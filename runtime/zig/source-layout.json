@@ -994,7 +994,7 @@
       },
       "src/backend/metal/metal_bridge_decls.zig": {
         "decision": "Keep",
-        "moduleSha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad",
+        "moduleSha256": "c5844606b4f3bbf46ccca78143678bd8d3c97a76cf504398ad31a93f2252b48c",
         "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
         "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
@@ -1018,7 +1018,7 @@
       },
       "src/backend/metal/metal_deferred_release.zig": {
         "decision": "Keep",
-        "moduleSha256": "9f6ad1227fb320207345c438c9555fc1f74a75d93ac17a1c6e6479fcad7ebf64",
+        "moduleSha256": "3c3a6dedd827b0bca411d370932fc98a04229b33f4628d60d12085d4c14033f0",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -1180,7 +1180,7 @@
       },
       "src/backend/ports/resource.zig": {
         "decision": "Keep",
-        "moduleSha256": "d2ef77a4d4e6909da961ef6f75d8448ae1b9836f183a88ba92cf41fd6f8e938e",
+        "moduleSha256": "8f4d18a3bb839891345b4a89144fe9da9ff5fe37894f251c1a29dfadcc49a86d",
         "reason": "Keep: reachable backend implementation shared by 3 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-hexagonal-migration/2026-08-22"
       },
@@ -3676,7 +3676,7 @@
       },
       "src/native/resource/doe_texture_sampler_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "41211b8c93caa82bae78fc871aff93df6b5242948dc905a1917d0cf04ba56e75",
+        "moduleSha256": "0c25d32413af5d7cd51dc988302338e4d2c17a527571735a9ce8f6aec3c1e0f1",
         "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
         "reviewer": "codex-submit-availability/2026-09-07"
       },
