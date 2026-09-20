@@ -36,8 +36,10 @@ test "Metal repair proof: staged writes preserve interleaved snapshots across si
                 .dst = .{ .handle = destination_handle },
                 .bytes = size,
             }, .deferred);
+            try runtime.transition_streaming_submission_deferred();
             @memset(source, 83);
             try runtime.stage_buffer_write_bytes(source_handle, 0, size, source);
+            try runtime.transition_streaming_submission_deferred();
             // Poison the borrowed input before any submission reads its snapshot.
             @memset(source, 255);
             _ = try runtime.flush_queue();

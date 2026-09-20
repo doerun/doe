@@ -335,6 +335,7 @@ fn execute_native_command(
     command: model.Command,
     promoted_dispatch: ?compute_contract.DispatchRequest,
 ) !webgpu.NativeExecutionResult {
+    try self.get_runtime().completion.check();
     try self.check_timestamp_requirement();
 
     const requirements = command_requirements.requirements(command);
@@ -408,7 +409,7 @@ pub fn execute_command(self: anytype, command: model.Command) anyerror!webgpu.Na
         const requirements = command_requirements.requirements(command);
         return .{
             .status = common_errors.map_error_status(err),
-            .status_message = self.write_status("{s}", .{common_errors.error_code(err)}),
+            .status_message = failureMessage(self, err),
             .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
@@ -425,7 +426,7 @@ pub fn execute_dispatch_request(comptime Backend: type, self: *Backend, request:
         const requirements = command_requirements.requirements(command);
         return .{
             .status = common_errors.map_error_status(err),
-            .status_message = self.write_status("{s}", .{common_errors.error_code(err)}),
+            .status_message = failureMessage(self, err),
             .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
@@ -562,4 +563,13 @@ test "Metal capture checks native bounds and waits before copying; failed flush 
     try std.testing.expectEqual(@as(u32, 0), owner.pending_upload_commands);
     Probe.bytes[1] = 0;
     try std.testing.expectEqual(@as(u8, 9), captured[0]);
+}
+
+fn failureMessage(self: anytype, err: anyerror) []const u8 {
+    if (err == error.MetalCommandFailed) {
+        if (self.get_runtime().completion.failure_code) |code| {
+            return self.write_status("MetalCommandFailed: native error code {d}", .{code});
+        }
+    }
+    return self.write_status("{s}", .{common_errors.error_code(err)});
 }

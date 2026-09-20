@@ -1,0 +1,14 @@
+Base: bd1a81618031db0ebc7d759d863fd6a7027fd003
+Command: zig test /home/x/deco/doe/runtime/zig/.completion-predecessor-ma4v43ht.zig
+1/1 .completion-predecessor-ma4v43ht.test.rollover must preserve the earlier failed submission for status inspection...FAIL (TestUnexpectedResult)
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/testing.zig:607:14: 0x102c359 in expect (std.zig)
+    if (!ok) return error.TestUnexpectedResult;
+             ^
+/home/x/deco/doe/runtime/zig/.completion-predecessor-ma4v43ht.zig:84:5: 0x102c5ce in test.rollover must preserve the earlier failed submission for status inspection (.completion-predecessor-ma4v43ht.zig)
+    try std.testing.expect(!bridge.lost_failed_submission);
+    ^
+0 passed; 0 skipped; 1 failed.
+error: the following test command failed with exit code 1:
+/home/x/.cache/zig/o/4e66335db2d1043096e05be892982bc7/test --seed=0x1088a93
+
+exitCode=1

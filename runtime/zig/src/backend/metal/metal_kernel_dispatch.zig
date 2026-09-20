@@ -6,7 +6,6 @@ const bridge = @import("metal_bridge_decls.zig");
 
 const metal_bridge_cmd_buf_compute_encoder = bridge.metal_bridge_cmd_buf_compute_encoder;
 const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
-const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
 const metal_bridge_compute_encoder_encode_dispatch = bridge.metal_bridge_compute_encoder_encode_dispatch;
 const metal_bridge_encode_compute_dispatch_batch = bridge.metal_bridge_encode_compute_dispatch_batch;
@@ -60,6 +59,7 @@ pub fn run_kernel_dispatch_timed(
     queue_sync_mode: webgpu.QueueSyncMode,
     record_timestamps: bool,
 ) !KernelDispatchResult {
+    try runtime.completion.check();
     const setup_start = common_timing.now_ns();
     if (warmup > 0 or record_timestamps or queue_sync_mode != .deferred) {
         _ = try runtime.flush_queue();
@@ -98,8 +98,7 @@ pub fn run_kernel_dispatch_timed(
             workgroup_size[1],
             workgroup_size[2],
         ) orelse return error.InvalidState;
-        commitAndWait(wcb);
-        metal_bridge_release(wcb);
+        try commitAndWait(runtime, wcb);
     }
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
 
@@ -189,15 +188,13 @@ pub fn run_kernel_dispatch_timed(
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), t_enc_start);
 
     const t_sub_start = common_timing.now_ns();
-    commitAndWait(cmd_buf);
+    try commitAndWait(runtime, cmd_buf);
     const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), t_sub_start);
 
     var gpu_elapsed_ns: u64 = 0;
     if (want_ts) {
         gpu_elapsed_ns = runtime.timestamp_state.resolve_elapsed_ns();
     }
-
-    metal_bridge_release(cmd_buf);
 
     return .{
         .metrics = .{
@@ -212,9 +209,10 @@ pub fn run_kernel_dispatch_timed(
     };
 }
 
-fn commitAndWait(cmd_buf: ?*anyopaque) void {
+fn commitAndWait(runtime: anytype, cmd_buf: *anyopaque) !void {
     metal_bridge_command_buffer_commit(cmd_buf);
-    metal_bridge_command_buffer_wait_completed(cmd_buf);
+    runtime.completion.retireOne(cmd_buf);
+    try runtime.completion.check();
 }
 
 fn ensure_streaming_compute_encoder(runtime: anytype) !void {

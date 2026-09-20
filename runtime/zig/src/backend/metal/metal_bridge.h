@@ -66,6 +66,9 @@ MetalHandle metal_bridge_encode_blit_copy(
 
 void metal_bridge_command_buffer_commit(MetalHandle cmd_buf);
 void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf);
+// Wait for a committed buffer, including failed completion. Returns 1 only for
+// Completed; otherwise returns 0 and preserves NSError.code (0 if unavailable).
+int metal_bridge_command_buffer_wait_result(MetalHandle cmd_buf, int64_t* error_code);
 void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf);
 // Keep an Objective-C object alive until this command buffer completes.
 int metal_bridge_command_buffer_retain_object_until_complete(

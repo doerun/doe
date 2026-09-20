@@ -154,6 +154,11 @@ MetalHandle metal_bridge_cmd_buf_compute_encoder(MetalHandle cmd_buf) {
 void metal_bridge_end_compute_encoding(MetalHandle encoder) { (void)encoder; }
 void metal_bridge_command_buffer_commit(MetalHandle cmd_buf) { (void)cmd_buf; }
 void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf) { (void)cmd_buf; }
+int metal_bridge_command_buffer_wait_result(MetalHandle cmd_buf, int64_t* error_code) {
+    (void)cmd_buf;
+    if (error_code != NULL) *error_code = 0;
+    return 0;
+}
 void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf) { (void)cmd_buf; }
 int metal_bridge_command_buffer_retain_object_until_complete(MetalHandle cmd_buf, MetalHandle object) {
     (void)cmd_buf;

@@ -12,6 +12,15 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [Metal completion checkpoint](../../bench/out/maintenance/20260920-zig-metal-completion/README.md)
+is the current continuation of the texture and resource reviews. Remaining
+boundaries are native encoder failure reporting, explicit wait/timeout policy,
+transactional surface state and physical Metal qualification. The command-runtime
+completion owner does not qualify the ordinary native callback path. Continue
+those owner-specific repairs; the next never-examined queue file is the telemetry
+port. Per-file verdicts and acceptance receipts remain in the checkpoint and
+append-only ledger.
+
 The [Metal texture-safety checkpoint](../../bench/out/maintenance/20260920-zig-metal-texture-safety/README.md)
 repairs format-aware upload/copy footprints, descriptor reuse and exact query
 expectations. Command textures have a named metadata/reference owner; temporary

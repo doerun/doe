@@ -10,10 +10,6 @@ test "metal: SMALL_UPLOAD_CAPACITY is 1MB" {
     try std.testing.expectEqual(@as(usize, 1024 * 1024), metal_runtime.SMALL_UPLOAD_CAPACITY);
 }
 
-test "metal: FAST_WAIT_UPLOAD_THRESHOLD is 256KB" {
-    try std.testing.expectEqual(@as(usize, 256 * 1024), metal_runtime.FAST_WAIT_UPLOAD_THRESHOLD);
-}
-
 test "metal: MAX_BINDING_SLOTS is 32" {
     try std.testing.expectEqual(@as(usize, 32), metal_runtime.MAX_BINDING_SLOTS);
 }
@@ -30,16 +26,6 @@ test "metal: SMALL_UPLOAD_CAPACITY is a power of two" {
     const cap = metal_runtime.SMALL_UPLOAD_CAPACITY;
     try std.testing.expect(cap > 0);
     try std.testing.expectEqual(@as(usize, 0), cap & (cap - 1));
-}
-
-test "metal: FAST_WAIT_UPLOAD_THRESHOLD is a power of two" {
-    const threshold = metal_runtime.FAST_WAIT_UPLOAD_THRESHOLD;
-    try std.testing.expect(threshold > 0);
-    try std.testing.expectEqual(@as(usize, 0), threshold & (threshold - 1));
-}
-
-test "metal: FAST_WAIT_UPLOAD_THRESHOLD <= SMALL_UPLOAD_CAPACITY" {
-    try std.testing.expect(metal_runtime.FAST_WAIT_UPLOAD_THRESHOLD <= metal_runtime.SMALL_UPLOAD_CAPACITY);
 }
 
 test "metal: pool capacity limit is reasonable" {
@@ -283,11 +269,12 @@ test "metal: NativeMetalRuntime default pipeline binary cache is null" {
     try std.testing.expectEqual(@as(?*anyopaque, null), rt.pipeline_binary_cache);
 }
 
-test "metal: NativeMetalRuntime default outstanding_cmd_buf is null" {
+test "metal: NativeMetalRuntime default completion owner is empty" {
     const rt = metal_runtime.NativeMetalRuntime{
         .allocator = std.testing.allocator,
     };
-    try std.testing.expectEqual(@as(?*anyopaque, null), rt.outstanding_cmd_buf);
+    try std.testing.expectEqual(@as(usize, 0), rt.completion.pending.items.len);
+    try rt.completion.check();
 }
 
 test "metal: NativeMetalRuntime kernel_root default is null" {

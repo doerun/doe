@@ -591,6 +591,16 @@ void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf_h) {
     [cmd_buf waitUntilCompleted];
 }
 
+int metal_bridge_command_buffer_wait_result(MetalHandle cmd_buf_h, int64_t* error_code) {
+    if (error_code != NULL) *error_code = 0;
+    if (cmd_buf_h == NULL) return 0;
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    [cmd_buf waitUntilCompleted];
+    if (cmd_buf.status == MTLCommandBufferStatusCompleted) return 1;
+    if (error_code != NULL && cmd_buf.error != nil) *error_code = (int64_t)cmd_buf.error.code;
+    return 0;
+}
+
 void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf_h) {
     id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
     while ([cmd_buf status] < MTLCommandBufferStatusCompleted) {

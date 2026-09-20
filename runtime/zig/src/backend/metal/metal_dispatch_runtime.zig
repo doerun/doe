@@ -9,9 +9,7 @@ const metal_bridge_command_buffer_encode_signal_event = bridge.metal_bridge_comm
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
 const metal_bridge_cmd_buf_encode_compute_dispatch = bridge.metal_bridge_cmd_buf_encode_compute_dispatch;
 const metal_bridge_cmd_buf_encode_compute_dispatch_indirect = bridge.metal_bridge_cmd_buf_encode_compute_dispatch_indirect;
-const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
-const metal_bridge_release = bridge.metal_bridge_release;
 
 const DEFAULT_DISPATCH_KERNEL = "dispatch_noop.metal";
 const DISPATCH_INDIRECT_ARGS_BYTES = @sizeOf([3]u32);
@@ -38,7 +36,7 @@ pub fn run_dispatch(runtime: anytype, x: u32, y: u32, z: u32, queue_sync_mode: w
         DEFAULT_WORKGROUP_SIZE,
     );
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
-    const submit_wait_ns = finalize_dispatch_submission(runtime, cmd_buf, queue_sync_mode);
+    const submit_wait_ns = try finalize_dispatch_submission(runtime, cmd_buf, queue_sync_mode);
     return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = 1 };
 }
 
@@ -64,7 +62,7 @@ pub fn run_dispatch_indirect(runtime: anytype, x: u32, y: u32, z: u32, queue_syn
         DEFAULT_WORKGROUP_SIZE,
     );
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
-    const submit_wait_ns = finalize_dispatch_submission(runtime, cmd_buf, queue_sync_mode);
+    const submit_wait_ns = try finalize_dispatch_submission(runtime, cmd_buf, queue_sync_mode);
     return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns +| retirement_ns, .dispatch_count = 1 };
 }
 
@@ -83,22 +81,20 @@ fn write_dispatch_indirect_args(buffer: ?*anyopaque, x: u32, y: u32, z: u32) !vo
 }
 
 fn prepare_dispatch_submission(runtime: anytype, queue_sync_mode: webgpu.QueueSyncMode) !void {
+    try runtime.completion.check();
     if (queue_sync_mode == .deferred) {
         if (runtime.streaming_cmd_buf != null) {
             try runtime.transition_streaming_submission_deferred();
         }
-        if (runtime.outstanding_cmd_buf) |previous| {
-            metal_bridge_release(previous);
-            runtime.outstanding_cmd_buf = null;
-        }
+        try runtime.completion.reserve(runtime.allocator);
         return;
     }
-    if (runtime.streaming_cmd_buf != null or runtime.has_deferred_submissions or runtime.outstanding_cmd_buf != null) {
+    if (runtime.streaming_cmd_buf != null or runtime.has_deferred_submissions or runtime.completion.pending.items.len != 0) {
         _ = try runtime.flush_queue();
     }
 }
 
-fn finalize_dispatch_submission(runtime: anytype, cmd_buf: ?*anyopaque, queue_sync_mode: webgpu.QueueSyncMode) u64 {
+fn finalize_dispatch_submission(runtime: anytype, cmd_buf: ?*anyopaque, queue_sync_mode: webgpu.QueueSyncMode) !u64 {
     if (queue_sync_mode == .deferred) {
         runtime.fence_value +%= 1;
         if (runtime.shared_event) |ev| {
@@ -106,13 +102,13 @@ fn finalize_dispatch_submission(runtime: anytype, cmd_buf: ?*anyopaque, queue_sy
         }
         metal_bridge_command_buffer_commit(cmd_buf);
         runtime.has_deferred_submissions = true;
-        runtime.outstanding_cmd_buf = cmd_buf;
+        runtime.completion.retainSubmitted(cmd_buf.?);
         return 0;
     }
     metal_bridge_command_buffer_commit(cmd_buf);
     const submit_start = common_timing.now_ns();
-    metal_bridge_command_buffer_wait_completed(cmd_buf);
+    runtime.completion.retireOne(cmd_buf.?);
     const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
-    metal_bridge_release(cmd_buf);
+    try runtime.completion.check();
     return submit_wait_ns;
 }

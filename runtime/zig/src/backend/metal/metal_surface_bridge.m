@@ -271,7 +271,7 @@ MetalHandle doe_surface_acquire_drawable(MetalHandle surf_h, MetalHandle* drawab
 // Encodes a present-after-minimum-duration into the command buffer,
 // then commits. The caller provides the command buffer (+1 retained)
 // that encoded rendering into the drawable's texture.
-// The command buffer is released by this function.
+// Ownership stays with the caller, which checks completion before release.
 void doe_surface_present_drawable(
     MetalHandle cmd_buf_h,
     MetalHandle drawable_h)

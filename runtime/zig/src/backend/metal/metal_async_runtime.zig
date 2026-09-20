@@ -9,8 +9,9 @@ const metal_bridge_device_max_buffer_length = bridge.metal_bridge_device_max_buf
 const metal_bridge_release = bridge.metal_bridge_release;
 
 pub fn execute_map_async(runtime: anytype, cmd: model_async_types.MapAsyncCommand) !u64 {
+    try runtime.completion.check();
     try validate_map_async_size(cmd.bytes, metal_bridge_device_max_buffer_length(runtime.device));
-    if (runtime.streaming_cmd_buf != null or runtime.has_deferred_submissions or runtime.outstanding_cmd_buf != null) {
+    if (runtime.streaming_cmd_buf != null or runtime.has_deferred_submissions or runtime.completion.pending.items.len != 0) {
         _ = try runtime.flush_queue();
     }
 

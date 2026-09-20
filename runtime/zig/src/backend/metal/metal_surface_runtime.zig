@@ -3,7 +3,6 @@ const common_timing = @import("../common/timing.zig");
 const model_surface_control_types = @import("../../contracts/model/model_surface_control_types.zig");
 const model_texture_types = @import("../../contracts/model/model_texture_value_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
-const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
 const doe_surface_acquire_drawable = bridge.doe_surface_acquire_drawable;
 const doe_surface_configure = bridge.doe_surface_configure;
@@ -140,6 +139,7 @@ pub fn present_surface(self: anytype, cmd: model_surface_control_types.SurfacePr
     var entry = try surface_entry(self, cmd.handle);
     if (!entry.configured or !entry.acquired or entry.texture == null or entry.drawable == null) return error.SurfaceUnavailable;
     const start_ns = common_timing.now_ns();
+    _ = try self.flush_queue();
     const cmd_buf = metal_bridge_create_command_buffer(self.queue) orelse {
         doe_surface_discard_drawable(entry.drawable);
         metal_bridge_release(entry.texture);
@@ -149,13 +149,13 @@ pub fn present_surface(self: anytype, cmd: model_surface_control_types.SurfacePr
         return error.InvalidState;
     };
     doe_surface_present_drawable(cmd_buf, entry.drawable);
-    metal_bridge_command_buffer_wait_completed(cmd_buf);
-    metal_bridge_release(cmd_buf);
+    self.completion.retireOne(cmd_buf);
     doe_surface_discard_drawable(entry.drawable);
     metal_bridge_release(entry.texture);
     entry.drawable = null;
     entry.texture = null;
     entry.acquired = false;
+    try self.completion.check();
     return common_timing.ns_delta(common_timing.now_ns(), start_ns);
 }
 

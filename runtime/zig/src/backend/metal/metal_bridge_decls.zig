@@ -18,6 +18,7 @@ pub extern fn metal_bridge_end_blit_encoding(encoder: ?*anyopaque) callconv(.c) 
 pub extern fn metal_bridge_end_compute_encoding(encoder: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_command_buffer_commit(cmd_buf: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_command_buffer_wait_completed(cmd_buf: ?*anyopaque) callconv(.c) void;
+pub extern fn metal_bridge_command_buffer_wait_result(cmd_buf: ?*anyopaque, error_code: *i64) callconv(.c) c_int;
 pub extern fn metal_bridge_command_buffer_spin_wait(cmd_buf: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_command_buffer_retain_object_until_complete(cmd_buf: ?*anyopaque, object: ?*anyopaque) callconv(.c) c_int;
 pub extern fn metal_bridge_command_buffer_create_completion_waiter(cmd_buf: ?*anyopaque) callconv(.c) ?*anyopaque;

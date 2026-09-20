@@ -467,6 +467,10 @@
         {
           "path": "src/backend/metal/metal_resource_commands.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_completion.zig",
+          "kind": "inline"
         }
       ]
     },
@@ -778,6 +782,10 @@
         },
         {
           "path": "src/backend/metal/metal_resource_commands.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_completion.zig",
           "kind": "inline"
         }
       ]

@@ -116,11 +116,11 @@ test "metal deferred upload keeps per-command submit_wait_ns at zero until final
     try std.testing.expectEqual(@as(u64, 0), upload_result.submit_wait_ns);
     const runtime = backend.get_runtime();
     try std.testing.expect(runtime.streaming_cmd_buf != null);
-    try std.testing.expectEqual(@as(?*anyopaque, null), runtime.outstanding_cmd_buf);
+    try std.testing.expectEqual(@as(usize, 0), runtime.completion.pending.items.len);
 
     const flush_ns = try iface.flush_queue();
     try std.testing.expect(flush_ns > 0);
-    try std.testing.expectEqual(@as(?*anyopaque, null), runtime.outstanding_cmd_buf);
+    try std.testing.expectEqual(@as(usize, 0), runtime.completion.pending.items.len);
     try std.testing.expectEqual(@as(usize, 0), runtime.streaming_uploads.items.len);
 }
 

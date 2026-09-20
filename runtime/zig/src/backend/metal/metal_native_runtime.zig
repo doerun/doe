@@ -36,7 +36,6 @@ const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 pub const MAX_UPLOAD_BYTES: u64 = 0; // unused; retained for prewarm clamp only
 pub const MAX_BINDING_SLOTS: usize = 32;
 pub const SMALL_UPLOAD_CAPACITY: usize = metal_runtime_limits.SMALL_UPLOAD_CAPACITY;
-pub const FAST_WAIT_UPLOAD_THRESHOLD: usize = metal_runtime_limits.FAST_WAIT_UPLOAD_THRESHOLD;
 pub const MAX_POOL_ENTRIES_PER_SIZE: usize = metal_buffer_pool.MAX_POOL_ENTRIES_PER_SIZE;
 pub const DispatchMetrics = kernel_dispatch.DispatchMetrics;
 pub const FlushResult = queue_ops.FlushResult;
@@ -74,7 +73,7 @@ pub const NativeMetalRuntime = struct {
 
     has_deferred_submissions: bool = false,
 
-    outstanding_cmd_buf: ?*anyopaque = null,
+    completion: @import("metal_completion.zig").Completion = .{},
     deferred_releases: std.ArrayListUnmanaged(?*anyopaque) = .{},
 
     // Batch deferred release pool — collects texture/sampler destroys and
@@ -153,7 +152,7 @@ pub const NativeMetalRuntime = struct {
 
     pub fn deinit(self: *NativeMetalRuntime) void {
         _ = self.flush_queue() catch {};
-        queue_ops.wait_outstanding(self);
+        self.completion.deinit(self.allocator);
         // Release any remaining streaming uploads (if flush_queue failed).
         for (self.streaming_uploads.items) |item| {
             metal_bridge_release(item.src_buffer);
@@ -480,4 +479,40 @@ test "non-Metal native acquisition failures leave the runtime safe to destroy" {
     }));
     try std.testing.expectEqual(@as(u32, 0), runtime.textures.count());
     try std.testing.expectEqual(@as(u32, 0), runtime.compute_buffers.count());
+}
+
+test "non-Metal completion failures retire queue state and remain observable" {
+    if (builtin.os.tag == .macos) return error.SkipZigTest;
+    var runtime = NativeMetalRuntime{ .allocator = std.testing.allocator, .has_device = true };
+    defer runtime.deinit();
+    var first: u8 = 0;
+    var second: u8 = 0;
+    try runtime.completion.reserve(runtime.allocator);
+    runtime.completion.retainSubmitted(&first);
+    runtime.streaming_cmd_buf = &second;
+    runtime.has_deferred_submissions = true;
+    // The non-Metal bridge cannot report successful GPU completion.
+    try std.testing.expectError(error.MetalCommandFailed, runtime.flush_queue());
+    try std.testing.expect(runtime.streaming_cmd_buf == null);
+    try std.testing.expect(!runtime.has_deferred_submissions);
+    try std.testing.expectEqual(@as(usize, 0), runtime.completion.pending.items.len);
+    try std.testing.expectEqual(@as(?i64, 0), runtime.completion.failure_code);
+    try std.testing.expectError(error.MetalCommandFailed, runtime.flush_queue());
+    try std.testing.expectError(error.MetalCommandFailed, runtime.execute_map_async(.{ .bytes = 4 }));
+}
+
+test "Metal deferred rollover reserves completion ownership before encoder transitions" {
+    var allocator = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
+    var command: u8 = 0;
+    var encoder: u8 = 0;
+    var runtime = NativeMetalRuntime{
+        .allocator = allocator.allocator(),
+        .streaming_cmd_buf = &command,
+        .streaming_blit_encoder = &encoder,
+    };
+    try std.testing.expectError(error.OutOfMemory, runtime.transition_streaming_submission_deferred());
+    try std.testing.expectEqual(@as(?*anyopaque, &command), runtime.streaming_cmd_buf);
+    try std.testing.expectEqual(@as(?*anyopaque, &encoder), runtime.streaming_blit_encoder);
+    try std.testing.expectEqual(@as(usize, 0), runtime.completion.pending.items.len);
+    try std.testing.expect(!runtime.has_deferred_submissions);
 }

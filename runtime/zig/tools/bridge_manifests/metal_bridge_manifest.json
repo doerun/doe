@@ -24,6 +24,7 @@
         "metal_bridge_end_compute_encoding",
         "metal_bridge_command_buffer_commit",
         "metal_bridge_command_buffer_wait_completed",
+        "metal_bridge_command_buffer_wait_result",
         "metal_bridge_command_buffer_spin_wait",
         "metal_bridge_command_buffer_retain_object_until_complete",
         "metal_bridge_command_buffer_create_completion_waiter",
