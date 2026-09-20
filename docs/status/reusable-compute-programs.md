@@ -2,7 +2,19 @@
 
 ## GPU interference attribution
 
-The [latest calibration retry](../../bench/out/compute-program/20260914-calibration-retry/README.md)
+The [latest calibration retry](../../bench/out/compute-program/20260920-calibration-retry-02/README.md)
+started after observed GPU inactivity, then stopped on renewed Chrome GPU work
+attributed to the Doppler checkout through matching process and boot identity.
+The retained hash and observation replay confirms the rejection; admission
+remains unavailable and no final precision assessment exists. An
+[idle-window watcher](../../bench/out/compute-program/20260920-calibration-retry-03/watch_and_run.py)
+waits for sustained observed inactivity before a fresh complete attempt. Its
+launch guard is scheduling only, not proof of exclusive access; per-process
+interference admission remains unchanged. Accepted packages, evaluator,
+workloads, and thresholds remain unchanged, and interrupted cohorts cannot be
+combined into an accepted series.
+
+The [preceding coverage-loss retry](../../bench/out/compute-program/20260914-calibration-retry/README.md)
 started after quiet preflight and unchanged input/storage checks, then stopped
 when a foreign `chrome-headless` DRM client disappeared between observation
 boundaries. Its boot-scoped task identity is retained; the departed client
