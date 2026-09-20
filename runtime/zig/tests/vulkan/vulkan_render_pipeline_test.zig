@@ -136,15 +136,15 @@ test "vulkan: color_write_mask_to_vk maps All correctly" {
         vk_constants.VK_COLOR_COMPONENT_G_BIT |
         vk_constants.VK_COLOR_COMPONENT_B_BIT |
         vk_constants.VK_COLOR_COMPONENT_A_BIT;
-    try std.testing.expectEqual(ALL, vk_render_pipeline.color_write_mask_to_vk(0xF, 0));
+    try std.testing.expectEqual(ALL, vk_render_pipeline.color_write_mask_to_vk(0xF));
 }
 
 test "vulkan: color_write_mask_to_vk maps R-only correctly" {
-    try std.testing.expectEqual(vk_constants.VK_COLOR_COMPONENT_R_BIT, vk_render_pipeline.color_write_mask_to_vk(0x1, 0));
+    try std.testing.expectEqual(vk_constants.VK_COLOR_COMPONENT_R_BIT, vk_render_pipeline.color_write_mask_to_vk(0x1));
 }
 
-test "vulkan: color_write_mask_to_vk returns fallback for zero mask" {
-    try std.testing.expectEqual(@as(u32, 42), vk_render_pipeline.color_write_mask_to_vk(0, 42));
+test "vulkan: color write mask zero preserves disabled color writes" {
+    try std.testing.expectEqual(@as(u32, 0), vk_render_pipeline.color_write_mask_to_vk(0));
 }
 
 // wgpu_compare_to_vk
@@ -209,22 +209,19 @@ test "vulkan: format_has_stencil returns false for Undefined" {
 
 // resolve_entry_point_name
 
-test "vulkan: resolve_entry_point_name uses provided name" {
-    var buf: [64]u8 = undefined;
-    const name = vk_render_pipeline.resolve_entry_point_name("vertex_main", "main", &buf);
-    try std.testing.expectEqualStrings("vertex_main", std.mem.span(name));
-}
-
-test "vulkan: resolve_entry_point_name uses fallback when null" {
-    var buf: [64]u8 = undefined;
-    const name = vk_render_pipeline.resolve_entry_point_name(null, "main", &buf);
-    try std.testing.expectEqualStrings("main", std.mem.span(name));
-}
-
-test "vulkan: resolve_entry_point_name truncates to buffer size" {
-    var buf: [4]u8 = undefined;
-    const name = vk_render_pipeline.resolve_entry_point_name("long_entry_name", "main", &buf);
-    try std.testing.expectEqualStrings("lon", std.mem.span(name));
+test "vulkan: entry point names preserve full identity and default only when absent" {
+    const allocator = std.testing.allocator;
+    const long_name = "entry_" ++ "x" ** 128;
+    for ([_]?[]const u8{ "vertex_main", long_name, null }) |input| {
+        const name = try vk_render_pipeline.resolve_entry_point_name(allocator, input, "main");
+        defer allocator.free(name);
+        try std.testing.expectEqualStrings(input orelse "main", name);
+        try std.testing.expectEqual(@as(u8, 0), name[name.len]);
+    }
+    try std.testing.expectError(error.InvalidArgument, vk_render_pipeline.resolve_entry_point_name(allocator, "", "main"));
+    try std.testing.expectError(error.InvalidArgument, vk_render_pipeline.resolve_entry_point_name(allocator, "main\x00other", "main"));
+    var failing = std.testing.FailingAllocator.init(allocator, .{ .fail_index = 0 });
+    try std.testing.expectError(error.OutOfMemory, vk_render_pipeline.resolve_entry_point_name(failing.allocator(), long_name, "main"));
 }
 
 // vertex_step_mode_to_vk

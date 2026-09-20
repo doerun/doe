@@ -21276,6 +21276,2432 @@
       "targets": [
         "src/backend/metal/metal_dispatch_runtime.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/ports/factory.zig",
+          "sha256": "904508fa47c337a1597923421a363953f9b53247dd043c0bcb5b6acef93e376d"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_telemetry.zig",
+          "sha256": "e9e910fd2441e86b3916a48f4d02ac290ba81f92690da8dfc5d7d9ef179e436f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "218ca134b924cc1d5b6aa184dae0f5efe0b7725e1e157b9b36e1a9df5d203e08",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_01_telemetry",
+      "reviewedAt": "2026-09-20T17:23:14.018622+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: borrowed provider context routes timestamp errors, borrowed snapshots and optional explicit artifact collection. The port allocates and retains nothing; snapshot does not invoke collection.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/telemetry.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/execution_report.zig",
+          "sha256": "eeaf596815d1830d140fae8038e817689e78613c04b31df62b7dfc607b96aeec"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "67da3f5a9a0ea4cf42193c9bc53381f37c400f72901141579bd5f3072a77d6e5",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_02_transfer",
+      "reviewedAt": "2026-09-20T17:23:15.348268+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: synchronous prepared transfer borrows its payload, forwards original errors/reports, and delegates prewarm and instance upload policy. Provider adapter owns the direct-write conversion; this port has no second execution interpreter.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/transfer.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/common/artifact_state.zig",
+          "sha256": "dabf582598425430aef4054439b0b16bc241a8925919d650360106e844ffda29"
+        },
+        {
+          "path": "runtime/zig/src/backend/common/shader_artifact_manifest.zig",
+          "sha256": "2d349cbe3644f96fbefd85db23b8465d64212a0e4f8c318c0447dd6fffd9fb7f"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/mod.zig",
+          "sha256": "175ecea289fedded340002e805fba713cd052bb80eea6dd28be2530d735cdbc9"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "c63cef1171bd92ed39f2ac047ff6e9c9224fb17ff3e8fa609517de9f51dbb4f7",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_03_artifact_emit",
+      "reviewedAt": "2026-09-20T17:23:16.659107+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: Vulkan supplies immutable stage identity and a typed artifact-state owner to the shared explicit fallible writer. No borrowed pending-field convention or telemetry-triggered filesystem work remains.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/artifact_emit.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_resources.zig",
+          "sha256": "f0613fa0c7e91f8be433074796fbe51cfef270f6505d5dfaa56345ce3714c037"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_upload.zig",
+          "sha256": "c33cb5eb3e84f4da4a04a8f03c16cdf91a9e21fdc8ff0a8aba16ccc8b56b743e"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "execute_buffer_write_bytes includes flush time in write_ns/setup_ns and again in submit_wait_ns; deferred recording can report a submission without committing. execute_upload/execute_barrier infer submission count from elapsed duration. Move counts to actual queue submission events and split timing scopes.",
+        "execute_dispatch_command selects the no-op program only when no pipeline is active. Establish and test the dispatch contract after an explicit kernel command; the current active-pipeline shortcut can retain unrelated program state.",
+        "use_explicit_submit_boundaries is a constant-false experimental branch with several inactive alternatives; remove only after preserving recorded submission behavior and accounting in direct/repeated/indirect characterization tests."
+      ],
+      "inputHash": "582e1db630414ba8d204c06512baf5300d8b5657f8be2f0035bfc7e02a292016",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Checked offset plus byte count rejects overflow and empty input before resource acquisition; boundary tests exercise overflow and declared/minimum capacity."
+      ],
+      "reviewId": "vulkan_batch_20260920_04_backend_execute",
+      "reviewedAt": "2026-09-20T17:23:17.956335+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined the entire command adapter, promoted compute boundary, upload/write/capture paths and receipt construction. Checked write sizing now precedes lazy device/resource acquisition; broader accounting and dispatch policy remain unresolved.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/backend_execute.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/ports/queue.zig",
+          "sha256": "d6ab883806910e62d72e4c7ee43e719315d9dd7c257a2028ad169d1cc0c7aabd"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/backend_execute.zig",
+          "sha256": "d46c8968c36eb4950e30acef14febc24a2befb8ef23fd412cf2d664127db724a"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_async_dispatch.zig",
+          "sha256": "4ded67cb58bca706a4dbc54bfc682626692a3a0539e52a43764d3afbdff6911b"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "set_webgpu_ffi_queue_wait_timeout_ns discards both inputs. Instance timeout semantics need a Vulkan completion owner and timeout retention tests; accepting the setter does not establish bounded waits.",
+        "capability_set enables async diagnostic families whose strict implementations do not execute their named semantic features; reconcile capability admission with real probe behavior."
+      ],
+      "inputHash": "d72a054f2a3b20bd944bc5f411717a083374d4b5eb6e90e50734c98655568c74",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_05_mod",
+      "reviewedAt": "2026-09-20T17:23:19.299826+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined provider-owned configuration, lazy runtime construction, capability routing, snapshot borrowing and explicit artifact capture/collection. Artifact ownership is stronger; unsupported configuration and capability admission remain open.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/mod.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_device.zig",
+          "sha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_device_caps.zig",
+          "sha256": "c392f5b78d81b7d22ca5aa5cd6e9b9686facd637ef88a6492a4197c3e6a62e54"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_feature_caps.zig",
+          "sha256": "e3cf69a5008e3e5bd420a377fec9f228b07de1d744b3edea780d23695345a9f1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "5d82b87208477796e13efa8673eeba8aa62fb3cfcacfde8bc0988d09c7687fee",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_06_vk_adapter_probe",
+      "reviewedAt": "2026-09-20T17:23:20.605091+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: one temporary instance selects a physical device and captures descriptor identity, capabilities and queue metadata before explicit teardown. Identity disagreement tests cover all compared fields. The identity is a device descriptor, not proof of a unique physical board or feature correctness.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_adapter_probe.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_async_probes.zig",
+          "sha256": "b8b2bccdae9a6f37a055cae899e08dacd0e3b238a057d6180cc3363c7f9180b2"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_runtime_probe_ops.zig",
+          "sha256": "badd18a16899f006ca6d437d8b32530dd8eecfc4361aafa48d75ce02a56c6d8b"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "execute .capability_introspection only reads cached values into discarded expressions; its duration and iterations are not evidence of asynchronous callback work or GPU dispatch.",
+        "Strict resource-table/immediates and pixel-local-storage routes delegate to resource construction/upload or empty subpasses. Require real feature-specific operations and independent outputs; distinguish logical iteration counts from actual GPU submissions."
+      ],
+      "inputHash": "d6e039509b12de17d1fcb2c009dd687322002f4dc707e87c4d4db8c0659bfac5",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_07_vk_async_dispatch",
+      "reviewedAt": "2026-09-20T17:23:21.951633+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined strict/emulated diagnostics and returned operation counts; the explicit feature-policy branch is visible but several named probes do not establish the semantics they advertise.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_async_dispatch.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_resources.zig",
+          "sha256": "f0613fa0c7e91f8be433074796fbe51cfef270f6505d5dfaa56345ce3714c037"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_upload.zig",
+          "sha256": "c33cb5eb3e84f4da4a04a8f03c16cdf91a9e21fdc8ff0a8aba16ccc8b56b743e"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "resource_table_immediates_probe and pixel_local_storage_probe defer destruction of submitted buffers/images/framebuffers after finite wait errors. A timeout is not terminal completion; transfer temporaries to an explicit pending owner before submission.",
+        "pixel_local_storage_probe builds an input-attachment subpass without corresponding input-attachment image usage, uses conflicting input/color layouts for the same attachment, and executes no shader. Correct native admission and execute an independent pixel-local-storage oracle before claiming strict support."
+      ],
+      "inputHash": "b2758107d84e5c8ec478cc594ef8ce8a9f3477c3d23f632a3affc7e090e2b2eb",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed the format-error-to-RGBA8 replacement; the requested format now either maps explicitly or returns its original error."
+      ],
+      "reviewId": "vulkan_batch_20260920_08_vk_async_probes",
+      "reviewedAt": "2026-09-20T17:23:23.247593+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined temporary buffers/images, render-pass construction, submissions, native waits and cleanup. Format failure now propagates; lifetime and strict feature meaning remain unresolved.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_async_probes.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vulkan_types.zig",
+          "sha256": "c8ff888b6970c70bfd4c79987ade157e03dfe80d850c5cbd1e049fbc4df8dc81"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "6b1be6ae267281bdf5d982be4ee1d4f779718298ca799c44c89ab321768bf2b6",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_09_vk_capability_structs",
+      "reviewedAt": "2026-09-20T17:23:24.576757+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: ABI-only extern feature/property structures have no ownership or runtime policy. Independent comparison against installed Khronos headers verifies every exported struct size, alignment, field offset and field size.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_capability_structs.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_resources.zig",
+          "sha256": "f0613fa0c7e91f8be433074796fbe51cfef270f6505d5dfaa56345ce3714c037"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_upload.zig",
+          "sha256": "c33cb5eb3e84f4da4a04a8f03c16cdf91a9e21fdc8ff0a8aba16ccc8b56b743e"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "NativeVulkanRuntime.run_dispatch_indirect writes the shared argument buffer before flushing prior deferred uses (and can defer that flush). Retire the prior use before modifying host bytes, with consecutive differently-sized deferred dispatches and timeout tests."
+      ],
+      "inputHash": "c7356d051007bbd4104e744f910e41e576f915b47fa81fe5b3a7de863b8b0fce",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reserve host list capacity before vkAllocateCommandBuffers so host OOM cannot leave a native command untracked; fail-before-native regression passes.",
+        "Reject an indirect buffer smaller than the argument payload before memcpy; sentinels and exact-size writes are tested."
+      ],
+      "reviewId": "vulkan_batch_20260920_10_vk_command_buffers",
+      "reviewedAt": "2026-09-20T17:23:25.905831+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined command-pool ownership, reuse indexing, replay begin and indirect mapped writes. Allocation publication and write capacity are repaired; the shared indirect argument lifetime still needs its caller fixed.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_command_buffers.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+          "sha256": "b7a36a995d3ff7e39da0b9450dc39fb03d43a13e145c31c57d2f9b314f9f9399"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "3bfbce27533e60e57af9456f218a1bf9bf2a050c53b8cf008d369e70fed00760"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "ComputeProgram.deinit suppresses flush_queue failure and destroys command pools and owned compute state. Unknown completion can therefore free GPU-live objects. Introduce a fallible close/deferred owner and prove timeout, retry, device failure and teardown ordering.",
+        "begin/finish temporarily move active runtime cache state; incomplete begin and wrong-device destruction need explicit failure/lifetime tests binding the caller cleanup contract."
+      ],
+      "inputHash": "e56c18e4a9d7ea99819c4da14ed697cce5f8a245f4195f820741ca7415e4811e",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_11_vk_compute_program",
+      "reviewedAt": "2026-09-20T17:23:27.188798+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined detached compute-cache ownership and begin/finish/submit/deinit transitions, including recorded descriptor validation. Submission success fixtures do not cover failed retirement.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_compute_program.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_dispatch_indirect.zig",
+          "sha256": "8fdd969b3816f2853ac3a54849b01b83f28678ae33eb582ef413634169e428a4"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_dispatch_repeat.zig",
+          "sha256": "4541c7f4dbeb8100df0b7418ea1d56d8282ad540f39c121992110f3543bcf6ba"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_upload.zig",
+          "sha256": "c33cb5eb3e84f4da4a04a8f03c16cdf91a9e21fdc8ff0a8aba16ccc8b56b743e"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "b743d73b2bb280780e039ba05674ab9e9fff7148f3235bb9106275bcb9a184aa",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Indirect-only barriers preserve pending shader hazards, for both exact-buffer and unknown/global tracking; recording tests verify masks and a later shader consumer still requires visibility.",
+        "Incomplete current-binding tracking now forces visibility rather than relying on the truncated handle intersection.",
+        "Global transfer/compute barriers cover shader plus indirect consumption before clearing their shared tracking state; removed the obsolete pending-buffer-removal helper."
+      ],
+      "reviewId": "vulkan_batch_20260920_12_vk_compute_sync",
+      "reviewedAt": "2026-09-20T17:23:28.491068+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Compute/transfer visibility remains owned here. Buffer access tracking is bounded and falls back conservatively on incomplete tracking; storage-image writes retain global hazards. The repaired indirect boundary no longer consumes shader visibility obligations.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_compute_sync.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_capability_structs.zig",
+          "sha256": "6b287a152dca819319596bc858a04bcc699ce86e011adc7f5ed63549f71ad5c0"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_functions.zig",
+          "sha256": "e4ea23136384864f2821079d5b6fcf7926b2d4a39473291e2056babe580a9b0a"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vulkan_errors.zig",
+          "sha256": "cf8bad9e1025976eec9aec53d6fce485ac1242932b29ea0505530c4576280b10"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "96bcc6ee016675ad07e335981f394e5f42ad70fc5a444de6443285fc83dd23a8",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_13_vk_constants",
+      "reviewedAt": "2026-09-20T17:23:29.822882+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: Vulkan ABI constants and aliases remain in the backend binding owner. Independent header comparison checks exported matching numeric Vulkan declarations; native calls and behavioral policy remain with consumers.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_constants.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+          "sha256": "b7a36a995d3ff7e39da0b9450dc39fb03d43a13e145c31c57d2f9b314f9f9399"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_resources.zig",
+          "sha256": "f0613fa0c7e91f8be433074796fbe51cfef270f6505d5dfaa56345ce3714c037"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "3bfbce27533e60e57af9456f218a1bf9bf2a050c53b8cf008d369e70fed00760"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "1cbc9761777d03c0777cebac36fc728a06ddb15bd487fb187fbd92c2ad06d639",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_14_vk_descriptor_identity",
+      "reviewedAt": "2026-09-20T17:23:31.146137+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: exact descriptor snapshots combine declaration, generation, backing handles, extent and layout. Checked generation exhaustion fails instead of wrapping. Parent-generation checks reject recycled images; collision resolution consumes full snapshots, not hash equality.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_descriptor_identity.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+          "sha256": "b7a36a995d3ff7e39da0b9450dc39fb03d43a13e145c31c57d2f9b314f9f9399"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_resources.zig",
+          "sha256": "f0613fa0c7e91f8be433074796fbe51cfef270f6505d5dfaa56345ce3714c037"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "3bfbce27533e60e57af9456f218a1bf9bf2a050c53b8cf008d369e70fed00760"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "validate_texture_binding accepts enumerated sample types without checking the actual format/sample-type compatibility. Validate descriptor format semantics before native descriptor updates.",
+        "prepare can promote or change texture layout while replay recording is active. Trace replacement/retired-source destruction and command-pool reset against already recorded commands; add growth/promotion and failed-wait fixtures before claiming retained lifetime completeness."
+      ],
+      "inputHash": "0622f56b91b82e95e02ec6b535e9bff8227f6d7a7eebcde2783693489a0418b2",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Whole-size range validation now rejects offset equal to buffer size; tests cover empty tail, valid last byte and overflowing explicit range."
+      ],
+      "reviewId": "vulkan_batch_20260920_15_vk_descriptors",
+      "reviewedAt": "2026-09-20T17:23:32.461715+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined descriptor scratch allocation, resource resolution, identity binding, cache restore and native pool ownership. Empty whole-buffer tails are rejected; texture semantics and promotion during recording remain open.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_descriptors.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_feature_caps.zig",
+          "sha256": "e3cf69a5008e3e5bd420a377fec9f228b07de1d744b3edea780d23695345a9f1"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_render_pipeline.zig",
+          "sha256": "5cd563db312049e78ba04f7832ea5df74edf9b14e27dbe525020aa7eae7026eb"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_sync.zig",
+          "sha256": "2969d40280ebbdb377caf330621a9bef990b0f3cb02189135a8189749b1ebc71"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "create_command_pool_and_primary_buffer sets has_command_pool before allocating the primary buffer; ensure_submission_state checks only the pool flag, so retry after allocation failure can proceed without a primary buffer. Make lazy submission initialization transactional or check both owned components.",
+        "score_physical_device sums heap size once per memory type, double-counting shared heaps; present_capable_value is inferred from graphics support without surface support query. Keep physical observations separate from selection heuristics.",
+        "Depth-clip extension presence is used as enabled support without querying/enabling its feature struct. Bind extension feature admission to pipeline state before using unclipped depth."
+      ],
+      "inputHash": "c1ea6d3d13253182e5add7d02e8a3852717126c8b980df7f8dcd3768baea51cf",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_16_vk_device",
+      "reviewedAt": "2026-09-20T17:23:33.801384+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined instance/device bootstrap, queue selection, queried feature enablement, lazy submission state, extension lookup and memory selection. Native ownership flags support teardown, but retry and capability details remain incomplete.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_device.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_device.zig",
+          "sha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_feature_caps.zig",
+          "sha256": "e3cf69a5008e3e5bd420a377fec9f228b07de1d744b3edea780d23695345a9f1"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_device_caps.zig",
+          "sha256": "15734661555ecb65ae12998ce4e4648e07099176e8dd4671b25877c26a9885eb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "map_vulkan_to_wgpu_limits applies max(native, WebGPU minimum) to native maxima and clamp_alignment can lower a required hardware alignment. Advertise only supported limits and reject adapters/devices that cannot meet required minima.",
+        "maxComputeWorkgroupsPerDimension examines only the X dimension; use the common bound across axes. Dynamic buffer counts and several other fields are fixed constants rather than queried/validated limits.",
+        "has_feature returns Depth32FloatStencil8 unconditionally and depth-clip support follows extension presence alone. Query required format/feature support; probe_device_caps substitutes 36 timestamp bits instead of retaining the selected value."
+      ],
+      "inputHash": "df238b14e5265afa4a4f1c28897ba868695238aa946e811c67d13c818730566b",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_17_vk_device_caps",
+      "reviewedAt": "2026-09-20T17:23:35.113061+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined physical limit/format queries and public feature conversion. The current minimum-floor mapping can overstate native capabilities and needs repair with adapter/device admission tests.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_device_caps.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_compute_sync.zig",
+          "sha256": "3b343025cfa3b59edb3d97b6701293483855dd14be2017f3f9ecf7403885e7ba"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_pipeline.zig",
+          "sha256": "7fcc450ef0aa78130f27aef5289b82dd9fdb768e1ee59f60b5342c7880f64739"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "record_prepared_replay receives a raw buffer and offset but no capacity/device proof. Bind each caller admission of alignment, argument footprint, generation and pending lifetime; add rejection/early-release coverage before declaring this boundary complete."
+      ],
+      "inputHash": "16fdd844379d05951c481078efc9bd17655fc5eb1c2cec8dd787f796721efb13",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_18_vk_dispatch_indirect",
+      "reviewedAt": "2026-09-20T17:23:36.429238+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined prepared indirect replay through transfer visibility, indirect visibility, conservative replay barrier and pipeline/descriptors. It borrows native resources and relies on external admission.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_dispatch_indirect.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_upload.zig",
+          "sha256": "c33cb5eb3e84f4da4a04a8f03c16cdf91a9e21fdc8ff0a8aba16ccc8b56b743e"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vulkan_timing.zig",
+          "sha256": "68b1e0b084ae4929fa3665fea9c4737a865c8dff7b6c999f1c55a868111277c5"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "run_batch submits the primary command with a finite wait but does not register pending ownership before that wait. A failed wait must prevent resetting/reusing that command and its resources.",
+        "queue_wait_mode is ignored for batches larger than one. Timestamp subtraction checks ordered endpoints but does not apply selected queue timestampValidBits; test rollover and required-mode rejection before execution."
+      ],
+      "inputHash": "f9c80b6c586d2870d987860ec57b259b9b4278206d20971a0a660680238a0c75",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_19_vk_dispatch_repeat",
+      "reviewedAt": "2026-09-20T17:23:37.803156+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined dependent versus independent repeated recording, query boundaries, synchronous submission and returned metrics. Batch ownership is not safely recoverable from every wait failure.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_dispatch_repeat.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_device.zig",
+          "sha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_formats.zig",
+          "sha256": "176c11d02d77eabef4690a93c19a12b990348d399ccd94afb735ec1ed1129a2b"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_device_caps.zig",
+          "sha256": "15734661555ecb65ae12998ce4e4648e07099176e8dd4671b25877c26a9885eb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "Texture tier support is derived from format properties while enabled_core_features leaves shaderStorageImageExtendedFormats disabled. Bind advertised tier operations to the native features and compiler paths actually enabled.",
+        "Format tables duplicate native format identities and tier policy rather than deriving the semantic set from an authoritative contract; extend capability tests to all advertised tier operations before claiming complete support."
+      ],
+      "inputHash": "863a1a26d4d05443c2c508a334511955cde9ed13cfb51d024ce806dd9bca3e07",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_20_vk_feature_caps",
+      "reviewedAt": "2026-09-20T17:23:39.133746+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined feature pNext chains, format tables, subgroup/f16 constraints and enabled-device feature construction. Query output and enabled implementation need a stronger correspondence.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_feature_caps.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_device.zig",
+          "sha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_feature_caps.zig",
+          "sha256": "e3cf69a5008e3e5bd420a377fec9f228b07de1d744b3edea780d23695345a9f1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "7cea34da095206a8d8ad50b99a8e4d2ca6c662743b2b0da209010e5be552ff3d",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_21_vk_feature_probe",
+      "reviewedAt": "2026-09-20T17:23:40.454299+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: temporary feature-probe instance is allocator-scoped and destroyed on every exit after creation; selected-device query delegates to the feature owner. This wrapper neither caches global state nor independently guarantees every advertised feature.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_feature_probe.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_format_value_types.zig",
+          "sha256": "47d4cbcdf028c0634c6625f8b764727b2e2cc747348ea1ffc1088dc980d1ed8f"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format_layout.zig",
+          "sha256": "2c93a5ec273e29d5b88e7c4a4214d0c3f5430e2a1a49d213458316fd4e3e30b4"
+        },
+        {
+          "path": "runtime/zig/src/contracts/vertex_format.zig",
+          "sha256": "9a030fbd3207e2266c6ebaa1345655a2eb4a97f323a296a5848edf63d06f57d5"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "f9c2d4512d26a4f80d04fb9e52613901cd070e7cc9e94d2ccc949a2d58315043",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_22_vk_formats",
+      "reviewedAt": "2026-09-20T17:23:41.813313+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: backend format translation owns native enum mapping while canonical contracts own byte/block footprints and vertex identities. Unknown texture formats explicitly fail; vertex switching is exhaustive. Independent header comparison verifies numeric format codes.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_formats.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_structs.zig",
+          "sha256": "881813e86e21d77a71a58193040eaaf4d5557f04ce95a6d4fbaffe1862443163"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vulkan_errors.zig",
+          "sha256": "cf8bad9e1025976eec9aec53d6fce485ac1242932b29ea0505530c4576280b10"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vulkan_types.zig",
+          "sha256": "c8ff888b6970c70bfd4c79987ade157e03dfe80d850c5cbd1e049fbc4df8dc81"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "08ef7cab9c3762c396691158ea508d48d3ea688cb343f6e15ec8d31408911708",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_23_vk_functions",
+      "reviewedAt": "2026-09-20T17:23:43.117350+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: narrow C-call declarations carry explicit native pointer/count/handle types and delegate VkResult taxonomy. No allocator, global state or execution fallback is hidden in this adapter; exercised native suites and ABI comparisons support the declared boundary.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_functions.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/build.zig",
+          "sha256": "061929dc4143e60bcff6c11d64867a8889bc5fd5659719bddcd09d5901a2435a"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_device.zig",
+          "sha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_resources.zig",
+          "sha256": "f0613fa0c7e91f8be433074796fbe51cfef270f6505d5dfaa56345ce3714c037"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "62e3544a76f45c8730db38e5b35f2ded3505024c3809ce4456df139ccfcfa49b",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_24_vk_memory_policy",
+      "reviewedAt": "2026-09-20T17:23:44.417744+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: pure first-supported memory selection requires all mandatory flags and treats preferred flags only as preference; readback choices come from immutable build options. Coherence/type-mask regressions cover fallback and explicit unsupported results.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_memory_policy.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/contracts/execution.zig",
+          "sha256": "a1c44a092e212819c165f16d94d9f43d2e519eef7f8eb56e2c4b2b681200362b"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "f971f7efe6fddad1bc86c0df96bb237a75f316afda2f766e7830efc839b30ead",
+      "level": "file",
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_25_vk_metrics",
+      "reviewedAt": "2026-09-20T17:23:45.717279+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "verified",
+      "summary": "Retain unchanged: exact alias of the canonical dispatch metrics contract; no competing field registry, allocation, error translation or backend-specific interpretation is introduced.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_metrics.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_descriptors.zig",
+          "sha256": "fd6306e0262ed26af067bc280c488c4552ab29a7e108effe53f45f2546021162"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+          "sha256": "b7a36a995d3ff7e39da0b9450dc39fb03d43a13e145c31c57d2f9b314f9f9399"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_shared_pipeline.zig",
+          "sha256": "fb5ddf4288af5f1065c187937aa86d76fd0ebdea970d053b2e5c0fa9ba529b00"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "retire_pipeline_objects/retire_descriptor_state panic on allocator failure rather than preserving a fallible transition; descriptor cache release during recorded work also needs a retained-owner proof.",
+        "required_subgroup_size_for_pipeline reads DOE_VULKAN_REQUIRED_SUBGROUP_SIZE per pipeline, accepts arbitrary parsed values and turns malformed input into null. Resolve validated instance policy once and bind it to pipeline identity.",
+        "SPIR-V admission uses local partial scans and only checks descriptor presence when no bindings are supplied. Validate requested entrypoint/stage and full binding layout with compiler metadata before native creation."
+      ],
+      "inputHash": "76ed5e5d66155f2fbaaa8de83054b8cffd4f1ab3e02fc81c3b07ec5229322c5c",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_26_vk_pipeline",
+      "reviewedAt": "2026-09-20T17:23:47.006323+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined shared pipeline identity, resource layout creation, active/cache/retired ownership, artifact snapshots and native binding. Explicit ownership exists but fallible retirement and configuration still need repair.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_pipeline.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_compute_program.zig",
+          "sha256": "f0416074d583b5803ac9111cf39e7d97cda84942b1c5225a0a5ba6e151e48bcb"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_descriptor_identity.zig",
+          "sha256": "b05a8441a64f5bf01fa89206ae0270a2b6fc6522d1018a614c0981bd65835b3d"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "3bfbce27533e60e57af9456f218a1bf9bf2a050c53b8cf008d369e70fed00760"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "cached_compute_states and current_descriptor_state_cache grow without an overall capacity or full-capacity policy after fixed hot tiers fill. Declare retention behavior with pending-work-safe eviction/overflow and measure it; hot array size alone is not the cache limit.",
+        "Capture/restore APIs copy owning states and require paired clearing; preserve current callers but constrain move transitions and exercise teardown/idempotence before broad reuse."
+      ],
+      "inputHash": "fb7705765a5bd8932e9ddcfb300d76bcb3f8dd9f7c8b3c5ea1402e7c62cddfe1",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_27_vk_pipeline_cache",
+      "reviewedAt": "2026-09-20T17:23:48.309159+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined exact-identity collision resolution, hot/map tiers, move-and-clear ownership, allocation rollback and buffer-specific invalidation. Cache capacity remains an undeclared unbounded resource cost.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_pipeline_cache.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_device.zig",
+          "sha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_configuration.zig",
+          "sha256": "45c3191e8ce14f96a55bbf92682f66f8a9373bb4825851fcfe2aabf7ecd1ad89"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "Every provider uses the same .tmp path for a cache destination; concurrent flushes can truncate, rename or delete another writer staging file. Use unique temporary-file ownership and atomic replacement.",
+        "Reloaded state means bytes were read, not that the driver accepted compatible cache content. Header/provenance validation and malformed-file tests are missing; wall-clock subtraction can also underflow warmup duration.",
+        "An invalid/oversized explicit directory silently becomes empty and can select an environment path. Resolve declared configuration errors explicitly instead of changing destination."
+      ],
+      "inputHash": "9e165f114d4cb23e9b2172387fe487bc5ad56c341cf8925a216bd9b013043367",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_28_vk_pipeline_cache_persistent",
+      "reviewedAt": "2026-09-20T17:23:49.598821+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined per-provider cache handle, paths, warmup observations, disk input and publication. Native handles are provider-owned, but shared storage paths and accepted blob meaning remain unresolved.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_pipeline_cache_persistent.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_render_pipeline.zig",
+          "sha256": "5cd563db312049e78ba04f7832ea5df74edf9b14e27dbe525020aa7eae7026eb"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_resources.zig",
+          "sha256": "f0613fa0c7e91f8be433074796fbe51cfef270f6505d5dfaa56345ce3714c037"
+        },
+        {
+          "path": "runtime/zig/src/runtime/render/render_bundle.zig",
+          "sha256": "89d24b1ca9d0cc191dfb751e3d05877f6f92974304e398fb4458a6ed9d1fcbc6"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "record_indexed_draws destroys its temporary index buffer on return, before record_and_submit_draws submits the commands. Give inline index storage a submission-lifetime owner and test independent indexed output.",
+        "execute_render_draw/clear/bundles defer release_render_state even when native wait fails; retain command and attachment/pipeline resources until terminal completion.",
+        "Bundle replay errors are logged then skipped, allowing partial work to return success. Propagate failure before submission and ensure all encoded references remain owned.",
+        "Draw path lacks the clear path surface acquire/signal synchronization; vkCmdResetQueryPool is recorded inside a render pass; attachment extent/usage/sample admission and indirect/index ranges are incomplete. Validate before encoding and run validation-layer/output fixtures."
+      ],
+      "inputHash": "535aab2ae14df1c4f2d3fc157243cc4d38b9d176f7396c762fc03aea9d20fb3b",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_29_vk_render",
+      "reviewedAt": "2026-09-20T17:23:50.888246+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined attachment selection, render-pass/pipeline ownership, direct/indexed/indirect encoding, surface synchronization, submission and bundle replay. Consequential lifetime and failure-propagation defects remain.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_render.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_device.zig",
+          "sha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_render_types.zig",
+          "sha256": "596a984301f25c33a47d132fb71abe5e64a85b7da97341ee27d21aa1f3739644"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_render_pipeline_test.zig",
+          "sha256": "97588fcf6c616c65fb67a378f3658dacb019c9731a5505d13cabfbc597af2b53"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "createRenderDescriptorState trusts counts against fixed arrays, assumes one descriptor set, does not reject duplicate binding numbers, and emits missing texture/sampler handles as null. Validate complete layout and resource ranges before acquisition.",
+        "create_graphics_pipeline clamps oversized strides/offsets and truncates vertex-layout arrays; unsupported unclipped depth logs a fallback that changes behavior. Reject invalid inputs and bind enabled device features.",
+        "Several enum conversions silently choose defaults for unknown values; multisample pipeline state can disagree with the single-sampled render-pass/target owner. Canonical admission must establish these invariants."
+      ],
+      "inputHash": "2da96d924a9c0971e4b2e90face32a8d50ae60ed8230a597c3188f2b95476d76",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Allocator-owned sentinel entrypoint strings preserve names beyond the former stack-buffer limit; empty/NUL names fail, and allocation failure propagates.",
+        "Zero color-write mask now preserves no-write semantics rather than becoming all channels; changed regressions replace the old fallback/truncation expectations."
+      ],
+      "reviewId": "vulkan_batch_20260920_30_vk_render_pipeline",
+      "reviewedAt": "2026-09-20T17:23:52.190355+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined graphics shader selection, entrypoint ownership, state conversion, vertex layouts and descriptor materialization. Exact entrypoint names and zero write masks are repaired; full graphics admission remains incomplete.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_render_pipeline.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+          "sha256": "b7a36a995d3ff7e39da0b9450dc39fb03d43a13e145c31c57d2f9b314f9f9399"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_upload.zig",
+          "sha256": "c33cb5eb3e84f4da4a04a8f03c16cdf91a9e21fdc8ff0a8aba16ccc8b56b743e"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "ensure_compute_buffer growth allocates a replacement and frees the previous buffer without preserving bytes; define growth versus object replacement and test existing contents across a partial write.",
+        "create_texture_view subtracts unchecked base mip from mip count and defaults array-layer count without subtracting base layer. Validate subresource bounds and native-compatible view descriptors.",
+        "bytes_per_pixel_for_texture_format converts unknown layout to four bytes. Preserve unsupported layout errors through footprint consumers.",
+        "Capture/promotion temporary resources are released on failed native wait, and texture layout transitions reset a shared command pool without fully accounting for active recordings. Bind all pending uses to the queue owner before recycling.",
+        "buffer_write_staging_offset plus length is unchecked; staging replacement can reset the runtime offset while callers retain the previous offset. Test checked growth, queued copies and subsequent writes."
+      ],
+      "inputHash": "40836c1e3dcea9405599fd360b487f5c31663b515c309d653beb06ea1057cb9b",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_31_vk_resources",
+      "reviewedAt": "2026-09-20T17:23:53.491784+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined buffer allocation/growth/promotion, mapped and staged writes, capture, texture/view ownership and transitions. Existing generations and capacity reservation are useful; retained contents and admitted layouts need repairs.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_resources.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_async_dispatch.zig",
+          "sha256": "4ded67cb58bca706a4dbc54bfc682626692a3a0539e52a43764d3afbdff6911b"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_async_probes.zig",
+          "sha256": "b8b2bccdae9a6f37a055cae899e08dacd0e3b238a057d6180cc3363c7f9180b2"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_device.zig",
+          "sha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/README.md",
+          "sha256": "7c4a2cb5d120f996478d33fa35c51abcb590046330127e21589446dacfdf7d4d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi-probe.zig",
+          "sha256": "56d8c3bc59b280671098568746bce333297111dada8cf302c8f3f78d85dceeed"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/abi.log",
+          "sha256": "0143f722b0ae2ad872b6b50b1ed06878f05871f61fc4061084d4e4afbfc71048"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/acceptance.log",
+          "sha256": "966ed457cacd14d703f25bf1769df681ab95d51c83dc443e600fb887a321a15e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/doc-links.log",
+          "sha256": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/file-reviews.json",
+          "sha256": "77913bc35b132aa68e07c316e39ae7aad8104268887b88df896e637acc097492"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-lower.log",
+          "sha256": "7df52d2e77f9599820df30b89d9cc03f117d53a855fcc3520183c21f6c0dffe5"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/focused-upper.log",
+          "sha256": "c4951a3a9bdec2e5a0a6a9c2b9d2b5d60ed18ee71a1428114d737938be22b98a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/host.json",
+          "sha256": "077622c3da5956afe56a1cb8a9d0ad0d9002fc30aff6bdfe0b9083ab135ed76a"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-vulkan-review/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "pipeline_async_probe performs synchronous rebuilds; resource-table and pixel-local-storage emulation only allocate/upload/barrier with fixed byte counts. Define and execute equivalent semantic probes with independent outputs or expose explicit unsupported feature results.",
+        "Cached present_capable forwards graphics-queue inference from vk_device, not a queried surface capability; preserve that distinction in the observation contract."
+      ],
+      "inputHash": "3227e90c96168b1e2b3e871b245ac011d7f4e0d1177eb98291ac19bf4fdf4eb5",
+      "level": "file",
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "vulkan_batch_20260920_32_vk_runtime_probe_ops",
+      "reviewedAt": "2026-09-20T17:23:54.806004+00:00",
+      "reviewer": "codex-vulkan-file-review/2026-09-20",
+      "sourceCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+      "status": "needs_changes",
+      "summary": "Examined lifecycle, nominal async compilation, explicit emulation workloads and cached adapter access. Allocator/source cleanup is explicit, but diagnostic names do not establish their advertised semantics.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_runtime_probe_ops.zig"
+      ]
     }
   ],
   "schemaVersion": 1

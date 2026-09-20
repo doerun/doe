@@ -1,0 +1,500 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+  "kind": "batch-file-examinations",
+  "nextTarget": "src/backend/vulkan/vk_runtime_surface_ops.zig",
+  "entries": [
+    {
+      "target": "src/backend/ports/telemetry.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: borrowed provider context routes timestamp errors, borrowed snapshots and optional explicit artifact collection. The port allocates and retains nothing; snapshot does not invoke collection.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/ports/provider_adapter.zig",
+        "runtime/zig/src/backend/ports/factory.zig",
+        "runtime/zig/src/contracts/runtime_telemetry.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/ports/transfer.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: synchronous prepared transfer borrows its payload, forwards original errors/reports, and delegates prewarm and instance upload policy. Provider adapter owns the direct-write conversion; this port has no second execution interpreter.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/ports/provider_adapter.zig",
+        "runtime/zig/src/contracts/prepared_operation.zig",
+        "runtime/zig/src/contracts/execution_report.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/artifact_emit.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: Vulkan supplies immutable stage identity and a typed artifact-state owner to the shared explicit fallible writer. No borrowed pending-field convention or telemetry-triggered filesystem work remains.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/common/artifact_state.zig",
+        "runtime/zig/src/backend/common/shader_artifact_manifest.zig",
+        "runtime/zig/src/backend/vulkan/mod.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/backend_execute.zig",
+      "status": "needs_changes",
+      "summary": "Examined the entire command adapter, promoted compute boundary, upload/write/capture paths and receipt construction. Checked write sizing now precedes lazy device/resource acquisition; broader accounting and dispatch policy remain unresolved.",
+      "findings": [
+        "execute_buffer_write_bytes includes flush time in write_ns/setup_ns and again in submit_wait_ns; deferred recording can report a submission without committing. execute_upload/execute_barrier infer submission count from elapsed duration. Move counts to actual queue submission events and split timing scopes.",
+        "execute_dispatch_command selects the no-op program only when no pipeline is active. Establish and test the dispatch contract after an explicit kernel command; the current active-pipeline shortcut can retain unrelated program state.",
+        "use_explicit_submit_boundaries is a constant-false experimental branch with several inactive alternatives; remove only after preserving recorded submission behavior and accounting in direct/repeated/indirect characterization tests."
+      ],
+      "resolvedFindings": [
+        "Checked offset plus byte count rejects overflow and empty input before resource acquisition; boundary tests exercise overflow and declared/minimum capacity."
+      ],
+      "context": [
+        "runtime/zig/src/backend/vulkan/native_runtime.zig",
+        "runtime/zig/src/backend/vulkan/vk_upload.zig",
+        "runtime/zig/src/backend/vulkan/vk_resources.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/mod.zig",
+      "status": "needs_changes",
+      "summary": "Examined provider-owned configuration, lazy runtime construction, capability routing, snapshot borrowing and explicit artifact capture/collection. Artifact ownership is stronger; unsupported configuration and capability admission remain open.",
+      "findings": [
+        "set_webgpu_ffi_queue_wait_timeout_ns discards both inputs. Instance timeout semantics need a Vulkan completion owner and timeout retention tests; accepting the setter does not establish bounded waits.",
+        "capability_set enables async diagnostic families whose strict implementations do not execute their named semantic features; reconcile capability admission with real probe behavior."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/backend_execute.zig",
+        "runtime/zig/src/backend/vulkan/vk_async_dispatch.zig",
+        "runtime/zig/src/backend/ports/queue.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_adapter_probe.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: one temporary instance selects a physical device and captures descriptor identity, capabilities and queue metadata before explicit teardown. Identity disagreement tests cover all compared fields. The identity is a device descriptor, not proof of a unique physical board or feature correctness.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_device.zig",
+        "runtime/zig/src/backend/vulkan/vk_feature_caps.zig",
+        "runtime/zig/src/backend/vulkan/vk_device_caps.zig",
+        "runtime/zig/src/backend/vulkan/native_runtime.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/vk_async_dispatch.zig",
+      "status": "needs_changes",
+      "summary": "Examined strict/emulated diagnostics and returned operation counts; the explicit feature-policy branch is visible but several named probes do not establish the semantics they advertise.",
+      "findings": [
+        "execute .capability_introspection only reads cached values into discarded expressions; its duration and iterations are not evidence of asynchronous callback work or GPU dispatch.",
+        "Strict resource-table/immediates and pixel-local-storage routes delegate to resource construction/upload or empty subpasses. Require real feature-specific operations and independent outputs; distinguish logical iteration counts from actual GPU submissions."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_async_probes.zig",
+        "runtime/zig/src/backend/vulkan/vk_runtime_probe_ops.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_async_probes.zig",
+      "status": "needs_changes",
+      "summary": "Examined temporary buffers/images, render-pass construction, submissions, native waits and cleanup. Format failure now propagates; lifetime and strict feature meaning remain unresolved.",
+      "findings": [
+        "resource_table_immediates_probe and pixel_local_storage_probe defer destruction of submitted buffers/images/framebuffers after finite wait errors. A timeout is not terminal completion; transfer temporaries to an explicit pending owner before submission.",
+        "pixel_local_storage_probe builds an input-attachment subpass without corresponding input-attachment image usage, uses conflicting input/color layouts for the same attachment, and executes no shader. Correct native admission and execute an independent pixel-local-storage oracle before claiming strict support."
+      ],
+      "resolvedFindings": [
+        "Removed the format-error-to-RGBA8 replacement; the requested format now either maps explicitly or returns its original error."
+      ],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_upload.zig",
+        "runtime/zig/src/backend/vulkan/vk_resources.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_capability_structs.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: ABI-only extern feature/property structures have no ownership or runtime policy. Independent comparison against installed Khronos headers verifies every exported struct size, alignment, field offset and field size.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vulkan_types.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/vk_command_buffers.zig",
+      "status": "needs_changes",
+      "summary": "Examined command-pool ownership, reuse indexing, replay begin and indirect mapped writes. Allocation publication and write capacity are repaired; the shared indirect argument lifetime still needs its caller fixed.",
+      "findings": [
+        "NativeVulkanRuntime.run_dispatch_indirect writes the shared argument buffer before flushing prior deferred uses (and can defer that flush). Retire the prior use before modifying host bytes, with consecutive differently-sized deferred dispatches and timeout tests."
+      ],
+      "resolvedFindings": [
+        "Reserve host list capacity before vkAllocateCommandBuffers so host OOM cannot leave a native command untracked; fail-before-native regression passes.",
+        "Reject an indirect buffer smaller than the argument payload before memcpy; sentinels and exact-size writes are tested."
+      ],
+      "context": [
+        "runtime/zig/src/backend/vulkan/native_runtime.zig",
+        "runtime/zig/src/backend/vulkan/vk_resources.zig",
+        "runtime/zig/src/backend/vulkan/vk_upload.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_compute_program.zig",
+      "status": "needs_changes",
+      "summary": "Examined detached compute-cache ownership and begin/finish/submit/deinit transitions, including recorded descriptor validation. Submission success fixtures do not cover failed retirement.",
+      "findings": [
+        "ComputeProgram.deinit suppresses flush_queue failure and destroys command pools and owned compute state. Unknown completion can therefore free GPU-live objects. Introduce a fallible close/deferred owner and prove timeout, retry, device failure and teardown ordering.",
+        "begin/finish temporarily move active runtime cache state; incomplete begin and wrong-device destruction need explicit failure/lifetime tests binding the caller cleanup contract."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/native_runtime.zig",
+        "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+        "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_compute_sync.zig",
+      "status": "verified",
+      "summary": "Compute/transfer visibility remains owned here. Buffer access tracking is bounded and falls back conservatively on incomplete tracking; storage-image writes retain global hazards. The repaired indirect boundary no longer consumes shader visibility obligations.",
+      "findings": [],
+      "resolvedFindings": [
+        "Indirect-only barriers preserve pending shader hazards, for both exact-buffer and unknown/global tracking; recording tests verify masks and a later shader consumer still requires visibility.",
+        "Incomplete current-binding tracking now forces visibility rather than relying on the truncated handle intersection.",
+        "Global transfer/compute barriers cover shader plus indirect consumption before clearing their shared tracking state; removed the obsolete pending-buffer-removal helper."
+      ],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_dispatch_indirect.zig",
+        "runtime/zig/src/backend/vulkan/vk_dispatch_repeat.zig",
+        "runtime/zig/src/backend/vulkan/native_runtime.zig",
+        "runtime/zig/src/backend/vulkan/vk_upload.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/vk_constants.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: Vulkan ABI constants and aliases remain in the backend binding owner. Independent header comparison checks exported matching numeric Vulkan declarations; native calls and behavioral policy remain with consumers.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vulkan_errors.zig",
+        "runtime/zig/src/backend/vulkan/vk_functions.zig",
+        "runtime/zig/src/backend/vulkan/vk_capability_structs.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/vk_descriptor_identity.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: exact descriptor snapshots combine declaration, generation, backing handles, extent and layout. Checked generation exhaustion fails instead of wrapping. Parent-generation checks reject recycled images; collision resolution consumes full snapshots, not hash equality.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+        "runtime/zig/src/backend/vulkan/vk_resources.zig",
+        "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/vk_descriptors.zig",
+      "status": "needs_changes",
+      "summary": "Examined descriptor scratch allocation, resource resolution, identity binding, cache restore and native pool ownership. Empty whole-buffer tails are rejected; texture semantics and promotion during recording remain open.",
+      "findings": [
+        "validate_texture_binding accepts enumerated sample types without checking the actual format/sample-type compatibility. Validate descriptor format semantics before native descriptor updates.",
+        "prepare can promote or change texture layout while replay recording is active. Trace replacement/retired-source destruction and command-pool reset against already recorded commands; add growth/promotion and failed-wait fixtures before claiming retained lifetime completeness."
+      ],
+      "resolvedFindings": [
+        "Whole-size range validation now rejects offset equal to buffer size; tests cover empty tail, valid last byte and overflowing explicit range."
+      ],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+        "runtime/zig/src/backend/vulkan/vk_resources.zig",
+        "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_device.zig",
+      "status": "needs_changes",
+      "summary": "Examined instance/device bootstrap, queue selection, queried feature enablement, lazy submission state, extension lookup and memory selection. Native ownership flags support teardown, but retry and capability details remain incomplete.",
+      "findings": [
+        "create_command_pool_and_primary_buffer sets has_command_pool before allocating the primary buffer; ensure_submission_state checks only the pool flag, so retry after allocation failure can proceed without a primary buffer. Make lazy submission initialization transactional or check both owned components.",
+        "score_physical_device sums heap size once per memory type, double-counting shared heaps; present_capable_value is inferred from graphics support without surface support query. Keep physical observations separate from selection heuristics.",
+        "Depth-clip extension presence is used as enabled support without querying/enabling its feature struct. Bind extension feature admission to pipeline state before using unclipped depth."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_feature_caps.zig",
+        "runtime/zig/src/backend/vulkan/vk_render_pipeline.zig",
+        "runtime/zig/src/backend/vulkan/vk_sync.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_device_caps.zig",
+      "status": "needs_changes",
+      "summary": "Examined physical limit/format queries and public feature conversion. The current minimum-floor mapping can overstate native capabilities and needs repair with adapter/device admission tests.",
+      "findings": [
+        "map_vulkan_to_wgpu_limits applies max(native, WebGPU minimum) to native maxima and clamp_alignment can lower a required hardware alignment. Advertise only supported limits and reject adapters/devices that cannot meet required minima.",
+        "maxComputeWorkgroupsPerDimension examines only the X dimension; use the common bound across axes. Dynamic buffer counts and several other fields are fixed constants rather than queried/validated limits.",
+        "has_feature returns Depth32FloatStencil8 unconditionally and depth-clip support follows extension presence alone. Query required format/feature support; probe_device_caps substitutes 36 timestamp bits instead of retaining the selected value."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/native/support/doe_device_caps.zig",
+        "runtime/zig/src/backend/vulkan/vk_device.zig",
+        "runtime/zig/src/backend/vulkan/vk_feature_caps.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_dispatch_indirect.zig",
+      "status": "needs_changes",
+      "summary": "Examined prepared indirect replay through transfer visibility, indirect visibility, conservative replay barrier and pipeline/descriptors. It borrows native resources and relies on external admission.",
+      "findings": [
+        "record_prepared_replay receives a raw buffer and offset but no capacity/device proof. Bind each caller admission of alignment, argument footprint, generation and pending lifetime; add rejection/early-release coverage before declaring this boundary complete."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/native_runtime.zig",
+        "runtime/zig/src/backend/vulkan/vk_compute_sync.zig",
+        "runtime/zig/src/backend/vulkan/vk_pipeline.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_dispatch_repeat.zig",
+      "status": "needs_changes",
+      "summary": "Examined dependent versus independent repeated recording, query boundaries, synchronous submission and returned metrics. Batch ownership is not safely recoverable from every wait failure.",
+      "findings": [
+        "run_batch submits the primary command with a finite wait but does not register pending ownership before that wait. A failed wait must prevent resetting/reusing that command and its resources.",
+        "queue_wait_mode is ignored for batches larger than one. Timestamp subtraction checks ordered endpoints but does not apply selected queue timestampValidBits; test rollover and required-mode rejection before execution."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/native_runtime.zig",
+        "runtime/zig/src/backend/vulkan/vk_upload.zig",
+        "runtime/zig/src/backend/vulkan/vulkan_timing.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_feature_caps.zig",
+      "status": "needs_changes",
+      "summary": "Examined feature pNext chains, format tables, subgroup/f16 constraints and enabled-device feature construction. Query output and enabled implementation need a stronger correspondence.",
+      "findings": [
+        "Texture tier support is derived from format properties while enabled_core_features leaves shaderStorageImageExtendedFormats disabled. Bind advertised tier operations to the native features and compiler paths actually enabled.",
+        "Format tables duplicate native format identities and tier policy rather than deriving the semantic set from an authoritative contract; extend capability tests to all advertised tier operations before claiming complete support."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_device.zig",
+        "runtime/zig/src/backend/vulkan/vk_formats.zig",
+        "runtime/zig/src/native/support/doe_device_caps.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_feature_probe.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: temporary feature-probe instance is allocator-scoped and destroyed on every exit after creation; selected-device query delegates to the feature owner. This wrapper neither caches global state nor independently guarantees every advertised feature.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_device.zig",
+        "runtime/zig/src/backend/vulkan/vk_feature_caps.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/vk_formats.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: backend format translation owns native enum mapping while canonical contracts own byte/block footprints and vertex identities. Unknown texture formats explicitly fail; vertex switching is exhaustive. Independent header comparison verifies numeric format codes.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/contracts/vertex_format.zig",
+        "runtime/zig/src/contracts/texture_format_layout.zig",
+        "runtime/zig/src/contracts/model/model_texture_format_value_types.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/vk_functions.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: narrow C-call declarations carry explicit native pointer/count/handle types and delegate VkResult taxonomy. No allocator, global state or execution fallback is hidden in this adapter; exercised native suites and ABI comparisons support the declared boundary.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_structs.zig",
+        "runtime/zig/src/backend/vulkan/vulkan_types.zig",
+        "runtime/zig/src/backend/vulkan/vulkan_errors.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/vk_memory_policy.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: pure first-supported memory selection requires all mandatory flags and treats preferred flags only as preference; readback choices come from immutable build options. Coherence/type-mask regressions cover fallback and explicit unsupported results.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_device.zig",
+        "runtime/zig/src/backend/vulkan/vk_resources.zig",
+        "runtime/zig/build.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/vk_metrics.zig",
+      "status": "verified",
+      "summary": "Retain unchanged: exact alias of the canonical dispatch metrics contract; no competing field registry, allocation, error translation or backend-specific interpretation is introduced.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/contracts/execution.zig"
+      ],
+      "nextAction": "Retain this responsibility; revalidate when the bound inputs change."
+    },
+    {
+      "target": "src/backend/vulkan/vk_pipeline.zig",
+      "status": "needs_changes",
+      "summary": "Examined shared pipeline identity, resource layout creation, active/cache/retired ownership, artifact snapshots and native binding. Explicit ownership exists but fallible retirement and configuration still need repair.",
+      "findings": [
+        "retire_pipeline_objects/retire_descriptor_state panic on allocator failure rather than preserving a fallible transition; descriptor cache release during recorded work also needs a retained-owner proof.",
+        "required_subgroup_size_for_pipeline reads DOE_VULKAN_REQUIRED_SUBGROUP_SIZE per pipeline, accepts arbitrary parsed values and turns malformed input into null. Resolve validated instance policy once and bind it to pipeline identity.",
+        "SPIR-V admission uses local partial scans and only checks descriptor presence when no bindings are supplied. Validate requested entrypoint/stage and full binding layout with compiler metadata before native creation."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_shared_pipeline.zig",
+        "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+        "runtime/zig/src/backend/vulkan/vk_descriptors.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_pipeline_cache.zig",
+      "status": "needs_changes",
+      "summary": "Examined exact-identity collision resolution, hot/map tiers, move-and-clear ownership, allocation rollback and buffer-specific invalidation. Cache capacity remains an undeclared unbounded resource cost.",
+      "findings": [
+        "cached_compute_states and current_descriptor_state_cache grow without an overall capacity or full-capacity policy after fixed hot tiers fill. Declare retention behavior with pending-work-safe eviction/overflow and measure it; hot array size alone is not the cache limit.",
+        "Capture/restore APIs copy owning states and require paired clearing; preserve current callers but constrain move transitions and exercise teardown/idempotence before broad reuse."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_compute_program.zig",
+        "runtime/zig/src/backend/vulkan/vk_descriptor_identity.zig",
+        "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_pipeline_cache_persistent.zig",
+      "status": "needs_changes",
+      "summary": "Examined per-provider cache handle, paths, warmup observations, disk input and publication. Native handles are provider-owned, but shared storage paths and accepted blob meaning remain unresolved.",
+      "findings": [
+        "Every provider uses the same .tmp path for a cache destination; concurrent flushes can truncate, rename or delete another writer staging file. Use unique temporary-file ownership and atomic replacement.",
+        "Reloaded state means bytes were read, not that the driver accepted compatible cache content. Header/provenance validation and malformed-file tests are missing; wall-clock subtraction can also underflow warmup duration.",
+        "An invalid/oversized explicit directory silently becomes empty and can select an environment path. Resolve declared configuration errors explicitly instead of changing destination."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_device.zig",
+        "runtime/zig/src/contracts/runtime_configuration.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_render.zig",
+      "status": "needs_changes",
+      "summary": "Examined attachment selection, render-pass/pipeline ownership, direct/indexed/indirect encoding, surface synchronization, submission and bundle replay. Consequential lifetime and failure-propagation defects remain.",
+      "findings": [
+        "record_indexed_draws destroys its temporary index buffer on return, before record_and_submit_draws submits the commands. Give inline index storage a submission-lifetime owner and test independent indexed output.",
+        "execute_render_draw/clear/bundles defer release_render_state even when native wait fails; retain command and attachment/pipeline resources until terminal completion.",
+        "Bundle replay errors are logged then skipped, allowing partial work to return success. Propagate failure before submission and ensure all encoded references remain owned.",
+        "Draw path lacks the clear path surface acquire/signal synchronization; vkCmdResetQueryPool is recorded inside a render pass; attachment extent/usage/sample admission and indirect/index ranges are incomplete. Validate before encoding and run validation-layer/output fixtures."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_render_pipeline.zig",
+        "runtime/zig/src/backend/vulkan/vk_resources.zig",
+        "runtime/zig/src/runtime/render/render_bundle.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_render_pipeline.zig",
+      "status": "needs_changes",
+      "summary": "Examined graphics shader selection, entrypoint ownership, state conversion, vertex layouts and descriptor materialization. Exact entrypoint names and zero write masks are repaired; full graphics admission remains incomplete.",
+      "findings": [
+        "createRenderDescriptorState trusts counts against fixed arrays, assumes one descriptor set, does not reject duplicate binding numbers, and emits missing texture/sampler handles as null. Validate complete layout and resource ranges before acquisition.",
+        "create_graphics_pipeline clamps oversized strides/offsets and truncates vertex-layout arrays; unsupported unclipped depth logs a fallback that changes behavior. Reject invalid inputs and bind enabled device features.",
+        "Several enum conversions silently choose defaults for unknown values; multisample pipeline state can disagree with the single-sampled render-pass/target owner. Canonical admission must establish these invariants."
+      ],
+      "resolvedFindings": [
+        "Allocator-owned sentinel entrypoint strings preserve names beyond the former stack-buffer limit; empty/NUL names fail, and allocation failure propagates.",
+        "Zero color-write mask now preserves no-write semantics rather than becoming all channels; changed regressions replace the old fallback/truncation expectations."
+      ],
+      "context": [
+        "runtime/zig/tests/vulkan/vulkan_render_pipeline_test.zig",
+        "runtime/zig/src/contracts/model/model_render_types.zig",
+        "runtime/zig/src/backend/vulkan/vk_device.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_resources.zig",
+      "status": "needs_changes",
+      "summary": "Examined buffer allocation/growth/promotion, mapped and staged writes, capture, texture/view ownership and transitions. Existing generations and capacity reservation are useful; retained contents and admitted layouts need repairs.",
+      "findings": [
+        "ensure_compute_buffer growth allocates a replacement and frees the previous buffer without preserving bytes; define growth versus object replacement and test existing contents across a partial write.",
+        "create_texture_view subtracts unchecked base mip from mip count and defaults array-layer count without subtracting base layer. Validate subresource bounds and native-compatible view descriptors.",
+        "bytes_per_pixel_for_texture_format converts unknown layout to four bytes. Preserve unsupported layout errors through footprint consumers.",
+        "Capture/promotion temporary resources are released on failed native wait, and texture layout transitions reset a shared command pool without fully accounting for active recordings. Bind all pending uses to the queue owner before recycling.",
+        "buffer_write_staging_offset plus length is unchecked; staging replacement can reset the runtime offset while callers retain the previous offset. Test checked growth, queued copies and subsequent writes."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_upload.zig",
+        "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+        "runtime/zig/src/backend/vulkan/native_runtime.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_runtime_probe_ops.zig",
+      "status": "needs_changes",
+      "summary": "Examined lifecycle, nominal async compilation, explicit emulation workloads and cached adapter access. Allocator/source cleanup is explicit, but diagnostic names do not establish their advertised semantics.",
+      "findings": [
+        "pipeline_async_probe performs synchronous rebuilds; resource-table and pixel-local-storage emulation only allocate/upload/barrier with fixed byte counts. Define and execute equivalent semantic probes with independent outputs or expose explicit unsupported feature results.",
+        "Cached present_capable forwards graphics-queue inference from vk_device, not a queried surface capability; preserve that distinction in the observation contract."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_async_dispatch.zig",
+        "runtime/zig/src/backend/vulkan/vk_async_probes.zig",
+        "runtime/zig/src/backend/vulkan/vk_device.zig"
+      ],
+      "nextAction": "Resolve the named findings with owner-specific failure and integration tests before verification."
+    }
+  ]
+}

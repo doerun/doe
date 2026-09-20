@@ -12,26 +12,7 @@ pub const ComputeBindingAccess = struct {
 };
 
 pub fn make_prior_transfer_writes_visible(self: anytype, command_buffer: c.VkCommandBuffer) void {
-    if (!self.has_pending_transfer_writes) return;
-    const barrier = c.VkMemoryBarrier{
-        .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-        .pNext = null,
-        .srcAccessMask = c.VK_ACCESS_TRANSFER_WRITE_BIT,
-        .dstAccessMask = c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
-    };
-    c.vkCmdPipelineBarrier(
-        command_buffer,
-        c.VK_PIPELINE_STAGE_TRANSFER_BIT,
-        c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        0,
-        1,
-        @ptrCast(&barrier),
-        0,
-        null,
-        0,
-        null,
-    );
-    self.has_pending_transfer_writes = false;
+    make_prior_transfer_writes_visible_for_indirect_dispatch(self, command_buffer);
 }
 
 pub fn make_prior_transfer_writes_visible_for_indirect_dispatch(self: anytype, command_buffer: c.VkCommandBuffer) void {
@@ -70,6 +51,10 @@ pub fn make_prior_compute_writes_visible_for_indirect_read(
     resource_handle: u64,
     buffer: c.VkBuffer,
 ) void {
+    make_indirect_writes_visible(self, command_buffer, resource_handle, buffer, c);
+}
+
+fn make_indirect_writes_visible(self: anytype, command_buffer: c.VkCommandBuffer, resource_handle: u64, buffer: c.VkBuffer, comptime native: type) void {
     if (!self.has_pending_compute_writes) return;
     if (!self.pending_compute_write_tracking_complete or self.pending_compute_write_buffer_count == 0) {
         const barrier = c.VkMemoryBarrier{
@@ -78,7 +63,7 @@ pub fn make_prior_compute_writes_visible_for_indirect_read(
             .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT,
             .dstAccessMask = c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
         };
-        c.vkCmdPipelineBarrier(
+        native.vkCmdPipelineBarrier(
             command_buffer,
             c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
             c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
@@ -90,12 +75,12 @@ pub fn make_prior_compute_writes_visible_for_indirect_read(
             0,
             null,
         );
-        clear_pending_compute_writes(self);
+        // Indirect visibility does not discharge later shader reads or writes.
         return;
     }
     if (!pending_compute_write_buffer_contains(self, resource_handle)) return;
     var barrier = buffer_memory_barrier(buffer, c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
-    c.vkCmdPipelineBarrier(
+    native.vkCmdPipelineBarrier(
         command_buffer,
         c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
@@ -107,8 +92,7 @@ pub fn make_prior_compute_writes_visible_for_indirect_read(
         0,
         null,
     );
-    remove_pending_compute_write_buffer(self, resource_handle);
-    self.has_pending_compute_writes = self.pending_compute_write_buffer_count != 0;
+    // Preserve the shader hazard until a barrier covers compute accesses too.
 }
 
 pub fn make_transfer_writes_visible_for_host_read(command_buffer: c.VkCommandBuffer) void {
@@ -170,23 +154,17 @@ pub fn capture_current_compute_bindings(
     }
 }
 
-pub fn make_prior_compute_writes_visible_for_current_bindings(
-    self: anytype,
-    command_buffer: c.VkCommandBuffer,
-) void {
-    if (!self.has_pending_compute_writes) return;
-    if (!self.pending_compute_write_tracking_complete or self.pending_compute_write_buffer_count == 0) {
-        emit_compute_write_visibility_barrier(self, command_buffer);
-        return;
-    }
+pub fn make_prior_compute_writes_visible_for_current_bindings(self: anytype, command_buffer: c.VkCommandBuffer) void {
+    if (current_bindings_need_visibility(self)) emit_compute_write_visibility_barrier(self, command_buffer);
+}
 
+fn current_bindings_need_visibility(self: anytype) bool {
+    if (!self.has_pending_compute_writes) return false;
+    if (!self.current_compute_binding_tracking_complete or !self.pending_compute_write_tracking_complete or self.pending_compute_write_buffer_count == 0) return true;
     for (current_compute_bindings(self)) |binding| {
-        if (!binding.reads and !binding.writes) continue;
-        if (pending_compute_write_buffer_contains(self, binding.resource_handle)) {
-            emit_compute_write_visibility_barrier(self, command_buffer);
-            return;
-        }
+        if ((binding.reads or binding.writes) and pending_compute_write_buffer_contains(self, binding.resource_handle)) return true;
     }
+    return false;
 }
 
 pub fn make_replay_compute_writes_visible(self: anytype, command_buffer: c.VkCommandBuffer) void {
@@ -229,12 +207,12 @@ fn emit_compute_write_visibility_barrier(self: anytype, command_buffer: c.VkComm
         .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
         .pNext = null,
         .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT,
-        .dstAccessMask = c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
+        .dstAccessMask = c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT | c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
     };
     c.vkCmdPipelineBarrier(
         command_buffer,
         c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
         0,
         1,
         @ptrCast(&barrier),
@@ -303,20 +281,6 @@ fn add_pending_compute_write_buffer(self: anytype, resource_handle: u64) !void {
     self.pending_compute_write_buffer_count += 1;
 }
 
-fn remove_pending_compute_write_buffer(self: anytype, resource_handle: u64) void {
-    if (resource_handle == 0 or !self.pending_compute_write_tracking_complete) return;
-    var index: usize = 0;
-    const count: usize = @intCast(self.pending_compute_write_buffer_count);
-    while (index < count) : (index += 1) {
-        if (self.pending_compute_write_buffer_handles[index] != resource_handle) continue;
-        const last_index = count - 1;
-        self.pending_compute_write_buffer_handles[index] = self.pending_compute_write_buffer_handles[last_index];
-        self.pending_compute_write_buffer_handles[last_index] = 0;
-        self.pending_compute_write_buffer_count -= 1;
-        return;
-    }
-}
-
 fn clear_pending_compute_write_buffers(self: anytype) void {
     const count: usize = @intCast(self.pending_compute_write_buffer_count);
     @memset(self.pending_compute_write_buffer_handles[0..count], 0);
@@ -350,4 +314,48 @@ test "storage texture write access requires conservative compute synchronization
     try std.testing.expect(storage_texture_binding_writes(write_only));
     try std.testing.expect(storage_texture_binding_writes(read_write));
     try std.testing.expect(storage_texture_binding_writes(base));
+}
+
+const VisibilityProbe = struct {
+    var barriers: usize = 0;
+    fn vkCmdPipelineBarrier(_: c.VkCommandBuffer, _: u32, destination: u32, _: u32, memory_count: u32, memory: ?*const anyopaque, buffer_count: u32, buffers: ?*const anyopaque, _: u32, _: ?[*]const c.VkImageMemoryBarrier) void {
+        std.testing.expectEqual(c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, destination) catch @panic("wrong indirect stage");
+        const access = if (memory_count != 0)
+            @as(*const c.VkMemoryBarrier, @ptrCast(@alignCast(memory.?))).dstAccessMask
+        else access: {
+            std.testing.expectEqual(@as(u32, 1), buffer_count) catch @panic("missing buffer barrier");
+            break :access @as(*const c.VkBufferMemoryBarrier, @ptrCast(@alignCast(buffers.?))).dstAccessMask;
+        };
+        std.testing.expectEqual(c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT, access) catch @panic("wrong indirect access");
+        barriers += 1;
+    }
+};
+
+test "Vulkan indirect visibility retains hazards for later shader consumers" {
+    const Tracker = struct {
+        has_pending_compute_writes: bool = true,
+        pending_compute_write_tracking_complete: bool = true,
+        pending_compute_write_buffer_count: u32 = 1,
+        pending_compute_write_buffer_handles: [MAX_TRACKED_COMPUTE_BINDINGS]u64 = @splat(0),
+        current_compute_binding_tracking_complete: bool = true,
+        current_compute_binding_count: u32 = 1,
+        current_compute_bindings: [MAX_TRACKED_COMPUTE_BINDINGS]ComputeBindingAccess = @splat(.{}),
+    };
+    VisibilityProbe.barriers = 0;
+    for ([_]bool{ true, false }) |complete| {
+        var tracker = Tracker{ .pending_compute_write_tracking_complete = complete };
+        tracker.pending_compute_write_buffer_handles[0] = 7;
+        tracker.current_compute_bindings[0] = .{ .resource_handle = 7, .reads = true };
+        make_indirect_writes_visible(&tracker, null, 7, 9, VisibilityProbe);
+        try std.testing.expect(tracker.has_pending_compute_writes);
+        try std.testing.expectEqual(@as(u32, 1), tracker.pending_compute_write_buffer_count);
+        try std.testing.expect(current_bindings_need_visibility(&tracker));
+    }
+    try std.testing.expectEqual(@as(usize, 2), VisibilityProbe.barriers);
+    var tracker = Tracker{};
+    tracker.pending_compute_write_buffer_handles[0] = 7;
+    tracker.current_compute_bindings[0] = .{ .resource_handle = 8, .reads = true };
+    try std.testing.expect(!current_bindings_need_visibility(&tracker));
+    tracker.current_compute_binding_tracking_complete = false;
+    try std.testing.expect(current_bindings_need_visibility(&tracker));
 }

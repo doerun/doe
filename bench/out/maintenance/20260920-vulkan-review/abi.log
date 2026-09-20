@@ -1,0 +1,16 @@
+1/15 .review_abi_probe.test.Vulkan capability ABI matches installed Khronos headers...OK
+2/15 .review_abi_probe.test.Vulkan constants and format codes match installed Khronos headers...OK
+3/15 src.backend.vulkan.vulkan_errors.test.check_vk succeeds on VK_SUCCESS...OK
+4/15 src.backend.vulkan.vulkan_errors.test.check_vk returns error on failure code...OK
+5/15 src.backend.vulkan.vulkan_errors.test.map_vk_result maps EXTENSION_NOT_PRESENT to UnsupportedFeature...OK
+6/15 src.backend.vulkan.vulkan_errors.test.map_vk_result maps FEATURE_NOT_PRESENT to UnsupportedFeature...OK
+7/15 src.backend.vulkan.vulkan_errors.test.map_vk_result maps INCOMPATIBLE_DRIVER to UnsupportedFeature...OK
+8/15 src.backend.vulkan.vulkan_errors.test.map_vk_result maps TOO_MANY_OBJECTS to UnsupportedFeature...OK
+9/15 src.backend.vulkan.vulkan_errors.test.map_vk_result maps FORMAT_NOT_SUPPORTED to UnsupportedFeature...OK
+10/15 src.backend.vulkan.vulkan_errors.test.map_vk_result maps FRAGMENTED_POOL to UnsupportedFeature...OK
+11/15 src.backend.vulkan.vulkan_errors.test.map_vk_result maps UNKNOWN to UnsupportedFeature...OK
+12/15 src.backend.vulkan.vulkan_errors.test.map_vk_result maps OUT_OF_DATE_KHR to SurfaceUnavailable...OK
+13/15 src.backend.vulkan.vulkan_errors.test.map_vk_result maps other errors to InvalidState...OK
+14/15 src.backend.vulkan.vulkan_errors.test.vulkanResultName returns known names...OK
+15/15 src.contracts.execution.test.backend errors have one unsupported classification...OK
+All 15 tests passed.

@@ -1,0 +1,58 @@
+source layout violations detected:
+module decision review is stale for src/backend/vulkan/backend_execute.zig: expected d46c8968c36eb4950e30acef14febc24a2befb8ef23fd412cf2d664127db724a, got 30c51be60eee5a11df1a1b73897c80cf25a8b273875414c2823b737b0b05dc0c
+module decision review is stale for src/backend/vulkan/vk_async_probes.zig: expected b8b2bccdae9a6f37a055cae899e08dacd0e3b238a057d6180cc3363c7f9180b2, got a57eb3af426a1bd390b2894f1428be334d4cedae49dbb3a99dfbf0f0f3589339
+module decision review is stale for src/backend/vulkan/vk_command_buffers.zig: expected 99c43d6704906db301381f588bf2129dcea3d48b986639722249791dd01c3cb2, got 64c9d3a1b6bdbf70005a174db61aafcda0f9249e73e4b8747f4f9743ee1eff3a
+module decision review is stale for src/backend/vulkan/vk_compute_sync.zig: expected 3b343025cfa3b59edb3d97b6701293483855dd14be2017f3f9ecf7403885e7ba, got e225bc095a0443f401651b99359a6dc6f32782dc0d05807687967af60f65ff2b
+module decision review is stale for src/backend/vulkan/vk_render_pipeline.zig: expected 5cd563db312049e78ba04f7832ea5df74edf9b14e27dbe525020aa7eae7026eb, got 517cddff11aa6450af58a5a73ba327be2868408d3062832ff3877e59da837f37
+module decision review is stale for src/backend/vulkan/vk_descriptors.zig: expected fd6306e0262ed26af067bc280c488c4552ab29a7e108effe53f45f2546021162, got 8c2bea990c14e69e7d2bdc958d3881f56562c3d6ab273bff08deab5da88c84e1
+Zig source architecture review signals:
+src/backend/vulkan/native_runtime.zig: 1003 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_render.zig: 981 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_resources.zig: 1069 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_upload.zig: 843 lines exceeds advisory review signal 800
+src/backend/vulkan/vulkan_surface.zig: 808 lines exceeds advisory review signal 800
+src/compiler/tsir/digest.zig: 999 lines exceeds advisory review signal 800
+src/compiler/tsir/emit_kernel_body.zig: 895 lines exceeds advisory review signal 800
+src/compiler/tsir/frontend.zig: 885 lines exceeds advisory review signal 800
+src/compiler/tsir/reference_extended_ops.zig: 841 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_exec_v1.zig: 989 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_compile_source.zig: 895 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_runtime.zig: 837 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_ir_walk.zig: 888 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_layout.zig: 911 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/msl/emit_msl_ir.zig: 981 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig: 839 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig: 1046 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/parser_expr.zig: 851 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/sema.zig: 806 lines exceeds advisory review signal 800
+src/compiler/wgsl/ir/ir_transform_robustness.zig: 984 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_proof_match.zig: 890 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_uniform_bounds.zig: 878 lines exceeds advisory review signal 800
+src/dropin/dropin_browser_shared_memory.zig: 806 lines exceeds advisory review signal 800
+src/native/compute/doe_compute_fast.zig: 1062 lines exceeds advisory review signal 800
+src/native/queue/doe_queue_submit_metal.zig: 837 lines exceeds advisory review signal 800
+src/native/resource/doe_texture_sampler_native.zig: 829 lines exceeds advisory review signal 800
+src/native/shader/doe_shader_native.zig: 956 lines exceeds advisory review signal 800
+src/native/vulkan/vulkan_compute_native.zig: 835 lines exceeds advisory review signal 800
+src/runtime/trace/trace.zig: 879 lines exceeds advisory review signal 800
+src/spatial/csl/csl_host_plan_tool.zig: 828 lines exceeds advisory review signal 800
+test
++- run python3 failure
+error: the following command exited with error code 1:
+python3 tools/check_source_layout.py
+
+Build Summary: 9/11 steps succeeded; 1 failed; 34/34 tests passed
+test transitive failure
++- zig fmt --check success
++- run python3 success 839ms MaxRSS:13M
++- run python3 failure
++- run python3 success 42ms MaxRSS:21M
++- run python3 success 43ms MaxRSS:21M
++- run python3 success 35ms MaxRSS:21M
++- run python3 success 82ms MaxRSS:12M
++- run test 34 passed 316ms MaxRSS:62M
+   +- compile test Debug native success 867ms MaxRSS:225M
+      +- options cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/a514c9ffaa956a19e0be5987994f5ac1/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0xbe8cf3a2 -Z00384cc4d6094041 test -Dtest-filter=Vulkan --summary all

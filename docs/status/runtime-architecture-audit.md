@@ -12,6 +12,16 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [Vulkan and port examination batch](../../bench/out/maintenance/20260920-vulkan-review/README.md)
+continues the queue with checked write/descriptor bounds, native allocation
+publication, compute/indirect visibility and exact graphics entrypoint/color-mask
+semantics. Its [per-file conclusions](../../bench/out/maintenance/20260920-vulkan-review/file-reviews.json)
+separate retained sound code from unresolved completion lifetimes, capability
+claims, render admission, cache retention and receipt accounting. Host/native
+checks do not close stalled-device or complete graphics qualification. The next
+never-examined file is `src/backend/vulkan/vk_runtime_surface_ops.zig`; supporting
+edits grant no directory or relationship review credit.
+
 The [Metal notification checkpoint](../../bench/out/maintenance/20260920-metal-notification/README.md)
 integrates the external wait proposal with the current checked-dispatch runtime.
 Completion owns precommit notification admission, instance wait controls and one
@@ -20,7 +30,7 @@ status before retirement. The [wait contract](../metal-command-waits.md) records
 zero and indefinite call inputs, failure ownership and migration. Host gates
 remain distinct from Apple SDK and physical Metal qualification. Reentrant
 teardown, remaining void encoder boundaries and aggregate retention still need
-work; the next never-examined file is the telemetry port. Supporting edits confer
+work. That checkpoint stopped before the telemetry port. Supporting edits confer
 no review credit.
 
 Earlier [bounded polling](../../bench/out/maintenance/20260920-metal-bounded-wait/README.md),

@@ -115,6 +115,10 @@ const test_src_backend_metal_metal_completion_zig_e8786e3f = @import("src/backen
 const test_src_backend_metal_metal_wait_policy_zig_69e40d1f = @import("src/backend/metal/metal_wait_policy.zig");
 const test_src_backend_metal_metal_kernel_dispatch_zig_e9f5c033 = @import("src/backend/metal/metal_kernel_dispatch.zig");
 const test_src_backend_metal_metal_dispatch_runtime_zig_9106bea1 = @import("src/backend/metal/metal_dispatch_runtime.zig");
+const test_src_backend_vulkan_backend_execute_zig_fbaf27f3 = @import("src/backend/vulkan/backend_execute.zig");
+const test_src_backend_vulkan_vk_command_buffers_zig_cc09a2e8 = @import("src/backend/vulkan/vk_command_buffers.zig");
+const test_src_backend_vulkan_vk_compute_sync_zig_1111ce1b = @import("src/backend/vulkan/vk_compute_sync.zig");
+const test_src_backend_vulkan_vk_descriptors_zig_424d8d65 = @import("src/backend/vulkan/vk_descriptors.zig");
 
 comptime {
     _ = test_tests_metal_metal_mod_integration_test_zig_6f53b3ec;
@@ -231,4 +235,8 @@ comptime {
     _ = test_src_backend_metal_metal_wait_policy_zig_69e40d1f;
     _ = test_src_backend_metal_metal_kernel_dispatch_zig_e9f5c033;
     _ = test_src_backend_metal_metal_dispatch_runtime_zig_9106bea1;
+    _ = test_src_backend_vulkan_backend_execute_zig_fbaf27f3;
+    _ = test_src_backend_vulkan_vk_command_buffers_zig_cc09a2e8;
+    _ = test_src_backend_vulkan_vk_compute_sync_zig_1111ce1b;
+    _ = test_src_backend_vulkan_vk_descriptors_zig_424d8d65;
 }

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+  "toolchain": "0.15.2",
+  "platform": "Linux x86_64",
+  "vulkanHeader": "/usr/include/vulkan/vulkan_core.h",
+  "vulkanHeaderSha256": "03964df1e28a162285726ec7cf9098e5e0271cb1df21933e7bfef9f6fa08937f"
+}

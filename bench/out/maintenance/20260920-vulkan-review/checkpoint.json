@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "227b672751c3fba93afa686c996d642f545be8c3",
+  "batch": {
+    "verified": 13,
+    "needs_changes": 19
+  },
+  "queue": {
+    "activeScopes": 1357,
+    "retiredScopes": 2,
+    "byStatus": {
+      "stale": 90,
+      "needs_changes": 35,
+      "verified": 18,
+      "pending": 1214
+    },
+    "byLevel": {
+      "cross_directory": {
+        "pending": 384
+      },
+      "directory": {
+        "pending": 103,
+        "stale": 2
+      },
+      "file": {
+        "stale": 86,
+        "needs_changes": 35,
+        "verified": 18,
+        "pending": 623
+      },
+      "system": {
+        "pending": 1
+      },
+      "within_directory": {
+        "pending": 103,
+        "stale": 2
+      }
+    },
+    "currentVerifiedPercent": 1.33,
+    "examinedScopes": 143,
+    "nextPendingFile": "src/backend/vulkan/vk_runtime_surface_ops.zig"
+  }
+}

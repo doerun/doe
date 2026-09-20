@@ -292,7 +292,7 @@ fn validate_texture_binding_aspect(binding_aspect: u32, texture: vk_resources.Te
 pub fn descriptor_range(binding: model_compute_types.KernelBinding, buffer_size: u64) !u64 {
     if (binding.resource_kind != .buffer) return error.UnsupportedFeature;
     if (binding.buffer_size == model_texture_types.WGPUWholeSize) {
-        if (binding.buffer_offset > buffer_size) return error.InvalidArgument;
+        if (binding.buffer_offset >= buffer_size) return error.InvalidArgument;
         return c.VK_WHOLE_SIZE;
     }
     if (binding.buffer_size == 0) return error.InvalidArgument;
@@ -353,4 +353,15 @@ test "validate_texture_binding rejects multisample mismatch" {
         .layout = 0,
     };
     try std.testing.expectError(error.InvalidState, validate_texture_binding(binding, texture));
+}
+
+test "Vulkan whole-size descriptors reject an empty tail and overflowing explicit ranges" {
+    var binding = model_compute_types.KernelBinding{ .binding = 0, .resource_kind = .buffer, .resource_handle = 1, .buffer_offset = 16, .buffer_size = model_texture_types.WGPUWholeSize };
+    try std.testing.expectError(error.InvalidArgument, descriptor_range(binding, 16));
+    binding.buffer_offset = 15;
+    try std.testing.expectEqual(c.VK_WHOLE_SIZE, try descriptor_range(binding, 16));
+    binding.buffer_size = 2;
+    try std.testing.expectError(error.InvalidArgument, descriptor_range(binding, 16));
+    binding.buffer_offset = std.math.maxInt(u64);
+    try std.testing.expectError(error.InvalidArgument, descriptor_range(binding, std.math.maxInt(u64)));
 }

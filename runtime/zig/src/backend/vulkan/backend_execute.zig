@@ -95,14 +95,9 @@ fn execute_buffer_write(self: anytype, setup_ns: u64, bw: model.BufferWriteComma
 }
 
 fn execute_buffer_write_bytes(self: anytype, setup_ns: u64, handle: u64, offset: u64, buffer_size: u64, data_bytes: []const u8) !webgpu.NativeExecutionResult {
+    const required_size = try buffer_write_capacity(offset, buffer_size, data_bytes.len);
     const runtime = try self.ensure_runtime_bootstrapped();
     const write_start = common_timing.now_ns();
-    if (data_bytes.len == 0) return error.InvalidArgument;
-
-    const required_size = if (buffer_size > 0)
-        @max(buffer_size, offset + data_bytes.len)
-    else
-        offset + data_bytes.len;
 
     const vk_resources = @import("vk_resources.zig");
     const compute_buffer = try vk_resources.ensure_compute_buffer(runtime, handle, required_size, false);
@@ -136,6 +131,19 @@ fn execute_buffer_write_bytes(self: anytype, setup_ns: u64, handle: u64, offset:
         .gpu_timestamp_attempted = false,
         .gpu_timestamp_valid = false,
     };
+}
+
+fn buffer_write_capacity(offset: u64, buffer_size: u64, byte_count: u64) !u64 {
+    if (byte_count == 0) return error.InvalidArgument;
+    const end = std.math.add(u64, offset, byte_count) catch return error.InvalidArgument;
+    return @max(buffer_size, end);
+}
+
+test "Vulkan buffer write capacity rejects overflow before resource acquisition" {
+    try std.testing.expectError(error.InvalidArgument, buffer_write_capacity(std.math.maxInt(u64), 0, 1));
+    try std.testing.expectError(error.InvalidArgument, buffer_write_capacity(0, 16, 0));
+    try std.testing.expectEqual(@as(u64, 20), try buffer_write_capacity(16, 8, 4));
+    try std.testing.expectEqual(@as(u64, 32), try buffer_write_capacity(16, 32, 4));
 }
 
 fn use_explicit_submit_boundaries(self: anytype) bool {

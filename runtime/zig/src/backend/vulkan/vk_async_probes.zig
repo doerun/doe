@@ -217,7 +217,7 @@ pub fn pixel_local_storage_probe(
         );
         defer vk_resources.release_texture_resource(self, color_attachment);
 
-        const vk_format = vk_resources.texture_format_to_vk(format) catch c.VK_FORMAT_R8G8B8A8_UNORM;
+        const vk_format = try vk_resources.texture_format_to_vk(format);
 
         // Two-subpass render pass: subpass 0 writes color, subpass 1 reads
         // color as input attachment (framebuffer-fetch pattern).

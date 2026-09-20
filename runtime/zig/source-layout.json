@@ -1216,9 +1216,9 @@
       },
       "src/backend/vulkan/backend_execute.zig": {
         "decision": "Keep",
-        "moduleSha256": "30c51be60eee5a11df1a1b73897c80cf25a8b273875414c2823b737b0b05dc0c",
-        "reason": "Keep: explicit resource ownership and prepared execution preserve ordinary provider semantics; validated by program and queue-ordering regressions.",
-        "reviewer": "codex-gpu-program/2026-09-05"
+        "moduleSha256": "d46c8968c36eb4950e30acef14febc24a2befb8ef23fd412cf2d664127db724a",
+        "reason": "Keep: Owns command-provider result adaptation and early checked write sizing; timing/submission accounting and remaining broad command handling stay open in the file review.",
+        "reviewer": "codex-vulkan-file-review/2026-09-20"
       },
       "src/backend/vulkan/mod.zig": {
         "decision": "Keep",
@@ -1246,9 +1246,9 @@
       },
       "src/backend/vulkan/vk_async_probes.zig": {
         "decision": "Keep",
-        "moduleSha256": "a57eb3af426a1bd390b2894f1428be334d4cedae49dbb3a99dfbf0f0f3589339",
-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "b8b2bccdae9a6f37a055cae899e08dacd0e3b238a057d6180cc3363c7f9180b2",
+        "reason": "Keep: Owns explicit command diagnostic probes and propagates format rejection; strict probe semantics and pending-resource cleanup remain open, not platform acceptance.",
+        "reviewer": "codex-vulkan-file-review/2026-09-20"
       },
       "src/backend/vulkan/vk_capability_structs.zig": {
         "decision": "Keep",
@@ -1258,15 +1258,15 @@
       },
       "src/backend/vulkan/vk_command_buffers.zig": {
         "decision": "Keep",
-        "moduleSha256": "64c9d3a1b6bdbf70005a174db61aafcda0f9249e73e4b8747f4f9743ee1eff3a",
-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "99c43d6704906db301381f588bf2129dcea3d48b986639722249791dd01c3cb2",
+        "reason": "Keep: Owns native command allocation publication and bounded indirect argument writes; reuse ordering remains a caller-owned obligation bound in the review.",
+        "reviewer": "codex-vulkan-file-review/2026-09-20"
       },
       "src/backend/vulkan/vk_compute_sync.zig": {
         "decision": "Keep",
-        "moduleSha256": "e225bc095a0443f401651b99359a6dc6f32782dc0d05807687967af60f65ff2b",
-        "reason": "Keep: explicit resource ownership and prepared execution preserve ordinary provider semantics; validated by program and queue-ordering regressions.",
-        "reviewer": "codex-gpu-program/2026-09-05"
+        "moduleSha256": "3b343025cfa3b59edb3d97b6701293483855dd14be2017f3f9ecf7403885e7ba",
+        "reason": "Keep: Owns compute and transfer visibility accounting; indirect-only visibility retains shader hazards and tracker discharge covers compute plus indirect consumption.",
+        "reviewer": "codex-vulkan-file-review/2026-09-20"
       },
       "src/backend/vulkan/vk_constants.zig": {
         "decision": "Keep",
@@ -1354,9 +1354,9 @@
       },
       "src/backend/vulkan/vk_render_pipeline.zig": {
         "decision": "Keep",
-        "moduleSha256": "517cddff11aa6450af58a5a73ba327be2868408d3062832ff3877e59da837f37",
-        "reason": "Keep: render descriptors consume sampler native handles from the generation-bearing resource registry.",
-        "reviewer": "codex-descriptor-identity/2026-09-05"
+        "moduleSha256": "5cd563db312049e78ba04f7832ea5df74edf9b14e27dbe525020aa7eae7026eb",
+        "reason": "Keep: Owns native graphics pipeline conversion with exact allocated entrypoint names and explicit zero color masks; binding/layout admission and unsupported graphics state remain open.",
+        "reviewer": "codex-vulkan-file-review/2026-09-20"
       },
       "src/backend/vulkan/vk_resources.zig": {
         "decision": "Keep",
@@ -4240,9 +4240,9 @@
       },
       "src/backend/vulkan/vk_descriptors.zig": {
         "decision": "Keep",
-        "moduleSha256": "8c2bea990c14e69e7d2bdc958d3881f56562c3d6ab273bff08deab5da88c84e1",
-        "reason": "Keep: descriptor preparation owns resource resolution, exact cache selection, transactional pool publication, and binding validation separately from pipeline creation.",
-        "reviewer": "codex-descriptor-identity/2026-09-05"
+        "moduleSha256": "fd6306e0262ed26af067bc280c488c4552ab29a7e108effe53f45f2546021162",
+        "reason": "Keep: Owns Vulkan descriptor materialization from resource identities and checked nonempty ranges; texture type validation and recorded-resource promotion remain open.",
+        "reviewer": "codex-vulkan-file-review/2026-09-20"
       },
       "src/compiler/wgsl/ir/ir_transform_float_fusion.zig": {
         "decision": "Keep",

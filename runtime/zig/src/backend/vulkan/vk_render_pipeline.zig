@@ -124,12 +124,10 @@ pub fn format_has_stencil(format: model_gpu_types.WGPUTextureFormat) bool {
     };
 }
 
-pub fn resolve_entry_point_name(entry_point: ?[]const u8, fallback: []const u8, buf: []u8) [*:0]const u8 {
+pub fn resolve_entry_point_name(allocator: std.mem.Allocator, entry_point: ?[]const u8, fallback: []const u8) ![:0]u8 {
     const name = entry_point orelse fallback;
-    const len = @min(name.len, buf.len - 1);
-    @memcpy(buf[0..len], name[0..len]);
-    buf[len] = 0;
-    return buf[0..len :0];
+    if (name.len == 0 or std.mem.indexOfScalar(u8, name, 0) != null) return error.InvalidArgument;
+    return allocator.dupeZ(u8, name);
 }
 
 pub fn topology_to_vk(topology: u32) u32 {
@@ -204,13 +202,13 @@ pub fn blend_operation_to_vk(operation: u32) u32 {
     };
 }
 
-pub fn color_write_mask_to_vk(write_mask: u32, fallback: u32) u32 {
+pub fn color_write_mask_to_vk(write_mask: u32) u32 {
     var mask: u32 = 0;
     if ((write_mask & 0x1) != 0) mask |= c.VK_COLOR_COMPONENT_R_BIT;
     if ((write_mask & 0x2) != 0) mask |= c.VK_COLOR_COMPONENT_G_BIT;
     if ((write_mask & 0x4) != 0) mask |= c.VK_COLOR_COMPONENT_B_BIT;
     if ((write_mask & 0x8) != 0) mask |= c.VK_COLOR_COMPONENT_A_BIT;
-    return if (mask == 0) fallback else mask;
+    return mask;
 }
 
 pub fn create_graphics_pipeline(
@@ -233,10 +231,10 @@ pub fn create_graphics_pipeline(
     const fragment_spirv_words = cmd.fragment_spirv orelse
         vk_shader_source.load_kernel_spirv_cached(self, DEFAULT_FRAGMENT_SHADER_NAME) catch
         return error.ShaderCompileFailed;
-    var vertex_entry_buf: [64]u8 = undefined;
-    var fragment_entry_buf: [64]u8 = undefined;
-    const vertex_entry = resolve_entry_point_name(cmd.vertex_entry_point, "main", &vertex_entry_buf);
-    const fragment_entry = resolve_entry_point_name(cmd.fragment_entry_point, "main", &fragment_entry_buf);
+    const vertex_entry = try resolve_entry_point_name(self.allocator, cmd.vertex_entry_point, "main");
+    defer self.allocator.free(vertex_entry);
+    const fragment_entry = try resolve_entry_point_name(self.allocator, cmd.fragment_entry_point, "main");
+    defer self.allocator.free(fragment_entry);
 
     var vertex_shader_info = c.VkShaderModuleCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -392,11 +390,6 @@ pub fn create_graphics_pipeline(
         .alphaToOneEnable = c.VK_FALSE,
     };
 
-    const COLOR_WRITE_ALL = c.VK_COLOR_COMPONENT_R_BIT |
-        c.VK_COLOR_COMPONENT_G_BIT |
-        c.VK_COLOR_COMPONENT_B_BIT |
-        c.VK_COLOR_COMPONENT_A_BIT;
-
     var blend_attachment = c.VkPipelineColorBlendAttachmentState{
         .blendEnable = if (cmd.blend_enabled) c.VK_TRUE else c.VK_FALSE,
         .srcColorBlendFactor = blend_factor_to_vk(cmd.color_src_factor),
@@ -405,7 +398,7 @@ pub fn create_graphics_pipeline(
         .srcAlphaBlendFactor = blend_factor_to_vk(cmd.alpha_src_factor),
         .dstAlphaBlendFactor = blend_factor_to_vk(cmd.alpha_dst_factor),
         .alphaBlendOp = blend_operation_to_vk(cmd.alpha_operation),
-        .colorWriteMask = color_write_mask_to_vk(cmd.color_write_mask, COLOR_WRITE_ALL),
+        .colorWriteMask = color_write_mask_to_vk(cmd.color_write_mask),
     };
 
     var color_blend = c.VkPipelineColorBlendStateCreateInfo{

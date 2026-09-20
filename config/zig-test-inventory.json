@@ -483,6 +483,22 @@
         {
           "path": "src/backend/metal/metal_dispatch_runtime.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/backend_execute.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/vk_command_buffers.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/vk_compute_sync.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/vk_descriptors.zig",
+          "kind": "inline"
         }
       ]
     },
@@ -810,6 +826,22 @@
         },
         {
           "path": "src/backend/metal/metal_dispatch_runtime.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/backend_execute.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/vk_command_buffers.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/vk_compute_sync.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/vk_descriptors.zig",
           "kind": "inline"
         }
       ]

@@ -63,10 +63,10 @@ file	src/backend/metal/metal_async_runtime.zig	stale	metal_async_completion_2026
 file	src/backend/metal/metal_bridge_decls.zig	stale	metal_ports_20260920_02		Retain declarations; extend signature/layout parity checks alongside native changes. Native sampler and completion semantics remain findings in their owning scopes.
 file	src/backend/metal/metal_buffer_pool.zig	stale	metal_ports_20260920_03		Give the pool a versioned total retention policy and owned accounting, test full/OOM/reuse paths, then move shader normalization with its tests to its actual owner.
 file	src/backend/metal/metal_cleanup.zig	stale	metal_ports_20260920_04		Retain this file; re-examine when its bound contract or consumer changes.
-file	src/backend/metal/metal_completion.zig	needs_changes	metal_completion_notification_20260920_final		Design and test caller-owned close/deferred destruction; compile with Apple SDK and exercise both modes, blocked/late completion, native failure, early release and CPU cost on Metal.
+file	src/backend/metal/metal_completion.zig	stale	metal_completion_notification_20260920_final		Design and test caller-owned close/deferred destruction; compile with Apple SDK and exercise both modes, blocked/late completion, native failure, early release and CPU cost on Metal.
 file	src/backend/metal/metal_copy_runtime.zig	stale	metal_copy_runtime_texture_20260920		Give native encode/completion failures an explicit return contract and qualify direct/temporary copies plus retirement on Metal hardware.
 file	src/backend/metal/metal_deferred_release.zig	stale	metal_deferred_release_sampler_20260920		Complete checked native retirement and physical sampler use/release plus concurrent-device sampling; preserve the cache owner and single bridge translation.
-file	src/backend/metal/metal_dispatch_runtime.zig	needs_changes	metal_dispatch_notification_20260920_final		Run Apple SDK and physical direct/indirect output and guard fixtures, resolve destruction ownership, and narrow the command context without changing operation or timing semantics.
+file	src/backend/metal/metal_dispatch_runtime.zig	stale	metal_dispatch_notification_20260920_final		Run Apple SDK and physical direct/indirect output and guard fixtures, resolve destruction ownership, and narrow the command context without changing operation or timing semantics.
 file	src/backend/metal/metal_external_texture.zig	stale	metal_ports_20260920_08		Bind native pixel format and exact supported plane layout to import admission; add unsupported-layout and second-plane failure tests on the bridge.
 file	src/backend/metal/metal_gpu_timestamps.zig	stale	metal_ports_20260920_09		Return sampling success/generation from the bridge and bind validity to both samples from the completed invocation; test encoder failure and reuse.
 file	src/backend/metal/metal_kernel_dispatch.zig	stale	metal_kernel_dispatch_program_contract_20260920		Run Apple SDK and grouped/offset readback fixtures, extend checked encoding to remaining consumers, and separate analyzed admission from native acquisition where required.
@@ -75,7 +75,7 @@ file	src/backend/metal/metal_pipeline_cache.zig	stale	metal_ports_20260920_12		U
 file	src/backend/metal/metal_render_state_bridge_decls.zig	stale	metal_ports_20260920_13		Retain this file; re-examine when its bound contract or consumer changes.
 file	src/backend/metal/metal_resource_commands.zig	stale	metal_resource_commands_texture_20260920		Repair checked command-buffer completion and failure propagation, then run the physical array/volume upload and early-release cases.
 file	src/backend/metal/metal_runtime_limits.zig	stale	metal_ports_20260920_15		Move supported staging/wait policy into the existing versioned backend policy and derive immutable typed values, with limits validated before use.
-file	src/backend/metal/metal_runtime_queue_ops.zig	needs_changes	metal_queue_notification_20260920_final		Repair remaining native encoder/commit error boundaries and total retention ownership, then execute Apple SDK and physical lifetime/concurrency checks; next never-examined file is src/backend/ports/telemetry.zig.
+file	src/backend/metal/metal_runtime_queue_ops.zig	stale	metal_queue_notification_20260920_final		Repair remaining native encoder/commit error boundaries and total retention ownership, then execute Apple SDK and physical lifetime/concurrency checks; next never-examined file is src/backend/ports/telemetry.zig.
 file	src/backend/metal/metal_runtime_render_ops.zig	stale	metal_ports_20260920_17		Implement command-declared bundle/state behavior and propagate native failures, then validate temporary render/blit output on Metal.
 file	src/backend/metal/metal_runtime_resources.zig	stale	metal_runtime_resources_program_contract_20260920		Qualify selected-entrypoint/source-replacement fixtures on Metal; preserve native diagnostic text and examine total retained cache capacity.
 file	src/backend/metal/metal_surface_runtime.zig	stale	metal_ports_20260920_19		Make configure/layer replacement transactional and add failure/resize/presentation ordering tests against the actual surface bridge.
@@ -97,39 +97,39 @@ file	src/backend/ports/render.zig	stale	metal_ports_20260920_32		Retain this fil
 file	src/backend/ports/resource.zig	stale	resource_port_20260920		Repair texture-owner admission and canonical observed submission/completion reporting; next never-examined file is src/backend/ports/spatial.zig.
 file	src/backend/ports/spatial.zig	stale	spatial_port_20260920		Next never-examined queue file is src/backend/ports/surface.zig; qualified spatial providers require their own execution and lifetime review.
 file	src/backend/ports/surface.zig	stale	surface_port_20260920		Repair transactional surface replacement and native capability admission; next never-examined queue file is src/backend/ports/telemetry.zig.
-file	src/backend/ports/telemetry.zig	pending			Read and review the complete scope.
-file	src/backend/ports/transfer.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/artifact_emit.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/backend_execute.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/mod.zig	pending			Read and review the complete scope.
+file	src/backend/ports/telemetry.zig	verified	vulkan_batch_20260920_01_telemetry		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/ports/transfer.zig	verified	vulkan_batch_20260920_02_transfer		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/artifact_emit.zig	verified	vulkan_batch_20260920_03_artifact_emit		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/backend_execute.zig	needs_changes	vulkan_batch_20260920_04_backend_execute		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/mod.zig	needs_changes	vulkan_batch_20260920_05_mod		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/native_runtime.zig	stale	shader_semantics_runtime_20260919_evidence		Review remaining dispatch entrypoints and their distinct contracts, allocation/cleanup paths and full runtime responsibility.
-file	src/backend/vulkan/vk_adapter_probe.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_async_dispatch.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_async_probes.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_capability_structs.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_command_buffers.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_compute_program.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_compute_sync.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_constants.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_descriptor_identity.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_descriptors.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_device.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_device_caps.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_dispatch_indirect.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_dispatch_repeat.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_feature_caps.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_feature_probe.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_formats.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_functions.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_memory_policy.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_metrics.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_pipeline.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_pipeline_cache.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_pipeline_cache_persistent.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_render.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_render_pipeline.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_resources.zig	pending			Read and review the complete scope.
-file	src/backend/vulkan/vk_runtime_probe_ops.zig	pending			Read and review the complete scope.
+file	src/backend/vulkan/vk_adapter_probe.zig	verified	vulkan_batch_20260920_06_vk_adapter_probe		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/vk_async_dispatch.zig	needs_changes	vulkan_batch_20260920_07_vk_async_dispatch		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_async_probes.zig	needs_changes	vulkan_batch_20260920_08_vk_async_probes		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_capability_structs.zig	verified	vulkan_batch_20260920_09_vk_capability_structs		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/vk_command_buffers.zig	needs_changes	vulkan_batch_20260920_10_vk_command_buffers		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_compute_program.zig	needs_changes	vulkan_batch_20260920_11_vk_compute_program		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_compute_sync.zig	verified	vulkan_batch_20260920_12_vk_compute_sync		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/vk_constants.zig	verified	vulkan_batch_20260920_13_vk_constants		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/vk_descriptor_identity.zig	verified	vulkan_batch_20260920_14_vk_descriptor_identity		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/vk_descriptors.zig	needs_changes	vulkan_batch_20260920_15_vk_descriptors		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_device.zig	needs_changes	vulkan_batch_20260920_16_vk_device		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_device_caps.zig	needs_changes	vulkan_batch_20260920_17_vk_device_caps		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_dispatch_indirect.zig	needs_changes	vulkan_batch_20260920_18_vk_dispatch_indirect		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_dispatch_repeat.zig	needs_changes	vulkan_batch_20260920_19_vk_dispatch_repeat		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_feature_caps.zig	needs_changes	vulkan_batch_20260920_20_vk_feature_caps		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_feature_probe.zig	verified	vulkan_batch_20260920_21_vk_feature_probe		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/vk_formats.zig	verified	vulkan_batch_20260920_22_vk_formats		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/vk_functions.zig	verified	vulkan_batch_20260920_23_vk_functions		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/vk_memory_policy.zig	verified	vulkan_batch_20260920_24_vk_memory_policy		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/vk_metrics.zig	verified	vulkan_batch_20260920_25_vk_metrics		Retain this responsibility; revalidate when the bound inputs change.
+file	src/backend/vulkan/vk_pipeline.zig	needs_changes	vulkan_batch_20260920_26_vk_pipeline		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_pipeline_cache.zig	needs_changes	vulkan_batch_20260920_27_vk_pipeline_cache		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_pipeline_cache_persistent.zig	needs_changes	vulkan_batch_20260920_28_vk_pipeline_cache_persistent		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_render.zig	needs_changes	vulkan_batch_20260920_29_vk_render		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_render_pipeline.zig	needs_changes	vulkan_batch_20260920_30_vk_render_pipeline		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_resources.zig	needs_changes	vulkan_batch_20260920_31_vk_resources		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_runtime_probe_ops.zig	needs_changes	vulkan_batch_20260920_32_vk_runtime_probe_ops		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_runtime_surface_ops.zig	pending			Read and review the complete scope.
 file	src/backend/vulkan/vk_samplers.zig	pending			Read and review the complete scope.
 file	src/backend/vulkan/vk_shader_source.zig	pending			Read and review the complete scope.
