@@ -105,10 +105,9 @@ pub const DescriptorHeapState = struct {
         buffer: ?*anyopaque,
         size: u64,
     ) !u32 {
+        const aligned_size = try align_cbv_size(size);
         try self.ensure_heaps(device);
         const index = try self.next_cbv_srv_uav_index();
-        // CBV size must be 256-byte aligned per D3D12 spec
-        const aligned_size = align_cbv_size(size);
         bridge.c.d3d12_bridge_device_create_cbv(
             device,
             self.cbv_srv_uav_heap,
@@ -367,7 +366,7 @@ pub fn create_root_signature_with_bindings(
         &ranges,
         range_count,
         flags,
-    );
+    ) orelse return error.InvalidState;
 }
 
 /// Set a compute root descriptor table on a command list, pointing into the
@@ -424,19 +423,20 @@ pub fn set_graphics_sampler_table(
 const CBV_ALIGNMENT: u64 = 256;
 
 /// D3D12 requires constant buffer views to have 256-byte aligned sizes.
-fn align_cbv_size(size: u64) u64 {
-    return (size + CBV_ALIGNMENT - 1) & ~(CBV_ALIGNMENT - 1);
+fn align_cbv_size(size: u64) !u32 {
+    if (size == 0 or size > d3d12_constants.MAX_CONSTANT_BUFFER_BYTES) return error.InvalidArgument;
+    return @intCast((size + CBV_ALIGNMENT - 1) & ~(CBV_ALIGNMENT - 1));
 }
 
 // --- Tests ---
 
 test "align_cbv_size rounds up to 256" {
-    try std.testing.expectEqual(@as(u64, 256), align_cbv_size(1));
-    try std.testing.expectEqual(@as(u64, 256), align_cbv_size(128));
-    try std.testing.expectEqual(@as(u64, 256), align_cbv_size(256));
-    try std.testing.expectEqual(@as(u64, 512), align_cbv_size(257));
-    try std.testing.expectEqual(@as(u64, 512), align_cbv_size(512));
-    try std.testing.expectEqual(@as(u64, 768), align_cbv_size(768));
+    try std.testing.expectEqual(@as(u64, 256), try align_cbv_size(1));
+    try std.testing.expectEqual(@as(u64, 256), try align_cbv_size(128));
+    try std.testing.expectEqual(@as(u64, 256), try align_cbv_size(256));
+    try std.testing.expectEqual(@as(u64, 512), try align_cbv_size(257));
+    try std.testing.expectEqual(@as(u64, 512), try align_cbv_size(512));
+    try std.testing.expectEqual(@as(u64, 768), try align_cbv_size(768));
 }
 
 test "DescriptorHeapState starts zeroed" {
@@ -472,4 +472,11 @@ test "RootSignatureLayout defaults to no groups" {
 test "DescriptorRangeDesc extern struct size" {
     // 4 x u32 = 16 bytes, must match C layout
     try std.testing.expectEqual(@as(usize, 16), @sizeOf(DescriptorRangeDesc));
+}
+
+test "D3D12 CBV rejects zero over-limit and overflowing sizes before native allocation" {
+    try std.testing.expectError(error.InvalidArgument, align_cbv_size(0));
+    try std.testing.expectError(error.InvalidArgument, align_cbv_size(d3d12_constants.MAX_CONSTANT_BUFFER_BYTES + 1));
+    try std.testing.expectError(error.InvalidArgument, align_cbv_size(std.math.maxInt(u64)));
+    try std.testing.expectEqual(@as(u32, d3d12_constants.MAX_CONSTANT_BUFFER_BYTES), try align_cbv_size(d3d12_constants.MAX_CONSTANT_BUFFER_BYTES));
 }

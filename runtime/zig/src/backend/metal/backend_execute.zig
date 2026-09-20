@@ -324,8 +324,8 @@ fn flush_pending_uploads_if_required(comptime Backend: type, self: *Backend, com
         else => {},
     }
     if (self.pending_upload_commands == 0) return submit_wait_ns;
-    self.pending_upload_commands = 0;
     submit_wait_ns +|= try rt.flush_queue();
+    self.pending_upload_commands = 0;
     return submit_wait_ns;
 }
 
@@ -475,8 +475,9 @@ pub fn set_gpu_timestamp_mode(self: anytype, mode: webgpu.GpuTimestampMode) void
 
 pub fn flush_queue(self: anytype) anyerror!u64 {
     const rt = self.get_runtime();
+    const elapsed = try rt.flush_queue();
     self.pending_upload_commands = 0;
-    return try rt.flush_queue();
+    return elapsed;
 }
 
 pub fn prewarm_upload_path(self: anytype, max_upload_bytes: u64) anyerror!void {
@@ -506,11 +507,59 @@ pub fn prewarm_kernel_dispatch(
 }
 
 pub fn capture_buffer(self: anytype, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {
+    return capture_buffer_with_bridge(self, allocator, handle, offset, size, bridge);
+}
+
+fn capture_buffer_with_bridge(self: anytype, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64, comptime native: type) ![]u8 {
     const runtime = self.get_runtime();
     if (size == 0) return error.InvalidArgument;
     const end = std.math.add(u64, offset, size) catch return error.InvalidArgument;
     const buffer = runtime.compute_buffers.get(handle) orelse return error.InvalidArgument;
-    const mapped = bridge.metal_bridge_buffer_contents(buffer) orelse return error.InvalidState;
+    if (end > native.metal_bridge_buffer_length(buffer)) return error.InvalidArgument;
+    _ = try flush_queue(self);
+    const mapped = native.metal_bridge_buffer_contents(buffer) orelse return error.InvalidState;
     const source = mapped[@intCast(offset)..@intCast(end)];
     return try allocator.dupe(u8, source);
+}
+
+test "Metal capture checks native bounds and waits before copying; failed flush retains pending work" {
+    const Probe = struct {
+        compute_buffers: std.AutoHashMapUnmanaged(u64, ?*anyopaque) = .{},
+        pending_upload_commands: u32 = 1,
+        fail_flush: bool = false,
+        var bytes = [_]u8{ 1, 2, 3, 4 };
+        var completed = false;
+        fn get_runtime(self: *@This()) *@This() {
+            return self;
+        }
+        fn flush_queue(self: *@This()) !u64 {
+            if (self.fail_flush) return error.InvalidState;
+            completed = true;
+            bytes[1] = 9;
+            return 7;
+        }
+        fn metal_bridge_buffer_length(_: ?*anyopaque) usize {
+            return bytes.len;
+        }
+        fn metal_bridge_buffer_contents(_: ?*anyopaque) ?[*]u8 {
+            std.debug.assert(completed);
+            return &bytes;
+        }
+    };
+    var owner: Probe = .{};
+    defer owner.compute_buffers.deinit(std.testing.allocator);
+    try owner.compute_buffers.put(std.testing.allocator, 1, &Probe.bytes);
+    try std.testing.expectError(error.InvalidArgument, capture_buffer_with_bridge(&owner, std.testing.allocator, 1, 3, 2, Probe));
+    try std.testing.expectError(error.InvalidArgument, capture_buffer_with_bridge(&owner, std.testing.allocator, 1, std.math.maxInt(u64), 1, Probe));
+    try std.testing.expect(!Probe.completed);
+    owner.fail_flush = true;
+    try std.testing.expectError(error.InvalidState, capture_buffer_with_bridge(&owner, std.testing.allocator, 1, 0, 4, Probe));
+    try std.testing.expectEqual(@as(u32, 1), owner.pending_upload_commands);
+    owner.fail_flush = false;
+    const captured = try capture_buffer_with_bridge(&owner, std.testing.allocator, 1, 1, 2, Probe);
+    defer std.testing.allocator.free(captured);
+    try std.testing.expectEqualSlices(u8, &.{ 9, 3 }, captured);
+    try std.testing.expectEqual(@as(u32, 0), owner.pending_upload_commands);
+    Probe.bytes[1] = 0;
+    try std.testing.expectEqual(@as(u8, 9), captured[0]);
 }

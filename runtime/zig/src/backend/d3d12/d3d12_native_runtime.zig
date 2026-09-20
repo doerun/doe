@@ -150,7 +150,7 @@ pub const NativeD3D12Runtime = struct {
             self.dispatch_info_buffer = null;
             self.has_dispatch_info_cbv = false;
         }
-        d3d12_texture.release_all(&self.texture_map);
+        d3d12_texture.release_all(&self.texture_map, self.allocator);
         if (self.retirement_fence) |f| {
             bridge.c.d3d12_bridge_release(f);
             self.retirement_fence = null;
@@ -286,8 +286,12 @@ pub const NativeD3D12Runtime = struct {
 
     // --- Forwarding to sub-modules ---
 
-    pub fn texture_write(self: *NativeD3D12Runtime, cmd: model_texture_types.TextureWriteCommand) !u64 {
-        return d3d12_texture.texture_write(self.device, self.queue, &self.texture_map, self.allocator, cmd);
+    pub fn texture_write(self: *NativeD3D12Runtime, cmd: model_texture_types.TextureWriteCommand) !d3d12_texture.WriteMetrics {
+        try self.flush_before_dropin_submit_if_needed();
+        return d3d12_texture.texture_write(self.device, self.queue, self.fence, &self.fence_value, &self.texture_map, self.allocator, cmd) catch |err| {
+            if (err == error.DeviceLost) self.device_lost = true;
+            return err;
+        };
     }
 
     pub fn texture_query(self: *const NativeD3D12Runtime, cmd: model_texture_types.TextureQueryCommand) !u64 {
@@ -295,14 +299,17 @@ pub const NativeD3D12Runtime = struct {
     }
 
     pub fn texture_destroy(self: *NativeD3D12Runtime, cmd: model_texture_types.TextureDestroyCommand) !u64 {
+        try self.flush_before_dropin_submit_if_needed();
         return d3d12_texture.texture_destroy(&self.texture_map, cmd);
     }
 
     pub fn sampler_create(self: *NativeD3D12Runtime, cmd: model_render_types.SamplerCreateCommand) !u64 {
+        try self.flush_before_dropin_submit_if_needed();
         return self.sampler_state.sampler_create(self.device, self.allocator, cmd);
     }
 
     pub fn sampler_destroy(self: *NativeD3D12Runtime, cmd: model_render_types.SamplerDestroyCommand) !u64 {
+        try self.flush_before_dropin_submit_if_needed();
         return self.sampler_state.sampler_destroy(cmd);
     }
 
@@ -384,11 +391,14 @@ pub const NativeD3D12Runtime = struct {
     }
 
     pub fn execute_render_draw(self: *NativeD3D12Runtime, cmd: model_render_types.RenderDrawCommand, is_indirect: bool, is_indexed_indirect: bool, queue_sync_mode: webgpu.QueueSyncMode) !d3d12_render.RenderMetrics {
+        if (self.device_lost) return error.DeviceLost;
+        const recovery_wait_ns = if (self.has_deferred_submissions or self.pending_uploads.items.len > 0 or self.pending_submit_batches.items.len > 0 or self.streaming_copy_state.has_pending()) try self.flush_queue() else 0;
         const submission = try self.render_state.execute_render_draw(self.device, self.queue, self.fence, &self.fence_value, cmd, is_indirect, is_indexed_indirect, queue_sync_mode, &self.descriptor_state);
         if (submission.cmd_allocator != null or submission.cmd_list != null) {
             try self.trackDeferredCommandBatch(submission.cmd_allocator, submission.cmd_list);
         }
-        const metrics = submission.metrics;
+        var metrics = submission.metrics;
+        metrics.submit_wait_ns +|= recovery_wait_ns;
         if (metrics.submit_wait_ns != 0) self.noteCompletedFenceWait();
         return metrics;
     }
@@ -402,7 +412,7 @@ pub const NativeD3D12Runtime = struct {
         sample_count: u32,
         queue_sync_mode: webgpu.QueueSyncMode,
     ) !d3d12_render.RenderMetrics {
-        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0)
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0 or self.pending_submit_batches.items.len > 0 or self.streaming_copy_state.has_pending())
             _ = try self.flush_queue();
         const submission = try self.render_state.execute_render_bundles(self.device, self.queue, self.fence, &self.fence_value, bundles, target_width, target_height, color_format, sample_count, queue_sync_mode);
         if (submission.cmd_allocator != null or submission.cmd_list != null) {
@@ -471,7 +481,7 @@ pub const NativeD3D12Runtime = struct {
 
     // Flush outstanding GPU work before reporting completion to the caller.
     pub fn on_submitted_work_done(self: *NativeD3D12Runtime) !u64 {
-        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0 or self.pending_submit_batches.items.len > 0) {
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0 or self.pending_submit_batches.items.len > 0 or self.streaming_copy_state.has_pending()) {
             return try self.flush_queue();
         }
         return 0;

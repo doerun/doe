@@ -39,6 +39,13 @@ pub fn bind_render_pass_textures_and_samplers(
     bind_textures: []const ?*anyopaque,
     bind_samplers: []const ?*anyopaque,
 ) !RenderBindResult {
+    if (bind_textures.len > MAX_FLAT_BIND or bind_samplers.len > MAX_FLAT_BIND) return error.InvalidArgument;
+    for (bind_textures) |handle| {
+        if (handle) |value| if (texture_view_state.get_view(@intFromPtr(value)) == null) return error.InvalidArgument;
+    }
+    for (bind_samplers) |handle| {
+        if (handle) |value| if (!sampler_state.map.contains(@intFromPtr(value))) return error.InvalidArgument;
+    }
     var result = RenderBindResult{};
 
     // Count active textures and samplers
@@ -58,6 +65,10 @@ pub fn bind_render_pass_textures_and_samplers(
     // Record start indices for contiguous descriptor table ranges
     const srv_base = descriptor_state.cbv_srv_uav_next;
     const sampler_base = descriptor_state.sampler_next;
+    errdefer {
+        descriptor_state.cbv_srv_uav_next = srv_base;
+        descriptor_state.sampler_next = sampler_base;
+    }
 
     // Allocate SRV descriptors for each bound texture view
     for (bind_textures) |maybe_tex| {
@@ -74,13 +85,7 @@ pub fn bind_render_pass_textures_and_samplers(
                 entry.format,
             );
         } else {
-            // Fallback: allocate SRV with RGBA8Unorm format
-            const RGBA8_UNORM_FORMAT: u32 = 0x00000012;
-            _ = try descriptor_state.allocate_srv_texture(
-                device,
-                tex_view_ptr,
-                RGBA8_UNORM_FORMAT,
-            );
+            return error.InvalidArgument;
         }
     }
 
@@ -104,20 +109,7 @@ pub fn bind_render_pass_textures_and_samplers(
                 entry.max_anisotropy,
             );
         } else {
-            // Fallback: linear wrap sampler with reasonable defaults
-            _ = try descriptor_state.allocate_sampler_descriptor(
-                device,
-                0x00000002, // linear min
-                0x00000002, // linear mag
-                0x00000002, // linear mip
-                0x00000002, // wrap U
-                0x00000002, // wrap V
-                0x00000002, // wrap W
-                0.0, // lod min
-                32.0, // lod max
-                0, // no compare
-                1, // no anisotropy
-            );
+            return error.InvalidArgument;
         }
     }
 
@@ -131,7 +123,7 @@ pub fn bind_render_pass_textures_and_samplers(
         var layout = d3d12_descriptors.RootSignatureLayout{
             .allow_input_assembler = true,
         };
-        var entries_buf: [MAX_FLAT_BIND]d3d12_descriptors.BindingEntry = undefined;
+        var entries_buf: [MAX_FLAT_BIND * 2]d3d12_descriptors.BindingEntry = undefined;
         var entry_count: usize = 0;
 
         // SRV entries for textures

@@ -1,5 +1,4 @@
 const std = @import("std");
-const log = std.log.scoped(.d3d12_render);
 const model_render_types = @import("../../../contracts/model/model_render_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const webgpu = @import("../../../contracts/runtime_types.zig");
@@ -30,7 +29,6 @@ const D3D12InputElementDesc = bridge.D3D12InputElementDesc;
 const D3D12GraphicsPipelineDesc = bridge.D3D12GraphicsPipelineDesc;
 
 const RENDER_ATTACHMENT_USAGE: u32 = 0x00000010;
-const DRAW_INDIRECT_ARG_BYTES: usize = 16;
 const DRAW_INDEXED_INDIRECT_ARG_BYTES: usize = 20;
 const D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA = dc.INPUT_CLASSIFICATION_PER_VERTEX_DATA;
 const D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA = dc.INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
@@ -103,6 +101,7 @@ pub const RenderState = struct {
         queue_sync_mode: webgpu.QueueSyncMode,
         descriptor_state: *d3d12_descriptors.DescriptorHeapState,
     ) !RenderSubmission {
+        if (fence_value.* >= std.math.maxInt(u64) - 1) return error.InvalidState;
         const setup_start = common_timing.now_ns();
 
         const has_bind_groups = cmd.bind_texture_count > 0 or cmd.bind_sampler_count > 0;
@@ -111,14 +110,16 @@ pub const RenderState = struct {
         const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
         const encode_start = common_timing.now_ns();
 
-        var cmd_allocator = self.cmd_allocator;
-        var cmd_list = self.cmd_list;
+        var cmd_allocator = if (queue_sync_mode == .per_command) self.cmd_allocator else null;
+        var cmd_list = if (queue_sync_mode == .per_command) self.cmd_list else null;
+        errdefer if (queue_sync_mode != .per_command) {
+            if (cmd_list) |handle| bridge.c.d3d12_bridge_release(handle);
+            if (cmd_allocator) |handle| bridge.c.d3d12_bridge_release(handle);
+        };
         if (queue_sync_mode != .per_command) {
             cmd_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
-            errdefer bridge.c.d3d12_bridge_release(cmd_allocator);
             cmd_list = bridge.c.d3d12_bridge_device_create_command_list(device, cmd_allocator) orelse return error.InvalidState;
-            errdefer bridge.c.d3d12_bridge_release(cmd_list);
-            bridge.c.d3d12_bridge_command_list_close(cmd_list);
+            if (bridge.c.d3d12_bridge_command_list_close_checked(cmd_list) != 0) return error.InvalidState;
         }
 
         if (bridge.c.d3d12_bridge_command_allocator_reset(cmd_allocator) != 0) return error.InvalidState;
@@ -186,22 +187,23 @@ pub const RenderState = struct {
         }
 
         bridge.c.d3d12_bridge_command_list_resource_barrier_transition(cmd_list, self.render_target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_PRESENT);
-        bridge.c.d3d12_bridge_command_list_close(cmd_list);
+        if (bridge.c.d3d12_bridge_command_list_close_checked(cmd_list) != 0) return error.InvalidState;
 
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
+        const submit_start = common_timing.now_ns();
         bridge.c.d3d12_bridge_queue_execute_command_list(queue, cmd_list);
-        fence_value.* +|= 1;
+        fence_value.* += 1;
         bridge.c.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
         if (queue_sync_mode == .per_command) {
-            const submit_start = common_timing.now_ns();
             bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
+            if (bridge.c.d3d12_bridge_fence_completed_value(fence) == std.math.maxInt(u64)) return error.DeviceLost;
             const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
             return .{ .metrics = .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .draw_count = draw_count } };
         }
 
         return .{
-            .metrics = .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = 0, .draw_count = draw_count },
+            .metrics = .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start), .draw_count = draw_count },
             .cmd_allocator = cmd_allocator,
             .cmd_list = cmd_list,
         };
@@ -212,6 +214,18 @@ pub const RenderState = struct {
     }
 
     fn ensure_pipeline(self: *RenderState, device: ?*anyopaque, cmd: model_render_types.RenderDrawCommand, has_bind_groups: bool) !void {
+        const key = build_pipeline_key(cmd);
+        if (self.graphics_pipeline != null and self.cached_format == cmd.target_format and
+            self.cached_width == cmd.target_width and self.cached_height == cmd.target_height and
+            self.has_cached_pipeline_key and std.meta.eql(self.cached_pipeline_key, key)) return;
+        var replacement: RenderState = .{};
+        errdefer replacement.deinit();
+        try replacement.create_pipeline(device, cmd, has_bind_groups, key);
+        self.deinit();
+        self.* = replacement;
+    }
+
+    fn create_pipeline(self: *RenderState, device: ?*anyopaque, cmd: model_render_types.RenderDrawCommand, has_bind_groups: bool, key: PipelineKey) !void {
         const width = cmd.target_width;
         const height = cmd.target_height;
         const format = cmd.target_format;
@@ -222,18 +236,6 @@ pub const RenderState = struct {
                 self.root_signature = bridge.c.d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
             }
         }
-
-        const key = build_pipeline_key(cmd);
-        const needs_rebuild = self.graphics_pipeline == null or
-            self.cached_format != format or
-            self.cached_width != width or
-            self.cached_height != height or
-            !self.has_cached_pipeline_key or
-            !std.meta.eql(self.cached_pipeline_key, key);
-        if (!needs_rebuild) return;
-
-        if (self.graphics_pipeline) |old| bridge.c.d3d12_bridge_release(old);
-        if (self.render_target) |old| bridge.c.d3d12_bridge_release(old);
 
         var input_elements: [model_render_types.MAX_VERTEX_ATTRIBUTES]D3D12InputElementDesc = [_]D3D12InputElementDesc{std.mem.zeroes(D3D12InputElementDesc)} ** model_render_types.MAX_VERTEX_ATTRIBUTES;
         const input_count = try build_input_elements(cmd, &input_elements);
@@ -311,16 +313,14 @@ pub const RenderState = struct {
     }
 
     fn ensure_draw_indirect(self: *RenderState, device: ?*anyopaque) !void {
-        if (self.draw_cmd_sig != null) return;
-        self.draw_cmd_sig = bridge.c.d3d12_bridge_device_create_command_signature_draw(device, self.root_signature) orelse return error.InvalidState;
+        if (self.draw_cmd_sig == null) self.draw_cmd_sig = bridge.c.d3d12_bridge_device_create_command_signature_draw(device, null) orelse return error.InvalidState;
         if (self.indirect_arg_buffer == null) {
-            self.indirect_arg_buffer = bridge.c.d3d12_bridge_device_create_buffer(device, DRAW_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
+            self.indirect_arg_buffer = bridge.c.d3d12_bridge_device_create_buffer(device, DRAW_INDEXED_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
         }
     }
 
     fn ensure_indexed_indirect(self: *RenderState, device: ?*anyopaque) !void {
-        if (self.draw_indexed_cmd_sig != null) return;
-        self.draw_indexed_cmd_sig = bridge.c.d3d12_bridge_device_create_command_signature_draw_indexed(device, self.root_signature) orelse return error.InvalidState;
+        if (self.draw_indexed_cmd_sig == null) self.draw_indexed_cmd_sig = bridge.c.d3d12_bridge_device_create_command_signature_draw_indexed(device, null) orelse return error.InvalidState;
         if (self.indirect_arg_buffer == null) {
             self.indirect_arg_buffer = bridge.c.d3d12_bridge_device_create_buffer(device, DRAW_INDEXED_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
         }
@@ -346,10 +346,8 @@ pub const RenderState = struct {
     }
 
     pub fn deinit(self: *RenderState) void {
-        if (self.has_cmd) {
-            bridge.c.d3d12_bridge_release(self.cmd_list);
-            bridge.c.d3d12_bridge_release(self.cmd_allocator);
-        }
+        if (self.cmd_list) |handle| bridge.c.d3d12_bridge_release(handle);
+        if (self.cmd_allocator) |handle| bridge.c.d3d12_bridge_release(handle);
         if (self.graphics_pipeline) |p| bridge.c.d3d12_bridge_release(p);
         if (self.root_signature) |r| bridge.c.d3d12_bridge_release(r);
         if (self.render_target) |t| bridge.c.d3d12_bridge_release(t);
@@ -556,6 +554,7 @@ pub fn execute_render_bundles(
     sample_count: u32,
     queue_sync_mode: webgpu.QueueSyncMode,
 ) !RenderSubmission {
+    if (fence_value.* >= std.math.maxInt(u64) - 1) return error.InvalidState;
     if (bundles.len == 0) return .{};
 
     const width = if (target_width > 0) target_width else 256;
@@ -576,14 +575,16 @@ pub fn execute_render_bundles(
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
 
     const encode_start = common_timing.now_ns();
-    var cmd_allocator = self.cmd_allocator;
-    var cmd_list = self.cmd_list;
+    var cmd_allocator = if (queue_sync_mode == .per_command) self.cmd_allocator else null;
+    var cmd_list = if (queue_sync_mode == .per_command) self.cmd_list else null;
+    errdefer if (queue_sync_mode != .per_command) {
+        if (cmd_list) |handle| bridge.c.d3d12_bridge_release(handle);
+        if (cmd_allocator) |handle| bridge.c.d3d12_bridge_release(handle);
+    };
     if (queue_sync_mode != .per_command) {
         cmd_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
-        errdefer bridge.c.d3d12_bridge_release(cmd_allocator);
         cmd_list = bridge.c.d3d12_bridge_device_create_command_list(device, cmd_allocator) orelse return error.InvalidState;
-        errdefer bridge.c.d3d12_bridge_release(cmd_list);
-        bridge.c.d3d12_bridge_command_list_close(cmd_list);
+        if (bridge.c.d3d12_bridge_command_list_close_checked(cmd_list) != 0) return error.InvalidState;
     }
     if (bridge.c.d3d12_bridge_command_allocator_reset(cmd_allocator) != 0) return error.InvalidState;
     if (bridge.c.d3d12_bridge_command_list_reset(cmd_list, cmd_allocator) != 0) return error.InvalidState;
@@ -601,29 +602,27 @@ pub fn execute_render_bundles(
 
     var draw_count: u32 = 0;
     for (bundles) |b| {
-        render_bundle.replay_bundle_d3d12(b, cmd_list, color_format, pass_sample_count, self.draw_cmd_sig, self.draw_indexed_cmd_sig) catch |err| {
-            log.warn("bundle replay failed: {}", .{err});
-            continue;
-        };
+        try render_bundle.replay_bundle_d3d12(b, cmd_list, color_format, pass_sample_count, self.draw_cmd_sig, self.draw_indexed_cmd_sig);
         draw_count += 1;
     }
 
     bridge.c.d3d12_bridge_command_list_resource_barrier_transition(cmd_list, self.render_target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_PRESENT);
-    bridge.c.d3d12_bridge_command_list_close(cmd_list);
+    if (bridge.c.d3d12_bridge_command_list_close_checked(cmd_list) != 0) return error.InvalidState;
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
+    const submit_start = common_timing.now_ns();
     bridge.c.d3d12_bridge_queue_execute_command_list(queue, cmd_list);
-    fence_value.* +|= 1;
+    fence_value.* += 1;
     bridge.c.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
     if (queue_sync_mode == .per_command) {
-        const submit_start = common_timing.now_ns();
         bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
+        if (bridge.c.d3d12_bridge_fence_completed_value(fence) == std.math.maxInt(u64)) return error.DeviceLost;
         const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
         return .{ .metrics = .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .draw_count = draw_count } };
     }
 
     return .{
-        .metrics = .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = 0, .draw_count = draw_count },
+        .metrics = .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start), .draw_count = draw_count },
         .cmd_allocator = cmd_allocator,
         .cmd_list = cmd_list,
     };

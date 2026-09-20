@@ -304,8 +304,8 @@ fn execute_copy_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.CopyComman
 
 fn execute_texture_write_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.TextureWriteCommand) !webgpu.NativeExecutionResult {
     const rt = try ensure_runtime_bootstrapped(self);
-    const encode_ns = try rt.texture_write(cmd);
-    return .{ .status = .ok, .status_message = "", .setup_ns = setup_ns, .encode_ns = encode_ns };
+    const metrics = try rt.texture_write(cmd);
+    return .{ .status = .ok, .status_message = "", .setup_ns = setup_ns, .encode_ns = metrics.encode_ns, .submit_wait_ns = metrics.submit_wait_ns };
 }
 
 fn execute_texture_query_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.TextureQueryCommand) !webgpu.NativeExecutionResult {
@@ -566,8 +566,9 @@ fn set_gpu_timestamp_mode(ctx: *anyopaque, mode: webgpu.GpuTimestampMode) void {
 fn flush_queue(ctx: *anyopaque) anyerror!u64 {
     const self = cast(ctx);
     const rt = try ensure_runtime_bootstrapped(self);
+    const elapsed = try rt.flush_queue();
     self.pending_upload_commands = 0;
-    return try rt.flush_queue();
+    return elapsed;
 }
 
 fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {

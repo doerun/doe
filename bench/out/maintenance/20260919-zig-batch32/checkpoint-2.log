@@ -1,0 +1,69 @@
+Zig source architecture review signals:
+src/backend/vulkan/native_runtime.zig: 1003 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_render.zig: 981 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_resources.zig: 1069 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_upload.zig: 843 lines exceeds advisory review signal 800
+src/backend/vulkan/vulkan_surface.zig: 808 lines exceeds advisory review signal 800
+src/compiler/tsir/digest.zig: 999 lines exceeds advisory review signal 800
+src/compiler/tsir/emit_kernel_body.zig: 895 lines exceeds advisory review signal 800
+src/compiler/tsir/frontend.zig: 885 lines exceeds advisory review signal 800
+src/compiler/tsir/reference_extended_ops.zig: 841 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_exec_v1.zig: 989 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_compile_source.zig: 895 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_runtime.zig: 837 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_ir_walk.zig: 888 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_layout.zig: 911 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/msl/emit_msl_ir.zig: 976 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig: 839 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig: 1046 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/parser_expr.zig: 851 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/sema.zig: 806 lines exceeds advisory review signal 800
+src/compiler/wgsl/ir/ir_transform_robustness.zig: 984 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_proof_match.zig: 890 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_uniform_bounds.zig: 878 lines exceeds advisory review signal 800
+src/dropin/dropin_browser_shared_memory.zig: 806 lines exceeds advisory review signal 800
+src/native/compute/doe_compute_fast.zig: 1062 lines exceeds advisory review signal 800
+src/native/queue/doe_queue_submit_metal.zig: 837 lines exceeds advisory review signal 800
+src/native/resource/doe_texture_sampler_native.zig: 829 lines exceeds advisory review signal 800
+src/native/shader/doe_shader_native.zig: 956 lines exceeds advisory review signal 800
+src/native/vulkan/vulkan_compute_native.zig: 835 lines exceeds advisory review signal 800
+src/runtime/trace/trace.zig: 879 lines exceeds advisory review signal 800
+src/spatial/csl/csl_host_plan_tool.zig: 828 lines exceeds advisory review signal 800
+test
++- run test 2251/2256 passed, 1 failed, 4 skipped
+[default] (warn): doe_compute_preconditions: storage dispatch precondition failed: requiredBytes=3072 boundBytes=2047 kind=flat_index_2d_dispatch_x group=0 binding=1
+[default] (warn): doe_compute_preconditions: storage dispatch precondition failed: buffer missing group=0 binding=0
+error: 'src.backend.d3d12.d3d12_formats.test.wgpu_vertex_format_to_dxgi maps 32-bit int formats' failed: [default] (warn): doe: createShaderModule failed: unsupported sType 0xffffffff
+[default] (warn): doe: createComputePipeline failed: shader module is null or invalid. Ensure createShaderModule succeeded (check stderr for WGSL translation errors).
+[default] (warn): doe: createShaderModule failed: MTLLibrary creation returned null
+expected 7, found 17
+/home/x/deco/doe/runtime/zig/src/backend/d3d12/commands/d3d12_dispatch.zig:51:96: 0x1dfccd3 in prepare_pipeline (test_suite.zig)
+            const root = native.d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
+                                                                                               ^
+/home/x/deco/doe/runtime/zig/src/backend/d3d12/commands/d3d12_dispatch.zig:53:130: 0x1dfcd4c in prepare_pipeline (test_suite.zig)
+            const pipeline = native.d3d12_bridge_device_create_compute_pipeline(device, root, bytecode.ptr, bytecode.len) orelse return error.ShaderCompileFailed;
+                                                                                                                                 ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/testing.zig:110:17: 0x12ee934 in expectEqualInner__anon_34326 (std.zig)
+                return error.TestExpectedEqual;
+                ^
+/home/x/deco/doe/runtime/zig/src/backend/d3d12/d3d12_formats.zig:580:5: 0x1eb8622 in test.wgpu_vertex_format_to_dxgi maps 32-bit int formats (test_suite.zig)
+    try testing.expectEqual(DXGI_FORMAT_R32G32B32_UINT, try wgpu_vertex_format_to_dxgi(0x21));
+    ^
+error: while executing test 'src.native.command.doe_immediates_external_native.test.immediate layouts reject unsupported state before retaining bindings', the following test command failed:
+./.zig-cache/o/abe88d01d4c4c748f99d94fc52cc542f/test --cache-dir=./.zig-cache --seed=0x3bbd2a2 --listen=-
+
+Build Summary: 9/11 steps succeeded; 1 failed; 2251/2256 tests passed; 4 skipped; 1 failed
+test transitive failure
++- zig fmt --check success
++- run python3 success 867ms MaxRSS:13M
++- run python3 success 422ms MaxRSS:28M
++- run python3 success 39ms MaxRSS:21M
++- run python3 success 66ms MaxRSS:20M
++- run python3 success 44ms MaxRSS:22M
++- run python3 success 106ms MaxRSS:12M
++- run test 2251/2256 passed, 1 failed, 4 skipped
+   +- compile test Debug native success 1s MaxRSS:303M
+      +- options cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/e22820648f2f517437e60abc02b84c90/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x3bbd2a2 -Z6a79b66ff525a904 test --summary all

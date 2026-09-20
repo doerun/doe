@@ -12,6 +12,7 @@
         "metal_bridge_device_new_buffer_shared",
         "metal_bridge_device_new_buffer_private",
         "metal_bridge_buffer_contents",
+        "metal_bridge_buffer_length",
         "metal_bridge_encode_blit_copy",
         "metal_bridge_encode_blit_batch",
         "metal_bridge_begin_blit_encoding",

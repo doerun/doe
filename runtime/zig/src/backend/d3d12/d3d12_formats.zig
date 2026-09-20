@@ -260,8 +260,6 @@ pub fn bytes_per_pixel(format: model_gpu_types.WGPUTextureFormat) !u32 {
         model_gpu_types.WGPUTextureFormat_RGBA8Sint,
         model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
         model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb,
-        model_gpu_types.WGPUTextureFormat_RGBA16Unorm,
-        model_gpu_types.WGPUTextureFormat_RGBA16Snorm,
         model_gpu_types.WGPUTextureFormat_RGB10A2Uint,
         model_gpu_types.WGPUTextureFormat_RGB10A2Unorm,
         model_gpu_types.WGPUTextureFormat_RG11B10Ufloat,
@@ -280,6 +278,8 @@ pub fn bytes_per_pixel(format: model_gpu_types.WGPUTextureFormat) !u32 {
         => 4,
 
         // 8 bytes per pixel
+        model_gpu_types.WGPUTextureFormat_RGBA16Unorm,
+        model_gpu_types.WGPUTextureFormat_RGBA16Snorm,
         model_gpu_types.WGPUTextureFormat_RGBA16Uint,
         model_gpu_types.WGPUTextureFormat_RGBA16Sint,
         model_gpu_types.WGPUTextureFormat_RGBA16Float,
@@ -577,6 +577,7 @@ test "wgpu_vertex_format_to_dxgi maps 16-bit float formats" {
 
 test "wgpu_vertex_format_to_dxgi maps 32-bit int formats" {
     try testing.expectEqual(DXGI_FORMAT_R32_UINT, try wgpu_vertex_format_to_dxgi(0x20));
+    try testing.expectEqual(DXGI_FORMAT_R32G32_UINT, try wgpu_vertex_format_to_dxgi(0x21));
     try testing.expectEqual(DXGI_FORMAT_R32G32B32_UINT, try wgpu_vertex_format_to_dxgi(0x22));
     try testing.expectEqual(DXGI_FORMAT_R32G32B32A32_UINT, try wgpu_vertex_format_to_dxgi(0x23));
     try testing.expectEqual(DXGI_FORMAT_R32_SINT, try wgpu_vertex_format_to_dxgi(0x24));
@@ -592,4 +593,9 @@ test "wgpu_vertex_format_to_dxgi rejects invalid format" {
     try testing.expectError(error.UnsupportedFeature, wgpu_vertex_format_to_dxgi(0x00));
     try testing.expectError(error.UnsupportedFeature, wgpu_vertex_format_to_dxgi(0x2A));
     try testing.expectError(error.UnsupportedFeature, wgpu_vertex_format_to_dxgi(0xFF));
+}
+
+test "D3D12 RGBA16 normalized texture footprint is eight bytes" {
+    try testing.expectEqual(@as(u32, 8), try bytes_per_pixel(model_gpu_types.WGPUTextureFormat_RGBA16Unorm));
+    try testing.expectEqual(@as(u32, 8), try bytes_per_pixel(model_gpu_types.WGPUTextureFormat_RGBA16Snorm));
 }

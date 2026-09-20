@@ -796,31 +796,31 @@
       },
       "src/backend/d3d12/commands/d3d12_map_async.zig": {
         "decision": "Keep",
-        "moduleSha256": "18a1684f2eb6d08bf10b082a58ce913a642bc177b82811f6ce4495bd15fa4a74",
+        "moduleSha256": "0e9c372bbf955534c3334a5e71c5903fc87033bbe266b3c72541c5edfd235e76",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/commands/d3d12_native_render_pass.zig": {
         "decision": "Keep",
-        "moduleSha256": "dd7d470356a464b27ab465e7549f57729bc80f99bed77f1f8c26cfcd1de38427",
+        "moduleSha256": "bafb14b4427a926abe3e679467352538ef7114f25128bc21a1d40285b6a8960a",
         "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/commands/d3d12_render.zig": {
         "decision": "Keep",
-        "moduleSha256": "9b16d643da4c68d2e533e2b126d386e42b016a437d4df20f02df83c10f312eb9",
+        "moduleSha256": "2ce9eaea7644990ff6b829fa8a21b7fc16ec5f15ca25e6cb6c882ce809ce26ab",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-hexagonal-migration/2026-08-22"
       },
       "src/backend/d3d12/commands/d3d12_render_bind_groups.zig": {
         "decision": "Keep",
-        "moduleSha256": "a24ad66a8a91b5dc568400700453b5fa637bef23837a7c54b64c07bfb78d8a5f",
+        "moduleSha256": "f3569f4ae8b704215a09db77cbda7e1f21394ead53c06623cc780496df7bce01",
         "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/commands/d3d12_render_vertex.zig": {
         "decision": "Keep",
-        "moduleSha256": "69fb53c78c99ac2514935f6ea293f277186d36e5f8ba6ccfcd1043133814e568",
+        "moduleSha256": "8468145dbc797d26ed2689562fa7c075c0e1a1d070015fc8e398f924a85df7bd",
         "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -832,37 +832,37 @@
       },
       "src/backend/d3d12/d3d12_bridge_decls.zig": {
         "decision": "Keep",
-        "moduleSha256": "036207e6791097450f3d3d62b423b360102586b712d77b7e7cdb6bdab5dc1695",
+        "moduleSha256": "2c01e91943ceab0c62b9e3be7373b4fd39ba6a53e2f456cdc31b3d40cc6de89f",
         "reason": "Keep: isolated C/OS FFI boundary at src/backend/d3d12/d3d12_bridge_decls.zig.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/d3d12_constants.zig": {
         "decision": "Keep",
-        "moduleSha256": "638197701120590d724bfbf550eaba97878c1a658ac0dde33c32c9019ebe9140",
+        "moduleSha256": "bade31dce73e99c7a6268c995ba389fa5b2a713afc73e15ead67703fa9d949d9",
         "reason": "Keep: reachable backend implementation shared by 12 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/d3d12_descriptors.zig": {
         "decision": "Keep",
-        "moduleSha256": "0c821c59d20e1e790a5a15b4b91b74223df2ae59b5f7c441c1af33ebbe3a131f",
+        "moduleSha256": "f08c39efe63d80a20ee0cc64392ee5dacde0e38dac914d5acb3e29ce8407a3ac",
         "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/d3d12_device_caps.zig": {
         "decision": "Keep",
-        "moduleSha256": "90f25f0a54459bee474f3ae6978af2d4ee7f2a6a6a2512024e54dd9ad9565ce1",
+        "moduleSha256": "f3f050a38b41062db1974bff78a884fe3c37f50037410343042ee590b6f216ca",
         "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/d3d12_formats.zig": {
         "decision": "Keep",
-        "moduleSha256": "6f2e493b258aa54416c8f604c5d9ced9d7742c2fb0db35a0ff63a99074d5226c",
+        "moduleSha256": "07ccaa21cd046786f78079eaa11f6b7f81412d3584ed5603bf88b8867ca8eece",
         "reviewer": "codex-render-submission/2026-09-06",
         "reason": "Keep: shared vertex-format identity is checked against the pinned WebGPU header; native backend conversion and recorded execution remain owned by their existing components."
       },
       "src/backend/d3d12/d3d12_native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "856d31cfd5a39bb08b09ac7f4f5db048143f7739f8ca01a99cb9ca8c890db1eb",
+        "moduleSha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3",
         "reason": "Keep: reachable backend implementation shared by 2 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-hexagonal-migration/2026-08-22"
       },
@@ -874,7 +874,7 @@
       },
       "src/backend/d3d12/d3d12_runtime_compute.zig": {
         "decision": "Keep",
-        "moduleSha256": "82d37ad594568c375b9d389154702b7b1f4afd48ff2dd2d6aa75d61939c9493d",
+        "moduleSha256": "cf6e1b568b3b5e51344491b89b6a1fb8c21bddc3456c06917de9ea34958b6721",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-common-audit/2026-09-19"
       },
@@ -886,37 +886,37 @@
       },
       "src/backend/d3d12/mod.zig": {
         "decision": "Keep",
-        "moduleSha256": "20d6072880945797ad819e63e5da3949166d822145b188f619e85cee9e2bf81f",
+        "moduleSha256": "b32d8f371a2e34871690447f7e6be6ae3a4a0581afedb78ce5310aed9b1e4ed1",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-common-audit/2026-09-19"
       },
       "src/backend/d3d12/resources/d3d12_depth_stencil.zig": {
         "decision": "Keep",
-        "moduleSha256": "4e2ce6901eb0290cf7ba4513cb2e4aaac81d63d28c2a14d591a0208866ac9d8d",
+        "moduleSha256": "ec1aee86f65381dc96df38c32d15b887dd12a9f25629b4b664fa716fde1b58ac",
         "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/resources/d3d12_sampler.zig": {
         "decision": "Keep",
-        "moduleSha256": "d95a0229f74a7a28666b5e442cea42aa15c8e8215c81c9a7ec44d47365ff9ef3",
+        "moduleSha256": "d3268a9129842ee0f45825d5525e2a1f9f913d38a30fb11dd2568482571527d2",
         "reason": "Keep: reachable backend implementation shared by 3 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/resources/d3d12_texture.zig": {
         "decision": "Keep",
-        "moduleSha256": "d461936595f64e627e92c0eeb1703c59886000e07ae15bdfabd95c9359283d8f",
+        "moduleSha256": "681962c4bad82deadd92988bdd976b75f207e30f06ca3a0423b360d3e3f43efb",
         "reason": "Keep: reachable backend implementation shared by 2 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/resources/d3d12_texture_view.zig": {
         "decision": "Keep",
-        "moduleSha256": "c6075327984ab4c62c5c53428a64a10c46b0b97190c4d7d7c141a43ea2c99ff3",
+        "moduleSha256": "96dc380ff8df1495e3e145281f4c946cf551fd4fc99c76532c15a78aa4434080",
         "reason": "Keep: reachable backend implementation shared by 3 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/d3d12/surface/d3d12_surface.zig": {
         "decision": "Keep",
-        "moduleSha256": "a31124a10594984a7efd674264ab357af001dfba691cb4e327dc8477b095f16f",
+        "moduleSha256": "d06e547777527616082fcd490424395977aa75b2489fad2dd6c0c2fe3a678bae",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -946,7 +946,7 @@
       },
       "src/backend/dropin_pipeline_cache.zig": {
         "decision": "Keep",
-        "moduleSha256": "fcebcc162d26dc74908d2f596105db1624031d9afa2a84e0779eaa61c4edc09b",
+        "moduleSha256": "f193bfd94c46f05b3fb3ebcaa1aa05c2ef281d8bfcc71064501d0d90ad384372",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-architecture-refactor/2026-08-23"
       },
@@ -982,7 +982,7 @@
       },
       "src/backend/metal/backend_execute.zig": {
         "decision": "Keep",
-        "moduleSha256": "d4249d4f3179eaf5ffae7a6a1fe50a42fdbf95f6715206d1d13f153565b51a8c",
+        "moduleSha256": "bf234f5fac75cc185debeb305e6fc3f12bdce32b82105067c58c00752393e7cc",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-common-audit/2026-09-19"
       },
@@ -994,7 +994,7 @@
       },
       "src/backend/metal/metal_bridge_decls.zig": {
         "decision": "Keep",
-        "moduleSha256": "943ff6853fa58a9fecc71e6583ffc68ed43a53c26e43c2f4b6a276b3a1fd5a4a",
+        "moduleSha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad",
         "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
         "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
@@ -3586,7 +3586,7 @@
       },
       "src/native/queue/doe_queue_submit_d3d12.zig": {
         "decision": "Keep",
-        "moduleSha256": "67a1f4602941f9e85c8a33e3ecc96be360ca1e9bc5433259d048c5838e5320c6",
+        "moduleSha256": "dec0d612820946f9ca3f8363635141968ae3c7fbad7903e9a91c814a85db2618",
         "reason": "Keep: reachable native implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },

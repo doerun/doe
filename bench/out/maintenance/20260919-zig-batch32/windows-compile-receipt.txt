@@ -1,0 +1,5 @@
+Zig 0.15.2
+Command (runtime/zig working directory): /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig test -ld3d12 -ldxgi /home/x/deco/doe/runtime/zig/src/backend/d3d12/d3d12_bridge.c -ODebug -target x86_64-windows-gnu -mcpu baseline -I /home/x/deco/doe/runtime/zig/src/backend/d3d12 -I /home/x/deco/doe/runtime/zig/src/backend/metal -I /home/x/deco/doe/runtime/zig/vendor/webgpu-headers --dep build_options -Mroot=/home/x/deco/doe/runtime/zig/test_suite_d3d12.zig -Mbuild_options=.zig-cache/c/83b8d6b4d86314910e06bed127c5ebca/options.zig -lc --cache-dir .zig-cache --global-cache-dir /home/x/.cache/zig --name test --zig-lib-dir /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/ --test-no-exec -femit-bin=/tmp/doe-batch32-windows-test.exe
+Exit code: 0
+Scope: Windows Zig test executable compiled and linked; no Windows execution or GPU validation.
+Executable SHA256: dc26b76b61ca7a441c0eb4054c01bb0f446a5579371bc65012cfbb9ef73d9ce1

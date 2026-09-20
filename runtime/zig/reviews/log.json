@@ -12656,6 +12656,2827 @@
       "targets": [
         "src/backend/d3d12/commands/d3d12_gpu_timestamps.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "845b6ec51176325533f06ce960ed4e29a9249e36f3ebd6814ab98b3dab0de438"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.h",
+          "sha256": "7e969f497e73b9525bc581a30c70dbc942c50052337d057efda04c4118f6a92c"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+          "sha256": "bade31dce73e99c7a6268c995ba389fa5b2a713afc73e15ead67703fa9d949d9"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "b32d8f371a2e34871690447f7e6be6ae3a4a0581afedb78ce5310aed9b1e4ed1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_async_types.zig",
+          "sha256": "ecfe312c25232b1da11ccee650285f4bfff80a5d3d876710123f46e695ed4685"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [],
+      "inputHash": "80be1b2293340602d0434544964b913a542f0bae4b0e1a653eec1d8b26073d35",
+      "level": "file",
+      "nextAction": "Retain the repaired implementation; ordinary map callbacks and physical D3D12 execution retain separate review/qualification obligations.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Read mappings now declare the CPU-read range and no CPU writes on unmap; write mappings preserve the upload-heap contract. Null/empty/oversized requests fail before native allocation. Recording-native tests cover both heap kinds, allocation/map failure, byte effects, and balanced cleanup."
+      ],
+      "reviewId": "batch32_20260919_01",
+      "reviewedAt": "2026-09-20T00:26:46.550675+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined the entire temporary-buffer map command, its provider caller, native Map range contract, and cleanup. The command borrows a device, owns one native heap buffer through unmap/release, and does not implement ordinary WebGPU callbacks. Bounds and native failures are admitted explicitly; no retained borrowed payload or process state is introduced.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_map_async.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render_bind_groups.zig",
+          "sha256": "f3569f4ae8b704215a09db77cbda7e1f21394ead53c06623cc780496df7bce01"
+        },
+        {
+          "path": "runtime/zig/src/native/queue/doe_queue_submit_d3d12.zig",
+          "sha256": "dec0d612820946f9ca3f8363635141968ae3c7fbad7903e9a91c814a85db2618"
+        },
+        {
+          "path": "runtime/zig/src/native/render/doe_render_native.zig",
+          "sha256": "7adc8da7c689dbb24cb3e014b5b0e2eb5bf2345f486bb3a25b034012c27c15b0"
+        },
+        {
+          "path": "runtime/zig/src/native/render/doe_render_pipeline_native.zig",
+          "sha256": "86f2799d9604d294551ca62269383909fff82df92786127b56639ef4730da923"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_command_types.zig",
+          "sha256": "973612ca269ab09d8a57f2ce94f32e0735d48d37e971da36ab38ef84f1ebdb56"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Recorded load/store/clear operations, pass boundaries, viewport/scissor and indirect execution fields are not faithfully consumed; vertex buffer stride is hardcoded to zero.",
+        "A root signature created while recording replaces the pipeline root when bindings are present; this does not establish PSO/root-layout compatibility. Buffer bindings are not encoded."
+      ],
+      "inputHash": "13caab09a730f7b8f6af88fe21d119ae130e9f4af2b364b21acee53d12990557",
+      "level": "file",
+      "nextAction": "Repair the pipeline-layout and recorded-pass contract together; preserve vertex strides and load/store/dynamic state through encoding, then test native command traces and physical output.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reserve all per-pass retention slots before acquiring native objects, eliminating append-failure leaks. The queue caller now aborts an unsubmitted list and reports recording/close failures instead of continuing with omitted passes."
+      ],
+      "reviewId": "batch32_20260919_02",
+      "reviewedAt": "2026-09-20T00:26:47.624861+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined native recorded-pass decoding, attachment/view conversion, descriptor ownership, drawing, resolve operations and the queue caller. Native resource pointers remain borrowed through command references; per-pass native heaps/root signatures transfer into the submission retention list.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_native_render_pass.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render_vertex.zig",
+          "sha256": "8468145dbc797d26ed2689562fa7c075c0e1a1d070015fc8e398f924a85df7bd"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/resources/d3d12_depth_stencil.zig",
+          "sha256": "ec1aee86f65381dc96df38c32d15b887dd12a9f25629b4b664fa716fde1b58ac"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_render_types.zig",
+          "sha256": "596a984301f25c33a47d132fb71abe5e64a85b7da97341ee27d21aa1f3739644"
+        },
+        {
+          "path": "runtime/zig/src/native/render/doe_bundle_native.zig",
+          "sha256": "fb857f70f2bda8fb4ffde88d4106e16297541c13a1517a0d70c814779363ef5e"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Command shader/target inputs are not fully represented: the path builds fixed passthrough shaders and a private target, with a single-sample target even when the pipeline requests multisampling.",
+        "Binding creation still supplies fallback sampler/texture interpretations and lacks authoritative resource/register mapping. Attachment load/store behavior and resource transitions need native debug-layer/output validation."
+      ],
+      "inputHash": "baba01fda0fd1be2dcfbcce420d1c3d7688c002d647273a77fcdbfecae13d79f",
+      "level": "file",
+      "nextAction": "Replace the fixed shader/attachment assumptions with the declared render contract and shared pipeline layout, then verify state replacement and deferred execution on D3D12.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Pipeline replacement is transactional and partial command acquisition is released. Indirect storage fits both draw argument shapes; command-signature creation uses the required empty root association and retry repairs missing argument storage.",
+        "Deferred error cleanup now spans recording, bundle errors propagate, command-list close and fence bounds are checked, and submit timing starts before Execute/Signal instead of omitting that work. Runtime drains retained submissions before shared render-state replacement."
+      ],
+      "reviewId": "batch32_20260919_03",
+      "reviewedAt": "2026-09-20T00:26:48.728462+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined pipeline identity/replacement, attachment ownership, vertex/index/indirect encoding, bundle replay and synchronous/deferred submission. State owns pipeline, root, attachments and indirect argument storage; deferred command objects transfer to runtime batches.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_render.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_native_render_pass.zig",
+          "sha256": "bafb14b4427a926abe3e679467352538ef7114f25128bc21a1d40285b6a8960a"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_descriptors.zig",
+          "sha256": "f08c39efe63d80a20ee0cc64392ee5dacde0e38dac914d5acb3e29ce8407a3ac"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/resources/d3d12_sampler.zig",
+          "sha256": "d3268a9129842ee0f45825d5525e2a1f9f913d38a30fb11dd2568482571527d2"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/resources/d3d12_texture_view.zig",
+          "sha256": "96dc380ff8df1495e3e145281f4c946cf551fd4fc99c76532c15a78aa4434080"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_command_types.zig",
+          "sha256": "973612ca269ab09d8a57f2ce94f32e0735d48d37e971da36ab38ef84f1ebdb56"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Native recorded texture pointers and logical texture-view registry keys are different identities; the descriptor writer still passes a view identity where a native texture resource is required.",
+        "Sparse binding positions are compacted and a new root signature is built without the pipeline layout; lifetime/full-capacity policy for shared descriptor ranges is not tied to submission retirement."
+      ],
+      "inputHash": "73f79137d410bcdb14f47fabe5e81f18e5fde1f2928006b8e2e893cdd1df17bb",
+      "level": "file",
+      "nextAction": "Define one typed binding snapshot carrying native resources and actual register positions; allocate descriptor tables against the pipeline-owned layout and retire them with submissions.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Preflight rejects oversized slices and unknown non-null handles. Removed fabricated RGBA8/default-sampler fallbacks, sized temporary entries for both binding families, and roll back descriptor cursors on failure."
+      ],
+      "reviewId": "batch32_20260919_04",
+      "reviewedAt": "2026-09-20T00:26:49.795707+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined fixed-array bounds, registry lookups, descriptor allocation/rollback, root-signature construction and table binding. The helper borrows resource registries and returns an owning root handle; descriptors remain owned by the device heap.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_render_bind_groups.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render.zig",
+          "sha256": "2ce9eaea7644990ff6b829fa8a21b7fc16ec5f15ca25e6cb6c882ce809ce26ab"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_render_types.zig",
+          "sha256": "596a984301f25c33a47d132fb71abe5e64a85b7da97341ee27d21aa1f3739644"
+        },
+        {
+          "path": "runtime/zig/src/contracts/vertex_format.zig",
+          "sha256": "9a030fbd3207e2266c6ebaa1345655a2eb4a97f323a296a5848edf63d06f57d5"
+        },
+        {
+          "path": "runtime/zig/vendor/webgpu-headers/webgpu.h",
+          "sha256": "7691d76ceb67056f89e97b9ff0b62163eacf19a8e0e09a8fa7dbb32069b7978c"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Count normalization silently clamps excess layouts/attributes, and zero stride is treated as missing and inferred from attributes, although an explicit zero stride has defined repetition semantics."
+      ],
+      "inputHash": "6bd09f3911746d3098f95b3d2d44a4262ec05e14b6b83ca18c53472ee249fb00",
+      "level": "file",
+      "nextAction": "Separate absent layout defaults from explicit zero stride and reject excessive counts before key generation; bind normalization tests to the actual command producers.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Vertex byte sizes now switch exhaustively over the canonical format enum. Fixed-vector indexing and offset addition are checked; key identity includes texture/sampler counts. Regressions cover scalar/vector sizes, invalid indexing and overflow."
+      ],
+      "reviewId": "batch32_20260919_05",
+      "reviewedAt": "2026-09-20T00:26:50.864345+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined command normalization, pipeline key fields, array/slice lookup, native-handle conversion, byte-size/stride arithmetic and inline tests. This file owns no allocation and borrows binding arrays only during recording.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_render_vertex.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/resources/d3d12_texture.zig",
+          "sha256": "681962c4bad82deadd92988bdd976b75f207e30f06ca3a0423b360d3e3f43efb"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_resource_types.zig",
+          "sha256": "7f6089bd35aac69f43af7d99ad4bedd3fa7a95b6b716cfc52e1cd4ae80d9cb41"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "resolve_resource creates buffers for texture identities and does not maintain a real buffer registry. Fresh buffer handles are not retained/released with the copy batch.",
+        "Buffer offsets are omitted and texture-to-buffer/texture-to-texture commands are sent through CopyBufferRegion; dimensions, sizes, states and native footprints are not validated."
+      ],
+      "inputHash": "ca80e8ab7273e07e7db9cd6de88fc2acd1a49ff8fb5d5be1ce8c466a2c8797f2",
+      "level": "file",
+      "nextAction": "Repair real resource lookup/ownership first, then implement each copy direction with native layouts, offsets and transitions; use recording tests and GPU readback rather than state-only tests.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_06",
+      "reviewedAt": "2026-09-20T00:26:51.951140+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined recording/reuse, submitted-fence recovery, resource resolution, copy variants and teardown. Existing failure tests establish retry without duplicate submissions, but resource creation and copy semantics remain incorrect.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_streaming_copy.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_dispatch.zig",
+          "sha256": "8eeb0c24d621efdd85b05f1b86912a05f267ce4a37ac0f42b5f24c024b2202d8"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.h",
+          "sha256": "7e969f497e73b9525bc581a30c70dbc942c50052337d057efda04c4118f6a92c"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_upload.zig",
+          "sha256": "dd2bc8714efa53829eaf574c2f2c7f4859451db1f524eb6ad3da33fcf8cf5eee"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [],
+      "inputHash": "d76e158c415c7babc919b9c839b9034cf1154afa5bd3106772460ff875c4df28",
+      "level": "file",
+      "nextAction": "Retain the typed boundary; backend C behavior and physical driver failure delivery require their own evidence.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "check_signal and check_wait now expose the named SynchronizationError set explicitly. Existing synchronization fault tests exercise loss/signal/wait classifications and Windows compilation checks imported ABI use."
+      ],
+      "reviewId": "batch32_20260919_07",
+      "reviewedAt": "2026-09-20T00:26:53.028024+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined the complete narrow ABI adapter, C-header-owned structures and synchronization status mapping. It allocates and retains nothing; unknown native status codes are failures, never success.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/d3d12_bridge_decls.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_map_async.zig",
+          "sha256": "0e9c372bbf955534c3334a5e71c5903fc87033bbe266b3c72541c5edfd235e76"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_descriptors.zig",
+          "sha256": "f08c39efe63d80a20ee0cc64392ee5dacde0e38dac914d5acb3e29ce8407a3ac"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_device_caps.zig",
+          "sha256": "f3f050a38b41062db1974bff78a884fe3c37f50037410343042ee590b6f216ca"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_formats.zig",
+          "sha256": "07ccaa21cd046786f78079eaa11f6b7f81412d3584ed5603bf88b8867ca8eece"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/native-constants-receipt.txt",
+          "sha256": "e53db49e28e6a0aceb5e1d229e467803f18124e4f0e92804eab3e402a5ec18d7"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/native-constants.c",
+          "sha256": "bf4c79ec9736a82df2d2cdbf7d0858101103b00ad11d4102b3b7d2041e1cd863"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/spec-diff.log",
+          "sha256": "4f7d73722c9bc4fc512fe7932b8a69dd4a4079872e4698f2a7e258d5d7722408"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [],
+      "inputHash": "44d1c69a7566d51b38a7f210a85846b2f6aa229958af82eb7071c837266c4cf5",
+      "level": "file",
+      "nextAction": "Retain centralized native constants and run the existing spec-drift checks when the pinned headers change.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Map admission and device caps now share BASELINE_MAX_BUFFER_SIZE; CBV admission and uniform limits share MAX_CONSTANT_BUFFER_BYTES. No new deployment knob was introduced."
+      ],
+      "reviewId": "batch32_20260919_08",
+      "reviewedAt": "2026-09-20T00:26:54.117666+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined the entire native numeric/constants surface and its consumers. Constants encode native ABI values or fixed baseline bounds; there is no mutable policy, allocation, ownership transfer or unsafe execution here. Header/spec checking remains authoritative for transcriptions.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/d3d12_constants.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render_bind_groups.zig",
+          "sha256": "f3569f4ae8b704215a09db77cbda7e1f21394ead53c06623cc780496df7bce01"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.h",
+          "sha256": "7e969f497e73b9525bc581a30c70dbc942c50052337d057efda04c4118f6a92c"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_compute.zig",
+          "sha256": "cf6e1b568b3b5e51344491b89b6a1fb8c21bddc3456c06917de9ea34958b6721"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "create_root_signature_with_bindings counts entries by type but discards explicit binding numbers and dynamic-offset semantics; its stated group/table model disagrees with native range-per-root-parameter construction.",
+        "reset_allocations has no submission-retirement precondition encoded in its interface; overflow/full-capacity behavior needs integration with the owning queue."
+      ],
+      "inputHash": "c18dd0570d70ef9c543ffaee0940e0d50e7528d4f9bb367b2e53180d08dd2705",
+      "level": "file",
+      "nextAction": "Build tables from actual binding/register identities and make retirement part of descriptor reuse; test sparse groups, sampler-only groups, failure rollback and in-flight allocations.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Constant-buffer sizing is fallible and bounded before alignment, casts or slot mutation, including zero, over-limit and maximum-integer tests. Null native root creation remains an error."
+      ],
+      "reviewId": "batch32_20260919_09",
+      "reviewedAt": "2026-09-20T00:26:55.210147+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined heap ownership, linear allocation, descriptor writing, root-signature layout conversion, errors and tests. Native heaps own descriptors; caller synchronization must protect descriptor reuse.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/d3d12_descriptors.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/native/lifecycle/doe_instance_device_native.zig",
+          "sha256": "0d1e6620136d2522f4e40b1a41db0fa79655cf497928f14ca28e4002bfe29fa8"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_device_caps.zig",
+          "sha256": "15734661555ecb65ae12998ce4e4648e07099176e8dd4671b25877c26a9885eb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Native bridge shader-model and wave-size functions return constants rather than hardware observations; subgroup reporting derived from them cannot establish native support.",
+        "Registry insertion still suppresses allocation failure, and advertised static limits/features are not bound to implemented native/compiler support across all consumers."
+      ],
+      "inputHash": "19f30df9d3cce196a71cc23e2ad5ea7d68b070bc725d3ce2d8d2f31d1871ab1b",
+      "level": "file",
+      "nextAction": "Replace bridge placeholders with actual CheckFeatureSupport results, propagate required cache failures, and qualify advertised features against native/compiler implementation tests.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Protected registry get/set/remove with a mutex and release the empty map. Shared buffer/uniform limits replace duplicate values."
+      ],
+      "reviewId": "batch32_20260919_10",
+      "reviewedAt": "2026-09-20T00:26:56.280248+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined static limits, feature admission, native probe calls, adapter cache and tests. The adapter registry is process-owned and returns copied snapshots; device probing must remain authoritative for hardware facts.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/d3d12_device_caps.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "845b6ec51176325533f06ce960ed4e29a9249e36f3ebd6814ab98b3dab0de438"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_value_types.zig",
+          "sha256": "8c0d88e10eb988c689331d8d38c9da096f300ef50239879e652eacfaba8467e5"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format.zig",
+          "sha256": "87e943453f449eb9aaf42e2e61b132536b5cf99e2a43060bbf0195379b8d62e7"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format_layout.zig",
+          "sha256": "2c93a5ec273e29d5b88e7c4a4214d0c3f5430e2a1a49d213458316fd4e3e30b4"
+        },
+        {
+          "path": "runtime/zig/src/contracts/vertex_format.zig",
+          "sha256": "9a030fbd3207e2266c6ebaa1345655a2eb4a97f323a296a5848edf63d06f57d5"
+        },
+        {
+          "path": "runtime/zig/tests/backend/d3d12_descriptors_formats_test.zig",
+          "sha256": "84c5e0198a5f46e73ff1d467afbfea67d86e2afae9dd2eef0fbf0d0934ddf683"
+        },
+        {
+          "path": "runtime/zig/vendor/webgpu-headers/webgpu.h",
+          "sha256": "7691d76ceb67056f89e97b9ff0b62163eacf19a8e0e09a8fa7dbb32069b7978c"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/native-constants-receipt.txt",
+          "sha256": "e53db49e28e6a0aceb5e1d229e467803f18124e4f0e92804eab3e402a5ec18d7"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/native-constants.c",
+          "sha256": "bf4c79ec9736a82df2d2cdbf7d0858101103b00ad11d4102b3b7d2041e1cd863"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/spec-diff.log",
+          "sha256": "4f7d73722c9bc4fc512fe7932b8a69dd4a4079872e4698f2a7e258d5d7722408"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [],
+      "inputHash": "c9c33a2d193d9aa34bca135141fbba3481f154c0bbea2de1308b843658ce8c6f",
+      "level": "file",
+      "nextAction": "Retain the pure format mapping and pinned-value tests; plane-specific copy legality remains owned by the copy contract and native adapter.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "RGBA16 normalized formats now report their full byte footprint. Registered inline format tests explicitly and corrected the erroneous integer-vector test identity while retaining separate two- and three-component expectations."
+      ],
+      "reviewId": "batch32_20260919_11",
+      "reviewedAt": "2026-09-20T00:26:57.373274+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined all color, depth/stencil, compressed and vertex conversions, copy-byte metadata and tests against canonical format identities. The pure mapping allocates nothing; unavailable native formats return UnsupportedFeature. Copy footprint metadata is not GPU allocation/residency.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/d3d12_formats.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render.zig",
+          "sha256": "2ce9eaea7644990ff6b829fa8a21b7fc16ec5f15ca25e6cb6c882ce809ce26ab"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_streaming_copy.zig",
+          "sha256": "57c8cf8a5071dfa8d70d59ffa9bf1b5f918671fbcdda5cf828136aca34dffa7b"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_compute.zig",
+          "sha256": "cf6e1b568b3b5e51344491b89b6a1fb8c21bddc3456c06917de9ea34958b6721"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_upload.zig",
+          "sha256": "dd2bc8714efa53829eaf574c2f2c7f4859451db1f524eb6ad3da33fcf8cf5eee"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/resources/d3d12_texture.zig",
+          "sha256": "681962c4bad82deadd92988bdd976b75f207e30f06ca3a0423b360d3e3f43efb"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/surface/d3d12_surface.zig",
+          "sha256": "d06e547777527616082fcd490424395977aa75b2489fad2dd6c0c2fe3a678bae"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Kernel pipeline replacement and surface retirement still lack the same complete in-flight-resource handoff as the repaired render/resource paths.",
+        "The runtime exposes copy/query/surface helpers whose resource semantics remain unfinished; wrapper reachability is not proof of native API completion."
+      ],
+      "inputHash": "2d2dc297f60be0bd062a262ab2b4251fda0fbe66363761a814c45c7c9404d421",
+      "level": "file",
+      "nextAction": "Apply the completion/retirement contract to compute pipeline and surface replacement, then exercise mixed copy/render/compute resource lifetimes with injected failures and native validation.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Texture cleanup now receives the map allocator. Resource replacement/destruction and render-state reuse drain outstanding work, including pending submit batches and streaming copies. Texture-write device loss is retained and write timing keeps submission separate."
+      ],
+      "reviewId": "batch32_20260919_12",
+      "reviewedAt": "2026-09-20T00:26:58.459408+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined initialization/deinitialization, pending upload/submission retention, completion/device-loss handling and every resource/compute/render/surface forwarding path. The runtime owns allocator-backed registries and native device/queue state; helpers borrow that serialized owner.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/d3d12_native_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_gpu_timestamps.zig",
+          "sha256": "c2e6b64219084fe00d5d99bbd668a39b4e3e2f4855faa64acdddeeb42dea6354"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_query_native.zig",
+          "sha256": "ba22b6a85933a96959391c1861d9c0b6e34ad1c1eef374e9d4f0c22af1c007e2"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "create can overwrite an existing handle or leak all native objects on map insertion failure, and substitutes frequency 1 for an unavailable timestamp clock.",
+        "begin/end/resolve use bridge functions with incompatible hardcoded query types; resolve records on an already-closed command list, lacks per-slot availability/mapping state, and conversion can overflow or collapse unavailable data to zero."
+      ],
+      "inputHash": "3119ac0b414028f567601a0c90cca6bd122f6a6f2f1473711fa38554b38410ae",
+      "level": "file",
+      "nextAction": "Establish a real consumer and typed query recording/availability contract, then repair transactional creation, readback lifetime and checked conversion; do not inherit dispatch timestamp qualification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_13",
+      "reviewedAt": "2026-09-20T00:26:59.531571+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined the full multi-query-set helper, native query-type calls, readback ownership/conversion and callers. It is distinct from the repaired dispatch timestamp owner; runtime creation/destruction wrappers do not establish an exercised ordinary query path.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/d3d12_query_set.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_descriptors.zig",
+          "sha256": "f08c39efe63d80a20ee0cc64392ee5dacde0e38dac914d5acb3e29ce8407a3ac"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "b32d8f371a2e34871690447f7e6be6ae3a4a0581afedb78ce5310aed9b1e4ed1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/shader_abi/dispatch_info.zig",
+          "sha256": "c0fde78b0f3af700ed04bf562c610aeee9bf7f1f570699af83156cc3fb2fe273"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "loadKernelCso can prefer an unrelated same-basename DXIL/CSO/DXBC file over requested WGSL without content/toolchain binding; generated cache identity omits compiler/options and publication is not atomic.",
+        "Pipeline replacement drops old state before successful replacement and partial command acquisition is not transactional; the single dispatch-info root layout does not realize general kernel bindings. Shader hash reuse has no byte equality check."
+      ],
+      "inputHash": "d27053fe7f6608e8f49882669d5d5b7645a3f9246932754ea26dc88fa8309f73",
+      "level": "file",
+      "nextAction": "Bind source and compiled artifacts explicitly, make pipeline replacement transactional after retirement, and implement request entrypoint/resource layouts before qualifying general kernel execution.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reserve both dispatch-info retention slots before either ownership transfer, preventing a failed second append from causing duplicate release."
+      ],
+      "reviewId": "batch32_20260919_14",
+      "reviewedAt": "2026-09-20T00:27:00.593772+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined shader lookup/compilation/cache identity, pipeline replacement, dispatch-info ownership, timestamp integration and command submission. Native transient buffer/heap ownership transfers into runtime submission batches; source/DXC allocations are explicit.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/d3d12_runtime_compute.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "b32d8f371a2e34871690447f7e6be6ae3a4a0581afedb78ce5310aed9b1e4ed1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Pools limit entries per exact size but retain an unbounded number of size classes; capacity, total retained bytes, invalidation and full-budget behavior are not defined across the runtime owner."
+      ],
+      "inputHash": "3cbc03d65b37c0f89752ca399b61b2d4ea467aa712396df865c7306ccb0cafc8",
+      "level": "file",
+      "nextAction": "Define an explicit total retention policy for both upload/default pools and test varied sizes, allocator failures, budget exhaustion and cleanup without changing measured work.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_15",
+      "reviewedAt": "2026-09-20T00:27:01.683951+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined temporary command/buffer ownership, pending submission admission, retry without resubmission, completion-driven release and pool allocation. Existing fault tests exercise queue errors, retry and terminal loss. No source change is needed for that already-repaired synchronization subpath.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/d3d12_runtime_upload.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/common/submit_count_policy.zig",
+          "sha256": "84bf471d039b95dcf075ec84fdb5ca3894530612598b0e5312c15369a7c386a7"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_compute.zig",
+          "sha256": "cf6e1b568b3b5e51344491b89b6a1fb8c21bddc3456c06917de9ea34958b6721"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Kernel execution/prewarm omit request entrypoint, binding and initialization semantics; broad capability reporting does not establish complete command behavior.",
+        "Several subordinate render/copy/surface/query paths remain incomplete; provider success and logical counts cannot be used as proof of equivalent GPU work."
+      ],
+      "inputHash": "5c2105457157695ea704c726c19dc51f4de24ac05ce7e9d00a9ad2ffa3bc1b35",
+      "level": "file",
+      "nextAction": "Propagate complete kernel requests into real pipeline/binding execution and validate per-command capabilities against repaired native work; retain non-claimable physical evidence boundaries.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Pending-upload counters clear only after successful flush. Texture writes report actual submission waiting separately from encoding. Required timestamp admission remains before runtime work."
+      ],
+      "reviewId": "batch32_20260919_16",
+      "reviewedAt": "2026-09-20T00:27:02.772524+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined provider construction, capability routing, prepared/native commands, request conversion, policy admission, telemetry/artifacts and teardown. This is the command-oriented provider, distinct from native WebGPU object entrypoints.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/mod.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "845b6ec51176325533f06ce960ed4e29a9249e36f3ebd6814ab98b3dab0de438"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render.zig",
+          "sha256": "2ce9eaea7644990ff6b829fa8a21b7fc16ec5f15ca25e6cb6c882ce809ce26ab"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_formats.zig",
+          "sha256": "07ccaa21cd046786f78079eaa11f6b7f81412d3584ed5603bf88b8867ca8eece"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_value_types.zig",
+          "sha256": "8c0d88e10eb988c689331d8d38c9da096f300ef50239879e652eacfaba8467e5"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [],
+      "inputHash": "73ec22825ba0ade4e191e4fa0b3de9e9dbb6d71032ce2cd39333d47412452821",
+      "level": "file",
+      "nextAction": "Retain this single-sample owner; the render caller must resolve its separate multisample attachment finding rather than treating this helper as multisample support.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Canonical WebGPU depth identities replace local copies. Replacement preserves both old handles until the new pair exists; injected native allocation failures verify rollback and successful replacement releases the old pair."
+      ],
+      "reviewId": "batch32_20260919_17",
+      "reviewedAt": "2026-09-20T00:27:03.888049+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined pure depth/stencil classification and the single-sample texture/DSV owner. Native objects are acquired transactionally, reused by exact dimensions/format, and released by one state owner after caller retirement; no allocator or process cache is hidden.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/resources/d3d12_depth_stencil.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render_bind_groups.zig",
+          "sha256": "f3569f4ae8b704215a09db77cbda7e1f21394ead53c06623cc780496df7bce01"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_render_types.zig",
+          "sha256": "596a984301f25c33a47d132fb71abe5e64a85b7da97341ee27d21aa1f3739644"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Sampler admission does not validate finite/ordered LOD bounds, filter/address enums or anisotropy requirements before the bridge maps them; invalid values may silently become native defaults."
+      ],
+      "inputHash": "00669bb2992cd14803140e7156bd77fc7cf14025fa94334a87ef339008dbee17",
+      "level": "file",
+      "nextAction": "Apply shared sampler semantic validation before descriptor writes and test invalid enums, LOD ranges and anisotropic filtering combinations through the command/native boundary.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Sampler creation now writes the actual native descriptor. Reserve map capacity before native acquisition, reuse the existing slot on replacement, and recycle destroyed slots. Capacity/replacement/double-destroy tests prove reuse and exact descriptor-write accounting."
+      ],
+      "reviewId": "batch32_20260919_18",
+      "reviewedAt": "2026-09-20T00:27:04.967203+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined sampler identity, native descriptor creation, heap capacity, replacement, destruction and map ownership. The runtime serializes descriptor replacement with prior work; slots belong to the state-owned heap.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/resources/d3d12_sampler.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_streaming_copy.zig",
+          "sha256": "57c8cf8a5071dfa8d70d59ffa9bf1b5f918671fbcdda5cf828136aca34dffa7b"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_resource_types.zig",
+          "sha256": "7f6089bd35aac69f43af7d99ad4bedd3fa7a95b6b716cfc52e1cd4ae80d9cb41"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_types.zig",
+          "sha256": "0267eafe3b61d8ba3d595c0dd186f1b8da3a1195136eb86167f8214290881d07"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_copy.zig",
+          "sha256": "4a7b01380cb0000a1f7c8d587b7c2b157f6fd9f384444427fc968cdeb92e8c81"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format_layout.zig",
+          "sha256": "2c93a5ec273e29d5b88e7c4a4214d0c3f5430e2a1a49d213458316fd4e3e30b4"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "The shared texture registry is also populated/consumed by the unfinished streaming-copy path, so a registry hit does not yet guarantee a real texture or globally current resource state.",
+        "texture_query omits expected dimension/view-dimension/usage fields; native upload round trips and allocation/recording failure probes remain required beyond layout-only tests."
+      ],
+      "inputHash": "dceb10f01565b8536a8d0e4ee81d5caee16a7b88ac190e8eb7d986f8fbdef1b8",
+      "level": "file",
+      "nextAction": "Unify registry resource/state ownership with real copy execution, honor all query expectations, and verify upload/readback across mips, compressed layouts and native failure cleanup.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Upload supplied bytes rather than uninitialized staging data; repack compact/padded source rows to native row/placement alignment, preserve offsets, size mips/volumes and use correct array subresource indices.",
+        "Retain staging/list/allocator through completion, track write transitions, propagate allocation causes and device loss, validate existing texture identity, and free registry storage with its owning allocator. Separate host encoding and submission/wait timing."
+      ],
+      "reviewId": "batch32_20260919_19",
+      "reviewedAt": "2026-09-20T00:27:06.021582+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined texture registry ownership, allocation/layout admission, data movement, mip/array/volume addressing, native state transitions, completion and query/destruction. Layout tests validate source bounds and packing independently of a GPU.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/resources/d3d12_texture.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render_bind_groups.zig",
+          "sha256": "f3569f4ae8b704215a09db77cbda7e1f21394ead53c06623cc780496df7bce01"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_descriptors.zig",
+          "sha256": "f08c39efe63d80a20ee0cc64392ee5dacde0e38dac914d5acb3e29ce8407a3ac"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_value_types.zig",
+          "sha256": "8c0d88e10eb988c689331d8d38c9da096f300ef50239879e652eacfaba8467e5"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Storage-vs-sampled descriptor selection follows texture usage rather than the binding role, and the 1D path calls a 2D-only bridge writer.",
+        "Mip/layer bounds and supported storage-format admission are incomplete; unknown format/dimension fallbacks and descriptor retirement need an authoritative texture/layout contract."
+      ],
+      "inputHash": "eed9e13f44f797092df6b0411fb1ed45c6efd1b32e6d2dcfdc56f8a5e744b061",
+      "level": "file",
+      "nextAction": "Carry the actual texture descriptor and binding role into view creation, implement the native dimension variants, and validate ranges before publishing descriptors.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Use canonical aspect values so depth and stencil cannot alias each other. Reject duplicate handles and null native prerequisites, reserve map space before descriptor writes, and reset freed map state. Aspect regressions are explicitly registered."
+      ],
+      "reviewId": "batch32_20260919_20",
+      "reviewedAt": "2026-09-20T00:27:07.084283+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined view identity/aspects, descriptor emission, dimension selection, map allocation, destruction and caller-owned heap lifetime. Views borrow texture identity; descriptor storage belongs to the supplied heap.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/resources/d3d12_texture_view.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_surface_control_types.zig",
+          "sha256": "915e430a6d7a86260627905ac5e406ac2e0e453211481d315c042f67ed2fd98f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "The render target is a separate allocation rather than the acquired swapchain back buffer; acquire only changes local status, so presentation does not prove rendered-frame delivery.",
+        "Capabilities do not query native support, configure omits requested usage/present-mode/latency semantics, and caller retirement is incomplete."
+      ],
+      "inputHash": "e2926300be2c2678a33a05233cab5f93e08e2c0626a7bfc435eeca4645101b69",
+      "level": "file",
+      "nextAction": "Connect acquisition to real swapchain buffers and requested presentation policy, then validate rendered output, resize/reconfigure and in-flight teardown on Windows.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Duplicate create and configure-without-create fail explicitly; reconfiguration publishes only a complete replacement and preserves old ownership on every acquisition failure. Reject replacement while acquired and presentation without acquisition. Native-failure probes cover rollback; deinit resets state."
+      ],
+      "reviewId": "batch32_20260919_21",
+      "reviewedAt": "2026-09-20T00:27:08.142855+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined surface state transitions, swapchain/RTV/target ownership, reconfiguration failure and presentation. The state map owns native objects; the runtime must supply a completion boundary before replacement/destruction.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/d3d12/surface/d3d12_surface.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/common/submit_count_policy.zig",
+          "sha256": "84bf471d039b95dcf075ec84fdb5ca3894530612598b0e5312c15369a7c386a7"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/backend/webgpu_backend.zig",
+          "sha256": "c4dfb504ef636d8f4fb412b544f73a5ed7c6c43324d218d4fb3d339684731938"
+        },
+        {
+          "path": "runtime/zig/src/composition/backend_factory.zig",
+          "sha256": "56f5ed63106befa07024d0b98a4ee49e7f09b45df1a73770e027aeb8d667abee"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [],
+      "inputHash": "a8e2b7e150127535db2dc93fd5c29077af8c4c6e92d26e5f43bc7a1d83bebd93",
+      "level": "file",
+      "nextAction": "Retain this adapter; independently review inner WebGPU execution and comparator work/timing before making provider-performance claims.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_22",
+      "reviewedAt": "2026-09-20T00:27:09.222834+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined the full owning Dawn delegate, composition-selected provider identity, narrow port adapters, error forwarding, logical submission accounting and observation. Allocation rollback and deinit retain the exact allocator; preparation/capture borrow caller inputs and forward to the inner WebGPU owner. Retain unchanged: the documented prewarm no-op makes no execution claim and telemetry performs no file output.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/dawn_delegate_backend.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_device_caps.zig",
+          "sha256": "f3f050a38b41062db1974bff78a884fe3c37f50037410343042ee590b6f216ca"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_device_caps.zig",
+          "sha256": "15734661555ecb65ae12998ce4e4648e07099176e8dd4671b25877c26a9885eb"
+        },
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_feature_cache.zig",
+          "sha256": "edb3d2d17b9f615756f51cb6c12637e59234f98f1e45671daa12e8fe07be6e5a"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [],
+      "inputHash": "b38296f3a85b79245d536b5cdaf7f757c7c0d180d9e1d22f7b769cf6a3513f73",
+      "level": "file",
+      "nextAction": "Preserve this narrow gateway while repairing D3D12 hardware queries in their owner; do not infer complete capability implementation from the re-export.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_23",
+      "reviewedAt": "2026-09-20T00:27:10.314285+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined the entire import gateway and actual Metal capability calls with native capability consumers. Retain unchanged: platform availability is compile-time explicit; the gateway owns no cache/allocation and does not invent hardware results. D3D12 probe defects remain attributed to their implementation scope.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/dropin_capabilities.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_external_texture.zig",
+          "sha256": "3219d457154c0680ac250f534886a9d7cabe928adef09d4ed9b57c25c9e09166"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_external_texture_native.zig",
+          "sha256": "9619554b22e8ec53b3bbf4f640d2c731429304fa1e0e5f814ece58818b5c1607"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [],
+      "inputHash": "88e5562c29b5ab12946f751bcfb029df32f9ce0b33aa6da5557260168ec47c8c",
+      "level": "file",
+      "nextAction": "Retain the seam; external producer synchronization and plane lifetimes require the dedicated native/Metal relationship examination.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_24",
+      "reviewedAt": "2026-09-20T00:27:11.361822+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined all aliases and the native external-texture caller. Retain unchanged: plane layout/import/release operations and pixel formats stay with the Metal owner, with no duplicated semantic transform, allocation or retained state in this gateway. The importer remains responsible for actual native resource acquisition.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/dropin_external_texture.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "caec158e913a0e7270c349fd3849093f83aa7e5572b92fe48a2e2ffdf7ef5035"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/native/lifecycle/doe_instance_device_native.zig",
+          "sha256": "0d1e6620136d2522f4e40b1a41db0fa79655cf497928f14ca28e4002bfe29fa8"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_shared_types.zig",
+          "sha256": "70de870106c78878dbc2988267a5bfb1de980831c2eca30dff12f8f39cfc6ee4"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [],
+      "inputHash": "2ad0ccf23f6cd836807e6354dd2aac65fd98022dba75843a2b4c59339b224463",
+      "level": "file",
+      "nextAction": "Retain the aliases; device construction, callback and teardown ordering remain separate end-to-end review scopes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_25",
+      "reviewedAt": "2026-09-20T00:27:12.485087+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined all runtime type and native lifetime aliases with shared/native lifecycle consumers. Retain unchanged: the gateway introduces no additional owner; Vulkan availability is explicit by target and Metal retain/release keep their native contracts.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/dropin_lifecycle.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/dropin_lifecycle.zig",
+          "sha256": "128d62e3aa8452df99e99d093f29583e5367d3d25b425355a7a6b4244ebe40f6"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_pipeline_cache_persistent.zig",
+          "sha256": "fe8aa0d9271fc876e857714c7d5835f3ab3008f8e143d71419c480ffc5264401"
+        },
+        {
+          "path": "runtime/zig/src/native/queue/doe_queue_lifecycle.zig",
+          "sha256": "4874d2a1679adb36f3f4633ebf1355eb8c4e0b128f31c7a73e69cda7f083c95f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [],
+      "inputHash": "ae8f08ad4ce9344695a690c654e9acd31f460b7ce8da8937b6e6731b88b0b9d2",
+      "level": "file",
+      "nextAction": "Retain the typed adapter; cache identity, budget, persistence failures and invalidation belong to the persistent-cache owner review.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Use the named NativeVulkanRuntime pointer instead of anytype field-shape dependencies. Existing core/native compilation verifies callers against the explicit type."
+      ],
+      "reviewId": "batch32_20260919_26",
+      "reviewedAt": "2026-09-20T00:27:13.555500+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined active/disabled/warmup accessors, explicit flush, platform handling and queue lifecycle consumers. Observations read the device-owned cache; persistence only occurs at the explicit flush boundary. Non-Vulkan queue callers return before this adapter, preserving availability discrimination.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/dropin_pipeline_cache.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_native_render_pass.zig",
+          "sha256": "bafb14b4427a926abe3e679467352538ef7114f25128bc21a1d40285b6a8960a"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/native/queue/doe_queue_submit_d3d12.zig",
+          "sha256": "dec0d612820946f9ca3f8363635141968ae3c7fbad7903e9a91c814a85db2618"
+        },
+        {
+          "path": "runtime/zig/src/native/queue/doe_queue_submit_shared.zig",
+          "sha256": "6ac4859009a0e9391be8547b99cc2b833bd9de4ddad0d135b65e4c60c97e1c3d"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [],
+      "inputHash": "94fd453dfd9ceaa0134450d8541fc3b7f269d5adf1930a64f1949b291a1b8689",
+      "level": "file",
+      "nextAction": "Keep the gateway; inspect shared completion versus platform operations in the native/backend relationship pass and repair the D3D12 recorded-pass findings separately.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_27",
+      "reviewedAt": "2026-09-20T00:27:14.611906+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined all backend implementation re-exports and native queue consumers. Retain unchanged as an import gateway: it has no independent dispatch policy, allocations or resource lifetime. It does not establish behavioral backend decoupling or certify the implementations it exposes.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/dropin_queue_submit.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/metal/render_state.zig",
+          "sha256": "01eef43abd8b288bfd7ad0a7f3f6d2e51d97a45256fffa6132e715c804c03794"
+        },
+        {
+          "path": "runtime/zig/src/native/render/doe_render_state_native.zig",
+          "sha256": "366044f3b23f9b0c1b75343ade9cd15beff7e645538c66c3752b5053379d50e6"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [],
+      "inputHash": "50865a4eb9f6730967f487dd94b6d4bc86d78936bf0b93e8c89c1ec248fad630",
+      "level": "file",
+      "nextAction": "Retain the import seam; review Metal dynamic-state conversion and ABI enum identity in their implementation/relationship scopes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_28",
+      "reviewedAt": "2026-09-20T00:27:15.668917+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined the complete single-alias seam and native render-state caller. Retain unchanged: it neither converts enum values nor owns mutable state; conversion correctness remains with the Metal render-state implementation and its actual ABI consumers.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/dropin_render_state.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_texture_commands.zig",
+          "sha256": "82b32dc3e8f756a9cd9c3c7db5b37dbbba0c62b093e6c7b0fb2845d6667561e0"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_resource_types.zig",
+          "sha256": "7f6089bd35aac69f43af7d99ad4bedd3fa7a95b6b716cfc52e1cd4ae80d9cb41"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_command_texture_native.zig",
+          "sha256": "1b6d4e3faaeb1131c98b77bd2c37fdd3037c28a51d72ea99264ee05b1d121fe4"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+          "sha256": "66e19d9214ec17c19639972d9d1f9ad52465981541acb9f3393c30ecffbe5e93"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [
+        "QueueWriteTextureArgs omits origin, slice, width and depth supplied by doeNativeQueueWriteTexture. copyTextureResource reconstructs the full texture extent, so partial/nonzero-origin writes cannot preserve the public request."
+      ],
+      "inputHash": "b3ed28ef83843c392dc6afd919902ecc5afaf629919c629e5ade3935ce6d5fda",
+      "level": "file",
+      "nextAction": "Carry the full validated write region through the adapter and native Vulkan copy operation; add public-path readback tests for partial, layered and nonzero-origin writes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_29",
+      "reviewedAt": "2026-09-20T00:27:16.730629+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined all aliases plus Vulkan writeTexture argument conversion and error delivery, tracing the exported native caller through the Vulkan callee. Error handling is explicit once Vulkan is selected, but the request loses semantic information before execution.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/dropin_resource_ops.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vulkan_surface.zig",
+          "sha256": "dd6bf4913c417a303aefafa64dcd7a32999363dfc15affc5fdc17dd596be115b"
+        },
+        {
+          "path": "runtime/zig/src/native/surface/doe_surface_native.zig",
+          "sha256": "6f68b414c9a848cdbdfd9ebc4a4bfc0f53440b8e651a55b6e3b7072faffa5d16"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [],
+      "inputHash": "d887db4906ae436d9c388920f3dd3c940ce6a9c48c5977e4701ced9158aacae5",
+      "level": "file",
+      "nextAction": "Retain the gateway; platform surface creation, presentation and destruction require the dedicated native/backend execution-path review.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_30",
+      "reviewedAt": "2026-09-20T00:27:17.795326+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined platform-gated surface constructors/types and native surface consumers. Retain unchanged: the gateway owns neither presentation state nor host handles and adds no hidden fallback; actual surface lifecycle remains in the selected native backend.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/dropin_surface_ops.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/shader-artifact.schema.json",
+          "sha256": "9125c9e578a3212b871a77631fdac8f18fae69d4b4f68a7ba61efcdf9cc17bde"
+        },
+        {
+          "path": "runtime/zig/src/backend/common/artifact_state.zig",
+          "sha256": "dabf582598425430aef4054439b0b16bc241a8925919d650360106e844ffda29"
+        },
+        {
+          "path": "runtime/zig/src/backend/common/shader_artifact_manifest.zig",
+          "sha256": "2d349cbe3644f96fbefd85db23b8465d64212a0e4f8c318c0447dd6fffd9fb7f"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/mod.zig",
+          "sha256": "541c756c5bd21493dcc338ad1c1589e30f006924f0c0f319a66cb234f9b846b7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [],
+      "inputHash": "937aed4a1c7d6a993cc156ed0baaa8f0c8c085782d2a36a9a3169ca509cd067c",
+      "level": "file",
+      "nextAction": "Retain this backend specification and shared publication owner; actual compiler-stage byte capture needs independent evidence before changing identity kinds.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_31",
+      "reviewedAt": "2026-09-20T00:27:18.868912+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined the full Metal manifest specification, typed artifact-state owner, shared emitter and explicit collection caller. Retain unchanged: stage labels are derived identities under the current manifest contract, optional fields are not asserted content hashes, and flush is explicit/fallible outside telemetry reads.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/artifact_emit.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "845b6ec51176325533f06ce960ed4e29a9249e36f3ebd6814ab98b3dab0de438"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "bed0e79aae498ca0e52109c72efcfbcecb9d83d2d37115c494041ece58f60555"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "9ea26d2ac9aa3cfb6851ee5bbb3abae90305f58c222af64022926060b17f37b1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_stubs.c",
+          "sha256": "d95f4ec07a9e59868a6a852dd28fa474ae877ccf0022a70071b9018cc9728986"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "b4f3fa8700894b7a004578e153e8fa4fec7954c850be032501fc813f2b260062"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/mod.zig",
+          "sha256": "541c756c5bd21493dcc338ad1c1589e30f006924f0c0f319a66cb234f9b846b7"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_async_types.zig",
+          "sha256": "ecfe312c25232b1da11ccee650285f4bfff80a5d3d876710123f46e695ed4685"
+        },
+        {
+          "path": "runtime/zig/tools/bridge_manifests/metal_bridge_manifest.json",
+          "sha256": "ff01cbcbd8ced8929a58c55204e33314ccddea0faf9fc13fdfe5adfb205aaff5"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        }
+      ],
+      "findings": [
+        "Async diagnostic commands route through synchronous render-pipeline preparation while reporting diagnostic success and fixed logical counts without performing the requested asynchronous operations.",
+        "The executor still relies on a large anytype backend field surface; the named owner/required operations should be explicit when repairing the diagnostic path."
+      ],
+      "inputHash": "2400ba01328a9dc9696c891d5f7a6e36253079512bc114f1567b8e1586cae0dc",
+      "level": "file",
+      "nextAction": "Implement the requested asynchronous diagnostic operations with measured callback/completion events and a named execution dependency contract; retain capture/flush regressions and validate on Metal hardware.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Failed flushes preserve pending-upload accounting. Buffer capture queries actual native length, rejects bounds/overflow, waits for completion before mapping and copies into the caller allocator. The new internal bridge symbol is declared, implemented, stubbed and registered. Recording tests cover bounds, flush failure/retry and snapshot independence."
+      ],
+      "reviewId": "batch32_20260919_32",
+      "reviewedAt": "2026-09-20T00:27:19.933759+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined every command adapter, timestamp admission call chain, pending-work flush, receipts, prewarm and capture. Runtime owns native resources; capture returns an allocator-owned independent copy. Generic backend field dependencies remain visible for a later typed-interface repair.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/backend_execute.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render_vertex.zig",
+          "sha256": "8468145dbc797d26ed2689562fa7c075c0e1a1d070015fc8e398f924a85df7bd"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/resources/d3d12_depth_stencil.zig",
+          "sha256": "ec1aee86f65381dc96df38c32d15b887dd12a9f25629b4b664fa716fde1b58ac"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_render_types.zig",
+          "sha256": "596a984301f25c33a47d132fb71abe5e64a85b7da97341ee27d21aa1f3739644"
+        },
+        {
+          "path": "runtime/zig/src/native/render/doe_bundle_native.zig",
+          "sha256": "fb857f70f2bda8fb4ffde88d4106e16297541c13a1517a0d70c814779363ef5e"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Command shader/target inputs are not fully represented: the path builds fixed passthrough shaders and a private target, with a single-sample target even when the pipeline requests multisampling.",
+        "Binding creation still supplies fallback sampler/texture interpretations and lacks authoritative resource/register mapping. Attachment load/store behavior and resource transitions need native debug-layer/output validation."
+      ],
+      "inputHash": "baba01fda0fd1be2dcfbcce420d1c3d7688c002d647273a77fcdbfecae13d79f",
+      "level": "file",
+      "nextAction": "Replace the fixed shader/attachment assumptions with the declared render contract and shared pipeline layout, then verify state replacement and deferred execution on D3D12.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Pipeline replacement is transactional and partial command acquisition is released. Indirect storage fits both draw argument shapes; command-signature creation uses the required empty root association and retry repairs missing argument storage.",
+        "Deferred error cleanup now spans recording, bundle errors propagate, command-list close and fence bounds are checked, and submit timing starts before Execute/Signal instead of omitting that work. Runtime drains retained submissions before shared render-state replacement."
+      ],
+      "reviewId": "batch32_20260919_03_revalidated",
+      "reviewedAt": "2026-09-20T00:28:58.418455+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined pipeline identity/replacement, attachment ownership, vertex/index/indirect encoding, bundle replay and synchronous/deferred submission. State owns pipeline, root, attachments and indirect argument storage; deferred command objects transfer to runtime batches. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_03",
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_render.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/resources/d3d12_texture.zig",
+          "sha256": "681962c4bad82deadd92988bdd976b75f207e30f06ca3a0423b360d3e3f43efb"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_resource_types.zig",
+          "sha256": "7f6089bd35aac69f43af7d99ad4bedd3fa7a95b6b716cfc52e1cd4ae80d9cb41"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "resolve_resource creates buffers for texture identities and does not maintain a real buffer registry. Fresh buffer handles are not retained/released with the copy batch.",
+        "Buffer offsets are omitted and texture-to-buffer/texture-to-texture commands are sent through CopyBufferRegion; dimensions, sizes, states and native footprints are not validated."
+      ],
+      "inputHash": "ca80e8ab7273e07e7db9cd6de88fc2acd1a49ff8fb5d5be1ce8c466a2c8797f2",
+      "level": "file",
+      "nextAction": "Repair real resource lookup/ownership first, then implement each copy direction with native layouts, offsets and transitions; use recording tests and GPU readback rather than state-only tests.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_06_revalidated",
+      "reviewedAt": "2026-09-20T00:28:59.560321+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined recording/reuse, submitted-fence recovery, resource resolution, copy variants and teardown. Existing failure tests establish retry without duplicate submissions, but resource creation and copy semantics remain incorrect. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_06",
+      "targets": [
+        "src/backend/d3d12/commands/d3d12_streaming_copy.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/native/lifecycle/doe_instance_device_native.zig",
+          "sha256": "0d1e6620136d2522f4e40b1a41db0fa79655cf497928f14ca28e4002bfe29fa8"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_device_caps.zig",
+          "sha256": "15734661555ecb65ae12998ce4e4648e07099176e8dd4671b25877c26a9885eb"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Native bridge shader-model and wave-size functions return constants rather than hardware observations; subgroup reporting derived from them cannot establish native support.",
+        "Registry insertion still suppresses allocation failure, and advertised static limits/features are not bound to implemented native/compiler support across all consumers."
+      ],
+      "inputHash": "19f30df9d3cce196a71cc23e2ad5ea7d68b070bc725d3ce2d8d2f31d1871ab1b",
+      "level": "file",
+      "nextAction": "Replace bridge placeholders with actual CheckFeatureSupport results, propagate required cache failures, and qualify advertised features against native/compiler implementation tests.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Protected registry get/set/remove with a mutex and release the empty map. Shared buffer/uniform limits replace duplicate values."
+      ],
+      "reviewId": "batch32_20260919_10_revalidated",
+      "reviewedAt": "2026-09-20T00:29:00.687103+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined static limits, feature admission, native probe calls, adapter cache and tests. The adapter registry is process-owned and returns copied snapshots; device probing must remain authoritative for hardware facts. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_10",
+      "targets": [
+        "src/backend/d3d12/d3d12_device_caps.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render.zig",
+          "sha256": "2ce9eaea7644990ff6b829fa8a21b7fc16ec5f15ca25e6cb6c882ce809ce26ab"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_streaming_copy.zig",
+          "sha256": "57c8cf8a5071dfa8d70d59ffa9bf1b5f918671fbcdda5cf828136aca34dffa7b"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_compute.zig",
+          "sha256": "cf6e1b568b3b5e51344491b89b6a1fb8c21bddc3456c06917de9ea34958b6721"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_upload.zig",
+          "sha256": "dd2bc8714efa53829eaf574c2f2c7f4859451db1f524eb6ad3da33fcf8cf5eee"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/resources/d3d12_texture.zig",
+          "sha256": "681962c4bad82deadd92988bdd976b75f207e30f06ca3a0423b360d3e3f43efb"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/surface/d3d12_surface.zig",
+          "sha256": "d06e547777527616082fcd490424395977aa75b2489fad2dd6c0c2fe3a678bae"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Kernel pipeline replacement and surface retirement still lack the same complete in-flight-resource handoff as the repaired render/resource paths.",
+        "The runtime exposes copy/query/surface helpers whose resource semantics remain unfinished; wrapper reachability is not proof of native API completion."
+      ],
+      "inputHash": "6b9277f77cbb002b5d5f3788696b136a779000d8274bb627e2af764ed7557005",
+      "level": "file",
+      "nextAction": "Apply the completion/retirement contract to compute pipeline and surface replacement, then exercise mixed copy/render/compute resource lifetimes with injected failures and native validation.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Texture cleanup now receives the map allocator. Resource replacement/destruction and render-state reuse drain outstanding work, including pending submit batches and streaming copies. Texture-write device loss is retained and write timing keeps submission separate."
+      ],
+      "reviewId": "batch32_20260919_12_revalidated",
+      "reviewedAt": "2026-09-20T00:29:01.823670+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined initialization/deinitialization, pending upload/submission retention, completion/device-loss handling and every resource/compute/render/surface forwarding path. The runtime owns allocator-backed registries and native device/queue state; helpers borrow that serialized owner. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_12",
+      "targets": [
+        "src/backend/d3d12/d3d12_native_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_gpu_timestamps.zig",
+          "sha256": "c2e6b64219084fe00d5d99bbd668a39b4e3e2f4855faa64acdddeeb42dea6354"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_query_native.zig",
+          "sha256": "ba22b6a85933a96959391c1861d9c0b6e34ad1c1eef374e9d4f0c22af1c007e2"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "create can overwrite an existing handle or leak all native objects on map insertion failure, and substitutes frequency 1 for an unavailable timestamp clock.",
+        "begin/end/resolve use bridge functions with incompatible hardcoded query types; resolve records on an already-closed command list, lacks per-slot availability/mapping state, and conversion can overflow or collapse unavailable data to zero."
+      ],
+      "inputHash": "3119ac0b414028f567601a0c90cca6bd122f6a6f2f1473711fa38554b38410ae",
+      "level": "file",
+      "nextAction": "Establish a real consumer and typed query recording/availability contract, then repair transactional creation, readback lifetime and checked conversion; do not inherit dispatch timestamp qualification.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_13_revalidated",
+      "reviewedAt": "2026-09-20T00:29:02.964556+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined the full multi-query-set helper, native query-type calls, readback ownership/conversion and callers. It is distinct from the repaired dispatch timestamp owner; runtime creation/destruction wrappers do not establish an exercised ordinary query path. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_13",
+      "targets": [
+        "src/backend/d3d12/d3d12_query_set.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_descriptors.zig",
+          "sha256": "f08c39efe63d80a20ee0cc64392ee5dacde0e38dac914d5acb3e29ce8407a3ac"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "b32d8f371a2e34871690447f7e6be6ae3a4a0581afedb78ce5310aed9b1e4ed1"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/shader_abi/dispatch_info.zig",
+          "sha256": "c0fde78b0f3af700ed04bf562c610aeee9bf7f1f570699af83156cc3fb2fe273"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "loadKernelCso can prefer an unrelated same-basename DXIL/CSO/DXBC file over requested WGSL without content/toolchain binding; generated cache identity omits compiler/options and publication is not atomic.",
+        "Pipeline replacement drops old state before successful replacement and partial command acquisition is not transactional; the single dispatch-info root layout does not realize general kernel bindings. Shader hash reuse has no byte equality check."
+      ],
+      "inputHash": "d27053fe7f6608e8f49882669d5d5b7645a3f9246932754ea26dc88fa8309f73",
+      "level": "file",
+      "nextAction": "Bind source and compiled artifacts explicitly, make pipeline replacement transactional after retirement, and implement request entrypoint/resource layouts before qualifying general kernel execution.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reserve both dispatch-info retention slots before either ownership transfer, preventing a failed second append from causing duplicate release."
+      ],
+      "reviewId": "batch32_20260919_14_revalidated",
+      "reviewedAt": "2026-09-20T00:29:04.126991+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined shader lookup/compilation/cache identity, pipeline replacement, dispatch-info ownership, timestamp integration and command submission. Native transient buffer/heap ownership transfers into runtime submission batches; source/DXC allocations are explicit. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_14",
+      "targets": [
+        "src/backend/d3d12/d3d12_runtime_compute.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/mod.zig",
+          "sha256": "b32d8f371a2e34871690447f7e6be6ae3a4a0581afedb78ce5310aed9b1e4ed1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Pools limit entries per exact size but retain an unbounded number of size classes; capacity, total retained bytes, invalidation and full-budget behavior are not defined across the runtime owner."
+      ],
+      "inputHash": "3cbc03d65b37c0f89752ca399b61b2d4ea467aa712396df865c7306ccb0cafc8",
+      "level": "file",
+      "nextAction": "Define an explicit total retention policy for both upload/default pools and test varied sizes, allocator failures, budget exhaustion and cleanup without changing measured work.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_15_revalidated",
+      "reviewedAt": "2026-09-20T00:29:05.241741+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined temporary command/buffer ownership, pending submission admission, retry without resubmission, completion-driven release and pool allocation. Existing fault tests exercise queue errors, retry and terminal loss. No source change is needed for that already-repaired synchronization subpath. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_15",
+      "targets": [
+        "src/backend/d3d12/d3d12_runtime_upload.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/common/submit_count_policy.zig",
+          "sha256": "84bf471d039b95dcf075ec84fdb5ca3894530612598b0e5312c15369a7c386a7"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_compute.zig",
+          "sha256": "cf6e1b568b3b5e51344491b89b6a1fb8c21bddc3456c06917de9ea34958b6721"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/compute.zig",
+          "sha256": "e077e45c261e00569e8fbbf67586cb801d316893dbfad968fc8dcd74300f436a"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Kernel execution/prewarm omit request entrypoint, binding and initialization semantics; broad capability reporting does not establish complete command behavior.",
+        "Several subordinate render/copy/surface/query paths remain incomplete; provider success and logical counts cannot be used as proof of equivalent GPU work."
+      ],
+      "inputHash": "5c2105457157695ea704c726c19dc51f4de24ac05ce7e9d00a9ad2ffa3bc1b35",
+      "level": "file",
+      "nextAction": "Propagate complete kernel requests into real pipeline/binding execution and validate per-command capabilities against repaired native work; retain non-claimable physical evidence boundaries.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Pending-upload counters clear only after successful flush. Texture writes report actual submission waiting separately from encoding. Required timestamp admission remains before runtime work."
+      ],
+      "reviewId": "batch32_20260919_16_revalidated",
+      "reviewedAt": "2026-09-20T00:29:06.392997+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined provider construction, capability routing, prepared/native commands, request conversion, policy admission, telemetry/artifacts and teardown. This is the command-oriented provider, distinct from native WebGPU object entrypoints. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_16",
+      "targets": [
+        "src/backend/d3d12/mod.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_render_bind_groups.zig",
+          "sha256": "f3569f4ae8b704215a09db77cbda7e1f21394ead53c06623cc780496df7bce01"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_render_types.zig",
+          "sha256": "596a984301f25c33a47d132fb71abe5e64a85b7da97341ee27d21aa1f3739644"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "Sampler admission does not validate finite/ordered LOD bounds, filter/address enums or anisotropy requirements before the bridge maps them; invalid values may silently become native defaults."
+      ],
+      "inputHash": "00669bb2992cd14803140e7156bd77fc7cf14025fa94334a87ef339008dbee17",
+      "level": "file",
+      "nextAction": "Apply shared sampler semantic validation before descriptor writes and test invalid enums, LOD ranges and anisotropic filtering combinations through the command/native boundary.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Sampler creation now writes the actual native descriptor. Reserve map capacity before native acquisition, reuse the existing slot on replacement, and recycle destroyed slots. Capacity/replacement/double-destroy tests prove reuse and exact descriptor-write accounting."
+      ],
+      "reviewId": "batch32_20260919_18_revalidated",
+      "reviewedAt": "2026-09-20T00:29:07.556015+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined sampler identity, native descriptor creation, heap capacity, replacement, destruction and map ownership. The runtime serializes descriptor replacement with prior work; slots belong to the state-owned heap. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_18",
+      "targets": [
+        "src/backend/d3d12/resources/d3d12_sampler.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/commands/d3d12_streaming_copy.zig",
+          "sha256": "57c8cf8a5071dfa8d70d59ffa9bf1b5f918671fbcdda5cf828136aca34dffa7b"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_resource_types.zig",
+          "sha256": "7f6089bd35aac69f43af7d99ad4bedd3fa7a95b6b716cfc52e1cd4ae80d9cb41"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_types.zig",
+          "sha256": "0267eafe3b61d8ba3d595c0dd186f1b8da3a1195136eb86167f8214290881d07"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_copy.zig",
+          "sha256": "4a7b01380cb0000a1f7c8d587b7c2b157f6fd9f384444427fc968cdeb92e8c81"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format_layout.zig",
+          "sha256": "2c93a5ec273e29d5b88e7c4a4214d0c3f5430e2a1a49d213458316fd4e3e30b4"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "The shared texture registry is also populated/consumed by the unfinished streaming-copy path, so a registry hit does not yet guarantee a real texture or globally current resource state.",
+        "texture_query omits expected dimension/view-dimension/usage fields; native upload round trips and allocation/recording failure probes remain required beyond layout-only tests."
+      ],
+      "inputHash": "dceb10f01565b8536a8d0e4ee81d5caee16a7b88ac190e8eb7d986f8fbdef1b8",
+      "level": "file",
+      "nextAction": "Unify registry resource/state ownership with real copy execution, honor all query expectations, and verify upload/readback across mips, compressed layouts and native failure cleanup.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Upload supplied bytes rather than uninitialized staging data; repack compact/padded source rows to native row/placement alignment, preserve offsets, size mips/volumes and use correct array subresource indices.",
+        "Retain staging/list/allocator through completion, track write transitions, propagate allocation causes and device loss, validate existing texture identity, and free registry storage with its owning allocator. Separate host encoding and submission/wait timing."
+      ],
+      "reviewId": "batch32_20260919_19_revalidated",
+      "reviewedAt": "2026-09-20T00:29:08.699588+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined texture registry ownership, allocation/layout admission, data movement, mip/array/volume addressing, native state transitions, completion and query/destruction. Layout tests validate source bounds and packing independently of a GPU. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_19",
+      "targets": [
+        "src/backend/d3d12/resources/d3d12_texture.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_bridge.c",
+          "sha256": "1eb56be880e552e9416ac7b4c4958ab4bff2e0ccdc88b124f2ea5a85f3f87c50"
+        },
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_surface_control_types.zig",
+          "sha256": "915e430a6d7a86260627905ac5e406ac2e0e453211481d315c042f67ed2fd98f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/d3d12-release-fast-final.log",
+          "sha256": "7ea13ed159d41d4765cfd10e862224c27ef7ad93d25bb8023fbe1275514be2e8"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/windows-compile-receipt.txt",
+          "sha256": "c2aa60114d90932d4a2b8da02962827ffe605985725b9046fb0aa5de829b0a74"
+        }
+      ],
+      "findings": [
+        "The render target is a separate allocation rather than the acquired swapchain back buffer; acquire only changes local status, so presentation does not prove rendered-frame delivery.",
+        "Capabilities do not query native support, configure omits requested usage/present-mode/latency semantics, and caller retirement is incomplete."
+      ],
+      "inputHash": "e2926300be2c2678a33a05233cab5f93e08e2c0626a7bfc435eeca4645101b69",
+      "level": "file",
+      "nextAction": "Connect acquisition to real swapchain buffers and requested presentation policy, then validate rendered output, resize/reconfigure and in-flight teardown on Windows.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Duplicate create and configure-without-create fail explicitly; reconfiguration publishes only a complete replacement and preserves old ownership on every acquisition failure. Reject replacement while acquired and presentation without acquisition. Native-failure probes cover rollback; deinit resets state."
+      ],
+      "reviewId": "batch32_20260919_21_revalidated",
+      "reviewedAt": "2026-09-20T00:29:09.868252+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "needs_changes",
+      "summary": "Examined surface state transitions, swapchain/RTV/target ownership, reconfiguration failure and presentation. The state map owns native objects; the runtime must supply a completion boundary before replacement/destruction. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_21",
+      "targets": [
+        "src/backend/d3d12/surface/d3d12_surface.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig",
+          "sha256": "958c1f01b751a9010fefc223c675b918a3dad8b6dab754f84b75a251a15c76f3"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f5ce5c9ac2636b068b5881cab8c1211d67a097cb128008f3a0d080fe11c06dad"
+        },
+        {
+          "path": "runtime/zig/src/native/lifecycle/doe_instance_device_native.zig",
+          "sha256": "0d1e6620136d2522f4e40b1a41db0fa79655cf497928f14ca28e4002bfe29fa8"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_shared_types.zig",
+          "sha256": "70de870106c78878dbc2988267a5bfb1de980831c2eca30dff12f8f39cfc6ee4"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/README.md",
+          "sha256": "b11c8862eef61ad47900138e3396b7d1b8ef0f5e3b7d55beacd010d905218d21"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-final.log",
+          "sha256": "8f9089eecd5e9b382ce518e5789123c84e7eb29aff3779092a050acd9dc2e1a5"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/aggregate-revalidation.log",
+          "sha256": "8cccd6645927bd428b59a13482df944acfb78554b0b92755e4ef3991df2d9448"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/file-reviews.md",
+          "sha256": "939a0e165252a3bf3e4c483059255b04196b30ace7da3bfc1989b884e1921cf2"
+        },
+        {
+          "path": "bench/out/maintenance/20260919-zig-batch32/revalidation.md",
+          "sha256": "eba30279c14f743aa9dcbd380d006c4962db6a8a9fbeddba46e602055446beaa"
+        }
+      ],
+      "findings": [],
+      "inputHash": "2ad0ccf23f6cd836807e6354dd2aac65fd98022dba75843a2b4c59339b224463",
+      "level": "file",
+      "nextAction": "Retain the aliases; device construction, callback and teardown ordering remain separate end-to-end review scopes.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "batch32_20260919_25_revalidated",
+      "reviewedAt": "2026-09-20T00:29:11.029829+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4da9a6b6db410a4ca909d148267f77d4fb0e11f8",
+      "status": "verified",
+      "summary": "Examined all runtime type and native lifetime aliases with shared/native lifecycle consumers. Retain unchanged: the gateway introduces no additional owner; Vulkan availability is explicit by target and Metal retain/release keep their native contracts. Revalidated the sole changed input: removal of a duplicate read-only pending-submit OR term in the native runtime. It preserves the examined behavior and ownership; the complete host suite passes after cleanup. Earlier findings and limitations remain unchanged.",
+      "supersedes": "batch32_20260919_25",
+      "targets": [
+        "src/backend/dropin_lifecycle.zig"
+      ]
     }
   ],
   "schemaVersion": 1

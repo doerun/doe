@@ -53,6 +53,7 @@ MetalHandle metal_bridge_device_new_command_queue(MetalHandle device);
 MetalHandle metal_bridge_device_new_buffer_shared(MetalHandle device, size_t length);
 MetalHandle metal_bridge_device_new_buffer_private(MetalHandle device, size_t length);
 void*       metal_bridge_buffer_contents(MetalHandle buffer);
+size_t      metal_bridge_buffer_length(MetalHandle buffer);
 
 // Records a blit copy from src to dst and returns the committed command buffer
 // (+1 retained). Call metal_bridge_command_buffer_wait_completed(), then

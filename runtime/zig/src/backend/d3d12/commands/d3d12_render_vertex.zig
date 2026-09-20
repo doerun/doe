@@ -1,6 +1,6 @@
 const std = @import("std");
 const model_render_types = @import("../../../contracts/model/model_render_types.zig");
-const bridge = @import("../d3d12_bridge_decls.zig");
+const vertex_formats = @import("../../../contracts/vertex_format.zig");
 
 pub const ResolvedVertexAttribute = struct {
     format: u32,
@@ -40,6 +40,8 @@ pub const PipelineKey = struct {
     depth_bias_slope_scale: f32 = 0,
     depth_bias_clamp: f32 = 0,
     unclipped_depth: bool = false,
+    bind_texture_count: u32 = 0,
+    bind_sampler_count: u32 = 0,
     vertex_buffer_count: u32 = 0,
     vertex_buffer_strides: [model_render_types.MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** model_render_types.MAX_VERTEX_BUFFERS,
     vertex_step_modes: [model_render_types.MAX_VERTEX_BUFFERS]u32 = [_]u32{0} ** model_render_types.MAX_VERTEX_BUFFERS,
@@ -82,6 +84,8 @@ pub fn build_pipeline_key(cmd: model_render_types.RenderDrawCommand) PipelineKey
         .depth_bias_slope_scale = cmd.depth_bias_slope_scale,
         .depth_bias_clamp = cmd.depth_bias_clamp,
         .unclipped_depth = cmd.unclipped_depth,
+        .bind_texture_count = cmd.bind_texture_count,
+        .bind_sampler_count = cmd.bind_sampler_count,
         .vertex_buffer_count = resolve_vertex_buffer_count(cmd),
         .vertex_attribute_count = resolve_vertex_attribute_count(cmd),
     };
@@ -96,6 +100,7 @@ pub fn build_pipeline_key(cmd: model_render_types.RenderDrawCommand) PipelineKey
 }
 
 pub fn resolve_vertex_attribute(cmd: model_render_types.RenderDrawCommand, index: u32) ?ResolvedVertexAttribute {
+    if (index >= model_render_types.MAX_VERTEX_ATTRIBUTES) return null;
     if (index < cmd.vertex_attribute_count) {
         return .{
             .format = cmd.vertex_attribute_formats[index],
@@ -109,7 +114,8 @@ pub fn resolve_vertex_attribute(cmd: model_render_types.RenderDrawCommand, index
         var slot: usize = 0;
         while (slot < @min(layouts.len, model_render_types.MAX_VERTEX_BUFFERS)) : (slot += 1) {
             const layout = layouts[slot];
-            if (index < base + layout.attribute_count) {
+            const count = @min(layout.attribute_count, model_render_types.MAX_VERTEX_ATTRIBUTES);
+            if (index < base + count) {
                 const attr = layout.attributes[index - base];
                 return .{
                     .format = attr.format,
@@ -118,7 +124,7 @@ pub fn resolve_vertex_attribute(cmd: model_render_types.RenderDrawCommand, index
                     .buffer_slot = @intCast(slot),
                 };
             }
-            base += layout.attribute_count;
+            base += count;
         }
     }
     return null;
@@ -148,14 +154,14 @@ pub fn resolve_vertex_attribute_count(cmd: model_render_types.RenderDrawCommand)
     if (cmd.vertex_layouts) |layouts| {
         var total: u32 = 0;
         var i: usize = 0;
-        while (i < @min(layouts.len, model_render_types.MAX_VERTEX_BUFFERS)) : (i += 1) total += layouts[i].attribute_count;
+        while (i < @min(layouts.len, model_render_types.MAX_VERTEX_BUFFERS)) : (i += 1) total += @min(layouts[i].attribute_count, model_render_types.MAX_VERTEX_ATTRIBUTES);
         return @min(total, @as(u32, model_render_types.MAX_VERTEX_ATTRIBUTES));
     }
     return 0;
 }
 
 pub fn resolve_vertex_buffer_handle(cmd: model_render_types.RenderDrawCommand, slot: u32) ?*anyopaque {
-    if (slot < cmd.vertex_buffer_count and cmd.vertex_buffer_handles[slot] != 0) {
+    if (slot < model_render_types.MAX_VERTEX_BUFFERS and slot < cmd.vertex_buffer_count and cmd.vertex_buffer_handles[slot] != 0) {
         return @ptrFromInt(cmd.vertex_buffer_handles[slot]);
     }
     if (cmd.vertex_bindings) |bindings| {
@@ -167,7 +173,7 @@ pub fn resolve_vertex_buffer_handle(cmd: model_render_types.RenderDrawCommand, s
 }
 
 pub fn resolve_vertex_buffer_offset(cmd: model_render_types.RenderDrawCommand, slot: u32) u64 {
-    if (slot < cmd.vertex_buffer_count and cmd.vertex_buffer_handles[slot] != 0) {
+    if (slot < model_render_types.MAX_VERTEX_BUFFERS and slot < cmd.vertex_buffer_count and cmd.vertex_buffer_handles[slot] != 0) {
         return cmd.vertex_buffer_offsets[slot];
     }
     if (cmd.vertex_bindings) |bindings| {
@@ -184,7 +190,7 @@ pub fn resolve_vertex_step_mode(cmd: model_render_types.RenderDrawCommand, slot:
 }
 
 fn resolve_vertex_step_mode_fallback(cmd: model_render_types.RenderDrawCommand, slot: u32) u32 {
-    if (slot < cmd.vertex_layout_count and cmd.vertex_step_modes[slot] != 0) {
+    if (slot < model_render_types.MAX_VERTEX_BUFFERS and slot < cmd.vertex_layout_count and cmd.vertex_step_modes[slot] != 0) {
         return cmd.vertex_step_modes[slot];
     }
     if (cmd.vertex_layouts) |layouts| {
@@ -194,7 +200,7 @@ fn resolve_vertex_step_mode_fallback(cmd: model_render_types.RenderDrawCommand, 
 }
 
 pub fn resolve_vertex_buffer_stride_fallback(cmd: model_render_types.RenderDrawCommand, slot: u32) u64 {
-    if (slot < cmd.vertex_layout_count and cmd.vertex_buffer_strides[slot] != 0) {
+    if (slot < model_render_types.MAX_VERTEX_BUFFERS and slot < cmd.vertex_layout_count and cmd.vertex_buffer_strides[slot] != 0) {
         return cmd.vertex_buffer_strides[slot];
     }
     if (cmd.vertex_layouts) |layouts| {
@@ -211,7 +217,7 @@ pub fn resolve_vertex_buffer_stride(cmd: model_render_types.RenderDrawCommand, s
         while (i < attribute_count) : (i += 1) {
             const attr = resolve_vertex_attribute(cmd, i) orelse continue;
             if (attr.buffer_slot != slot) continue;
-            stride = @max(stride, attr.offset + try vertex_format_size(attr.format));
+            stride = @max(stride, std.math.add(u64, attr.offset, try vertex_format_size(attr.format)) catch return error.InvalidArgument);
         }
     }
     if (stride == 0 or stride > std.math.maxInt(u32)) return error.UnsupportedFeature;
@@ -237,14 +243,13 @@ pub fn resolve_index_format(cmd: model_render_types.RenderDrawCommand) ?u32 {
 }
 
 pub fn vertex_format_size(format: u32) !u64 {
-    return switch (format) {
-        0x00000001, 0x00000004, 0x00000007, 0x0000000A => 1,
-        0x00000002, 0x00000005, 0x00000008, 0x0000000B, 0x0000000D, 0x00000010, 0x00000013, 0x00000016, 0x0000001D, 0x00000021, 0x00000025 => 2,
-        0x00000003, 0x00000006, 0x00000009, 0x0000000C, 0x0000000E, 0x00000011, 0x00000014, 0x00000017, 0x00000019, 0x00000029, 0x0000002A => 4,
-        0x0000000F, 0x00000012, 0x00000015, 0x00000018, 0x0000001A, 0x0000001E, 0x00000022, 0x00000026 => 8,
-        0x0000001B, 0x00000023, 0x00000027 => 12,
-        0x0000001C, 0x0000001F, 0x00000024, 0x00000028 => 16,
-        else => error.UnsupportedFeature,
+    return switch (try vertex_formats.fromCode(format)) {
+        .uint8, .sint8, .unorm8, .snorm8 => 1,
+        .uint8x2, .sint8x2, .unorm8x2, .snorm8x2, .uint16, .sint16, .unorm16, .snorm16, .float16 => 2,
+        .uint8x4, .sint8x4, .unorm8x4, .snorm8x4, .uint16x2, .sint16x2, .unorm16x2, .snorm16x2, .float16x2, .float32, .uint32, .sint32, .unorm10_10_10_2, .unorm8x4_bgra => 4,
+        .uint16x4, .sint16x4, .unorm16x4, .snorm16x4, .float16x4, .float32x2, .uint32x2, .sint32x2 => 8,
+        .float32x3, .uint32x3, .sint32x3 => 12,
+        .float32x4, .uint32x4, .sint32x4 => 16,
     };
 }
 
@@ -280,9 +285,31 @@ test "resolve_vertex_attribute_count returns 0 for default" {
 test "vertex_format_size returns correct sizes" {
     try std.testing.expectEqual(@as(u64, 4), try vertex_format_size(0x00000003));
     try std.testing.expectEqual(@as(u64, 8), try vertex_format_size(0x0000000F));
-    try std.testing.expectEqual(@as(u64, 16), try vertex_format_size(0x0000001C));
+    try std.testing.expectEqual(@as(u64, 16), try vertex_format_size(0x0000001F));
 }
 
 test "vertex_format_size returns error for unknown" {
     try std.testing.expectError(error.UnsupportedFeature, vertex_format_size(0xDEAD));
+}
+
+test "D3D12 vertex resolver bounds untrusted counts and offset arithmetic" {
+    var cmd = model_render_types.RenderDrawCommand{ .draw_count = 1, .vertex_attribute_count = std.math.maxInt(u32), .vertex_buffer_count = std.math.maxInt(u32), .vertex_layout_count = std.math.maxInt(u32) };
+    try std.testing.expect(resolve_vertex_attribute(cmd, model_render_types.MAX_VERTEX_ATTRIBUTES) == null);
+    try std.testing.expect(resolve_vertex_buffer_handle(cmd, model_render_types.MAX_VERTEX_BUFFERS) == null);
+    try std.testing.expectEqual(@as(u64, 0), resolve_vertex_buffer_offset(cmd, model_render_types.MAX_VERTEX_BUFFERS));
+    cmd.vertex_attribute_count = 1;
+    cmd.vertex_attribute_formats[0] = 0x19;
+    cmd.vertex_attribute_offsets[0] = std.math.maxInt(u64);
+    try std.testing.expectError(error.InvalidArgument, resolve_vertex_buffer_stride(cmd, 0));
+}
+
+test "D3D12 vertex byte sizes follow canonical scalar and vector identities" {
+    const cases = [_]struct { vertex: vertex_formats.Format, bytes: u64 }{
+        .{ .vertex = .float16, .bytes = 2 },    .{ .vertex = .float16x2, .bytes = 4 },
+        .{ .vertex = .float16x4, .bytes = 8 },  .{ .vertex = .float32, .bytes = 4 },
+        .{ .vertex = .float32x2, .bytes = 8 },  .{ .vertex = .float32x3, .bytes = 12 },
+        .{ .vertex = .float32x4, .bytes = 16 }, .{ .vertex = .uint32x2, .bytes = 8 },
+        .{ .vertex = .sint32x3, .bytes = 12 },  .{ .vertex = .unorm10_10_10_2, .bytes = 4 },
+    };
+    for (cases) |case| try std.testing.expectEqual(case.bytes, try vertex_format_size(@intFromEnum(case.vertex)));
 }

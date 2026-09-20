@@ -25,12 +25,13 @@ pub fn record_render_pass_command(
     texture_view_state: *const d3d12_texture_view.TextureViewState,
     sampler_state: *const d3d12_sampler.SamplerState,
 ) !void {
+    try retained_handles.ensureUnusedCapacity(allocator, 3);
     const target_view = texture_view_from_handle(cmd.target_view_handle) orelse return error.InvalidArgument;
     const target_texture = target_view.tex;
     const target_format = resolve_view_format(target_view, cmd.target_format);
     const target_dimension = resolve_render_view_dimension(target_view);
     const rtv_heap = bridge.c.d3d12_bridge_device_create_rtv_heap(device, 1) orelse return error.InvalidState;
-    try retained_handles.append(allocator, rtv_heap);
+    retained_handles.appendAssumeCapacity(rtv_heap);
     bridge.c.d3d12_bridge_device_create_rtv_view(
         device,
         cmd.target,
@@ -48,7 +49,7 @@ pub fn record_render_pass_command(
     if (cmd.depth_target != null) {
         const depth_view = texture_view_from_handle(cmd.depth_target_view_handle) orelse return error.InvalidArgument;
         dsv_heap = bridge.c.d3d12_bridge_device_create_dsv_heap(device, 1) orelse return error.InvalidState;
-        try retained_handles.append(allocator, dsv_heap);
+        retained_handles.appendAssumeCapacity(dsv_heap);
         bridge.c.d3d12_bridge_device_create_dsv_view(
             device,
             cmd.depth_target,
@@ -79,7 +80,7 @@ pub fn record_render_pass_command(
     const active_root_sig = bind_result.root_signature orelse cmd.root_signature;
     bridge.c.d3d12_bridge_command_list_set_graphics_root_signature(cmd_list, active_root_sig);
     if (bind_result.root_signature) |rs| {
-        try retained_handles.append(allocator, rs);
+        retained_handles.appendAssumeCapacity(rs);
     }
 
     bridge.c.d3d12_bridge_command_list_set_pipeline_state(cmd_list, cmd.pso);

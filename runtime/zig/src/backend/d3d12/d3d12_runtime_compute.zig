@@ -337,8 +337,9 @@ fn createTransientDispatchInfoBinding(
         0,
         @intCast(dispatch_info.DISPATCH_INFO_BUFFER_BYTES),
     );
-    try retained_handles.append(self.allocator, buffer);
-    try retained_handles.append(self.allocator, heap);
+    try retained_handles.ensureUnusedCapacity(self.allocator, 2);
+    retained_handles.appendAssumeCapacity(buffer);
+    retained_handles.appendAssumeCapacity(heap);
     return .{
         .buffer = buffer,
         .heap = heap,

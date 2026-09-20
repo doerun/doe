@@ -86,10 +86,22 @@ const test_src_backend_d3d12_commands_d3d12_async_diagnostics_zig_382f4e78 = @im
 const test_src_backend_vulkan_vk_shader_source_zig_d25a569b = @import("src/backend/vulkan/vk_shader_source.zig");
 const test_src_backend_d3d12_commands_d3d12_dispatch_zig_793febe7 = @import("src/backend/d3d12/commands/d3d12_dispatch.zig");
 const test_src_backend_d3d12_commands_d3d12_gpu_timestamps_zig_4c78b353 = @import("src/backend/d3d12/commands/d3d12_gpu_timestamps.zig");
+const test_src_backend_d3d12_commands_d3d12_map_async_zig_7d0b8c13 = @import("src/backend/d3d12/commands/d3d12_map_async.zig");
 const test_src_backend_d3d12_mod_zig_1d072893 = @import("src/backend/d3d12/mod.zig");
 const test_src_backend_d3d12_d3d12_native_runtime_zig_55270130 = @import("src/backend/d3d12/d3d12_native_runtime.zig");
 const test_src_backend_d3d12_d3d12_runtime_upload_zig_19153cf8 = @import("src/backend/d3d12/d3d12_runtime_upload.zig");
 const test_src_backend_d3d12_commands_d3d12_streaming_copy_zig_061dc0c0 = @import("src/backend/d3d12/commands/d3d12_streaming_copy.zig");
+const test_src_backend_d3d12_d3d12_descriptors_zig_14fffb5b = @import("src/backend/d3d12/d3d12_descriptors.zig");
+const test_src_backend_d3d12_d3d12_formats_zig_39eddb68 = @import("src/backend/d3d12/d3d12_formats.zig");
+const test_src_backend_d3d12_d3d12_device_caps_zig_9a61d926 = @import("src/backend/d3d12/d3d12_device_caps.zig");
+const test_src_backend_d3d12_commands_d3d12_render_vertex_zig_9073f189 = @import("src/backend/d3d12/commands/d3d12_render_vertex.zig");
+const test_src_backend_d3d12_commands_d3d12_render_bind_groups_zig_ad49037b = @import("src/backend/d3d12/commands/d3d12_render_bind_groups.zig");
+const test_src_backend_d3d12_resources_d3d12_depth_stencil_zig_b2d6736e = @import("src/backend/d3d12/resources/d3d12_depth_stencil.zig");
+const test_src_backend_d3d12_resources_d3d12_texture_view_zig_c914f54a = @import("src/backend/d3d12/resources/d3d12_texture_view.zig");
+const test_src_backend_d3d12_resources_d3d12_texture_zig_6dbb3c7c = @import("src/backend/d3d12/resources/d3d12_texture.zig");
+const test_src_backend_d3d12_surface_d3d12_surface_zig_cd114ba3 = @import("src/backend/d3d12/surface/d3d12_surface.zig");
+const test_src_backend_metal_backend_execute_zig_a56db399 = @import("src/backend/metal/backend_execute.zig");
+const test_src_backend_d3d12_resources_d3d12_sampler_zig_81874f49 = @import("src/backend/d3d12/resources/d3d12_sampler.zig");
 
 comptime {
     _ = test_tests_metal_metal_mod_integration_test_zig_6f53b3ec;
@@ -177,8 +189,20 @@ comptime {
     _ = test_src_backend_vulkan_vk_shader_source_zig_d25a569b;
     _ = test_src_backend_d3d12_commands_d3d12_dispatch_zig_793febe7;
     _ = test_src_backend_d3d12_commands_d3d12_gpu_timestamps_zig_4c78b353;
+    _ = test_src_backend_d3d12_commands_d3d12_map_async_zig_7d0b8c13;
     _ = test_src_backend_d3d12_mod_zig_1d072893;
     _ = test_src_backend_d3d12_d3d12_native_runtime_zig_55270130;
     _ = test_src_backend_d3d12_d3d12_runtime_upload_zig_19153cf8;
     _ = test_src_backend_d3d12_commands_d3d12_streaming_copy_zig_061dc0c0;
+    _ = test_src_backend_d3d12_d3d12_descriptors_zig_14fffb5b;
+    _ = test_src_backend_d3d12_d3d12_formats_zig_39eddb68;
+    _ = test_src_backend_d3d12_d3d12_device_caps_zig_9a61d926;
+    _ = test_src_backend_d3d12_commands_d3d12_render_vertex_zig_9073f189;
+    _ = test_src_backend_d3d12_commands_d3d12_render_bind_groups_zig_ad49037b;
+    _ = test_src_backend_d3d12_resources_d3d12_depth_stencil_zig_b2d6736e;
+    _ = test_src_backend_d3d12_resources_d3d12_texture_view_zig_c914f54a;
+    _ = test_src_backend_d3d12_resources_d3d12_texture_zig_6dbb3c7c;
+    _ = test_src_backend_d3d12_surface_d3d12_surface_zig_cd114ba3;
+    _ = test_src_backend_metal_backend_execute_zig_a56db399;
+    _ = test_src_backend_d3d12_resources_d3d12_sampler_zig_81874f49;
 }

@@ -551,6 +551,11 @@ void* metal_bridge_buffer_contents(MetalHandle buffer_h) {
     return [buf contents];
 }
 
+size_t metal_bridge_buffer_length(MetalHandle buffer_h) {
+    id<MTLBuffer> buf = (__bridge id<MTLBuffer>)buffer_h;
+    return [buf length];
+}
+
 MetalHandle metal_bridge_encode_blit_copy(
     MetalHandle queue_h,
     MetalHandle src_h,

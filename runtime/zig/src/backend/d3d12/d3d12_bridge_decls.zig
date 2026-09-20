@@ -8,7 +8,7 @@ pub const D3D12GraphicsPipelineDesc = c.D3D12GraphicsPipelineDesc;
 
 pub const SynchronizationError = error{ DeviceLost, QueueSignalFailed, FenceWaitFailed };
 
-pub fn check_signal(result: c_int) !void {
+pub fn check_signal(result: c_int) SynchronizationError!void {
     switch (result) {
         c.D3D12_SYNC_OK => {},
         c.D3D12_SYNC_DEVICE_LOST => return error.DeviceLost,
@@ -16,7 +16,7 @@ pub fn check_signal(result: c_int) !void {
     }
 }
 
-pub fn check_wait(result: c_int) !void {
+pub fn check_wait(result: c_int) SynchronizationError!void {
     switch (result) {
         c.D3D12_SYNC_OK => {},
         c.D3D12_SYNC_DEVICE_LOST => return error.DeviceLost,

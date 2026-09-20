@@ -1,4 +1,5 @@
 const builtin = @import("builtin");
+const NativeVulkanRuntime = @import("dropin_lifecycle.zig").NativeVulkanRuntime;
 
 const vk_pipeline_cache_persistent = if (builtin.os.tag == .linux) @import("vulkan/vk_pipeline_cache_persistent.zig") else struct {
     pub const WarmupTelemetry = struct {
@@ -9,22 +10,22 @@ const vk_pipeline_cache_persistent = if (builtin.os.tag == .linux) @import("vulk
 
 pub const WarmupTelemetry = vk_pipeline_cache_persistent.WarmupTelemetry;
 
-pub fn vulkanPipelineCacheActive(runtime: anytype) bool {
+pub fn vulkanPipelineCacheActive(runtime: *NativeVulkanRuntime) bool {
     if (comptime builtin.os.tag != .linux) return false;
     return runtime.pipeline_cache.active();
 }
 
-pub fn vulkanPipelineCacheDisabled(runtime: anytype) bool {
+pub fn vulkanPipelineCacheDisabled(runtime: *NativeVulkanRuntime) bool {
     if (comptime builtin.os.tag != .linux) return false;
     return !runtime.pipeline_cache.enabled;
 }
 
-pub fn vulkanPipelineCacheWarmupTelemetry(runtime: anytype) WarmupTelemetry {
+pub fn vulkanPipelineCacheWarmupTelemetry(runtime: *NativeVulkanRuntime) WarmupTelemetry {
     if (comptime builtin.os.tag != .linux) return .{};
     return runtime.pipeline_cache.warmupTelemetry();
 }
 
-pub fn flushVulkanPipelineCache(runtime: anytype) void {
+pub fn flushVulkanPipelineCache(runtime: *NativeVulkanRuntime) void {
     if (comptime builtin.os.tag != .linux) return;
     if (runtime.device == null) return;
     runtime.pipeline_cache.flush(runtime.device);

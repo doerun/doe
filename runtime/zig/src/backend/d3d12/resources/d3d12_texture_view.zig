@@ -17,15 +17,15 @@ const VIEW_DIMENSION_3D: u32 = 6;
 
 // --- Texture aspect constants (WebGPU GPUTextureAspect) ---
 
-const TEXTURE_ASPECT_ALL: u32 = 0;
-const TEXTURE_ASPECT_STENCIL_ONLY: u32 = 1;
-const TEXTURE_ASPECT_DEPTH_ONLY: u32 = 2;
+const TEXTURE_ASPECT_ALL = model_gpu_types.WGPUTextureAspect_All;
+const TEXTURE_ASPECT_STENCIL_ONLY = model_gpu_types.WGPUTextureAspect_StencilOnly;
+const TEXTURE_ASPECT_DEPTH_ONLY = model_gpu_types.WGPUTextureAspect_DepthOnly;
 
 fn normalize_aspect(aspect: u32) ?u32 {
     return switch (aspect) {
-        TEXTURE_ASPECT_ALL, model_gpu_types.WGPUTextureAspect_All => TEXTURE_ASPECT_ALL,
-        TEXTURE_ASPECT_STENCIL_ONLY, model_gpu_types.WGPUTextureAspect_StencilOnly => TEXTURE_ASPECT_STENCIL_ONLY,
-        TEXTURE_ASPECT_DEPTH_ONLY, model_gpu_types.WGPUTextureAspect_DepthOnly => TEXTURE_ASPECT_DEPTH_ONLY,
+        0, TEXTURE_ASPECT_ALL => TEXTURE_ASPECT_ALL,
+        TEXTURE_ASPECT_STENCIL_ONLY => TEXTURE_ASPECT_STENCIL_ONLY,
+        TEXTURE_ASPECT_DEPTH_ONLY => TEXTURE_ASPECT_DEPTH_ONLY,
         else => null,
     };
 }
@@ -101,6 +101,9 @@ pub const TextureViewState = struct {
         descriptor_index: u32,
     ) !u64 {
         const encode_start = common_timing.now_ns();
+        if (device == null or texture_resource == null or descriptor_heap == null) return error.InvalidArgument;
+        if (self.map.contains(handle)) return error.InvalidArgument;
+        try self.map.ensureUnusedCapacity(allocator, 1);
 
         if (!texture_aspect_supported(format, aspect)) return error.UnsupportedFeature;
 
@@ -176,7 +179,7 @@ pub const TextureViewState = struct {
             .descriptor_index = descriptor_index,
         };
 
-        self.map.put(allocator, handle, entry) catch return error.InvalidState;
+        self.map.putAssumeCapacity(handle, entry);
 
         return common_timing.ns_delta(common_timing.now_ns(), encode_start);
     }
@@ -193,6 +196,7 @@ pub const TextureViewState = struct {
 
     pub fn deinit(self: *TextureViewState, allocator: std.mem.Allocator) void {
         self.map.deinit(allocator);
+        self.* = .{};
     }
 };
 
@@ -210,4 +214,12 @@ pub fn map_view_dimension_to_srv(dimension: u32) u32 {
         // dimension before reaching this point.
         else => d3d12_constants.SRV_DIMENSION_TEXTURE2D,
     };
+}
+
+test "D3D12 texture view aspects preserve canonical stencil and depth identities" {
+    try std.testing.expectEqual(model_gpu_types.WGPUTextureAspect_All, normalize_aspect(0).?);
+    try std.testing.expect(texture_aspect_supported(model_gpu_types.WGPUTextureFormat_Depth32Float, model_gpu_types.WGPUTextureAspect_DepthOnly));
+    try std.testing.expect(!texture_aspect_supported(model_gpu_types.WGPUTextureFormat_Depth32Float, model_gpu_types.WGPUTextureAspect_StencilOnly));
+    try std.testing.expect(texture_aspect_supported(model_gpu_types.WGPUTextureFormat_Stencil8, model_gpu_types.WGPUTextureAspect_StencilOnly));
+    try std.testing.expect(!texture_aspect_supported(model_gpu_types.WGPUTextureFormat_Stencil8, model_gpu_types.WGPUTextureAspect_DepthOnly));
 }

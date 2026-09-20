@@ -11,14 +11,13 @@ const DXGI_FORMAT_D32_FLOAT = formats.DXGI_FORMAT_D32_FLOAT;
 const DXGI_FORMAT_D24_UNORM_S8_UINT = formats.DXGI_FORMAT_D24_UNORM_S8_UINT;
 const DXGI_FORMAT_D32_FLOAT_S8X24_UINT = formats.DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 
-// --- WebGPU depth texture format identifiers ---
-// From the WebGPU spec GPUTextureFormat enum.
-const WGPU_DEPTH16_UNORM: u32 = 0x0000002D;
-const WGPU_DEPTH24_PLUS: u32 = 0x0000002E;
-const WGPU_DEPTH24_PLUS_STENCIL8: u32 = 0x0000002F;
-const WGPU_DEPTH32_FLOAT: u32 = 0x00000030;
-const WGPU_DEPTH32_FLOAT_STENCIL8: u32 = 0x00000031;
-const WGPU_STENCIL8: u32 = 0x0000002C;
+const gpu = @import("../../../contracts/model/model_texture_value_types.zig");
+const WGPU_DEPTH16_UNORM = gpu.WGPUTextureFormat_Depth16Unorm;
+const WGPU_DEPTH24_PLUS = gpu.WGPUTextureFormat_Depth24Plus;
+const WGPU_DEPTH24_PLUS_STENCIL8 = gpu.WGPUTextureFormat_Depth24PlusStencil8;
+const WGPU_DEPTH32_FLOAT = gpu.WGPUTextureFormat_Depth32Float;
+const WGPU_DEPTH32_FLOAT_STENCIL8 = gpu.WGPUTextureFormat_Depth32FloatStencil8;
+const WGPU_STENCIL8 = gpu.WGPUTextureFormat_Stencil8;
 
 // Single DSV descriptor per depth/stencil state; more can be added if MRT
 // depth targets are needed in the future.
@@ -89,6 +88,10 @@ pub const DepthStencilState = struct {
         height: u32,
         format: u32,
     ) !void {
+        return self.ensure_with_bridge(device, width, height, format, bridge.c);
+    }
+
+    fn ensure_with_bridge(self: *DepthStencilState, device: ?*anyopaque, width: u32, height: u32, format: u32, comptime native: type) !void {
         if (width == 0 or height == 0) return error.InvalidArgument;
 
         const dxgi_format = map_wgpu_depth_format(format);
@@ -103,25 +106,24 @@ pub const DepthStencilState = struct {
             return;
         }
 
-        // Tear down previous resources before allocating new ones.
-        self.release_resources();
-
-        const texture = bridge.c.d3d12_bridge_device_create_depth_texture(
+        const texture = native.d3d12_bridge_device_create_depth_texture(
             device,
             width,
             height,
             dxgi_format,
         ) orelse return error.InvalidState;
-        errdefer bridge.c.d3d12_bridge_release(texture);
+        errdefer native.d3d12_bridge_release(texture);
 
-        const heap = bridge.c.d3d12_bridge_device_create_dsv_heap(
+        const heap = native.d3d12_bridge_device_create_dsv_heap(
             device,
             DSV_HEAP_SIZE,
         ) orelse return error.InvalidState;
-        errdefer bridge.c.d3d12_bridge_release(heap);
+        errdefer native.d3d12_bridge_release(heap);
 
-        bridge.c.d3d12_bridge_device_create_dsv(device, texture, heap, 0, dxgi_format);
+        native.d3d12_bridge_device_create_dsv(device, texture, heap, 0, dxgi_format);
 
+        if (self.depth_texture) |handle| native.d3d12_bridge_release(handle);
+        if (self.dsv_heap) |handle| native.d3d12_bridge_release(handle);
         self.depth_texture = texture;
         self.dsv_heap = heap;
         self.cached_width = width;
@@ -187,4 +189,42 @@ test "has_stencil distinguishes stencil formats" {
     try std.testing.expect(has_stencil(WGPU_DEPTH24_PLUS_STENCIL8));
     try std.testing.expect(!has_stencil(WGPU_DEPTH32_FLOAT));
     try std.testing.expect(has_stencil(WGPU_DEPTH32_FLOAT_STENCIL8));
+}
+
+test "D3D12 depth replacement retains old resources when allocation fails" {
+    const Native = struct {
+        var stage: usize = 0;
+        var fail_at: usize = 0;
+        var released: usize = 0;
+        var old_released: usize = 0;
+        fn acquire() ?*anyopaque {
+            stage += 1;
+            return if (stage == fail_at) null else @ptrFromInt(16 + stage);
+        }
+        fn d3d12_bridge_device_create_depth_texture(_: ?*anyopaque, _: u32, _: u32, _: u32) ?*anyopaque {
+            return acquire();
+        }
+        fn d3d12_bridge_device_create_dsv_heap(_: ?*anyopaque, _: u32) ?*anyopaque {
+            return acquire();
+        }
+        fn d3d12_bridge_device_create_dsv(_: ?*anyopaque, _: ?*anyopaque, _: ?*anyopaque, _: u32, _: u32) void {}
+        fn d3d12_bridge_release(handle: ?*anyopaque) void {
+            if (@intFromPtr(handle) < 16) old_released += 1 else released += 1;
+        }
+    };
+    var state = DepthStencilState{ .depth_texture = @ptrFromInt(1), .dsv_heap = @ptrFromInt(2), .cached_width = 4, .cached_height = 4, .cached_format = WGPU_DEPTH32_FLOAT };
+    for (1..3) |failure| {
+        Native.stage = 0;
+        Native.released = 0;
+        Native.fail_at = failure;
+        try std.testing.expectError(error.InvalidState, state.ensure_with_bridge(null, 8, 8, WGPU_DEPTH32_FLOAT, Native));
+        try std.testing.expectEqual(failure - 1, Native.released);
+        try std.testing.expectEqual(@as(usize, 0), Native.old_released);
+        try std.testing.expectEqual(@as(u32, 4), state.cached_width);
+    }
+    Native.stage = 0;
+    Native.fail_at = 0;
+    try state.ensure_with_bridge(null, 8, 8, WGPU_DEPTH32_FLOAT, Native);
+    try std.testing.expectEqual(@as(usize, 2), Native.old_released);
+    try std.testing.expectEqual(@as(u32, 8), state.cached_width);
 }

@@ -1,0 +1,4 @@
+bench/out/maintenance/20260919-zig-batch32/native-constants.c:126:17: error: use of undeclared identifier 'DXGI_FORMAT_D24_X8_STENCIL8'
+  126 | _Static_assert((DXGI_FORMAT_D24_X8_STENCIL8) == (45), "DXGI_FORMAT_D24_X8_STENCIL8");
+      |                 ^
+1 error generated.

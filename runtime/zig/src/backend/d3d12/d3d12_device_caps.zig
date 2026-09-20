@@ -47,8 +47,7 @@ const SM_6_2: c_int = 0x62; // Native 16-bit shader ops
 // D3D12 Feature Level 11.0 conservative limits.
 // These match the WebGPU spec minimum where possible, and D3D12 FL11.0
 // hardware guarantees otherwise.
-const FALLBACK_MAX_BUFFER_SIZE: u64 = 268_435_456; // 256 MB — spec minimum
-const D3D12_MAX_UNIFORM_BUFFER_BINDING_SIZE: u64 = 65_536; // 64 KB (D3D12 constant buffer limit)
+const D3D12_MAX_UNIFORM_BUFFER_BINDING_SIZE = dc.MAX_CONSTANT_BUFFER_BYTES;
 
 const D3D12_LIMITS_STATIC = abi_callback.WGPULimits{
     .nextInChain = null,
@@ -67,11 +66,11 @@ const D3D12_LIMITS_STATIC = abi_callback.WGPULimits{
     .maxStorageTexturesPerShaderStage = 8,
     .maxUniformBuffersPerShaderStage = 14, // D3D12 CBV limit
     .maxUniformBufferBindingSize = D3D12_MAX_UNIFORM_BUFFER_BINDING_SIZE,
-    .maxStorageBufferBindingSize = FALLBACK_MAX_BUFFER_SIZE,
+    .maxStorageBufferBindingSize = dc.BASELINE_MAX_BUFFER_SIZE,
     .minUniformBufferOffsetAlignment = 256, // D3D12 constant buffer alignment
     .minStorageBufferOffsetAlignment = 32,
     .maxVertexBuffers = 16, // D3D12 input slot count
-    .maxBufferSize = FALLBACK_MAX_BUFFER_SIZE,
+    .maxBufferSize = dc.BASELINE_MAX_BUFFER_SIZE,
     .maxVertexAttributes = 32, // D3D12 input element limit
     .maxVertexBufferArrayStride = 2048,
     .maxInterStageShaderVariables = 16,
@@ -181,6 +180,8 @@ const FLOAT32_BLENDABLE_FORMATS = [_]u32{
 const D3D12_CAPS_STATIC = D3D12DeviceCaps{};
 var adapter_caps_cache: std.AutoHashMapUnmanaged(usize, D3D12DeviceCaps) = .{};
 const CACHE_ALLOCATOR = std.heap.page_allocator;
+// Process-owned adapter lookup; publication/removal/query serialize access.
+var adapter_caps_mutex: std.Thread.Mutex = .{};
 
 fn supports_all_storage_formats(device: ?*anyopaque, formats: []const u32) bool {
     for (formats) |format| {
@@ -332,18 +333,28 @@ pub fn d3d12_device_subgroup_size_from_caps(caps: D3D12DeviceCaps) u32 {
 }
 
 pub fn set_adapter_caps(raw: ?*anyopaque, caps: D3D12DeviceCaps) void {
+    adapter_caps_mutex.lock();
+    defer adapter_caps_mutex.unlock();
     const ptr = raw orelse return;
     adapter_caps_cache.put(CACHE_ALLOCATOR, @intFromPtr(ptr), caps) catch {};
 }
 
 pub fn get_adapter_caps(raw: ?*anyopaque) ?D3D12DeviceCaps {
+    adapter_caps_mutex.lock();
+    defer adapter_caps_mutex.unlock();
     const ptr = raw orelse return null;
     return adapter_caps_cache.get(@intFromPtr(ptr));
 }
 
 pub fn remove_adapter_caps(raw: ?*anyopaque) void {
+    adapter_caps_mutex.lock();
+    defer adapter_caps_mutex.unlock();
     const ptr = raw orelse return;
     _ = adapter_caps_cache.remove(@intFromPtr(ptr));
+    if (adapter_caps_cache.count() == 0) {
+        adapter_caps_cache.deinit(CACHE_ALLOCATOR);
+        adapter_caps_cache = .{};
+    }
 }
 
 test "d3d12 source-backed feature publication follows queried caps" {

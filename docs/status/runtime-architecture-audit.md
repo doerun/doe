@@ -12,14 +12,25 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [backend review batch](../../bench/out/maintenance/20260919-zig-batch32/README.md)
+records file examinations separately from verified coverage. Mapping, allocation
+rollback, texture staging, descriptor bounds/reuse and Metal capture have concrete
+repairs and host tests. Native binding/copy/query/presentation semantics and the
+Vulkan write-region adapter retain open findings; see the batch file notes and
+ledger for exact outcomes. Windows compilation is separate from execution, and
+the broader spec-diff gate lacks its Chromium header inputs. Continue the named
+repair actions before granting those scopes completion; the batch handoff also
+identifies the next never-examined file. Accepted packages and performance
+qualification remain unchanged.
+
 The [D3D12 timestamp review](../../bench/out/maintenance/20260919-zig-d3d12-timestamps/README.md)
 connects the existing measurement owner to compute command recording and completed
 readback. Acquisition is transactional; missing frequency stays unavailable;
 conversion checks bounds. Existing timestamp modes now govern acquisition and
 receipts, with required deferred measurements rejected before runtime work.
 Host failure tests and native bridge cross-compilation are retained separately
-from physical Windows accuracy. The next scope is the D3D12 map-async command
-file. Supporting edits grant no additional audit credit; accepted packages and
+from physical Windows accuracy. The map-async continuation is retained in the backend review batch above.
+Supporting edits grant no additional audit credit; accepted packages and
 measurement thresholds are unchanged.
 
 The [synchronization follow-up](../../bench/out/maintenance/20260919-zig-d3d12-synchronization/README.md)

@@ -51,7 +51,10 @@ pub fn submit_d3d12_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*an
                         &rt.descriptor_state,
                         &rt.texture_view_state,
                         &rt.sampler_state,
-                    ) catch continue;
+                    ) catch |err| {
+                        shared.deliverInternalError(q.dev, "doe_queue_submit: d3d12 render recording: {s}", .{@errorName(err)});
+                        return;
+                    };
                     has_gpu_work = true;
                 },
                 else => {},
@@ -61,7 +64,10 @@ pub fn submit_d3d12_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*an
 
     if (!has_gpu_work) return;
 
-    bridge.c.d3d12_bridge_command_list_close(cmd_list);
+    if (bridge.c.d3d12_bridge_command_list_close_checked(cmd_list) != 0) {
+        shared.deliverInternalError(q.dev, "doe_queue_submit: d3d12 command close failed", .{});
+        return;
+    }
     bridge.c.d3d12_bridge_queue_execute_command_list(rt.queue, cmd_list);
     rt.fence_value +|= 1;
     bridge.c.d3d12_bridge_queue_signal(rt.queue, rt.fence, rt.fence_value);

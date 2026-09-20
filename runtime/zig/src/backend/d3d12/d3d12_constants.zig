@@ -1,5 +1,9 @@
 pub const formats = @import("d3d12_formats.zig");
 
+pub const MAX_CONSTANT_BUFFER_BYTES: u32 = 64 * 1024;
+
+pub const BASELINE_MAX_BUFFER_SIZE: usize = 256 * 1024 * 1024;
+
 pub const MAX_DISPATCH_DIMENSION: u32 = 65535;
 
 pub const HEAP_TYPE_UPLOAD: c_int = 2;

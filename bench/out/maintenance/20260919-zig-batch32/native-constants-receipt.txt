@@ -1,0 +1,6 @@
+Zig 0.15.2
+Command: zig cc -target x86_64-windows-gnu -std=c11 -c bench/out/maintenance/20260919-zig-batch32/native-constants.c -I runtime/zig/vendor/webgpu-headers -o /tmp/doe-batch32-native-constants.obj
+Exit code: 0
+Checks: native constants against Zig-bundled Windows headers and pinned WebGPU header; not a replacement for the unavailable Chromium-header spec-diff gate.
+Source SHA256: bf4c79ec9736a82df2d2cdbf7d0858101103b00ad11d4102b3b7d2041e1cd863
+Object SHA256: e86b2aa4e610dc7766c07e2d413671d0f589c9cb6fe78591452a5a45662326fa

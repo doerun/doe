@@ -62,6 +62,10 @@ void* metal_bridge_buffer_contents(MetalHandle buffer) {
     (void)buffer;
     return NULL;
 }
+size_t metal_bridge_buffer_length(MetalHandle buffer) {
+    (void)buffer;
+    return 0;
+}
 
 MetalHandle metal_bridge_encode_blit_copy(MetalHandle queue, MetalHandle src_buffer, MetalHandle dst_buffer, size_t byte_count) {
     (void)queue;
