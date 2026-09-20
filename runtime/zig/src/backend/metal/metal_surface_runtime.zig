@@ -152,7 +152,7 @@ pub fn present_surface(self: anytype, cmd: model_surface_control_types.SurfacePr
         entry.acquired = false;
         return error.InvalidState;
     };
-    self.completion.reserve(self.allocator) catch |err| {
+    self.completion.prepare(self.allocator, cmd_buf, bridge) catch |err| {
         metal_bridge_release(cmd_buf);
         return err;
     };

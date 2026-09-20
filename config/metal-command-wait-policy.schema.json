@@ -10,13 +10,13 @@
       "type": "integer",
       "minimum": 1,
       "maximum": 9223372036854775807,
-      "description": "Elapsed-time budget shared by all submitted commands in one operational retirement call. Timeout retains unfinished work. Destruction drains terminal completion separately and may block."
+      "description": "Default elapsed-time budget shared by all submitted commands in one operational retirement call. Explicit queue-port timeout inputs override the instance default. Timeout retains unfinished work. Destruction drains terminal completion separately and may block."
     },
     "pollIntervalNs": {
       "type": "integer",
       "minimum": 1,
       "maximum": 9223372036854775807,
-      "description": "Sleep between native status observations, capped to the remaining wait budget. Scheduling can delay wakeup; this is not a hard real-time deadline."
+      "description": "Polling-mode sleep between native status observations, capped to the remaining wait budget. Scheduling can delay wakeup; this is not a hard real-time deadline."
     }
   }
 }

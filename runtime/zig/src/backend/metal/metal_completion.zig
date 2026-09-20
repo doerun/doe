@@ -1,5 +1,6 @@
 //! Submitted references remain owned until their individual terminal result is observed.
 const std = @import("std");
+const configuration = @import("../../contracts/runtime_configuration.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const wait_policy = @import("metal_wait_policy.zig");
 
@@ -33,6 +34,9 @@ const Clock = struct {
         return self.timer.read();
     }
     fn sleep(_: *Clock, ns: u64) void {
+        sleepUnbounded(ns);
+    }
+    fn sleepUnbounded(ns: u64) void {
         std.Thread.sleep(ns);
     }
 };
@@ -46,6 +50,8 @@ pub const Completion = struct {
     failure_code: ?i64 = null,
     wait_state: WaitState = .ready,
     retiring: bool = false,
+    wait_mode: configuration.QueueWaitMode = .process_events,
+    timeout_ns: u64 = wait_policy.compiled().timeoutNs,
 
     pub fn check(self: *const Completion) (WaitError || error{MetalCommandFailed})!void {
         if (self.failure_code != null) return error.MetalCommandFailed;
@@ -64,7 +70,14 @@ pub const Completion = struct {
         try self.pending.ensureUnusedCapacity(allocator, 1);
     }
 
-    /// Transfers a +1 reference after commit. Call reserve before native submission.
+    /// Registration occurs before commit. Neither reservation nor notification takes
+    /// the caller's command reference; failure must leave it unsubmitted.
+    pub fn prepare(self: *Completion, allocator: std.mem.Allocator, command: *anyopaque, comptime native: type) !void {
+        try self.reserve(allocator);
+        if (native.metal_bridge_command_buffer_prepare_wait(command) == 0) return error.MetalWaitPreparationFailed;
+    }
+
+    /// Transfers a +1 reference after commit. Call prepare before native submission.
     pub fn retainSubmitted(self: *Completion, command: *anyopaque) void {
         self.pending.appendAssumeCapacity(command);
     }
@@ -72,7 +85,13 @@ pub const Completion = struct {
     /// One elapsed budget covers the batch. Timeout/unknown retain unfinished work;
     /// a later call may retire it. Terminal failure still requires check before use.
     pub fn retire(self: *Completion) WaitError!void {
-        try self.retireWithClock(bridge, Clock, wait_policy.compiled());
+        try self.retireWithMode(self.wait_mode);
+    }
+
+    pub fn retireWithMode(self: *Completion, mode: configuration.QueueWaitMode) WaitError!void {
+        var policy = wait_policy.compiled();
+        policy.timeoutNs = self.timeout_ns;
+        try self.retireWithClock(bridge, Clock, policy, mode);
     }
 
     /// Destruction is a blocking drain, not an operational wait or cancellation.
@@ -87,7 +106,7 @@ pub const Completion = struct {
         self.pending = .{};
     }
 
-    fn retireWithClock(self: *Completion, comptime native: type, comptime Timer: type, policy: wait_policy.Policy) WaitError!void {
+    fn retireWithClock(self: *Completion, comptime native: type, comptime Timer: type, policy: wait_policy.Policy, mode: configuration.QueueWaitMode) WaitError!void {
         if (self.retiring) return error.MetalCompletionUnknown;
         self.retiring = true;
         defer self.retiring = false;
@@ -95,7 +114,7 @@ pub const Completion = struct {
             self.wait_state = .ready;
             return;
         }
-        var clock = Timer.start() catch {
+        var clock: ?Timer = if (policy.timeoutNs == 0 or policy.timeoutNs == std.math.maxInt(u64)) null else Timer.start() catch {
             self.wait_state = .clock_unavailable;
             return error.MetalWaitClockUnavailable;
         };
@@ -109,12 +128,26 @@ pub const Completion = struct {
                 self.wait_state = .ready;
                 return;
             }
-            const elapsed = clock.read();
-            if (elapsed >= policy.timeoutNs) {
+            const elapsed = if (clock) |*timer| timer.read() else 0;
+            if (policy.timeoutNs != std.math.maxInt(u64) and elapsed >= policy.timeoutNs) {
                 self.wait_state = .timed_out;
                 return error.MetalWaitTimeout;
             }
-            clock.sleep(@min(policy.pollIntervalNs, policy.timeoutNs - elapsed));
+            const remaining = policy.timeoutNs - elapsed;
+            switch (mode) {
+                .process_events => {
+                    const interval = @min(policy.pollIntervalNs, remaining);
+                    if (clock) |*timer| timer.sleep(interval) else Timer.sleepUnbounded(interval);
+                },
+                .wait_any => {
+                    // Notification only wakes observation. Recheck every native status
+                    // before releasing anything, including errors from later commands.
+                    if (native.metal_bridge_command_buffer_wait_notification(self.pending.items[0], remaining) < 0) {
+                        self.wait_state = .unknown;
+                        return error.MetalCompletionUnknown;
+                    }
+                },
+            }
         }
     }
 
@@ -232,7 +265,7 @@ test "Metal completion rejects reentrant retirement and submission during a nati
         var releases: usize = 0;
         pub fn metal_bridge_command_buffer_wait_result(_: ?*anyopaque, code: *i64) c_int {
             std.testing.expectError(error.MetalCompletionUnknown, owner.retireWithBridge(@This())) catch @panic("reentrant retirement accepted");
-            std.testing.expectError(error.MetalCompletionUnknown, owner.reserve(std.testing.allocator)) catch @panic("reentrant submission accepted");
+            std.testing.expectError(if (owner.failure_code != null) error.MetalCommandFailed else error.MetalCompletionUnknown, owner.reserve(std.testing.allocator)) catch @panic("reentrant submission accepted");
             code.* = 0;
             return 1;
         }
@@ -290,6 +323,9 @@ const TimedProbe = struct {
     var polls: usize = 0;
     var fail_clock = false;
     var reenter: ?*Completion = null;
+    var notification_budgets: [8]u64 = undefined;
+    var notifications: usize = 0;
+    var fail_notification = false;
     const policy: wait_policy.Policy = .{ .schemaVersion = wait_policy.VERSION, .timeoutNs = 5, .pollIntervalNs = 2 };
     const Timer = struct {
         origin: u64,
@@ -301,6 +337,9 @@ const TimedProbe = struct {
             return now - self.origin;
         }
         fn sleep(_: *Timer, ns: u64) void {
+            sleepUnbounded(ns);
+        }
+        fn sleepUnbounded(ns: u64) void {
             now += ns;
         }
     };
@@ -310,12 +349,22 @@ const TimedProbe = struct {
         polls = 0;
         fail_clock = false;
         reenter = null;
+        notifications = 0;
+        fail_notification = false;
+    }
+    pub fn metal_bridge_command_buffer_wait_notification(handle: ?*anyopaque, budget: u64) c_int {
+        notification_budgets[notifications] = budget;
+        notifications += 1;
+        if (fail_notification) return -1;
+        const command: *Command = @ptrCast(@alignCast(handle.?));
+        now += @min(command.ready_at -| now, budget);
+        return if (now >= command.ready_at) 1 else 0;
     }
     pub fn metal_bridge_command_buffer_poll_result(handle: ?*anyopaque, code: *i64) c_int {
         polls += 1;
         if (reenter) |owner| {
-            std.testing.expectError(error.MetalCompletionUnknown, owner.retireWithClock(@This(), Timer, policy)) catch @panic("reentrant retirement accepted");
-            std.testing.expectError(error.MetalCompletionUnknown, owner.reserve(std.testing.allocator)) catch @panic("reentrant submission accepted");
+            std.testing.expectError(error.MetalCompletionUnknown, owner.retireWithClock(@This(), Timer, policy, .process_events)) catch @panic("reentrant retirement accepted");
+            std.testing.expectError(if (owner.failure_code != null) error.MetalCommandFailed else error.MetalCompletionUnknown, owner.reserve(std.testing.allocator)) catch @panic("reentrant submission accepted");
         }
         const command: *Command = @ptrCast(@alignCast(handle.?));
         code.* = command.code;
@@ -336,13 +385,13 @@ test "Metal wait shares one deadline retains unfinished work and permits a later
         owner.retainSubmitted(command);
     }
     TimedProbe.reenter = &owner;
-    try std.testing.expectError(error.MetalWaitTimeout, owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy));
+    try std.testing.expectError(error.MetalWaitTimeout, owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy, .process_events));
     try std.testing.expectEqual(@as(u64, 5), TimedProbe.now);
     try std.testing.expectEqual(@as(usize, 2), TimedProbe.releases);
     try std.testing.expectEqual(@as(usize, 1), owner.pending.items.len);
     try std.testing.expectEqual(@as(*anyopaque, @ptrCast(&commands[2])), owner.pending.items[0]);
     try std.testing.expectError(error.MetalWaitTimeout, owner.reserve(std.testing.allocator));
-    try owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy);
+    try owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy, .process_events);
     try owner.check();
     try std.testing.expectEqual(@as(usize, 0), owner.pending.items.len);
     try std.testing.expectEqual(@as(usize, 3), TimedProbe.releases);
@@ -357,11 +406,11 @@ test "Metal timed wait preserves native failure while retaining another timed ou
         try owner.reserve(std.testing.allocator);
         owner.retainSubmitted(command);
     }
-    try std.testing.expectError(error.MetalWaitTimeout, owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy));
+    try std.testing.expectError(error.MetalWaitTimeout, owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy, .process_events));
     try std.testing.expectEqual(@as(?i64, 42), owner.failure_code);
     try std.testing.expectEqual(@as(usize, 1), owner.pending.items.len);
     try std.testing.expectError(error.MetalCommandFailed, owner.check());
-    try owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy);
+    try owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy, .process_events);
     try std.testing.expectEqual(@as(?i64, 42), owner.failure_code);
     try std.testing.expectEqual(@as(usize, 2), TimedProbe.releases);
     try std.testing.expectError(error.MetalCommandFailed, owner.check());
@@ -375,16 +424,87 @@ test "Metal wait clock failure and unknown status preserve ownership without pol
     try owner.reserve(std.testing.allocator);
     owner.retainSubmitted(&command);
     TimedProbe.fail_clock = true;
-    try std.testing.expectError(error.MetalWaitClockUnavailable, owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy));
+    try std.testing.expectError(error.MetalWaitClockUnavailable, owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy, .process_events));
     try std.testing.expectError(error.MetalWaitClockUnavailable, owner.check());
     try std.testing.expectEqual(@as(usize, 0), TimedProbe.polls);
     TimedProbe.fail_clock = false;
-    try std.testing.expectError(error.MetalCompletionUnknown, owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy));
+    try std.testing.expectError(error.MetalCompletionUnknown, owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy, .process_events));
     try std.testing.expectEqual(@as(u64, 0), TimedProbe.now);
     try std.testing.expectEqual(@as(usize, 1), owner.pending.items.len);
     try std.testing.expectEqual(@as(usize, 0), TimedProbe.releases);
     command.status = 1;
-    try owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy);
+    try owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy, .process_events);
     try owner.check();
     try std.testing.expectEqual(@as(usize, 1), TimedProbe.releases);
+}
+
+test "Metal notification waits share a deadline and retain error code zero across late completion" {
+    TimedProbe.reset();
+    var owner = Completion{};
+    defer owner.pending.deinit(std.testing.allocator);
+    var commands = [_]TimedProbe.Command{ .{ .ready_at = 0, .status = 0 }, .{ .ready_at = 3 }, .{ .ready_at = 8 } };
+    for (&commands) |*command| {
+        try owner.reserve(std.testing.allocator);
+        owner.retainSubmitted(command);
+    }
+    TimedProbe.reenter = &owner;
+    try std.testing.expectError(error.MetalWaitTimeout, owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy, .wait_any));
+    try std.testing.expectEqualSlices(u64, &.{ 5, 2 }, TimedProbe.notification_budgets[0..TimedProbe.notifications]);
+    try std.testing.expectEqual(@as(u64, 5), TimedProbe.now);
+    try std.testing.expectEqual(@as(usize, 2), TimedProbe.releases);
+    try std.testing.expectEqual(@as(?i64, 0), owner.failure_code);
+    try std.testing.expectEqual(@as(*anyopaque, @ptrCast(&commands[2])), owner.pending.items[0]);
+    try owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy, .wait_any);
+    try std.testing.expectEqual(@as(usize, 3), TimedProbe.releases);
+    try std.testing.expectError(error.MetalCommandFailed, owner.check());
+}
+
+test "Metal zero and indefinite waits need no clock and missing notifications retain ownership" {
+    for ([_]configuration.QueueWaitMode{ .process_events, .wait_any }) |mode| {
+        TimedProbe.reset();
+        TimedProbe.fail_clock = true;
+        var owner = Completion{};
+        defer owner.pending.deinit(std.testing.allocator);
+        var command = TimedProbe.Command{ .ready_at = 3 };
+        try owner.reserve(std.testing.allocator);
+        owner.retainSubmitted(&command);
+        var policy = TimedProbe.policy;
+        policy.timeoutNs = 0;
+        try std.testing.expectError(error.MetalWaitTimeout, owner.retireWithClock(TimedProbe, TimedProbe.Timer, policy, mode));
+        try std.testing.expectEqual(@as(usize, 0), TimedProbe.notifications);
+        try std.testing.expectEqual(@as(u64, 0), TimedProbe.now);
+        try std.testing.expectEqual(@as(usize, 0), TimedProbe.releases);
+        policy.timeoutNs = std.math.maxInt(u64);
+        if (mode == .wait_any) {
+            TimedProbe.fail_notification = true;
+            try std.testing.expectError(error.MetalCompletionUnknown, owner.retireWithClock(TimedProbe, TimedProbe.Timer, policy, mode));
+            try std.testing.expectEqual(@as(usize, 1), owner.pending.items.len);
+            TimedProbe.fail_notification = false;
+        }
+        try owner.retireWithClock(TimedProbe, TimedProbe.Timer, policy, mode);
+        try owner.check();
+        try std.testing.expectEqual(@as(usize, 1), TimedProbe.releases);
+    }
+}
+
+test "Metal precommit notification failure neither transfers ownership nor bypasses allocation and reentry checks" {
+    const Native = struct {
+        var calls: usize = 0;
+        pub fn metal_bridge_command_buffer_prepare_wait(_: ?*anyopaque) c_int {
+            calls += 1;
+            return 0;
+        }
+    };
+    Native.calls = 0;
+    var owner = Completion{};
+    defer owner.pending.deinit(std.testing.allocator);
+    var command: u8 = 0;
+    var allocator = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
+    try std.testing.expectError(error.OutOfMemory, owner.prepare(allocator.allocator(), &command, Native));
+    try std.testing.expectEqual(@as(usize, 0), Native.calls);
+    try std.testing.expectError(error.MetalWaitPreparationFailed, owner.prepare(std.testing.allocator, &command, Native));
+    owner.retiring = true;
+    try std.testing.expectError(error.MetalCompletionUnknown, owner.prepare(std.testing.allocator, &command, Native));
+    try std.testing.expectEqual(@as(usize, 1), Native.calls);
+    try std.testing.expectEqual(@as(usize, 0), owner.pending.items.len);
 }

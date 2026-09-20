@@ -441,7 +441,7 @@ pub fn execute_buffer_write_bytes_iface(self: anytype, handle: u64, offset: u64,
     const result = execute_buffer_write_bytes(self, handle, offset, buffer_size, data) catch |err| {
         return .{
             .status = common_errors.map_error_status(err),
-            .status_message = self.write_status("{s}", .{common_errors.error_code(err)}),
+            .status_message = failureMessage(self, err),
             .dispatch_count = 0,
             .gpu_timestamp_attempted = false,
             .gpu_timestamp_valid = false,
@@ -460,8 +460,8 @@ pub fn set_upload_behavior(self: anytype, mode: webgpu.UploadBufferUsageMode, su
 }
 
 pub fn set_queue_wait_mode(self: anytype, mode: webgpu.QueueWaitMode) void {
-    if (self.queue_wait_mode == mode) return;
     self.queue_wait_mode = mode;
+    self.get_runtime().completion.wait_mode = mode;
 }
 
 pub fn set_queue_sync_mode(self: anytype, mode: webgpu.QueueSyncMode) void {

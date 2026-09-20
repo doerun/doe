@@ -44,6 +44,7 @@ test "Metal repair proof: timed out queue retains resources until a separate que
     var code: i64 = 0;
     try std.testing.expectEqual(@as(c_int, -1), bridge.metal_bridge_command_buffer_poll_result(command, &code));
     bridge.metal_bridge_command_buffer_encode_wait_event(command, event, 1);
+    try runtime.completion.prepare(runtime.allocator, command, bridge);
     bridge.metal_bridge_command_buffer_commit(command);
     runtime.completion.retainSubmitted(command);
     submitted = true;
@@ -54,12 +55,17 @@ test "Metal repair proof: timed out queue retains resources until a separate que
         return err;
     };
     try std.testing.expectError(error.MetalWaitTimeout, runtime.flush_queue());
+    runtime.completion.wait_mode = .wait_any;
+    try std.testing.expectError(error.MetalWaitTimeout, runtime.flush_queue());
+    runtime.completion.timeout_ns = 0;
+    try std.testing.expectError(error.MetalWaitTimeout, runtime.flush_queue());
     try std.testing.expectEqual(@as(usize, 1), runtime.completion.pending.items.len);
     try std.testing.expectEqual(@as(usize, 1), runtime.deferred_releases.items.len);
     try std.testing.expect(runtime.has_deferred_submissions);
     try std.testing.expectError(error.MetalWaitTimeout, runtime.completion.reserve(runtime.allocator));
     bridge.metal_bridge_command_buffer_commit(signal_command);
     signaled = true;
+    runtime.completion.timeout_ns = std.math.maxInt(u64);
     _ = try runtime.flush_queue();
     try runtime.completion.check();
     try std.testing.expectEqual(@as(usize, 0), runtime.completion.pending.items.len);
@@ -105,6 +111,7 @@ test "Metal repair proof: checked indirect arguments execute exact dimensions an
     try std.testing.expectEqual(@as(c_int, 1), bridge.metal_bridge_compute_encoder_dispatch_indirect_checked(encoder, program.pipeline, indirect, 4, &program.workgroup_size));
     bridge.metal_bridge_end_compute_encoding(encoder);
     encoding = false;
+    try runtime.completion.prepare(runtime.allocator, command, bridge);
     bridge.metal_bridge_command_buffer_commit(command);
     runtime.completion.retainSubmitted(command);
     submitted = true;

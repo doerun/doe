@@ -72,6 +72,12 @@ void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf);
 int metal_bridge_command_buffer_wait_result(MetalHandle cmd_buf, int64_t* error_code);
 // Nonblocking: the same terminal codes, 2 for submitted/pending, -1 for unknown.
 int metal_bridge_command_buffer_poll_result(MetalHandle cmd_buf, int64_t* error_code);
+// Caller serializes preparation with submission. Idempotent before commit;
+// returns 0 on failure, without taking the caller's command reference.
+int metal_bridge_command_buffer_prepare_wait(MetalHandle command);
+// Notification only: 1 signaled, 0 timed out, -1 missing notification/command.
+// Zero observes; UINT64_MAX waits indefinitely. Recheck native status afterward.
+int metal_bridge_command_buffer_wait_notification(MetalHandle command, uint64_t timeout_ns);
 void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf);
 // Keep an Objective-C object alive until this command buffer completes.
 int metal_bridge_command_buffer_retain_object_until_complete(

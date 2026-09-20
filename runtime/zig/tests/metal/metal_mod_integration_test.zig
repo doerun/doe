@@ -141,3 +141,32 @@ test "metal backend upload cadence and flush queue preserve execution result" {
     try std.testing.expect(second.status == .ok);
     try std.testing.expectEqual(@as(u64, 0), second.submit_wait_ns);
 }
+
+test "Metal queue port wait controls reach only their completion owner" {
+    const configuration = @import("../../src/contracts/runtime_configuration.zig");
+    var first = metal_mod.ZigMetalBackend{
+        .allocator = std.testing.allocator,
+        .runtime = .{ .allocator = std.testing.allocator },
+        .capability_set = .{},
+        .artifacts = .{ .allocator = std.testing.allocator },
+    };
+    var second = metal_mod.ZigMetalBackend{
+        .allocator = std.testing.allocator,
+        .runtime = .{ .allocator = std.testing.allocator },
+        .capability_set = .{},
+        .artifacts = .{ .allocator = std.testing.allocator },
+    };
+    const ports = first.asPorts("host_control_test", "test_policy_hash", false);
+    const original_timeout = second.get_runtime().completion.timeout_ns;
+    for ([_]configuration.QueueWaitMode{ .wait_any, .process_events }) |mode| {
+        ports.queue.setWaitMode(mode);
+        try std.testing.expectEqual(mode, first.queue_wait_mode);
+        try std.testing.expectEqual(mode, first.get_runtime().completion.wait_mode);
+        for ([_]u64{ 0, 7, std.math.maxInt(u64) }) |timeout| {
+            ports.queue.setWaitTimeoutNs(timeout);
+            try std.testing.expectEqual(timeout, first.get_runtime().completion.timeout_ns);
+            try std.testing.expectEqual(original_timeout, second.get_runtime().completion.timeout_ns);
+            try std.testing.expectEqual(configuration.QueueWaitMode.process_events, second.get_runtime().completion.wait_mode);
+        }
+    }
+}

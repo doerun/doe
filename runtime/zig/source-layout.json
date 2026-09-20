@@ -982,9 +982,9 @@
       },
       "src/backend/metal/backend_execute.zig": {
         "decision": "Keep",
-        "moduleSha256": "0fe3194860f65ab1e3533e03195b5f9033a32a61ffdbc371a48a619a48649137",
-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-metal-wait/2026-09-20"
+        "moduleSha256": "0ffca29d3e3cf05d30f4a6b9dd1d572c2a8ccc0e56da306f54afc0d2ccc98e3d",
+        "reason": "Own command-provider adaptation, operation accounting and diagnostics; queue wait controls delegate to the runtime completion owner.",
+        "reviewer": "codex-metal-notification/2026-09-20"
       },
       "src/backend/metal/metal_async_runtime.zig": {
         "decision": "Keep",
@@ -994,9 +994,9 @@
       },
       "src/backend/metal/metal_bridge_decls.zig": {
         "decision": "Keep",
-        "moduleSha256": "20995a16dcac96cdd0a159b8c716eaecb5e701c911ec004ea79cc481ac689668",
-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
-        "reviewer": "codex-texture-copy-regions/2026-09-07"
+        "moduleSha256": "9c757e3011d8d0d66059f33fe2f2aadb45f8255023be10ab48c339c6a5e7f198",
+        "reason": "Declare the private Metal C boundary; native notification, encoding, resource and copy semantics stay in the backend bridge and typed consumers.",
+        "reviewer": "codex-metal-notification/2026-09-20"
       },
       "src/backend/metal/metal_buffer_pool.zig": {
         "decision": "Keep",
@@ -1024,9 +1024,9 @@
       },
       "src/backend/metal/metal_dispatch_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "efe14a5a8fe766d0b63c505bc8289e70618358481db2161170f8c333792a9ca7",
+        "moduleSha256": "b6a4a18ff231ada1fbec755045c9628b449e154926251a20621a5b1563d00e64",
         "reason": "Own direct and indirect command dispatch admission, checked encoding, rollback, completion transfer and measured submission accounting.",
-        "reviewer": "codex-metal-checked-dispatch/2026-09-20"
+        "reviewer": "codex-metal-notification/2026-09-20"
       },
       "src/backend/metal/metal_external_texture.zig": {
         "decision": "Keep",
@@ -1042,15 +1042,15 @@
       },
       "src/backend/metal/metal_kernel_dispatch.zig": {
         "decision": "Keep",
-        "moduleSha256": "a2f4a30102c2c58ab4e40d9afd140405c6ddfb19d408d03451ef44c9b00e9746",
+        "moduleSha256": "5b4c0c4b1e854e20055b839855a661cb25e02acd739b7c3858364f21c53fefbd",
         "reason": "Consume compiler-owned entrypoint and binding metadata; validate buffer layouts and encode checked kernel work through the Metal adapter.",
-        "reviewer": "codex-metal-program-contract/2026-09-20"
+        "reviewer": "codex-metal-notification/2026-09-20"
       },
       "src/backend/metal/metal_native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "86d0f7781b8302c706cb891fbef524708ec452591e3326c1bbfe074a5ef6d112",
-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-architecture-refactor/2026-08-23"
+        "moduleSha256": "d08e4722ec0048c4d50e2136d73beff95ae5abb9623b43270f09090ba87e183b",
+        "reason": "Own command-runtime resource maps and lifecycle; delegate submission retirement to the completion owner before native resource destruction.",
+        "reviewer": "codex-metal-notification/2026-09-20"
       },
       "src/backend/metal/metal_pipeline_cache.zig": {
         "decision": "Keep",
@@ -1078,9 +1078,9 @@
       },
       "src/backend/metal/metal_runtime_queue_ops.zig": {
         "decision": "Keep",
-        "moduleSha256": "a59722937f97583257f324dea8a7ef0086fe194f87a4317fa8bae201d87803fe",
+        "moduleSha256": "af7af24aa0f470387219b41a80c4952d709f471e753d046e7b2cf84f47c8854f",
         "reason": "Own command submission, checked retirement and resource recycling; completion uncertainty cannot authorize reuse.",
-        "reviewer": "codex-metal-program-contract/2026-09-20"
+        "reviewer": "codex-metal-notification/2026-09-20"
       },
       "src/backend/metal/metal_runtime_render_ops.zig": {
         "decision": "Keep",
@@ -1096,9 +1096,9 @@
       },
       "src/backend/metal/metal_surface_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "89a2be23474b80f7233d0a479cfa8d34601028a60561e17852f214d315ac8090",
-        "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "b83fa808f6f415ec4122c44dd2c8f5aba48c5d937fe5b56189abc935b8d8f07e",
+        "reason": "Own command-provider surface state and native drawable references; prepare and transfer presentation submissions to the completion owner.",
+        "reviewer": "codex-metal-notification/2026-09-20"
       },
       "src/backend/metal/metal_upload.zig": {
         "decision": "Keep",
@@ -1108,9 +1108,9 @@
       },
       "src/backend/metal/mod.zig": {
         "decision": "Keep",
-        "moduleSha256": "541c756c5bd21493dcc338ad1c1589e30f006924f0c0f319a66cb234f9b846b7",
-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-common-audit/2026-09-19"
+        "moduleSha256": "ee12db009489808818f6a69febdfafa00584452ff3bbe6acad4cbd636a05968c",
+        "reason": "Compose the Metal command provider and capability ports; adapt existing queue controls without introducing another wait-policy owner.",
+        "reviewer": "codex-metal-notification/2026-09-20"
       },
       "src/backend/metal/render_state.zig": {
         "decision": "Keep",
@@ -4354,9 +4354,9 @@
       },
       "src/backend/metal/metal_completion.zig": {
         "decision": "Keep",
-        "moduleSha256": "f73b2afda2b7107374e29521dce45a760476c34990641e2caafd75c7af841c98",
-        "reason": "Own bounded operational batch retirement, retained timeout/unknown references, first native failure and separate blocking destruction.",
-        "reviewer": "codex-metal-wait/2026-09-20"
+        "moduleSha256": "b6b9d790552243a0da316233b45d78fd5ea8b09c0d83674ba860e8757aa83d3a",
+        "reason": "Own precommit notification admission, configured operational retirement, retained timeout/unknown references, first native failure and separate blocking destruction.",
+        "reviewer": "codex-metal-notification/2026-09-20"
       },
       "src/backend/metal/metal_wait_policy.zig": {
         "decision": "Keep",

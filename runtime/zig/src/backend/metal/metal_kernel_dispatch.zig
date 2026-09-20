@@ -262,7 +262,7 @@ pub fn run_kernel_dispatch_timed(
 }
 
 fn commitAndWait(runtime: anytype, cmd_buf: *anyopaque) !void {
-    runtime.completion.reserve(runtime.allocator) catch |err| {
+    runtime.completion.prepare(runtime.allocator, cmd_buf, bridge) catch |err| {
         metal_bridge_release(cmd_buf);
         return err;
     };

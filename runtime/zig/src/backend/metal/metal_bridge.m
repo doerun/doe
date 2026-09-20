@@ -616,6 +616,48 @@ int metal_bridge_command_buffer_poll_result(MetalHandle cmd_buf_h, int64_t* erro
     }
 }
 
+// The command and completion block own the semaphore independently. Neither
+// captures a Zig owner or stack frame that could expire on an operational timeout.
+static char command_wait_notification_key;
+
+int metal_bridge_command_buffer_prepare_wait(MetalHandle command_h) {
+    if (command_h == NULL) return 0;
+    id<MTLCommandBuffer> command = (__bridge id<MTLCommandBuffer>)command_h;
+    @try {
+        if (command.status >= MTLCommandBufferStatusCommitted) return 0;
+        if (objc_getAssociatedObject(command, &command_wait_notification_key) != nil) return 1;
+        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+        if (semaphore == nil) return 0;
+        objc_setAssociatedObject(command, &command_wait_notification_key,
+                                 semaphore, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        [command addCompletedHandler:^(id<MTLCommandBuffer> completed) {
+            (void)completed;
+            dispatch_semaphore_signal(semaphore);
+        }];
+        return 1;
+    } @catch (NSException* exception) {
+        (void)exception;
+        objc_setAssociatedObject(command, &command_wait_notification_key,
+                                 nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        return 0;
+    }
+}
+
+int metal_bridge_command_buffer_wait_notification(MetalHandle command_h, uint64_t timeout_ns) {
+    if (command_h == NULL) return -1;
+    id<MTLCommandBuffer> command = (__bridge id<MTLCommandBuffer>)command_h;
+    dispatch_semaphore_t semaphore = objc_getAssociatedObject(command, &command_wait_notification_key);
+    if (semaphore == nil) return -1;
+    const dispatch_time_t deadline = timeout_ns == UINT64_MAX
+        ? DISPATCH_TIME_FOREVER
+        : dispatch_time(DISPATCH_TIME_NOW, (int64_t)MIN(timeout_ns, (uint64_t)INT64_MAX));
+    if (dispatch_semaphore_wait(semaphore, deadline) != 0) return 0;
+    // Preserve the notification for another observer; only native status can
+    // authorize successful execution or retirement of the command reference.
+    dispatch_semaphore_signal(semaphore);
+    return 1;
+}
+
 void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf_h) {
     id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
     while ([cmd_buf status] < MTLCommandBufferStatusCompleted) {

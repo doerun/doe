@@ -344,8 +344,7 @@ fn set_queue_wait_mode(ctx: *anyopaque, mode: webgpu.QueueWaitMode) void {
 }
 
 fn set_webgpu_ffi_queue_wait_timeout_ns(ctx: *anyopaque, timeout_ns: u64) void {
-    _ = ctx;
-    _ = timeout_ns;
+    cast(ctx).get_runtime().completion.timeout_ns = timeout_ns;
 }
 
 fn set_queue_sync_mode(ctx: *anyopaque, mode: webgpu.QueueSyncMode) void {

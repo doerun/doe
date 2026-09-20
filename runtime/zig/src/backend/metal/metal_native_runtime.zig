@@ -477,7 +477,7 @@ test "non-Metal native acquisition failures leave the runtime safe to destroy" {
     try std.testing.expectEqual(@as(u32, 0), runtime.compute_buffers.count());
 }
 
-test "non-Metal unknown completion retains queue resources and remains observable" {
+test "non-Metal notification failure preserves unsubmitted and pending queue ownership" {
     if (builtin.os.tag == .macos) return error.SkipZigTest;
     var runtime = NativeMetalRuntime{ .allocator = std.testing.allocator, .has_device = true };
     defer runtime.deinit();
@@ -489,15 +489,15 @@ test "non-Metal unknown completion retains queue resources and remains observabl
     runtime.completion.retainSubmitted(&first);
     runtime.streaming_cmd_buf = &second;
     runtime.has_deferred_submissions = true;
-    // A non-Metal poll establishes no terminal GPU result.
-    try std.testing.expectError(error.MetalCompletionUnknown, runtime.flush_queue());
-    try std.testing.expect(runtime.streaming_cmd_buf == null);
+    // Unsupported hosts cannot register a real completion notification.
+    try std.testing.expectError(error.MetalWaitPreparationFailed, runtime.flush_queue());
+    try std.testing.expect(runtime.streaming_cmd_buf == @as(?*anyopaque, &second));
     try std.testing.expect(runtime.has_deferred_submissions);
-    try std.testing.expectEqual(@as(usize, 2), runtime.completion.pending.items.len);
+    try std.testing.expectEqual(@as(usize, 1), runtime.completion.pending.items.len);
     try std.testing.expectEqual(@as(usize, 1), runtime.deferred_releases.items.len);
     try std.testing.expectEqual(@as(?i64, null), runtime.completion.failure_code);
-    try std.testing.expectError(error.MetalCompletionUnknown, runtime.flush_queue());
-    try std.testing.expectError(error.MetalCompletionUnknown, runtime.execute_map_async(.{ .bytes = 4 }));
+    try std.testing.expectError(error.MetalWaitPreparationFailed, runtime.flush_queue());
+    try std.testing.expectError(error.MetalWaitPreparationFailed, runtime.execute_map_async(.{ .bytes = 4 }));
 }
 
 test "Metal queue cleanup preserves a previously observed terminal failure" {

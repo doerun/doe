@@ -92,6 +92,10 @@ fn prepare_dispatch_submission(runtime: anytype, queue_sync_mode: webgpu.QueueSy
 
 fn finalize_dispatch_submission(runtime: anytype, cmd_buf: *anyopaque, queue_sync_mode: webgpu.QueueSyncMode, comptime native: type) !u64 {
     const submit_start = common_timing.now_ns();
+    runtime.completion.prepare(runtime.allocator, cmd_buf, native) catch |err| {
+        native.metal_bridge_release(cmd_buf);
+        return err;
+    };
     if (queue_sync_mode == .deferred) {
         runtime.fence_value +%= 1;
         if (runtime.shared_event) |ev| {
@@ -114,7 +118,7 @@ const DispatchProbe = struct {
     var command: u8 = 0;
     var encoder: u8 = 0;
     var arguments: [DISPATCH_INDIRECT_ARGS_BYTES]u8 = @splat(0);
-    var failure: enum { none, command, encoder, encoding } = .none;
+    var failure: enum { none, command, encoder, encoding, preparation } = .none;
     var created: usize = 0;
     var ended: usize = 0;
     var released: usize = 0;
@@ -143,6 +147,10 @@ const DispatchProbe = struct {
     }
     pub fn metal_bridge_release(_: ?*anyopaque) void {
         released += 1;
+    }
+    pub fn metal_bridge_command_buffer_prepare_wait(_: ?*anyopaque) c_int {
+        std.testing.expectEqual(@as(usize, 0), committed) catch @panic("notification registered after commit");
+        return if (failure == .preparation) 0 else 1;
     }
     pub fn metal_bridge_command_buffer_commit(_: ?*anyopaque) void {
         std.testing.expectEqual(@as(usize, 1), ended) catch @panic("commit before encoder end");
@@ -259,5 +267,20 @@ test "Metal deferred dispatch transfers exactly one encoded command and preserve
         try std.testing.expectEqual(@as(u32, 1), metrics.dispatch_count);
         try std.testing.expectEqual(@as(u32, 1), metrics.submit_count);
         try std.testing.expectEqual(@as(u64, 0), metrics.submit_wait_ns);
+    }
+}
+
+test "Metal dispatch notification rejection releases unsubmitted direct and indirect commands" {
+    for ([_]DispatchMode{ .direct, .indirect }) |mode| {
+        for ([_]webgpu.QueueSyncMode{ .per_command, .deferred }) |sync| {
+            DispatchProbe.reset();
+            DispatchProbe.failure = .preparation;
+            var runtime = ProbeRuntime{};
+            defer runtime.deinit();
+            try std.testing.expectError(error.MetalWaitPreparationFailed, runDispatchWithBridge(&runtime, .{ 3, 4, 5 }, sync, mode, DispatchProbe));
+            try std.testing.expectEqual(@as(usize, 0), DispatchProbe.committed);
+            try std.testing.expectEqual(@as(usize, 1), DispatchProbe.released);
+            try std.testing.expectEqual(@as(usize, 0), runtime.completion.pending.items.len);
+        }
     }
 }

@@ -12,40 +12,23 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
-The [bounded Metal wait checkpoint](../../bench/out/maintenance/20260920-metal-bounded-wait/README.md)
-adds build-checked operational deadlines, native status polling and retained
-ownership on timeout or unavailable completion. The [wait contract](../metal-command-waits.md)
-separates retryable operational waits from blocking destruction. Reentrant
-teardown, native wait-mode mapping, remaining encoder errors and physical Metal
-qualification remain open. Continue those owners before the next never-examined
-telemetry-port scope; supporting edits confer no review credit.
+The [Metal notification checkpoint](../../bench/out/maintenance/20260920-metal-notification/README.md)
+integrates the external wait proposal with the current checked-dispatch runtime.
+Completion owns precommit notification admission, instance wait controls and one
+retirement budget. Polling preserves bounded sleeps; event waits recheck native
+status before retirement. The [wait contract](../metal-command-waits.md) records
+zero and indefinite call inputs, failure ownership and migration. Host gates
+remain distinct from Apple SDK and physical Metal qualification. Reentrant
+teardown, remaining void encoder boundaries and aggregate retention still need
+work; the next never-examined file is the telemetry port. Supporting edits confer
+no review credit.
 
-The [checked dispatch checkpoint](../../bench/out/maintenance/20260920-metal-checked-dispatch/README.md)
-extends explicit encoder rejection to direct and indirect Metal command dispatch.
-Unencoded commands are released without submission, while successful submissions
-retain their completion owner. Host acceptance remains separate from unavailable
-Apple SDK and physical Metal evidence. Bounded waiting, render/native encoder
-errors and corrected-package qualification remain open; the next never-examined
-queue scope remains the telemetry port.
-
-The [Metal program and completion checkpoint](../../bench/out/maintenance/20260920-metal-program-contract/README.md)
-continues checked retirement with an explicit unknown outcome and retained native
-references. Command kernels bind actual WGSL bytes, selected entrypoint and
-compiler identity; checked dispatch preserves binding groups, offsets and ranges.
-Its acceptance receipt separates host suites and the Linux executable from the
-unexecuted Apple SDK and physical Metal fixture. Bounded waiting, remaining void
-encoder paths, transactional surfaces and corrected-package qualification remain
-open. Supporting edits confer no automatic review credit; continue these owners
-before the next never-examined telemetry port.
-
-The [Metal completion checkpoint](../../bench/out/maintenance/20260920-zig-metal-completion/README.md)
-records the preceding continuation of the texture and resource reviews. Remaining
-boundaries are native encoder failure reporting, explicit wait/timeout policy,
-transactional surface state and physical Metal qualification. The command-runtime
-completion owner does not qualify the ordinary native callback path. Continue
-those owner-specific repairs; the next never-examined queue file is the telemetry
-port. Per-file verdicts and acceptance receipts remain in the checkpoint and
-append-only ledger.
+Earlier [bounded polling](../../bench/out/maintenance/20260920-metal-bounded-wait/README.md),
+[checked dispatch](../../bench/out/maintenance/20260920-metal-checked-dispatch/README.md),
+[program identity](../../bench/out/maintenance/20260920-metal-program-contract/README.md)
+and [completion ownership](../../bench/out/maintenance/20260920-zig-metal-completion/README.md)
+checkpoints retain their original receipts and evidence limits. They neither
+replace accepted packages nor qualify the ordinary native callback path.
 
 The [Metal texture-safety checkpoint](../../bench/out/maintenance/20260920-zig-metal-texture-safety/README.md)
 repairs format-aware upload/copy footprints, descriptor reuse and exact query

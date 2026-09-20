@@ -1,0 +1,90 @@
+Zig source architecture review signals:
+src/backend/vulkan/native_runtime.zig: 1003 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_render.zig: 981 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_resources.zig: 1069 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_upload.zig: 843 lines exceeds advisory review signal 800
+src/backend/vulkan/vulkan_surface.zig: 808 lines exceeds advisory review signal 800
+src/compiler/tsir/digest.zig: 999 lines exceeds advisory review signal 800
+src/compiler/tsir/emit_kernel_body.zig: 895 lines exceeds advisory review signal 800
+src/compiler/tsir/frontend.zig: 885 lines exceeds advisory review signal 800
+src/compiler/tsir/reference_extended_ops.zig: 841 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_exec_v1.zig: 989 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_compile_source.zig: 895 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_runtime.zig: 837 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_ir_walk.zig: 888 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_layout.zig: 911 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/msl/emit_msl_ir.zig: 981 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig: 839 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig: 1046 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/parser_expr.zig: 851 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/sema.zig: 806 lines exceeds advisory review signal 800
+src/compiler/wgsl/ir/ir_transform_robustness.zig: 984 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_proof_match.zig: 890 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_uniform_bounds.zig: 878 lines exceeds advisory review signal 800
+src/dropin/dropin_browser_shared_memory.zig: 806 lines exceeds advisory review signal 800
+src/native/compute/doe_compute_fast.zig: 1062 lines exceeds advisory review signal 800
+src/native/queue/doe_queue_submit_metal.zig: 837 lines exceeds advisory review signal 800
+src/native/resource/doe_texture_sampler_native.zig: 829 lines exceeds advisory review signal 800
+src/native/shader/doe_shader_native.zig: 956 lines exceeds advisory review signal 800
+src/native/vulkan/vulkan_compute_native.zig: 835 lines exceeds advisory review signal 800
+src/runtime/trace/trace.zig: 879 lines exceeds advisory review signal 800
+src/spatial/csl/csl_host_plan_tool.zig: 828 lines exceeds advisory review signal 800
+test
++- run test failure
+expected error.MetalCompletionUnknown, found error.MetalCommandFailed
+thread 3212615 panic: reentrant submission accepted
+/home/x/deco/doe/runtime/zig/src/backend/metal/metal_completion.zig:57:40: 0x1509158 in check (test_suite.zig)
+        if (self.failure_code != null) return error.MetalCommandFailed;
+                                       ^
+/home/x/deco/doe/runtime/zig/src/backend/metal/metal_completion.zig:69:9: 0x1500e3c in reserve (test_suite.zig)
+        try self.check();
+        ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/testing.zig:64:13: 0x1528389 in expectError__anon_70642 (std.zig)
+            return error.TestUnexpectedError;
+            ^
+/home/x/deco/doe/runtime/zig/src/backend/metal/metal_completion.zig:367:111: 0x15617bd in metal_bridge_command_buffer_poll_result (test_suite.zig)
+            std.testing.expectError(error.MetalCompletionUnknown, owner.reserve(std.testing.allocator)) catch @panic("reentrant submission accepted");
+                                                                                                              ^
+/home/x/deco/doe/runtime/zig/src/backend/metal/metal_completion.zig:19:55: 0x156136d in readResult__anon_72055 (test_suite.zig)
+        native.metal_bridge_command_buffer_poll_result(command, &code);
+                                                      ^
+/home/x/deco/doe/runtime/zig/src/backend/metal/metal_completion.zig:166:38: 0x1560b83 in retirePass__anon_72038 (test_suite.zig)
+            const result = readResult(command, native, blocking);
+                                     ^
+/home/x/deco/doe/runtime/zig/src/backend/metal/metal_completion.zig:122:44: 0x15604e1 in retireWithClock__anon_72005 (test_suite.zig)
+            const unknown = self.retirePass(native, false);
+                                           ^
+/home/x/deco/doe/runtime/zig/src/backend/metal/metal_completion.zig:451:78: 0x15658c6 in test.Metal notification waits share a deadline and retain error code zero across late completion (test_suite.zig)
+    try std.testing.expectError(error.MetalWaitTimeout, owner.retireWithClock(TimedProbe, TimedProbe.Timer, TimedProbe.policy, .wait_any));
+                                                                             ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/compiler/test_runner.zig:130:29: 0x1219fa3 in mainServer (test_runner.zig)
+                test_fn.func() catch |err| switch (err) {
+                            ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/compiler/test_runner.zig:64:26: 0x121b226 in main (test_runner.zig)
+        return mainServer() catch @panic("internal test runner failure");
+                         ^
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/start.zig:618:22: 0x1215855 in main (std.zig)
+            root.main();
+                     ^
+../sysdeps/nptl/libc_start_call_main.h:59:16: 0x7579a982a600 in __libc_start_call_main (../sysdeps/x86/libc-start.c)
+../csu/libc-start.c:360:3: 0x7579a982a717 in __libc_start_main_impl (../sysdeps/x86/libc-start.c)
+???:?:?: 0x18ef504 in ??? (???)
+???:?:?: 0x0 in ??? (???)
+error: while executing test 'src.backend.metal.metal_completion.test.Metal notification waits share a deadline and retain error code zero across late completion', the following command terminated with signal 6 (expected exited with code 0):
+./.zig-cache/o/52406aba72ff7eb0caad5726bc1e9ce5/test --cache-dir=./.zig-cache --seed=0x90fcf72a --listen=-
+
+Build Summary: 9/11 steps succeeded; 1 failed; 49/58 tests passed; 9 skipped
+test transitive failure
++- zig fmt --check success
++- run python3 success 861ms MaxRSS:13M
++- run python3 success 529ms MaxRSS:27M
++- run python3 success 40ms MaxRSS:21M
++- run python3 success 58ms MaxRSS:20M
++- run python3 success 47ms MaxRSS:21M
++- run python3 success 86ms MaxRSS:12M
++- run test failure
+   +- compile test Debug native success 986ms MaxRSS:236M
+      +- options cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/a514c9ffaa956a19e0be5987994f5ac1/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x90fcf72a -Z14241618cd74781b test -Dtest-filter=Metal  --summary all
