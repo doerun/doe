@@ -75,6 +75,8 @@ const test_src_backend_metal_metal_native_runtime_zig_2247fa05 = @import("src/ba
 const test_src_backend_metal_metal_surface_runtime_zig_5c72526c = @import("src/backend/metal/metal_surface_runtime.zig");
 const test_src_backend_metal_metal_deferred_release_zig_97de8e23 = @import("src/backend/metal/metal_deferred_release.zig");
 const test_tests_metal_metal_repair_proof_test_zig_9a36dcaa = @import("tests/metal/metal_repair_proof_test.zig");
+const test_src_backend_metal_metal_texture_resources_zig_6db5e064 = @import("src/backend/metal/metal_texture_resources.zig");
+const test_src_backend_metal_metal_resource_commands_zig_cd51753c = @import("src/backend/metal/metal_resource_commands.zig");
 
 comptime {
     _ = test_tests_backend_common_artifact_meta_test_zig_80b3c4bd;
@@ -151,4 +153,6 @@ comptime {
     _ = test_src_backend_metal_metal_surface_runtime_zig_5c72526c;
     _ = test_src_backend_metal_metal_deferred_release_zig_97de8e23;
     _ = test_tests_metal_metal_repair_proof_test_zig_9a36dcaa;
+    _ = test_src_backend_metal_metal_texture_resources_zig_6db5e064;
+    _ = test_src_backend_metal_metal_resource_commands_zig_cd51753c;
 }

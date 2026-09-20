@@ -202,7 +202,7 @@ static MTLPixelFormat wgpu_to_mtl_format(uint32_t wgpu) {
         case 0x0000002C: return MTLPixelFormatStencil8;
         case 0x0000002D: return MTLPixelFormatDepth16Unorm;
         case 0x0000002E: return MTLPixelFormatDepth32Float;   // depth24plus
-        case 0x0000002F: return MTLPixelFormatDepth32Float;   // depth24plus-stencil8
+        case 0x0000002F: return MTLPixelFormatDepth32Float_Stencil8; // depth24plus-stencil8
         case 0x00000030: return MTLPixelFormatDepth32Float;
         case 0x00000031: return MTLPixelFormatDepth32Float_Stencil8;
         // BC compressed formats (texture-compression-bc feature)
@@ -738,25 +738,15 @@ void metal_bridge_blit_encoder_copy_texture_to_texture(
     id<MTLBlitCommandEncoder> encoder = (__bridge id<MTLBlitCommandEncoder>)encoder_h;
     id<MTLTexture> src = (__bridge id<MTLTexture>)src_texture_h;
     id<MTLTexture> dst = (__bridge id<MTLTexture>)dst_texture_h;
-    MTLSize copy_size = MTLSizeMake(width, height, depth_or_array_layers);
-    SEL copy_sel = @selector(copyFromTexture:sourceSlice:sourceLevel:sourceOrigin:sourceSize:toTexture:destinationSlice:destinationLevel:destinationOrigin:);
-    typedef void (*CopyTextureToTextureFn)(id, SEL, id<MTLTexture>, NSUInteger, NSUInteger, MTLOrigin, MTLSize, id<MTLTexture>, NSUInteger, NSUInteger, MTLOrigin);
-    static CopyTextureToTextureFn copy_fn = NULL;
-    if (copy_fn == NULL) {
-        copy_fn = (CopyTextureToTextureFn)(IMP)[(id)encoder methodForSelector:copy_sel];
+    const BOOL source_volume = src.textureType == MTLTextureType3D;
+    const BOOL destination_volume = dst.textureType == MTLTextureType3D;
+    const MTLSize size = MTLSizeMake(width, height, 1);
+    for (NSUInteger layer = 0; layer < depth_or_array_layers; ++layer) {
+        [encoder copyFromTexture:src sourceSlice:source_volume ? 0 : layer
+                    sourceLevel:src_mip_level sourceOrigin:MTLOriginMake(0, 0, source_volume ? layer : 0)
+                     sourceSize:size toTexture:dst destinationSlice:destination_volume ? 0 : layer
+               destinationLevel:dst_mip_level destinationOrigin:MTLOriginMake(0, 0, destination_volume ? layer : 0)];
     }
-    copy_fn(
-        encoder,
-        copy_sel,
-        src,
-        0,
-        (NSUInteger)src_mip_level,
-        MTLOriginMake(0, 0, 0),
-        copy_size,
-        dst,
-        0,
-        (NSUInteger)dst_mip_level,
-        MTLOriginMake(0, 0, 0));
 }
 
 void metal_bridge_end_blit_encoding(MetalHandle encoder_h) {
@@ -1907,7 +1897,10 @@ MetalHandle metal_bridge_device_new_texture(
     desc.sampleCount      = sample_count > 1 ? sample_count : 1;
 
     // dimension: 3 = WGPUTextureDimension_3D; 2D-array when layers > 1 and dimension != 3.
-    if (dimension == 3) {
+    if (dimension == WGPUTextureDimension_1D) {
+        desc.textureType = MTLTextureType1D;
+        desc.depth = 1;
+    } else if (dimension == WGPUTextureDimension_3D) {
         desc.textureType = MTLTextureType3D;
         desc.depth       = layers;
     } else if (desc.sampleCount > 1) {
@@ -1922,7 +1915,6 @@ MetalHandle metal_bridge_device_new_texture(
     }
 
     MTLTextureUsage mtl_usage = MTLTextureUsageShaderRead;
-    if (usage & 0x02) mtl_usage |= MTLTextureUsageShaderWrite; // CopyDst
     if (usage & 0x08) mtl_usage |= MTLTextureUsageShaderWrite; // StorageBinding
     if (usage & 0x10) mtl_usage |= MTLTextureUsageRenderTarget; // RenderAttachment
     desc.usage       = mtl_usage;

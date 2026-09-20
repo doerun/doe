@@ -115,7 +115,7 @@ pub const NativeMetalRuntime = struct {
     compute_buffers: std.AutoHashMapUnmanaged(u64, ?*anyopaque) = .{},
     dispatch_indirect_args_buffer: ?*anyopaque = null,
 
-    textures: std.AutoHashMapUnmanaged(u64, ?*anyopaque) = .{},
+    textures: @import("metal_texture_resources.zig").Map = .{},
 
     samplers: std.AutoHashMapUnmanaged(u64, ?*anyopaque) = .{},
     surfaces: std.AutoHashMapUnmanaged(u64, surface_runtime.SurfaceState) = .{},
@@ -475,7 +475,7 @@ test "non-Metal native acquisition failures leave the runtime safe to destroy" {
         .bytes = 8,
     }, .per_command));
     try std.testing.expectError(error.InvalidState, runtime.texture_write(.{
-        .texture = .{ .handle = 3 },
+        .texture = .{ .handle = 3, .format = @import("../../contracts/model/model_texture_value_types.zig").WGPUTextureFormat_RGBA8Unorm },
         .data = &.{},
     }));
     try std.testing.expectEqual(@as(u32, 0), runtime.textures.count());

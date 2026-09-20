@@ -459,6 +459,14 @@
         {
           "path": "tests/metal/metal_repair_proof_test.zig",
           "kind": "backend"
+        },
+        {
+          "path": "src/backend/metal/metal_texture_resources.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_resource_commands.zig",
+          "kind": "inline"
         }
       ]
     },
@@ -763,6 +771,14 @@
         {
           "path": "tests/metal/metal_repair_proof_test.zig",
           "kind": "backend"
+        },
+        {
+          "path": "src/backend/metal/metal_texture_resources.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_resource_commands.zig",
+          "kind": "inline"
         }
       ]
     },

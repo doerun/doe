@@ -12,6 +12,17 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [Metal texture-safety checkpoint](../../bench/out/maintenance/20260920-zig-metal-texture-safety/README.md)
+repairs format-aware upload/copy footprints, descriptor reuse and exact query
+expectations. Command textures have a named metadata/reference owner; temporary
+copies allocate the padded footprint and CPU replacement retires earlier work.
+Host acceptance and a failing predecessor reproduction are retained separately
+from the physical Metal fixture, which is unexecuted on this Linux host. Native
+completion/error propagation remains open; the spatial-port examination does not
+qualify accelerator execution. Continue checked completion before the next broad
+batch; the next never-examined file is the surface port. Supporting bridge and
+cleanup edits grant no automatic review credit or release qualification.
+
 The [sampler and resource-port follow-up](../../bench/out/maintenance/20260920-zig-metal-sampler-resource/README.md)
 consolidates open Metal findings by responsible owner. Canonical sampler
 translation, comparison identity and call-local descriptor ownership are repaired

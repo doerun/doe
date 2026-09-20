@@ -1,20 +1,13 @@
-// metal_resource_commands.zig — Texture and sampler lifecycle commands.
-// Sharded from metal_native_runtime.zig to stay under the line-limit policy.
-//
-// Performance: sampler create/destroy uses a descriptor cache to avoid
-// redundant MTLSamplerState allocations. Texture and uncached sampler
-// destroys go through the deferred release pool, which batch-drains at
-// command buffer boundaries instead of per-call CFRelease.
+//! Command sampler lifecycle and validated host texture uploads.
 
+const std = @import("std");
+const copy_contract = @import("../../contracts/texture_copy.zig");
+const formats = @import("../../contracts/texture_format.zig");
+const values = @import("../../contracts/model/model_texture_value_types.zig");
+const textures = @import("metal_texture_resources.zig");
 const model_render_types = @import("../../contracts/model/model_render_types.zig");
 const model_texture_types = @import("../../contracts/model/model_texture_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
-const metal_bridge_device_new_texture = bridge.metal_bridge_device_new_texture;
-const metal_bridge_texture_depth = bridge.metal_bridge_texture_depth;
-const metal_bridge_texture_height = bridge.metal_bridge_texture_height;
-const metal_bridge_texture_replace_region = bridge.metal_bridge_texture_replace_region;
-const metal_bridge_texture_sample_count = bridge.metal_bridge_texture_sample_count;
-const metal_bridge_texture_width = bridge.metal_bridge_texture_width;
 
 const model = struct {
     pub const SamplerCreateCommand = model_render_types.SamplerCreateCommand;
@@ -50,64 +43,131 @@ pub fn sampler_destroy(self: anytype, cmd: model.SamplerDestroyCommand) !void {
     }
 }
 
-pub fn texture_write(self: anytype, cmd: model.TextureWriteCommand) !void {
-    const t = &cmd.texture;
-    const mip_w = @max(t.width >> @intCast(t.mip_level), 1);
-    const mip_h = @max(t.height >> @intCast(t.mip_level), 1);
+const Write = struct {
+    descriptor: textures.Descriptor,
+    copy: copy_contract.Copy,
+    layout: ?copy_contract.Region,
 
-    const gop = try self.textures.getOrPut(self.allocator, t.handle);
-    if (!gop.found_existing) gop.value_ptr.* = null;
-    errdefer if (!gop.found_existing) {
-        _ = self.textures.remove(t.handle);
-    };
-    if (gop.value_ptr.* == null) {
-        const mip_count: u32 = if (t.mip_level > 0) t.mip_level + 1 else 1;
-        const tex = metal_bridge_device_new_texture(
-            self.device,
-            t.width,
-            t.height,
-            t.depth_or_array_layers,
-            mip_count,
-            t.sample_count,
-            t.format,
-            @intCast(t.usage),
-            t.dimension,
-        ) orelse return error.InvalidState;
-        if (gop.found_existing and gop.value_ptr.* != null) {
-            self.deferred_pool.enqueue(gop.value_ptr.*);
+    fn init(map: *const textures.Map, cmd: model.TextureWriteCommand) !Write {
+        const descriptor = try textures.admit(map, cmd.texture, values.WGPUTextureUsage_CopyDst);
+        const region = descriptor.region(cmd.texture);
+        // Empty payload is the existing declaration-only command, not a zero-byte upload.
+        if (cmd.data.len == 0) {
+            if (cmd.texture.offset != 0) return error.TextureCopyRange;
+            return .{ .descriptor = descriptor, .copy = region, .layout = null };
         }
-        gop.value_ptr.* = tex;
+        // replaceRegion cannot upload separately selected depth/stencil planes.
+        if (formats.isDepthStencilFormat(descriptor.texture.format)) return error.UnsupportedFeature;
+        return .{ .descriptor = descriptor, .copy = region, .layout = try copy_contract.validate(cmd.data.len, descriptor.texture, region, .buffer_to_texture, .native) };
     }
+};
 
-    if (cmd.data.len > 0) {
-        const rows = if (t.rows_per_image > 0) t.rows_per_image else mip_h;
-        const bytes_per_image: u32 = rows * t.bytes_per_row;
-        metal_bridge_texture_replace_region(
-            gop.value_ptr.*,
-            mip_w,
-            mip_h,
-            t.depth_or_array_layers,
-            cmd.data.ptr,
-            t.bytes_per_row,
-            bytes_per_image,
-            t.mip_level,
-        );
+pub fn texture_write(self: anytype, cmd: model.TextureWriteCommand) !void {
+    return writeWithBridge(self, cmd, bridge);
+}
+
+fn writeWithBridge(self: anytype, cmd: model.TextureWriteCommand, comptime native: type) !void {
+    const write = try Write.init(&self.textures, cmd);
+    // CPU replacement must not overtake earlier queued GPU reads or writes.
+    if (write.layout != null) _ = try self.flush_queue();
+    const texture = try textures.ensure(&self.textures, self.allocator, self.device, cmd.texture.handle, write.descriptor);
+    const layout = write.layout orelse return;
+    const copy = write.copy;
+    const volume = write.descriptor.texture.dimension == values.WGPUTextureDimension_3D;
+    const image_stride = @as(u64, layout.pitch) * layout.image_rows;
+    const image_count = if (volume) 1 else copy.depth_or_layers;
+    for (0..image_count) |layer| {
+        const source_offset: usize = @intCast(copy.offset + image_stride * layer);
+        if (native.metal_bridge_texture_write_region(texture, cmd.data[source_offset..].ptr, layout.pitch, layout.image_rows, 0, 0, 0, copy.mip, @intCast(layer), copy.width, copy.height, if (volume) copy.depth_or_layers else 1) == 0) return error.InvalidState;
     }
 }
 
 pub fn texture_query(self: anytype, cmd: model.TextureQueryCommand) !void {
-    const tex = self.textures.get(cmd.handle) orelse return error.InvalidState;
-    if (cmd.expected_width) |w| if (metal_bridge_texture_width(tex) != w) return error.InvalidState;
-    if (cmd.expected_height) |h| if (metal_bridge_texture_height(tex) != h) return error.InvalidState;
-    if (cmd.expected_depth_or_array_layers) |d| {
-        if (d != 1 and metal_bridge_texture_depth(tex) != d) return error.InvalidState;
-    }
-    if (cmd.expected_sample_count) |sc| if (metal_bridge_texture_sample_count(tex) != sc) return error.InvalidState;
+    const texture = self.textures.get(cmd.handle) orelse return error.InvalidState;
+    try texture.descriptor.checkQuery(cmd);
 }
 
 pub fn texture_destroy(self: anytype, cmd: model.TextureDestroyCommand) !void {
     _ = try self.flush_queue();
     if (self.textures.fetchRemove(cmd.handle)) |e| {
-        self.deferred_pool.enqueue(e.value);
+        self.deferred_pool.enqueue(e.value.handle);
     }
+}
+
+test "Metal texture writes validate last byte, array padding and volume mip extents" {
+    const map: textures.Map = .{};
+    var bytes: [156]u8 = undefined;
+    var cmd = model.TextureWriteCommand{ .texture = .{ .handle = 1, .width = 4, .height = 4, .depth_or_array_layers = 2, .mip_level = 1, .format = values.WGPUTextureFormat_RGBA8Unorm, .bytes_per_row = 32, .rows_per_image = 3, .offset = 20 }, .data = &bytes };
+    const write = try Write.init(&map, cmd);
+    try std.testing.expectEqual(@as(u64, 136), write.layout.?.required_bytes);
+    cmd.data = bytes[0..155];
+    try std.testing.expectError(error.TextureCopyRange, Write.init(&map, cmd));
+    cmd.data = &bytes;
+    cmd.texture.dimension = values.WGPUTextureDimension_3D;
+    const volume = try Write.init(&map, cmd);
+    try std.testing.expectEqual(@as(u32, 1), volume.copy.depth_or_layers);
+    cmd.texture.mip_level = 32;
+    try std.testing.expectError(error.InvalidArgument, Write.init(&map, cmd));
+    cmd.texture.mip_level = 1;
+    cmd.texture.bytes_per_row = 4;
+    try std.testing.expectError(error.TextureCopyLayout, Write.init(&map, cmd));
+    cmd.texture.bytes_per_row = 32;
+    cmd.texture.rows_per_image = 1;
+    try std.testing.expectError(error.TextureCopyLayout, Write.init(&map, cmd));
+}
+
+test "Metal texture writes reject before side effects and retire before writing each array layer" {
+    const Probe = struct {
+        var retired = false;
+        var writes: usize = 0;
+        var fail_write = false;
+        var output: [32]u8 = undefined;
+        pub fn metal_bridge_texture_write_region(_: ?*anyopaque, source: *const anyopaque, pitch: u32, _: u32, _: u32, _: u32, _: u32, _: u32, layer: u32, width: u32, height: u32, depth: u32) c_int {
+            std.testing.expect(retired and width == 2 and height == 2 and depth == 1) catch return 0;
+            if (fail_write) return 0;
+            const bytes: [*]const u8 = @ptrCast(source);
+            for (0..2) |row| @memcpy(output[layer * 16 + row * 8 ..][0..8], bytes[row * pitch ..][0..8]);
+            writes += 1;
+            return 1;
+        }
+    };
+    const Owner = struct {
+        textures: textures.Map = .{},
+        allocator: std.mem.Allocator = std.testing.allocator,
+        device: ?*anyopaque = null,
+        fail_wait: bool = false,
+        pub fn flush_queue(self: *@This()) !u64 {
+            if (self.fail_wait) return error.DeviceLost;
+            Probe.retired = true;
+            return 0;
+        }
+    };
+    Probe.retired = false;
+    Probe.writes = 0;
+    Probe.fail_write = false;
+    @memset(&Probe.output, 0);
+    var owner = Owner{};
+    defer owner.textures.deinit(owner.allocator);
+    var token: u8 = 0;
+    var bytes = [_]u8{255} ** 60;
+    @memset(bytes[4..12], 17);
+    @memset(bytes[16..24], 18);
+    @memset(bytes[40..48], 83);
+    @memset(bytes[52..60], 84);
+    var cmd = model.TextureWriteCommand{ .texture = .{ .handle = 1, .width = 2, .height = 2, .depth_or_array_layers = 2, .format = values.WGPUTextureFormat_RGBA8Unorm, .offset = 4, .bytes_per_row = 12, .rows_per_image = 3 }, .data = bytes[0..59] };
+    const descriptor = try textures.Descriptor.init(cmd.texture, values.WGPUTextureUsage_CopyDst);
+    try owner.textures.put(owner.allocator, 1, .{ .handle = &token, .descriptor = descriptor });
+    try std.testing.expectError(error.TextureCopyRange, writeWithBridge(&owner, cmd, Probe));
+    try std.testing.expect(!Probe.retired and Probe.writes == 0);
+    cmd.data = &bytes;
+    owner.fail_wait = true;
+    try std.testing.expectError(error.DeviceLost, writeWithBridge(&owner, cmd, Probe));
+    try std.testing.expect(!Probe.retired and Probe.writes == 0);
+    owner.fail_wait = false;
+    try writeWithBridge(&owner, cmd, Probe);
+    const expected = [_]u8{17} ** 8 ++ [_]u8{18} ** 8 ++ [_]u8{83} ** 8 ++ [_]u8{84} ** 8;
+    try std.testing.expectEqualSlices(u8, &expected, &Probe.output);
+    try std.testing.expectEqual(@as(usize, 2), Probe.writes);
+    Probe.fail_write = true;
+    try std.testing.expectError(error.InvalidState, writeWithBridge(&owner, cmd, Probe));
 }

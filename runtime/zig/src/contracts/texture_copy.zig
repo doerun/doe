@@ -40,31 +40,19 @@ pub const Region = struct {
     image_rows: u32,
     row_length: u32,
     image_height: u32,
+    /// Bytes touched after copy.offset, excluding trailing row/image padding.
+    required_bytes: u64,
 };
 
 pub fn validate(buffer_size: u64, texture: Texture, copy: Copy, direction: Direction, alignment: Alignment) Error!Region {
-    if (copy.mip >= texture.mip_levels or copy.mip >= @bitSizeOf(u32) or texture.samples != 1)
-        return error.TextureCopyRange;
-    const shift: u5 = @intCast(copy.mip);
-    const is_3d = texture.dimension == values.WGPUTextureDimension_3D;
+    const extent = try validateExtent(texture, copy, alignment);
     const block = layout.copy_block_extent(texture.format);
-    var extent = [3]u32{ @max(texture.width >> shift, 1), @max(texture.height >> shift, 1), if (is_3d) @max(texture.layers >> shift, 1) else texture.layers };
-    const virtual_extent = extent;
-    extent[0] = std.math.cast(u32, (std.math.divCeil(u64, extent[0], block[0]) catch unreachable) * block[0]) orelse return error.TextureCopyRange;
-    extent[1] = std.math.cast(u32, (std.math.divCeil(u64, extent[1], block[1]) catch unreachable) * block[1]) orelse return error.TextureCopyRange;
-    const size = [3]u32{ copy.width, copy.height, copy.depth_or_layers };
-    for (copy.origin, size, extent) |origin, count, bound| {
-        if (origin > bound or count > bound - origin or origin > std.math.maxInt(i32)) return error.TextureCopyRange;
-    }
     const aspect = try resolveAspect(texture.format, copy.aspect, direction);
     const bytes = if (aspect == .stencil) 1 else if (aspect == .depth and texture.format == values.WGPUTextureFormat_Depth32FloatStencil8) 4 else layout.bytes_per_pixel(texture.format) catch return error.TextureCopyUnsupported;
     const depth_stencil = formats.isDepthStencilFormat(texture.format);
     if (depth_stencil and (copy.width != extent[0] or copy.height != extent[1])) return error.TextureCopyRange;
     const offset_alignment = if (depth_stencil) DEPTH_STENCIL_OFFSET_ALIGNMENT else bytes;
-    if (copy.origin[0] % block[0] != 0 or copy.origin[1] % block[1] != 0 or
-        (copy.width % block[0] != 0 and (alignment == .webgpu or copy.width != virtual_extent[0] -| copy.origin[0])) or
-        (copy.height % block[1] != 0 and (alignment == .webgpu or copy.height != virtual_extent[1] -| copy.origin[1])) or
-        copy.offset % offset_alignment != 0) return error.TextureCopyLayout;
+    if (copy.offset % offset_alignment != 0) return error.TextureCopyLayout;
     const columns = std.math.divCeil(u64, copy.width, block[0]) catch unreachable;
     const rows = std.math.divCeil(u64, copy.height, block[1]) catch unreachable;
     const row_bytes = columns * bytes;
@@ -90,11 +78,44 @@ pub fn validate(buffer_size: u64, texture: Texture, copy: Copy, direction: Direc
     if (copy.offset > buffer_size or required > buffer_size - copy.offset) return error.TextureCopyRange;
     return .{
         .aspect = aspect,
+        .required_bytes = required,
         .pitch = std.math.cast(u32, pitch) orelse return error.TextureCopyRange,
         .image_rows = std.math.cast(u32, image_rows) orelse return error.TextureCopyRange,
         .row_length = std.math.cast(u32, (pitch / bytes) * block[0]) orelse return error.TextureCopyRange,
         .image_height = std.math.cast(u32, image_rows * block[1]) orelse return error.TextureCopyRange,
     };
+}
+
+fn validateExtent(texture: Texture, copy: Copy, alignment: Alignment) Error![3]u32 {
+    if (copy.mip >= texture.mip_levels or copy.mip >= @bitSizeOf(u32) or texture.samples != 1)
+        return error.TextureCopyRange;
+    const shift: u5 = @intCast(copy.mip);
+    const is_3d = texture.dimension == values.WGPUTextureDimension_3D;
+    const block = layout.copy_block_extent(texture.format);
+    var extent = [3]u32{ @max(texture.width >> shift, 1), @max(texture.height >> shift, 1), if (is_3d) @max(texture.layers >> shift, 1) else texture.layers };
+    const virtual_extent = extent;
+    extent[0] = std.math.cast(u32, (std.math.divCeil(u64, extent[0], block[0]) catch unreachable) * block[0]) orelse return error.TextureCopyRange;
+    extent[1] = std.math.cast(u32, (std.math.divCeil(u64, extent[1], block[1]) catch unreachable) * block[1]) orelse return error.TextureCopyRange;
+    const size = [3]u32{ copy.width, copy.height, copy.depth_or_layers };
+    for (copy.origin, size, extent) |origin, count, bound| {
+        if (origin > bound or count > bound - origin or origin > std.math.maxInt(i32)) return error.TextureCopyRange;
+    }
+    if (copy.origin[0] % block[0] != 0 or copy.origin[1] % block[1] != 0 or
+        (copy.width % block[0] != 0 and (alignment == .webgpu or copy.width != virtual_extent[0] -| copy.origin[0])) or
+        (copy.height % block[1] != 0 and (alignment == .webgpu or copy.height != virtual_extent[1] -| copy.origin[1]))) return error.TextureCopyLayout;
+    return extent;
+}
+
+/// Texture copies preserve complete aspects and an identical selected extent.
+pub fn validateTextureToTexture(source: Texture, source_copy: Copy, destination: Texture, destination_copy: Copy) Error!void {
+    _ = layout.bytes_per_pixel(source.format) catch return error.TextureCopyUnsupported;
+    _ = try validateExtent(source, source_copy, .native);
+    _ = try validateExtent(destination, destination_copy, .native);
+    if (source.format != destination.format) return error.TextureCopyUnsupported;
+    if (source_copy.width != destination_copy.width or source_copy.height != destination_copy.height or source_copy.depth_or_layers != destination_copy.depth_or_layers) return error.TextureCopyRange;
+    for ([_]u32{ source_copy.aspect, destination_copy.aspect }) |aspect| {
+        if (aspect != values.WGPUTextureAspect_Undefined and aspect != values.WGPUTextureAspect_All) return error.TextureCopyAspect;
+    }
 }
 
 fn resolveAspect(format: u32, requested: u32, direction: Direction) Error!Aspect {
@@ -159,4 +180,30 @@ test "strict compressed copies use physical mip bounds and empty copies retain s
     try std.testing.expectError(error.TextureCopyLayout, validate(1024, texture, copy, .texture_to_buffer, .webgpu));
     copy.bytes_per_row = STRIDE_UNDEFINED;
     try std.testing.expectError(error.TextureCopyLayout, validate(1024, texture, copy, .texture_to_buffer, .webgpu));
+}
+
+test "texture copy footprints distinguish last access from trailing padding and retain overflow checks" {
+    var texture = Texture{ .width = 8, .height = 8, .layers = 2, .mip_levels = 4, .samples = 1, .dimension = values.WGPUTextureDimension_2D, .format = values.WGPUTextureFormat_BC1RGBAUnorm };
+    var copy = Copy{ .offset = 8, .bytes_per_row = 32, .rows_per_image = 3, .mip = 0, .width = 8, .height = 8, .depth_or_layers = 2 };
+    const result = try validate(152, texture, copy, .texture_to_buffer, .native);
+    try std.testing.expectEqual(@as(u64, 144), result.required_bytes);
+    try std.testing.expectError(error.TextureCopyRange, validate(151, texture, copy, .texture_to_buffer, .native));
+    texture.format = values.WGPUTextureFormat_R8Unorm;
+    texture.layers = std.math.maxInt(u32);
+    copy.bytes_per_row = std.math.maxInt(u32) - 1;
+    copy.rows_per_image = std.math.maxInt(u32) - 1;
+    copy.depth_or_layers = std.math.maxInt(u32);
+    try std.testing.expectError(error.TextureCopyRange, validate(std.math.maxInt(u64), texture, copy, .texture_to_buffer, .native));
+}
+
+test "direct texture copies preserve full depth stencil aspects without buffer upload restrictions" {
+    const texture = Texture{ .width = 4, .height = 4, .layers = 1, .mip_levels = 1, .samples = 1, .dimension = values.WGPUTextureDimension_2D, .format = values.WGPUTextureFormat_Depth32FloatStencil8 };
+    const copy = Copy{ .offset = 0, .bytes_per_row = 0, .rows_per_image = 0, .mip = 0, .width = 4, .height = 4, .depth_or_layers = 1 };
+    try validateTextureToTexture(texture, copy, texture, copy);
+    var invalid = copy;
+    invalid.aspect = values.WGPUTextureAspect_StencilOnly;
+    try std.testing.expectError(error.TextureCopyAspect, validateTextureToTexture(texture, copy, texture, invalid));
+    invalid = copy;
+    invalid.mip = 32;
+    try std.testing.expectError(error.TextureCopyRange, validateTextureToTexture(texture, copy, texture, invalid));
 }

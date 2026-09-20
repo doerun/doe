@@ -47,7 +47,7 @@ pub fn release_compute_buffers(self: anytype) void {
 
 pub fn release_textures(self: anytype) void {
     var it = self.textures.valueIterator();
-    while (it.next()) |v| metal_bridge_release(v.*);
+    while (it.next()) |v| metal_bridge_release(v.handle);
     self.textures.deinit(self.allocator);
 }
 

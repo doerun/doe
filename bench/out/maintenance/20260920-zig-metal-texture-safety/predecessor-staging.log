@@ -1,0 +1,15 @@
+Base: 4eec28db09a06df1ff977e7cddfe7dfdb831e220
+Command: zig test /home/x/deco/doe/runtime/zig/.texture-predecessor-b49ytjqh.zig
+1/1 .texture-predecessor-b49ytjqh.test.predecessor must retain the padded texture footprint...expected 2560, found 256
+FAIL (TestExpectedEqual)
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/std/testing.zig:110:17: 0x102c753 in expectEqualInner__anon_635 (std.zig)
+                return error.TestExpectedEqual;
+                ^
+/home/x/deco/doe/runtime/zig/.texture-predecessor-b49ytjqh.zig:25:5: 0x102c862 in test.predecessor must retain the padded texture footprint (.texture-predecessor-b49ytjqh.zig)
+    try std.testing.expectEqual(@as(u64, 2560), try alignedStagingSize(cmd));
+    ^
+0 passed; 0 skipped; 1 failed.
+error: the following test command failed with exit code 1:
+/home/x/.cache/zig/o/817e9e8456509499d0d0b601862530fb/test --seed=0x6e0fbc7f
+
+exitCode=1

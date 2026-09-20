@@ -1006,13 +1006,13 @@
       },
       "src/backend/metal/metal_cleanup.zig": {
         "decision": "Keep",
-        "moduleSha256": "d11957b6b29e6beb306a13d1e538f9f986778a6dd9894f6bd6e2c8cb619c7ded",
+        "moduleSha256": "317585305a6ec3fe3eabe1fd27219ef06d79532b3a44c1a1e851ebd3cf9ed978",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
       "src/backend/metal/metal_copy_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "def6cb05daad3b85d63d02954d2b99ac7130b4179c01d03d1b08509c0b4ad03c",
+        "moduleSha256": "c976cb299d97d34749d4f7b6dc776c630251571c45fb815be64b51da25adb9fb",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-hexagonal-migration/2026-08-22"
       },
@@ -1048,7 +1048,7 @@
       },
       "src/backend/metal/metal_native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "bf5ad1c590511e8e4f35b6a58148ae93b3c2b9628a80a02b9f0c77a8ecc858e5",
+        "moduleSha256": "046845b4c89ab8d000e8a3edbd0899c8c5e6465fd22ce9b355e1e91a2059bb5b",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-architecture-refactor/2026-08-23"
       },
@@ -1066,7 +1066,7 @@
       },
       "src/backend/metal/metal_resource_commands.zig": {
         "decision": "Keep",
-        "moduleSha256": "3a75d8ff4c7937b99de5655f068c8626074f1bd9144e562b34de9f63899a6cd1",
+        "moduleSha256": "4b25f7853d11c0081294e5058ce1ccea33b6d965d7a6c5b5c14b2ac72bde1b95",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -1186,7 +1186,7 @@
       },
       "src/backend/ports/spatial.zig": {
         "decision": "Keep",
-        "moduleSha256": "57b7d76220f2d72158435a88c847a2795aad49a4044af495793bbfd5ceb3a1c7",
+        "moduleSha256": "aafd896736f0f4b8077789e232e1c8de4c6e9422db199b16f47870f4d1296b43",
         "reason": "Keep: reachable backend implementation shared by 3 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-hexagonal-migration/2026-08-22"
       },
@@ -4324,7 +4324,7 @@
       },
       "src/contracts/texture_copy.zig": {
         "decision": "Keep",
-        "moduleSha256": "4a7b01380cb0000a1f7c8d587b7c2b157f6fd9f384444427fc968cdeb92e8c81",
+        "moduleSha256": "1d347d6b5d880f6d09128924342db2e0c34814161cbf3669a30872298b827000",
         "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
         "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
@@ -4345,6 +4345,12 @@
         "moduleSha256": "bf7c702ececc4ab2cf285a041991f47fcc1b32fbee2ce5bdde23babef27769bc",
         "reason": "Keep: preserves existing native ownership; build-selected diagnostics observe actual command storage and export device-scoped metadata after cleanup.",
         "reviewer": "codex-command-storage-observation/2026-09-12"
+      },
+      "src/backend/metal/metal_texture_resources.zig": {
+        "decision": "Keep",
+        "moduleSha256": "e45e6cbb81471ba785fa07f3a6961a81c52b748d2e7cdce5758159c171fb64db",
+        "reason": "Own command texture descriptor admission, native handle publication and compatible reuse; copy and upload consume canonical texture footprints.",
+        "reviewer": "codex-texture-safety/2026-09-20"
       }
     },
     "linePolicy": {

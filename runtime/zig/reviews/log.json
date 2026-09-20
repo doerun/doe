@@ -17918,6 +17918,712 @@
       "targets": [
         "src/backend/ports/resource.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "5c49ef515b4213874f13a665379d96ebd873ba7e1f16a9d6102e2dc132c3b180"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_async_runtime.zig",
+          "sha256": "947c62b51d06eec05e485c335b23744efe101025e8df5ffdc6479ea337ede55a"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "ea257269a830c6b971f618f94432fbc10bf52f3e6ef94bbe59830febef9c57da"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "d7f1e9bb90d2c61f68ad2d4fff65d031ba8bc6d697bb9f3b39a2649f7554461e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "c5844606b4f3bbf46ccca78143678bd8d3c97a76cf504398ad31a93f2252b48c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_cleanup.zig",
+          "sha256": "317585305a6ec3fe3eabe1fd27219ef06d79532b3a44c1a1e851ebd3cf9ed978"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_copy_runtime.zig",
+          "sha256": "c976cb299d97d34749d4f7b6dc776c630251571c45fb815be64b51da25adb9fb"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_deferred_release.zig",
+          "sha256": "3c3a6dedd827b0bca411d370932fc98a04229b33f4628d60d12085d4c14033f0"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "046845b4c89ab8d000e8a3edbd0899c8c5e6465fd22ce9b355e1e91a2059bb5b"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_resources.zig",
+          "sha256": "8c713fe2ecc18f91ed3a36d3da772380519d53837dd272517164c9c2e4086111"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_texture_resources.zig",
+          "sha256": "e45e6cbb81471ba785fa07f3a6961a81c52b748d2e7cdce5758159c171fb64db"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_resource_types.zig",
+          "sha256": "7f6089bd35aac69f43af7d99ad4bedd3fa7a95b6b716cfc52e1cd4ae80d9cb41"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_types.zig",
+          "sha256": "0267eafe3b61d8ba3d595c0dd186f1b8da3a1195136eb86167f8214290881d07"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_value_types.zig",
+          "sha256": "8c0d88e10eb988c689331d8d38c9da096f300ef50239879e652eacfaba8467e5"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture.zig",
+          "sha256": "a19d48993cc655bf9f5d482094f5221395ca3481dddc6128dee191c034d8be05"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_copy.zig",
+          "sha256": "1d347d6b5d880f6d09128924342db2e0c34814161cbf3669a30872298b827000"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format.zig",
+          "sha256": "87e943453f449eb9aaf42e2e61b132536b5cf99e2a43060bbf0195379b8d62e7"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format_layout.zig",
+          "sha256": "2c93a5ec273e29d5b88e7c4a4214d0c3f5430e2a1a49d213458316fd4e3e30b4"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_repair_proof_test.zig",
+          "sha256": "dd1afded8c86947b9ab8e17a96e389e3151cbd053625813e473b616fbc834854"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/README.md",
+          "sha256": "2f123d42ae6f6bd9d3e8f308056d456248bb21c963071dd4e0150c3d8eea2c64"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/aggregate-final.log",
+          "sha256": "8b14e4834542fad9c011d4c61a7a6b467a04d20b79e9b9d6d5c5e6b4b3a70963"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/core-release-fast-final.log",
+          "sha256": "df932171d1c77025a68dd6e1c2b999d52c185e541cd25259cd8d590e8b183d9e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/doc-links.log",
+          "sha256": "1f595a73b2ed09c1daaeb8becdd5972805c2e54d319d1d1379fd724d863b04e4"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/file-reviews.md",
+          "sha256": "896b2d8df2a2fa118b62c632ab2e6b3d1767a13175034df4d8c48d58036c1086"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/full-final.log",
+          "sha256": "26f61699146211b588a278f9e08feaf1455c0500b2a83783a19b775013e3dd78"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/physical-availability.log",
+          "sha256": "50c630508fc01875b80feb46166bdd4e42f7603f69d45d2f7000af97d113b68f"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/predecessor-staging-probe.zig",
+          "sha256": "9a8e0104b1eacd73245cbadcb01afb22932b34ab1fb6a5c92060ba1e5bcb2a99"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/predecessor-staging.log",
+          "sha256": "6350fb1f7d19419dcb93fc4dd8d310b9098c317a47286118323a279bd31eec39"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/reproduce_predecessor.py",
+          "sha256": "6fa03acaba4b6f34e5195d495e7b8a953dca62758c01fcc74aa825cbd91e859e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "texture_write and destruction call flush before CPU replacement or release, but the native wait/error contract is incomplete. Correct host call ordering does not establish physical GPU retirement or preserve every native failure."
+      ],
+      "inputHash": "886d6af907ee9d2656824eb7153ae00ebd88cbe8303b8c8cfb499d2f0275c33b",
+      "level": "file",
+      "nextAction": "Repair checked command-buffer completion and failure propagation, then run the physical array/volume upload and early-release cases.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Write.init uses canonical format/block layout and checked last-byte admission before any side effects; invalid mip, row/image footprint and descriptor reuse are rejected.",
+        "Each array slice receives its own padded payload region; volume mip depth is preserved. CPU replacement follows flush, whose surfaced errors propagate. A recording bridge verifies independent output bytes and no work after rejection or wait failure.",
+        "texture_query checks all optional expectations, including exact depth one and usage subsets, from the retained admitted descriptor. Map destruction transfers the stored native reference to the existing release owner."
+      ],
+      "reviewId": "metal_resource_commands_texture_20260920",
+      "reviewedAt": "2026-09-20T02:36:45.040943+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4eec28db09a06df1ff977e7cddfe7dfdb831e220",
+      "status": "needs_changes",
+      "summary": "Examined every sampler and texture lifecycle branch, rollback, borrowing and native access. Shared layout admission, descriptor-owned identity and all query predicates replace unchecked writes and ignored expectations. Retirement is still a native completion dependency.",
+      "supersedes": "metal_resource_commands_sampler_20260920",
+      "targets": [
+        "src/backend/metal/metal_resource_commands.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "5c49ef515b4213874f13a665379d96ebd873ba7e1f16a9d6102e2dc132c3b180"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_async_runtime.zig",
+          "sha256": "947c62b51d06eec05e485c335b23744efe101025e8df5ffdc6479ea337ede55a"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "ea257269a830c6b971f618f94432fbc10bf52f3e6ef94bbe59830febef9c57da"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "d7f1e9bb90d2c61f68ad2d4fff65d031ba8bc6d697bb9f3b39a2649f7554461e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "c5844606b4f3bbf46ccca78143678bd8d3c97a76cf504398ad31a93f2252b48c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_cleanup.zig",
+          "sha256": "317585305a6ec3fe3eabe1fd27219ef06d79532b3a44c1a1e851ebd3cf9ed978"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "046845b4c89ab8d000e8a3edbd0899c8c5e6465fd22ce9b355e1e91a2059bb5b"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_resource_commands.zig",
+          "sha256": "4b25f7853d11c0081294e5058ce1ccea33b6d965d7a6c5b5c14b2ac72bde1b95"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_resources.zig",
+          "sha256": "8c713fe2ecc18f91ed3a36d3da772380519d53837dd272517164c9c2e4086111"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_texture_resources.zig",
+          "sha256": "e45e6cbb81471ba785fa07f3a6961a81c52b748d2e7cdce5758159c171fb64db"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_resource_types.zig",
+          "sha256": "7f6089bd35aac69f43af7d99ad4bedd3fa7a95b6b716cfc52e1cd4ae80d9cb41"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_types.zig",
+          "sha256": "0267eafe3b61d8ba3d595c0dd186f1b8da3a1195136eb86167f8214290881d07"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_value_types.zig",
+          "sha256": "8c0d88e10eb988c689331d8d38c9da096f300ef50239879e652eacfaba8467e5"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture.zig",
+          "sha256": "a19d48993cc655bf9f5d482094f5221395ca3481dddc6128dee191c034d8be05"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_copy.zig",
+          "sha256": "1d347d6b5d880f6d09128924342db2e0c34814161cbf3669a30872298b827000"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format.zig",
+          "sha256": "87e943453f449eb9aaf42e2e61b132536b5cf99e2a43060bbf0195379b8d62e7"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format_layout.zig",
+          "sha256": "2c93a5ec273e29d5b88e7c4a4214d0c3f5430e2a1a49d213458316fd4e3e30b4"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_repair_proof_test.zig",
+          "sha256": "dd1afded8c86947b9ab8e17a96e389e3151cbd053625813e473b616fbc834854"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/README.md",
+          "sha256": "2f123d42ae6f6bd9d3e8f308056d456248bb21c963071dd4e0150c3d8eea2c64"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/aggregate-final.log",
+          "sha256": "8b14e4834542fad9c011d4c61a7a6b467a04d20b79e9b9d6d5c5e6b4b3a70963"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/core-release-fast-final.log",
+          "sha256": "df932171d1c77025a68dd6e1c2b999d52c185e541cd25259cd8d590e8b183d9e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/doc-links.log",
+          "sha256": "1f595a73b2ed09c1daaeb8becdd5972805c2e54d319d1d1379fd724d863b04e4"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/file-reviews.md",
+          "sha256": "896b2d8df2a2fa118b62c632ab2e6b3d1767a13175034df4d8c48d58036c1086"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/full-final.log",
+          "sha256": "26f61699146211b588a278f9e08feaf1455c0500b2a83783a19b775013e3dd78"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/physical-availability.log",
+          "sha256": "50c630508fc01875b80feb46166bdd4e42f7603f69d45d2f7000af97d113b68f"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/predecessor-staging-probe.zig",
+          "sha256": "9a8e0104b1eacd73245cbadcb01afb22932b34ab1fb6a5c92060ba1e5bcb2a99"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/predecessor-staging.log",
+          "sha256": "6350fb1f7d19419dcb93fc4dd8d310b9098c317a47286118323a279bd31eec39"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/reproduce_predecessor.py",
+          "sha256": "6fa03acaba4b6f34e5195d495e7b8a953dca62758c01fcc74aa825cbd91e859e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "Native bridge copy encoders and completion still have void/incomplete error channels; execute_copy can only propagate errors exposed by those interfaces. Physical Metal copy/readback and retirement remain unqualified."
+      ],
+      "inputHash": "773cc282adaf13d6d1baec9c0247ecfa84e677cdcfcb48d6c71f39e5686a82b2",
+      "level": "file",
+      "nextAction": "Give native encode/completion failures an explicit return contract and qualify direct/temporary copies plus retirement on Metal hardware.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Plan.init validates resource kinds, usage, descriptor compatibility, mip geometry, aspects, offsets and canonical byte footprints before allocation/encoding. Existing source and destination buffer capacity are checked first.",
+        "Temporary capacity covers the actual padded last access plus requested alignment; the predecessor reproduction fails an independent footprint assertion. Native reference ownership transfers once to deferred retirement before any fallible flush.",
+        "Direct bridge texture copies iterate array slices/volume planes rather than interpreting array length as volume depth. Tests cover compressed formats, one-byte-short windows, geometry mismatch and overflow."
+      ],
+      "reviewId": "metal_copy_runtime_texture_20260920",
+      "reviewedAt": "2026-09-20T02:36:46.314165+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4eec28db09a06df1ff977e7cddfe7dfdb831e220",
+      "status": "needs_changes",
+      "summary": "Examined all copy directions, plans, offsets, resource reuse, encoder transitions, temporary ownership and timing/report boundaries. Format-aware preflight and padded staging replace unchecked pixel arithmetic.",
+      "supersedes": "metal_ports_20260920_05",
+      "targets": [
+        "src/backend/metal/metal_copy_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "5c49ef515b4213874f13a665379d96ebd873ba7e1f16a9d6102e2dc132c3b180"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_async_runtime.zig",
+          "sha256": "947c62b51d06eec05e485c335b23744efe101025e8df5ffdc6479ea337ede55a"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "ea257269a830c6b971f618f94432fbc10bf52f3e6ef94bbe59830febef9c57da"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "d7f1e9bb90d2c61f68ad2d4fff65d031ba8bc6d697bb9f3b39a2649f7554461e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "c5844606b4f3bbf46ccca78143678bd8d3c97a76cf504398ad31a93f2252b48c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_cleanup.zig",
+          "sha256": "317585305a6ec3fe3eabe1fd27219ef06d79532b3a44c1a1e851ebd3cf9ed978"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_copy_runtime.zig",
+          "sha256": "c976cb299d97d34749d4f7b6dc776c630251571c45fb815be64b51da25adb9fb"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "046845b4c89ab8d000e8a3edbd0899c8c5e6465fd22ce9b355e1e91a2059bb5b"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_resource_commands.zig",
+          "sha256": "4b25f7853d11c0081294e5058ce1ccea33b6d965d7a6c5b5c14b2ac72bde1b95"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_resources.zig",
+          "sha256": "8c713fe2ecc18f91ed3a36d3da772380519d53837dd272517164c9c2e4086111"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_resource_types.zig",
+          "sha256": "7f6089bd35aac69f43af7d99ad4bedd3fa7a95b6b716cfc52e1cd4ae80d9cb41"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_types.zig",
+          "sha256": "0267eafe3b61d8ba3d595c0dd186f1b8da3a1195136eb86167f8214290881d07"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_value_types.zig",
+          "sha256": "8c0d88e10eb988c689331d8d38c9da096f300ef50239879e652eacfaba8467e5"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture.zig",
+          "sha256": "a19d48993cc655bf9f5d482094f5221395ca3481dddc6128dee191c034d8be05"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_copy.zig",
+          "sha256": "1d347d6b5d880f6d09128924342db2e0c34814161cbf3669a30872298b827000"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format.zig",
+          "sha256": "87e943453f449eb9aaf42e2e61b132536b5cf99e2a43060bbf0195379b8d62e7"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format_layout.zig",
+          "sha256": "2c93a5ec273e29d5b88e7c4a4214d0c3f5430e2a1a49d213458316fd4e3e30b4"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_repair_proof_test.zig",
+          "sha256": "dd1afded8c86947b9ab8e17a96e389e3151cbd053625813e473b616fbc834854"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/README.md",
+          "sha256": "2f123d42ae6f6bd9d3e8f308056d456248bb21c963071dd4e0150c3d8eea2c64"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/aggregate-final.log",
+          "sha256": "8b14e4834542fad9c011d4c61a7a6b467a04d20b79e9b9d6d5c5e6b4b3a70963"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/core-release-fast-final.log",
+          "sha256": "df932171d1c77025a68dd6e1c2b999d52c185e541cd25259cd8d590e8b183d9e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/doc-links.log",
+          "sha256": "1f595a73b2ed09c1daaeb8becdd5972805c2e54d319d1d1379fd724d863b04e4"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/file-reviews.md",
+          "sha256": "896b2d8df2a2fa118b62c632ab2e6b3d1767a13175034df4d8c48d58036c1086"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/full-final.log",
+          "sha256": "26f61699146211b588a278f9e08feaf1455c0500b2a83783a19b775013e3dd78"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/physical-availability.log",
+          "sha256": "50c630508fc01875b80feb46166bdd4e42f7603f69d45d2f7000af97d113b68f"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/predecessor-staging-probe.zig",
+          "sha256": "9a8e0104b1eacd73245cbadcb01afb22932b34ab1fb6a5c92060ba1e5bcb2a99"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/predecessor-staging.log",
+          "sha256": "6350fb1f7d19419dcb93fc4dd8d310b9098c317a47286118323a279bd31eec39"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/reproduce_predecessor.py",
+          "sha256": "6fa03acaba4b6f34e5195d495e7b8a953dca62758c01fcc74aa825cbd91e859e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "15e637e19a4bb108f7e9e2589d3a528a27968c6d308e520e1a4181e62ae3c9df",
+      "level": "file",
+      "nextAction": "Retain descriptor/reference ownership when adding capabilities; physical factory/copy qualification and checked completion remain with the related execution reviews.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Descriptor metadata and native references share one entry. Reuse rejects contradictory declarations; acquisition failure leaves no published entry. Allocation failure is tested before native acquisition, followed by native failure, retry and reuse.",
+        "Queries enforce each requested fact; unsupported multisample/alternate-view declarations and unknown formats fail explicitly. Cleanup consumes the same owner. This source/host verdict does not qualify the native texture factory on physical Metal."
+      ],
+      "reviewId": "metal_texture_resources_20260920",
+      "reviewedAt": "2026-09-20T02:36:47.582597+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4eec28db09a06df1ff977e7cddfe7dfdb831e220",
+      "status": "verified",
+      "summary": "Examined the complete named command-texture owner: descriptor admission, selected mip geometry, identity/usage compatibility, query predicates, capacity reservation and native-reference publication. No owning payload or process-global state is hidden behind the map.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/metal/metal_texture_resources.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "5c49ef515b4213874f13a665379d96ebd873ba7e1f16a9d6102e2dc132c3b180"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_async_runtime.zig",
+          "sha256": "947c62b51d06eec05e485c335b23744efe101025e8df5ffdc6479ea337ede55a"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "ea257269a830c6b971f618f94432fbc10bf52f3e6ef94bbe59830febef9c57da"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "d7f1e9bb90d2c61f68ad2d4fff65d031ba8bc6d697bb9f3b39a2649f7554461e"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "c5844606b4f3bbf46ccca78143678bd8d3c97a76cf504398ad31a93f2252b48c"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_cleanup.zig",
+          "sha256": "317585305a6ec3fe3eabe1fd27219ef06d79532b3a44c1a1e851ebd3cf9ed978"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_copy_runtime.zig",
+          "sha256": "c976cb299d97d34749d4f7b6dc776c630251571c45fb815be64b51da25adb9fb"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "046845b4c89ab8d000e8a3edbd0899c8c5e6465fd22ce9b355e1e91a2059bb5b"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_resource_commands.zig",
+          "sha256": "4b25f7853d11c0081294e5058ce1ccea33b6d965d7a6c5b5c14b2ac72bde1b95"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "d518ac122e910e95168866a145db30473b830b31c7df593fb3f4fec7f115b3c1"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_resources.zig",
+          "sha256": "8c713fe2ecc18f91ed3a36d3da772380519d53837dd272517164c9c2e4086111"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_texture_resources.zig",
+          "sha256": "e45e6cbb81471ba785fa07f3a6961a81c52b748d2e7cdce5758159c171fb64db"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_resource_types.zig",
+          "sha256": "7f6089bd35aac69f43af7d99ad4bedd3fa7a95b6b716cfc52e1cd4ae80d9cb41"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_types.zig",
+          "sha256": "0267eafe3b61d8ba3d595c0dd186f1b8da3a1195136eb86167f8214290881d07"
+        },
+        {
+          "path": "runtime/zig/src/contracts/model/model_texture_value_types.zig",
+          "sha256": "8c0d88e10eb988c689331d8d38c9da096f300ef50239879e652eacfaba8467e5"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture.zig",
+          "sha256": "a19d48993cc655bf9f5d482094f5221395ca3481dddc6128dee191c034d8be05"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format.zig",
+          "sha256": "87e943453f449eb9aaf42e2e61b132536b5cf99e2a43060bbf0195379b8d62e7"
+        },
+        {
+          "path": "runtime/zig/src/contracts/texture_format_layout.zig",
+          "sha256": "2c93a5ec273e29d5b88e7c4a4214d0c3f5430e2a1a49d213458316fd4e3e30b4"
+        },
+        {
+          "path": "runtime/zig/src/native/command/doe_buffer_texture_copy.zig",
+          "sha256": "c5f0ebbbaed095c6aee7928d869eeff7c63d0303af835db5f46cc1da0fedf301"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_repair_proof_test.zig",
+          "sha256": "dd1afded8c86947b9ab8e17a96e389e3151cbd053625813e473b616fbc834854"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/README.md",
+          "sha256": "2f123d42ae6f6bd9d3e8f308056d456248bb21c963071dd4e0150c3d8eea2c64"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/aggregate-final.log",
+          "sha256": "8b14e4834542fad9c011d4c61a7a6b467a04d20b79e9b9d6d5c5e6b4b3a70963"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/core-release-fast-final.log",
+          "sha256": "df932171d1c77025a68dd6e1c2b999d52c185e541cd25259cd8d590e8b183d9e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/doc-links.log",
+          "sha256": "1f595a73b2ed09c1daaeb8becdd5972805c2e54d319d1d1379fd724d863b04e4"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/file-reviews.md",
+          "sha256": "896b2d8df2a2fa118b62c632ab2e6b3d1767a13175034df4d8c48d58036c1086"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/full-final.log",
+          "sha256": "26f61699146211b588a278f9e08feaf1455c0500b2a83783a19b775013e3dd78"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/physical-availability.log",
+          "sha256": "50c630508fc01875b80feb46166bdd4e42f7603f69d45d2f7000af97d113b68f"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/predecessor-staging-probe.zig",
+          "sha256": "9a8e0104b1eacd73245cbadcb01afb22932b34ab1fb6a5c92060ba1e5bcb2a99"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/predecessor-staging.log",
+          "sha256": "6350fb1f7d19419dcb93fc4dd8d310b9098c317a47286118323a279bd31eec39"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/reproduce_predecessor.py",
+          "sha256": "6fa03acaba4b6f34e5195d495e7b8a953dca62758c01fcc74aa825cbd91e859e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "7e5ffc55de7b99d3e3d4fbfa9fbc704654ffed74da8cf73e65a4dce16b59d4d8",
+      "level": "file",
+      "nextAction": "Preserve resource descriptor admission as a caller precondition and bind any future aspect/layout extension to independent byte-boundary tests.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Region.required_bytes exposes the existing checked last-access calculation. Shared extent validation also supports full-aspect texture copies without applying buffer-upload plane restrictions.",
+        "New tests distinguish footprint from trailing padding, exercise overflow/short input and full depth-stencil texture-copy admission. Aggregate, ReleaseFast core and full consumer suites pass the internal type migration."
+      ],
+      "reviewId": "texture_copy_footprint_20260920",
+      "reviewedAt": "2026-09-20T02:36:48.842944+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4eec28db09a06df1ff977e7cddfe7dfdb831e220",
+      "status": "verified",
+      "summary": "Examined the entire pure copy-layout contract: aspect restrictions, physical block/mip bounds, native versus strict strides, empty-copy behavior, overflow and tests. Canonical checked arithmetic exposes its footprint without allocating or acquiring resources.",
+      "supersedes": null,
+      "targets": [
+        "src/contracts/texture_copy.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "5c49ef515b4213874f13a665379d96ebd873ba7e1f16a9d6102e2dc132c3b180"
+        },
+        {
+          "path": "docs/cerebras.md",
+          "sha256": "c0f82dd9dc539a277eebd250eb82067aa12f596519fd43b6f74fb72012db1574"
+        },
+        {
+          "path": "runtime/zig/src/app/runner.zig",
+          "sha256": "976a5cf512024d9cd6ee36ed994d2086b5bdf6442e030a5c5d9c35a750833005"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/factory.zig",
+          "sha256": "904508fa47c337a1597923421a363953f9b53247dd043c0bcb5b6acef93e376d"
+        },
+        {
+          "path": "runtime/zig/src/backend/ports/provider_adapter.zig",
+          "sha256": "fb867493a280be12faaba39ac14e171608cef7913ba82038afcf3463ce8bb476"
+        },
+        {
+          "path": "runtime/zig/src/contracts/execution_report.zig",
+          "sha256": "eeaf596815d1830d140fae8038e817689e78613c04b31df62b7dfc607b96aeec"
+        },
+        {
+          "path": "runtime/zig/src/contracts/identity.zig",
+          "sha256": "e09dd1303efbf04b5fb938ee4b907b7a8ce1584d5d065d3d636382fc881fc25c"
+        },
+        {
+          "path": "runtime/zig/src/contracts/prepared_operation.zig",
+          "sha256": "443288b7a4f3fd32643b9a3b9e4567cb5df53692733306b2cd783be835315395"
+        },
+        {
+          "path": "runtime/zig/src/contracts/spatial_operation.zig",
+          "sha256": "d69d5ac1b48717e9c4f418a7e360d1204bb847983a8a31475bf266639d76c4fc"
+        },
+        {
+          "path": "runtime/zig/tests/core/hexagonal_composition_test.zig",
+          "sha256": "f88c5ae5ea2b882984b42e394712d544ef834981bc63046fd343d417cf35ab7f"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_repair_proof_test.zig",
+          "sha256": "dd1afded8c86947b9ab8e17a96e389e3151cbd053625813e473b616fbc834854"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/README.md",
+          "sha256": "2f123d42ae6f6bd9d3e8f308056d456248bb21c963071dd4e0150c3d8eea2c64"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/aggregate-final.log",
+          "sha256": "8b14e4834542fad9c011d4c61a7a6b467a04d20b79e9b9d6d5c5e6b4b3a70963"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/core-release-fast-final.log",
+          "sha256": "df932171d1c77025a68dd6e1c2b999d52c185e541cd25259cd8d590e8b183d9e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/doc-links.log",
+          "sha256": "1f595a73b2ed09c1daaeb8becdd5972805c2e54d319d1d1379fd724d863b04e4"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/file-reviews.md",
+          "sha256": "896b2d8df2a2fa118b62c632ab2e6b3d1767a13175034df4d8c48d58036c1086"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/full-final.log",
+          "sha256": "26f61699146211b588a278f9e08feaf1455c0500b2a83783a19b775013e3dd78"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/physical-availability.log",
+          "sha256": "50c630508fc01875b80feb46166bdd4e42f7603f69d45d2f7000af97d113b68f"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/predecessor-staging-probe.zig",
+          "sha256": "9a8e0104b1eacd73245cbadcb01afb22932b34ab1fb6a5c92060ba1e5bcb2a99"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/predecessor-staging.log",
+          "sha256": "6350fb1f7d19419dcb93fc4dd8d310b9098c317a47286118323a279bd31eec39"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/reproduce_predecessor.py",
+          "sha256": "6fa03acaba4b6f34e5195d495e7b8a953dca62758c01fcc74aa825cbd91e859e"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-zig-metal-texture-safety/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [],
+      "inputHash": "753ac265094598ec79cb7897ec4351caa29b9678edfac4dacc5e48c03f15f4da",
+      "level": "file",
+      "nextAction": "Next never-examined queue file is src/backend/ports/surface.zig; qualified spatial providers require their own execution and lifetime review.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed the unused import and documented provider context/vtable lifetime, call-scoped operation borrowing and independent ownership for retained work. Existing composition tests support the source examination without claiming accelerator execution."
+      ],
+      "reviewId": "spatial_port_20260920",
+      "reviewedAt": "2026-09-20T02:36:50.151721+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4eec28db09a06df1ff977e7cddfe7dfdb831e220",
+      "status": "verified",
+      "summary": "Examined the complete spatial port with prepared identity, caller routing, provider adapter and bundle. It forwards reports/errors, allocates nothing and owns no fabric selection or execution policy. The generic provider explicitly reports unsupported.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/ports/spatial.zig"
+      ]
     }
   ],
   "schemaVersion": 1
