@@ -597,10 +597,23 @@ int metal_bridge_command_buffer_wait_result(MetalHandle cmd_buf_h, int64_t* erro
     id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
     if (cmd_buf.status < MTLCommandBufferStatusCommitted) return -1;
     [cmd_buf waitUntilCompleted];
-    if (cmd_buf.status == MTLCommandBufferStatusCompleted) return 1;
-    if (cmd_buf.status != MTLCommandBufferStatusError) return -1;
-    if (error_code != NULL && cmd_buf.error != nil) *error_code = (int64_t)cmd_buf.error.code;
-    return 0;
+    const int result = metal_bridge_command_buffer_poll_result(cmd_buf_h, error_code);
+    return result == 2 ? -1 : result;
+}
+
+int metal_bridge_command_buffer_poll_result(MetalHandle cmd_buf_h, int64_t* error_code) {
+    if (error_code != NULL) *error_code = 0;
+    if (cmd_buf_h == NULL) return -1;
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    switch (cmd_buf.status) {
+        case MTLCommandBufferStatusCompleted: return 1;
+        case MTLCommandBufferStatusError:
+            if (error_code != NULL && cmd_buf.error != nil) *error_code = (int64_t)cmd_buf.error.code;
+            return 0;
+        case MTLCommandBufferStatusCommitted:
+        case MTLCommandBufferStatusScheduled: return 2;
+        default: return -1;
+    }
 }
 
 void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf_h) {

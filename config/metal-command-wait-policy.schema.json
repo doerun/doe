@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Metal command runtime operational wait policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "timeoutNs", "pollIntervalNs"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "timeoutNs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9223372036854775807,
+      "description": "Elapsed-time budget shared by all submitted commands in one operational retirement call. Timeout retains unfinished work. Destruction drains terminal completion separately and may block."
+    },
+    "pollIntervalNs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9223372036854775807,
+      "description": "Sleep between native status observations, capped to the remaining wait budget. Scheduling can delay wakeup; this is not a hard real-time deadline."
+    }
+  }
+}

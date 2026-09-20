@@ -12,6 +12,14 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [bounded Metal wait checkpoint](../../bench/out/maintenance/20260920-metal-bounded-wait/README.md)
+adds build-checked operational deadlines, native status polling and retained
+ownership on timeout or unavailable completion. The [wait contract](../metal-command-waits.md)
+separates retryable operational waits from blocking destruction. Reentrant
+teardown, native wait-mode mapping, remaining encoder errors and physical Metal
+qualification remain open. Continue those owners before the next never-examined
+telemetry-port scope; supporting edits confer no review credit.
+
 The [checked dispatch checkpoint](../../bench/out/maintenance/20260920-metal-checked-dispatch/README.md)
 extends explicit encoder rejection to direct and indirect Metal command dispatch.
 Unencoded commands are released without submission, while successful submissions

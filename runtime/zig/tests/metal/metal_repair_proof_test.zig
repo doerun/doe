@@ -17,6 +17,56 @@ fn expectBytes(runtime: *metal.NativeMetalRuntime, handle: u64, length: usize, e
     for (bytes) |byte| try std.testing.expectEqual(expected, byte);
 }
 
+test "Metal repair proof: timed out queue retains resources until a separate queue unblocks it" {
+    try requireMetal();
+    var runtime = try metal.NativeMetalRuntime.init(std.testing.allocator, null, "", false);
+    defer runtime.deinit();
+    const event = bridge.metal_bridge_device_new_shared_event(runtime.device) orelse return error.MetalEncodingFailed;
+    defer bridge.metal_bridge_release(event);
+    const signal_queue = bridge.metal_bridge_device_new_command_queue(runtime.device) orelse return error.MetalEncodingFailed;
+    defer bridge.metal_bridge_release(signal_queue);
+    const signal_command = bridge.metal_bridge_create_command_buffer(signal_queue) orelse return error.MetalEncodingFailed;
+    defer bridge.metal_bridge_release(signal_command);
+    bridge.metal_bridge_command_buffer_encode_signal_event(signal_command, event, 1);
+    var signaled = false;
+    // Unblock even if an assertion fails; never leave runtime teardown waiting
+    // for an event whose only signal command was discarded by test cleanup.
+    defer {
+        if (!signaled) bridge.metal_bridge_command_buffer_commit(signal_command);
+        bridge.metal_bridge_command_buffer_wait_completed(signal_command);
+        // Retire the waiting command before releasing its unretained event.
+        runtime.completion.deinit(runtime.allocator);
+    }
+    try runtime.completion.reserve(runtime.allocator);
+    const command = bridge.metal_bridge_create_command_buffer(runtime.queue) orelse return error.MetalEncodingFailed;
+    var submitted = false;
+    defer if (!submitted) bridge.metal_bridge_release(command);
+    var code: i64 = 0;
+    try std.testing.expectEqual(@as(c_int, -1), bridge.metal_bridge_command_buffer_poll_result(command, &code));
+    bridge.metal_bridge_command_buffer_encode_wait_event(command, event, 1);
+    bridge.metal_bridge_command_buffer_commit(command);
+    runtime.completion.retainSubmitted(command);
+    submitted = true;
+    runtime.has_deferred_submissions = true;
+    const held = bridge.metal_bridge_device_new_buffer_shared(runtime.device, 4) orelse return error.MetalEncodingFailed;
+    runtime.deferred_releases.append(runtime.allocator, held) catch |err| {
+        bridge.metal_bridge_release(held);
+        return err;
+    };
+    try std.testing.expectError(error.MetalWaitTimeout, runtime.flush_queue());
+    try std.testing.expectEqual(@as(usize, 1), runtime.completion.pending.items.len);
+    try std.testing.expectEqual(@as(usize, 1), runtime.deferred_releases.items.len);
+    try std.testing.expect(runtime.has_deferred_submissions);
+    try std.testing.expectError(error.MetalWaitTimeout, runtime.completion.reserve(runtime.allocator));
+    bridge.metal_bridge_command_buffer_commit(signal_command);
+    signaled = true;
+    _ = try runtime.flush_queue();
+    try runtime.completion.check();
+    try std.testing.expectEqual(@as(usize, 0), runtime.completion.pending.items.len);
+    try std.testing.expectEqual(@as(usize, 0), runtime.deferred_releases.items.len);
+    try std.testing.expect(!runtime.has_deferred_submissions);
+}
+
 test "Metal repair proof: checked indirect arguments execute exact dimensions and preserve guards" {
     try requireMetal();
     const source =

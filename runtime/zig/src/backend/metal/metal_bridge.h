@@ -70,6 +70,8 @@ void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf);
 // completion is unknown. Only terminal results permit resource retirement.
 // Preserves NSError.code for failure (0 if unavailable).
 int metal_bridge_command_buffer_wait_result(MetalHandle cmd_buf, int64_t* error_code);
+// Nonblocking: the same terminal codes, 2 for submitted/pending, -1 for unknown.
+int metal_bridge_command_buffer_poll_result(MetalHandle cmd_buf, int64_t* error_code);
 void metal_bridge_command_buffer_spin_wait(MetalHandle cmd_buf);
 // Keep an Objective-C object alive until this command buffer completes.
 int metal_bridge_command_buffer_retain_object_until_complete(

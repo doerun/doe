@@ -1,5 +1,6 @@
 const std = @import("std");
 const backend_policy = @import("src/backend/backend_policy.zig");
+const metal_wait_policy = @import("src/backend/metal/metal_wait_policy.zig");
 const command_storage_contract = @import("src/contracts/command_storage.zig");
 const APP_BUNDLE_NAME = "Doe Runtime.app";
 const APP_ICON_BASENAME = "DoeRuntime";
@@ -344,6 +345,16 @@ fn addCompilerArithmeticPolicy(options: *std.Build.Step.Options, allocator: std.
     options.addOption(bool, "spirv_compute_preserve_multi_dot_loops", policy.value.multiDotLoops == .preserve);
 }
 
+fn addMetalWaitPolicy(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
+    const bytes = std.fs.cwd().readFileAlloc(allocator, "../../config/metal-command-wait-policy.json", metal_wait_policy.MAX_POLICY_BYTES) catch
+        @panic("failed to read metal-command-wait-policy.json");
+    defer allocator.free(bytes);
+    const policy = metal_wait_policy.parse(allocator, bytes) catch
+        @panic("invalid Metal command wait policy");
+    options.addOption(u64, "metal_wait_timeout_ns", policy.timeoutNs);
+    options.addOption(u64, "metal_wait_poll_interval_ns", policy.pollIntervalNs);
+}
+
 fn addNativeCommandStoragePolicy(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
     const bytes = std.fs.cwd().readFileAlloc(allocator, "../../config/native-command-storage-policy.json", command_storage_contract.MAX_POLICY_BYTES) catch
         @panic("failed to read native-command-storage-policy.json");
@@ -487,6 +498,7 @@ pub fn build(b: *std.Build) void {
     build_options.addOption(backend_policy.PolicyTable, "backend_runtime_policy", runtime_policy_table);
     addComputeProgramContract(build_options, b.allocator);
     addNativeCommandStoragePolicy(build_options, b.allocator);
+    addMetalWaitPolicy(build_options, b.allocator);
     addCompilerArithmeticPolicy(build_options, b.allocator);
     build_options.addOption(bool, "lean_verified", lean_verified);
     build_options.addOption(BuildTier, "build_tier", build_tier);
@@ -1288,6 +1300,7 @@ pub fn build(b: *std.Build) void {
     compute_build_options.addOption(backend_policy.PolicyTable, "backend_runtime_policy", runtime_policy_table);
     addComputeProgramContract(compute_build_options, b.allocator);
     addNativeCommandStoragePolicy(compute_build_options, b.allocator);
+    addMetalWaitPolicy(compute_build_options, b.allocator);
     addCompilerArithmeticPolicy(compute_build_options, b.allocator);
     compute_build_options.addOption(bool, "lean_verified", lean_verified);
     compute_build_options.addOption(BuildTier, "build_tier", .compute);
@@ -1335,6 +1348,7 @@ pub fn build(b: *std.Build) void {
     full_build_options.addOption(backend_policy.PolicyTable, "backend_runtime_policy", runtime_policy_table);
     addComputeProgramContract(full_build_options, b.allocator);
     addNativeCommandStoragePolicy(full_build_options, b.allocator);
+    addMetalWaitPolicy(full_build_options, b.allocator);
     addCompilerArithmeticPolicy(full_build_options, b.allocator);
     full_build_options.addOption(bool, "lean_verified", lean_verified);
     full_build_options.addOption(BuildTier, "build_tier", .full);

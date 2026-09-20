@@ -1452,6 +1452,10 @@
     {
       "schema": "config/native-command-storage-policy.schema.json",
       "data": "config/native-command-storage-policy.json"
+    },
+    {
+      "schema": "config/metal-command-wait-policy.schema.json",
+      "data": "config/metal-command-wait-policy.json"
     }
   ],
   "globTargets": [

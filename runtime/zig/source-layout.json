@@ -982,9 +982,9 @@
       },
       "src/backend/metal/backend_execute.zig": {
         "decision": "Keep",
-        "moduleSha256": "a288b4506090fe9825ce8c97089cd7f2315ab71727173c5c6fc699e1aa12a445",
+        "moduleSha256": "0fe3194860f65ab1e3533e03195b5f9033a32a61ffdbc371a48a619a48649137",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-common-audit/2026-09-19"
+        "reviewer": "codex-metal-wait/2026-09-20"
       },
       "src/backend/metal/metal_async_runtime.zig": {
         "decision": "Keep",
@@ -994,7 +994,7 @@
       },
       "src/backend/metal/metal_bridge_decls.zig": {
         "decision": "Keep",
-        "moduleSha256": "f797cb889fb770a674d2cc15c6333fb0bb0ef360769f492546cc57bae105e250",
+        "moduleSha256": "20995a16dcac96cdd0a159b8c716eaecb5e701c911ec004ea79cc481ac689668",
         "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
         "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
@@ -1048,7 +1048,7 @@
       },
       "src/backend/metal/metal_native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "cf806308ac560ec7108df34d875d372125d9fdeac4c342c540a30ad7762d99ee",
+        "moduleSha256": "86d0f7781b8302c706cb891fbef524708ec452591e3326c1bbfe074a5ef6d112",
         "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-architecture-refactor/2026-08-23"
       },
@@ -4354,9 +4354,15 @@
       },
       "src/backend/metal/metal_completion.zig": {
         "decision": "Keep",
-        "moduleSha256": "809a06e8c930ed84184cbc997d8bf27dd0c3ebec569d609c13e826cf91cc88ff",
-        "reason": "Own submitted references, distinguish terminal from unknown native completion and preserve first failure before resource retirement.",
-        "reviewer": "codex-metal-program-contract/2026-09-20"
+        "moduleSha256": "f73b2afda2b7107374e29521dce45a760476c34990641e2caafd75c7af841c98",
+        "reason": "Own bounded operational batch retirement, retained timeout/unknown references, first native failure and separate blocking destruction.",
+        "reviewer": "codex-metal-wait/2026-09-20"
+      },
+      "src/backend/metal/metal_wait_policy.zig": {
+        "decision": "Keep",
+        "moduleSha256": "67f866def78316b7e50cf763c486c5dfb5691ff1e70761de35a35e40342a0a5f",
+        "reviewer": "codex-metal-wait/2026-09-20",
+        "reason": "Parse the strict versioned Metal command wait policy at build time and expose immutable timeout and polling bounds to its completion owner."
       }
     },
     "linePolicy": {

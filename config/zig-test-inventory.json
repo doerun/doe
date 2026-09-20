@@ -473,6 +473,10 @@
           "kind": "inline"
         },
         {
+          "path": "src/backend/metal/metal_wait_policy.zig",
+          "kind": "inline"
+        },
+        {
           "path": "src/backend/metal/metal_kernel_dispatch.zig",
           "kind": "inline"
         },
@@ -794,6 +798,10 @@
         },
         {
           "path": "src/backend/metal/metal_completion.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_wait_policy.zig",
           "kind": "inline"
         },
         {

@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "timeoutNs": 2000000000,
+  "pollIntervalNs": 50000
+}
