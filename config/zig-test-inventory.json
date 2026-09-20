@@ -475,6 +475,10 @@
         {
           "path": "src/backend/metal/metal_kernel_dispatch.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_dispatch_runtime.zig",
+          "kind": "inline"
         }
       ]
     },
@@ -794,6 +798,10 @@
         },
         {
           "path": "src/backend/metal/metal_kernel_dispatch.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/backend/metal/metal_dispatch_runtime.zig",
           "kind": "inline"
         }
       ]

@@ -17,6 +17,61 @@ fn expectBytes(runtime: *metal.NativeMetalRuntime, handle: u64, length: usize, e
     for (bytes) |byte| try std.testing.expectEqual(expected, byte);
 }
 
+test "Metal repair proof: checked indirect arguments execute exact dimensions and preserve guards" {
+    try requireMetal();
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<u32, 8>;
+        \\@compute @workgroup_size(3) fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+        \\    data[id.x] = id.x + 10u;
+        \\}
+    ;
+    var directory = std.testing.tmpDir(.{});
+    defer directory.cleanup();
+    try directory.dir.writeFile(.{ .sub_path = "indirect.wgsl", .data = source });
+    try directory.dir.writeFile(.{ .sub_path = "dispatch_noop.wgsl", .data = "@compute @workgroup_size(1) fn main() {}" });
+    const root = try directory.dir.realpathAlloc(std.testing.allocator, ".");
+    defer std.testing.allocator.free(root);
+    var runtime = try metal.NativeMetalRuntime.init(std.testing.allocator, root, "", false);
+    defer runtime.deinit();
+    const sentinel: u32 = 123456;
+    const initial = [_]u32{sentinel} ** 8;
+    const arguments = [_]u32{ sentinel, 2, 1, 1 };
+    try runtime.write_buffer_bytes(1, 0, @sizeOf(@TypeOf(initial)), std.mem.asBytes(&initial));
+    try runtime.write_buffer_bytes(2, 0, @sizeOf(@TypeOf(arguments)), std.mem.asBytes(&arguments));
+    const program = try runtime.ensure_kernel_pipeline_info("indirect", "main");
+    try runtime.completion.reserve(runtime.allocator);
+    const command = bridge.metal_bridge_create_command_buffer(runtime.queue) orelse return error.MetalEncodingFailed;
+    var submitted = false;
+    defer if (!submitted) bridge.metal_bridge_release(command);
+    const encoder = bridge.metal_bridge_cmd_buf_compute_encoder(command) orelse return error.MetalEncodingFailed;
+    var encoding = true;
+    defer if (encoding) bridge.metal_bridge_end_compute_encoding(encoder);
+    // Zero dispatches prepares the validated fixed-size buffer binding only.
+    try std.testing.expectEqual(@as(c_int, 1), bridge.metal_bridge_compute_encoder_dispatch_checked(encoder, program.pipeline, &.{runtime.compute_buffers.get(1).?}, &.{0}, &.{@sizeOf(@TypeOf(initial))}, 1, std.math.maxInt(u32), &.{ 1, 1, 1 }, &program.workgroup_size, 0));
+    const indirect = runtime.compute_buffers.get(2).?;
+    try std.testing.expectEqual(@as(c_int, 0), bridge.metal_bridge_compute_encoder_dispatch_indirect_checked(encoder, program.pipeline, indirect, 1, &program.workgroup_size));
+    try std.testing.expectEqual(@as(c_int, 0), bridge.metal_bridge_compute_encoder_dispatch_indirect_checked(encoder, program.pipeline, indirect, 8, &program.workgroup_size));
+    try std.testing.expectEqual(@as(c_int, 0), bridge.metal_bridge_compute_encoder_dispatch_indirect_checked(encoder, program.pipeline, indirect, 4, &.{ 0, 1, 1 }));
+    try std.testing.expectEqual(@as(c_int, 1), bridge.metal_bridge_compute_encoder_dispatch_indirect_checked(encoder, program.pipeline, indirect, 4, &program.workgroup_size));
+    bridge.metal_bridge_end_compute_encoding(encoder);
+    encoding = false;
+    bridge.metal_bridge_command_buffer_commit(command);
+    runtime.completion.retainSubmitted(command);
+    submitted = true;
+    try runtime.completion.retire();
+    try runtime.completion.check();
+    const bytes = bridge.metal_bridge_buffer_contents(runtime.compute_buffers.get(1).?).?;
+    for (0..initial.len) |i| {
+        const expected: u32 = if (i < 6) @as(u32, @intCast(i)) + 10 else sentinel;
+        try std.testing.expectEqual(expected, std.mem.readInt(u32, bytes[i * 4 ..][0..4], .little));
+    }
+    const direct = try runtime.run_dispatch(2, 1, 1, .per_command);
+    const deferred = try runtime.run_dispatch_indirect(2, 1, 1, .deferred);
+    _ = try runtime.flush_queue();
+    try std.testing.expectEqual(@as(u32, 1), direct.submit_count);
+    try std.testing.expectEqual(@as(u32, 1), deferred.submit_count);
+}
+
 test "Metal repair proof: selected WGSL entrypoint bindings and source replacement preserve guards" {
     try requireMetal();
     const source =

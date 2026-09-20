@@ -113,6 +113,7 @@ const test_src_backend_metal_metal_texture_resources_zig_6db5e064 = @import("src
 const test_src_backend_metal_metal_resource_commands_zig_cd51753c = @import("src/backend/metal/metal_resource_commands.zig");
 const test_src_backend_metal_metal_completion_zig_e8786e3f = @import("src/backend/metal/metal_completion.zig");
 const test_src_backend_metal_metal_kernel_dispatch_zig_e9f5c033 = @import("src/backend/metal/metal_kernel_dispatch.zig");
+const test_src_backend_metal_metal_dispatch_runtime_zig_9106bea1 = @import("src/backend/metal/metal_dispatch_runtime.zig");
 
 comptime {
     _ = test_tests_metal_metal_mod_integration_test_zig_6f53b3ec;
@@ -227,4 +228,5 @@ comptime {
     _ = test_src_backend_metal_metal_resource_commands_zig_cd51753c;
     _ = test_src_backend_metal_metal_completion_zig_e8786e3f;
     _ = test_src_backend_metal_metal_kernel_dispatch_zig_e9f5c033;
+    _ = test_src_backend_metal_metal_dispatch_runtime_zig_9106bea1;
 }

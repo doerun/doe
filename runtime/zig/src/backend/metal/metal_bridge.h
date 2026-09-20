@@ -861,3 +861,9 @@ int metal_bridge_compute_encoder_dispatch_checked(
     const uint64_t* offsets, const uint32_t* sizes, uint32_t buffer_count,
     uint32_t sizes_slot, const uint32_t* dimensions,
     const uint32_t* workgroup, uint32_t repeat_count);
+
+// Uses the encoder's existing resource bindings. Validates the argument buffer
+// and exact workgroup shape before encoding an indirect dispatch.
+int metal_bridge_compute_encoder_dispatch_indirect_checked(
+    MetalHandle encoder, MetalHandle pipeline, MetalHandle indirect_buffer,
+    uint64_t indirect_offset, const uint32_t* workgroup);

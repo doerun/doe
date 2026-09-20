@@ -994,7 +994,7 @@
       },
       "src/backend/metal/metal_bridge_decls.zig": {
         "decision": "Keep",
-        "moduleSha256": "64f5ff4ba8ed796a88a5b592d3897889a28cbc12fca42e0938d1a1214a84af6e",
+        "moduleSha256": "f797cb889fb770a674d2cc15c6333fb0bb0ef360769f492546cc57bae105e250",
         "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
         "reviewer": "codex-texture-copy-regions/2026-09-07"
       },
@@ -1024,9 +1024,9 @@
       },
       "src/backend/metal/metal_dispatch_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "f32d92d1dd8d8656ec72d25bef7b4254ac5cd730d4274e6a1fd3e7d3749083dc",
-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-hexagonal-migration/2026-08-22"
+        "moduleSha256": "efe14a5a8fe766d0b63c505bc8289e70618358481db2161170f8c333792a9ca7",
+        "reason": "Own direct and indirect command dispatch admission, checked encoding, rollback, completion transfer and measured submission accounting.",
+        "reviewer": "codex-metal-checked-dispatch/2026-09-20"
       },
       "src/backend/metal/metal_external_texture.zig": {
         "decision": "Keep",

@@ -1006,3 +1006,12 @@ int metal_bridge_compute_encoder_dispatch_checked(
     (void)repeat_count;
     return 0;
 }
+
+int metal_bridge_compute_encoder_dispatch_indirect_checked(
+    MetalHandle encoder, MetalHandle pipeline, MetalHandle indirect_buffer,
+    uint64_t indirect_offset, const uint32_t* workgroup)
+{
+    (void)encoder; (void)pipeline; (void)indirect_buffer;
+    (void)indirect_offset; (void)workgroup;
+    return 0;
+}

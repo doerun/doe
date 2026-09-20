@@ -19878,6 +19878,110 @@
       "targets": [
         "src/backend/metal/metal_runtime_queue_ops.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/zig-test-inventory.json",
+          "sha256": "ddffc18d97e74fe9800755f2cb2b608a0b18854bed5d2e0026f65d33e2e407f2"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.h",
+          "sha256": "1c0ceb3c41fcbdf86b0a7a997a0774c9047730b16a1d3ffcd541229633274efa"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge.m",
+          "sha256": "b47c567ded27e7acb860de1eb456a87368724e99f4c3bc3f9bb3d0be5db337e7"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_decls.zig",
+          "sha256": "f797cb889fb770a674d2cc15c6333fb0bb0ef360769f492546cc57bae105e250"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_bridge_stubs.c",
+          "sha256": "4f22944b82a406c18f01a37d27c4e6d6776248beb23b16552ed3842da7e050fb"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_completion.zig",
+          "sha256": "809a06e8c930ed84184cbc997d8bf27dd0c3ebec569d609c13e826cf91cc88ff"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_native_runtime.zig",
+          "sha256": "cf806308ac560ec7108df34d875d372125d9fdeac4c342c540a30ad7762d99ee"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig",
+          "sha256": "a59722937f97583257f324dea8a7ef0086fe194f87a4317fa8bae201d87803fe"
+        },
+        {
+          "path": "runtime/zig/src/backend/metal/metal_runtime_resources.zig",
+          "sha256": "fdff7cb9951545e93ba496bfa5ae9173e4ce17711911a16a5b18cd8fa4ca2d0b"
+        },
+        {
+          "path": "runtime/zig/src/contracts/execution.zig",
+          "sha256": "a1c44a092e212819c165f16d94d9f43d2e519eef7f8eb56e2c4b2b681200362b"
+        },
+        {
+          "path": "runtime/zig/src/contracts/runtime_types.zig",
+          "sha256": "78c0f8da356755bc78bbc02427d3e4db9b1861d23b1c6b4484f9c9267c2fd33a"
+        },
+        {
+          "path": "runtime/zig/tests/metal/metal_repair_proof_test.zig",
+          "sha256": "d9244044637601442e5aad8d02a54b7cf44c78ea2a0cbf12dec243f659f84e26"
+        },
+        {
+          "path": "runtime/zig/tools/bridge_manifests/metal_bridge_manifest.json",
+          "sha256": "67a83e66da9ba036db0a46bc7cd79d4ef6b5292fa1b09294d47fb033c8dd0095"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "bench/out/maintenance/20260920-metal-checked-dispatch/README.md",
+          "sha256": "dedd9043bb96a1c23a39c6c2672296ffb77acdd2b38a62d76931a8bc70ae4734"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-checked-dispatch/acceptance.log",
+          "sha256": "a533fe6674337b784040aa4315aa21110051748cda7f6615a753c98e921b301c"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-checked-dispatch/doc-links.log",
+          "sha256": "c3a83593d26384c7ba197fc59d784f63c97d392d7d404bd5e99e5f1e4a48395d"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-checked-dispatch/focused-final.log",
+          "sha256": "992df329b4d376772856d466ad5e9077e0cf4f7d944b9e32cf2289cd65058233"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-checked-dispatch/physical-availability.log",
+          "sha256": "6d7b42f20e7bdd85a0867332d2f2e5867ec6567c4a3be111ef934b9ce8a53b18"
+        },
+        {
+          "path": "bench/out/maintenance/20260920-metal-checked-dispatch/schema.log",
+          "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+        }
+      ],
+      "findings": [
+        "The new native indirect encoder contract lacks Apple SDK and physical Metal acceptance. The added independent readback/guard fixture is skipped on this Linux host; native device failure and argument reuse still need physical qualification.",
+        "Completion timeout/teardown behavior remains dependent on the unresolved queue owner contract; this file still consumes a structural anytype runtime instead of a named command-context interface."
+      ],
+      "inputHash": "f452de57028120d188ae6a2f480c20aa7b9601038fba36b849eeca18219876bc",
+      "level": "file",
+      "nextAction": "Compile with an Apple SDK and run the checked indirect readback/guard and direct/deferred fixtures; continue bounded queue waiting and remaining render/native encoder failures before broad queue expansion.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Direct and indirect commands no longer call void encoding methods. Command/encoder acquisition and native encoding rejection fail before commit, end any created encoder and release the unsubmitted reference. Host injection covers both sync modes and allocation failure.",
+        "One command owner validates a resource-free default program, retires earlier indirect-argument users before writes, preserves exact dimensions/workgroup metadata and transfers one submitted reference. Setup, synchronous commit/wait, deferred commit and actual submission counts are recorded explicitly."
+      ],
+      "reviewId": "metal_dispatch_checked_20260920",
+      "reviewedAt": "2026-09-20T14:16:09.587110+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "8d647be84ee46c72697a4e647f3525d05082b6c8",
+      "status": "needs_changes",
+      "summary": "Re-examined the whole direct/indirect dispatch owner and repaired failed-encoding submission, ownership rollback, exact argument/workgroup propagation and timing/accounting gaps. Supporting bridge changes receive no independent file-review credit.",
+      "supersedes": "metal_dispatch_completion_20260920",
+      "targets": [
+        "src/backend/metal/metal_dispatch_runtime.zig"
+      ]
     }
   ],
   "schemaVersion": 1

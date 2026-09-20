@@ -3261,18 +3261,8 @@ MetalHandle metal_bridge_device_new_render_pipeline_with_archive(
     return NULL;
 }
 
-int metal_bridge_compute_encoder_dispatch_checked(
-    MetalHandle encoder, MetalHandle pipeline, const MetalHandle* buffers,
-    const uint64_t* offsets, const uint32_t* sizes, uint32_t buffer_count,
-    uint32_t sizes_slot, const uint32_t* dimensions,
-    const uint32_t* workgroup, uint32_t repeat_count)
-{
-    if (encoder == NULL || pipeline == NULL || buffers == NULL || offsets == NULL ||
-        sizes == NULL || dimensions == NULL || workgroup == NULL) return 0;
-    const uint32_t buffer_slot_count = 31;
-    if (buffer_count > buffer_slot_count ||
-        (sizes_slot != UINT32_MAX && sizes_slot >= buffer_slot_count)) return 0;
-    id<MTLComputePipelineState> pso = (__bridge id<MTLComputePipelineState>)pipeline;
+static int valid_compute_workgroup(id<MTLComputePipelineState> pso, const uint32_t* workgroup) {
+    if (pso == nil || workgroup == NULL) return 0;
     const MTLSize max_threads = pso.device.maxThreadsPerThreadgroup;
     if (workgroup[0] == 0 || workgroup[1] == 0 || workgroup[2] == 0 ||
         workgroup[0] > max_threads.width || workgroup[1] > max_threads.height ||
@@ -3282,6 +3272,22 @@ int metal_bridge_compute_encoder_dispatch_checked(
         if (workgroup[i] > remaining) return 0;
         remaining /= workgroup[i];
     }
+    return 1;
+}
+
+int metal_bridge_compute_encoder_dispatch_checked(
+    MetalHandle encoder, MetalHandle pipeline, const MetalHandle* buffers,
+    const uint64_t* offsets, const uint32_t* sizes, uint32_t buffer_count,
+    uint32_t sizes_slot, const uint32_t* dimensions,
+    const uint32_t* workgroup, uint32_t repeat_count)
+{
+    if (encoder == NULL || pipeline == NULL || buffers == NULL || offsets == NULL ||
+        sizes == NULL || dimensions == NULL) return 0;
+    const uint32_t buffer_slot_count = 31;
+    if (buffer_count > buffer_slot_count ||
+        (sizes_slot != UINT32_MAX && sizes_slot >= buffer_slot_count)) return 0;
+    id<MTLComputePipelineState> pso = (__bridge id<MTLComputePipelineState>)pipeline;
+    if (!valid_compute_workgroup(pso, workgroup)) return 0;
     for (uint32_t i = 0; i < buffer_count; ++i) {
         if (buffers[i] == NULL) continue;
         id<MTLBuffer> buffer = (__bridge id<MTLBuffer>)buffers[i];
@@ -3301,5 +3307,23 @@ int metal_bridge_compute_encoder_dispatch_checked(
     for (uint32_t i = 0; i < repeat_count; ++i) {
         [enc dispatchThreadgroups:grid threadsPerThreadgroup:group];
     }
+    return 1;
+}
+
+int metal_bridge_compute_encoder_dispatch_indirect_checked(
+    MetalHandle encoder, MetalHandle pipeline, MetalHandle indirect_buffer,
+    uint64_t indirect_offset, const uint32_t* workgroup)
+{
+    if (encoder == NULL || pipeline == NULL || indirect_buffer == NULL) return 0;
+    id<MTLComputePipelineState> pso = (__bridge id<MTLComputePipelineState>)pipeline;
+    id<MTLBuffer> indirect = (__bridge id<MTLBuffer>)indirect_buffer;
+    if (!valid_compute_workgroup(pso, workgroup) || indirect.device != pso.device ||
+        indirect_offset % sizeof(uint32_t) != 0 || indirect_offset > indirect.length ||
+        sizeof(MTLDispatchThreadgroupsIndirectArguments) > indirect.length - indirect_offset) return 0;
+    id<MTLComputeCommandEncoder> enc = (__bridge id<MTLComputeCommandEncoder>)encoder;
+    [enc setComputePipelineState:pso];
+    [enc dispatchThreadgroupsWithIndirectBuffer:indirect
+                          indirectBufferOffset:(NSUInteger)indirect_offset
+                         threadsPerThreadgroup:MTLSizeMake(workgroup[0], workgroup[1], workgroup[2])];
     return 1;
 }

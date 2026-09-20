@@ -216,3 +216,4 @@ pub const MetalVertexAttributeDesc = extern struct {
 };
 
 pub extern fn metal_bridge_compute_encoder_dispatch_checked(encoder: ?*anyopaque, pipeline: ?*anyopaque, buffers: [*]const ?*anyopaque, offsets: [*]const u64, sizes: [*]const u32, buffer_count: u32, sizes_slot: u32, dimensions: [*]const u32, workgroup: [*]const u32, repeat_count: u32) callconv(.c) c_int;
+pub extern fn metal_bridge_compute_encoder_dispatch_indirect_checked(encoder: ?*anyopaque, pipeline: ?*anyopaque, indirect_buffer: ?*anyopaque, indirect_offset: u64, workgroup: [*]const u32) callconv(.c) c_int;

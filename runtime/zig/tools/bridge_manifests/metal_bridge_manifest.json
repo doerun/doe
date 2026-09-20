@@ -57,6 +57,7 @@
         "metal_bridge_device_new_compute_pipeline",
         "metal_bridge_encode_compute_dispatch",
         "metal_bridge_compute_encoder_dispatch_checked",
+        "metal_bridge_compute_encoder_dispatch_indirect_checked",
         "metal_bridge_encode_compute_dispatch_batch",
         "metal_bridge_cmd_buf_encode_compute_dispatch",
         "metal_bridge_compute_encoder_encode_dispatch",

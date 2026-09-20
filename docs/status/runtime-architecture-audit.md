@@ -12,6 +12,14 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [checked dispatch checkpoint](../../bench/out/maintenance/20260920-metal-checked-dispatch/README.md)
+extends explicit encoder rejection to direct and indirect Metal command dispatch.
+Unencoded commands are released without submission, while successful submissions
+retain their completion owner. Host acceptance remains separate from unavailable
+Apple SDK and physical Metal evidence. Bounded waiting, render/native encoder
+errors and corrected-package qualification remain open; the next never-examined
+queue scope remains the telemetry port.
+
 The [Metal program and completion checkpoint](../../bench/out/maintenance/20260920-metal-program-contract/README.md)
 continues checked retirement with an explicit unknown outcome and retained native
 references. Command kernels bind actual WGSL bytes, selected entrypoint and
