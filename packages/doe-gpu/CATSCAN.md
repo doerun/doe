@@ -4,7 +4,8 @@ Parent: [Packages](../CATSCAN.md)
 
 ## Target
 
-Let JavaScript applications select providers, execute supported work, and validate attributable results.
+Let applications use ordinary WebGPU and optionally adopt fixed-shape reusable
+compute through the same runtime, with attributable results.
 
 ## Authority
 
@@ -14,7 +15,7 @@ Let JavaScript applications select providers, execute supported work, and valida
 
 ## Scope
 
-- Includes files beneath this directory except child-chartered components, which narrow this authority.
+- Includes this tree; child charters narrow authority.
 
 ## Contracts
 
@@ -31,8 +32,10 @@ Outputs:
 - `close()` restores every global descriptor changed by the session.
 - Unsupported tuples fail explicitly and never select an undeclared provider.
 - DoeProof receipts never assign DoeRuntime ownership credit.
-- Programs own private resources and immutable declarations; updates retain
-  identical contracts, invalidate old recordings, and roll back failed preparation.
+- Programs own immutable declarations and private device resources, separating invocations.
+  Updates prepare before activation, preserve state on failure, and
+  invalidate affected recordings. Incompatible resident-state changes require approval.
+- Host adapters convert values, callbacks, and errors; they never reinterpret WGSL.
 - Bounded or cancelled processes terminate at the declared platform scope;
   receipts never overstate descendant cleanup.
 - Declared runtime files are hash-bound without being mislabeled as a complete
@@ -51,4 +54,4 @@ Outputs:
 
 ## Freedom
 
-Any mechanism is permitted if it preserves these boundaries and passes the acceptance evidence.
+Implementation freedom requires these boundaries and acceptance evidence.

@@ -50,6 +50,10 @@ classified and cannot be promoted by benchmark results.
 
 ## Workload and evidence law
 
+- Improvement agents operate offline. Candidates cannot alter frozen oracles,
+  workloads, or acceptance thresholds to gain promotion. Independent tests and
+  comparisons govern acceptance; ordinary application execution uses selected
+  versions without requiring the evaluator or silently rewriting runtime policy.
 - Systematic Zig review records file, directory, internal relationship,
   cross-directory, and system passes independently in the
   [review ledger](../runtime/zig/reviews/README.md). Entries are append-only and

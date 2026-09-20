@@ -4,16 +4,18 @@ Parent: none
 
 ## Target
 
-Earn voluntary DoeRuntime adoption through measured application advantage on qualified hardware. Prove ordinary provider substitution first, then safe reuse and acceleration. DoeProof evaluates providers impartially; browser distribution is optional.
+Earn adoption through ordinary WebGPU, then safe reuse on another application,
+using one portable compiler/runtime. DoeProof evaluates impartially; browser
+distribution is optional.
 
 ## Authority
 
-- Owns Doe's repository-wide execution, evidence, and component-boundary law.
+- Owns execution, evidence, and component-boundary law.
 - Does not own application planning, browser policy, model selection, or external hardware governance.
 
 ## Scope
 
-- Includes files beneath this directory except child-chartered components, which narrow this authority.
+- Includes this tree; child charters narrow authority.
 
 ## Contracts
 
@@ -24,21 +26,24 @@ Inputs:
 - Process law: [`docs/process.md`](docs/process.md).
 
 Outputs:
-- Public package, native runtime, compiler, evidence, and governed expansion artifacts.
+- Package, runtime, compiler, and qualification artifacts.
 - Component authority index: [`docs/component-index.md`](docs/component-index.md).
 
 ## Invariants
 
-- Provider, backend, program, hardware, fallback, and result identity remain explicit.
+- Provider, backend, program, hardware, fallback, and result identities remain explicit.
 - Unsupported or unproved behavior fails closed at its declared boundary.
-- Package, native, browser, simulator, and hardware evidence never inherit cross-tier claims.
-- Runtime ownership requires governed ownership comparison; receipts alone do not prove adoption.
-- Reuse preserves frozen source and resource assumptions; device or shape changes invalidate prepared state.
+- Package, native, browser, simulator, and hardware evidence cannot inherit claims.
+- Runtime ownership requires governed comparison.
+- Receipts do not prove adoption or become prerequisites for ordinary execution.
+- Exact program/resource identity authorizes reuse; affected changes invalidate prepared state.
+- Unknown completion retains ownership; timeout never authorizes unsafe reuse.
+- Compiler meaning, runtime execution, and offline improvement have distinct owners.
 
 ## Acceptance
 
 - Component charters and their generated index pass the blocking CATSCAN gate.
-- Acceptance evidence verifies that [INTENT.md](INTENT.md) and [GOALS.md](GOALS.md) remain supported.
+- Behavioral evidence must satisfy [INTENT.md](INTENT.md) and [GOALS.md](GOALS.md).
 - Evidence: [`bench/gates/catscan_gate.py`](bench/gates/catscan_gate.py).
 
 ## Non-goals
@@ -47,4 +52,4 @@ Outputs:
 
 ## Freedom
 
-Any mechanism is permitted if it preserves these boundaries and passes the acceptance evidence.
+Implementation freedom requires these boundaries and acceptance evidence.

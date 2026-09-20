@@ -29,6 +29,11 @@ Outputs:
 - Unsupported capabilities fail with original typed causes and no hidden fallback.
 - Backend behavior is real or rejected; fake execution and synthetic state are forbidden.
 - Resource ownership, synchronization, completion, and readback remain explicit.
+- Compiler analysis owns shader meaning; native objects own WebGPU validation
+  and references; backends own platform state and execution.
+- Exact program identity and allocation generations authorize reuse. Unknown
+  completion retains resources; terminal failure never becomes successful output.
+- Compile-time completeness complements behavioral tests, not ownership proof.
 
 ## Acceptance
 

@@ -12,6 +12,16 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [product-intent alignment](../../bench/out/maintenance/20260920-product-intent/README.md)
+binds ordinary WebGPU and optional safe reuse into goals, intent, charters, and
+implementation guidance. Compiler meaning, execution ownership, offline
+improvement, numerical acceptance, and deployment claims now have explicit
+boundaries. This documentation change grants no implementation or hardware
+qualification. Shared-guidance changes reopen affected reviews; earlier ledger
+entries remain unchanged. Continue at `src/backend/vulkan/vk_runtime_surface_ops.zig`
+and revalidate earlier scopes against the changed assumptions before restoring
+verified status.
+
 The [Vulkan and port examination batch](../../bench/out/maintenance/20260920-vulkan-review/README.md)
 continues the queue with checked write/descriptor bounds, native allocation
 publication, compute/indirect visibility and exact graphics entrypoint/color-mask

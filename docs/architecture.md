@@ -114,6 +114,74 @@ refer to that artifact rather than restating counts.
 
 ## Execution model
 
+### Semantic and execution owners
+
+These are implementation obligations, not a declaration that every path has
+already passed its review or physical qualification.
+
+| Owner | Responsibility |
+| --- | --- |
+| `packages/doe-gpu/` and native adapters | Host values, public interfaces, callbacks, and error delivery |
+| `runtime/zig/src/contracts/` | Shared command, resource, format, identity, and result meanings |
+| `runtime/zig/src/compiler/wgsl/` | Parsing, semantic validation, IR, transformations, and target shader emission |
+| `runtime/zig/src/native/` | WebGPU objects, API validation, references, and command ownership |
+| `runtime/zig/src/backend/` | Backend-private state, pipelines, recording, synchronization, submission, completion, and destruction |
+| `bench/` and supporting tooling | Independent evaluation and offline improvement proposals |
+
+Platform APIs and drivers still perform subsequent compilation and hardware
+execution. Host adapters must not implement a second interpretation of WGSL.
+Ordinary WebGPU, command-oriented execution, and prepared package programs
+remain distinct entrypoints sharing applicable semantics. A universal command
+interpreter is not required for architectural symmetry.
+
+### Reuse and completion obligations
+
+Keep immutable descriptions, device-specific prepared resources, and invocation
+inputs/completion separately owned. Reuse binds exact shader bytes, entrypoint,
+layout, effective compiler options and compiler identity, and device identity.
+Hashes locate candidates; complete identity checks authorize reuse. Native
+allocation generations distinguish replacement allocations from recycled handles.
+
+Compatible parameter updates may reuse resources. Structural changes prepare a
+replacement before activation; failure preserves the working program.
+Incompatible resident-state changes require explicit application approval.
+The public fixed-shape buffer-compute contract and distinct `webgpu`,
+`native-recorded`, and Vulkan `gpu-recorded` modes remain bounded by
+[reusable compute programs](reusable-compute-programs.md).
+
+Submission transfers lifetime obligations. Timeout means waiting stopped, not
+that GPU use ended. Unknown completion retains ownership and blocks unsafe
+reuse or destruction. Terminal failure still requires cleanup and error delivery;
+it never authorizes successful outputs or valid execution claims.
+
+### Enforcement and observation obligations
+
+Use Zig compile-time checks, exhaustive decisions, and type inspection to reject
+missing command decisions, incomplete adapters, and unsupported snapshot shapes.
+Generate immutable build choices from authoritative definitions, resolve hardware
+facts per device, and validate changing resources per invocation. Application
+WGSL received later still needs compilation. Follow
+[the Zig style guide](../runtime/zig/STYLE.md) for explicit allocators, checked
+arithmetic, acquisition rollback, cache bounds, and backend-private ownership.
+Structural checks do not prove ownership or semantic correctness; specialization
+needs runtime, binary-size, and build-cost evidence.
+
+Diagnostics report the best established source location, validation rule,
+resource, command, submission, or native error. Unattributed hardware faults
+must not acquire invented WGSL locations. Detailed tracing is optional and
+artifact writing stays outside ordinary execution. Keep CPU work, allocations,
+retained capacity, transfers, application latency, and available GPU observations
+separate; requested GPU bytes are not residency.
+
+Agents propose improvements offline against frozen tests and independent
+comparisons. Application requests execute selected versions without silently
+rewriting their compiler, runtime, or policy. Ordinary execution remains useful
+without the development system. Numerical correctness uses independent exact
+outputs where justified and declared tolerances elsewhere; artifact identity
+alone does not establish numerical agreement.
+
+### Existing execution contracts
+
 Command ingestion takes stable identity and canonical names from
 `contracts/command.zig`. Parsing and payload cleanup switch exhaustively over
 that contract. Compile-time alias checks reject missing owners and ambiguous
@@ -135,7 +203,7 @@ do not prove that a declared accounting rule is semantically correct.
 
 The [source-layout manifest](../runtime/zig/source-layout.json) owns module
 responsibilities and dependency permissions; its [generated source map](../runtime/zig/src/README.md)
-is the navigation surface. The [proposed user journeys](thesis.md#proposed-user-journeys)
+is the navigation surface. The [target journeys](thesis.md#prioritized-target-journeys)
 exercise these owners rather than defining separate product subsystems. An
 image-processing integration supplies shaders, declared work, and acceptance
 tests; image-editor policy does not belong in resource management.

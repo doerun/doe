@@ -71,6 +71,13 @@ application outcomes; graph execution is not a Doe invention.
 Ordinary browser imports still use browser-owned WebGPU. Browser replacement
 requires its own integration, artifact, and acceptance evidence.
 
+The deployment promise is no mandatory browser or cloud service. Platform drivers
+and frameworks remain dependencies. Allocation reductions require measurements
+on named paths; neither zero dependencies nor universal zero allocation is a
+product promise. iOS and Android support requires implemented integration and
+physical qualification. Prioritize compute without weakening shared graphics
+semantics, and keep one implementation across applications and hardware vendors.
+
 ## Make corrections transferable
 
 Preserve relationships from original WGSL through IR and backend programs to

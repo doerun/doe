@@ -28,7 +28,7 @@ tests, and receipts when a change touches the corresponding boundary.
 | ID | Invariant | Enforcement surface |
 | --- | --- | --- |
 | `INV-OWNER-001` | Shared behavior lives with the narrowest subsystem that owns its semantics; dependency direction remains one-way. | `tools/check_source_layout.py`, `tools/check_core_import_fence.py`, import tests |
-| `INV-PLAN-002` | Immediate, recorded, replayed, direct, and indirect execution derive from one prepared-operation contract. | affected executor parity tests, trace/replay gates |
+| `INV-PLAN-002` | Command-oriented immediate, recorded, replayed, direct, and indirect execution share the prepared-operation contract; ordinary WebGPU and package programs share applicable semantics without a universal interpreter. | affected executor parity tests, trace/replay gates |
 | `INV-RESOURCE-003` | Every resource has one explicit owner and every ownership transition has one cleanup path. | allocator-backed tests, lifecycle and failure-path tests |
 | `INV-RECEIPT-004` | Structural refactors preserve the canonical behavior receipt and first failure boundary. | trace determinism, replay, semantic digest, and workload-oracle tests |
 | `INV-FACADE-005` | Module roots and compatibility facades aggregate, normalize, delegate, or translate errors; they do not own independent domain behavior. | `source-layout.json`, `tools/check_source_layout.py`, exercised facade tests |
@@ -308,6 +308,10 @@ unambiguous, such as a loop index.
 
 ## Prepared operation parity
 
+These rules govern the command-oriented executor. Ordinary native WebGPU and
+package compute programs retain their own submission interfaces while consuming
+the same applicable shader, resource, ownership, and error contracts.
+
 - Resolve policy, bindings, work shape, entry point, specialization, and
   fallback eligibility before selecting an executor.
 - Immediate, recorded, replayed, direct, indirect, and backend-specific paths
@@ -387,6 +391,9 @@ the dependencies or output contract of a subsystem or promoted execution path.
 - Ownership transitions belong to the resource owner, not to convenience
   callers. Each transition must have one success cleanup path and one tested
   failure cleanup path.
+- Submission retains resources until established terminal completion. Timeout
+  or unknown completion cannot authorize reuse or destruction. Terminal failure
+  allows retirement but must remain an error to consumers.
 
 ## FFI and C interop
 
