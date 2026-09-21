@@ -253,7 +253,13 @@ pub fn FunctionState(comptime EmitterT: type) type {
 
                     if (self.emitter.preserve_multi_dot_loops) {
                         const words = self.emitter.builder.functions.items;
-                        words[body_offset - 1] = emit_spirv_fn_helpers.multiDotLoopControl(words[body_offset..]);
+                        const control = emit_spirv_fn_helpers.multiDotLoopControl(words[body_offset..]);
+                        words[body_offset - 1] = if (control == spirv.LoopControl.DontUnroll and
+                            @import("build_options").spirv_compute_unroll_independent_dot_loops and
+                            emit_spirv_fn_helpers.independentIndexedLoop(self.emitter.module, self.function, loop_stmt))
+                            spirv.LoopControl.Unroll
+                        else
+                            control;
                     }
 
                     try self.emit_label(merge_label);

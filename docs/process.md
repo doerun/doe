@@ -524,6 +524,9 @@ application oracles on physical hardware. Retain source, library, and target
 artifact identities. A passing compiler suite or a numerically failing incumbent
 does not qualify an application comparison. Policy migration and target scope
 are documented in [`shader-compiler-architecture.md`](shader-compiler-architecture.md).
+Independent-element loop unrolling additionally requires negative coverage for
+array recurrences, overlapping indices, out-of-range bounds, and effectful calls.
+Confirm any measured benefit with diagnostic instrumentation disabled.
 
 Retained-package application evaluation binds the installed package to a passed
 Node/Bun/Electron qualification. Archive hashes, installed files, loaded native

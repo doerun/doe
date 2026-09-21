@@ -1,0 +1,386 @@
+diff --git a/config/spirv-compute-arithmetic-policy.json b/config/spirv-compute-arithmetic-policy.json
+index f5753b7b8..0aa05b9d6 100644
+--- a/config/spirv-compute-arithmetic-policy.json
++++ b/config/spirv-compute-arithmetic-policy.json
+@@ -1,5 +1,5 @@
+ {
+-  "schemaVersion": 2,
++  "schemaVersion": 3,
+   "offsetMultiplyAdd": "fuse-trailing-add",
+-  "multiDotLoops": "preserve"
++  "multiDotLoops": "preserve-reductions-unroll-independent"
+ }
+diff --git a/config/spirv-compute-arithmetic-policy.schema.json b/config/spirv-compute-arithmetic-policy.schema.json
+index f962c2f93..3a12afcc0 100644
+--- a/config/spirv-compute-arithmetic-policy.schema.json
++++ b/config/spirv-compute-arithmetic-policy.schema.json
+@@ -5,7 +5,7 @@
+   "additionalProperties": false,
+   "required": ["schemaVersion", "offsetMultiplyAdd", "multiDotLoops"],
+   "properties": {
+-    "schemaVersion": {"type": "integer", "const": 2},
++    "schemaVersion": {"type": "integer", "const": 3},
+     "offsetMultiplyAdd": {
+       "type": "string",
+       "enum": ["source-order", "fuse-trailing-add"],
+@@ -13,8 +13,8 @@
+     },
+     "multiDotLoops": {
+       "type": "string",
+-      "enum": ["driver-default", "preserve"],
+-      "description": "Build-time policy for compute-only SPIR-V modules. Preserve innermost loops containing multiple emitted OpDot instructions with DontUnroll to avoid driver unrolling changing accumulated rounding. Other loops and other targets retain their existing controls."
++      "enum": ["driver-default", "preserve", "preserve-reductions-unroll-independent"],
++      "description": "Compute-only SPIR-V loop policy. Preserve applies DontUnroll to innermost loops containing multiple emitted OpDot instructions. Preserve-reductions-unroll-independent keeps that protection except for proven independent, bounded local-array element updates, which receive Unroll. Driver-default applies neither hint. Other loops and targets retain their existing controls."
+     }
+   }
+ }
+diff --git a/runtime/zig/build.zig b/runtime/zig/build.zig
+index 926e28589..5697e8f98 100644
+--- a/runtime/zig/build.zig
++++ b/runtime/zig/build.zig
+@@ -336,13 +336,14 @@ fn addCompilerArithmeticPolicy(options: *std.Build.Step.Options, allocator: std.
+     const Policy = struct {
+         schemaVersion: u32,
+         offsetMultiplyAdd: enum { @"source-order", @"fuse-trailing-add" },
+-        multiDotLoops: enum { @"driver-default", preserve },
++        multiDotLoops: enum { @"driver-default", preserve, @"preserve-reductions-unroll-independent" },
+     };
+     const policy = std.json.parseFromSlice(Policy, allocator, bytes, .{}) catch
+         @panic("invalid SPIR-V compute arithmetic policy");
+-    if (policy.value.schemaVersion != 2) @panic("unsupported SPIR-V compute arithmetic policy version");
++    if (policy.value.schemaVersion != 3) @panic("unsupported SPIR-V compute arithmetic policy version");
+     options.addOption(bool, "spirv_compute_fuse_trailing_add", policy.value.offsetMultiplyAdd == .@"fuse-trailing-add");
+-    options.addOption(bool, "spirv_compute_preserve_multi_dot_loops", policy.value.multiDotLoops == .preserve);
++    options.addOption(bool, "spirv_compute_preserve_multi_dot_loops", policy.value.multiDotLoops != .@"driver-default");
++    options.addOption(bool, "spirv_compute_unroll_independent_dot_loops", policy.value.multiDotLoops == .@"preserve-reductions-unroll-independent");
+ }
+ 
+ fn addMetalWaitPolicy(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 2aefef2aa..673efd8db 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -2302,15 +2302,15 @@
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "03800bd885a95bb1338a511acb42df974ea8078245fc845229ddc571508bdd70",
+-        "reason": "Keep: SPIR-V function/control-flow lowering state machine; builtin, stage, texture, and serialization responsibilities are separate.",
+-        "reviewer": "codex-multi-dot-loops/2026-09-07"
++        "moduleSha256": "fb705a8fcf706a8a3d6bfa800c80546c59f1ce59d152afe502b6657e14fe59d2",
++        "reason": "Keep: SPIR-V control-flow emission selects the configured loop hint after inspecting emitted dot operations and the typed independent-element proof; instruction ownership remains with this emitter.",
++        "reviewer": "codex-independent-dot-loops/2026-09-20"
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "8ba309d366547c0e9169c1cb9cd06ebd346c1b82446c7659616c64325fe17048",
+-        "reason": "Keep: reachable compiler implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-multi-dot-loops/2026-09-07"
++        "moduleSha256": "92664ac007762c8cf4f53cd7eb7b17230a2ab9c692a6fdeb3a6002408c3dee8a",
++        "reason": "Keep: allocation-free SPIR-V function-emission analyses, including conservative local-array loop independence and emitted instruction inspection; no application, runtime scheduling, or benchmark policy ownership.",
++        "reviewer": "codex-independent-dot-loops/2026-09-20"
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_matrix.zig": {
+         "decision": "Keep",
+@@ -2344,9 +2344,9 @@
+       },
+       "src/compiler/wgsl/emit/spirv/spirv_spec.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "b5df9e28d6e57107578eaee74a159c0c3b3bca45eeafd6144fbb269acf9836c1",
+-        "reason": "Keep: reachable compiler implementation shared by 2 production consumers with no conflicting ownership signal.",
+-        "reviewer": "codex-multi-dot-loops/2026-09-07"
++        "moduleSha256": "c6e667c8d774ae8bf7eb0e6b275f4893019518e76a1481f0b106f464ab3c1aaa",
++        "reason": "Keep: canonical numeric SPIR-V vocabulary; Unroll is a format-defined loop-control bit consumed by the emitter.",
++        "reviewer": "codex-independent-dot-loops/2026-09-20"
+       },
+       "src/compiler/wgsl/emit/toolchain.zig": {
+         "decision": "Keep",
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
+index 91f5506b2..b0caf123f 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
+@@ -253,7 +253,13 @@ pub fn FunctionState(comptime EmitterT: type) type {
+ 
+                     if (self.emitter.preserve_multi_dot_loops) {
+                         const words = self.emitter.builder.functions.items;
+-                        words[body_offset - 1] = emit_spirv_fn_helpers.multiDotLoopControl(words[body_offset..]);
++                        const control = emit_spirv_fn_helpers.multiDotLoopControl(words[body_offset..]);
++                        words[body_offset - 1] = if (control == spirv.LoopControl.DontUnroll and
++                            @import("build_options").spirv_compute_unroll_independent_dot_loops and
++                            emit_spirv_fn_helpers.independentIndexedLoop(self.emitter.module, self.function, loop_stmt))
++                            spirv.LoopControl.Unroll
++                        else
++                            control;
+                     }
+ 
+                     try self.emit_label(merge_label);
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig
+index 0ad7e01b9..249c77746 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig
+@@ -1,6 +1,160 @@
+ const std = @import("std");
+ const ir = @import("../../ir/ir.zig");
+ const spirv = @import("spirv_spec.zig");
++const query = @import("../../ir/ir_query.zig");
++const INDEPENDENCE_MAX_EXPR_DEPTH: u32 = 64;
++
++/// Distinct local array elements have no reduction carried between iterations.
++/// Unknown calls, aliases, index remapping and control flow keep the old hint.
++pub fn independentIndexedLoop(module: *const ir.Module, function: *const ir.Function, loop: @FieldType(ir.Stmt, "loop_")) bool {
++    const init = singleStatement(function, loop.init orelse return false);
++    if (init != .local_decl) return false;
++    const induction = init.local_decl.local;
++    if (!ir.is_scalar(&module.types, function.locals.items[induction].ty, .u32)) return false;
++    if ((fixedInt(module, function, init.local_decl.initializer orelse return false) orelse return false) != 0) return false;
++    const cond = function.exprs.items[loop.cond orelse return false].data;
++    if (cond != .binary or cond.binary.op != .less or !inductionRef(function, cond.binary.lhs, induction)) return false;
++    const limit = fixedInt(module, function, cond.binary.rhs) orelse return false;
++    if (limit == 0 or limit > std.math.maxInt(u32)) return false;
++    const step = singleStatement(function, loop.continuing orelse return false);
++    if (step != .assign or !inductionRef(function, step.assign.lhs, induction)) return false;
++    if (step.assign.op == .add) {
++        if ((fixedInt(module, function, step.assign.rhs) orelse return false) != 1) return false;
++    } else if (step.assign.op == .assign) {
++        const add = function.exprs.items[step.assign.rhs].data;
++        if (add != .binary or add.binary.op != .add or !inductionRef(function, add.binary.lhs, induction)) return false;
++        if ((fixedInt(module, function, add.binary.rhs) orelse return false) != 1) return false;
++    } else return false;
++
++    const body = function.stmts.items[loop.body];
++    if (body != .block) return false;
++    const children = function.stmt_children.items[body.block.start..][0..body.block.len];
++    var target: ?u32 = null;
++    for (children) |id| switch (function.stmts.items[id]) {
++        .local_decl => |decl| if (!decl.is_const) return false,
++        .assign => |assignment| {
++            if (target != null) return false;
++            const lhs = function.exprs.items[assignment.lhs].data;
++            if (lhs != .index) return false;
++            const base = function.exprs.items[lhs.index.base].data;
++            if (base != .local_ref or base.local_ref == induction) return false;
++            const ty = module.types.get(function.locals.items[base.local_ref].ty);
++            if (ty != .array or limit > (ty.array.len orelse return false)) return false;
++            if (!ir.is_scalar(&module.types, ty.array.elem, .f32)) return false;
++            if (!isInductionIndex(module, function, lhs.index.index, induction, limit)) return false;
++            target = base.local_ref;
++        },
++        else => return false,
++    };
++    const context = IndependentLoop{ .module = module, .function = function, .induction = induction, .limit = limit, .target = target orelse return false };
++    for (children) |id| switch (function.stmts.items[id]) {
++        .local_decl => |decl| {
++            if (!context.readOnlyExpr(decl.initializer orelse return false, INDEPENDENCE_MAX_EXPR_DEPTH)) return false;
++        },
++        .assign => |assignment| if (!context.readOnlyExpr(assignment.rhs, INDEPENDENCE_MAX_EXPR_DEPTH)) return false,
++        else => unreachable,
++    };
++    return true;
++}
++
++fn singleStatement(function: *const ir.Function, id: ir.StmtId) ir.Stmt {
++    const statement = function.stmts.items[id];
++    if (statement == .block and statement.block.len == 1) return singleStatement(function, function.stmt_children.items[statement.block.start]);
++    return statement;
++}
++
++fn fixedInt(module: *const ir.Module, function: *const ir.Function, id: ir.ExprId) ?u64 {
++    var current = id;
++    for (0..INDEPENDENCE_MAX_EXPR_DEPTH) |_| {
++        switch (function.exprs.items[current].data) {
++            .int_lit => |value| return value,
++            .load => |inner| current = inner,
++            .local_ref => |local| current = query.resolveConstLocalInitializer(function, local) orelse return null,
++            .global_ref => |index| {
++                const global = module.globals.items[index];
++                if (global.class != .const_ and global.class != .override_) return null;
++                if (!ir.is_scalar(&module.types, global.ty, .u32)) return null;
++                const initializer = global.initializer orelse return null;
++                return if (initializer == .int) initializer.int else null;
++            },
++            else => return null,
++        }
++    }
++    return null;
++}
++
++fn inductionRef(function: *const ir.Function, id: ir.ExprId, induction: u32) bool {
++    var current = id;
++    while (function.exprs.items[current].data == .load) current = function.exprs.items[current].data.load;
++    const expr = function.exprs.items[current].data;
++    // Numeric conversions are not aliases: float rounding can repeat indices.
++    return expr == .local_ref and expr.local_ref == induction;
++}
++
++fn isInductionIndex(module: *const ir.Module, function: *const ir.Function, id: ir.ExprId, induction: u32, limit: u64) bool {
++    if (inductionRef(function, id, induction)) return true;
++    const expr = function.exprs.items[id].data;
++    if (expr != .call or !expr.call.robustness_generated or !std.mem.eql(u8, expr.call.name, "min") or expr.call.args.len != 2) return false;
++    const args = function.expr_args.items[expr.call.args.start..][0..2];
++    return inductionRef(function, args[0], induction) and (fixedInt(module, function, args[1]) orelse return false) >= limit - 1;
++}
++
++const IndependentLoop = struct {
++    module: *const ir.Module,
++    function: *const ir.Function,
++    induction: u32,
++    limit: u64,
++    target: ?u32,
++
++    fn readOnlyExpr(self: IndependentLoop, id: ir.ExprId, depth: u32) bool {
++        if (depth == 0) return false;
++        return switch (self.function.exprs.items[id].data) {
++            .bool_lit, .int_lit, .float_lit, .global_ref => true,
++            .local_ref => |local| (self.target == null or local != self.target.?) and
++                self.module.types.get(self.function.locals.items[local].ty) != .ref,
++            .param_ref => |param| self.module.types.get(self.function.params.items[param].ty) != .ref,
++            .load => |inner| self.readOnlyExpr(inner, depth - 1),
++            .unary => |value| self.readOnlyExpr(value.operand, depth - 1),
++            .binary => |value| self.readOnlyExpr(value.lhs, depth - 1) and self.readOnlyExpr(value.rhs, depth - 1),
++            .member => |value| self.readOnlyExpr(value.base, depth - 1),
++            .index => |value| blk: {
++                const base = self.function.exprs.items[value.base].data;
++                if (self.target != null and base == .local_ref and base.local_ref == self.target.?)
++                    break :blk isInductionIndex(self.module, self.function, value.index, self.induction, self.limit);
++                break :blk self.readOnlyExpr(value.base, depth - 1) and self.readOnlyExpr(value.index, depth - 1);
++            },
++            .construct => |value| self.readOnlyArgs(value.args, depth - 1),
++            .call => |call| blk: {
++                if (!self.readOnlyArgs(call.args, depth - 1)) break :blk false;
++                if (call.kind == .builtin) break :blk std.mem.eql(u8, call.name, "dot") or std.mem.eql(u8, call.name, "min") or std.mem.eql(u8, call.name, "max") or std.mem.eql(u8, call.name, "clamp") or std.mem.eql(u8, call.name, "arrayLength");
++                for (self.module.functions.items) |*callee| {
++                    if (!std.mem.eql(u8, callee.name, call.name)) continue;
++                    const context = IndependentLoop{ .module = self.module, .function = callee, .induction = 0, .limit = 0, .target = null };
++                    break :blk context.readOnlyStatement(callee.root_stmt, depth - 1);
++                }
++                break :blk false;
++            },
++        };
++    }
++
++    fn readOnlyArgs(self: IndependentLoop, range: ir.Range, depth: u32) bool {
++        for (self.function.expr_args.items[range.start..][0..range.len]) |arg| if (!self.readOnlyExpr(arg, depth)) return false;
++        return true;
++    }
++
++    fn readOnlyStatement(self: IndependentLoop, id: ir.StmtId, depth: u32) bool {
++        if (depth == 0) return false;
++        return switch (self.function.stmts.items[id]) {
++            .block => |range| blk: {
++                for (self.function.stmt_children.items[range.start..][0..range.len]) |child| if (!self.readOnlyStatement(child, depth - 1)) break :blk false;
++                break :blk true;
++            },
++            .local_decl => |decl| decl.is_const and self.readOnlyExpr(decl.initializer orelse return false, depth - 1),
++            .return_ => |expr| self.readOnlyExpr(expr orelse return false, depth - 1),
++            else => false,
++        };
++    }
++};
+ 
+ pub fn multiDotLoopControl(body: []const u32) u32 {
+     const multi_dot_minimum = 2;
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/spirv_spec.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/spirv_spec.zig
+index 007cda2f4..16d4e67d0 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/spirv_spec.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/spirv_spec.zig
+@@ -195,6 +195,7 @@ pub const SelectionControl = struct {
+ 
+ pub const LoopControl = struct {
+     pub const None: u32 = 0;
++    pub const Unroll: u32 = 1;
+     pub const DontUnroll: u32 = 2;
+ };
+ 
+diff --git a/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig b/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig
+index 92982caf7..52c3f63c2 100644
+--- a/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig
++++ b/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig
+@@ -3,6 +3,10 @@
+ const std = @import("std");
+ const spirv = @import("../../src/compiler/wgsl/emit/spirv/spirv_builder.zig");
+ const mod = @import("../../src/compiler/wgsl/mod.zig");
++const parser = @import("../../src/compiler/wgsl/frontend/parser.zig");
++const sema = @import("../../src/compiler/wgsl/frontend/sema.zig");
++const ir_builder = @import("../../src/compiler/wgsl/ir/ir_builder.zig");
++const loop_helpers = @import("../../src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig");
+ 
+ const testing = std.testing;
+ const allocator = testing.allocator;
+@@ -56,6 +60,77 @@ fn read_u32_le(bytes: []const u8, offset: usize) u32 {
+     return std.mem.readInt(u32, @as(*const [4]u8, @ptrCast(bytes[offset .. offset + 4].ptr)), .little);
+ }
+ 
++test "spirv unrolls independent dot outputs but preserves recurrence alias and side effect cases" {
++    const prefix =
++        \\override COUNT: u32 = 4u;
++        \\@group(0) @binding(0) var<storage, read> data: array<vec4<f32>>;
++        \\@group(0) @binding(1) var<storage, read_write> output: array<f32>;
++        \\fn read_vec(i: u32) -> vec4<f32> { let index = i + 1u; return data[index]; }
++        \\fn mutating_vec(i: u32) -> vec4<f32> { output[0] = 1.0; return data[i]; }
++        \\@compute @workgroup_size(1) fn main() {
++        \\  var results: array<f32, 8>;
++        \\  var total = 0.0;
++    ;
++    const cases = .{
++        .{ "for (var i = 0u; i < COUNT; i++) { let a = read_vec(i); results[i] = results[i] + dot(a, a) + dot(data[i], a); }", true },
++        .{ "for (var i = 0u; i < 9u; i++) { results[i] += dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
++        .{ "for (var i = 0u; i < 4u; i++) { results[0] += dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
++        .{ "for (var i = 0u; i < 4u; i++) { results[i] = results[i+1u] + dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
++        .{ "for (var i = 0u; i < 4u; i++) { let a = mutating_vec(i); results[i] += dot(a, a) + dot(data[i], a); }", false },
++        .{ "for (var i = 0u; i < 4u; i++) { total += 1.0; results[i] += dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
++        .{ "for (var i = 0u; i < 4u; i += 2u) { results[i] += dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
++        .{ "for (var i = 0u; i < 4u; i++) { results[u32(f32(i))] += dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
++        .{ "for (var i = 0u; i < 4u; i++) { let previous = results; results[i] = previous[i+1u] + dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
++    };
++    inline for (cases) |case| {
++        var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
++        const source = prefix ++ case[0] ++ "output[0] = results[0] + total; }";
++        const len = try translateToSpirv(allocator, source, &binary);
++        var offset: usize = 5;
++        var unrolled: u32 = 0;
++        var preserved: u32 = 0;
++        while (offset < len / 4) {
++            const instruction = read_u32_le(&binary, offset * 4);
++            if (@as(u16, @truncate(instruction)) == spirv.Opcode.LoopMerge and
++                read_u32_le(&binary, (offset + 3) * 4) == spirv.LoopControl.Unroll) unrolled += 1;
++            if (@as(u16, @truncate(instruction)) == spirv.Opcode.LoopMerge and
++                read_u32_le(&binary, (offset + 3) * 4) == spirv.LoopControl.DontUnroll) preserved += 1;
++            offset += instruction >> 16;
++        }
++        const enabled = @import("build_options").spirv_compute_unroll_independent_dot_loops;
++        try testing.expectEqual(@as(u32, @intFromBool(enabled and case[1])), unrolled);
++        const preserve = @import("build_options").spirv_compute_preserve_multi_dot_loops;
++        try testing.expectEqual(@as(u32, @intFromBool(preserve and !(enabled and case[1]))), preserved);
++    }
++}
++
++test "spirv independence analysis rejects pointer aliases before emission" {
++    const source =
++        \\@compute @workgroup_size(1) fn main() {
++        \\  var results: array<f32, 8>;
++        \\  let previous = &results;
++        \\  for (var i = 0u; i < 4u; i++) {
++        \\    results[i] = (*previous)[i + 1u] + 1.0;
++        \\  }
++        \\}
++    ;
++    var tree = try parser.parseSource(allocator, source);
++    defer tree.deinit();
++    var semantic = try sema.analyze(allocator, &tree);
++    defer semantic.deinit();
++    var module = try ir_builder.build(allocator, &tree, &semantic);
++    defer module.deinit();
++    var examined: usize = 0;
++    for (module.functions.items) |*function| {
++        for (function.stmts.items) |statement| {
++            if (statement != .loop_) continue;
++            examined += 1;
++            try testing.expect(!loop_helpers.independentIndexedLoop(&module, function, statement.loop_));
++        }
++    }
++    try testing.expectEqual(@as(usize, 1), examined);
++}
++
+ fn count_spirv_opcode(binary: []const u8, opcode: u16) u32 {
+     const word_count = binary.len / 4;
+     var i: usize = 5;

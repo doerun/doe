@@ -1,0 +1,8 @@
+START 0 candidate
+END 0 candidate exit 0 activity True
+START 1 baseline
+END 1 baseline exit 0 activity True
+START 2 baseline
+END 2 baseline exit 0 activity True
+START 3 candidate
+END 3 candidate exit 0 activity True

@@ -1,0 +1,37 @@
+[
+  {
+    "artifact": "bench/out/doppler-search/20260920-subgroup-probe/0-doe/result.json",
+    "passed": true,
+    "timedSamples": 6,
+    "medianMs": 756.1813054999984,
+    "scope": "instrumented diagnostic; never pooled with confirmation"
+  },
+  {
+    "artifact": "bench/out/doppler-search/20260920-subgroup-probe/1-doe/result.json",
+    "passed": true,
+    "timedSamples": 6,
+    "medianMs": 711.9269820000009,
+    "scope": "instrumented diagnostic; never pooled with confirmation"
+  },
+  {
+    "artifact": "bench/out/doppler-search/20260920-loop-probe/0-doe/result.json",
+    "passed": true,
+    "timedSamples": 8,
+    "medianMs": 703.8368185000036,
+    "scope": "instrumented diagnostic; never pooled with confirmation"
+  },
+  {
+    "artifact": "bench/out/doppler-search/20260920-unroll-probe/0-doe/result.json",
+    "passed": true,
+    "timedSamples": 8,
+    "medianMs": 698.774257000001,
+    "scope": "instrumented diagnostic; never pooled with confirmation"
+  },
+  {
+    "artifact": "bench/out/doppler-search/20260920-sync-probe/0-doe/result.json",
+    "passed": true,
+    "timedSamples": 8,
+    "medianMs": 708.0877785000011,
+    "scope": "instrumented diagnostic; never pooled with confirmation"
+  }
+]

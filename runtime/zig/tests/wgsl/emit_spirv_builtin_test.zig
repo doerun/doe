@@ -3,6 +3,10 @@
 const std = @import("std");
 const spirv = @import("../../src/compiler/wgsl/emit/spirv/spirv_builder.zig");
 const mod = @import("../../src/compiler/wgsl/mod.zig");
+const parser = @import("../../src/compiler/wgsl/frontend/parser.zig");
+const sema = @import("../../src/compiler/wgsl/frontend/sema.zig");
+const ir_builder = @import("../../src/compiler/wgsl/ir/ir_builder.zig");
+const loop_helpers = @import("../../src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig");
 
 const testing = std.testing;
 const allocator = testing.allocator;
@@ -54,6 +58,77 @@ test "spirv compute policy preserves innermost multiple-dot loops without changi
 
 fn read_u32_le(bytes: []const u8, offset: usize) u32 {
     return std.mem.readInt(u32, @as(*const [4]u8, @ptrCast(bytes[offset .. offset + 4].ptr)), .little);
+}
+
+test "spirv unrolls independent dot outputs but preserves recurrence alias and side effect cases" {
+    const prefix =
+        \\override COUNT: u32 = 4u;
+        \\@group(0) @binding(0) var<storage, read> data: array<vec4<f32>>;
+        \\@group(0) @binding(1) var<storage, read_write> output: array<f32>;
+        \\fn read_vec(i: u32) -> vec4<f32> { let index = i + 1u; return data[index]; }
+        \\fn mutating_vec(i: u32) -> vec4<f32> { output[0] = 1.0; return data[i]; }
+        \\@compute @workgroup_size(1) fn main() {
+        \\  var results: array<f32, 8>;
+        \\  var total = 0.0;
+    ;
+    const cases = .{
+        .{ "for (var i = 0u; i < COUNT; i++) { let a = read_vec(i); results[i] = results[i] + dot(a, a) + dot(data[i], a); }", true },
+        .{ "for (var i = 0u; i < 9u; i++) { results[i] += dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
+        .{ "for (var i = 0u; i < 4u; i++) { results[0] += dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
+        .{ "for (var i = 0u; i < 4u; i++) { results[i] = results[i+1u] + dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
+        .{ "for (var i = 0u; i < 4u; i++) { let a = mutating_vec(i); results[i] += dot(a, a) + dot(data[i], a); }", false },
+        .{ "for (var i = 0u; i < 4u; i++) { total += 1.0; results[i] += dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
+        .{ "for (var i = 0u; i < 4u; i += 2u) { results[i] += dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
+        .{ "for (var i = 0u; i < 4u; i++) { results[u32(f32(i))] += dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
+        .{ "for (var i = 0u; i < 4u; i++) { let previous = results; results[i] = previous[i+1u] + dot(data[i], data[i]) + dot(data[i+1u], data[i]); }", false },
+    };
+    inline for (cases) |case| {
+        var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
+        const source = prefix ++ case[0] ++ "output[0] = results[0] + total; }";
+        const len = try translateToSpirv(allocator, source, &binary);
+        var offset: usize = 5;
+        var unrolled: u32 = 0;
+        var preserved: u32 = 0;
+        while (offset < len / 4) {
+            const instruction = read_u32_le(&binary, offset * 4);
+            if (@as(u16, @truncate(instruction)) == spirv.Opcode.LoopMerge and
+                read_u32_le(&binary, (offset + 3) * 4) == spirv.LoopControl.Unroll) unrolled += 1;
+            if (@as(u16, @truncate(instruction)) == spirv.Opcode.LoopMerge and
+                read_u32_le(&binary, (offset + 3) * 4) == spirv.LoopControl.DontUnroll) preserved += 1;
+            offset += instruction >> 16;
+        }
+        const enabled = @import("build_options").spirv_compute_unroll_independent_dot_loops;
+        try testing.expectEqual(@as(u32, @intFromBool(enabled and case[1])), unrolled);
+        const preserve = @import("build_options").spirv_compute_preserve_multi_dot_loops;
+        try testing.expectEqual(@as(u32, @intFromBool(preserve and !(enabled and case[1]))), preserved);
+    }
+}
+
+test "spirv independence analysis rejects pointer aliases before emission" {
+    const source =
+        \\@compute @workgroup_size(1) fn main() {
+        \\  var results: array<f32, 8>;
+        \\  let previous = &results;
+        \\  for (var i = 0u; i < 4u; i++) {
+        \\    results[i] = (*previous)[i + 1u] + 1.0;
+        \\  }
+        \\}
+    ;
+    var tree = try parser.parseSource(allocator, source);
+    defer tree.deinit();
+    var semantic = try sema.analyze(allocator, &tree);
+    defer semantic.deinit();
+    var module = try ir_builder.build(allocator, &tree, &semantic);
+    defer module.deinit();
+    var examined: usize = 0;
+    for (module.functions.items) |*function| {
+        for (function.stmts.items) |statement| {
+            if (statement != .loop_) continue;
+            examined += 1;
+            try testing.expect(!loop_helpers.independentIndexedLoop(&module, function, statement.loop_));
+        }
+    }
+    try testing.expectEqual(@as(usize, 1), examined);
 }
 
 fn count_spirv_opcode(binary: []const u8, opcode: u16) u32 {

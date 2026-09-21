@@ -81,7 +81,7 @@ not promise improved accuracy for every input. Frozen application numerical
 requirements remain blocking; agreement among providers is not an oracle.
 The transform owns no workload names, source hashes, or input-specific rules.
 
-Policy version 2 requires `multiDotLoops`. `preserve` marks innermost emitted
+Policy version 3 retains `multiDotLoops`. `preserve` marks innermost emitted
 loops containing multiple dot products with SPIR-V `DontUnroll`. This limits
 driver unrolling that changes rounding across repeated dot accumulation;
 `driver-default` retains the previous loop controls. Other loops, graphics and
@@ -90,8 +90,17 @@ GPU checks or source-specific selection. Driver hints do not promise bitwise
 agreement across devices: frozen numerical tests and physical execution remain
 required. Rebuild and requalify prepared artifacts when the policy changes.
 
-Migration: version 1 configurations add an explicit `multiDotLoops` value and
-advance to version 2. Rebuild the native library
+`preserve-reductions-unroll-independent` retains that reduction protection but
+requests `Unroll` for a bounded loop updating distinct elements of a local
+floating-point array. The emitter checks the induction variable, fixed bound,
+unit step, array capacity, same-element reads, and absence of other writes or
+effectful calls. Unrecognized shapes keep `DontUnroll`; source arithmetic and
+robust bounds remain unchanged. This is an opportunity for driver optimization,
+not a promise about generated code size or performance.
+
+Migration: version 1 configurations add an explicit `multiDotLoops` value.
+Version 2 configurations advance to version 3, retaining `preserve` for the old
+behavior or explicitly selecting the independent-element optimization. Rebuild the native library
 and retain the new library and generated SPIR-V identities. The original WGSL,
 descriptor, and receipt fields keep their meanings. Existing pipeline reuse
 compares actual SPIR-V words, so differently lowered programs cannot share a

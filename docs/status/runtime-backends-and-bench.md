@@ -6,6 +6,11 @@ history remains in the archive.
 
 ## Current boundary
 
+The Qwen reranker compiler experiment, unchanged numerical oracle, separate
+predecessor and Dawn comparisons, and final-build confirmation are indexed at
+`bench/out/doppler-search/20260920-independent-loops/README.md`. This remains
+local AMD/Vulkan evidence; it does not promote a package or establish superiority.
+
 The retained Node-qualified Qwen reranker executes through Doppler's installed
 public Capsule API on an isolated Doe AMD/Vulkan build. Its frozen source oracle,
 resident repeated execution, compiler repair, and cleanup observations are

@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "classification": "local-diagnostic-not-release-claim",
+  "workload": "qwen3-reranker-three-documents",
+  "backend": "amd-vulkan",
+  "comparator": "Final candidate Doe versus predecessor Doe",
+  "policy": {
+    "schemaVersion": 1,
+    "classification": "local-diagnostic",
+    "workload": "qwen3-reranker-three-documents",
+    "measurement": "await session.rerank; complete public operation wall; oracle outside timing",
+    "warmupRuns": 3,
+    "timedRuns": 20,
+    "order": [
+      "candidate",
+      "baseline",
+      "baseline",
+      "candidate"
+    ],
+    "createArgs": [
+      "backend=vulkan",
+      "enable-dawn-features=allow_unsafe_apis"
+    ],
+    "dawnNative": "/home/x/deco/doe/bench/node_modules/webgpu/dist/linux-x64.dawn.node",
+    "unmodifiedOracle": "/var/tmp/doppler-release-20260907-restored-02/retained/references/reranker-reference.json",
+    "unchangedPackage": "/var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu",
+    "candidateHypothesis": "Unroll proven independent local-array dot loops without changing reduction loops or shader arithmetic. Final pointer-alias rejection confirmation."
+  },
+  "checks": {
+    "independentOraclePassed": true,
+    "retainedPlanAndInputMatch": true,
+    "declaredAndRecordedExecutionShapeMatch": true,
+    "processBoundaryGpuActivityAdmitted": true
+  },
+  "providerObservationDifferences": [
+    "Adapter spelling and architecture labels differ between providers.",
+    "Reported maximum buffer size differs by three bytes; neither changes this workload allocation shape.",
+    "Resolved execution digests include those provider observations and are expected to differ."
+  ],
+  "limitations": [
+    "Process-boundary GPU observation cannot see every short-lived client.",
+    "Recorded operation counters are model observations, not a native GPU trace.",
+    "This measures one warm reranking workload, not complete search or general model performance."
+  ],
+  "results": {
+    "baseline": {
+      "queryMs": {
+        "count": 40,
+        "mean": 711.4426782500002,
+        "min": 669.8572359999962,
+        "max": 749.4805469999992,
+        "median": 717.1771819999994,
+        "p95": 743.174755,
+        "p99": 749.4805469999992
+      },
+      "runs": [
+        {
+          "index": 1,
+          "queryMs": {
+            "count": 20,
+            "mean": 716.2419535499997,
+            "min": 669.8572359999962,
+            "max": 749.4805469999992,
+            "median": 720.2226999999984,
+            "p95": 746.7623229999954,
+            "p99": 749.4805469999992
+          },
+          "loadMs": 30140.819136
+        },
+        {
+          "index": 2,
+          "queryMs": {
+            "count": 20,
+            "mean": 706.6434029500008,
+            "min": 673.4733420000048,
+            "max": 743.174755,
+            "median": 708.8442270000014,
+            "p95": 726.1310410000006,
+            "p99": 743.174755
+          },
+          "loadMs": 30868.899628
+        }
+      ],
+      "librarySha256": "c414953cf64e25d28a607e588a1d4ed20b3eec1ee0f1bbbdcc6af3e72d262025"
+    },
+    "candidate": {
+      "queryMs": {
+        "count": 40,
+        "mean": 694.5693612749994,
+        "min": 655.3011970000007,
+        "max": 735.2336209999994,
+        "median": 696.7139810000008,
+        "p95": 724.7304870000007,
+        "p99": 735.2336209999994
+      },
+      "runs": [
+        {
+          "index": 0,
+          "queryMs": {
+            "count": 20,
+            "mean": 694.3447456499995,
+            "min": 659.4084550000043,
+            "max": 724.7304870000007,
+            "median": 694.655095999995,
+            "p95": 714.6249889999963,
+            "p99": 724.7304870000007
+          },
+          "loadMs": 30810.862888
+        },
+        {
+          "index": 3,
+          "queryMs": {
+            "count": 20,
+            "mean": 694.7939768999993,
+            "min": 655.3011970000007,
+            "max": 735.2336209999994,
+            "median": 696.7139810000008,
+            "p95": 729.2558149999968,
+            "p99": 735.2336209999994
+          },
+          "loadMs": 31029.941831
+        }
+      ],
+      "librarySha256": "8909e6e45ae2740eceece6388f20fb69e306ff1f08f7e04855bb949b53391978"
+    }
+  },
+  "candidateOverBaselineMedian": 0.9714670216599297,
+  "candidateOverBaselineP95": 0.9751817888378094
+}

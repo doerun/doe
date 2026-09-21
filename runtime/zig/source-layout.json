@@ -2302,15 +2302,15 @@
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
         "decision": "Keep",
-        "moduleSha256": "03800bd885a95bb1338a511acb42df974ea8078245fc845229ddc571508bdd70",
-        "reason": "Keep: SPIR-V function/control-flow lowering state machine; builtin, stage, texture, and serialization responsibilities are separate.",
-        "reviewer": "codex-multi-dot-loops/2026-09-07"
+        "moduleSha256": "fb705a8fcf706a8a3d6bfa800c80546c59f1ce59d152afe502b6657e14fe59d2",
+        "reason": "Keep: SPIR-V control-flow emission selects the configured loop hint after inspecting emitted dot operations and the typed independent-element proof; instruction ownership remains with this emitter.",
+        "reviewer": "codex-independent-dot-loops/2026-09-20"
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": {
         "decision": "Keep",
-        "moduleSha256": "8ba309d366547c0e9169c1cb9cd06ebd346c1b82446c7659616c64325fe17048",
-        "reason": "Keep: reachable compiler implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-multi-dot-loops/2026-09-07"
+        "moduleSha256": "92664ac007762c8cf4f53cd7eb7b17230a2ab9c692a6fdeb3a6002408c3dee8a",
+        "reason": "Keep: allocation-free SPIR-V function-emission analyses, including conservative local-array loop independence and emitted instruction inspection; no application, runtime scheduling, or benchmark policy ownership.",
+        "reviewer": "codex-independent-dot-loops/2026-09-20"
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_matrix.zig": {
         "decision": "Keep",
@@ -2344,9 +2344,9 @@
       },
       "src/compiler/wgsl/emit/spirv/spirv_spec.zig": {
         "decision": "Keep",
-        "moduleSha256": "b5df9e28d6e57107578eaee74a159c0c3b3bca45eeafd6144fbb269acf9836c1",
-        "reason": "Keep: reachable compiler implementation shared by 2 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-multi-dot-loops/2026-09-07"
+        "moduleSha256": "c6e667c8d774ae8bf7eb0e6b275f4893019518e76a1481f0b106f464ab3c1aaa",
+        "reason": "Keep: canonical numeric SPIR-V vocabulary; Unroll is a format-defined loop-control bit consumed by the emitter.",
+        "reviewer": "codex-independent-dot-loops/2026-09-20"
       },
       "src/compiler/wgsl/emit/toolchain.zig": {
         "decision": "Keep",

@@ -1,0 +1,40 @@
+{
+  "baseCommit": "4ec71f76e741a19c4d1d909af395c9aa390c2069",
+  "preAliasHardeningLibraries": [
+    {
+      "path": "bench/out/doppler-search/20260920-admission/native-final/lib/libwebgpu_doe.so",
+      "sha256": "c414953cf64e25d28a607e588a1d4ed20b3eec1ee0f1bbbdcc6af3e72d262025",
+      "bytes": 11641232
+    },
+    {
+      "path": "bench/out/doppler-search/20260920-independent-loops/native/lib/libwebgpu_doe.so",
+      "sha256": "5bc1c1d771ec210c644f6660481c9fc9b1c4e87cdc89e306cdb9941a0c311e53",
+      "bytes": 11662984
+    },
+    {
+      "path": "bench/node_modules/webgpu/dist/linux-x64.dawn.node",
+      "sha256": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1",
+      "bytes": 18617336
+    }
+  ],
+  "finalLibrary": {
+    "path": "bench/out/doppler-search/20260920-independent-loops/native/lib/libwebgpu_doe.so",
+    "sha256": "8909e6e45ae2740eceece6388f20fb69e306ff1f08f7e04855bb949b53391978",
+    "bytes": 11663048
+  },
+  "q4SpirvBeforeAfterAliasSafeguardIdentical": true,
+  "q4SpirvSha256": "6207fd3353ab417b2d980ae5d6b00e73090e8ccd8f1ff4acb80cd7e546142fc4",
+  "sourceFiles": {
+    "config/spirv-compute-arithmetic-policy.json": "658f8f65c373da30e38d37ccaf686b97a02711fd90d3a535956a6bde96d09956",
+    "config/spirv-compute-arithmetic-policy.schema.json": "280b66c1106694ba74a17a09bb0eb1f6a635f5d7eb87fb388571c6562168082c",
+    "docs/process.md": "ce0e1ec1390b178826d238f88f43dfac7b39a87b35756915c325a9e6b422f0e7",
+    "docs/shader-compiler-architecture.md": "dc210934684c880c04f6770be140ac0e8550b4fb6b44c78b0e15b05ddf0eb792",
+    "docs/status/runtime-backends-and-bench.md": "032fd48b7b816226e1b1344621663171d48ce98be06cc9b8d2b631077e27a3f9",
+    "runtime/zig/build.zig": "b4bcb5ce1ae12d51bb7f4fef7697695567ad8649710beea23e23e58777411fbd",
+    "runtime/zig/source-layout.json": "700796a10f4a7d80c7401512dd8496c02d74f75fbc29240aa16fd2cd0761fb6e",
+    "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": "fb705a8fcf706a8a3d6bfa800c80546c59f1ce59d152afe502b6657e14fe59d2",
+    "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": "92664ac007762c8cf4f53cd7eb7b17230a2ab9c692a6fdeb3a6002408c3dee8a",
+    "runtime/zig/src/compiler/wgsl/emit/spirv/spirv_spec.zig": "c6e667c8d774ae8bf7eb0e6b275f4893019518e76a1481f0b106f464ab3c1aaa",
+    "runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig": "44a9ae659be195a5c369b17543e703bda0180634020caebb155cf86b982afe64"
+  }
+}

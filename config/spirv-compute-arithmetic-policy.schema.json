@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "offsetMultiplyAdd", "multiDotLoops"],
   "properties": {
-    "schemaVersion": {"type": "integer", "const": 2},
+    "schemaVersion": {"type": "integer", "const": 3},
     "offsetMultiplyAdd": {
       "type": "string",
       "enum": ["source-order", "fuse-trailing-add"],
@@ -13,8 +13,8 @@
     },
     "multiDotLoops": {
       "type": "string",
-      "enum": ["driver-default", "preserve"],
-      "description": "Build-time policy for compute-only SPIR-V modules. Preserve innermost loops containing multiple emitted OpDot instructions with DontUnroll to avoid driver unrolling changing accumulated rounding. Other loops and other targets retain their existing controls."
+      "enum": ["driver-default", "preserve", "preserve-reductions-unroll-independent"],
+      "description": "Compute-only SPIR-V loop policy. Preserve applies DontUnroll to innermost loops containing multiple emitted OpDot instructions. Preserve-reductions-unroll-independent keeps that protection except for proven independent, bounded local-array element updates, which receive Unroll. Driver-default applies neither hint. Other loops and targets retain their existing controls."
     }
   }
 }

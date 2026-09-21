@@ -336,13 +336,14 @@ fn addCompilerArithmeticPolicy(options: *std.Build.Step.Options, allocator: std.
     const Policy = struct {
         schemaVersion: u32,
         offsetMultiplyAdd: enum { @"source-order", @"fuse-trailing-add" },
-        multiDotLoops: enum { @"driver-default", preserve },
+        multiDotLoops: enum { @"driver-default", preserve, @"preserve-reductions-unroll-independent" },
     };
     const policy = std.json.parseFromSlice(Policy, allocator, bytes, .{}) catch
         @panic("invalid SPIR-V compute arithmetic policy");
-    if (policy.value.schemaVersion != 2) @panic("unsupported SPIR-V compute arithmetic policy version");
+    if (policy.value.schemaVersion != 3) @panic("unsupported SPIR-V compute arithmetic policy version");
     options.addOption(bool, "spirv_compute_fuse_trailing_add", policy.value.offsetMultiplyAdd == .@"fuse-trailing-add");
-    options.addOption(bool, "spirv_compute_preserve_multi_dot_loops", policy.value.multiDotLoops == .preserve);
+    options.addOption(bool, "spirv_compute_preserve_multi_dot_loops", policy.value.multiDotLoops != .@"driver-default");
+    options.addOption(bool, "spirv_compute_unroll_independent_dot_loops", policy.value.multiDotLoops == .@"preserve-reductions-unroll-independent");
 }
 
 fn addMetalWaitPolicy(options: *std.Build.Step.Options, allocator: std.mem.Allocator) void {
