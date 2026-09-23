@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "classification": "local-diagnostic-not-release-claim",
+  "workload": "qwen3-reranker-three-documents",
+  "backend": "amd-vulkan",
+  "comparator": "Candidate Doe versus predecessor Doe and Node webgpu 0.4.0 (Dawn)",
+  "policy": {
+    "schemaVersion": 1,
+    "classification": "local-diagnostic",
+    "workload": "qwen3-reranker-three-documents",
+    "measurement": "await session.rerank; complete public operation wall; oracle outside timing",
+    "warmupRuns": 3,
+    "timedRuns": 20,
+    "order": [
+      "baseline",
+      "candidate",
+      "dawn",
+      "dawn",
+      "candidate",
+      "baseline"
+    ],
+    "createArgs": [
+      "backend=vulkan",
+      "enable-dawn-features=allow_unsafe_apis"
+    ],
+    "dawnNative": "/home/x/deco/doe/bench/node_modules/webgpu/dist/linux-x64.dawn.node",
+    "unmodifiedOracle": "/var/tmp/doppler-release-20260907-restored-02/retained/references/reranker-reference.json",
+    "unchangedPackage": "/var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu",
+    "candidateHypothesis": "Retain synchronization only where immutable native allocation accesses can conflict; preserve uniform visibility and unknown-resource barriers."
+  },
+  "checks": {
+    "independentOraclePassed": true,
+    "retainedPlanAndInputMatch": true,
+    "declaredAndRecordedExecutionShapeMatch": true,
+    "processBoundaryGpuActivityAdmitted": true
+  },
+  "providerObservationDifferences": [
+    "Adapter spelling and architecture labels differ between providers.",
+    "Reported maximum buffer size differs by three bytes; neither changes this workload allocation shape.",
+    "Resolved execution digests include those provider observations and are expected to differ."
+  ],
+  "limitations": [
+    "Process-boundary GPU observation cannot see every short-lived client.",
+    "Recorded operation counters are model observations, not a native GPU trace.",
+    "This measures one warm reranking workload, not complete search or general model performance."
+  ],
+  "results": {
+    "baseline": {
+      "queryMs": {
+        "count": 40,
+        "mean": 689.9274601249999,
+        "min": 654.7456050000037,
+        "max": 728.2601439999999,
+        "median": 690.7168189999938,
+        "p95": 724.8523940000014,
+        "p99": 728.2601439999999
+      },
+      "runs": [
+        {
+          "index": 0,
+          "queryMs": {
+            "count": 20,
+            "mean": 683.4939179,
+            "min": 654.7456050000037,
+            "max": 706.4671759999983,
+            "median": 686.5747249999986,
+            "p95": 705.0000149999978,
+            "p99": 706.4671759999983
+          },
+          "loadMs": 31038.666142000002
+        },
+        {
+          "index": 5,
+          "queryMs": {
+            "count": 20,
+            "mean": 696.3610023499998,
+            "min": 656.4626329999955,
+            "max": 728.2601439999999,
+            "median": 693.3613850000038,
+            "p95": 725.5607509999973,
+            "p99": 728.2601439999999
+          },
+          "loadMs": 30392.406539
+        }
+      ],
+      "librarySha256": "f65e8adbc8bdef0c968e7ffda1107607f01af69e891046b92acd1939ea5d5b2f"
+    },
+    "candidate": {
+      "queryMs": {
+        "count": 40,
+        "mean": 689.4710458249998,
+        "min": 640.4897669999991,
+        "max": 757.4479300000021,
+        "median": 689.533761000006,
+        "p95": 719.1836719999992,
+        "p99": 757.4479300000021
+      },
+      "runs": [
+        {
+          "index": 1,
+          "queryMs": {
+            "count": 20,
+            "mean": 684.14109465,
+            "min": 640.8745340000023,
+            "max": 719.1836719999992,
+            "median": 683.340360999995,
+            "p95": 712.4590299999982,
+            "p99": 719.1836719999992
+          },
+          "loadMs": 30727.361119999998
+        },
+        {
+          "index": 4,
+          "queryMs": {
+            "count": 20,
+            "mean": 694.8009969999996,
+            "min": 640.4897669999991,
+            "max": 757.4479300000021,
+            "median": 693.7656330000027,
+            "p95": 739.8498499999987,
+            "p99": 757.4479300000021
+          },
+          "loadMs": 30440.273919
+        }
+      ],
+      "librarySha256": "a6f830e8fb76930cf962f7b3e1919b5121e8d18a3ff2393f2ce629e0c2552fc3"
+    },
+    "dawn": {
+      "queryMs": {
+        "count": 40,
+        "mean": 591.0382694000002,
+        "min": 529.2866789999971,
+        "max": 662.5681929999992,
+        "median": 542.8147630000021,
+        "p95": 654.7175120000029,
+        "p99": 662.5681929999992
+      },
+      "runs": [
+        {
+          "index": 2,
+          "queryMs": {
+            "count": 20,
+            "mean": 589.0725451500002,
+            "min": 529.2866789999971,
+            "max": 660.6237970000002,
+            "median": 538.9285610000006,
+            "p95": 652.029757999997,
+            "p99": 660.6237970000002
+          },
+          "loadMs": 31338.649441
+        },
+        {
+          "index": 3,
+          "queryMs": {
+            "count": 20,
+            "mean": 593.0039936500001,
+            "min": 530.5587020000021,
+            "max": 662.5681929999992,
+            "median": 542.8147630000021,
+            "p95": 654.7175120000029,
+            "p99": 662.5681929999992
+          },
+          "loadMs": 30306.325448
+        }
+      ],
+      "librarySha256": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1"
+    }
+  },
+  "candidateOverBaselineMedian": 0.9982872025590739,
+  "candidateOverBaselineP95": 0.992179480888902,
+  "candidateOverDawnMedian": 1.2702929396929525,
+  "candidateOverDawnP95": 1.098464083850557
+}

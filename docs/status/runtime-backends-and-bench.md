@@ -6,6 +6,13 @@ history remains in the archive.
 
 ## Current boundary
 
+The Qwen reranker ownership correction, rejected synchronization experiment,
+and fresh matched predecessor/Dawn cohorts are indexed at
+`bench/out/doppler-search/20260923-shader-owner/README.md`. The measured deficit
+remains open; removing cached shader copies does not establish a latency gain.
+The runtime keeps conservative replay barriers and corrects uniform visibility.
+These diagnostics do not promote the accepted package or a speed claim.
+
 The Qwen reranker compiler experiment, unchanged numerical oracle, separate
 predecessor and Dawn comparisons, and final-build confirmation are indexed at
 `bench/out/doppler-search/20260920-independent-loops/README.md`. This remains

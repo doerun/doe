@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "classification": "local-diagnostic",
+  "workload": "qwen3-reranker-three-documents",
+  "measurement": "Diagnostic: one timestamped compute pass per dispatch; changes scheduling; never a performance claim.",
+  "warmupRuns": 3,
+  "timedRuns": 2,
+  "order": [
+    "doe",
+    "dawn"
+  ],
+  "createArgs": [
+    "backend=vulkan",
+    "enable-dawn-features=allow_unsafe_apis"
+  ],
+  "dawnNative": "/home/x/deco/doe/bench/node_modules/webgpu/dist/linux-x64.dawn.node",
+  "unmodifiedOracle": "/var/tmp/doppler-release-20260907-restored-02/retained/references/reranker-reference.json",
+  "unchangedPackage": "/var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu",
+  "candidateHypothesis": "Current HEAD ordinary WebGPU reference against Dawn before shader owner changes."
+}

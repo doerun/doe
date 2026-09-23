@@ -1,0 +1,482 @@
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 673efd8db..a6b8679f8 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -1222,15 +1222,15 @@
+       },
+       "src/backend/vulkan/mod.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "175ecea289fedded340002e805fba713cd052bb80eea6dd28be2530d735cdbc9",
+-        "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-common-audit/2026-09-19"
++        "moduleSha256": "8a67445f6f20ac0eb7b717127c9f0ced7cfa21cec1898e0f777b60c1a14532ad",
++        "reason": "Keep: Explicit artifact capture consumes a retained shader owner and releases it on success or capture failure; command boundaries discard stale ownership.",
++        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+       },
+       "src/backend/vulkan/native_runtime.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c",
+-        "reason": "Keep: Vulkan execution owns native dispatch recording; zero workgroup counts preserve valid empty WebGPU work without changing pipeline validation.",
+-        "reviewer": "codex-shader-semantics/2026-09-19"
++        "moduleSha256": "cccf207a602102842cfed99c93aee3145864684cc1ab2adcc82601401870e7d8",
++        "reason": "Keep: The device runtime retains pending shader identity independently of active and cached execution references and releases it during teardown.",
++        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+       },
+       "src/backend/vulkan/vk_adapter_probe.zig": {
+         "decision": "Keep",
+@@ -1264,15 +1264,15 @@
+       },
+       "src/backend/vulkan/vk_compute_sync.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "3b343025cfa3b59edb3d97b6701293483855dd14be2017f3f9ecf7403885e7ba",
+-        "reason": "Keep: Owns compute and transfer visibility accounting; indirect-only visibility retains shader hazards and tracker discharge covers compute plus indirect consumption.",
+-        "reviewer": "codex-vulkan-file-review/2026-09-20"
++        "moduleSha256": "20f60be7c3fcc510eb334688d9bc0291acfa6a7797c38848d1cce2a735464ee1",
++        "reason": "Keep: Compute and transfer visibility include uniform-buffer reads as well as storage and indirect accesses; conservative replay barriers remain after the access-tracker experiment was rejected.",
++        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+       },
+       "src/backend/vulkan/vk_constants.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "92c57c53dabcc58182a349031a9aa956446f2315ece1eebe5a0adcb45ba71628",
+-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
+-        "reviewer": "codex-recording-ownership/2026-09-06"
++        "moduleSha256": "2bb9ef74b74bef85086b0195d372b9cbe035150cffd8c4c8a09c92c891e1dfba",
++        "reason": "Keep: Owns Vulkan ABI constants including the distinct uniform-read access bit required by the compute synchronization owner.",
++        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+       },
+       "src/backend/vulkan/vk_device.zig": {
+         "decision": "Keep",
+@@ -1330,9 +1330,9 @@
+       },
+       "src/backend/vulkan/vk_pipeline.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "7fcc450ef0aa78130f27aef5289b82dd9fdb768e1ee59f60b5342c7880f64739",
+-        "reason": "Keep: pipeline and layout ownership retain descriptor preparation through its dedicated module and release identity snapshots with native state.",
+-        "reviewer": "codex-common-audit/2026-09-19"
++        "moduleSha256": "1a5025c5960da8753b62979a15ca1312089f2c33a8d85cbf004a6d81d79d2ff1",
++        "reason": "Keep: Shader selection retains its actual immutable pipeline owner instead of copying SPIR-V on cache hits; replacement acquires before releasing the previous owner.",
++        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+       },
+       "src/backend/vulkan/vk_pipeline_cache.zig": {
+         "decision": "Keep",
+@@ -4228,9 +4228,9 @@
+       },
+       "src/backend/vulkan/vk_shared_pipeline.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "fb5ddf4288af5f1065c187937aa86d76fd0ebdea970d053b2e5c0fa9ba529b00",
+-        "reason": "Keep: immutable pipeline and layout identity checks have one owner shared by device interning and local compute-state selection.",
+-        "reviewer": "codex-pipeline-identity/2026-09-05"
++        "moduleSha256": "f15d1c9e6fa7db80957fe165f263cf2c3d2633542cc3f444329b19cbf98be9d0",
++        "reason": "Keep: The device-local registry owns immutable words and native pipelines; checked reference acquisition is shared by cache, program and artifact owners.",
++        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+       },
+       "src/backend/vulkan/vk_descriptor_identity.zig": {
+         "decision": "Keep",
+diff --git a/runtime/zig/src/backend/vulkan/mod.zig b/runtime/zig/src/backend/vulkan/mod.zig
+index 02772bd63..5d3779be0 100644
+--- a/runtime/zig/src/backend/vulkan/mod.zig
++++ b/runtime/zig/src/backend/vulkan/mod.zig
+@@ -27,6 +27,8 @@ const artifact_state = @import("../common/artifact_state.zig");
+ const artifact_emit = @import("artifact_emit.zig");
+ const backend_execute = @import("backend_execute.zig");
+ const native_runtime = @import("native_runtime.zig");
++const vk_pipeline = @import("vk_pipeline.zig");
++const shared_pipeline = @import("vk_shared_pipeline.zig");
+ const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
+ 
+ const STATUS_MESSAGE_BYTES: usize = 256;
+@@ -194,17 +196,17 @@ pub const ZigVulkanBackend = struct {
+     }
+ 
+     fn beginCommand(self: *ZigVulkanBackend) void {
+-        if (self.takePendingSpirv()) |stale| self.allocator.free(stale);
+         if (self.runtime) |*runtime| {
++            vk_pipeline.discardPendingSpirv(runtime);
+             runtime.last_submit_count = null;
+         }
+     }
+ 
+-    pub fn takePendingSpirv(self: *ZigVulkanBackend) ?[]u8 {
++    pub fn takePendingSpirv(self: *ZigVulkanBackend) ?*shared_pipeline.Pipeline {
+         if (self.runtime) |*runtime| {
+-            const bytes = runtime.pending_spirv_bytes_owned;
+-            runtime.pending_spirv_bytes_owned = null;
+-            return bytes;
++            const owner = runtime.pending_spirv_pipeline;
++            runtime.pending_spirv_pipeline = null;
++            return owner;
+         }
+         return null;
+     }
+@@ -245,8 +247,12 @@ pub const ZigVulkanBackend = struct {
+ 
+         if (out.status == .ok and artifact_policy.should_emit_shader_artifact(command)) {
+             const status_code = artifact_policy.artifact_status_code(out);
+-            const spirv = self.takePendingSpirv();
+-            defer if (spirv) |bytes| self.allocator.free(bytes);
++            const owner = self.takePendingSpirv();
++            defer if (owner) |pipeline| {
++                const runtime = &self.runtime.?;
++                runtime.shared_pipelines.release(runtime.allocator, runtime.device, pipeline);
++            };
++            const spirv = if (owner) |pipeline| std.mem.sliceAsBytes(pipeline.words) else null;
+             self.artifacts.capture(command_info.shader_artifact_module(command), meta, status_code, spirv, self.shader_source_hash_for_module(command_info.shader_artifact_module(command))) catch |err| {
+                 out.status = .@"error";
+                 out.status_message = @errorName(err);
+@@ -603,13 +609,64 @@ test "new command discards prewarm or failed-command artifact staging" {
+     // Capability rejection must not access native device fields.
+     backend.runtime = @as(native_runtime.NativeVulkanRuntime, undefined);
+     backend.runtime.?.last_submit_count = 1;
+-    backend.runtime.?.pending_spirv_bytes_owned = try std.testing.allocator.dupe(u8, "stale prewarm bytes");
++    var pipeline = shared_pipeline.Pipeline{
++        .handle = 0,
++        .creation_layout = 0,
++        .words = &.{0x07230203},
++        .entry_point = @constCast("main"),
++        .layout = &.{},
++        .required_subgroup_size = null,
++        .references = 2,
++    };
++    backend.runtime.?.allocator = std.testing.allocator;
++    backend.runtime.?.device = null;
++    backend.runtime.?.shared_pipelines = .{};
++    backend.runtime.?.pending_spirv_pipeline = &pipeline;
+     defer {
+-        if (backend.takePendingSpirv()) |bytes| std.testing.allocator.free(bytes);
++        vk_pipeline.discardPendingSpirv(&backend.runtime.?);
+         backend.runtime = null;
+     }
+     const result = try execute_command(backend, .{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } });
+     try std.testing.expectEqual(@TypeOf(result.status).unsupported, result.status);
+-    try std.testing.expect(backend.runtime.?.pending_spirv_bytes_owned == null);
++    try std.testing.expect(backend.runtime.?.pending_spirv_pipeline == null);
++    try std.testing.expectEqual(@as(usize, 1), pipeline.references);
+     try std.testing.expect(backend.runtime.?.last_submit_count == null);
+ }
++
++test "Vulkan artifact capture releases its shader owner on success and every allocation failure" {
++    for (0..4) |fail_index| {
++        const backend = try ZigVulkanBackend.init(std.testing.allocator, .{
++            .vendor = "amd",
++            .api = .vulkan,
++            .driver_version = .{ .major = 0, .minor = 0, .patch = 0 },
++        }, null);
++        defer destroyContext(backend);
++        var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = fail_index });
++        backend.artifacts.allocator = failing.allocator();
++        var words = [_]u32{ 0x07230203, 1, 2 };
++        const expected = words;
++        var pipeline = shared_pipeline.Pipeline{
++            .handle = 0,
++            .creation_layout = 0,
++            .words = &words,
++            .entry_point = @constCast("main"),
++            .layout = &.{},
++            .required_subgroup_size = null,
++            .references = 2,
++        };
++        backend.runtime = .{ .allocator = std.testing.allocator, .kernel_root = null, .pending_spirv_pipeline = &pipeline };
++        defer backend.runtime = null;
++        const result = backend.annotate_result(.{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } }, .{ .status = .ok, .status_message = "ok" });
++        try std.testing.expectEqual(@as(usize, 1), pipeline.references);
++        try std.testing.expect(backend.runtime.?.pending_spirv_pipeline == null);
++        if (fail_index < 3) {
++            try std.testing.expectEqual(webgpu.NativeExecutionStatus.@"error", result.status);
++            try std.testing.expectEqualStrings("OutOfMemory", result.status_message);
++            try std.testing.expect(backend.artifacts.pending == null);
++        } else {
++            try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, result.status);
++            @memset(&words, 0);
++            try std.testing.expectEqualSlices(u8, std.mem.sliceAsBytes(&expected), backend.artifacts.pending.?.spirv.?);
++        }
++    }
++}
+diff --git a/runtime/zig/src/backend/vulkan/native_runtime.zig b/runtime/zig/src/backend/vulkan/native_runtime.zig
+index 79b79d129..5cebcc79a 100644
+--- a/runtime/zig/src/backend/vulkan/native_runtime.zig
++++ b/runtime/zig/src/backend/vulkan/native_runtime.zig
+@@ -175,11 +175,9 @@ pub const NativeVulkanRuntime = struct {
+     deferred_command_buffers: std.ArrayListUnmanaged(c.VkCommandBuffer) = .{},
+     deferred_command_buffer_index: usize = 0,
+ 
+-    /// Last-compiled SPIR-V bytes awaiting shader-artifact-manifest emission.
+-    /// Allocator-owned. Transferred to the manifest emitter which writes a
+-    /// sibling .spv file for `shader_artifact_gate.py --require-spirv-validation`
+-    /// to validate with spirv-val, then frees the allocation.
+-    pending_spirv_bytes_owned: ?[]u8 = null,
++    /// Retains the selected immutable shader owner until capture or discard.
++    /// Independent of the active/cache reference, including pipeline replacement.
++    pending_spirv_pipeline: ?*shared.Pipeline = null,
+ 
+     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeVulkanRuntime {
+         return init_with_backend_policy(allocator, kernel_root, .prefer_graphics_compute, .prefer_timeline_semaphore, .fixed_32_when_supported);
+@@ -224,10 +222,7 @@ pub const NativeVulkanRuntime = struct {
+     }
+ 
+     pub fn deinit(self: *NativeVulkanRuntime) void {
+-        if (self.pending_spirv_bytes_owned) |bytes| {
+-            self.allocator.free(bytes);
+-            self.pending_spirv_bytes_owned = null;
+-        }
++        vk_pipeline.discardPendingSpirv(self);
+         _ = self.flush_queue() catch {};
+         vk_pipeline.release_retired_states(self);
+         vk_upload.release_pending_uploads(self);
+diff --git a/runtime/zig/src/backend/vulkan/vk_compute_sync.zig b/runtime/zig/src/backend/vulkan/vk_compute_sync.zig
+index 9c3635b01..a7b7b4a4e 100644
+--- a/runtime/zig/src/backend/vulkan/vk_compute_sync.zig
++++ b/runtime/zig/src/backend/vulkan/vk_compute_sync.zig
+@@ -22,7 +22,7 @@ pub fn make_prior_transfer_writes_visible_for_indirect_dispatch(self: anytype, c
+         .pNext = null,
+         .srcAccessMask = c.VK_ACCESS_TRANSFER_WRITE_BIT,
+         .dstAccessMask = c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
+-            c.VK_ACCESS_SHADER_READ_BIT |
++            c.VK_ACCESS_UNIFORM_READ_BIT | c.VK_ACCESS_SHADER_READ_BIT |
+             c.VK_ACCESS_SHADER_WRITE_BIT,
+     };
+     c.vkCmdPipelineBarrier(
+@@ -207,7 +207,7 @@ fn emit_compute_write_visibility_barrier(self: anytype, command_buffer: c.VkComm
+         .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+         .pNext = null,
+         .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT,
+-        .dstAccessMask = c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT | c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
++        .dstAccessMask = c.VK_ACCESS_UNIFORM_READ_BIT | c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT | c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
+     };
+     c.vkCmdPipelineBarrier(
+         command_buffer,
+diff --git a/runtime/zig/src/backend/vulkan/vk_constants.zig b/runtime/zig/src/backend/vulkan/vk_constants.zig
+index a7706ca58..c04fbe4f0 100644
+--- a/runtime/zig/src/backend/vulkan/vk_constants.zig
++++ b/runtime/zig/src/backend/vulkan/vk_constants.zig
+@@ -338,6 +338,7 @@ pub const VK_MEMORY_PROPERTY_HOST_CACHED_BIT: u32 = 0x00000008;
+ 
+ // --- Access flags ---
+ pub const VK_ACCESS_INDIRECT_COMMAND_READ_BIT: u32 = 0x00000001;
++pub const VK_ACCESS_UNIFORM_READ_BIT: u32 = 0x00000008;
+ pub const VK_ACCESS_SHADER_READ_BIT: u32 = 0x00000020;
+ pub const VK_ACCESS_SHADER_WRITE_BIT: u32 = 0x00000040;
+ pub const VK_ACCESS_COLOR_ATTACHMENT_READ_BIT: u32 = 0x00000080;
+diff --git a/runtime/zig/src/backend/vulkan/vk_pipeline.zig b/runtime/zig/src/backend/vulkan/vk_pipeline.zig
+index a7fa33d5c..172c80507 100644
+--- a/runtime/zig/src/backend/vulkan/vk_pipeline.zig
++++ b/runtime/zig/src/backend/vulkan/vk_pipeline.zig
+@@ -257,7 +257,7 @@ pub fn set_compute_shader_spirv_with_hashes(
+     }
+     try descriptors.prepare(self, bindings, initialize_buffers_on_create, descriptor_bindings_hash);
+     vk_compute_sync.capture_current_compute_bindings(self, bindings);
+-    try stage_spirv_for_artifact(self, words);
++    try stageSpirvForArtifact(self);
+ }
+ pub fn rebuild_compute_shader_spirv(self: anytype, words: []const u32) !void {
+     if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
+@@ -320,42 +320,75 @@ fn build_pipeline_for_request(self: anytype, request: shared.Request, pipeline_h
+     self.current_pipeline_hash = pipeline_hash;
+ }
+ 
+-fn stage_spirv_for_artifact(self: anytype, words: []const u32) !void {
+-    const owned = try self.allocator.dupe(u8, std.mem.sliceAsBytes(words));
+-    if (self.pending_spirv_bytes_owned) |stale| self.allocator.free(stale);
+-    self.pending_spirv_bytes_owned = owned;
++fn stageSpirvForArtifact(self: anytype) !void {
++    const owner = self.shared_pipeline orelse return error.InvalidState;
++    if (owner == self.pending_spirv_pipeline) return;
++    try owner.retain();
++    discardPendingSpirv(self);
++    self.pending_spirv_pipeline = owner;
+ }
+ 
+-test "staged SPIR-V receipt replaces prewarm bytes" {
++pub fn discardPendingSpirv(self: anytype) void {
++    const owner = self.pending_spirv_pipeline orelse return;
++    self.pending_spirv_pipeline = null;
++    self.shared_pipelines.release(self.allocator, self.device, owner);
++}
++
++test "staged SPIR-V retains the actual shader across selection replacement without allocation" {
+     const Fixture = struct {
+         allocator: std.mem.Allocator,
+-        pending_spirv_bytes_owned: ?[]u8 = null,
++        device: c.VkDevice = null,
++        shared_pipelines: shared.Registry = .{},
++        shared_pipeline: ?*shared.Pipeline = null,
++        pending_spirv_pipeline: ?*shared.Pipeline = null,
+     };
+-    var fixture = Fixture{ .allocator = std.testing.allocator };
+-    defer if (fixture.pending_spirv_bytes_owned) |bytes| fixture.allocator.free(bytes);
+-    const prewarm_words = [_]u32{ SPIRV_MAGIC, 1, 2 };
+-    const executed_words = [_]u32{ SPIRV_MAGIC, 3, 4 };
+-
+-    try stage_spirv_for_artifact(&fixture, &prewarm_words);
+-    try stage_spirv_for_artifact(&fixture, &executed_words);
+-
+-    try std.testing.expectEqualSlices(
+-        u8,
+-        std.mem.sliceAsBytes(&executed_words),
+-        fixture.pending_spirv_bytes_owned.?,
+-    );
++    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
++    var fixture = Fixture{ .allocator = failing.allocator() };
++    defer discardPendingSpirv(&fixture);
++    var prewarm = artifactTestPipeline(&.{ SPIRV_MAGIC, 1, 2 });
++    var executed = artifactTestPipeline(&.{ SPIRV_MAGIC, 3, 4 });
++    fixture.shared_pipeline = &prewarm;
++    try stageSpirvForArtifact(&fixture);
++    try std.testing.expectEqual(@as(usize, 2), prewarm.references);
++    for (0..100) |_| try stageSpirvForArtifact(&fixture);
++    try std.testing.expectEqual(@as(usize, 2), prewarm.references);
++    fixture.shared_pipeline = &executed;
++    try std.testing.expectEqual(@as(?*shared.Pipeline, &prewarm), fixture.pending_spirv_pipeline);
++    try stageSpirvForArtifact(&fixture);
++    try std.testing.expectEqual(@as(usize, 1), prewarm.references);
++    try std.testing.expectEqual(@as(usize, 2), executed.references);
++    try std.testing.expect(fixture.pending_spirv_pipeline.?.words.ptr == executed.words.ptr);
++    discardPendingSpirv(&fixture);
++    discardPendingSpirv(&fixture);
++    try std.testing.expectEqual(@as(usize, 1), executed.references);
++    try std.testing.expectEqual(@as(usize, 0), failing.allocations);
+ }
+ 
+-test "SPIR-V staging allocation failure preserves the previous owner" {
+-    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 1 });
+-    const Fixture = struct { allocator: std.mem.Allocator, pending_spirv_bytes_owned: ?[]u8 = null };
+-    var fixture = Fixture{ .allocator = failing.allocator() };
+-    defer if (fixture.pending_spirv_bytes_owned) |bytes| fixture.allocator.free(bytes);
+-    const first = [_]u32{ SPIRV_MAGIC, 1 };
+-    const next = [_]u32{ SPIRV_MAGIC, 2 };
+-    try stage_spirv_for_artifact(&fixture, &first);
+-    try std.testing.expectError(error.OutOfMemory, stage_spirv_for_artifact(&fixture, &next));
+-    try std.testing.expectEqualSlices(u8, std.mem.sliceAsBytes(&first), fixture.pending_spirv_bytes_owned.?);
++test "SPIR-V staging failed acquisition preserves the previous owner" {
++    const Fixture = struct {
++        allocator: std.mem.Allocator = std.testing.allocator,
++        device: c.VkDevice = null,
++        shared_pipelines: shared.Registry = .{},
++        shared_pipeline: ?*shared.Pipeline = null,
++        pending_spirv_pipeline: ?*shared.Pipeline = null,
++    };
++    var fixture = Fixture{};
++    var first = artifactTestPipeline(&.{ SPIRV_MAGIC, 1 });
++    var next = artifactTestPipeline(&.{ SPIRV_MAGIC, 2 });
++    fixture.shared_pipeline = &first;
++    try stageSpirvForArtifact(&fixture);
++    defer discardPendingSpirv(&fixture);
++    next.references = std.math.maxInt(usize);
++    fixture.shared_pipeline = &next;
++    try std.testing.expectError(error.Overflow, stageSpirvForArtifact(&fixture));
++    fixture.shared_pipeline = null;
++    try std.testing.expectError(error.InvalidState, stageSpirvForArtifact(&fixture));
++    try std.testing.expectEqual(@as(?*shared.Pipeline, &first), fixture.pending_spirv_pipeline);
++    try std.testing.expectEqual(@as(usize, 2), first.references);
++}
++
++fn artifactTestPipeline(words: []const u32) shared.Pipeline {
++    return .{ .handle = c.VK_NULL_U64, .creation_layout = c.VK_NULL_U64, .words = words, .entry_point = @constCast("main"), .layout = &.{}, .required_subgroup_size = null };
+ }
+ 
+ fn required_subgroup_size_for_pipeline(self: anytype, words: []const u32) ?u32 {
+diff --git a/runtime/zig/src/backend/vulkan/vk_shared_pipeline.zig b/runtime/zig/src/backend/vulkan/vk_shared_pipeline.zig
+index 4c11d98d7..37ad0c6e5 100644
+--- a/runtime/zig/src/backend/vulkan/vk_shared_pipeline.zig
++++ b/runtime/zig/src/backend/vulkan/vk_shared_pipeline.zig
+@@ -41,12 +41,16 @@ pub const Request = struct {
+ pub const Pipeline = struct {
+     handle: c.VkPipeline,
+     creation_layout: c.VkPipelineLayout,
+-    words: []u32,
++    words: []const u32,
+     entry_point: [:0]u8,
+     layout: []LayoutBinding,
+     required_subgroup_size: ?u32,
+     references: usize = 1,
+ 
++    pub fn retain(self: *Pipeline) !void {
++        self.references = try std.math.add(usize, self.references, 1);
++    }
++
+     pub fn matches(self: *const Pipeline, request: Request) !bool {
+         if (self.required_subgroup_size != request.required_subgroup_size or
+             !std.mem.eql(u32, self.words, request.words) or
+@@ -80,7 +84,7 @@ pub const Registry = struct {
+     ) !*Pipeline {
+         if (share) for (self.entries.items) |entry| {
+             if (try entry.matches(request)) {
+-                entry.references = try std.math.add(usize, entry.references, 1);
++                try entry.retain();
+                 return entry;
+             }
+         };
+diff --git a/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig b/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig
+index 262236907..2cf5f49d5 100644
+--- a/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig
++++ b/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig
+@@ -478,7 +478,8 @@ test "Vulkan prepared programs share live pipelines and keep private descriptors
+     try first.submit(&rt);
+     try expect_reuse_output(&rt, 101, &.{ 7, 8, 0, 0 });
+     first.deinit(&rt);
+-    try std.testing.expectEqual(@as(usize, 1), second_pipeline.references);
++    try std.testing.expectEqual(@as(usize, 2), second_pipeline.references);
++    try std.testing.expectEqual(@as(?*shared.Pipeline, second_pipeline), rt.pending_spirv_pipeline);
+     try second.submit(&rt);
+     try expect_reuse_output(&rt, 102, &.{ 7, 8, 9, 10 });
+ 
+@@ -486,7 +487,7 @@ test "Vulkan prepared programs share live pipelines and keep private descriptors
+     try failed.begin(&rt);
+     try std.testing.expectError(error.InvalidArgument, rt.set_compute_shader_spirv(words, "missing_entry", &bindings, false));
+     failed.deinit(&rt);
+-    try std.testing.expectEqual(@as(usize, 1), second_pipeline.references);
++    try std.testing.expectEqual(@as(usize, 2), second_pipeline.references);
+     try second.submit(&rt);
+     try expect_reuse_output(&rt, 102, &.{ 14, 16, 18, 20 });
+ 
+@@ -522,6 +523,10 @@ test "Vulkan prepared programs share live pipelines and keep private descriptors
+     try expect_reuse_output(&other_device, 102, &.{ 7, 8, 9, 10 });
+ 
+     second.deinit(&rt);
++    try std.testing.expectEqual(@as(usize, 1), rt.shared_pipelines.entries.items.len);
++    try std.testing.expectEqual(@as(usize, 1), rt.pending_spirv_pipeline.?.references);
++    try std.testing.expectEqualSlices(u32, changed_words, rt.pending_spirv_pipeline.?.words);
++    @import("../../src/backend/vulkan/vk_pipeline.zig").discardPendingSpirv(&rt);
+     try std.testing.expectEqual(@as(usize, 0), rt.shared_pipelines.entries.items.len);
+ }
+ 
+@@ -551,3 +556,40 @@ test "strict Vulkan upload policy allows fast_mapped for small, forces staged fo
+     try std.testing.expect(!native_runtime.upload_uses_direct_path(strict_policy, .copy_dst, 4 * 1024 * 1024 * 1024));
+     try std.testing.expect(!native_runtime.upload_uses_direct_path(strict_policy, .copy_dst_copy_src, 4 * 1024 * 1024));
+ }
++
++test "Vulkan recorded compute writes become visible to uniform consumers" {
++    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
++        error.UnsupportedFeature => return error.SkipZigTest,
++        else => return err,
++    };
++    defer rt.deinit();
++    const source_binding = compute.KernelBinding{ .binding = 0, .resource_kind = .buffer, .resource_handle = 211, .buffer_size = REUSE_BUFFER_BYTES, .buffer_type = binding_types.WGPUBufferBindingType_Storage };
++    const result_binding = compute.KernelBinding{ .binding = 1, .resource_kind = .buffer, .resource_handle = 212, .buffer_size = REUSE_BUFFER_BYTES, .buffer_type = binding_types.WGPUBufferBindingType_Storage };
++    _ = try resources.ensure_compute_buffer_for_binding(&rt, source_binding, true);
++    _ = try resources.ensure_compute_buffer_for_binding(&rt, result_binding, true);
++    var uniform_binding = source_binding;
++    uniform_binding.buffer_type = binding_types.WGPUBufferBindingType_Uniform;
++    const consumer =
++        \\@group(0) @binding(0) var<uniform> input: vec4u;
++        \\@group(0) @binding(1) var<storage, read_write> output: array<u32>;
++        \\@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3u) {
++        \\    output[id.x] = input[id.x];
++        \\}
++    ;
++    var producer_spirv: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
++    const producer_length = try compiler.translateToSpirv(std.testing.allocator, REUSE_SHADER, &producer_spirv);
++    var consumer_spirv: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
++    const consumer_length = try compiler.translateToSpirv(std.testing.allocator, consumer, &consumer_spirv);
++    var program = compute_program.ComputeProgram{};
++    defer program.deinit(&rt);
++    try program.begin(&rt);
++    try rt.set_compute_shader_spirv(std.mem.bytesAsSlice(u32, producer_spirv[0..producer_length]), "main", &.{source_binding}, false);
++    try rt.record_prepared_dispatch_replay_on(program.command_buffer, 4, 1, 1);
++    try rt.set_compute_shader_spirv(std.mem.bytesAsSlice(u32, consumer_spirv[0..consumer_length]), "main", &.{ uniform_binding, result_binding }, false);
++    try rt.record_prepared_dispatch_replay_on(program.command_buffer, 4, 1, 1);
++    try program.finish(&rt);
++    try program.submit(&rt);
++    try expect_reuse_output(&rt, 212, &.{ 7, 8, 9, 10 });
++    try program.submit(&rt);
++    try expect_reuse_output(&rt, 212, &.{ 14, 16, 18, 20 });
++}

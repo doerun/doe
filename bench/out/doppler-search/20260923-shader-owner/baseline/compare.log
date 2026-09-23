@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "classification": "local-diagnostic-not-release-claim",
+  "workload": "qwen3-reranker-three-documents",
+  "backend": "amd-vulkan",
+  "comparator": "Current HEAD Doe versus Node webgpu 0.4.0 (Dawn)",
+  "policy": {
+    "schemaVersion": 1,
+    "classification": "local-diagnostic",
+    "workload": "qwen3-reranker-three-documents",
+    "measurement": "await session.rerank; complete public operation wall; oracle outside timing",
+    "warmupRuns": 3,
+    "timedRuns": 20,
+    "order": [
+      "baseline",
+      "dawn",
+      "dawn",
+      "baseline"
+    ],
+    "createArgs": [
+      "backend=vulkan",
+      "enable-dawn-features=allow_unsafe_apis"
+    ],
+    "dawnNative": "/home/x/deco/doe/bench/node_modules/webgpu/dist/linux-x64.dawn.node",
+    "unmodifiedOracle": "/var/tmp/doppler-release-20260907-restored-02/retained/references/reranker-reference.json",
+    "unchangedPackage": "/var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu",
+    "candidateHypothesis": "Current HEAD ordinary WebGPU reference against Dawn before shader owner changes."
+  },
+  "checks": {
+    "independentOraclePassed": true,
+    "retainedPlanAndInputMatch": true,
+    "declaredAndRecordedExecutionShapeMatch": true,
+    "processBoundaryGpuActivityAdmitted": true
+  },
+  "providerObservationDifferences": [
+    "Adapter spelling and architecture labels differ between providers.",
+    "Reported maximum buffer size differs by three bytes; neither changes this workload allocation shape.",
+    "Resolved execution digests include those provider observations and are expected to differ."
+  ],
+  "limitations": [
+    "Process-boundary GPU observation cannot see every short-lived client.",
+    "Recorded operation counters are model observations, not a native GPU trace.",
+    "This measures one warm reranking workload, not complete search or general model performance."
+  ],
+  "results": {
+    "baseline": {
+      "queryMs": {
+        "count": 40,
+        "mean": 691.7096391750005,
+        "min": 657.3175219999976,
+        "max": 731.4291230000017,
+        "median": 690.470110000002,
+        "p95": 722.1386129999955,
+        "p99": 731.4291230000017
+      },
+      "runs": [
+        {
+          "index": 0,
+          "queryMs": {
+            "count": 20,
+            "mean": 694.1469918999999,
+            "min": 658.8089390000023,
+            "max": 731.4291230000017,
+            "median": 691.0632380000025,
+            "p95": 723.1386679999996,
+            "p99": 731.4291230000017
+          },
+          "loadMs": 32039.096919
+        },
+        {
+          "index": 3,
+          "queryMs": {
+            "count": 20,
+            "mean": 689.272286450001,
+            "min": 657.3175219999976,
+            "max": 722.0019080000056,
+            "median": 689.9055579999986,
+            "p95": 717.0746370000052,
+            "p99": 722.0019080000056
+          },
+          "loadMs": 31102.716257
+        }
+      ],
+      "librarySha256": "8909e6e45ae2740eceece6388f20fb69e306ff1f08f7e04855bb949b53391978"
+    },
+    "dawn": {
+      "queryMs": {
+        "count": 40,
+        "mean": 589.5923012999998,
+        "min": 529.4896959999969,
+        "max": 658.7635100000043,
+        "median": 542.1319279999952,
+        "p95": 655.8331040000048,
+        "p99": 658.7635100000043
+      },
+      "runs": [
+        {
+          "index": 1,
+          "queryMs": {
+            "count": 20,
+            "mean": 587.7960052999991,
+            "min": 529.4896959999969,
+            "max": 656.1517049999966,
+            "median": 542.1319279999952,
+            "p95": 652.5749309999956,
+            "p99": 656.1517049999966
+          },
+          "loadMs": 30726.672928
+        },
+        {
+          "index": 2,
+          "queryMs": {
+            "count": 20,
+            "mean": 591.3885973000004,
+            "min": 530.1461220000056,
+            "max": 658.7635100000043,
+            "median": 540.2183480000022,
+            "p95": 655.8331040000048,
+            "p99": 658.7635100000043
+          },
+          "loadMs": 30856.857586000002
+        }
+      ],
+      "librarySha256": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1"
+    }
+  },
+  "baselineOverDawnMedian": 1.2736200809040121,
+  "baselineOverDawnP95": 1.1011011926595127
+}

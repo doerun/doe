@@ -1,0 +1,8 @@
+START 0 baseline
+END 0 baseline exit 0 activity True
+START 1 dawn
+END 1 dawn exit 0 activity True
+START 2 dawn
+END 2 dawn exit 0 activity True
+START 3 baseline
+END 3 baseline exit 0 activity True

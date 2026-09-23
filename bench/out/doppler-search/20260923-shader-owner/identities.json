@@ -1,0 +1,72 @@
+{
+  "baseCommit": "37f874bc9af750ffaa584e0db602d29655c3437d",
+  "libraries": [
+    {
+      "path": "bench/out/doppler-search/20260920-independent-loops/native/lib/libwebgpu_doe.so",
+      "sha256": "8909e6e45ae2740eceece6388f20fb69e306ff1f08f7e04855bb949b53391978",
+      "bytes": 11663048
+    },
+    {
+      "path": "bench/out/doppler-search/20260923-shader-owner/owner-native/lib/libwebgpu_doe.so",
+      "sha256": "f65e8adbc8bdef0c968e7ffda1107607f01af69e891046b92acd1939ea5d5b2f",
+      "bytes": 11662272
+    },
+    {
+      "path": "bench/node_modules/webgpu/dist/linux-x64.dawn.node",
+      "sha256": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1",
+      "bytes": 18617336
+    },
+    {
+      "path": "bench/out/doppler-search/20260923-shader-owner/sync-native/lib/libwebgpu_doe.so",
+      "sha256": "a6f830e8fb76930cf962f7b3e1919b5121e8d18a3ff2393f2ce629e0c2552fc3",
+      "bytes": 11668056
+    },
+    {
+      "path": "bench/out/doppler-search/20260923-shader-owner/final-native/lib/libwebgpu_doe.so",
+      "sha256": "c49073f5b420b098776c82a3fc5e5bfd22600b5465c9fa9370624375d937e0a3",
+      "bytes": 11662368
+    }
+  ],
+  "classification": "local-diagnostic-not-release-qualified",
+  "component": "Vulkan compute pipeline and artifact ownership",
+  "intent": "preserved",
+  "boundaryEffects": "No public API, model, oracle, shader transformation, or release change. Retained shader ownership and explicit Vulkan uniform visibility; conservative replay barriers retained.",
+  "syncCandidateSourceFiles": {
+    "runtime/zig/src/backend/vulkan/mod.zig": "8a67445f6f20ac0eb7b717127c9f0ced7cfa21cec1898e0f777b60c1a14532ad",
+    "runtime/zig/src/backend/vulkan/native_runtime.zig": "a6c86c11c3187ce2ab761f63e0adb667416e02794dae15eb6825045ddec33125",
+    "runtime/zig/src/backend/vulkan/vk_compute_sync.zig": "579dde7ec4b2eb3f6f562e544ceaa5aa6ed42c2573fffb5900b64955e23f8b6c",
+    "runtime/zig/src/backend/vulkan/vk_constants.zig": "2bb9ef74b74bef85086b0195d372b9cbe035150cffd8c4c8a09c92c891e1dfba",
+    "runtime/zig/src/backend/vulkan/vk_dispatch_indirect.zig": "11e90c908e0c2976937e2a998ad4b6f5496b336fb66d1c9afc67d36c63a2b736",
+    "runtime/zig/src/backend/vulkan/vk_pipeline.zig": "05e578712b54e58a73fdca39c26710c4235324701e3f9c8349196b5425baeff3",
+    "runtime/zig/src/backend/vulkan/vk_shared_pipeline.zig": "f15d1c9e6fa7db80957fe165f263cf2c3d2633542cc3f444329b19cbf98be9d0",
+    "runtime/zig/src/backend/vulkan/vk_texture_commands.zig": "31817e1000a7176fb7a76f66b68d67c3505a799b3142e38b08116313c7742a2e",
+    "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig": "3fab375b24de5626976af4c59bb7c3dbc076a0c287bde705d674993f71b86b1b"
+  },
+  "sourceFiles": {
+    "runtime/zig/src/backend/vulkan/mod.zig": "8a67445f6f20ac0eb7b717127c9f0ced7cfa21cec1898e0f777b60c1a14532ad",
+    "runtime/zig/src/backend/vulkan/native_runtime.zig": "cccf207a602102842cfed99c93aee3145864684cc1ab2adcc82601401870e7d8",
+    "runtime/zig/src/backend/vulkan/vk_compute_sync.zig": "20f60be7c3fcc510eb334688d9bc0291acfa6a7797c38848d1cce2a735464ee1",
+    "runtime/zig/src/backend/vulkan/vk_constants.zig": "2bb9ef74b74bef85086b0195d372b9cbe035150cffd8c4c8a09c92c891e1dfba",
+    "runtime/zig/src/backend/vulkan/vk_pipeline.zig": "1a5025c5960da8753b62979a15ca1312089f2c33a8d85cbf004a6d81d79d2ff1",
+    "runtime/zig/src/backend/vulkan/vk_shared_pipeline.zig": "f15d1c9e6fa7db80957fe165f263cf2c3d2633542cc3f444329b19cbf98be9d0",
+    "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig": "e6f2e6d1384115d4ef69cee874ef93f2058ee4767ac725f6001c7a267fa82f65"
+  },
+  "patches": {
+    "owner.patch": {
+      "sha256": "8dbf3f076a31658091fb99da74cf3575167efe31dbb9bdc5019140a13a474017",
+      "baseCommit": "37f874bc9af750ffaa584e0db602d29655c3437d"
+    },
+    "sync.patch": {
+      "sha256": "c42d290a60341849904f16bb74169c75b1da1d1616cf67065c1a6a158f8c6473",
+      "baseCommit": "37f874bc9af750ffaa584e0db602d29655c3437d"
+    },
+    "final.patch": {
+      "sha256": "07cc2aa3b61a2ea7b6764dd0632f3ab47137958b3f1b55e912e06640892f4401",
+      "baseCommit": "37f874bc9af750ffaa584e0db602d29655c3437d"
+    }
+  },
+  "toolchain": "0.15.2",
+  "node": "v22.22.1",
+  "host": "Linux 128 7.0.0-29-generic #29-Ubuntu SMP PREEMPT_DYNAMIC Fri Jul 17 20:52:35 UTC 2026 x86_64 GNU/Linux",
+  "schemaVersion": 1
+}

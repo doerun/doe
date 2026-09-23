@@ -1,0 +1,68 @@
+Zig source architecture review signals:
+src/backend/vulkan/native_runtime.zig: 998 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_render.zig: 981 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_resources.zig: 1069 lines exceeds advisory review signal 800
+src/backend/vulkan/vk_upload.zig: 843 lines exceeds advisory review signal 800
+src/backend/vulkan/vulkan_surface.zig: 808 lines exceeds advisory review signal 800
+src/compiler/tsir/digest.zig: 999 lines exceeds advisory review signal 800
+src/compiler/tsir/emit_kernel_body.zig: 895 lines exceeds advisory review signal 800
+src/compiler/tsir/frontend.zig: 885 lines exceeds advisory review signal 800
+src/compiler/tsir/reference_extended_ops.zig: 841 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_exec_v1.zig: 989 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_compile_source.zig: 895 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_host_runtime.zig: 837 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_ir_walk.zig: 888 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/csl/emit_csl_layout.zig: 911 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/msl/emit_msl_ir.zig: 981 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig: 839 lines exceeds advisory review signal 800
+src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig: 1052 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/parser_expr.zig: 851 lines exceeds advisory review signal 800
+src/compiler/wgsl/frontend/sema.zig: 806 lines exceeds advisory review signal 800
+src/compiler/wgsl/ir/ir_transform_robustness.zig: 984 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_proof_match.zig: 890 lines exceeds advisory review signal 800
+src/compiler/wgsl/proof/dispatch_uniform_bounds.zig: 878 lines exceeds advisory review signal 800
+src/dropin/dropin_browser_shared_memory.zig: 806 lines exceeds advisory review signal 800
+src/native/compute/doe_compute_fast.zig: 1062 lines exceeds advisory review signal 800
+src/native/queue/doe_queue_submit_metal.zig: 837 lines exceeds advisory review signal 800
+src/native/resource/doe_texture_sampler_native.zig: 829 lines exceeds advisory review signal 800
+src/native/shader/doe_shader_native.zig: 956 lines exceeds advisory review signal 800
+src/native/vulkan/vulkan_compute_native.zig: 835 lines exceeds advisory review signal 800
+src/runtime/trace/trace.zig: 879 lines exceeds advisory review signal 800
+src/spatial/csl/csl_host_plan_tool.zig: 828 lines exceeds advisory review signal 800
+test
++- run test
+   +- compile test ReleaseFast native 1 errors
+src/backend/vulkan/mod.zig:657:28: error: missing struct field: kernel_root
+        backend.runtime = .{ .allocator = std.testing.allocator, .pending_spirv_pipeline = &pipeline };
+                          ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/backend/vulkan/native_runtime.zig:49:33: note: struct declared here
+pub const NativeVulkanRuntime = struct {
+                                ^~~~~~
+referenced by:
+    vulkan_mod: tests/vulkan/vulkan_mod_integration_test.zig:6:28
+    test.vulkan headless surface lifecycle executes natively: tests/vulkan/vulkan_mod_integration_test.zig:217:25
+    2 reference(s) hidden; use '-freference-trace=4' to see all references
+error: the following command failed with 1 compilation errors:
+/home/x/.local/zig/zig-x86_64-linux-0.15.2/zig test /home/x/deco/doe/runtime/zig/src/backend/d3d12/d3d12_bridge_stubs.c -lvulkan /home/x/deco/doe/runtime/zig/src/backend/metal/metal_bridge_stubs.c -OReleaseFast -I /home/x/deco/doe/runtime/zig/src/backend/d3d12 -I /home/x/deco/doe/runtime/zig/src/backend/metal -I /home/x/deco/doe/runtime/zig/vendor/webgpu-headers -I /home/x/deco/doe/runtime/zig/src/backend/d3d12 -I /home/x/deco/doe/runtime/zig/src/backend/metal --dep build_options -Mroot=/home/x/deco/doe/runtime/zig/test_suite.zig -Mbuild_options=.zig-cache/c/db8edd3b6678ba048ec8ceebeffdd324/options.zig -lc --cache-dir .zig-cache --global-cache-dir /home/x/.cache/zig --name test --zig-lib-dir /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib/ --listen=-
+
+Build Summary: 13/16 steps succeeded; 1 failed
+test transitive failure
++- zig fmt --check success
++- run python3 success 827ms MaxRSS:13M
++- run python3 success 509ms MaxRSS:29M
++- run python3 success 35ms MaxRSS:22M
++- run python3 success 50ms MaxRSS:20M
++- run python3 success 35ms MaxRSS:21M
++- run python3 success 86ms MaxRSS:12M
++- run test transitive failure
+   +- compile test ReleaseFast native 1 errors
+      +- options cached
+dropin success
++- install webgpu_doe success
+|  +- compile lib webgpu_doe ReleaseFast native success 28s MaxRSS:699M
+|     +- options (reused)
++- install generated to share/doe-build-metadata.json success
+   +- WriteFile doe-build-metadata.json cached
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/a31bb2f35a74f7b168246adc0daea465/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0xfecd8cd2 -Z1b71b79f5b640fb1 test dropin -Doptimize=ReleaseFast --prefix /home/x/deco/doe/bench/out/doppler-search/20260923-shader-owner/owner-native --summary all

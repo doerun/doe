@@ -1222,15 +1222,15 @@
       },
       "src/backend/vulkan/mod.zig": {
         "decision": "Keep",
-        "moduleSha256": "175ecea289fedded340002e805fba713cd052bb80eea6dd28be2530d735cdbc9",
-        "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-common-audit/2026-09-19"
+        "moduleSha256": "8a67445f6f20ac0eb7b717127c9f0ced7cfa21cec1898e0f777b60c1a14532ad",
+        "reason": "Keep: Explicit artifact capture consumes a retained shader owner and releases it on success or capture failure; command boundaries discard stale ownership.",
+        "reviewer": "codex-qwen-owner-sync/2026-09-23"
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "03118a8ac9535c33bc6345d7a484ece4b4f637ba0e8451661f8b0c39bfddf05c",
-        "reason": "Keep: Vulkan execution owns native dispatch recording; zero workgroup counts preserve valid empty WebGPU work without changing pipeline validation.",
-        "reviewer": "codex-shader-semantics/2026-09-19"
+        "moduleSha256": "cccf207a602102842cfed99c93aee3145864684cc1ab2adcc82601401870e7d8",
+        "reason": "Keep: The device runtime retains pending shader identity independently of active and cached execution references and releases it during teardown.",
+        "reviewer": "codex-qwen-owner-sync/2026-09-23"
       },
       "src/backend/vulkan/vk_adapter_probe.zig": {
         "decision": "Keep",
@@ -1264,15 +1264,15 @@
       },
       "src/backend/vulkan/vk_compute_sync.zig": {
         "decision": "Keep",
-        "moduleSha256": "3b343025cfa3b59edb3d97b6701293483855dd14be2017f3f9ecf7403885e7ba",
-        "reason": "Keep: Owns compute and transfer visibility accounting; indirect-only visibility retains shader hazards and tracker discharge covers compute plus indirect consumption.",
-        "reviewer": "codex-vulkan-file-review/2026-09-20"
+        "moduleSha256": "20f60be7c3fcc510eb334688d9bc0291acfa6a7797c38848d1cce2a735464ee1",
+        "reason": "Keep: Compute and transfer visibility include uniform-buffer reads as well as storage and indirect accesses; conservative replay barriers remain after the access-tracker experiment was rejected.",
+        "reviewer": "codex-qwen-owner-sync/2026-09-23"
       },
       "src/backend/vulkan/vk_constants.zig": {
         "decision": "Keep",
-        "moduleSha256": "92c57c53dabcc58182a349031a9aa956446f2315ece1eebe5a0adcb45ba71628",
-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
-        "reviewer": "codex-recording-ownership/2026-09-06"
+        "moduleSha256": "2bb9ef74b74bef85086b0195d372b9cbe035150cffd8c4c8a09c92c891e1dfba",
+        "reason": "Keep: Owns Vulkan ABI constants including the distinct uniform-read access bit required by the compute synchronization owner.",
+        "reviewer": "codex-qwen-owner-sync/2026-09-23"
       },
       "src/backend/vulkan/vk_device.zig": {
         "decision": "Keep",
@@ -1330,9 +1330,9 @@
       },
       "src/backend/vulkan/vk_pipeline.zig": {
         "decision": "Keep",
-        "moduleSha256": "7fcc450ef0aa78130f27aef5289b82dd9fdb768e1ee59f60b5342c7880f64739",
-        "reason": "Keep: pipeline and layout ownership retain descriptor preparation through its dedicated module and release identity snapshots with native state.",
-        "reviewer": "codex-common-audit/2026-09-19"
+        "moduleSha256": "1a5025c5960da8753b62979a15ca1312089f2c33a8d85cbf004a6d81d79d2ff1",
+        "reason": "Keep: Shader selection retains its actual immutable pipeline owner instead of copying SPIR-V on cache hits; replacement acquires before releasing the previous owner.",
+        "reviewer": "codex-qwen-owner-sync/2026-09-23"
       },
       "src/backend/vulkan/vk_pipeline_cache.zig": {
         "decision": "Keep",
@@ -4228,9 +4228,9 @@
       },
       "src/backend/vulkan/vk_shared_pipeline.zig": {
         "decision": "Keep",
-        "moduleSha256": "fb5ddf4288af5f1065c187937aa86d76fd0ebdea970d053b2e5c0fa9ba529b00",
-        "reason": "Keep: immutable pipeline and layout identity checks have one owner shared by device interning and local compute-state selection.",
-        "reviewer": "codex-pipeline-identity/2026-09-05"
+        "moduleSha256": "f15d1c9e6fa7db80957fe165f263cf2c3d2633542cc3f444329b19cbf98be9d0",
+        "reason": "Keep: The device-local registry owns immutable words and native pipelines; checked reference acquisition is shared by cache, program and artifact owners.",
+        "reviewer": "codex-qwen-owner-sync/2026-09-23"
       },
       "src/backend/vulkan/vk_descriptor_identity.zig": {
         "decision": "Keep",

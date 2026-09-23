@@ -41,11 +41,15 @@ pub const Request = struct {
 pub const Pipeline = struct {
     handle: c.VkPipeline,
     creation_layout: c.VkPipelineLayout,
-    words: []u32,
+    words: []const u32,
     entry_point: [:0]u8,
     layout: []LayoutBinding,
     required_subgroup_size: ?u32,
     references: usize = 1,
+
+    pub fn retain(self: *Pipeline) !void {
+        self.references = try std.math.add(usize, self.references, 1);
+    }
 
     pub fn matches(self: *const Pipeline, request: Request) !bool {
         if (self.required_subgroup_size != request.required_subgroup_size or
@@ -80,7 +84,7 @@ pub const Registry = struct {
     ) !*Pipeline {
         if (share) for (self.entries.items) |entry| {
             if (try entry.matches(request)) {
-                entry.references = try std.math.add(usize, entry.references, 1);
+                try entry.retain();
                 return entry;
             }
         };

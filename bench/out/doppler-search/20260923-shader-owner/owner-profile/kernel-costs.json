@@ -1,0 +1,58 @@
+{
+  "0-doe/profile-3.json": {
+    "matmul_f16w_f32a_pipeline": 261.6490550000001,
+    "attention_prefill_small_f16kv_pipeline": 163.47838099999998,
+    "matmul_q4_fused_widetile_pipeline": 63.01520499999995,
+    "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=1|PRE_RESIDUAL=1|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": 21.75527000000001,
+    "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=0|PRE_RESIDUAL=0|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": 18.614177,
+    "residual_vec4_pipeline": 12.084735,
+    "silu_default_pipeline_HAS_GATE=1|INPUT_USE_IDENTITY=1": 10.196862999999995,
+    "rmsnorm_qk_default_pipeline_K_WEIGHT_IS_F16=1|Q_WEIGHT_IS_F16=1|RMS_NORM_OFFSET=0": 5.905739999999999,
+    "rope_qk_default_pipeline": 0.5441950000000003,
+    "kv_cache_write_f32_to_f16_pipeline": 0.43943500000000013,
+    "gather_f16_vec4_pipeline": 0.018716999999999998,
+    "lm_head_select_logits_f16w_f32a_pipeline_WORKGROUP_SIZE=256": 0.01563
+  },
+  "0-doe/profile-4.json": {
+    "matmul_f16w_f32a_pipeline": 259.418226,
+    "attention_prefill_small_f16kv_pipeline": 163.19254399999997,
+    "matmul_q4_fused_widetile_pipeline": 58.999998000000026,
+    "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=1|PRE_RESIDUAL=1|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": 19.326995000000004,
+    "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=0|PRE_RESIDUAL=0|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": 17.802018999999998,
+    "residual_vec4_pipeline": 11.725729,
+    "silu_default_pipeline_HAS_GATE=1|INPUT_USE_IDENTITY=1": 9.883336000000003,
+    "rmsnorm_qk_default_pipeline_K_WEIGHT_IS_F16=1|Q_WEIGHT_IS_F16=1|RMS_NORM_OFFSET=0": 5.578682999999999,
+    "rope_qk_default_pipeline": 0.5391440000000001,
+    "kv_cache_write_f32_to_f16_pipeline": 0.43875100000000006,
+    "gather_f16_vec4_pipeline": 0.017954,
+    "lm_head_select_logits_f16w_f32a_pipeline_WORKGROUP_SIZE=256": 0.015671
+  },
+  "1-dawn/profile-3.json": {
+    "matmul_f16w_f32a_pipeline": 237.24032,
+    "attention_prefill_small_f16kv_pipeline": 169.8037760000001,
+    "matmul_q4_fused_widetile_pipeline": 36.372480000000174,
+    "rmsnorm_qk_default_pipeline_K_WEIGHT_IS_F16=1|Q_WEIGHT_IS_F16=1|RMS_NORM_OFFSET=0": 1.7694720000000006,
+    "silu_default_pipeline_HAS_GATE=1|INPUT_USE_IDENTITY=1": 1.4417920000000004,
+    "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=1|PRE_RESIDUAL=1|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": 1.3107200000000003,
+    "residual_vec4_pipeline": 1.1796480000000003,
+    "rope_qk_default_pipeline": 0.9830400000000002,
+    "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=0|PRE_RESIDUAL=0|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": 0.8519680000000002,
+    "kv_cache_write_f32_to_f16_pipeline": 0.39321599999999995,
+    "gather_f16_vec4_pipeline": 0.131072,
+    "lm_head_select_logits_f16w_f32a_pipeline_WORKGROUP_SIZE=256": 0.0
+  },
+  "1-dawn/profile-4.json": {
+    "matmul_f16w_f32a_pipeline": 237.30585600000006,
+    "attention_prefill_small_f16kv_pipeline": 170.72128000000006,
+    "matmul_q4_fused_widetile_pipeline": 35.979264000000164,
+    "rmsnorm_qk_default_pipeline_K_WEIGHT_IS_F16=1|Q_WEIGHT_IS_F16=1|RMS_NORM_OFFSET=0": 1.9660800000000007,
+    "silu_default_pipeline_HAS_GATE=1|INPUT_USE_IDENTITY=1": 1.4417920000000004,
+    "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=1|PRE_RESIDUAL=1|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": 1.1796480000000003,
+    "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=0|PRE_RESIDUAL=0|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": 1.1141120000000002,
+    "residual_vec4_pipeline": 1.0485760000000002,
+    "kv_cache_write_f32_to_f16_pipeline": 0.45875199999999994,
+    "rope_qk_default_pipeline": 0.39321599999999995,
+    "gather_f16_vec4_pipeline": 0.065536,
+    "lm_head_select_logits_f16w_f32a_pipeline_WORKGROUP_SIZE=256": 0.0
+  }
+}

@@ -1,0 +1,4 @@
+no step named 'test-vulkan'
+  access the help menu with 'zig build -h'
+error: the following build command failed with exit code 1:
+.zig-cache/o/a31bb2f35a74f7b168246adc0daea465/build /home/x/.local/zig/zig-x86_64-linux-0.15.2/zig /home/x/.local/zig/zig-x86_64-linux-0.15.2/lib /home/x/deco/doe/runtime/zig .zig-cache /home/x/.cache/zig --seed 0x9514b033 -Z3c426b980343ac9c test test-vulkan dropin -Doptimize=ReleaseFast --prefix /home/x/deco/doe/bench/out/doppler-search/20260923-shader-owner/owner-native --summary all

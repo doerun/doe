@@ -27,6 +27,8 @@ const artifact_state = @import("../common/artifact_state.zig");
 const artifact_emit = @import("artifact_emit.zig");
 const backend_execute = @import("backend_execute.zig");
 const native_runtime = @import("native_runtime.zig");
+const vk_pipeline = @import("vk_pipeline.zig");
+const shared_pipeline = @import("vk_shared_pipeline.zig");
 const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 
 const STATUS_MESSAGE_BYTES: usize = 256;
@@ -194,17 +196,17 @@ pub const ZigVulkanBackend = struct {
     }
 
     fn beginCommand(self: *ZigVulkanBackend) void {
-        if (self.takePendingSpirv()) |stale| self.allocator.free(stale);
         if (self.runtime) |*runtime| {
+            vk_pipeline.discardPendingSpirv(runtime);
             runtime.last_submit_count = null;
         }
     }
 
-    pub fn takePendingSpirv(self: *ZigVulkanBackend) ?[]u8 {
+    pub fn takePendingSpirv(self: *ZigVulkanBackend) ?*shared_pipeline.Pipeline {
         if (self.runtime) |*runtime| {
-            const bytes = runtime.pending_spirv_bytes_owned;
-            runtime.pending_spirv_bytes_owned = null;
-            return bytes;
+            const owner = runtime.pending_spirv_pipeline;
+            runtime.pending_spirv_pipeline = null;
+            return owner;
         }
         return null;
     }
@@ -245,8 +247,12 @@ pub const ZigVulkanBackend = struct {
 
         if (out.status == .ok and artifact_policy.should_emit_shader_artifact(command)) {
             const status_code = artifact_policy.artifact_status_code(out);
-            const spirv = self.takePendingSpirv();
-            defer if (spirv) |bytes| self.allocator.free(bytes);
+            const owner = self.takePendingSpirv();
+            defer if (owner) |pipeline| {
+                const runtime = &self.runtime.?;
+                runtime.shared_pipelines.release(runtime.allocator, runtime.device, pipeline);
+            };
+            const spirv = if (owner) |pipeline| std.mem.sliceAsBytes(pipeline.words) else null;
             self.artifacts.capture(command_info.shader_artifact_module(command), meta, status_code, spirv, self.shader_source_hash_for_module(command_info.shader_artifact_module(command))) catch |err| {
                 out.status = .@"error";
                 out.status_message = @errorName(err);
@@ -603,13 +609,64 @@ test "new command discards prewarm or failed-command artifact staging" {
     // Capability rejection must not access native device fields.
     backend.runtime = @as(native_runtime.NativeVulkanRuntime, undefined);
     backend.runtime.?.last_submit_count = 1;
-    backend.runtime.?.pending_spirv_bytes_owned = try std.testing.allocator.dupe(u8, "stale prewarm bytes");
+    var pipeline = shared_pipeline.Pipeline{
+        .handle = 0,
+        .creation_layout = 0,
+        .words = &.{0x07230203},
+        .entry_point = @constCast("main"),
+        .layout = &.{},
+        .required_subgroup_size = null,
+        .references = 2,
+    };
+    backend.runtime.?.allocator = std.testing.allocator;
+    backend.runtime.?.device = null;
+    backend.runtime.?.shared_pipelines = .{};
+    backend.runtime.?.pending_spirv_pipeline = &pipeline;
     defer {
-        if (backend.takePendingSpirv()) |bytes| std.testing.allocator.free(bytes);
+        vk_pipeline.discardPendingSpirv(&backend.runtime.?);
         backend.runtime = null;
     }
     const result = try execute_command(backend, .{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } });
     try std.testing.expectEqual(@TypeOf(result.status).unsupported, result.status);
-    try std.testing.expect(backend.runtime.?.pending_spirv_bytes_owned == null);
+    try std.testing.expect(backend.runtime.?.pending_spirv_pipeline == null);
+    try std.testing.expectEqual(@as(usize, 1), pipeline.references);
     try std.testing.expect(backend.runtime.?.last_submit_count == null);
+}
+
+test "Vulkan artifact capture releases its shader owner on success and every allocation failure" {
+    for (0..4) |fail_index| {
+        const backend = try ZigVulkanBackend.init(std.testing.allocator, .{
+            .vendor = "amd",
+            .api = .vulkan,
+            .driver_version = .{ .major = 0, .minor = 0, .patch = 0 },
+        }, null);
+        defer destroyContext(backend);
+        var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = fail_index });
+        backend.artifacts.allocator = failing.allocator();
+        var words = [_]u32{ 0x07230203, 1, 2 };
+        const expected = words;
+        var pipeline = shared_pipeline.Pipeline{
+            .handle = 0,
+            .creation_layout = 0,
+            .words = &words,
+            .entry_point = @constCast("main"),
+            .layout = &.{},
+            .required_subgroup_size = null,
+            .references = 2,
+        };
+        backend.runtime = .{ .allocator = std.testing.allocator, .kernel_root = null, .pending_spirv_pipeline = &pipeline };
+        defer backend.runtime = null;
+        const result = backend.annotate_result(.{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } }, .{ .status = .ok, .status_message = "ok" });
+        try std.testing.expectEqual(@as(usize, 1), pipeline.references);
+        try std.testing.expect(backend.runtime.?.pending_spirv_pipeline == null);
+        if (fail_index < 3) {
+            try std.testing.expectEqual(webgpu.NativeExecutionStatus.@"error", result.status);
+            try std.testing.expectEqualStrings("OutOfMemory", result.status_message);
+            try std.testing.expect(backend.artifacts.pending == null);
+        } else {
+            try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, result.status);
+            @memset(&words, 0);
+            try std.testing.expectEqualSlices(u8, std.mem.sliceAsBytes(&expected), backend.artifacts.pending.?.spirv.?);
+        }
+    }
 }

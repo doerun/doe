@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "classification": "local-diagnostic-not-release-qualified",
+  "baseCommit": "37f874bc9af750ffaa584e0db602d29655c3437d",
+  "objective": "Close the ordinary WebGPU Qwen reranker deficit against Dawn on AMD/Vulkan",
+  "objectiveAchieved": false,
+  "experiments": [
+    {
+      "id": "immutable-shader-owner",
+      "retained": true,
+      "outcome": "targeted-staging-allocation-eliminated-no-established-application-speed-gain",
+      "comparison": "owner-compare/comparison.json",
+      "patch": "owner.patch",
+      "checks": "owner-verified.log"
+    },
+    {
+      "id": "native-allocation-aware-replay-synchronization",
+      "retained": false,
+      "outcome": "rejected-inconclusive-gain-with-worse-p99",
+      "comparison": "sync-compare/comparison.json",
+      "patch": "sync.patch",
+      "checks": "sync-final-check.log"
+    }
+  ],
+  "correctnessRepair": {
+    "id": "uniform-read-visibility",
+    "retained": true,
+    "evidence": "final-build.log",
+    "mechanism": "Compute and transfer barriers include the distinct uniform-buffer read access bit.",
+    "boundary": "Source-level omission corrected and storage-to-uniform physical regression passed; predecessor numerical failure was not reproduced."
+  },
+  "finalComparison": "final-compare/comparison.json",
+  "finalPatch": "final.patch",
+  "finalBuildChecks": "final-build.log",
+  "finalTestCounts": {
+    "passed": 2301,
+    "skipped": 11
+  },
+  "priorEvidence": "20260920-independent-loops cohorts remain separate; no historical samples pooled.",
+  "limitations": [
+    "Shared-host local diagnostic; no release qualification or A/A calibration acceptance.",
+    "GPU observer uses process-boundary snapshots; CPU exclusivity and all transient GPU clients are not established.",
+    "Recorded model operation parity is not a complete native GPU trace.",
+    "No whole-application allocation, peak GPU residency, or unprofiled CPU-cost reduction claim.",
+    "Profiling changes pass boundaries and cannot prove intrinsic shader costs.",
+    "Existing ordinary-provider render-output failure remains open; embedding Capsule rejects Node admission.",
+    "No Metal, D3D12, Fawn, complete document-search, package publication or accepted-binary change."
+  ],
+  "nextAction": "Stop this bounded batch. The deficit remains; use retained kernel costs and negative synchronization result to select future work without repeating this candidate."
+}

@@ -478,7 +478,8 @@ test "Vulkan prepared programs share live pipelines and keep private descriptors
     try first.submit(&rt);
     try expect_reuse_output(&rt, 101, &.{ 7, 8, 0, 0 });
     first.deinit(&rt);
-    try std.testing.expectEqual(@as(usize, 1), second_pipeline.references);
+    try std.testing.expectEqual(@as(usize, 2), second_pipeline.references);
+    try std.testing.expectEqual(@as(?*shared.Pipeline, second_pipeline), rt.pending_spirv_pipeline);
     try second.submit(&rt);
     try expect_reuse_output(&rt, 102, &.{ 7, 8, 9, 10 });
 
@@ -486,7 +487,7 @@ test "Vulkan prepared programs share live pipelines and keep private descriptors
     try failed.begin(&rt);
     try std.testing.expectError(error.InvalidArgument, rt.set_compute_shader_spirv(words, "missing_entry", &bindings, false));
     failed.deinit(&rt);
-    try std.testing.expectEqual(@as(usize, 1), second_pipeline.references);
+    try std.testing.expectEqual(@as(usize, 2), second_pipeline.references);
     try second.submit(&rt);
     try expect_reuse_output(&rt, 102, &.{ 14, 16, 18, 20 });
 
@@ -522,6 +523,10 @@ test "Vulkan prepared programs share live pipelines and keep private descriptors
     try expect_reuse_output(&other_device, 102, &.{ 7, 8, 9, 10 });
 
     second.deinit(&rt);
+    try std.testing.expectEqual(@as(usize, 1), rt.shared_pipelines.entries.items.len);
+    try std.testing.expectEqual(@as(usize, 1), rt.pending_spirv_pipeline.?.references);
+    try std.testing.expectEqualSlices(u32, changed_words, rt.pending_spirv_pipeline.?.words);
+    @import("../../src/backend/vulkan/vk_pipeline.zig").discardPendingSpirv(&rt);
     try std.testing.expectEqual(@as(usize, 0), rt.shared_pipelines.entries.items.len);
 }
 
@@ -550,4 +555,41 @@ test "strict Vulkan upload policy allows fast_mapped for small, forces staged fo
     try std.testing.expect(!native_runtime.upload_uses_direct_path(strict_policy, .copy_dst, 1024 * 1024 + 1));
     try std.testing.expect(!native_runtime.upload_uses_direct_path(strict_policy, .copy_dst, 4 * 1024 * 1024 * 1024));
     try std.testing.expect(!native_runtime.upload_uses_direct_path(strict_policy, .copy_dst_copy_src, 4 * 1024 * 1024));
+}
+
+test "Vulkan recorded compute writes become visible to uniform consumers" {
+    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
+        error.UnsupportedFeature => return error.SkipZigTest,
+        else => return err,
+    };
+    defer rt.deinit();
+    const source_binding = compute.KernelBinding{ .binding = 0, .resource_kind = .buffer, .resource_handle = 211, .buffer_size = REUSE_BUFFER_BYTES, .buffer_type = binding_types.WGPUBufferBindingType_Storage };
+    const result_binding = compute.KernelBinding{ .binding = 1, .resource_kind = .buffer, .resource_handle = 212, .buffer_size = REUSE_BUFFER_BYTES, .buffer_type = binding_types.WGPUBufferBindingType_Storage };
+    _ = try resources.ensure_compute_buffer_for_binding(&rt, source_binding, true);
+    _ = try resources.ensure_compute_buffer_for_binding(&rt, result_binding, true);
+    var uniform_binding = source_binding;
+    uniform_binding.buffer_type = binding_types.WGPUBufferBindingType_Uniform;
+    const consumer =
+        \\@group(0) @binding(0) var<uniform> input: vec4u;
+        \\@group(0) @binding(1) var<storage, read_write> output: array<u32>;
+        \\@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    output[id.x] = input[id.x];
+        \\}
+    ;
+    var producer_spirv: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
+    const producer_length = try compiler.translateToSpirv(std.testing.allocator, REUSE_SHADER, &producer_spirv);
+    var consumer_spirv: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
+    const consumer_length = try compiler.translateToSpirv(std.testing.allocator, consumer, &consumer_spirv);
+    var program = compute_program.ComputeProgram{};
+    defer program.deinit(&rt);
+    try program.begin(&rt);
+    try rt.set_compute_shader_spirv(std.mem.bytesAsSlice(u32, producer_spirv[0..producer_length]), "main", &.{source_binding}, false);
+    try rt.record_prepared_dispatch_replay_on(program.command_buffer, 4, 1, 1);
+    try rt.set_compute_shader_spirv(std.mem.bytesAsSlice(u32, consumer_spirv[0..consumer_length]), "main", &.{ uniform_binding, result_binding }, false);
+    try rt.record_prepared_dispatch_replay_on(program.command_buffer, 4, 1, 1);
+    try program.finish(&rt);
+    try program.submit(&rt);
+    try expect_reuse_output(&rt, 212, &.{ 7, 8, 9, 10 });
+    try program.submit(&rt);
+    try expect_reuse_output(&rt, 212, &.{ 14, 16, 18, 20 });
 }

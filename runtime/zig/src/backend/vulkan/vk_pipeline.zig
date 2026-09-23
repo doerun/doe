@@ -257,7 +257,7 @@ pub fn set_compute_shader_spirv_with_hashes(
     }
     try descriptors.prepare(self, bindings, initialize_buffers_on_create, descriptor_bindings_hash);
     vk_compute_sync.capture_current_compute_bindings(self, bindings);
-    try stage_spirv_for_artifact(self, words);
+    try stageSpirvForArtifact(self);
 }
 pub fn rebuild_compute_shader_spirv(self: anytype, words: []const u32) !void {
     if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
@@ -320,42 +320,75 @@ fn build_pipeline_for_request(self: anytype, request: shared.Request, pipeline_h
     self.current_pipeline_hash = pipeline_hash;
 }
 
-fn stage_spirv_for_artifact(self: anytype, words: []const u32) !void {
-    const owned = try self.allocator.dupe(u8, std.mem.sliceAsBytes(words));
-    if (self.pending_spirv_bytes_owned) |stale| self.allocator.free(stale);
-    self.pending_spirv_bytes_owned = owned;
+fn stageSpirvForArtifact(self: anytype) !void {
+    const owner = self.shared_pipeline orelse return error.InvalidState;
+    if (owner == self.pending_spirv_pipeline) return;
+    try owner.retain();
+    discardPendingSpirv(self);
+    self.pending_spirv_pipeline = owner;
 }
 
-test "staged SPIR-V receipt replaces prewarm bytes" {
+pub fn discardPendingSpirv(self: anytype) void {
+    const owner = self.pending_spirv_pipeline orelse return;
+    self.pending_spirv_pipeline = null;
+    self.shared_pipelines.release(self.allocator, self.device, owner);
+}
+
+test "staged SPIR-V retains the actual shader across selection replacement without allocation" {
     const Fixture = struct {
         allocator: std.mem.Allocator,
-        pending_spirv_bytes_owned: ?[]u8 = null,
+        device: c.VkDevice = null,
+        shared_pipelines: shared.Registry = .{},
+        shared_pipeline: ?*shared.Pipeline = null,
+        pending_spirv_pipeline: ?*shared.Pipeline = null,
     };
-    var fixture = Fixture{ .allocator = std.testing.allocator };
-    defer if (fixture.pending_spirv_bytes_owned) |bytes| fixture.allocator.free(bytes);
-    const prewarm_words = [_]u32{ SPIRV_MAGIC, 1, 2 };
-    const executed_words = [_]u32{ SPIRV_MAGIC, 3, 4 };
-
-    try stage_spirv_for_artifact(&fixture, &prewarm_words);
-    try stage_spirv_for_artifact(&fixture, &executed_words);
-
-    try std.testing.expectEqualSlices(
-        u8,
-        std.mem.sliceAsBytes(&executed_words),
-        fixture.pending_spirv_bytes_owned.?,
-    );
+    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
+    var fixture = Fixture{ .allocator = failing.allocator() };
+    defer discardPendingSpirv(&fixture);
+    var prewarm = artifactTestPipeline(&.{ SPIRV_MAGIC, 1, 2 });
+    var executed = artifactTestPipeline(&.{ SPIRV_MAGIC, 3, 4 });
+    fixture.shared_pipeline = &prewarm;
+    try stageSpirvForArtifact(&fixture);
+    try std.testing.expectEqual(@as(usize, 2), prewarm.references);
+    for (0..100) |_| try stageSpirvForArtifact(&fixture);
+    try std.testing.expectEqual(@as(usize, 2), prewarm.references);
+    fixture.shared_pipeline = &executed;
+    try std.testing.expectEqual(@as(?*shared.Pipeline, &prewarm), fixture.pending_spirv_pipeline);
+    try stageSpirvForArtifact(&fixture);
+    try std.testing.expectEqual(@as(usize, 1), prewarm.references);
+    try std.testing.expectEqual(@as(usize, 2), executed.references);
+    try std.testing.expect(fixture.pending_spirv_pipeline.?.words.ptr == executed.words.ptr);
+    discardPendingSpirv(&fixture);
+    discardPendingSpirv(&fixture);
+    try std.testing.expectEqual(@as(usize, 1), executed.references);
+    try std.testing.expectEqual(@as(usize, 0), failing.allocations);
 }
 
-test "SPIR-V staging allocation failure preserves the previous owner" {
-    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 1 });
-    const Fixture = struct { allocator: std.mem.Allocator, pending_spirv_bytes_owned: ?[]u8 = null };
-    var fixture = Fixture{ .allocator = failing.allocator() };
-    defer if (fixture.pending_spirv_bytes_owned) |bytes| fixture.allocator.free(bytes);
-    const first = [_]u32{ SPIRV_MAGIC, 1 };
-    const next = [_]u32{ SPIRV_MAGIC, 2 };
-    try stage_spirv_for_artifact(&fixture, &first);
-    try std.testing.expectError(error.OutOfMemory, stage_spirv_for_artifact(&fixture, &next));
-    try std.testing.expectEqualSlices(u8, std.mem.sliceAsBytes(&first), fixture.pending_spirv_bytes_owned.?);
+test "SPIR-V staging failed acquisition preserves the previous owner" {
+    const Fixture = struct {
+        allocator: std.mem.Allocator = std.testing.allocator,
+        device: c.VkDevice = null,
+        shared_pipelines: shared.Registry = .{},
+        shared_pipeline: ?*shared.Pipeline = null,
+        pending_spirv_pipeline: ?*shared.Pipeline = null,
+    };
+    var fixture = Fixture{};
+    var first = artifactTestPipeline(&.{ SPIRV_MAGIC, 1 });
+    var next = artifactTestPipeline(&.{ SPIRV_MAGIC, 2 });
+    fixture.shared_pipeline = &first;
+    try stageSpirvForArtifact(&fixture);
+    defer discardPendingSpirv(&fixture);
+    next.references = std.math.maxInt(usize);
+    fixture.shared_pipeline = &next;
+    try std.testing.expectError(error.Overflow, stageSpirvForArtifact(&fixture));
+    fixture.shared_pipeline = null;
+    try std.testing.expectError(error.InvalidState, stageSpirvForArtifact(&fixture));
+    try std.testing.expectEqual(@as(?*shared.Pipeline, &first), fixture.pending_spirv_pipeline);
+    try std.testing.expectEqual(@as(usize, 2), first.references);
+}
+
+fn artifactTestPipeline(words: []const u32) shared.Pipeline {
+    return .{ .handle = c.VK_NULL_U64, .creation_layout = c.VK_NULL_U64, .words = words, .entry_point = @constCast("main"), .layout = &.{}, .required_subgroup_size = null };
 }
 
 fn required_subgroup_size_for_pipeline(self: anytype, words: []const u32) ?u32 {
