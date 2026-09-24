@@ -34,12 +34,14 @@ pub const PendingUpload = struct {
     dst_buffer: VkBuffer,
     dst_memory: VkDeviceMemory,
     byte_count: u64 = 0,
+    dst_usage: c.VkFlags = 0,
     // Persistently-mapped pointer for the staging (src) buffer.
     // Retained across pool cycles to avoid per-upload vkMapMemory/vkUnmapMemory.
     src_mapped: ?*anyopaque = null,
 };
 
 pub const VkPoolEntry = struct {
+    usage: c.VkFlags = 0,
     buffer: VkBuffer,
     memory: VkDeviceMemory,
     mapped: ?*anyopaque = null,
@@ -217,82 +219,54 @@ pub fn record_upload_copy(self: anytype, bytes: u64, dst_usage: u32) !PendingUpl
     return upload;
 }
 
+fn create_upload_buffer(self: anytype, bytes: u64, usage: c.VkFlags, memory_flags: c.VkFlags, mapped: bool) !VkPoolEntry {
+    const info = c.VkBufferCreateInfo{ .sType = c.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = null, .flags = 0, .size = bytes, .usage = usage, .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE, .queueFamilyIndexCount = 0, .pQueueFamilyIndices = null };
+    var buffer: c.VkBuffer = VK_NULL_U64;
+    try c.check_vk(c.vkCreateBuffer(self.device, &info, null, &buffer));
+    var entry = VkPoolEntry{ .buffer = buffer, .memory = VK_NULL_U64, .usage = usage };
+    errdefer release_pool_entry(self.device, entry);
+    var requirements = std.mem.zeroes(c.VkMemoryRequirements);
+    c.vkGetBufferMemoryRequirements(self.device, buffer, &requirements);
+    const memory_index = try vk_device.find_memory_type_index(self, requirements.memoryTypeBits, memory_flags);
+    const allocation = c.VkMemoryAllocateInfo{ .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .pNext = null, .allocationSize = requirements.size, .memoryTypeIndex = memory_index };
+    var memory: c.VkDeviceMemory = VK_NULL_U64;
+    try c.check_vk(c.vkAllocateMemory(self.device, &allocation, null, &memory));
+    entry.memory = memory;
+    try c.check_vk(c.vkBindBufferMemory(self.device, buffer, memory, 0));
+    if (mapped) {
+        var address: ?*anyopaque = null;
+        try c.check_vk(c.vkMapMemory(self.device, memory, 0, bytes, 0, &address));
+        entry.mapped = address orelse return error.InvalidState;
+    }
+    return entry;
+}
+
 fn allocate_staged_upload(self: anytype, bytes: u64, dst_usage: u32) !PendingUpload {
     try vk_device.ensure_submission_state(self);
-
-    var src_buffer: VkBuffer = VK_NULL_U64;
-    var dst_buffer: VkBuffer = VK_NULL_U64;
-    var src_memory: VkDeviceMemory = VK_NULL_U64;
-    var dst_memory: VkDeviceMemory = VK_NULL_U64;
-    var src_mapped: ?*anyopaque = null;
-    var src_fresh = true;
-
-    // Try pool first for src (host-visible staging buffer).
-    if (hot_pool_pop(&self.hot_src_pool_entry, &self.hot_src_pool_size, bytes)) |entry| {
-        src_buffer = entry.buffer;
-        src_memory = entry.memory;
-        src_mapped = entry.mapped;
-        src_fresh = false;
-    } else if (vk_pool_pop(&self.src_pool, bytes)) |entry| {
-        src_buffer = entry.buffer;
-        src_memory = entry.memory;
-        src_mapped = entry.mapped;
-        src_fresh = false;
-    } else {
-        var src_info = c.VkBufferCreateInfo{ .sType = c.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = null, .flags = 0, .size = bytes, .usage = c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE, .queueFamilyIndexCount = 0, .pQueueFamilyIndices = null };
-        try c.check_vk(c.vkCreateBuffer(self.device, &src_info, null, &src_buffer));
-        errdefer c.vkDestroyBuffer(self.device, src_buffer, null);
-
-        var src_req = std.mem.zeroes(c.VkMemoryRequirements);
-        c.vkGetBufferMemoryRequirements(self.device, src_buffer, &src_req);
-        const src_mem_index = try vk_device.find_memory_type_index(self, src_req.memoryTypeBits, c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        var src_alloc_info = c.VkMemoryAllocateInfo{ .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .pNext = null, .allocationSize = src_req.size, .memoryTypeIndex = src_mem_index };
-        try c.check_vk(c.vkAllocateMemory(self.device, &src_alloc_info, null, &src_memory));
-        errdefer c.vkFreeMemory(self.device, src_memory, null);
-        try c.check_vk(c.vkBindBufferMemory(self.device, src_buffer, src_memory, 0));
-    }
-
-    // Try pool for dst (device-local storage buffer).
-    if (hot_pool_pop(&self.hot_dst_pool_entry, &self.hot_dst_pool_size, bytes)) |entry| {
-        dst_buffer = entry.buffer;
-        dst_memory = entry.memory;
-    } else if (vk_pool_pop(&self.dst_pool, bytes)) |entry| {
-        dst_buffer = entry.buffer;
-        dst_memory = entry.memory;
-    } else {
-        const permissive_dst_usage = c.VK_BUFFER_USAGE_TRANSFER_DST_BIT | c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT | c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-        const effective_usage = if (dst_usage == 0) permissive_dst_usage else dst_usage;
-        var dst_info = c.VkBufferCreateInfo{ .sType = c.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = null, .flags = 0, .size = bytes, .usage = effective_usage, .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE, .queueFamilyIndexCount = 0, .pQueueFamilyIndices = null };
-        try c.check_vk(c.vkCreateBuffer(self.device, &dst_info, null, &dst_buffer));
-        errdefer c.vkDestroyBuffer(self.device, dst_buffer, null);
-
-        var dst_req = std.mem.zeroes(c.VkMemoryRequirements);
-        c.vkGetBufferMemoryRequirements(self.device, dst_buffer, &dst_req);
-        const dst_mem_index = try vk_device.find_memory_type_index(self, dst_req.memoryTypeBits, c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        var dst_alloc_info = c.VkMemoryAllocateInfo{ .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .pNext = null, .allocationSize = dst_req.size, .memoryTypeIndex = dst_mem_index };
-        try c.check_vk(c.vkAllocateMemory(self.device, &dst_alloc_info, null, &dst_memory));
-        errdefer c.vkFreeMemory(self.device, dst_memory, null);
-        try c.check_vk(c.vkBindBufferMemory(self.device, dst_buffer, dst_memory, 0));
-    }
-    // Zero-fill fresh src allocations; keep the mapping persistent to
-    // avoid per-upload vkMapMemory/vkUnmapMemory on pool reuse cycles.
-    if (src_fresh) {
-        var mapped: ?*anyopaque = null;
-        try c.check_vk(c.vkMapMemory(self.device, src_memory, 0, bytes, 0, &mapped));
-        if (mapped) |raw| {
-            const fill_len = @min(@as(usize, @intCast(bytes)), MAX_UPLOAD_ZERO_FILL_BYTES);
-            @memset(@as([*]u8, @ptrCast(raw))[0..fill_len], 0);
-        }
-        src_mapped = mapped;
-    }
-
+    const src_usage = c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    const src = hot_pool_pop(&self.hot_src_pool_entry, &self.hot_src_pool_size, bytes, src_usage) orelse
+        vk_pool_pop(&self.src_pool, bytes, src_usage) orelse blk: {
+        const entry = try create_upload_buffer(self, bytes, src_usage, c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
+        @memset(@as([*]u8, @ptrCast(entry.mapped.?))[0..bounded_upload_fill_len(bytes)], 0);
+        break :blk entry;
+    };
+    // Ownership extends across destination acquisition, including pooled sources.
+    errdefer release_pool_entry(self.device, src);
+    const effective_usage = if (dst_usage == 0)
+        c.VK_BUFFER_USAGE_TRANSFER_DST_BIT | c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT | c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+    else
+        dst_usage;
+    const dst = hot_pool_pop(&self.hot_dst_pool_entry, &self.hot_dst_pool_size, bytes, effective_usage) orelse
+        vk_pool_pop(&self.dst_pool, bytes, effective_usage) orelse
+        try create_upload_buffer(self, bytes, effective_usage, c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, false);
     return .{
-        .src_buffer = src_buffer,
-        .src_memory = src_memory,
-        .dst_buffer = dst_buffer,
-        .dst_memory = dst_memory,
+        .src_buffer = src.buffer,
+        .src_memory = src.memory,
+        .dst_buffer = dst.buffer,
+        .dst_memory = dst.memory,
         .byte_count = bytes,
-        .src_mapped = src_mapped,
+        .dst_usage = dst.usage,
+        .src_mapped = src.mapped,
     };
 }
 
@@ -311,82 +285,16 @@ pub fn try_direct_upload(self: anytype, bytes: u64, dst_usage: u32) !bool {
 }
 
 fn record_direct_upload(self: anytype, bytes: u64, dst_usage: u32) !void {
-    var dst_buffer: VkBuffer = VK_NULL_U64;
-    var dst_memory: VkDeviceMemory = VK_NULL_U64;
-    var dst_mapped: ?*anyopaque = null;
-    var dst_fresh = false;
-
-    if (vk_pool_pop(&self.direct_upload_pool, bytes)) |entry| {
-        dst_buffer = entry.buffer;
-        dst_memory = entry.memory;
-        dst_mapped = entry.mapped;
-    } else {
-        const effective_usage = if (dst_usage == 0)
-            c.VK_BUFFER_USAGE_TRANSFER_DST_BIT | c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
-        else
-            dst_usage;
-        var dst_info = c.VkBufferCreateInfo{
-            .sType = c.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .pNext = null,
-            .flags = 0,
-            .size = bytes,
-            .usage = effective_usage,
-            .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices = null,
-        };
-        try c.check_vk(c.vkCreateBuffer(self.device, &dst_info, null, &dst_buffer));
-        errdefer c.vkDestroyBuffer(self.device, dst_buffer, null);
-
-        var dst_req = std.mem.zeroes(c.VkMemoryRequirements);
-        c.vkGetBufferMemoryRequirements(self.device, dst_buffer, &dst_req);
-        const dst_mem_index = try vk_device.find_memory_type_index(
-            self,
-            dst_req.memoryTypeBits,
-            c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        );
-        var dst_alloc_info = c.VkMemoryAllocateInfo{
-            .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .pNext = null,
-            .allocationSize = dst_req.size,
-            .memoryTypeIndex = dst_mem_index,
-        };
-        try c.check_vk(c.vkAllocateMemory(self.device, &dst_alloc_info, null, &dst_memory));
-        errdefer c.vkFreeMemory(self.device, dst_memory, null);
-        try c.check_vk(c.vkBindBufferMemory(self.device, dst_buffer, dst_memory, 0));
-        try c.check_vk(c.vkMapMemory(self.device, dst_memory, 0, bytes, 0, &dst_mapped));
-        dst_fresh = true;
+    const effective_usage = if (dst_usage == 0)
+        c.VK_BUFFER_USAGE_TRANSFER_DST_BIT | c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+    else
+        dst_usage;
+    const cached = vk_pool_pop(&self.direct_upload_pool, bytes, effective_usage);
+    const entry = cached orelse try create_upload_buffer(self, bytes, effective_usage, c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
+    if (cached == null or bytes < DIRECT_UPLOAD_REUSE_SKIP_ZERO_FILL_MIN_BYTES) {
+        @memset(@as([*]u8, @ptrCast(entry.mapped.?))[0..@intCast(bytes)], 0);
     }
-
-    errdefer {
-        if (dst_buffer != VK_NULL_U64 and dst_memory != VK_NULL_U64) {
-            vk_pool_push_or_destroy(
-                &self.direct_upload_pool,
-                self.allocator,
-                self.device,
-                bytes,
-                .{ .buffer = dst_buffer, .memory = dst_memory, .mapped = dst_mapped },
-            );
-        } else {
-            if (dst_buffer != VK_NULL_U64) c.vkDestroyBuffer(self.device, dst_buffer, null);
-            if (dst_memory != VK_NULL_U64) c.vkFreeMemory(self.device, dst_memory, null);
-        }
-    }
-
-    if (dst_fresh or bytes < DIRECT_UPLOAD_REUSE_SKIP_ZERO_FILL_MIN_BYTES) {
-        const fill_len: usize = @intCast(bytes);
-        if (dst_mapped) |raw| {
-            @memset(@as([*]u8, @ptrCast(raw))[0..fill_len], 0);
-        }
-    }
-
-    vk_pool_push_or_destroy(
-        &self.direct_upload_pool,
-        self.allocator,
-        self.device,
-        bytes,
-        .{ .buffer = dst_buffer, .memory = dst_memory, .mapped = dst_mapped },
-    );
+    vk_pool_push_or_destroy(&self.direct_upload_pool, self.allocator, self.device, bytes, entry);
 }
 
 pub fn ensure_upload_recording(self: anytype) !void {
@@ -413,37 +321,11 @@ pub fn finish_pending_upload_recording(self: anytype) !void {
 
 pub fn ensure_fast_upload_buffer(self: anytype, bytes: u64) !void {
     if (self.fast_upload_capacity >= bytes and self.fast_upload_mapped != null) return;
+    const replacement = try create_upload_buffer(self, bytes, c.VK_BUFFER_USAGE_TRANSFER_DST_BIT | c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT, c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
     release_fast_upload_buffer(self);
-
-    var buffer_info = c.VkBufferCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .size = bytes,
-        .usage = c.VK_BUFFER_USAGE_TRANSFER_DST_BIT | c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
-        .queueFamilyIndexCount = 0,
-        .pQueueFamilyIndices = null,
-    };
-    try c.check_vk(c.vkCreateBuffer(self.device, &buffer_info, null, &self.fast_upload_buffer));
-    errdefer release_fast_upload_buffer(self);
-
-    var requirements = std.mem.zeroes(c.VkMemoryRequirements);
-    c.vkGetBufferMemoryRequirements(self.device, self.fast_upload_buffer, &requirements);
-    const memory_index = try vk_device.find_memory_type_index(
-        self,
-        requirements.memoryTypeBits,
-        c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-    );
-    var alloc_info = c.VkMemoryAllocateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .pNext = null,
-        .allocationSize = requirements.size,
-        .memoryTypeIndex = memory_index,
-    };
-    try c.check_vk(c.vkAllocateMemory(self.device, &alloc_info, null, &self.fast_upload_memory));
-    try c.check_vk(c.vkBindBufferMemory(self.device, self.fast_upload_buffer, self.fast_upload_memory, 0));
-    try c.check_vk(c.vkMapMemory(self.device, self.fast_upload_memory, 0, bytes, 0, &self.fast_upload_mapped));
+    self.fast_upload_buffer = replacement.buffer;
+    self.fast_upload_memory = replacement.memory;
+    self.fast_upload_mapped = replacement.mapped;
     self.fast_upload_capacity = bytes;
 }
 
@@ -479,7 +361,7 @@ pub fn release_upload(self: anytype, item: PendingUpload) void {
     // Carry src_mapped through the pool so staging buffers stay
     // persistently mapped, eliminating per-upload map/unmap overhead.
     if (item.src_buffer != VK_NULL_U64 and item.src_memory != VK_NULL_U64) {
-        const src_entry = VkPoolEntry{ .buffer = item.src_buffer, .memory = item.src_memory, .mapped = item.src_mapped };
+        const src_entry = VkPoolEntry{ .buffer = item.src_buffer, .memory = item.src_memory, .mapped = item.src_mapped, .usage = c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT };
         if (!hot_pool_store(&self.hot_src_pool_entry, &self.hot_src_pool_size, item.byte_count, src_entry)) {
             vk_pool_push_or_destroy(&self.src_pool, self.allocator, self.device, item.byte_count, src_entry);
         }
@@ -489,8 +371,8 @@ pub fn release_upload(self: anytype, item: PendingUpload) void {
         if (item.src_memory != VK_NULL_U64) c.vkFreeMemory(self.device, item.src_memory, null);
     }
     if (item.dst_buffer != VK_NULL_U64 and item.dst_memory != VK_NULL_U64) {
-        if (!hot_pool_store(&self.hot_dst_pool_entry, &self.hot_dst_pool_size, item.byte_count, .{ .buffer = item.dst_buffer, .memory = item.dst_memory, .mapped = null })) {
-            vk_pool_push_or_destroy(&self.dst_pool, self.allocator, self.device, item.byte_count, .{ .buffer = item.dst_buffer, .memory = item.dst_memory, .mapped = null });
+        if (!hot_pool_store(&self.hot_dst_pool_entry, &self.hot_dst_pool_size, item.byte_count, .{ .buffer = item.dst_buffer, .memory = item.dst_memory, .mapped = null, .usage = item.dst_usage })) {
+            vk_pool_push_or_destroy(&self.dst_pool, self.allocator, self.device, item.byte_count, .{ .buffer = item.dst_buffer, .memory = item.dst_memory, .mapped = null, .usage = item.dst_usage });
         }
     } else {
         if (item.dst_buffer != VK_NULL_U64) c.vkDestroyBuffer(self.device, item.dst_buffer, null);
@@ -540,15 +422,21 @@ pub fn upload_uses_direct_path(
 
 // --- Pool management ---
 
-pub fn vk_pool_pop(pool: *VkPool, size: u64) ?VkPoolEntry {
+pub fn vk_pool_pop(pool: *VkPool, size: u64, required_usage: c.VkFlags) ?VkPoolEntry {
     if (pool.getPtr(size)) |list| {
-        if (list.items.len > 0) return list.pop();
+        var index = list.items.len;
+        while (index > 0) {
+            index -= 1;
+            if ((list.items[index].usage & required_usage) == required_usage) return list.swapRemove(index);
+        }
     }
     return null;
 }
 
-pub fn hot_pool_pop(entry: *?VkPoolEntry, size_slot: *u64, size: u64) ?VkPoolEntry {
-    if (size <= HOT_UPLOAD_POOL_CACHE_MAX_BYTES and entry.* != null and size_slot.* == size) {
+pub fn hot_pool_pop(entry: *?VkPoolEntry, size_slot: *u64, size: u64, required_usage: c.VkFlags) ?VkPoolEntry {
+    if (size <= HOT_UPLOAD_POOL_CACHE_MAX_BYTES and entry.* != null and size_slot.* == size and
+        (entry.*.?.usage & required_usage) == required_usage)
+    {
         const out = entry.*;
         entry.* = null;
         size_slot.* = 0;

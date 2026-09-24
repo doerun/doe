@@ -198,13 +198,13 @@ test "vulkan upload: bounded_upload_fill_len large value clamps to 1 MiB" {
 test "vulkan upload: hot_pool_pop null entry returns null" {
     var entry: ?vk_upload.VkPoolEntry = null;
     var size: u64 = 0;
-    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.hot_pool_pop(&entry, &size, 1024));
+    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.hot_pool_pop(&entry, &size, 1024, 0));
 }
 
 test "vulkan upload: hot_pool_pop size mismatch returns null, preserves entry" {
     var entry: ?vk_upload.VkPoolEntry = .{ .buffer = 42, .memory = 43, .mapped = null };
     var size: u64 = 2048;
-    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.hot_pool_pop(&entry, &size, 1024));
+    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.hot_pool_pop(&entry, &size, 1024, 0));
     try std.testing.expect(entry != null);
     try std.testing.expectEqual(@as(u64, 2048), size);
 }
@@ -212,7 +212,7 @@ test "vulkan upload: hot_pool_pop size mismatch returns null, preserves entry" {
 test "vulkan upload: hot_pool_pop exact match consumes entry" {
     var entry: ?vk_upload.VkPoolEntry = .{ .buffer = 10, .memory = 20, .mapped = null };
     var size: u64 = 4096;
-    const result = vk_upload.hot_pool_pop(&entry, &size, 4096);
+    const result = vk_upload.hot_pool_pop(&entry, &size, 4096, 0);
     try std.testing.expect(result != null);
     try std.testing.expectEqual(@as(u64, 10), result.?.buffer);
     try std.testing.expectEqual(@as(u64, 20), result.?.memory);
@@ -224,7 +224,7 @@ test "vulkan upload: hot_pool_pop rejects above HOT_UPLOAD_POOL_CACHE_MAX_BYTES"
     const too_big = vk_upload.HOT_UPLOAD_POOL_CACHE_MAX_BYTES + 1;
     var entry: ?vk_upload.VkPoolEntry = .{ .buffer = 1, .memory = 2, .mapped = null };
     var size: u64 = too_big;
-    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.hot_pool_pop(&entry, &size, too_big));
+    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.hot_pool_pop(&entry, &size, too_big, 0));
     try std.testing.expect(entry != null);
 }
 
@@ -232,7 +232,7 @@ test "vulkan upload: hot_pool_pop at exact HOT_UPLOAD_POOL_CACHE_MAX_BYTES succe
     const exact = vk_upload.HOT_UPLOAD_POOL_CACHE_MAX_BYTES;
     var entry: ?vk_upload.VkPoolEntry = .{ .buffer = 5, .memory = 6, .mapped = null };
     var size: u64 = exact;
-    const result = vk_upload.hot_pool_pop(&entry, &size, exact);
+    const result = vk_upload.hot_pool_pop(&entry, &size, exact, 0);
     try std.testing.expect(result != null);
     try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), entry);
 }
@@ -269,7 +269,7 @@ test "vulkan upload: hot_pool roundtrip store then pop" {
     const val = vk_upload.VkPoolEntry{ .buffer = 77, .memory = 88, .mapped = null };
 
     try std.testing.expect(vk_upload.hot_pool_store(&entry, &size, 1024, val));
-    const popped = vk_upload.hot_pool_pop(&entry, &size, 1024);
+    const popped = vk_upload.hot_pool_pop(&entry, &size, 1024, 0);
     try std.testing.expect(popped != null);
     try std.testing.expectEqual(@as(u64, 77), popped.?.buffer);
     try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), entry);
@@ -282,7 +282,7 @@ test "vulkan upload: hot_pool roundtrip store then pop" {
 test "vulkan upload: vk_pool_pop from empty pool returns null" {
     var pool = vk_upload.VkPool{};
     defer pool.deinit(std.testing.allocator);
-    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.vk_pool_pop(&pool, 1024));
+    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.vk_pool_pop(&pool, 1024, 0));
 }
 
 test "vulkan upload: vk_pool_pop missing size key returns null" {
@@ -293,7 +293,7 @@ test "vulkan upload: vk_pool_pop missing size key returns null" {
     try list.append(std.testing.allocator, .{ .buffer = 42, .memory = 43, .mapped = null });
     try pool.put(std.testing.allocator, 2048, list);
 
-    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.vk_pool_pop(&pool, 1024));
+    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.vk_pool_pop(&pool, 1024, 0));
 
     if (pool.getPtr(2048)) |l| {
         _ = l.pop();
@@ -309,12 +309,12 @@ test "vulkan upload: vk_pool_pop returns and removes matching entry" {
     try list.append(std.testing.allocator, .{ .buffer = 55, .memory = 66, .mapped = null });
     try pool.put(std.testing.allocator, 4096, list);
 
-    const result = vk_upload.vk_pool_pop(&pool, 4096);
+    const result = vk_upload.vk_pool_pop(&pool, 4096, 0);
     try std.testing.expect(result != null);
     try std.testing.expectEqual(@as(u64, 55), result.?.buffer);
 
     // Second pop should be empty.
-    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.vk_pool_pop(&pool, 4096));
+    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.vk_pool_pop(&pool, 4096, 0));
 
     if (pool.getPtr(4096)) |l| l.deinit(std.testing.allocator);
 }
@@ -328,15 +328,15 @@ test "vulkan upload: vk_pool_pop with multiple entries returns last pushed" {
     try list.append(std.testing.allocator, .{ .buffer = 2, .memory = 20, .mapped = null });
     try pool.put(std.testing.allocator, 8192, list);
 
-    const first = vk_upload.vk_pool_pop(&pool, 8192);
+    const first = vk_upload.vk_pool_pop(&pool, 8192, 0);
     try std.testing.expect(first != null);
     try std.testing.expectEqual(@as(u64, 2), first.?.buffer);
 
-    const second = vk_upload.vk_pool_pop(&pool, 8192);
+    const second = vk_upload.vk_pool_pop(&pool, 8192, 0);
     try std.testing.expect(second != null);
     try std.testing.expectEqual(@as(u64, 1), second.?.buffer);
 
-    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.vk_pool_pop(&pool, 8192));
+    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.vk_pool_pop(&pool, 8192, 0));
 
     if (pool.getPtr(8192)) |l| l.deinit(std.testing.allocator);
 }
@@ -761,4 +761,27 @@ test "vulkan upload: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO is 42" {
 
 test "vulkan upload: VK_STRUCTURE_TYPE_SUBMIT_INFO is 4" {
     try std.testing.expectEqual(@as(i32, 4), vk_constants.VK_STRUCTURE_TYPE_SUBMIT_INFO);
+}
+
+test "vulkan upload: pool reuse requires every requested usage bit" {
+    const narrow = vk_constants.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    const broad = narrow | vk_constants.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    var hot: ?vk_upload.VkPoolEntry = .{ .buffer = 11, .memory = 12, .usage = narrow };
+    var size: u64 = 4096;
+    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.hot_pool_pop(&hot, &size, size, broad));
+    try std.testing.expectEqual(@as(u64, 11), hot.?.buffer);
+    try std.testing.expectEqual(@as(u64, 4096), size);
+    hot.?.usage = broad;
+    try std.testing.expectEqual(@as(u64, 11), vk_upload.hot_pool_pop(&hot, &size, size, narrow).?.buffer);
+
+    var pool = vk_upload.VkPool{};
+    defer pool.deinit(std.testing.allocator);
+    var list = std.ArrayListUnmanaged(vk_upload.VkPoolEntry){};
+    try list.append(std.testing.allocator, .{ .buffer = 21, .memory = 22, .usage = broad });
+    try list.append(std.testing.allocator, .{ .buffer = 31, .memory = 32, .usage = narrow });
+    try pool.put(std.testing.allocator, 4096, list);
+    defer pool.getPtr(4096).?.deinit(std.testing.allocator);
+    try std.testing.expectEqual(@as(u64, 21), vk_upload.vk_pool_pop(&pool, 4096, broad).?.buffer);
+    try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), vk_upload.vk_pool_pop(&pool, 4096, broad));
+    try std.testing.expectEqual(@as(u64, 31), vk_upload.vk_pool_pop(&pool, 4096, narrow).?.buffer);
 }

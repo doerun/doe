@@ -673,3 +673,40 @@ test "Vulkan recorded compute writes become visible to uniform consumers" {
     try program.submit(&rt);
     try expect_reuse_output(&rt, 212, &.{ 14, 16, 18, 20 });
 }
+
+test "Vulkan staged upload reuses compatible native buffers without new allocation" {
+    const upload = @import("../../src/backend/vulkan/vk_upload.zig");
+    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
+        error.UnsupportedFeature => return error.SkipZigTest,
+        else => return err,
+    };
+    defer rt.deinit();
+    const bytes = REUSE_BUFFER_BYTES;
+    const narrow = vk.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    const broad = narrow | vk.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    try upload.prewarm_staged_upload_pool(&rt, bytes, narrow);
+    const original = rt.hot_dst_pool_entry.?;
+    try upload.prewarm_staged_upload_pool(&rt, bytes, broad);
+    try std.testing.expectEqual(original.buffer, rt.hot_dst_pool_entry.?.buffer);
+    const compatible = rt.dst_pool.get(bytes).?.items[0];
+    try std.testing.expect(original.buffer != compatible.buffer);
+    try std.testing.expectEqual(broad, compatible.usage);
+    var no_allocations = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
+    rt.allocator = no_allocations.allocator();
+    const reused = upload.prewarm_staged_upload_pool(&rt, bytes, broad);
+    rt.allocator = std.testing.allocator;
+    try reused;
+    try std.testing.expect(!no_allocations.has_induced_failure);
+    try std.testing.expectEqual(compatible.buffer, rt.dst_pool.get(bytes).?.items[0].buffer);
+
+    const pending = try upload.record_upload_copy(&rt, bytes, broad);
+    try std.testing.expectEqual(compatible.buffer, pending.dst_buffer);
+    const expected = [_]u32{ 17, 29, 43, 71 };
+    @memcpy(@as([*]u8, @ptrCast(pending.src_mapped.?))[0..bytes], std.mem.sliceAsBytes(&expected));
+    rt.hot_pending_upload = pending;
+    _ = try rt.flush_queue();
+    const readback = try resources.create_host_visible_buffer(&rt, bytes, vk.VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    defer resources.destroy_host_visible_buffer(&rt, readback);
+    try upload.copy_buffer_region_and_wait(&rt, pending.dst_buffer, 0, readback.buffer, 0, bytes);
+    try std.testing.expectEqualSlices(u8, std.mem.sliceAsBytes(&expected), @as([*]u8, @ptrCast(readback.mapped.?))[0..bytes]);
+}

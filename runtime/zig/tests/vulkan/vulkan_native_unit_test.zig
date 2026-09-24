@@ -152,14 +152,14 @@ test "vulkan: upload path thresholds are ordered correctly" {
 test "vulkan: hot_pool_pop returns null when entry is null" {
     var entry: ?vk_upload.VkPoolEntry = null;
     var size: u64 = 0;
-    const result = vk_upload.hot_pool_pop(&entry, &size, 1024);
+    const result = vk_upload.hot_pool_pop(&entry, &size, 1024, 0);
     try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), result);
 }
 
 test "vulkan: hot_pool_pop returns null when size does not match" {
     var entry: ?vk_upload.VkPoolEntry = .{ .buffer = 42, .memory = 43, .mapped = null };
     var size: u64 = 2048;
-    const result = vk_upload.hot_pool_pop(&entry, &size, 1024);
+    const result = vk_upload.hot_pool_pop(&entry, &size, 1024, 0);
     try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), result);
     // Entry should not be consumed on mismatch.
     try std.testing.expect(entry != null);
@@ -168,7 +168,7 @@ test "vulkan: hot_pool_pop returns null when size does not match" {
 test "vulkan: hot_pool_pop returns entry when size matches and within threshold" {
     var entry: ?vk_upload.VkPoolEntry = .{ .buffer = 42, .memory = 43, .mapped = null };
     var size: u64 = 1024;
-    const result = vk_upload.hot_pool_pop(&entry, &size, 1024);
+    const result = vk_upload.hot_pool_pop(&entry, &size, 1024, 0);
     try std.testing.expect(result != null);
     try std.testing.expectEqual(@as(vk_constants.VkBuffer, 42), result.?.buffer);
     try std.testing.expectEqual(@as(vk_constants.VkDeviceMemory, 43), result.?.memory);
@@ -181,7 +181,7 @@ test "vulkan: hot_pool_pop rejects sizes above HOT_UPLOAD_POOL_CACHE_MAX_BYTES" 
     var entry: ?vk_upload.VkPoolEntry = .{ .buffer = 1, .memory = 2, .mapped = null };
     const too_large = vk_upload.HOT_UPLOAD_POOL_CACHE_MAX_BYTES + 1;
     var size: u64 = too_large;
-    const result = vk_upload.hot_pool_pop(&entry, &size, too_large);
+    const result = vk_upload.hot_pool_pop(&entry, &size, too_large, 0);
     try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), result);
     // Entry should not be consumed.
     try std.testing.expect(entry != null);
@@ -223,7 +223,7 @@ test "vulkan: hot_pool_store fails when size exceeds HOT_UPLOAD_POOL_CACHE_MAX_B
 test "vulkan: vk_pool_pop returns null from empty pool" {
     var pool = vk_upload.VkPool{};
     defer pool.deinit(std.testing.allocator);
-    const result = vk_upload.vk_pool_pop(&pool, 1024);
+    const result = vk_upload.vk_pool_pop(&pool, 1024, 0);
     try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), result);
 }
 
@@ -236,7 +236,7 @@ test "vulkan: vk_pool_pop returns null for missing size key" {
     try list.append(std.testing.allocator, .{ .buffer = 42, .memory = 43, .mapped = null });
     try pool.put(std.testing.allocator, 2048, list);
 
-    const result = vk_upload.vk_pool_pop(&pool, 1024);
+    const result = vk_upload.vk_pool_pop(&pool, 1024, 0);
     try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), result);
 
     // Cleanup.
@@ -254,12 +254,12 @@ test "vulkan: vk_pool_pop returns entry for matching size and removes it" {
     try list.append(std.testing.allocator, .{ .buffer = 100, .memory = 200, .mapped = null });
     try pool.put(std.testing.allocator, 4096, list);
 
-    const result = vk_upload.vk_pool_pop(&pool, 4096);
+    const result = vk_upload.vk_pool_pop(&pool, 4096, 0);
     try std.testing.expect(result != null);
     try std.testing.expectEqual(@as(vk_constants.VkBuffer, 100), result.?.buffer);
 
     // Pool should now be empty for that size.
-    const second = vk_upload.vk_pool_pop(&pool, 4096);
+    const second = vk_upload.vk_pool_pop(&pool, 4096, 0);
     try std.testing.expectEqual(@as(?vk_upload.VkPoolEntry, null), second);
 
     // Cleanup.

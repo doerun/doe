@@ -12,13 +12,22 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [upload and ABI continuation](../../bench/out/maintenance/20260923-vulkan-upload-audit/README.md)
+consolidates native upload-buffer acquisition, preserves the working fast buffer
+on failed growth, and admits pool reuse only for compatible native usage flags.
+Retained fault sweeps reproduce the predecessor failures and exercise repaired
+cleanup; host-header comparisons cover the examined Vulkan structure and handle
+declarations. Upload completion/retry and aggregate retention remain open.
+The next never-examined file is `src/backend/webgpu_backend.zig`; file examination
+does not complete the Vulkan directory or its execution-path review.
+
 The [continued Vulkan audit](../../bench/out/maintenance/20260923-vulkan-audit/README.md)
 repairs rejected-submission reservations, shader source lookup/error propagation,
 elapsed timestamp conversion, and missing-surface admission. Its
 [file conclusions](../../bench/out/maintenance/20260923-vulkan-audit/file-reviews.json)
 retain unresolved sampler, presentation, completion, and error-taxonomy findings.
-The next never-examined file is `src/backend/vulkan/vk_structs.zig`;
-`vk_upload.zig` and `vulkan_types.zig` also remain unexamined in this continuation.
+That checkpoint left `vk_structs.zig`, `vk_upload.zig`, and `vulkan_types.zig`
+unexamined; the upload and ABI continuation above records their examination.
 Supporting caller edits confer no additional review credit. This audit does not
 establish application acceleration or release qualification.
 

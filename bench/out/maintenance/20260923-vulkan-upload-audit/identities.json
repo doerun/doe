@@ -1,0 +1,68 @@
+{
+  "sourceCommit": "e29ae5c8bb35bb7c9acace444644707bc54f8d18",
+  "scope": "local upload correctness and host ABI audit",
+  "sourceInputs": {
+    "docs/process.md": "cf365831aa8743aab3227e73119b4352f304f75aad3335821685e67777423f03",
+    "docs/status/runtime-architecture-audit.md": "5188c15656b218c9e6fd702d64586e7db05728d96c177d9cabf75b0818e9eefc",
+    "runtime/zig/source-layout.json": "9f4a47f1aa6ed5fe54b3a498440fb15b241958b30854c84eaeacb1b579ed6a31",
+    "runtime/zig/src/backend/vulkan/vk_upload.zig": "fc00c723fdd22ed73519d1519f6446640d7ed39bbd07628e395eb45e4faeae30",
+    "runtime/zig/tests/backend/vulkan_upload_test.zig": "9c1bdd52fee234ae2e4fd074bf48df92ee9b1185e6a37c2534577d0fd70649cc",
+    "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig": "6f29eac3e8656e82de645657d4c63c4fffcdc83e7c5fa228ac0a27ed50fa8353",
+    "runtime/zig/tests/vulkan/vulkan_native_unit_test.zig": "8e9d06650b369c4d4f34da980c729fd6e056f261a67fdd4a42b7fc14d9fae5ba"
+  },
+  "baselineUploadSha256": "0da4fc9b22410b5214b8e88a58b77785156be5b43b9ea0e009044654e7fb518a",
+  "compiler": {
+    "path": "/home/x/.local/zig/zig-x86_64-linux-0.15.2/zig",
+    "version": "0.15.2",
+    "sha256": "2858dc89dbbfdd08cceda1b841e7fd0a793a1a67b49f150bc3d0d1de44ed7f51"
+  },
+  "cCompiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "headers": {
+    "/usr/include/vulkan/vk_icd.h": "15d092840ca6d45fca3ccdc50cf021943e6c88aefe2a730c391f26d60bba9018",
+    "/usr/include/vulkan/vk_layer.h": "bfe6804d3f527138fcfebb0845c1c0077c5718725bf338be09b0f9be3e8dede5",
+    "/usr/include/vulkan/vk_platform.h": "949d517bb83e1d88fd4f1cef02bd3cb9ab50d44e8354cc68227cf2dccfdd3307",
+    "/usr/include/vulkan/vulkan.h": "72b952cc6de70ee12d118d3095e80346b42ff01cfc6f2bbb37ec01800eab1da6",
+    "/usr/include/vulkan/vulkan_android.h": "49cd5e53156cb9e36fa03d81a5f1b8c1e93428e3499698309398d66dc3872948",
+    "/usr/include/vulkan/vulkan_beta.h": "0c8306cc75db2a51fe5c29654afde8587f44fc84c2d123eaadf538e86dd0541c",
+    "/usr/include/vulkan/vulkan_core.h": "03964df1e28a162285726ec7cf9098e5e0271cb1df21933e7bfef9f6fa08937f",
+    "/usr/include/vulkan/vulkan_directfb.h": "4c6be34ee27f2fce4870c4046304b0c53f1fe62b13a4c21da8d537ec4cf8b965",
+    "/usr/include/vulkan/vulkan_fuchsia.h": "8a7a0c52e8c1ab41ede66bdabc32057255a7b385441d67dd4023121de5801194",
+    "/usr/include/vulkan/vulkan_ggp.h": "97cb1776742a4d8aae9f258ce908da76d0466da8864a5036aaca834af5f62e8d",
+    "/usr/include/vulkan/vulkan_ios.h": "8bb052cc162b4086c0f1cd29a5ed11ccf921b8ee83551194394b86efd249c572",
+    "/usr/include/vulkan/vulkan_macos.h": "00f532e9b7229488ac9932c2b391d74e9e8566ed91d0dbbad10e15dc356c9293",
+    "/usr/include/vulkan/vulkan_metal.h": "8f84536896b8d3c6c49883ce34242f8922840617d0b184b338c0f83da5bfaaaa",
+    "/usr/include/vulkan/vulkan_ohos.h": "9da9b4f1a23adc0b705450ce4b5c934dff2fd1eb8cdf4ac3273465420fc9475a",
+    "/usr/include/vulkan/vulkan_screen.h": "ffe2e63fbea5f0a9a7948a998eb7e1085e1f7cd5fd55b3d9a0146fe1aa8307bd",
+    "/usr/include/vulkan/vulkan_vi.h": "8caacbb6eccae5946fb367145ba5222b85d4747a3f8b30632fdfca0503f0c339",
+    "/usr/include/vulkan/vulkan_wayland.h": "d43ca1c45cd4b2e1119c168b780e2864205ad8119e5f42d9d99aa29d2654a3f2",
+    "/usr/include/vulkan/vulkan_win32.h": "0b11442e7efa0d5b6732b9964edf6dbdf3f6cf1dd58afe7572cc9b7f6de24317",
+    "/usr/include/vulkan/vulkan_xcb.h": "1e1525fc64826ab3ea9e8a6ee6a618ef14db3e27397fcf8fb070bb1ddaf00c0b",
+    "/usr/include/vulkan/vulkan_xlib.h": "82346aaa80a5c984b6a26f55c7c363c65be43029da539ba0fbdfea9840051cca",
+    "/usr/include/vulkan/vulkan_xlib_xrandr.h": "da5d5311bcffa49c614e9f397784e44668466890aeaf4e54c2e0064c20259089",
+    "/usr/include/vk_video/vulkan_video_codec_av1std.h": "9b4ebcef0d6844b226803fa91b4c4c8bf9eb941aa31b19cea48ded0886a8f9e2",
+    "/usr/include/vk_video/vulkan_video_codec_av1std_decode.h": "f03abf49fcaf2bd179d48d768164f9494264b58401b98899e8860ba297a1e7aa",
+    "/usr/include/vk_video/vulkan_video_codec_av1std_encode.h": "40f84c98d0341246ead3e864e1378df47d861505c5c139da5ed85c352d5e2300",
+    "/usr/include/vk_video/vulkan_video_codec_h264std.h": "f6691f82e4637adda20e56d56951c673cc1ecdf2fa77e09cc8eba4b1f45118c1",
+    "/usr/include/vk_video/vulkan_video_codec_h264std_decode.h": "8c4682860954d6bfc603e200d9e12586bc57265bd37b73a12b1ecf0c1ad42721",
+    "/usr/include/vk_video/vulkan_video_codec_h264std_encode.h": "75cc54e489b1ec7e3c635680cabaf7c9c2ddd4071a485440e5368e76ede30a85",
+    "/usr/include/vk_video/vulkan_video_codec_h265std.h": "01b5f3d0fd9d273a68ed90f898ba94c05c0305280a753bf95fab60d60727c22e",
+    "/usr/include/vk_video/vulkan_video_codec_h265std_decode.h": "926a24d94afed2b1ab030e81c3b9e2e6730cca530f7a5a5bd821e7b896b93a41",
+    "/usr/include/vk_video/vulkan_video_codec_h265std_encode.h": "8a56e0c78496affa84eca39ec0f5636df681c04623dd0291aeeadd012df324be",
+    "/usr/include/vk_video/vulkan_video_codec_vp9std.h": "e18e20b197945929d5871836bfde923e38b350b09e1cbe430f1bd802d9eda34e",
+    "/usr/include/vk_video/vulkan_video_codec_vp9std_decode.h": "c3929bbdd0ab79128c7f9bfb9641c9a017b3983529315b771caaafc74fdbb89a",
+    "/usr/include/vk_video/vulkan_video_codecs_common.h": "be6d2495d19e96aca6aa5c11e5c418d1cd72beac23fe19eb9169c06e2843f0af"
+  },
+  "driver": {
+    "manifest": "/usr/share/vulkan/icd.d/radeon_icd.json",
+    "manifestSha256": "ea05ad7109cee152ef4e801a022dfa40b655dc06a08da7d0d7b042f619a0947c",
+    "path": "/usr/lib/x86_64-linux-gnu/libvulkan_radeon.so",
+    "sha256": "0949baaa43f5ea34fc785f28f31863ca5ea4949478fae96b37c37675a489f830"
+  },
+  "library": {
+    "path": "bench/out/maintenance/20260923-vulkan-upload-audit/native/lib/libwebgpu_doe.so",
+    "sha256": "ae9b8609784deabe991db903263ed063e5d3bcb1f1edbd600fbf5d565a43a1d7"
+  },
+  "faultLibrarySha256": "9c0d60e0875d31ece2bd30989c6c1e185791364dbecef9abf50825a4fb0bed8e",
+  "host": "Linux 128 7.0.0-29-generic #29-Ubuntu SMP PREEMPT_DYNAMIC Fri Jul 17 20:52:35 UTC 2026 x86_64 GNU/Linux",
+  "qualification": "Not application performance or release evidence"
+}

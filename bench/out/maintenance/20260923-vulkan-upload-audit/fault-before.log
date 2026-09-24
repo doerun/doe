@@ -1,0 +1,11 @@
+1/2 .audit_upload_probe.test.upload fault sweep releases fresh and pooled native acquisitions...pooled=false step=1 buffers=0 memories=0 mappings=0
+pooled=false step=2 buffers=0 memories=0 mappings=0
+pooled=false step=3 buffers=0 memories=0 mappings=0
+pooled=false step=4 buffers=1 memories=1 mappings=0
+expected 0, found 1
+FAIL (TestExpectedEqual)
+2/2 .audit_upload_probe.test.upload fault during fast-buffer replacement preserves the working buffer...fast step=1 preserved=false buffers=0 memories=0 mappings=0
+FAIL (TestUnexpectedResult)
+0 passed; 0 skipped; 2 failed.
+error: the following test command failed with exit code 1:
+.zig-cache/o/a874e2923507579be24ed54d3f57fdc5/root --seed=0x8028a0b6

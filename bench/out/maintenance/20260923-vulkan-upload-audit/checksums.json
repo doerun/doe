@@ -1,0 +1,18 @@
+{
+  "bench/out/maintenance/20260923-vulkan-upload-audit/README.md": "e837f9f26e693f170628f52b14172f7f788c4f9504d4f89fcfa431e715fb29cd",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/abi-probe.zig": "72b118f73ba846d191eb9945fc7598e55c52c3be62344d5e4cf6d451f0171a5b",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/abi.log": "9c9eb805f8aa804004f60d87885d319411e6b2529181edf5f80a4bbbf3678303",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/acceptance.log": "2d699bd64cc79a311d3f2d3320a3d950b4e97f832032a1f072c968cfc7e89d76",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/build-options.zig": "20cec9ecfb035b76413bd88db410331c5051297817feefc722929cdd3a812283",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/changes.patch": "e60923f786bb9c4650e605c233b07d497df8c96a0b5123b3114c9e4110eb90e7",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/doc-links.log": "1f595a73b2ed09c1daaeb8becdd5972805c2e54d319d1d1379fd724d863b04e4",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/fault-after.log": "f60d9a89829d5229cf86ed58dbb174f36f39f8c8da7c61ac7fece472ee88d29b",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/fault-before.log": "ebbad693b1ced0fe9c769ab9440886b4c602f4d72b934e1b30fdb66227ddf9e9",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/fault-probe.zig": "4068f535179f0d52dccd0e3f10133fbc3570fae5ad85fa9a4847e1e110543831",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/fault.c": "b37e494d641e26e75547c0182d5ee84e8a76b8c8705dddf349f5972e78f27d39",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/file-reviews.json": "cb3f8dbd14414520d59471e4b5c4287e71a4c1396bbcc35c34f5ce5c089dfb8e",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/identities.json": "050bf66f1eeeb5000b700ea5732a5130a6ab6ade99741d833f4b4d027d04223e",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/review-check.log": "4c26e6668afce6074faa13f0c7e7b6947b3e7bc3a207ce31235e43db2b49bdff",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/review-write.log": "4c26e6668afce6074faa13f0c7e7b6947b3e7bc3a207ce31235e43db2b49bdff",
+  "bench/out/maintenance/20260923-vulkan-upload-audit/schema.log": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+}

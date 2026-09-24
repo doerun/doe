@@ -1,0 +1,54 @@
+{
+  "reviews": [
+    {
+      "target": "src/backend/vulkan/vk_structs.zig",
+      "status": "verified",
+      "summary": "Whole-file examination: native extern structures/unions preserve field order, pointer/count representation and canonical handle identities; no runtime ownership or policy is embedded. All exported declarations match installed Khronos host ABI sizes, alignments, offsets and field sizes.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vulkan_types.zig",
+        "runtime/zig/src/backend/vulkan/vk_functions.zig"
+      ],
+      "nextAction": "Retain declarations at the native ABI boundary; revalidate against target headers when fields or target ABI change. This host comparison does not qualify other architectures."
+    },
+    {
+      "target": "src/backend/vulkan/vulkan_types.zig",
+      "status": "verified",
+      "summary": "Whole-file examination: one owner defines Vulkan scalar and opaque-handle identities and basic native status constants. ABI representations agree with installed Khronos declarations; allocation callbacks intentionally remain an opaque pointer-only boundary.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_structs.zig",
+        "runtime/zig/src/backend/vulkan/vk_functions.zig"
+      ],
+      "nextAction": "Retain canonical handle identity; revalidate on ABI/target changes without inferring platform support from declaration presence."
+    },
+    {
+      "target": "src/backend/vulkan/vk_upload.zig",
+      "status": "needs_changes",
+      "summary": "Whole-file examination: staged/direct/fast native allocation, upload pools, replay submission, streaming command lifecycle, copies, waits and retirement. Consolidated native acquisition and corrected pool compatibility while retaining unresolved execution-path findings.",
+      "findings": [
+        "finalize_recorded_submit_replay ends the buffer before fallible submission but leaves replay_recording_active on failure; retry can end an already executable buffer. flush_streaming_copy clears active before submission and can lose the distinction between rejected and potentially submitted work. Introduce explicit owner transitions and native submit/wait fault tests.",
+        "VkPool limits entries per size but retains an unbounded set of size classes and map capacities. Declare aggregate retention and pending-work-safe full-capacity behavior.",
+        "streaming_copy_buffer_region and record_replay_buffer_copy accept raw handles/ranges without complete allocation bounds or alias admission; caller/callee contracts must identify which owner proves each range.",
+        "flush_queue relies on has_deferred_submissions and pending uploads to authorize reuse; complete mixed streaming/replay/upload lifetime and unknown-completion teardown still need end-to-end correction."
+      ],
+      "resolvedFindings": [
+        "Native creation, allocation, binding and mapping now have one cleanup owner across staged/direct/fast paths. Destination failure releases an acquired staging source even when it came from a pool; native fault sweeps demonstrate balanced cleanup.",
+        "Fast upload growth preserves the working allocation until replacement creation/binding/mapping succeeds; each injected failure retains it and permits retry.",
+        "Pooled buffers retain actual native usage flags, and reuse requires a usage superset as well as size. Incompatible entries remain owned; ordinary tests exercise both tiers and physical copy/readback after compatible reuse."
+      ],
+      "context": [
+        "runtime/zig/src/backend/vulkan/native_runtime.zig",
+        "runtime/zig/src/backend/vulkan/vk_device.zig",
+        "runtime/zig/src/backend/vulkan/vk_sync.zig",
+        "runtime/zig/src/backend/vulkan/vk_resources.zig",
+        "runtime/zig/tests/backend/vulkan_upload_test.zig",
+        "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+        "runtime/zig/tests/vulkan/vulkan_native_unit_test.zig"
+      ],
+      "nextAction": "Repair explicit recording/submitted/retired ownership across upload/replay callers with native submission-failure injection; retain conservative unknown-completion ownership before verifying this file."
+    }
+  ]
+}

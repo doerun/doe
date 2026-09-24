@@ -275,6 +275,16 @@ classified and cannot be promoted by benchmark results.
   spill, buffer aliases, resource replacement, and orphaned image views.
   Prepared programs reject changed resources before native submission. These
   internal identities preserve the public descriptor and receipt contracts.
+- Vulkan upload-pool reuse requires both the requested byte size and a native
+  usage mask containing every requested usage bit. Native allocation, binding,
+  and mapping failures must release partial acquisitions, including a staging
+  source removed from a pool. Fast-buffer growth prepares the replacement before
+  retiring the working allocation. Retained native fault sweeps and physical
+  copy/readback regressions cover these transitions; see the
+  [upload audit](../bench/out/maintenance/20260923-vulkan-upload-audit/README.md).
+  Usage metadata is backend-private; public policy and serialized schemas retain
+  their existing versions. Completion-failure retirement remains separately
+  governed by the resource-lifetime requirements.
 - Program close must release native bindings and pipelines as well as buffers.
   Resource-retention regressions keep closed program objects reachable, repeat
   preparation and execution on the same device, and distinguish driver-reported

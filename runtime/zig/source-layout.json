@@ -1414,9 +1414,9 @@
       },
       "src/backend/vulkan/vk_upload.zig": {
         "decision": "Keep",
-        "moduleSha256": "0da4fc9b22410b5214b8e88a58b77785156be5b43b9ea0e009044654e7fb518a",
-        "reason": "Keep: Upload and replay submission delegate native acceptance bookkeeping to the synchronization owner.",
-        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+        "moduleSha256": "fc00c723fdd22ed73519d1519f6446640d7ed39bbd07628e395eb45e4faeae30",
+        "reason": "Keep: upload allocation, pooling and recording share the existing owner; native acquisition unwinds transactionally and size-bucket reuse requires compatible usage flags. Completion and aggregate retention findings remain open.",
+        "reviewer": "codex-vulkan-upload-audit/2026-09-23"
       },
       "src/backend/vulkan/vulkan_errors.zig": {
         "decision": "Keep",
