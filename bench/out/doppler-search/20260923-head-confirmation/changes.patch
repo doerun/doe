@@ -1,0 +1,36 @@
+diff --git a/docs/status/runtime-backends-and-bench.md b/docs/status/runtime-backends-and-bench.md
+index d486a82e5..34b568121 100644
+--- a/docs/status/runtime-backends-and-bench.md
++++ b/docs/status/runtime-backends-and-bench.md
+@@ -8,0 +9,6 @@ history remains in the archive.
++Fresh confirmation of the already-landed Qwen ownership batch, expanded cached
++selection allocation checks, and the remaining evidence gaps are indexed at
++`bench/out/doppler-search/20260923-head-confirmation/README.md`. This does not
++establish a material application advantage or reopen the rejected synchronization
++candidate. Accepted binaries and the application remain unchanged.
++
+diff --git a/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig b/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig
+index 2cf5f49d5..5ac14711c 100644
+--- a/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig
++++ b/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig
+@@ -285,0 +286,20 @@ test "Vulkan pipeline hash collisions preserve every recorded shader and reject
++        // Finished recordings own private caches; prepare ordinary selection separately.
++        for ([_][]const u32{ first_words, second_words, first_words }) |words| {
++            try rt.set_compute_shader_spirv_with_hashes(words, hash, hash, null, "main", &bindings, false);
++        }
++        {
++            var no_allocations = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
++            rt.allocator = no_allocations.allocator();
++            defer rt.allocator = std.testing.allocator;
++            for ([_][]const u32{ first_words, second_words, first_words }) |words| {
++                try rt.set_compute_shader_spirv_with_hashes(words, hash, hash, null, "main", &bindings, false);
++                const owner = rt.pending_spirv_pipeline.?;
++                try std.testing.expectEqual(rt.shared_pipeline.?, owner);
++                try std.testing.expect(owner.words.ptr != words.ptr);
++                try std.testing.expectEqualSlices(u32, words, owner.words);
++            }
++            try std.testing.expectEqual(@as(usize, 0), no_allocations.allocations);
++            try std.testing.expectEqual(@as(usize, 0), no_allocations.allocated_bytes);
++            try std.testing.expect(!no_allocations.has_induced_failure);
++        }
++

@@ -1,0 +1,22 @@
+[
+  {
+    "path": "/home/x/deco/doe/bench/node_modules/webgpu/dist/linux-x64.dawn.node",
+    "sha256": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1"
+  },
+  {
+    "path": "/usr/lib/x86_64-linux-gnu/libvulkan.so.1.4.341",
+    "sha256": "def4af45e9e5784cf65eaaaa289530a5c73546b01015da4c0920ef0a144fe189"
+  },
+  {
+    "path": "/usr/lib/x86_64-linux-gnu/libvulkan_asahi.so",
+    "sha256": "726d307718ce540e6804ee3aff4d60faf5232199b1110e50a64d20ea8210996d"
+  },
+  {
+    "path": "/usr/lib/x86_64-linux-gnu/libvulkan_lvp.so",
+    "sha256": "c71b513e1dd12f7eb2ad0ea76fdea379e213b0b9331d8e10c5127f2d0723ca81"
+  },
+  {
+    "path": "/usr/lib/x86_64-linux-gnu/libvulkan_radeon.so",
+    "sha256": "0949baaa43f5ea34fc785f28f31863ca5ea4949478fae96b37c37675a489f830"
+  }
+]

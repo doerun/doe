@@ -1,0 +1,21 @@
+{
+  "classification": "local-diagnostic-not-application-allocation-profile",
+  "test": "Vulkan pipeline hash collisions preserve every recorded shader and reject invalid entry points",
+  "log": "allocation-tests-prepared.log",
+  "selectionsAfterOrdinaryPreparation": 6,
+  "selectionOrderPerCollisionCase": [
+    "A",
+    "B",
+    "A"
+  ],
+  "runtimeAllocatorSuccessfulCalls": 0,
+  "runtimeAllocatorAllocatedBytes": 0,
+  "runtimeAllocatorFailureTriggered": false,
+  "pendingOwnerMatchesActiveOwner": true,
+  "callerStorageDistinct": true,
+  "shaderBytesEqual": true,
+  "copiedShaderBytesBySourcePath": 0,
+  "applicationCopyCounterAvailable": false,
+  "scope": "Runtime allocator during prepared cached selection only. No whole-application, driver, or GPU allocation claim. Copy absence follows retaining immutable owner words rather than copying them; no production counters added.",
+  "predecessorMechanism": "stage_spirv_for_artifact duplicated the complete module on each selection; predecessor copy volume was not measured in the fresh application cohort."
+}

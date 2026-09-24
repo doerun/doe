@@ -1,0 +1,63 @@
+PROVIDER {"module":"doe-gpu","loaded":true,"loadError":"","defaultCreateArgs":[],"doeNative":true,"libraryFlavor":"doe-dropin","doeLibraryPath":"/home/x/deco/doe/bench/out/doppler-search/20260920-independent-loops/native/lib/libwebgpu_doe.so","buildMetadataSource":"workspace","buildMetadataPath":"/home/x/deco/doe/bench/out/doppler-search/20260920-independent-loops/native/share/doe-build-metadata.json","leanVerifiedBuild":false,"proofArtifactSha256":null,"nativeFastPaths":{"appleFastPathCompiled":false,"queueFlush":true,"queueFlushBreakdown":true,"queueWriteBufferBatch":true,"queueWriteBufferBatchDataPtrs":true,"computeDispatchFlush":true,"computeDispatchFlushBreakdown":true,"computeDispatchBatchFlush":true,"computeDispatchBatchCopyFlush":true,"computeDispatchBatchCopyFlushBreakdown":true,"computePrewarmDispatchBindings":true,"bufferMapReadCopyUnmap":true}} {"vendor":"AMD","architecture":"vulkan","device":"Radeon 8060S Graphics (RADV STRIX_HALO)","description":"Radeon 8060S Graphics (RADV STRIX_HALO)","isFallbackAdapter":false,"subgroupMinSize":32,"subgroupMaxSize":32,"vendorID":4098,"deviceID":5510,"driverVersion":109051907}
+[443.5ms][Platform] No specific platform matched for adapter (vendor=AMD, arch=vulkan), falling back to generic
+[GPU] AMD vulkan, f16/subgroups, 4.0GB, submit probe: 1.6ms
+[16961.2ms][doppler] Resolving model
+[16965.8ms][doppler] Fetching manifest
+[16978.9ms][doppler] Loading weights
+[16983.7ms][Pipeline] Execution v1 enabled (steps=35, kernelPathInline=yes, pipelineInline=no)
+[16983.8ms][Config] Using manifest-first config (source of truth)
+[16986.3ms][Pipeline] Resolved session applied (qwen-3-reranker-0-6b-q4k-ehf16-af32): batchSize=4, stopCheckMode=batch, readbackInterval=1, disableCommandBatching=false
+[16986.8ms][Pipeline] KernelPath: qwen-3-reranker-0-6b-q4k-ehf16-af32-execution-inline (15 decode steps, 12 kernels, source=execution-v1)
+[16987.0ms][Pipeline] 28L/1024H/16heads (128dim), kernelPath=qwen-3-reranker-0-6b-q4k-ehf16-af32-execution-inline
+[16987.3ms][Tokenizer] Loading bundled tokenizer from tokenizer.json
+[17052.6ms][Tokenizer] HuggingFace model.type="BPE", using type="bpe"
+[17124.6ms][Tokenizer] Loaded HuggingFace 151669 tokens (bpe), 26 special patterns, 151387 merges
+[17134.1ms][Pipeline] KV cache allocated: kvDtype=f16, maxSeqLen=1024, layout=contiguous, modelMaxSeqLen=40960, requestedKvDtype=f16, requestedMaxSeqLen=1024
+[17134.7ms][Pipeline] Execution plan: active=primary, dtype=f32, kernelPath=qwen-3-reranker-0-6b-q4k-ehf16-af32-execution-inline
+[17149.6ms][ShardCache] Custom shard loader configured
+[17149.7ms][Loader] Initializing...
+[17217.3ms][HeapManager] Allocated segment 0: 1024MB
+[17217.4ms][HeapManager] Segmented heap: 1GB per segment
+[17217.4ms][HeapManager] Initialized with strategy: SEGMENTED
+[17217.5ms][Loader] Initialized (f16, subgroups)
+[17217.9ms][Loader] Loading: qwen-3-reranker-0-6b-q4k-ehf16-af32
+[17219.0ms][Loader] [0.0s] Memory (start): | RSS=1.12 GB (heap=57.38 MB/103.52 MB, external=1.89 GB, arrayBuffers=1.89 GB) | GPU=0 B (0 active, 0 pooled, peak=0 B) | ShardCache=0 B (0 shards) | Layers=0, GPUBuffers=0
+[17219.6ms][Loader] Dense model on discrete GPU - performance limited. Consider MoE model.
+[17229.8ms][Loader] Embedding "model.embed_tokens.weight" GPU-resident: shouldStreamLargeWeight returned false.
+[21990.0ms][Loader] Embeddings tensor loaded: name=model.embed_tokens.weight, hasShape=true, shape=[151669,1024], isWeightBuffer=true
+[21990.4ms][Loader] Layers: 0-27
+[30836.4ms][Loader] Layers: 28 complete (8.85s)
+[30837.6ms][Loader] Complete: 894.91 MB in 13.61s (65.76 MB/s)
+[30838.3ms][Loader] [13.6s] Memory (complete): | RSS=1.17 GB (heap=59.95 MB/92.02 MB, external=1.93 GB, arrayBuffers=1.92 GB) | GPU=1.20 GB (450 active, 0 pooled, peak=1.20 GB) | ShardCache=0 B (0 shards) | Layers=28, GPUBuffers=450
+[30846.0ms][Pipeline] Model loaded successfully (13865ms)
+[30848.5ms][doppler] Model ready
+OPENED sha256:49a7f647fdc13fdc0c81b15e6dc0e0248a2c69d5883c1adb1eeedcba7034c932
+[30876.3ms][KernelSelect] matmul variant=q4_fused_widetile reason=path_override
+[30885.6ms][KernelSelect] attention variant=prefill_small_f16kv reason=path_override:tiled_small
+[30901.2ms][KernelSelect] matmul variant=f16w_f32a reason=path_override
+SAMPLE {"repeat":0,"elapsedMs":894.6436119999998,"passed":true}
+SAMPLE {"repeat":1,"elapsedMs":735.6154690000003,"passed":true}
+SAMPLE {"repeat":2,"elapsedMs":701.3825170000018,"passed":true}
+SAMPLE {"repeat":3,"elapsedMs":730.6829780000044,"passed":true}
+SAMPLE {"repeat":4,"elapsedMs":703.5910619999995,"passed":true}
+SAMPLE {"repeat":5,"elapsedMs":701.1329729999998,"passed":true}
+SAMPLE {"repeat":6,"elapsedMs":722.8389539999989,"passed":true}
+SAMPLE {"repeat":7,"elapsedMs":697.5291300000026,"passed":true}
+SAMPLE {"repeat":8,"elapsedMs":710.8732209999944,"passed":true}
+SAMPLE {"repeat":9,"elapsedMs":740.8949030000003,"passed":true}
+SAMPLE {"repeat":10,"elapsedMs":699.7355610000013,"passed":true}
+SAMPLE {"repeat":11,"elapsedMs":692.0313599999936,"passed":true}
+SAMPLE {"repeat":12,"elapsedMs":699.5249910000057,"passed":true}
+SAMPLE {"repeat":13,"elapsedMs":684.3306070000035,"passed":true}
+SAMPLE {"repeat":14,"elapsedMs":706.8967300000004,"passed":true}
+SAMPLE {"repeat":15,"elapsedMs":693.1110540000009,"passed":true}
+SAMPLE {"repeat":16,"elapsedMs":694.0741510000007,"passed":true}
+SAMPLE {"repeat":17,"elapsedMs":658.423563999997,"passed":true}
+SAMPLE {"repeat":18,"elapsedMs":695.9590349999999,"passed":true}
+SAMPLE {"repeat":19,"elapsedMs":688.1043319999953,"passed":true}
+SAMPLE {"repeat":20,"elapsedMs":699.1577899999975,"passed":true}
+SAMPLE {"repeat":21,"elapsedMs":684.6398420000041,"passed":true}
+SAMPLE {"repeat":22,"elapsedMs":679.753009,"passed":true}
+[47182.0ms][ExpertCache] Cache cleared
+[47191.6ms][Pipeline] Unloaded
+CLOSED []

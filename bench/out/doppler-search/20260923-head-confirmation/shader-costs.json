@@ -1,0 +1,1139 @@
+{
+  "classification": "historical-profile-reanalysis-not-current-timing",
+  "sourceCohort": "bench/out/doppler-search/20260923-shader-owner/owner-profile",
+  "completeDispatchSequencesMatch": true,
+  "nativeAllocationIdentityProved": false,
+  "scope": "Timestamp instrumentation splits passes; ratios describe instrumented wall, not causal contribution to ordinary application latency. Dawn short timestamps are quantized. No samples combined with fresh comparison.",
+  "rows": [
+    {
+      "family": "matmul_f16w_f32a_pipeline",
+      "invocationsPerQuery": 252,
+      "doeCumulativeGpuMs": 260.53364050000005,
+      "doeProfiledQueryFraction": 0.34882033294670245,
+      "dawnCumulativeGpuMs": 237.27308800000003,
+      "dawnProfiledQueryFraction": 0.38338437372681355,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "attention_prefill_small_f16kv_pipeline",
+      "invocationsPerQuery": 84,
+      "doeCumulativeGpuMs": 163.33546249999998,
+      "doeProfiledQueryFraction": 0.21869846574176394,
+      "dawnCumulativeGpuMs": 170.2625280000001,
+      "dawnProfiledQueryFraction": 0.27505312999644804,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "matmul_q4_fused_widetile_pipeline",
+      "invocationsPerQuery": 336,
+      "doeCumulativeGpuMs": 61.00760149999999,
+      "doeProfiledQueryFraction": 0.08163807019741842,
+      "dawnCumulativeGpuMs": 36.17587200000017,
+      "dawnProfiledQueryFraction": 0.05847868716636903,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=1|PRE_RESIDUAL=1|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1",
+      "invocationsPerQuery": 84,
+      "doeCumulativeGpuMs": 20.541132500000007,
+      "doeProfiledQueryFraction": 0.027474087430072493,
+      "dawnCumulativeGpuMs": 1.2451840000000003,
+      "dawnProfiledQueryFraction": 0.0020204147626618095,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=0|PRE_RESIDUAL=0|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1",
+      "invocationsPerQuery": 87,
+      "doeCumulativeGpuMs": 18.208098,
+      "doeProfiledQueryFraction": 0.024370154945639648,
+      "dawnCumulativeGpuMs": 0.9830400000000001,
+      "dawnProfiledQueryFraction": 0.001571543146503284,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "residual_vec4_pipeline",
+      "invocationsPerQuery": 84,
+      "doeCumulativeGpuMs": 11.905232,
+      "doeProfiledQueryFraction": 0.01593637044428777,
+      "dawnCumulativeGpuMs": 1.1141120000000002,
+      "dawnProfiledQueryFraction": 0.0018086271146683416,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "silu_default_pipeline_HAS_GATE=1|INPUT_USE_IDENTITY=1",
+      "invocationsPerQuery": 84,
+      "doeCumulativeGpuMs": 10.0400995,
+      "doeProfiledQueryFraction": 0.013439567044994737,
+      "dawnCumulativeGpuMs": 1.4417920000000004,
+      "dawnProfiledQueryFraction": 0.0023296641279281485,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "rmsnorm_qk_default_pipeline_K_WEIGHT_IS_F16=1|Q_WEIGHT_IS_F16=1|RMS_NORM_OFFSET=0",
+      "invocationsPerQuery": 84,
+      "doeCumulativeGpuMs": 5.742211499999999,
+      "doeProfiledQueryFraction": 0.007684638366643138,
+      "dawnCumulativeGpuMs": 1.8677760000000005,
+      "dawnProfiledQueryFraction": 0.0030053258238211256,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "rope_qk_default_pipeline",
+      "invocationsPerQuery": 84,
+      "doeCumulativeGpuMs": 0.5416695000000002,
+      "doeProfiledQueryFraction": 0.0007252192366851431,
+      "dawnCumulativeGpuMs": 0.6881280000000001,
+      "dawnProfiledQueryFraction": 0.0011498296322230914,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "kv_cache_write_f32_to_f16_pipeline",
+      "invocationsPerQuery": 84,
+      "doeCumulativeGpuMs": 0.43909300000000007,
+      "doeProfiledQueryFraction": 0.0005879258188594903,
+      "dawnCumulativeGpuMs": 0.4259839999999999,
+      "dawnProfiledQueryFraction": 0.0006840938026168393,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "gather_f16_vec4_pipeline",
+      "invocationsPerQuery": 3,
+      "doeCumulativeGpuMs": 0.018335499999999998,
+      "doeProfiledQueryFraction": 2.454134950162602e-05,
+      "dawnCumulativeGpuMs": 0.098304,
+      "dawnProfiledQueryFraction": 0.00016305678935703258,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    },
+    {
+      "family": "lm_head_select_logits_f16w_f32a_pipeline_WORKGROUP_SIZE=256",
+      "invocationsPerQuery": 3,
+      "doeCumulativeGpuMs": 0.0156505,
+      "doeProfiledQueryFraction": 2.0956123749237705e-05,
+      "dawnCumulativeGpuMs": 0.0,
+      "dawnProfiledQueryFraction": 0.0,
+      "ownerGeneratedCodeDelta": "No compiler or WGSL change in ownership candidate; no native ISA identity proof.",
+      "dawnGeneratedCodeDelta": "Unavailable for this cohort; older driver dumps not attributed to current family binaries."
+    }
+  ],
+  "runs": [
+    {
+      "variant": "0-doe",
+      "repeat": 3,
+      "source": "bench/out/doppler-search/20260923-shader-owner/owner-profile/0-doe/profile-3.json",
+      "sha256": "a8adfeee2b41b37dc08847adaecfef5b601931916e6e52ebf70bad8c0ff27c53",
+      "profiledQueryMs": 760.8631079999977,
+      "processCpuMicroseconds": {
+        "user": 234247,
+        "system": 304678
+      },
+      "families": {
+        "gather_f16_vec4_pipeline": {
+          "invocations": 3,
+          "gpuMs": 0.018716999999999998
+        },
+        "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=0|PRE_RESIDUAL=0|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": {
+          "invocations": 87,
+          "gpuMs": 18.614177
+        },
+        "matmul_q4_fused_widetile_pipeline": {
+          "invocations": 336,
+          "gpuMs": 63.01520499999995
+        },
+        "rmsnorm_qk_default_pipeline_K_WEIGHT_IS_F16=1|Q_WEIGHT_IS_F16=1|RMS_NORM_OFFSET=0": {
+          "invocations": 84,
+          "gpuMs": 5.905739999999999
+        },
+        "rope_qk_default_pipeline": {
+          "invocations": 84,
+          "gpuMs": 0.5441950000000003
+        },
+        "kv_cache_write_f32_to_f16_pipeline": {
+          "invocations": 84,
+          "gpuMs": 0.43943500000000013
+        },
+        "attention_prefill_small_f16kv_pipeline": {
+          "invocations": 84,
+          "gpuMs": 163.47838099999998
+        },
+        "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=1|PRE_RESIDUAL=1|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": {
+          "invocations": 84,
+          "gpuMs": 21.75527000000001
+        },
+        "matmul_f16w_f32a_pipeline": {
+          "invocations": 252,
+          "gpuMs": 261.6490550000001
+        },
+        "silu_default_pipeline_HAS_GATE=1|INPUT_USE_IDENTITY=1": {
+          "invocations": 84,
+          "gpuMs": 10.196862999999995
+        },
+        "residual_vec4_pipeline": {
+          "invocations": 84,
+          "gpuMs": 12.084735
+        },
+        "lm_head_select_logits_f16w_f32a_pipeline_WORKGROUP_SIZE=256": {
+          "invocations": 3,
+          "gpuMs": 0.01563
+        }
+      },
+      "sequences": [
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 27.497436,
+          "sumPassGpuMs": 27.374121,
+          "interPassGapMs": 0.12331500000000162
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 27.061678,
+          "sumPassGpuMs": 26.95331,
+          "interPassGapMs": 0.10836800000000224
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 27.429196,
+          "sumPassGpuMs": 27.316902,
+          "interPassGapMs": 0.11229400000000211
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.992886,
+          "sumPassGpuMs": 25.866446,
+          "interPassGapMs": 0.12643999999999878
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 27.031209,
+          "sumPassGpuMs": 26.92361,
+          "interPassGapMs": 0.10759900000000044
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.643614,
+          "sumPassGpuMs": 26.49934,
+          "interPassGapMs": 0.14427399999999935
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.972488,
+          "sumPassGpuMs": 25.85875,
+          "interPassGapMs": 0.1137379999999979
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.144104,
+          "sumPassGpuMs": 0.144104,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.00517,
+          "sumPassGpuMs": 0.00517,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 26.837893,
+          "sumPassGpuMs": 26.726487,
+          "interPassGapMs": 0.11140600000000234
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 27.273149,
+          "sumPassGpuMs": 27.157129,
+          "interPassGapMs": 0.1160199999999989
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.263391,
+          "sumPassGpuMs": 25.155264,
+          "interPassGapMs": 0.10812699999999964
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.27887,
+          "sumPassGpuMs": 25.171146,
+          "interPassGapMs": 0.10772400000000104
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 28.080624,
+          "sumPassGpuMs": 27.969416,
+          "interPassGapMs": 0.1112080000000013
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 27.769683,
+          "sumPassGpuMs": 27.647452,
+          "interPassGapMs": 0.12223099999999931
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.176646,
+          "sumPassGpuMs": 26.068677,
+          "interPassGapMs": 0.10796900000000065
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.135728,
+          "sumPassGpuMs": 0.135728,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.00529,
+          "sumPassGpuMs": 0.00529,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 26.176566,
+          "sumPassGpuMs": 26.064751,
+          "interPassGapMs": 0.111815
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 27.434035,
+          "sumPassGpuMs": 27.322943,
+          "interPassGapMs": 0.11109200000000286
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.711662,
+          "sumPassGpuMs": 25.603177,
+          "interPassGapMs": 0.10848500000000172
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 27.349925,
+          "sumPassGpuMs": 27.241878,
+          "interPassGapMs": 0.10804699999999912
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.948322,
+          "sumPassGpuMs": 25.840516,
+          "interPassGapMs": 0.10780600000000007
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.839806,
+          "sumPassGpuMs": 25.732437,
+          "interPassGapMs": 0.1073689999999985
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.90543,
+          "sumPassGpuMs": 26.799224,
+          "interPassGapMs": 0.10620600000000024
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.128965,
+          "sumPassGpuMs": 0.128965,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.00517,
+          "sumPassGpuMs": 0.00517,
+          "interPassGapMs": 0.0
+        }
+      ]
+    },
+    {
+      "variant": "0-doe",
+      "repeat": 4,
+      "source": "bench/out/doppler-search/20260923-shader-owner/owner-profile/0-doe/profile-4.json",
+      "sha256": "bc67f83855586851a8ff969e90331583c275453c7c287909c052155657b6b7d3",
+      "profiledQueryMs": 733.3250289999996,
+      "processCpuMicroseconds": {
+        "user": 197439,
+        "system": 291134
+      },
+      "families": {
+        "gather_f16_vec4_pipeline": {
+          "invocations": 3,
+          "gpuMs": 0.017954
+        },
+        "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=0|PRE_RESIDUAL=0|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": {
+          "invocations": 87,
+          "gpuMs": 17.802018999999998
+        },
+        "matmul_q4_fused_widetile_pipeline": {
+          "invocations": 336,
+          "gpuMs": 58.999998000000026
+        },
+        "rmsnorm_qk_default_pipeline_K_WEIGHT_IS_F16=1|Q_WEIGHT_IS_F16=1|RMS_NORM_OFFSET=0": {
+          "invocations": 84,
+          "gpuMs": 5.578682999999999
+        },
+        "rope_qk_default_pipeline": {
+          "invocations": 84,
+          "gpuMs": 0.5391440000000001
+        },
+        "kv_cache_write_f32_to_f16_pipeline": {
+          "invocations": 84,
+          "gpuMs": 0.43875100000000006
+        },
+        "attention_prefill_small_f16kv_pipeline": {
+          "invocations": 84,
+          "gpuMs": 163.19254399999997
+        },
+        "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=1|PRE_RESIDUAL=1|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": {
+          "invocations": 84,
+          "gpuMs": 19.326995000000004
+        },
+        "matmul_f16w_f32a_pipeline": {
+          "invocations": 252,
+          "gpuMs": 259.418226
+        },
+        "silu_default_pipeline_HAS_GATE=1|INPUT_USE_IDENTITY=1": {
+          "invocations": 84,
+          "gpuMs": 9.883336000000003
+        },
+        "residual_vec4_pipeline": {
+          "invocations": 84,
+          "gpuMs": 11.725729
+        },
+        "lm_head_select_logits_f16w_f32a_pipeline_WORKGROUP_SIZE=256": {
+          "invocations": 3,
+          "gpuMs": 0.015671
+        }
+      },
+      "sequences": [
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 26.285763,
+          "sumPassGpuMs": 26.167698,
+          "interPassGapMs": 0.11806499999999787
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.158662,
+          "sumPassGpuMs": 26.039634,
+          "interPassGapMs": 0.11902800000000013
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.141329,
+          "sumPassGpuMs": 26.027872,
+          "interPassGapMs": 0.11345700000000036
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.176636,
+          "sumPassGpuMs": 26.066983999999998,
+          "interPassGapMs": 0.10965200000000053
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.914808,
+          "sumPassGpuMs": 26.793176,
+          "interPassGapMs": 0.12163200000000174
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 27.249966,
+          "sumPassGpuMs": 27.132863,
+          "interPassGapMs": 0.11710300000000018
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.101754,
+          "sumPassGpuMs": 25.994113,
+          "interPassGapMs": 0.10764100000000099
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.122953,
+          "sumPassGpuMs": 0.122953,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.005331,
+          "sumPassGpuMs": 0.005331,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 26.488949,
+          "sumPassGpuMs": 26.364711,
+          "interPassGapMs": 0.12423800000000185
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.530127,
+          "sumPassGpuMs": 25.413825,
+          "interPassGapMs": 0.11630200000000102
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.058442,
+          "sumPassGpuMs": 25.94759,
+          "interPassGapMs": 0.11085199999999773
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.888648,
+          "sumPassGpuMs": 25.766255,
+          "interPassGapMs": 0.12239299999999886
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.440727,
+          "sumPassGpuMs": 25.324548,
+          "interPassGapMs": 0.11617899999999892
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.325719,
+          "sumPassGpuMs": 25.20978,
+          "interPassGapMs": 0.1159390000000009
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.832492,
+          "sumPassGpuMs": 25.715348,
+          "interPassGapMs": 0.11714399999999969
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.146158,
+          "sumPassGpuMs": 0.146158,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.00509,
+          "sumPassGpuMs": 0.00509,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 25.554955,
+          "sumPassGpuMs": 25.414208,
+          "interPassGapMs": 0.14074700000000107
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.705711,
+          "sumPassGpuMs": 26.578547,
+          "interPassGapMs": 0.1271640000000005
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.226009,
+          "sumPassGpuMs": 26.114477,
+          "interPassGapMs": 0.11153200000000041
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 26.271707,
+          "sumPassGpuMs": 26.158295,
+          "interPassGapMs": 0.11341200000000029
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 27.651408,
+          "sumPassGpuMs": 27.545166,
+          "interPassGapMs": 0.10624200000000172
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.508126,
+          "sumPassGpuMs": 25.396713,
+          "interPassGapMs": 0.11141300000000243
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 25.491735,
+          "sumPassGpuMs": 25.366494,
+          "interPassGapMs": 0.12524099999999905
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.115971,
+          "sumPassGpuMs": 0.115971,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.00525,
+          "sumPassGpuMs": 0.00525,
+          "interPassGapMs": 0.0
+        }
+      ]
+    },
+    {
+      "variant": "1-dawn",
+      "repeat": 3,
+      "source": "bench/out/doppler-search/20260923-shader-owner/owner-profile/1-dawn/profile-3.json",
+      "sha256": "e25264fdc96dc1a60f601113637685fc4e372615e761bc64a0fc9edd179d8bfd",
+      "profiledQueryMs": 573.2382809999981,
+      "processCpuMicroseconds": {
+        "user": 562792,
+        "system": 102135
+      },
+      "families": {
+        "gather_f16_vec4_pipeline": {
+          "invocations": 3,
+          "gpuMs": 0.131072
+        },
+        "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=0|PRE_RESIDUAL=0|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": {
+          "invocations": 87,
+          "gpuMs": 0.8519680000000002
+        },
+        "matmul_q4_fused_widetile_pipeline": {
+          "invocations": 336,
+          "gpuMs": 36.372480000000174
+        },
+        "rmsnorm_qk_default_pipeline_K_WEIGHT_IS_F16=1|Q_WEIGHT_IS_F16=1|RMS_NORM_OFFSET=0": {
+          "invocations": 84,
+          "gpuMs": 1.7694720000000006
+        },
+        "rope_qk_default_pipeline": {
+          "invocations": 84,
+          "gpuMs": 0.9830400000000002
+        },
+        "kv_cache_write_f32_to_f16_pipeline": {
+          "invocations": 84,
+          "gpuMs": 0.39321599999999995
+        },
+        "attention_prefill_small_f16kv_pipeline": {
+          "invocations": 84,
+          "gpuMs": 169.8037760000001
+        },
+        "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=1|PRE_RESIDUAL=1|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": {
+          "invocations": 84,
+          "gpuMs": 1.3107200000000003
+        },
+        "matmul_f16w_f32a_pipeline": {
+          "invocations": 252,
+          "gpuMs": 237.24032
+        },
+        "silu_default_pipeline_HAS_GATE=1|INPUT_USE_IDENTITY=1": {
+          "invocations": 84,
+          "gpuMs": 1.4417920000000004
+        },
+        "residual_vec4_pipeline": {
+          "invocations": 84,
+          "gpuMs": 1.1796480000000003
+        },
+        "lm_head_select_logits_f16w_f32a_pipeline_WORKGROUP_SIZE=256": {
+          "invocations": 3,
+          "gpuMs": 0.0
+        }
+      },
+      "sequences": [
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 21.62688,
+          "sumPassGpuMs": 21.561344,
+          "interPassGapMs": 0.06553600000000159
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.757952,
+          "sumPassGpuMs": 21.62688,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 22.020096,
+          "sumPassGpuMs": 21.823488,
+          "interPassGapMs": 0.19660799999999767
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 22.151168,
+          "sumPassGpuMs": 22.020096,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.561344,
+          "sumPassGpuMs": 21.561344000000002,
+          "interPassGapMs": -3.552713678800501e-15
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.95456,
+          "sumPassGpuMs": 21.823488,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.757952,
+          "sumPassGpuMs": 21.757952,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 21.561344,
+          "sumPassGpuMs": 21.430272,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.495808,
+          "sumPassGpuMs": 21.495808,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.561344,
+          "sumPassGpuMs": 21.364736,
+          "interPassGapMs": 0.19660799999999767
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.561344,
+          "sumPassGpuMs": 21.561344,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.889024,
+          "sumPassGpuMs": 21.561344,
+          "interPassGapMs": 0.32768000000000086
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.495808,
+          "sumPassGpuMs": 21.364736,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 20.97152,
+          "sumPassGpuMs": 20.905984,
+          "interPassGapMs": 0.06553600000000159
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 21.495808,
+          "sumPassGpuMs": 21.364736,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.561344,
+          "sumPassGpuMs": 21.495808,
+          "interPassGapMs": 0.06553599999999804
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.430272,
+          "sumPassGpuMs": 21.233664,
+          "interPassGapMs": 0.19660799999999767
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.757952,
+          "sumPassGpuMs": 21.495808,
+          "interPassGapMs": 0.26214399999999927
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.430272,
+          "sumPassGpuMs": 21.2992,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.692416,
+          "sumPassGpuMs": 21.561344,
+          "interPassGapMs": 0.13107200000000319
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.2992,
+          "sumPassGpuMs": 21.168128,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        }
+      ]
+    },
+    {
+      "variant": "1-dawn",
+      "repeat": 4,
+      "source": "bench/out/doppler-search/20260923-shader-owner/owner-profile/1-dawn/profile-4.json",
+      "sha256": "6bf64dc06faab0fd0ddef08d02b32eeeaa507b94a3924808e7b13fc93de77998",
+      "profiledQueryMs": 672.4281269999992,
+      "processCpuMicroseconds": {
+        "user": 712408,
+        "system": 96678
+      },
+      "families": {
+        "gather_f16_vec4_pipeline": {
+          "invocations": 3,
+          "gpuMs": 0.065536
+        },
+        "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=0|PRE_RESIDUAL=0|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": {
+          "invocations": 87,
+          "gpuMs": 1.1141120000000002
+        },
+        "matmul_q4_fused_widetile_pipeline": {
+          "invocations": 336,
+          "gpuMs": 35.979264000000164
+        },
+        "rmsnorm_qk_default_pipeline_K_WEIGHT_IS_F16=1|Q_WEIGHT_IS_F16=1|RMS_NORM_OFFSET=0": {
+          "invocations": 84,
+          "gpuMs": 1.9660800000000007
+        },
+        "rope_qk_default_pipeline": {
+          "invocations": 84,
+          "gpuMs": 0.39321599999999995
+        },
+        "kv_cache_write_f32_to_f16_pipeline": {
+          "invocations": 84,
+          "gpuMs": 0.45875199999999994
+        },
+        "attention_prefill_small_f16kv_pipeline": {
+          "invocations": 84,
+          "gpuMs": 170.72128000000006
+        },
+        "rmsnorm_subgroup_pipeline_OUTPUT_PRENORM=1|PRE_RESIDUAL=1|RMS_NORM_OFFSET=0|WEIGHT_IS_F16=1": {
+          "invocations": 84,
+          "gpuMs": 1.1796480000000003
+        },
+        "matmul_f16w_f32a_pipeline": {
+          "invocations": 252,
+          "gpuMs": 237.30585600000006
+        },
+        "silu_default_pipeline_HAS_GATE=1|INPUT_USE_IDENTITY=1": {
+          "invocations": 84,
+          "gpuMs": 1.4417920000000004
+        },
+        "residual_vec4_pipeline": {
+          "invocations": 84,
+          "gpuMs": 1.0485760000000002
+        },
+        "lm_head_select_logits_f16w_f32a_pipeline_WORKGROUP_SIZE=256": {
+          "invocations": 3,
+          "gpuMs": 0.0
+        }
+      },
+      "sequences": [
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 21.692416,
+          "sumPassGpuMs": 21.62688,
+          "interPassGapMs": 0.06553600000000159
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.889024,
+          "sumPassGpuMs": 21.692416,
+          "interPassGapMs": 0.19660799999999767
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 22.020096,
+          "sumPassGpuMs": 21.823488,
+          "interPassGapMs": 0.19660799999999767
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.823488,
+          "sumPassGpuMs": 21.62688,
+          "interPassGapMs": 0.19660800000000123
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 22.151168,
+          "sumPassGpuMs": 22.085632,
+          "interPassGapMs": 0.06553599999999804
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 22.151168,
+          "sumPassGpuMs": 22.085632,
+          "interPassGapMs": 0.06553599999999804
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 22.020096,
+          "sumPassGpuMs": 21.757952,
+          "interPassGapMs": 0.26214399999999927
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 21.037056,
+          "sumPassGpuMs": 20.971519999999998,
+          "interPassGapMs": 0.06553600000000159
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.823488,
+          "sumPassGpuMs": 21.757952,
+          "interPassGapMs": 0.06553600000000159
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.561344,
+          "sumPassGpuMs": 21.430272,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.430272,
+          "sumPassGpuMs": 21.168128,
+          "interPassGapMs": 0.26214399999999927
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.95456,
+          "sumPassGpuMs": 21.757952,
+          "interPassGapMs": 0.19660800000000123
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.692416,
+          "sumPassGpuMs": 21.561344,
+          "interPassGapMs": 0.13107200000000319
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.037056,
+          "sumPassGpuMs": 20.97152,
+          "interPassGapMs": 0.06553599999999804
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "prefill",
+          "invocations": 61,
+          "firstToLastGpuMs": 21.2992,
+          "sumPassGpuMs": 21.168128,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.2992,
+          "sumPassGpuMs": 21.168128,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.2992,
+          "sumPassGpuMs": 21.233664,
+          "interPassGapMs": 0.06553599999999804
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.757952,
+          "sumPassGpuMs": 21.62688,
+          "interPassGapMs": 0.13107199999999963
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.233664,
+          "sumPassGpuMs": 21.037056,
+          "interPassGapMs": 0.19660800000000123
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.889024,
+          "sumPassGpuMs": 21.823488,
+          "interPassGapMs": 0.06553599999999804
+        },
+        {
+          "label": "prefill-chunk",
+          "invocations": 60,
+          "firstToLastGpuMs": 21.495808,
+          "sumPassGpuMs": 21.233664,
+          "interPassGapMs": 0.26214399999999927
+        },
+        {
+          "label": "rmsnorm_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.065536,
+          "sumPassGpuMs": 0.065536,
+          "interPassGapMs": 0.0
+        },
+        {
+          "label": "lm_head_select_logits_encoder",
+          "invocations": 1,
+          "firstToLastGpuMs": 0.0,
+          "sumPassGpuMs": 0,
+          "interPassGapMs": 0.0
+        }
+      ]
+    }
+  ]
+}

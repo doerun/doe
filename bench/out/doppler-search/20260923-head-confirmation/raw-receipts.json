@@ -1,0 +1,32 @@
+[
+  {
+    "path": "comparison/0-baseline/result.json",
+    "sha256": "2e03b8d4cc92a461f0519e2c17113497f496316f9c9aa1d8ff4eef1602cfcca5",
+    "bytes": 1349506
+  },
+  {
+    "path": "comparison/1-candidate/result.json",
+    "sha256": "5b42ca04318b1ad07176208b70cf647eeee53251a9393ad6af4d9cad6acce9c9",
+    "bytes": 1349537
+  },
+  {
+    "path": "comparison/2-dawn/result.json",
+    "sha256": "32a1f68cca36d357e7f86aa24bc64b7d280635e852f83013179959d608f1e6e4",
+    "bytes": 1349137
+  },
+  {
+    "path": "comparison/3-dawn/result.json",
+    "sha256": "9b263a53826f0e9bb0e9d77c72031ec5abf884ea7502fd924655da97bb70e026",
+    "bytes": 1348938
+  },
+  {
+    "path": "comparison/4-candidate/result.json",
+    "sha256": "adedef74ea0bf72a337a315908b74cc92da3b39c94437a4a39b9f82c353fa485",
+    "bytes": 1349728
+  },
+  {
+    "path": "comparison/5-baseline/result.json",
+    "sha256": "13364051e33982e42ae17057e746ebef473418065ba425d236874e4a551fa44f",
+    "bytes": 1349485
+  }
+]

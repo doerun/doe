@@ -6,6 +6,12 @@ history remains in the archive.
 
 ## Current boundary
 
+Fresh confirmation of the already-landed Qwen ownership batch, expanded cached
+selection allocation checks, and the remaining evidence gaps are indexed at
+`bench/out/doppler-search/20260923-head-confirmation/README.md`. This does not
+establish a material application advantage or reopen the rejected synchronization
+candidate. Accepted binaries and the application remain unchanged.
+
 The Qwen reranker ownership correction, rejected synchronization experiment,
 and fresh matched predecessor/Dawn cohorts are indexed at
 `bench/out/doppler-search/20260923-shader-owner/README.md`. The measured deficit

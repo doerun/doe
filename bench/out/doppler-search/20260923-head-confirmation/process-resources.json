@@ -1,0 +1,54 @@
+{
+  "classification": "local-diagnostic",
+  "scope": "Entire child lifetime, including startup, loading, warmups, oracle, output serialization, and cleanup; not per-query CPU or GPU residency.",
+  "observations": [
+    {
+      "source": "bench/out/doppler-search/20260923-head-confirmation/comparison/0-baseline-resources.txt",
+      "variant": "baseline",
+      "userCpuSeconds": 38.8,
+      "systemCpuSeconds": 7.3,
+      "peakRssKiB": 1373428.0,
+      "exitStatus": 0.0
+    },
+    {
+      "source": "bench/out/doppler-search/20260923-head-confirmation/comparison/1-candidate-resources.txt",
+      "variant": "candidate",
+      "userCpuSeconds": 38.68,
+      "systemCpuSeconds": 7.55,
+      "peakRssKiB": 1358740.0,
+      "exitStatus": 0.0
+    },
+    {
+      "source": "bench/out/doppler-search/20260923-head-confirmation/comparison/2-dawn-resources.txt",
+      "variant": "dawn",
+      "userCpuSeconds": 47.69,
+      "systemCpuSeconds": 3.21,
+      "peakRssKiB": 1547152.0,
+      "exitStatus": 0.0
+    },
+    {
+      "source": "bench/out/doppler-search/20260923-head-confirmation/comparison/3-dawn-resources.txt",
+      "variant": "dawn",
+      "userCpuSeconds": 47.78,
+      "systemCpuSeconds": 3.24,
+      "peakRssKiB": 1549320.0,
+      "exitStatus": 0.0
+    },
+    {
+      "source": "bench/out/doppler-search/20260923-head-confirmation/comparison/4-candidate-resources.txt",
+      "variant": "candidate",
+      "userCpuSeconds": 37.96,
+      "systemCpuSeconds": 7.06,
+      "peakRssKiB": 1362996.0,
+      "exitStatus": 0.0
+    },
+    {
+      "source": "bench/out/doppler-search/20260923-head-confirmation/comparison/5-baseline-resources.txt",
+      "variant": "baseline",
+      "userCpuSeconds": 37.75,
+      "systemCpuSeconds": 7.45,
+      "peakRssKiB": 1376136.0,
+      "exitStatus": 0.0
+    }
+  ]
+}

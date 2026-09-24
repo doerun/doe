@@ -283,6 +283,26 @@ test "Vulkan pipeline hash collisions preserve every recorded shader and reject 
         try program.submit(&rt);
         try expect_reuse_output(&rt, bindings[0].resource_handle, &.{ 50, 56, 62, 68 });
 
+        // Finished recordings own private caches; prepare ordinary selection separately.
+        for ([_][]const u32{ first_words, second_words, first_words }) |words| {
+            try rt.set_compute_shader_spirv_with_hashes(words, hash, hash, null, "main", &bindings, false);
+        }
+        {
+            var no_allocations = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
+            rt.allocator = no_allocations.allocator();
+            defer rt.allocator = std.testing.allocator;
+            for ([_][]const u32{ first_words, second_words, first_words }) |words| {
+                try rt.set_compute_shader_spirv_with_hashes(words, hash, hash, null, "main", &bindings, false);
+                const owner = rt.pending_spirv_pipeline.?;
+                try std.testing.expectEqual(rt.shared_pipeline.?, owner);
+                try std.testing.expect(owner.words.ptr != words.ptr);
+                try std.testing.expectEqualSlices(u32, words, owner.words);
+            }
+            try std.testing.expectEqual(@as(usize, 0), no_allocations.allocations);
+            try std.testing.expectEqual(@as(usize, 0), no_allocations.allocated_bytes);
+            try std.testing.expect(!no_allocations.has_induced_failure);
+        }
+
         try rt.set_compute_shader_spirv_with_hashes(first_words, hash, hash, null, "main", &bindings, false);
         const original_pipeline = rt.pipeline;
         try std.testing.expectError(error.InvalidArgument, rt.set_compute_shader_spirv_with_hashes(first_words, hash, hash, null, "missing_entry", &bindings, false));

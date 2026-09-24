@@ -1,0 +1,28 @@
+{
+  "classification": "local-diagnostic-not-release-qualified",
+  "objectiveAchieved": false,
+  "startingCommit": "30401e9920c7b3680bff28c2798b16b4d2d3e80b",
+  "runtimeChange": "Already landed ownership and uniform visibility; no new production change.",
+  "newChange": "Test allocation-free cached A-B-A selection under pipeline-hash collisions.",
+  "secondCandidate": "Already-tested synchronization candidate remains rejected; no third candidate.",
+  "freshComparison": "comparison/comparison.json",
+  "headOverPreOwnerP50": 0.9896482852393509,
+  "headOverPreOwnerP95": 0.9983624170316867,
+  "headOverDawnP50": 1.260428144660318,
+  "headOverDawnP95": 1.111538683668649,
+  "interpretation": "Doe remains slower than Dawn. Small aggregate pre-owner improvement is inconsistent by order and does not establish repeatable material gain.",
+  "passedTests": 2301,
+  "skippedTests": 11,
+  "allocationEvidence": "allocation-results.json",
+  "cpuMemoryScope": "process-resources.json",
+  "historicalShaderTable": "shader-costs.csv",
+  "limitations": [
+    "No query-only CPU or whole-application allocation profile.",
+    "Process peak RSS is not GPU residency.",
+    "Historical split-pass profiling does not apportion current ordinary latency.",
+    "Current family-linked Doe/Dawn ISA differences unavailable.",
+    "Application operation receipts and boundary GPU checks are not full native work/readback equivalence.",
+    "No release qualification or other-workload advantage."
+  ],
+  "nextDecision": "Select future work from an independently important adopter execution problem and competent incumbent alternatives; no further candidate in this bounded batch."
+}
