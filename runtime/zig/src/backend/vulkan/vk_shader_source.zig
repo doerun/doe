@@ -10,7 +10,7 @@ pub fn load_kernel_source(self: anytype, allocator: std.mem.Allocator, kernel_na
     if (kernel_name.len == 0) return error.InvalidArgument;
     const path = try resolve_kernel_path(self, allocator, kernel_name);
     defer allocator.free(path);
-    return std.fs.cwd().readFileAlloc(allocator, path, MAX_KERNEL_SOURCE_BYTES) catch error.ShaderCompileFailed;
+    return std.fs.cwd().readFileAlloc(allocator, path, MAX_KERNEL_SOURCE_BYTES);
 }
 
 pub fn load_kernel_spirv(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
@@ -59,12 +59,15 @@ fn compile_kernel_wgsl_to_spirv(self: anytype, allocator: std.mem.Allocator, ker
     defer allocator.free(source_path);
     if (!std.mem.endsWith(u8, source_path, ".wgsl")) return error.UnsupportedFeature;
 
-    const wgsl = std.fs.cwd().readFileAlloc(allocator, source_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
+    const wgsl = try std.fs.cwd().readFileAlloc(allocator, source_path, MAX_KERNEL_SOURCE_BYTES);
     defer allocator.free(wgsl);
 
     var spirv_buf = try allocator.alloc(u8, spirv_translation.MAX_OUTPUT);
     defer allocator.free(spirv_buf);
-    const spirv_len = spirv_translation.translateToSpirv(allocator, wgsl, spirv_buf) catch return error.ShaderCompileFailed;
+    const spirv_len = spirv_translation.translateToSpirv(allocator, wgsl, spirv_buf) catch |err| switch (err) {
+        error.OutOfMemory => return err,
+        else => return error.ShaderCompileFailed,
+    };
     return try words_from_spirv_bytes(allocator, spirv_buf[0..spirv_len]);
 }
 
@@ -124,9 +127,10 @@ fn resolve_kernel_spirv_path(self: anytype, allocator: std.mem.Allocator, kernel
         allocator.free(sibling_spv);
     }
 
-    if (std.mem.lastIndexOfScalar(u8, source_path, '.')) |idx| {
+    const extension = std.fs.path.extension(source_path);
+    if (extension.len != 0) {
         {
-            const replaced = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path[0..idx]});
+            const replaced = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path[0 .. source_path.len - extension.len]});
             errdefer allocator.free(replaced);
             if (try path_utils.file_exists(replaced)) return replaced;
             allocator.free(replaced);
@@ -157,4 +161,41 @@ fn exerciseCacheAllocation(allocator: std.mem.Allocator) !void {
 
 test "SPIR-V cache admission releases loaded words on allocation failure" {
     try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseCacheAllocation, .{});
+}
+
+fn exerciseWgslAllocation(allocator: std.mem.Allocator) !void {
+    const Fixture = struct { kernel_root: ?[]const u8 };
+    var temporary = std.testing.tmpDir(.{});
+    defer temporary.cleanup();
+    const root = try temporary.dir.realpathAlloc(std.testing.allocator, ".");
+    defer std.testing.allocator.free(root);
+    const source = "@compute @workgroup_size(1) fn main() {}";
+    try temporary.dir.writeFile(.{ .sub_path = "probe.wgsl", .data = source });
+    const fixture = Fixture{ .kernel_root = root };
+    const loaded = try load_kernel_source(&fixture, allocator, "probe.wgsl");
+    defer allocator.free(loaded);
+    try std.testing.expectEqualStrings(source, loaded);
+    const words = try load_kernel_spirv(&fixture, allocator, "probe.wgsl");
+    defer allocator.free(words);
+    try std.testing.expectEqual(SPIRV_MAGIC, words[0]);
+}
+
+test "WGSL source loading and compilation preserve allocation failures" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseWgslAllocation, .{});
+}
+
+test "SPIR-V sibling resolution never treats a parent directory suffix as a file extension" {
+    var temporary = std.testing.tmpDir(.{});
+    defer temporary.cleanup();
+    try temporary.dir.makeDir("kernels.version");
+    try temporary.dir.writeFile(.{ .sub_path = "kernels.version/probe", .data = "source" });
+    try temporary.dir.writeFile(.{ .sub_path = "kernels.spv", .data = "unrelated" });
+    const root = try temporary.dir.realpathAlloc(std.testing.allocator, "kernels.version");
+    defer std.testing.allocator.free(root);
+    const fixture = .{ .kernel_root = @as(?[]const u8, root) };
+    try std.testing.expectError(error.UnsupportedFeature, resolve_kernel_spirv_path(&fixture, std.testing.allocator, "probe"));
+    try temporary.dir.writeFile(.{ .sub_path = "kernels.version/probe.spv", .data = "sibling" });
+    const resolved = try resolve_kernel_spirv_path(&fixture, std.testing.allocator, "probe");
+    defer std.testing.allocator.free(resolved);
+    try std.testing.expect(std.mem.endsWith(u8, resolved, "/kernels.version/probe.spv"));
 }

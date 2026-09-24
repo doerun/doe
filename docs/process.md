@@ -238,6 +238,19 @@ classified and cannot be promoted by benchmark results.
   an independent integer oracle, and physical query intervals are bounded by
   an independent host clock. Receipt version 3 distinguishes normalized Doe
   results from historical native-tick receipts; old evidence keeps its units.
+- Vulkan deferred submission bookkeeping must discard a reservation only when
+  native submission explicitly rejects it without submitting work. Host/device
+  allocation rejection must preserve earlier obligations and allow retry;
+  device loss and unknown results retain potentially submitted obligations.
+  Timeline creation errors propagate instead of silently selecting fences.
+  Host elapsed-query conversion masks counter wrap to the queue's valid bits
+  and rejects invalid calibration or overflow. Shader-file reads preserve I/O
+  and allocation errors; sibling SPIR-V lookup changes only the filename suffix.
+  Surface capability queries require a native surface. These internal repairs
+  preserve existing policy, public fields, and serialized receipt schemas;
+  callers must now handle previously swallowed failures. See the
+  [Vulkan audit evidence](../bench/out/maintenance/20260923-vulkan-audit/README.md)
+  for executed checks and remaining completion-lifetime findings.
 - Compute descriptor version 2 adds explicit invocation/program buffer lifetimes;
   native contract version 2 also accepts historical version 1 declarations.
   Receipt version 4 records GPU state provenance separately from known byte

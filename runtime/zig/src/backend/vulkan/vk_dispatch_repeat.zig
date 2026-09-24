@@ -82,7 +82,7 @@ fn run_batch(
             .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
             .pNext = null,
             .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
+            .dstAccessMask = c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_UNIFORM_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
         };
     }
     var dispatch_index: u32 = 0;
@@ -143,10 +143,8 @@ fn run_batch(
             @sizeOf(u64),
             c.VK_QUERY_RESULT_64_BIT | c.VK_QUERY_RESULT_WAIT_BIT,
         ));
-        if (results[1] > results[0]) {
-            gpu_timestamp_ns = vk_timing.computeElapsedNs(results[0], results[1], self.timestamp_period);
-            gpu_timestamp_valid = gpu_timestamp_ns > 0;
-        }
+        gpu_timestamp_ns = try vk_timing.computeElapsedNs(results[0], results[1], self.timestamp_period, self.queue_family_timestamp_valid_bits_value_cache orelse return error.InvalidState);
+        gpu_timestamp_valid = gpu_timestamp_ns > 0;
         if (gpu_timestamp_mode == .require and !gpu_timestamp_valid) return error.TimingPolicyMismatch;
     } else if (gpu_timestamp_mode == .require) {
         return error.TimingPolicyMismatch;

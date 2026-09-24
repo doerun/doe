@@ -321,10 +321,10 @@ pub fn create_fence_pool(self: anytype) !void {
     self.has_fence_pool = true;
 }
 
-pub fn create_timeline_semaphore(self: anytype) void {
-    self.timeline_semaphore_probe_done = true;
+pub fn create_timeline_semaphore(self: anytype) !void {
     const supported = vk_sync.detect_timeline_semaphore_support(self.physical_device);
-    self.timeline_semaphore = vk_sync.TimelineSemaphore.init(self.device, supported);
+    self.timeline_semaphore = try vk_sync.TimelineSemaphore.init(self.device, supported);
+    self.timeline_semaphore_probe_done = true;
     self.has_timeline_semaphore = self.timeline_semaphore.available;
 }
 
@@ -361,7 +361,7 @@ pub fn ensure_deferred_submission_state(self: anytype) !void {
         return;
     }
     if (!self.timeline_semaphore_probe_done) {
-        create_timeline_semaphore(self);
+        try create_timeline_semaphore(self);
     }
     if (!self.has_timeline_semaphore and !self.has_fence_pool) {
         try create_fence_pool(self);

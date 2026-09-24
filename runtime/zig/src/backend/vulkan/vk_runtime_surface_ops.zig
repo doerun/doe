@@ -1,3 +1,4 @@
+const std = @import("std");
 const model_gpu_types = @import("../../contracts/model/model_texture_value_types.zig");
 const model_surface_control_types = @import("../../contracts/model/model_surface_control_types.zig");
 const c = @import("vk_constants.zig");
@@ -16,15 +17,14 @@ pub fn create_surface(self: anytype, handle: u64) !void {
 
 pub fn get_surface_capabilities(self: anytype, handle: u64) !void {
     const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
-    if (surface.vk_surface != 0) {
-        const caps = try vulkan_surface.query_surface_capabilities(
-            self.physical_device,
-            self.queue_family_index,
-            surface.vk_surface,
-        );
-        surface.cached_capabilities = caps;
-        surface.capabilities_queried = true;
-    }
+    if (surface.vk_surface == 0) return error.SurfaceUnavailable;
+    const caps = try vulkan_surface.query_surface_capabilities(
+        self.physical_device,
+        self.queue_family_index,
+        surface.vk_surface,
+    );
+    surface.cached_capabilities = caps;
+    surface.capabilities_queried = true;
 }
 
 pub fn preferred_canvas_format(self: anytype) model_gpu_types.WGPUTextureFormat {
@@ -114,4 +114,20 @@ pub fn release_all_surfaces(self: anytype) void {
         }
     }
     self.surfaces.deinit(self.allocator);
+}
+
+test "surface capability queries require a native surface" {
+    const Fixture = struct {
+        allocator: std.mem.Allocator = std.testing.allocator,
+        surfaces: std.AutoHashMapUnmanaged(u64, SurfaceState) = .{},
+        physical_device: c.VkPhysicalDevice = null,
+        queue_family_index: u32 = 0,
+    };
+    var fixture = Fixture{};
+    defer fixture.surfaces.deinit(fixture.allocator);
+    try std.testing.expectError(error.SurfaceUnavailable, get_surface_capabilities(&fixture, 1));
+    try create_surface(&fixture, 1);
+    try std.testing.expectError(error.SurfaceUnavailable, get_surface_capabilities(&fixture, 1));
+    try std.testing.expect(!fixture.surfaces.get(1).?.capabilities_queried);
+    try std.testing.expectError(error.InvalidState, create_surface(&fixture, 1));
 }

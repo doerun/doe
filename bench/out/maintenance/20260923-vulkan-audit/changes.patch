@@ -1,0 +1,875 @@
+diff --git a/docs/process.md b/docs/process.md
+index 4b1cf1b55..6ce2ec865 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -238,6 +238,19 @@ classified and cannot be promoted by benchmark results.
+   an independent integer oracle, and physical query intervals are bounded by
+   an independent host clock. Receipt version 3 distinguishes normalized Doe
+   results from historical native-tick receipts; old evidence keeps its units.
++- Vulkan deferred submission bookkeeping must discard a reservation only when
++  native submission explicitly rejects it without submitting work. Host/device
++  allocation rejection must preserve earlier obligations and allow retry;
++  device loss and unknown results retain potentially submitted obligations.
++  Timeline creation errors propagate instead of silently selecting fences.
++  Host elapsed-query conversion masks counter wrap to the queue's valid bits
++  and rejects invalid calibration or overflow. Shader-file reads preserve I/O
++  and allocation errors; sibling SPIR-V lookup changes only the filename suffix.
++  Surface capability queries require a native surface. These internal repairs
++  preserve existing policy, public fields, and serialized receipt schemas;
++  callers must now handle previously swallowed failures. See the
++  [Vulkan audit evidence](../bench/out/maintenance/20260923-vulkan-audit/README.md)
++  for executed checks and remaining completion-lifetime findings.
+ - Compute descriptor version 2 adds explicit invocation/program buffer lifetimes;
+   native contract version 2 also accepts historical version 1 declarations.
+   Receipt version 4 records GPU state provenance separately from known byte
+diff --git a/docs/status/runtime-architecture-audit.md b/docs/status/runtime-architecture-audit.md
+index a92840e06..0585b15a0 100644
+--- a/docs/status/runtime-architecture-audit.md
++++ b/docs/status/runtime-architecture-audit.md
+@@ -12,13 +12,23 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
+ 
+ ## Hierarchical code review
+ 
++The [continued Vulkan audit](../../bench/out/maintenance/20260923-vulkan-audit/README.md)
++repairs rejected-submission reservations, shader source lookup/error propagation,
++elapsed timestamp conversion, and missing-surface admission. Its
++[file conclusions](../../bench/out/maintenance/20260923-vulkan-audit/file-reviews.json)
++retain unresolved sampler, presentation, completion, and error-taxonomy findings.
++The next never-examined file is `src/backend/vulkan/vk_structs.zig`;
++`vk_upload.zig` and `vulkan_types.zig` also remain unexamined in this continuation.
++Supporting caller edits confer no additional review credit. This audit does not
++establish application acceleration or release qualification.
++
+ The [product-intent alignment](../../bench/out/maintenance/20260920-product-intent/README.md)
+ binds ordinary WebGPU and optional safe reuse into goals, intent, charters, and
+ implementation guidance. Compiler meaning, execution ownership, offline
+ improvement, numerical acceptance, and deployment claims now have explicit
+ boundaries. This documentation change grants no implementation or hardware
+ qualification. Shared-guidance changes reopen affected reviews; earlier ledger
+-entries remain unchanged. Continue at `src/backend/vulkan/vk_runtime_surface_ops.zig`
++entries remain unchanged. Follow the latest continuation above
+ and revalidate earlier scopes against the changed assumptions before restoring
+ verified status.
+ 
+@@ -29,7 +39,7 @@ semantics. Its [per-file conclusions](../../bench/out/maintenance/20260920-vulka
+ separate retained sound code from unresolved completion lifetimes, capability
+ claims, render admission, cache retention and receipt accounting. Host/native
+ checks do not close stalled-device or complete graphics qualification. The next
+-never-examined file is `src/backend/vulkan/vk_runtime_surface_ops.zig`; supporting
++never-examined file at that checkpoint was `src/backend/vulkan/vk_runtime_surface_ops.zig`; supporting
+ edits grant no directory or relationship review credit.
+ 
+ The [Metal notification checkpoint](../../bench/out/maintenance/20260920-metal-notification/README.md)
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index a6b8679f8..05790d68e 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -1228,9 +1228,9 @@
+       },
+       "src/backend/vulkan/native_runtime.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "cccf207a602102842cfed99c93aee3145864684cc1ab2adcc82601401870e7d8",
+-        "reason": "Keep: The device runtime retains pending shader identity independently of active and cached execution references and releases it during teardown.",
+-        "reviewer": "codex-qwen-owner-sync/2026-09-23"
++        "moduleSha256": "3b910a221dc0136eb64dd098c1b73e50b802868eadcf46a15fbdc17d4b796b88",
++        "reason": "Keep: Runtime assembly delegates native submission bookkeeping and calibrated timestamp arithmetic to existing owners.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vk_adapter_probe.zig": {
+         "decision": "Keep",
+@@ -1276,9 +1276,9 @@
+       },
+       "src/backend/vulkan/vk_device.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb",
+-        "reason": "Keep: physical-device selection propagates allocation failure instead of silently treating it as an unsupported queue; timestamp calibration remains unchanged.",
+-        "reviewer": "codex-lifecycle-failure/2026-09-08"
++        "moduleSha256": "0d2ebf019bb847aaf6c39da775bb698c497e81c3318faa1d5fa1fc4b322c36b0",
++        "reason": "Keep: Device capability and synchronization-object creation remain local; supported timeline creation failures propagate.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vk_device_caps.zig": {
+         "decision": "Keep",
+@@ -1294,9 +1294,9 @@
+       },
+       "src/backend/vulkan/vk_dispatch_repeat.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "4541c7f4dbeb8100df0b7418ea1d56d8282ad540f39c121992110f3543bcf6ba",
+-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-hexagonal-migration/2026-08-22"
++        "moduleSha256": "2d32d26aecb70413c29fb9b796ab4115b059db3ec9b315f1514ff5909d5fe9cf",
++        "reason": "Keep: Repeated-dispatch encoding retains declared dependency policy and delegates calibrated elapsed-query arithmetic.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vk_feature_caps.zig": {
+         "decision": "Keep",
+@@ -1348,9 +1348,9 @@
+       },
+       "src/backend/vulkan/vk_render.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "dc83866472d2b5b423f542caeee23e889b1ae02398b499535f4a59b124383b72",
+-        "reason": "Keep: render execution binds caller-owned depth views, preserves attachment contents across draws, and separates borrowed targets from owned temporary targets.",
+-        "reviewer": "codex-depth-ownership/2026-09-06"
++        "moduleSha256": "19d1788f87b0c3b3b20b039443345d7df75fa3be9f7998050cbf0009a3875d46",
++        "reason": "Keep: Render recording delegates timeline submission acceptance to the synchronization owner.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vk_render_pipeline.zig": {
+         "decision": "Keep",
+@@ -1372,9 +1372,9 @@
+       },
+       "src/backend/vulkan/vk_runtime_surface_ops.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "096074017864254182bc8db48e6201bc7385ac5f7b29deeab80666c530385f0b",
+-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
++        "moduleSha256": "070f0c8e0334c364587e99615d0512e657e7e7fa53f8cce3476c9311beb6daff",
++        "reason": "Keep: Runtime surface operations delegate native capability and swapchain execution; missing native surfaces fail explicitly.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vk_samplers.zig": {
+         "decision": "Keep",
+@@ -1384,9 +1384,9 @@
+       },
+       "src/backend/vulkan/vk_shader_source.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "ff3a1fea216965ff6b6fa3c19c175c88eaf35b118fa3b68a95de74e19d4ce09b",
+-        "reason": "Keep: Vulkan kernel source resolution, WGSL-to-SPIR-V fallback, and owned SPIR-V source cache boundary.",
+-        "reviewer": "codex-common-audit/2026-09-19"
++        "moduleSha256": "acc7e67d6ead05bd35c560a18d0098554b492284b93e6092f800265c79e4b842",
++        "reason": "Keep: File lookup and owned shader-cache loading stay local; preserve allocation/I/O failures and filename boundaries.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vk_spirv_inspect.zig": {
+         "decision": "Keep",
+@@ -1402,27 +1402,27 @@
+       },
+       "src/backend/vulkan/vk_sync.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "2969d40280ebbdb377caf330621a9bef990b0f3cb02189135a8189749b1ebc71",
+-        "reason": "Keep: reachable backend implementation shared by 5 production consumers with no conflicting ownership signal.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
++        "moduleSha256": "918c05a2340c613797453ca2bdaafb59b007d54c4e28f14c4719c7e5cda0318c",
++        "reason": "Keep: Fence and timeline owners handle native submission acceptance and completion; no independent queue-policy authority.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vk_texture_commands.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "82b32dc3e8f756a9cd9c3c7db5b37dbbba0c62b093e6c7b0fb2845d6667561e0",
+-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
+-        "reviewer": "codex-texture-copy-regions/2026-09-07"
++        "moduleSha256": "bfce179170213fd401740ae903b970c99521b48c0efd8d5cd48e9c1265d9939e",
++        "reason": "Keep: Texture copy recording delegates timeline submission acceptance to the synchronization owner.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vk_upload.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "c33cb5eb3e84f4da4a04a8f03c16cdf91a9e21fdc8ff0a8aba16ccc8b56b743e",
+-        "reason": "Keep: explicit resource ownership and prepared execution preserve ordinary provider semantics; validated by program and queue-ordering regressions.",
+-        "reviewer": "codex-gpu-program/2026-09-05"
++        "moduleSha256": "0da4fc9b22410b5214b8e88a58b77785156be5b43b9ea0e009044654e7fb518a",
++        "reason": "Keep: Upload and replay submission delegate native acceptance bookkeeping to the synchronization owner.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vulkan_errors.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "cf8bad9e1025976eec9aec53d6fce485ac1242932b29ea0505530c4576280b10",
+-        "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
++        "moduleSha256": "7374722c872767c5407f4bcaeb044408c5eca3188da684c5d6f9c0fb74681d24",
++        "reason": "Keep: Raw Vulkan result constants and error translation have one backend owner; public taxonomy expansion remains open.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vulkan_surface.zig": {
+         "decision": "Keep",
+@@ -1432,9 +1432,9 @@
+       },
+       "src/backend/vulkan/vulkan_timing.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "68b1e0b084ae4929fa3665fea9c4737a865c8dff7b6c999f1c55a868111277c5",
+-        "reason": "Keep: reachable backend implementation shared by 2 production consumers with no conflicting ownership signal.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
++        "moduleSha256": "c6b00a0d5851682f3428792c3ef8c6cf0e43bf14d23005305b1786fa0e3d2e91",
++        "reason": "Keep: Pure elapsed-timestamp arithmetic consumes explicit calibration and counter width; no native state or timing policy.",
++        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vulkan_types.zig": {
+         "decision": "Keep",
+diff --git a/runtime/zig/src/backend/vulkan/native_runtime.zig b/runtime/zig/src/backend/vulkan/native_runtime.zig
+index 5cebcc79a..e2224feda 100644
+--- a/runtime/zig/src/backend/vulkan/native_runtime.zig
++++ b/runtime/zig/src/backend/vulkan/native_runtime.zig
+@@ -514,19 +514,19 @@ pub const NativeVulkanRuntime = struct {
+         } else {
+             try vk_device.ensure_deferred_submission_state(self);
+             if (self.has_timeline_semaphore) {
+-                var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
++                var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+                 tsi.patch();
+                 submit_info.pNext = @ptrCast(&tsi.timeline_info);
+                 submit_info.signalSemaphoreCount = 1;
+                 submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+-                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
++                try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
+                 self.has_deferred_submissions = true;
+             } else {
+                 const deferred_fence = if (self.has_fence_pool)
+                     try self.fence_pool_state.acquire(self.device)
+                 else
+                     VK_NULL_U64;
+-                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
++                try vk_sync.submitWithFence(self.queue, &submit_info, deferred_fence, if (self.has_fence_pool) &self.fence_pool_state else null);
+                 self.has_deferred_submissions = true;
+             }
+         }
+@@ -548,11 +548,9 @@ pub const NativeVulkanRuntime = struct {
+                 @sizeOf(u64),
+                 c.VK_QUERY_RESULT_64_BIT | c.VK_QUERY_RESULT_WAIT_BIT,
+             ));
+-            if (results[1] > results[0]) {
+-                const vk_timing = @import("vulkan_timing.zig");
+-                gpu_timestamp_ns = vk_timing.computeElapsedNs(results[0], results[1], self.timestamp_period);
+-                gpu_timestamp_valid = gpu_timestamp_ns > 0;
+-            }
++            const vk_timing = @import("vulkan_timing.zig");
++            gpu_timestamp_ns = try vk_timing.computeElapsedNs(results[0], results[1], self.timestamp_period, self.queue_family_timestamp_valid_bits_value_cache orelse return error.InvalidState);
++            gpu_timestamp_valid = gpu_timestamp_ns > 0;
+             if (gpu_timestamp_mode == .require and !gpu_timestamp_valid) return error.TimingPolicyMismatch;
+         } else if (gpu_timestamp_mode != .off) {
+             if (queue_sync_mode != .per_command and gpu_timestamp_mode == .require) return error.TimingPolicyMismatch;
+@@ -689,19 +687,19 @@ pub const NativeVulkanRuntime = struct {
+         } else {
+             try vk_device.ensure_deferred_submission_state(self);
+             if (self.has_timeline_semaphore) {
+-                var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
++                var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+                 tsi.patch();
+                 submit_info.pNext = @ptrCast(&tsi.timeline_info);
+                 submit_info.signalSemaphoreCount = 1;
+                 submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+-                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
++                try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
+                 self.has_deferred_submissions = true;
+             } else {
+                 const deferred_fence = if (self.has_fence_pool)
+                     try self.fence_pool_state.acquire(self.device)
+                 else
+                     VK_NULL_U64;
+-                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
++                try vk_sync.submitWithFence(self.queue, &submit_info, deferred_fence, if (self.has_fence_pool) &self.fence_pool_state else null);
+                 self.has_deferred_submissions = true;
+             }
+         }
+diff --git a/runtime/zig/src/backend/vulkan/vk_device.zig b/runtime/zig/src/backend/vulkan/vk_device.zig
+index 4db06902d..9bdee343f 100644
+--- a/runtime/zig/src/backend/vulkan/vk_device.zig
++++ b/runtime/zig/src/backend/vulkan/vk_device.zig
+@@ -321,10 +321,10 @@ pub fn create_fence_pool(self: anytype) !void {
+     self.has_fence_pool = true;
+ }
+ 
+-pub fn create_timeline_semaphore(self: anytype) void {
+-    self.timeline_semaphore_probe_done = true;
++pub fn create_timeline_semaphore(self: anytype) !void {
+     const supported = vk_sync.detect_timeline_semaphore_support(self.physical_device);
+-    self.timeline_semaphore = vk_sync.TimelineSemaphore.init(self.device, supported);
++    self.timeline_semaphore = try vk_sync.TimelineSemaphore.init(self.device, supported);
++    self.timeline_semaphore_probe_done = true;
+     self.has_timeline_semaphore = self.timeline_semaphore.available;
+ }
+ 
+@@ -361,7 +361,7 @@ pub fn ensure_deferred_submission_state(self: anytype) !void {
+         return;
+     }
+     if (!self.timeline_semaphore_probe_done) {
+-        create_timeline_semaphore(self);
++        try create_timeline_semaphore(self);
+     }
+     if (!self.has_timeline_semaphore and !self.has_fence_pool) {
+         try create_fence_pool(self);
+diff --git a/runtime/zig/src/backend/vulkan/vk_dispatch_repeat.zig b/runtime/zig/src/backend/vulkan/vk_dispatch_repeat.zig
+index 6df51d7fe..ec03f0ef9 100644
+--- a/runtime/zig/src/backend/vulkan/vk_dispatch_repeat.zig
++++ b/runtime/zig/src/backend/vulkan/vk_dispatch_repeat.zig
+@@ -82,7 +82,7 @@ fn run_batch(
+             .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+             .pNext = null,
+             .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT,
+-            .dstAccessMask = c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
++            .dstAccessMask = c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_UNIFORM_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
+         };
+     }
+     var dispatch_index: u32 = 0;
+@@ -143,10 +143,8 @@ fn run_batch(
+             @sizeOf(u64),
+             c.VK_QUERY_RESULT_64_BIT | c.VK_QUERY_RESULT_WAIT_BIT,
+         ));
+-        if (results[1] > results[0]) {
+-            gpu_timestamp_ns = vk_timing.computeElapsedNs(results[0], results[1], self.timestamp_period);
+-            gpu_timestamp_valid = gpu_timestamp_ns > 0;
+-        }
++        gpu_timestamp_ns = try vk_timing.computeElapsedNs(results[0], results[1], self.timestamp_period, self.queue_family_timestamp_valid_bits_value_cache orelse return error.InvalidState);
++        gpu_timestamp_valid = gpu_timestamp_ns > 0;
+         if (gpu_timestamp_mode == .require and !gpu_timestamp_valid) return error.TimingPolicyMismatch;
+     } else if (gpu_timestamp_mode == .require) {
+         return error.TimingPolicyMismatch;
+diff --git a/runtime/zig/src/backend/vulkan/vk_render.zig b/runtime/zig/src/backend/vulkan/vk_render.zig
+index ce5e5cc64..69f26cf07 100644
+--- a/runtime/zig/src/backend/vulkan/vk_render.zig
++++ b/runtime/zig/src/backend/vulkan/vk_render.zig
+@@ -823,12 +823,12 @@ fn submit_and_wait(self: anytype) !void {
+         .pSignalSemaphores = null,
+     };
+     if (self.has_timeline_semaphore) {
+-        var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
++        var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+         tsi.patch();
+         submit_info.pNext = @ptrCast(&tsi.timeline_info);
+         submit_info.signalSemaphoreCount = 1;
+         submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
++        try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
+         try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+     } else {
+         try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+diff --git a/runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig b/runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig
+index 141ab0988..6fbc816a0 100644
+--- a/runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig
++++ b/runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig
+@@ -1,3 +1,4 @@
++const std = @import("std");
+ const model_gpu_types = @import("../../contracts/model/model_texture_value_types.zig");
+ const model_surface_control_types = @import("../../contracts/model/model_surface_control_types.zig");
+ const c = @import("vk_constants.zig");
+@@ -16,15 +17,14 @@ pub fn create_surface(self: anytype, handle: u64) !void {
+ 
+ pub fn get_surface_capabilities(self: anytype, handle: u64) !void {
+     const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
+-    if (surface.vk_surface != 0) {
+-        const caps = try vulkan_surface.query_surface_capabilities(
+-            self.physical_device,
+-            self.queue_family_index,
+-            surface.vk_surface,
+-        );
+-        surface.cached_capabilities = caps;
+-        surface.capabilities_queried = true;
+-    }
++    if (surface.vk_surface == 0) return error.SurfaceUnavailable;
++    const caps = try vulkan_surface.query_surface_capabilities(
++        self.physical_device,
++        self.queue_family_index,
++        surface.vk_surface,
++    );
++    surface.cached_capabilities = caps;
++    surface.capabilities_queried = true;
+ }
+ 
+ pub fn preferred_canvas_format(self: anytype) model_gpu_types.WGPUTextureFormat {
+@@ -115,3 +115,19 @@ pub fn release_all_surfaces(self: anytype) void {
+     }
+     self.surfaces.deinit(self.allocator);
+ }
++
++test "surface capability queries require a native surface" {
++    const Fixture = struct {
++        allocator: std.mem.Allocator = std.testing.allocator,
++        surfaces: std.AutoHashMapUnmanaged(u64, SurfaceState) = .{},
++        physical_device: c.VkPhysicalDevice = null,
++        queue_family_index: u32 = 0,
++    };
++    var fixture = Fixture{};
++    defer fixture.surfaces.deinit(fixture.allocator);
++    try std.testing.expectError(error.SurfaceUnavailable, get_surface_capabilities(&fixture, 1));
++    try create_surface(&fixture, 1);
++    try std.testing.expectError(error.SurfaceUnavailable, get_surface_capabilities(&fixture, 1));
++    try std.testing.expect(!fixture.surfaces.get(1).?.capabilities_queried);
++    try std.testing.expectError(error.InvalidState, create_surface(&fixture, 1));
++}
+diff --git a/runtime/zig/src/backend/vulkan/vk_shader_source.zig b/runtime/zig/src/backend/vulkan/vk_shader_source.zig
+index 0d1d17d33..248d2c9e3 100644
+--- a/runtime/zig/src/backend/vulkan/vk_shader_source.zig
++++ b/runtime/zig/src/backend/vulkan/vk_shader_source.zig
+@@ -10,7 +10,7 @@ pub fn load_kernel_source(self: anytype, allocator: std.mem.Allocator, kernel_na
+     if (kernel_name.len == 0) return error.InvalidArgument;
+     const path = try resolve_kernel_path(self, allocator, kernel_name);
+     defer allocator.free(path);
+-    return std.fs.cwd().readFileAlloc(allocator, path, MAX_KERNEL_SOURCE_BYTES) catch error.ShaderCompileFailed;
++    return std.fs.cwd().readFileAlloc(allocator, path, MAX_KERNEL_SOURCE_BYTES);
+ }
+ 
+ pub fn load_kernel_spirv(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
+@@ -59,12 +59,15 @@ fn compile_kernel_wgsl_to_spirv(self: anytype, allocator: std.mem.Allocator, ker
+     defer allocator.free(source_path);
+     if (!std.mem.endsWith(u8, source_path, ".wgsl")) return error.UnsupportedFeature;
+ 
+-    const wgsl = std.fs.cwd().readFileAlloc(allocator, source_path, MAX_KERNEL_SOURCE_BYTES) catch return error.ShaderCompileFailed;
++    const wgsl = try std.fs.cwd().readFileAlloc(allocator, source_path, MAX_KERNEL_SOURCE_BYTES);
+     defer allocator.free(wgsl);
+ 
+     var spirv_buf = try allocator.alloc(u8, spirv_translation.MAX_OUTPUT);
+     defer allocator.free(spirv_buf);
+-    const spirv_len = spirv_translation.translateToSpirv(allocator, wgsl, spirv_buf) catch return error.ShaderCompileFailed;
++    const spirv_len = spirv_translation.translateToSpirv(allocator, wgsl, spirv_buf) catch |err| switch (err) {
++        error.OutOfMemory => return err,
++        else => return error.ShaderCompileFailed,
++    };
+     return try words_from_spirv_bytes(allocator, spirv_buf[0..spirv_len]);
+ }
+ 
+@@ -124,9 +127,10 @@ fn resolve_kernel_spirv_path(self: anytype, allocator: std.mem.Allocator, kernel
+         allocator.free(sibling_spv);
+     }
+ 
+-    if (std.mem.lastIndexOfScalar(u8, source_path, '.')) |idx| {
++    const extension = std.fs.path.extension(source_path);
++    if (extension.len != 0) {
+         {
+-            const replaced = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path[0..idx]});
++            const replaced = try std.fmt.allocPrint(allocator, "{s}.spv", .{source_path[0 .. source_path.len - extension.len]});
+             errdefer allocator.free(replaced);
+             if (try path_utils.file_exists(replaced)) return replaced;
+             allocator.free(replaced);
+@@ -158,3 +162,40 @@ fn exerciseCacheAllocation(allocator: std.mem.Allocator) !void {
+ test "SPIR-V cache admission releases loaded words on allocation failure" {
+     try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseCacheAllocation, .{});
+ }
++
++fn exerciseWgslAllocation(allocator: std.mem.Allocator) !void {
++    const Fixture = struct { kernel_root: ?[]const u8 };
++    var temporary = std.testing.tmpDir(.{});
++    defer temporary.cleanup();
++    const root = try temporary.dir.realpathAlloc(std.testing.allocator, ".");
++    defer std.testing.allocator.free(root);
++    const source = "@compute @workgroup_size(1) fn main() {}";
++    try temporary.dir.writeFile(.{ .sub_path = "probe.wgsl", .data = source });
++    const fixture = Fixture{ .kernel_root = root };
++    const loaded = try load_kernel_source(&fixture, allocator, "probe.wgsl");
++    defer allocator.free(loaded);
++    try std.testing.expectEqualStrings(source, loaded);
++    const words = try load_kernel_spirv(&fixture, allocator, "probe.wgsl");
++    defer allocator.free(words);
++    try std.testing.expectEqual(SPIRV_MAGIC, words[0]);
++}
++
++test "WGSL source loading and compilation preserve allocation failures" {
++    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseWgslAllocation, .{});
++}
++
++test "SPIR-V sibling resolution never treats a parent directory suffix as a file extension" {
++    var temporary = std.testing.tmpDir(.{});
++    defer temporary.cleanup();
++    try temporary.dir.makeDir("kernels.version");
++    try temporary.dir.writeFile(.{ .sub_path = "kernels.version/probe", .data = "source" });
++    try temporary.dir.writeFile(.{ .sub_path = "kernels.spv", .data = "unrelated" });
++    const root = try temporary.dir.realpathAlloc(std.testing.allocator, "kernels.version");
++    defer std.testing.allocator.free(root);
++    const fixture = .{ .kernel_root = @as(?[]const u8, root) };
++    try std.testing.expectError(error.UnsupportedFeature, resolve_kernel_spirv_path(&fixture, std.testing.allocator, "probe"));
++    try temporary.dir.writeFile(.{ .sub_path = "kernels.version/probe.spv", .data = "sibling" });
++    const resolved = try resolve_kernel_spirv_path(&fixture, std.testing.allocator, "probe");
++    defer std.testing.allocator.free(resolved);
++    try std.testing.expect(std.mem.endsWith(u8, resolved, "/kernels.version/probe.spv"));
++}
+diff --git a/runtime/zig/src/backend/vulkan/vk_sync.zig b/runtime/zig/src/backend/vulkan/vk_sync.zig
+index b7853b195..973ec8f83 100644
+--- a/runtime/zig/src/backend/vulkan/vk_sync.zig
++++ b/runtime/zig/src/backend/vulkan/vk_sync.zig
+@@ -9,6 +9,7 @@
+ 
+ const std = @import("std");
+ const c = @import("vk_constants.zig");
++const errors = @import("vulkan_errors.zig");
+ const common_errors = @import("../../contracts/execution.zig");
+ 
+ const VK_NULL_U64 = c.VK_NULL_U64;
+@@ -21,6 +22,22 @@ pub const FENCE_POOL_CAPACITY: usize = 128;
+ pub const FENCE_WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
+ pub const IMMEDIATE_FENCE_POLL_SPINS: usize = 2048;
+ 
++fn submissionRejected(result: c.VkResult) bool {
++    return result == errors.VK_ERROR_OUT_OF_HOST_MEMORY or result == errors.VK_ERROR_OUT_OF_DEVICE_MEMORY;
++}
++
++/// Allocation rejection leaves Vulkan submission state unchanged. Device loss
++/// or an unknown result cannot authorize forgetting potentially submitted work.
++pub fn submitWithFence(queue: c.VkQueue, info: *const c.VkSubmitInfo, fence: c.VkFence, pool: ?*FencePool) common_errors.BackendNativeError!void {
++    if (pool) |owner| {
++        const index = owner.last_in_flight_index;
++        if (index >= owner.count or !owner.in_flight[index] or owner.fences[index] != fence) return error.InvalidState;
++    }
++    const result = c.vkQueueSubmit(queue, 1, @ptrCast(info), fence);
++    if (pool) |owner| return owner.completeSubmit(result);
++    return c.check_vk(result);
++}
++
+ pub fn wait_for_fence_fast(device: c.VkDevice, fence: c.VkFence) common_errors.BackendNativeError!void {
+     var spin: usize = 0;
+     while (spin < IMMEDIATE_FENCE_POLL_SPINS) : (spin += 1) {
+@@ -78,6 +95,17 @@ pub const FencePool = struct {
+         return fence;
+     }
+ 
++    fn completeSubmit(self: *FencePool, result: c.VkResult) common_errors.BackendNativeError!void {
++        if (submissionRejected(result)) {
++            const index = self.last_in_flight_index;
++            std.debug.assert(index < self.count and self.in_flight[index]);
++            self.in_flight[index] = false;
++            self.in_flight_count -= 1;
++            self.next_index = index;
++        }
++        try c.check_vk(result);
++    }
++
+     /// Wait for all in-flight fences and mark them reusable. Used to drain all
+     /// deferred/pipelined submissions without vkQueueWaitIdle.
+     pub fn drain(self: *FencePool, device: c.VkDevice) common_errors.BackendNativeError!void {
+@@ -233,7 +261,7 @@ pub const TimelineSemaphore = struct {
+     /// Attempt to create a timeline semaphore. Returns a struct with
+     /// available=false if the device does not support the extension
+     /// (caller should fall back to fence pool).
+-    pub fn init(device: c.VkDevice, timeline_supported: bool) TimelineSemaphore {
++    pub fn init(device: c.VkDevice, timeline_supported: bool) common_errors.BackendNativeError!TimelineSemaphore {
+         if (!timeline_supported) return .{};
+ 
+         var type_info = VkSemaphoreTypeCreateInfo{};
+@@ -244,8 +272,7 @@ pub const TimelineSemaphore = struct {
+         };
+ 
+         var sem: c.VkSemaphore = VK_NULL_U64;
+-        const result = vkCreateSemaphore(device, &sem_info, null, &sem);
+-        if (result != c.VK_SUCCESS) return .{};
++        try c.check_vk(vkCreateSemaphore(device, &sem_info, null, &sem));
+ 
+         return .{
+             .semaphore = sem,
+@@ -254,12 +281,6 @@ pub const TimelineSemaphore = struct {
+         };
+     }
+ 
+-    /// Return the next signal value for a queue submission.
+-    pub fn next_signal_value(self: *TimelineSemaphore) u64 {
+-        self.current_value += 1;
+-        return self.current_value;
+-    }
+-
+     /// Wait on the CPU until the timeline reaches `value`.
+     pub fn wait(self: *const TimelineSemaphore, device: c.VkDevice, value: u64) common_errors.BackendNativeError!void {
+         if (!self.available) return error.UnsupportedFeature;
+@@ -304,7 +325,7 @@ pub const TimelineSemaphore = struct {
+ /// returned fields before calling vkQueueSubmit.
+ ///
+ /// Usage:
+-///   var tsi = TimelineSubmitHelper.prepare(&timeline_sem);
++///   var tsi = try TimelineSubmitHelper.prepare(&timeline_sem);
+ ///   if (tsi.ready) {
+ ///       submit.pNext = @ptrCast(&tsi.timeline_info);
+ ///       submit.signalSemaphoreCount = 1;
+@@ -317,11 +338,11 @@ pub const TimelineSubmitHelper = struct {
+     ready: bool = false,
+ 
+     /// Prepare a timeline signal for the next queue submission.
+-    /// Increments the timeline value and populates the helper fields.
++    /// Reserves a value without publishing an unsubmitted drain target.
+     /// Returns a helper with ready=false if the timeline is unavailable.
+-    pub fn prepare(ts: *TimelineSemaphore) TimelineSubmitHelper {
++    pub fn prepare(ts: *const TimelineSemaphore) common_errors.BackendNativeError!TimelineSubmitHelper {
+         if (!ts.available) return .{};
+-        const value = ts.next_signal_value();
++        const value = std.math.add(u64, ts.current_value, 1) catch return error.InvalidState;
+         return .{
+             .timeline_info = .{
+                 .waitSemaphoreValueCount = 0,
+@@ -342,8 +363,81 @@ pub const TimelineSubmitHelper = struct {
+         if (!self.ready) return;
+         self.timeline_info.pSignalSemaphoreValues = @ptrCast(&self.signal_value);
+     }
++
++    pub fn submit(self: *const TimelineSubmitHelper, ts: *TimelineSemaphore, queue: c.VkQueue, info: *const c.VkSubmitInfo) common_errors.BackendNativeError!void {
++        if (!self.ready or !ts.available or self.semaphore != ts.semaphore or
++            self.signal_value == 0 or self.signal_value - 1 != ts.current_value) return error.InvalidState;
++        return self.completeSubmit(ts, c.vkQueueSubmit(queue, 1, @ptrCast(info), VK_NULL_U64));
++    }
++
++    fn completeSubmit(self: *const TimelineSubmitHelper, ts: *TimelineSemaphore, result: c.VkResult) common_errors.BackendNativeError!void {
++        if (!submissionRejected(result)) ts.current_value = self.signal_value;
++        try c.check_vk(result);
++    }
+ };
+ 
++test "rejected fence submissions preserve earlier work and permit retry" {
++    for ([_]c.VkResult{ errors.VK_ERROR_OUT_OF_HOST_MEMORY, errors.VK_ERROR_OUT_OF_DEVICE_MEMORY }) |result| {
++        var pool = try FencePool.init(null);
++        pool.fences[0] = 11;
++        pool.fences[1] = 12;
++        pool.in_flight[0] = true;
++        pool.in_flight[1] = true;
++        pool.in_flight_count = 2;
++        pool.last_in_flight_index = 1;
++        pool.next_index = 2;
++        try std.testing.expectError(error.InvalidState, pool.completeSubmit(result));
++        try std.testing.expect(pool.in_flight[0]);
++        try std.testing.expect(!pool.in_flight[1]);
++        try std.testing.expectEqual(@as(u32, 1), pool.in_flight_count);
++        try std.testing.expectEqual(@as(u32, 1), pool.next_index);
++        pool.in_flight[1] = true;
++        pool.in_flight_count += 1;
++        try pool.completeSubmit(c.VK_SUCCESS);
++        try std.testing.expectEqual(@as(u32, 2), pool.in_flight_count);
++    }
++}
++
++test "rejected sole fence submission does not enter a native wait" {
++    var pool = try FencePool.init(null);
++    pool.fences[0] = 11;
++    pool.in_flight[0] = true;
++    pool.in_flight_count = 1;
++    try std.testing.expectError(error.InvalidState, pool.completeSubmit(errors.VK_ERROR_OUT_OF_HOST_MEMORY));
++    try pool.drain(null);
++    try std.testing.expect(!pool.has_in_flight());
++}
++
++test "timeline submission reserves then publishes only potentially submitted values" {
++    var timeline = TimelineSemaphore{ .semaphore = 11, .available = true, .current_value = 7 };
++    const pending = try TimelineSubmitHelper.prepare(&timeline);
++    try std.testing.expectEqual(@as(u64, 7), timeline.current_value);
++    for ([_]c.VkResult{ errors.VK_ERROR_OUT_OF_HOST_MEMORY, errors.VK_ERROR_OUT_OF_DEVICE_MEMORY }) |result| {
++        try std.testing.expectError(error.InvalidState, pending.completeSubmit(&timeline, result));
++        try std.testing.expectEqual(@as(u64, 7), timeline.current_value);
++    }
++    const retry = try TimelineSubmitHelper.prepare(&timeline);
++    try std.testing.expectEqual(pending.signal_value, retry.signal_value);
++    try retry.completeSubmit(&timeline, c.VK_SUCCESS);
++    try std.testing.expectEqual(@as(u64, 8), timeline.current_value);
++    timeline.current_value = std.math.maxInt(u64);
++    try std.testing.expectError(error.InvalidState, TimelineSubmitHelper.prepare(&timeline));
++}
++
++test "device loss and unknown submission errors retain synchronization obligations" {
++    for ([_]c.VkResult{ errors.VK_ERROR_DEVICE_LOST, errors.VK_ERROR_UNKNOWN }) |result| {
++        var pool = try FencePool.init(null);
++        pool.in_flight[0] = true;
++        pool.in_flight_count = 1;
++        try std.testing.expectError(errors.map_vk_result(result), pool.completeSubmit(result));
++        try std.testing.expect(pool.has_in_flight());
++        var timeline = TimelineSemaphore{ .semaphore = 11, .available = true };
++        const pending = try TimelineSubmitHelper.prepare(&timeline);
++        try std.testing.expectError(errors.map_vk_result(result), pending.completeSubmit(&timeline, result));
++        try std.testing.expectEqual(@as(u64, 1), timeline.current_value);
++    }
++}
++
+ /// Detect timeline semaphore support by querying
+ /// VkPhysicalDeviceTimelineSemaphoreFeatures via the Vulkan 1.1+
+ /// vkGetPhysicalDeviceFeatures2 entry point.
+diff --git a/runtime/zig/src/backend/vulkan/vk_texture_commands.zig b/runtime/zig/src/backend/vulkan/vk_texture_commands.zig
+index 815897c32..71c703f83 100644
+--- a/runtime/zig/src/backend/vulkan/vk_texture_commands.zig
++++ b/runtime/zig/src/backend/vulkan/vk_texture_commands.zig
+@@ -324,12 +324,12 @@ fn submit_and_wait_timeline(self: anytype) !void {
+         .pSignalSemaphores = null,
+     };
+     if (self.has_timeline_semaphore) {
+-        var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
++        var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+         tsi.patch();
+         submit_info.pNext = @ptrCast(&tsi.timeline_info);
+         submit_info.signalSemaphoreCount = 1;
+         submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), c.VK_NULL_U64));
++        try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
+         try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+     } else {
+         try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+diff --git a/runtime/zig/src/backend/vulkan/vk_upload.zig b/runtime/zig/src/backend/vulkan/vk_upload.zig
+index 177e88c11..419807d9b 100644
+--- a/runtime/zig/src/backend/vulkan/vk_upload.zig
++++ b/runtime/zig/src/backend/vulkan/vk_upload.zig
+@@ -179,14 +179,14 @@ pub fn submit_replay_command_buffer(self: anytype, command_buffer: c.VkCommandBu
+     const sync_prepare_started_ns = common_timing.now_ns();
+     try vk_device.ensure_deferred_submission_state(self);
+     if (self.has_timeline_semaphore) {
+-        var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
++        var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+         tsi.patch();
+         submit_info.pNext = @ptrCast(&tsi.timeline_info);
+         submit_info.signalSemaphoreCount = 1;
+         submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+         timings.sync_prepare_ns = common_timing.ns_delta(common_timing.now_ns(), sync_prepare_started_ns);
+         const submit_started_ns = common_timing.now_ns();
+-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
++        try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
+         timings.driver_submit_ns = common_timing.ns_delta(common_timing.now_ns(), submit_started_ns);
+     } else {
+         const deferred_fence = if (self.has_fence_pool)
+@@ -195,7 +195,7 @@ pub fn submit_replay_command_buffer(self: anytype, command_buffer: c.VkCommandBu
+             VK_NULL_U64;
+         timings.sync_prepare_ns = common_timing.ns_delta(common_timing.now_ns(), sync_prepare_started_ns);
+         const submit_started_ns = common_timing.now_ns();
+-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
++        try vk_sync.submitWithFence(self.queue, &submit_info, deferred_fence, if (self.has_fence_pool) &self.fence_pool_state else null);
+         timings.driver_submit_ns = common_timing.ns_delta(common_timing.now_ns(), submit_started_ns);
+     }
+     self.replay_prefix_copy_buffer = null;
+@@ -777,12 +777,12 @@ pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
+     if (self.has_timeline_semaphore and !wait) {
+         // Timeline path: signal the semaphore on every submission.
+         // For immediate-wait, follow with a CPU wait on the signaled value.
+-        var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
++        var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+         tsi.patch();
+         submit_info.pNext = @ptrCast(&tsi.timeline_info);
+         submit_info.signalSemaphoreCount = 1;
+         submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
++        try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
+         if (wait) {
+             try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+         } else {
+@@ -798,7 +798,7 @@ pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
+             try self.fence_pool_state.acquire(self.device)
+         else
+             VK_NULL_FENCE;
+-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
++        try vk_sync.submitWithFence(self.queue, &submit_info, deferred_fence, if (self.has_fence_pool) &self.fence_pool_state else null);
+         self.has_deferred_submissions = true;
+     }
+     self.has_pending_transfer_writes = true;
+diff --git a/runtime/zig/src/backend/vulkan/vulkan_errors.zig b/runtime/zig/src/backend/vulkan/vulkan_errors.zig
+index c6a882d92..4d51e1905 100644
+--- a/runtime/zig/src/backend/vulkan/vulkan_errors.zig
++++ b/runtime/zig/src/backend/vulkan/vulkan_errors.zig
+@@ -12,6 +12,9 @@ pub const VkResult = vk.VkResult;
+ pub const VulkanError = common_errors.BackendNativeError;
+ 
+ // --- VkResult error codes (named for fail-fast error mapping) ---
++pub const VK_ERROR_OUT_OF_HOST_MEMORY: VkResult = -1;
++pub const VK_ERROR_OUT_OF_DEVICE_MEMORY: VkResult = -2;
++pub const VK_ERROR_DEVICE_LOST: VkResult = -4;
+ pub const VK_ERROR_EXTENSION_NOT_PRESENT: VkResult = -7;
+ pub const VK_ERROR_FEATURE_NOT_PRESENT: VkResult = -8;
+ pub const VK_ERROR_INCOMPATIBLE_DRIVER: VkResult = -9;
+diff --git a/runtime/zig/src/backend/vulkan/vulkan_timing.zig b/runtime/zig/src/backend/vulkan/vulkan_timing.zig
+index 5ec7fb00f..16670ec0e 100644
+--- a/runtime/zig/src/backend/vulkan/vulkan_timing.zig
++++ b/runtime/zig/src/backend/vulkan/vulkan_timing.zig
+@@ -1,6 +1,7 @@
+ // GPU timestamp query helpers for the Vulkan backend.
+ // Data structures and pure arithmetic only — no Vulkan API calls.
+ 
++const std = @import("std");
+ const common_timing = @import("../common/timing.zig");
+ 
+ pub const now_ns = common_timing.now_ns;
+@@ -11,7 +12,7 @@ pub const ns_delta = common_timing.ns_delta;
+ pub const TIMESTAMP_QUERY_COUNT: u32 = 2;
+ 
+ /// Byte size for the readback buffer: 2 x @sizeOf(u64).
+-pub const TIMESTAMP_BUFFER_SIZE: u64 = 16;
++pub const TIMESTAMP_BUFFER_SIZE: u64 = TIMESTAMP_QUERY_COUNT * @sizeOf(u64);
+ 
+ /// Holds Vulkan handles and calibration data needed to issue and resolve
+ /// GPU timestamp queries. Fields are nullable so the struct can exist in
+@@ -26,10 +27,28 @@ pub const TimestampState = struct {
+ 
+ /// Convert a begin/end GPU tick pair into elapsed nanoseconds using the
+ /// device's timestamp period.
+-pub fn computeElapsedNs(begin_tick: u64, end_tick: u64, timestamp_period: f32) u64 {
+-    if (end_tick <= begin_tick) return 0;
+-    const delta: f64 = @floatFromInt(end_tick - begin_tick);
++pub fn computeElapsedNs(begin_tick: u64, end_tick: u64, timestamp_period: f32, valid_bits: u32) !u64 {
++    if (!std.math.isFinite(timestamp_period) or timestamp_period <= 0 or valid_bits == 0 or valid_bits > 64) return error.InvalidArgument;
++    const mask = @as(u64, std.math.maxInt(u64)) >> @as(u6, @intCast(64 - valid_bits));
++    const delta: f64 = @floatFromInt((end_tick -% begin_tick) & mask);
+     const ns: f64 = delta * @as(f64, @floatCast(timestamp_period));
+-    if (ns <= 0.0) return 0;
++    const U64_LIMIT_EXCLUSIVE: f64 = 0x1p64;
++    if (!std.math.isFinite(ns) or ns >= U64_LIMIT_EXCLUSIVE) return error.InvalidState;
+     return @intFromFloat(ns);
+ }
++
++test "Vulkan elapsed timestamps wrap at the queue counter width" {
++    try std.testing.expectEqual(@as(u64, 27), try computeElapsedNs(250, 5, 2.5, 8));
++    try std.testing.expectEqual(@as(u64, 25), try computeElapsedNs(std.math.maxInt(u64) - 9, 15, 1, 64));
++    try std.testing.expectEqual(@as(u64, 0), try computeElapsedNs(7, 7, 1, 64));
++    try std.testing.expectEqual(@as(u64, 12), try computeElapsedNs(10, 15, 2.5, 64));
++}
++
++test "Vulkan elapsed timestamps reject invalid calibration and unrepresentable nanoseconds" {
++    for ([_]f32{ 0, -1, std.math.inf(f32), std.math.nan(f32) }) |period| {
++        try std.testing.expectError(error.InvalidArgument, computeElapsedNs(1, 2, period, 64));
++    }
++    try std.testing.expectError(error.InvalidArgument, computeElapsedNs(1, 2, 1, 0));
++    try std.testing.expectError(error.InvalidArgument, computeElapsedNs(1, 2, 1, 65));
++    try std.testing.expectError(error.InvalidState, computeElapsedNs(0, std.math.maxInt(u64), 1, 64));
++}
+diff --git a/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig b/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig
+index 5ac14711c..aca1dd240 100644
+--- a/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig
++++ b/runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig
+@@ -29,6 +29,66 @@ const REUSE_BUFFER_BYTES = 4 * @sizeOf(u32);
+ const DEVICE_LOCAL_FAILURE_BYTES = 64 * 1024;
+ const ALIGNED_STORAGE_BINDING_OFFSET: u64 = 256;
+ 
++test "Vulkan deferred fence and timeline submissions preserve dependent results" {
++    for ([_]@import("../../src/contracts/backend.zig").DeferredSubmissionSyncPolicy{ .require_fence_pool, .prefer_timeline_semaphore }) |policy| {
++        var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
++            error.UnsupportedFeature => return error.SkipZigTest,
++            else => return err,
++        };
++        defer rt.deinit();
++        rt.deferred_submission_sync_policy = policy;
++        rt.recorded_submit_replay_active = false;
++        var output: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
++        const length = try compiler.translateToSpirv(std.testing.allocator, REUSE_SHADER, &output);
++        const binding = compute.KernelBinding{ .binding = 0, .resource_kind = .buffer, .resource_handle = 221, .buffer_size = REUSE_BUFFER_BYTES, .buffer_type = binding_types.WGPUBufferBindingType_Storage };
++        _ = try resources.ensure_compute_buffer_for_binding(&rt, binding, true);
++        try rt.set_compute_shader_spirv(std.mem.bytesAsSlice(u32, output[0..length]), "main", &.{binding}, true);
++        for (0..2) |_| {
++            const metrics = try rt.run_dispatch(4, 1, 1, .deferred, .wait_any, .off);
++            try std.testing.expectEqual(@as(u32, 1), metrics.submit_count);
++        }
++        try std.testing.expect(rt.has_deferred_submissions);
++        switch (policy) {
++            .require_fence_pool => {
++                try std.testing.expect(rt.has_fence_pool);
++                try std.testing.expect(!rt.has_timeline_semaphore);
++                try std.testing.expectEqual(@as(u32, 2), rt.fence_pool_state.in_flight_count);
++            },
++            .prefer_timeline_semaphore => {
++                if (!rt.has_timeline_semaphore) return error.SkipZigTest;
++                try std.testing.expectEqual(@as(u64, 2), rt.timeline_semaphore.current_value);
++            },
++        }
++        try expect_reuse_output(&rt, 221, &.{ 14, 16, 18, 20 });
++        try std.testing.expect(!rt.has_deferred_submissions);
++        _ = try rt.run_dispatch(4, 1, 1, .deferred, .wait_any, .off);
++        try expect_reuse_output(&rt, 221, &.{ 21, 24, 27, 30 });
++    }
++}
++
++test "Vulkan calibrated timestamps preserve single and dependent batch results" {
++    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
++        error.UnsupportedFeature => return error.SkipZigTest,
++        else => return err,
++    };
++    defer rt.deinit();
++    try @import("../../src/backend/vulkan/vk_device.zig").ensure_timestamp_query_pool(&rt);
++    if (!rt.timestamp_query_supported_value) return error.SkipZigTest;
++    var output: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
++    const length = try compiler.translateToSpirv(std.testing.allocator, REUSE_SHADER, &output);
++    const binding = compute.KernelBinding{ .binding = 0, .resource_kind = .buffer, .resource_handle = 222, .buffer_size = REUSE_BUFFER_BYTES, .buffer_type = binding_types.WGPUBufferBindingType_Storage };
++    _ = try resources.ensure_compute_buffer_for_binding(&rt, binding, true);
++    try rt.set_compute_shader_spirv(std.mem.bytesAsSlice(u32, output[0..length]), "main", &.{binding}, true);
++    const single = try rt.run_dispatch(4, 1, 1, .per_command, .wait_any, .require);
++    try std.testing.expect(single.gpu_timestamp_attempted and single.gpu_timestamp_valid);
++    try std.testing.expect(single.gpu_timestamp_ns > 0);
++    try expect_reuse_output(&rt, 222, &.{ 7, 8, 9, 10 });
++    const batch = try rt.run_dispatch_repeat(4, 1, 1, 3, .dependent, .wait_any, .require);
++    try std.testing.expect(batch.gpu_timestamp_attempted and batch.gpu_timestamp_valid);
++    try std.testing.expect(batch.gpu_timestamp_ns > 0);
++    try expect_reuse_output(&rt, 222, &.{ 28, 32, 36, 40 });
++}
++
+ test "Vulkan descriptor collisions preserve distinct recorded resources" {
+     var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
+         error.UnsupportedFeature => return error.SkipZigTest,

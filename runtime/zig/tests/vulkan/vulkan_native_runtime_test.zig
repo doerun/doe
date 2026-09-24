@@ -29,6 +29,66 @@ const REUSE_BUFFER_BYTES = 4 * @sizeOf(u32);
 const DEVICE_LOCAL_FAILURE_BYTES = 64 * 1024;
 const ALIGNED_STORAGE_BINDING_OFFSET: u64 = 256;
 
+test "Vulkan deferred fence and timeline submissions preserve dependent results" {
+    for ([_]@import("../../src/contracts/backend.zig").DeferredSubmissionSyncPolicy{ .require_fence_pool, .prefer_timeline_semaphore }) |policy| {
+        var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
+            error.UnsupportedFeature => return error.SkipZigTest,
+            else => return err,
+        };
+        defer rt.deinit();
+        rt.deferred_submission_sync_policy = policy;
+        rt.recorded_submit_replay_active = false;
+        var output: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
+        const length = try compiler.translateToSpirv(std.testing.allocator, REUSE_SHADER, &output);
+        const binding = compute.KernelBinding{ .binding = 0, .resource_kind = .buffer, .resource_handle = 221, .buffer_size = REUSE_BUFFER_BYTES, .buffer_type = binding_types.WGPUBufferBindingType_Storage };
+        _ = try resources.ensure_compute_buffer_for_binding(&rt, binding, true);
+        try rt.set_compute_shader_spirv(std.mem.bytesAsSlice(u32, output[0..length]), "main", &.{binding}, true);
+        for (0..2) |_| {
+            const metrics = try rt.run_dispatch(4, 1, 1, .deferred, .wait_any, .off);
+            try std.testing.expectEqual(@as(u32, 1), metrics.submit_count);
+        }
+        try std.testing.expect(rt.has_deferred_submissions);
+        switch (policy) {
+            .require_fence_pool => {
+                try std.testing.expect(rt.has_fence_pool);
+                try std.testing.expect(!rt.has_timeline_semaphore);
+                try std.testing.expectEqual(@as(u32, 2), rt.fence_pool_state.in_flight_count);
+            },
+            .prefer_timeline_semaphore => {
+                if (!rt.has_timeline_semaphore) return error.SkipZigTest;
+                try std.testing.expectEqual(@as(u64, 2), rt.timeline_semaphore.current_value);
+            },
+        }
+        try expect_reuse_output(&rt, 221, &.{ 14, 16, 18, 20 });
+        try std.testing.expect(!rt.has_deferred_submissions);
+        _ = try rt.run_dispatch(4, 1, 1, .deferred, .wait_any, .off);
+        try expect_reuse_output(&rt, 221, &.{ 21, 24, 27, 30 });
+    }
+}
+
+test "Vulkan calibrated timestamps preserve single and dependent batch results" {
+    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
+        error.UnsupportedFeature => return error.SkipZigTest,
+        else => return err,
+    };
+    defer rt.deinit();
+    try @import("../../src/backend/vulkan/vk_device.zig").ensure_timestamp_query_pool(&rt);
+    if (!rt.timestamp_query_supported_value) return error.SkipZigTest;
+    var output: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
+    const length = try compiler.translateToSpirv(std.testing.allocator, REUSE_SHADER, &output);
+    const binding = compute.KernelBinding{ .binding = 0, .resource_kind = .buffer, .resource_handle = 222, .buffer_size = REUSE_BUFFER_BYTES, .buffer_type = binding_types.WGPUBufferBindingType_Storage };
+    _ = try resources.ensure_compute_buffer_for_binding(&rt, binding, true);
+    try rt.set_compute_shader_spirv(std.mem.bytesAsSlice(u32, output[0..length]), "main", &.{binding}, true);
+    const single = try rt.run_dispatch(4, 1, 1, .per_command, .wait_any, .require);
+    try std.testing.expect(single.gpu_timestamp_attempted and single.gpu_timestamp_valid);
+    try std.testing.expect(single.gpu_timestamp_ns > 0);
+    try expect_reuse_output(&rt, 222, &.{ 7, 8, 9, 10 });
+    const batch = try rt.run_dispatch_repeat(4, 1, 1, 3, .dependent, .wait_any, .require);
+    try std.testing.expect(batch.gpu_timestamp_attempted and batch.gpu_timestamp_valid);
+    try std.testing.expect(batch.gpu_timestamp_ns > 0);
+    try expect_reuse_output(&rt, 222, &.{ 28, 32, 36, 40 });
+}
+
 test "Vulkan descriptor collisions preserve distinct recorded resources" {
     var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
         error.UnsupportedFeature => return error.SkipZigTest,

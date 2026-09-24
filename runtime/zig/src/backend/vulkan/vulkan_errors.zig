@@ -12,6 +12,9 @@ pub const VkResult = vk.VkResult;
 pub const VulkanError = common_errors.BackendNativeError;
 
 // --- VkResult error codes (named for fail-fast error mapping) ---
+pub const VK_ERROR_OUT_OF_HOST_MEMORY: VkResult = -1;
+pub const VK_ERROR_OUT_OF_DEVICE_MEMORY: VkResult = -2;
+pub const VK_ERROR_DEVICE_LOST: VkResult = -4;
 pub const VK_ERROR_EXTENSION_NOT_PRESENT: VkResult = -7;
 pub const VK_ERROR_FEATURE_NOT_PRESENT: VkResult = -8;
 pub const VK_ERROR_INCOMPATIBLE_DRIVER: VkResult = -9;

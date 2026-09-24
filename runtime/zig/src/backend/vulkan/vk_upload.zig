@@ -179,14 +179,14 @@ pub fn submit_replay_command_buffer(self: anytype, command_buffer: c.VkCommandBu
     const sync_prepare_started_ns = common_timing.now_ns();
     try vk_device.ensure_deferred_submission_state(self);
     if (self.has_timeline_semaphore) {
-        var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+        var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
         tsi.patch();
         submit_info.pNext = @ptrCast(&tsi.timeline_info);
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
         timings.sync_prepare_ns = common_timing.ns_delta(common_timing.now_ns(), sync_prepare_started_ns);
         const submit_started_ns = common_timing.now_ns();
-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+        try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
         timings.driver_submit_ns = common_timing.ns_delta(common_timing.now_ns(), submit_started_ns);
     } else {
         const deferred_fence = if (self.has_fence_pool)
@@ -195,7 +195,7 @@ pub fn submit_replay_command_buffer(self: anytype, command_buffer: c.VkCommandBu
             VK_NULL_U64;
         timings.sync_prepare_ns = common_timing.ns_delta(common_timing.now_ns(), sync_prepare_started_ns);
         const submit_started_ns = common_timing.now_ns();
-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
+        try vk_sync.submitWithFence(self.queue, &submit_info, deferred_fence, if (self.has_fence_pool) &self.fence_pool_state else null);
         timings.driver_submit_ns = common_timing.ns_delta(common_timing.now_ns(), submit_started_ns);
     }
     self.replay_prefix_copy_buffer = null;
@@ -777,12 +777,12 @@ pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
     if (self.has_timeline_semaphore and !wait) {
         // Timeline path: signal the semaphore on every submission.
         // For immediate-wait, follow with a CPU wait on the signaled value.
-        var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+        var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
         tsi.patch();
         submit_info.pNext = @ptrCast(&tsi.timeline_info);
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+        try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
         if (wait) {
             try self.timeline_semaphore.wait(self.device, tsi.signal_value);
         } else {
@@ -798,7 +798,7 @@ pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
             try self.fence_pool_state.acquire(self.device)
         else
             VK_NULL_FENCE;
-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
+        try vk_sync.submitWithFence(self.queue, &submit_info, deferred_fence, if (self.has_fence_pool) &self.fence_pool_state else null);
         self.has_deferred_submissions = true;
     }
     self.has_pending_transfer_writes = true;

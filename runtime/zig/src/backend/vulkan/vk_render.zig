@@ -823,12 +823,12 @@ fn submit_and_wait(self: anytype) !void {
         .pSignalSemaphores = null,
     };
     if (self.has_timeline_semaphore) {
-        var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+        var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
         tsi.patch();
         submit_info.pNext = @ptrCast(&tsi.timeline_info);
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+        try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
         try self.timeline_semaphore.wait(self.device, tsi.signal_value);
     } else {
         try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));

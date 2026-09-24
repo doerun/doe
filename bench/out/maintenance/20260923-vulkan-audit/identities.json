@@ -1,0 +1,37 @@
+{
+  "sourceCommit": "a88b5099fdd433149f9a78e8a810134c6710e37a",
+  "scope": "local correctness and file audit, not performance or release qualification",
+  "changedInputs": {
+    "docs/process.md": "9759c51984b16a166057b5861af04f8b353ef0f2ddd7be2cb296efe8e7fa37dd",
+    "docs/status/runtime-architecture-audit.md": "1e8f5d2de39b8fd4ce599b6ec52f237ed91c411d0bcd89104ca1574fe30dd9d5",
+    "runtime/zig/source-layout.json": "e9739a9162f771787573f2485582bc59f75e463b7b27de72e7ab6a773d3970ae",
+    "runtime/zig/src/backend/vulkan/native_runtime.zig": "3b910a221dc0136eb64dd098c1b73e50b802868eadcf46a15fbdc17d4b796b88",
+    "runtime/zig/src/backend/vulkan/vk_device.zig": "0d2ebf019bb847aaf6c39da775bb698c497e81c3318faa1d5fa1fc4b322c36b0",
+    "runtime/zig/src/backend/vulkan/vk_dispatch_repeat.zig": "2d32d26aecb70413c29fb9b796ab4115b059db3ec9b315f1514ff5909d5fe9cf",
+    "runtime/zig/src/backend/vulkan/vk_render.zig": "19d1788f87b0c3b3b20b039443345d7df75fa3be9f7998050cbf0009a3875d46",
+    "runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig": "070f0c8e0334c364587e99615d0512e657e7e7fa53f8cce3476c9311beb6daff",
+    "runtime/zig/src/backend/vulkan/vk_shader_source.zig": "acc7e67d6ead05bd35c560a18d0098554b492284b93e6092f800265c79e4b842",
+    "runtime/zig/src/backend/vulkan/vk_sync.zig": "918c05a2340c613797453ca2bdaafb59b007d54c4e28f14c4719c7e5cda0318c",
+    "runtime/zig/src/backend/vulkan/vk_texture_commands.zig": "bfce179170213fd401740ae903b970c99521b48c0efd8d5cd48e9c1265d9939e",
+    "runtime/zig/src/backend/vulkan/vk_upload.zig": "0da4fc9b22410b5214b8e88a58b77785156be5b43b9ea0e009044654e7fb518a",
+    "runtime/zig/src/backend/vulkan/vulkan_errors.zig": "7374722c872767c5407f4bcaeb044408c5eca3188da684c5d6f9c0fb74681d24",
+    "runtime/zig/src/backend/vulkan/vulkan_timing.zig": "c6b00a0d5851682f3428792c3ef8c6cf0e43bf14d23005305b1786fa0e3d2e91",
+    "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig": "90a39fab6c57f7b80cc0abe352f7dd1764341eed7046b7c48fab5889895548cf"
+  },
+  "zig": {
+    "path": "/home/x/.local/zig/zig-x86_64-linux-0.15.2/zig",
+    "version": "0.15.2",
+    "sha256": "2858dc89dbbfdd08cceda1b841e7fd0a793a1a67b49f150bc3d0d1de44ed7f51"
+  },
+  "library": {
+    "path": "bench/out/maintenance/20260923-vulkan-audit/native/lib/libwebgpu_doe.so",
+    "sha256": "0d4e7069ee5fabd4ba0d1f33678ac5646e819f4f51323927f89f76a0681bcb89"
+  },
+  "driver": {
+    "manifest": "/usr/share/vulkan/icd.d/radeon_icd.json",
+    "manifestSha256": "ea05ad7109cee152ef4e801a022dfa40b655dc06a08da7d0d7b042f619a0947c",
+    "path": "/usr/lib/x86_64-linux-gnu/libvulkan_radeon.so",
+    "sha256": "0949baaa43f5ea34fc785f28f31863ca5ea4949478fae96b37c37675a489f830"
+  },
+  "host": "Linux 128 7.0.0-29-generic #29-Ubuntu SMP PREEMPT_DYNAMIC Fri Jul 17 20:52:35 UTC 2026 x86_64 GNU/Linux"
+}

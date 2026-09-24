@@ -1,0 +1,17 @@
+{
+  "bench/out/maintenance/20260923-vulkan-audit/README.md": "ef1221e2c0e337f4b21cf12cb57b3c5ee358bc8662b9614ab9bde4ed86148857",
+  "bench/out/maintenance/20260923-vulkan-audit/build-test-final.log": "67c7caddbf8b1b6e1c2ef5a3bc1b739730894875aa48dc5f9c08c45ec3c97f9a",
+  "bench/out/maintenance/20260923-vulkan-audit/build-test-test-import-failure.log": "b9f38636e9dd89b5bd8b31a24e5374f59c5f3f8fe25611268cef7350230aaa4b",
+  "bench/out/maintenance/20260923-vulkan-audit/build-test-test-switch-failure.log": "90ae9632ec3fe65b0a99b4cb5e6ccd81206e6fccc2be8cb226d201ebb5a7524f",
+  "bench/out/maintenance/20260923-vulkan-audit/build-test.log": "e03ea5b99db374cf6ef5864aff802d6bf33bcc62b4049d06ebd16de60a484933",
+  "bench/out/maintenance/20260923-vulkan-audit/changes.patch": "1fedf365d290a0f37cb2a39bb45895d5813b204434f957d0f9cbb56f8bb70d04",
+  "bench/out/maintenance/20260923-vulkan-audit/doc-links.log": "8c48a33d2c359464395f74f0b2034ed8bf3608b2775d4035d227ae6fba0e0ce0",
+  "bench/out/maintenance/20260923-vulkan-audit/file-reviews.json": "8d047ff455b20ccb808cbb11aadf9add9e49c600205b6575eef450f63f0a9153",
+  "bench/out/maintenance/20260923-vulkan-audit/identities.json": "5c214a5b6d773e13f6785f98aa0c381c176e417587e9ed3b2594a3dc504b0e87",
+  "bench/out/maintenance/20260923-vulkan-audit/physical-deferred.log": "2840bd285be9debecfe071828dc084c566a2e1f42d194b4fe541d86dd0d883f8",
+  "bench/out/maintenance/20260923-vulkan-audit/physical-timestamps.log": "f5ed8a51d0ae528c91bfd38bed993ca5f9049dcc987c53617f7ff6918e9ce462",
+  "bench/out/maintenance/20260923-vulkan-audit/review-check.log": "4c26e6668afce6074faa13f0c7e7b6947b3e7bc3a207ce31235e43db2b49bdff",
+  "bench/out/maintenance/20260923-vulkan-audit/review-write.log": "4c26e6668afce6074faa13f0c7e7b6947b3e7bc3a207ce31235e43db2b49bdff",
+  "bench/out/maintenance/20260923-vulkan-audit/schema-gate.log": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431",
+  "bench/out/maintenance/20260923-vulkan-audit/vulkaninfo.log": "90b091244d9d095e44b24b81433ccd28abe7c7fc60add557dd0fab7e51e59064"
+}

@@ -1228,9 +1228,9 @@
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "cccf207a602102842cfed99c93aee3145864684cc1ab2adcc82601401870e7d8",
-        "reason": "Keep: The device runtime retains pending shader identity independently of active and cached execution references and releases it during teardown.",
-        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+        "moduleSha256": "3b910a221dc0136eb64dd098c1b73e50b802868eadcf46a15fbdc17d4b796b88",
+        "reason": "Keep: Runtime assembly delegates native submission bookkeeping and calibrated timestamp arithmetic to existing owners.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vk_adapter_probe.zig": {
         "decision": "Keep",
@@ -1276,9 +1276,9 @@
       },
       "src/backend/vulkan/vk_device.zig": {
         "decision": "Keep",
-        "moduleSha256": "8ff3dcd4aa4de94870c3a279f659e8d4535f2dad8ef19093a9b48863e1978bdb",
-        "reason": "Keep: physical-device selection propagates allocation failure instead of silently treating it as an unsupported queue; timestamp calibration remains unchanged.",
-        "reviewer": "codex-lifecycle-failure/2026-09-08"
+        "moduleSha256": "0d2ebf019bb847aaf6c39da775bb698c497e81c3318faa1d5fa1fc4b322c36b0",
+        "reason": "Keep: Device capability and synchronization-object creation remain local; supported timeline creation failures propagate.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vk_device_caps.zig": {
         "decision": "Keep",
@@ -1294,9 +1294,9 @@
       },
       "src/backend/vulkan/vk_dispatch_repeat.zig": {
         "decision": "Keep",
-        "moduleSha256": "4541c7f4dbeb8100df0b7418ea1d56d8282ad540f39c121992110f3543bcf6ba",
-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-hexagonal-migration/2026-08-22"
+        "moduleSha256": "2d32d26aecb70413c29fb9b796ab4115b059db3ec9b315f1514ff5909d5fe9cf",
+        "reason": "Keep: Repeated-dispatch encoding retains declared dependency policy and delegates calibrated elapsed-query arithmetic.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vk_feature_caps.zig": {
         "decision": "Keep",
@@ -1348,9 +1348,9 @@
       },
       "src/backend/vulkan/vk_render.zig": {
         "decision": "Keep",
-        "moduleSha256": "dc83866472d2b5b423f542caeee23e889b1ae02398b499535f4a59b124383b72",
-        "reason": "Keep: render execution binds caller-owned depth views, preserves attachment contents across draws, and separates borrowed targets from owned temporary targets.",
-        "reviewer": "codex-depth-ownership/2026-09-06"
+        "moduleSha256": "19d1788f87b0c3b3b20b039443345d7df75fa3be9f7998050cbf0009a3875d46",
+        "reason": "Keep: Render recording delegates timeline submission acceptance to the synchronization owner.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vk_render_pipeline.zig": {
         "decision": "Keep",
@@ -1372,9 +1372,9 @@
       },
       "src/backend/vulkan/vk_runtime_surface_ops.zig": {
         "decision": "Keep",
-        "moduleSha256": "096074017864254182bc8db48e6201bc7385ac5f7b29deeab80666c530385f0b",
-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "070f0c8e0334c364587e99615d0512e657e7e7fa53f8cce3476c9311beb6daff",
+        "reason": "Keep: Runtime surface operations delegate native capability and swapchain execution; missing native surfaces fail explicitly.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vk_samplers.zig": {
         "decision": "Keep",
@@ -1384,9 +1384,9 @@
       },
       "src/backend/vulkan/vk_shader_source.zig": {
         "decision": "Keep",
-        "moduleSha256": "ff3a1fea216965ff6b6fa3c19c175c88eaf35b118fa3b68a95de74e19d4ce09b",
-        "reason": "Keep: Vulkan kernel source resolution, WGSL-to-SPIR-V fallback, and owned SPIR-V source cache boundary.",
-        "reviewer": "codex-common-audit/2026-09-19"
+        "moduleSha256": "acc7e67d6ead05bd35c560a18d0098554b492284b93e6092f800265c79e4b842",
+        "reason": "Keep: File lookup and owned shader-cache loading stay local; preserve allocation/I/O failures and filename boundaries.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vk_spirv_inspect.zig": {
         "decision": "Keep",
@@ -1402,27 +1402,27 @@
       },
       "src/backend/vulkan/vk_sync.zig": {
         "decision": "Keep",
-        "moduleSha256": "2969d40280ebbdb377caf330621a9bef990b0f3cb02189135a8189749b1ebc71",
-        "reason": "Keep: reachable backend implementation shared by 5 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "918c05a2340c613797453ca2bdaafb59b007d54c4e28f14c4719c7e5cda0318c",
+        "reason": "Keep: Fence and timeline owners handle native submission acceptance and completion; no independent queue-policy authority.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vk_texture_commands.zig": {
         "decision": "Keep",
-        "moduleSha256": "82b32dc3e8f756a9cd9c3c7db5b37dbbba0c62b093e6c7b0fb2845d6667561e0",
-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
-        "reviewer": "codex-texture-copy-regions/2026-09-07"
+        "moduleSha256": "bfce179170213fd401740ae903b970c99521b48c0efd8d5cd48e9c1265d9939e",
+        "reason": "Keep: Texture copy recording delegates timeline submission acceptance to the synchronization owner.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vk_upload.zig": {
         "decision": "Keep",
-        "moduleSha256": "c33cb5eb3e84f4da4a04a8f03c16cdf91a9e21fdc8ff0a8aba16ccc8b56b743e",
-        "reason": "Keep: explicit resource ownership and prepared execution preserve ordinary provider semantics; validated by program and queue-ordering regressions.",
-        "reviewer": "codex-gpu-program/2026-09-05"
+        "moduleSha256": "0da4fc9b22410b5214b8e88a58b77785156be5b43b9ea0e009044654e7fb518a",
+        "reason": "Keep: Upload and replay submission delegate native acceptance bookkeeping to the synchronization owner.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vulkan_errors.zig": {
         "decision": "Keep",
-        "moduleSha256": "cf8bad9e1025976eec9aec53d6fce485ac1242932b29ea0505530c4576280b10",
-        "reason": "Keep: reachable backend implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "7374722c872767c5407f4bcaeb044408c5eca3188da684c5d6f9c0fb74681d24",
+        "reason": "Keep: Raw Vulkan result constants and error translation have one backend owner; public taxonomy expansion remains open.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vulkan_surface.zig": {
         "decision": "Keep",
@@ -1432,9 +1432,9 @@
       },
       "src/backend/vulkan/vulkan_timing.zig": {
         "decision": "Keep",
-        "moduleSha256": "68b1e0b084ae4929fa3665fea9c4737a865c8dff7b6c999f1c55a868111277c5",
-        "reason": "Keep: reachable backend implementation shared by 2 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "c6b00a0d5851682f3428792c3ef8c6cf0e43bf14d23005305b1786fa0e3d2e91",
+        "reason": "Keep: Pure elapsed-timestamp arithmetic consumes explicit calibration and counter width; no native state or timing policy.",
+        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
       "src/backend/vulkan/vulkan_types.zig": {
         "decision": "Keep",

@@ -9,6 +9,7 @@
 
 const std = @import("std");
 const c = @import("vk_constants.zig");
+const errors = @import("vulkan_errors.zig");
 const common_errors = @import("../../contracts/execution.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
@@ -20,6 +21,22 @@ pub const FENCE_POOL_CAPACITY: usize = 128;
 /// Timeout for per-fence waits (nanoseconds). Matches vk_upload.WAIT_TIMEOUT_NS.
 pub const FENCE_WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
 pub const IMMEDIATE_FENCE_POLL_SPINS: usize = 2048;
+
+fn submissionRejected(result: c.VkResult) bool {
+    return result == errors.VK_ERROR_OUT_OF_HOST_MEMORY or result == errors.VK_ERROR_OUT_OF_DEVICE_MEMORY;
+}
+
+/// Allocation rejection leaves Vulkan submission state unchanged. Device loss
+/// or an unknown result cannot authorize forgetting potentially submitted work.
+pub fn submitWithFence(queue: c.VkQueue, info: *const c.VkSubmitInfo, fence: c.VkFence, pool: ?*FencePool) common_errors.BackendNativeError!void {
+    if (pool) |owner| {
+        const index = owner.last_in_flight_index;
+        if (index >= owner.count or !owner.in_flight[index] or owner.fences[index] != fence) return error.InvalidState;
+    }
+    const result = c.vkQueueSubmit(queue, 1, @ptrCast(info), fence);
+    if (pool) |owner| return owner.completeSubmit(result);
+    return c.check_vk(result);
+}
 
 pub fn wait_for_fence_fast(device: c.VkDevice, fence: c.VkFence) common_errors.BackendNativeError!void {
     var spin: usize = 0;
@@ -76,6 +93,17 @@ pub const FencePool = struct {
         self.last_in_flight_index = idx;
         self.next_index = (idx + 1) % self.count;
         return fence;
+    }
+
+    fn completeSubmit(self: *FencePool, result: c.VkResult) common_errors.BackendNativeError!void {
+        if (submissionRejected(result)) {
+            const index = self.last_in_flight_index;
+            std.debug.assert(index < self.count and self.in_flight[index]);
+            self.in_flight[index] = false;
+            self.in_flight_count -= 1;
+            self.next_index = index;
+        }
+        try c.check_vk(result);
     }
 
     /// Wait for all in-flight fences and mark them reusable. Used to drain all
@@ -233,7 +261,7 @@ pub const TimelineSemaphore = struct {
     /// Attempt to create a timeline semaphore. Returns a struct with
     /// available=false if the device does not support the extension
     /// (caller should fall back to fence pool).
-    pub fn init(device: c.VkDevice, timeline_supported: bool) TimelineSemaphore {
+    pub fn init(device: c.VkDevice, timeline_supported: bool) common_errors.BackendNativeError!TimelineSemaphore {
         if (!timeline_supported) return .{};
 
         var type_info = VkSemaphoreTypeCreateInfo{};
@@ -244,20 +272,13 @@ pub const TimelineSemaphore = struct {
         };
 
         var sem: c.VkSemaphore = VK_NULL_U64;
-        const result = vkCreateSemaphore(device, &sem_info, null, &sem);
-        if (result != c.VK_SUCCESS) return .{};
+        try c.check_vk(vkCreateSemaphore(device, &sem_info, null, &sem));
 
         return .{
             .semaphore = sem,
             .current_value = 0,
             .available = true,
         };
-    }
-
-    /// Return the next signal value for a queue submission.
-    pub fn next_signal_value(self: *TimelineSemaphore) u64 {
-        self.current_value += 1;
-        return self.current_value;
     }
 
     /// Wait on the CPU until the timeline reaches `value`.
@@ -304,7 +325,7 @@ pub const TimelineSemaphore = struct {
 /// returned fields before calling vkQueueSubmit.
 ///
 /// Usage:
-///   var tsi = TimelineSubmitHelper.prepare(&timeline_sem);
+///   var tsi = try TimelineSubmitHelper.prepare(&timeline_sem);
 ///   if (tsi.ready) {
 ///       submit.pNext = @ptrCast(&tsi.timeline_info);
 ///       submit.signalSemaphoreCount = 1;
@@ -317,11 +338,11 @@ pub const TimelineSubmitHelper = struct {
     ready: bool = false,
 
     /// Prepare a timeline signal for the next queue submission.
-    /// Increments the timeline value and populates the helper fields.
+    /// Reserves a value without publishing an unsubmitted drain target.
     /// Returns a helper with ready=false if the timeline is unavailable.
-    pub fn prepare(ts: *TimelineSemaphore) TimelineSubmitHelper {
+    pub fn prepare(ts: *const TimelineSemaphore) common_errors.BackendNativeError!TimelineSubmitHelper {
         if (!ts.available) return .{};
-        const value = ts.next_signal_value();
+        const value = std.math.add(u64, ts.current_value, 1) catch return error.InvalidState;
         return .{
             .timeline_info = .{
                 .waitSemaphoreValueCount = 0,
@@ -342,7 +363,80 @@ pub const TimelineSubmitHelper = struct {
         if (!self.ready) return;
         self.timeline_info.pSignalSemaphoreValues = @ptrCast(&self.signal_value);
     }
+
+    pub fn submit(self: *const TimelineSubmitHelper, ts: *TimelineSemaphore, queue: c.VkQueue, info: *const c.VkSubmitInfo) common_errors.BackendNativeError!void {
+        if (!self.ready or !ts.available or self.semaphore != ts.semaphore or
+            self.signal_value == 0 or self.signal_value - 1 != ts.current_value) return error.InvalidState;
+        return self.completeSubmit(ts, c.vkQueueSubmit(queue, 1, @ptrCast(info), VK_NULL_U64));
+    }
+
+    fn completeSubmit(self: *const TimelineSubmitHelper, ts: *TimelineSemaphore, result: c.VkResult) common_errors.BackendNativeError!void {
+        if (!submissionRejected(result)) ts.current_value = self.signal_value;
+        try c.check_vk(result);
+    }
 };
+
+test "rejected fence submissions preserve earlier work and permit retry" {
+    for ([_]c.VkResult{ errors.VK_ERROR_OUT_OF_HOST_MEMORY, errors.VK_ERROR_OUT_OF_DEVICE_MEMORY }) |result| {
+        var pool = try FencePool.init(null);
+        pool.fences[0] = 11;
+        pool.fences[1] = 12;
+        pool.in_flight[0] = true;
+        pool.in_flight[1] = true;
+        pool.in_flight_count = 2;
+        pool.last_in_flight_index = 1;
+        pool.next_index = 2;
+        try std.testing.expectError(error.InvalidState, pool.completeSubmit(result));
+        try std.testing.expect(pool.in_flight[0]);
+        try std.testing.expect(!pool.in_flight[1]);
+        try std.testing.expectEqual(@as(u32, 1), pool.in_flight_count);
+        try std.testing.expectEqual(@as(u32, 1), pool.next_index);
+        pool.in_flight[1] = true;
+        pool.in_flight_count += 1;
+        try pool.completeSubmit(c.VK_SUCCESS);
+        try std.testing.expectEqual(@as(u32, 2), pool.in_flight_count);
+    }
+}
+
+test "rejected sole fence submission does not enter a native wait" {
+    var pool = try FencePool.init(null);
+    pool.fences[0] = 11;
+    pool.in_flight[0] = true;
+    pool.in_flight_count = 1;
+    try std.testing.expectError(error.InvalidState, pool.completeSubmit(errors.VK_ERROR_OUT_OF_HOST_MEMORY));
+    try pool.drain(null);
+    try std.testing.expect(!pool.has_in_flight());
+}
+
+test "timeline submission reserves then publishes only potentially submitted values" {
+    var timeline = TimelineSemaphore{ .semaphore = 11, .available = true, .current_value = 7 };
+    const pending = try TimelineSubmitHelper.prepare(&timeline);
+    try std.testing.expectEqual(@as(u64, 7), timeline.current_value);
+    for ([_]c.VkResult{ errors.VK_ERROR_OUT_OF_HOST_MEMORY, errors.VK_ERROR_OUT_OF_DEVICE_MEMORY }) |result| {
+        try std.testing.expectError(error.InvalidState, pending.completeSubmit(&timeline, result));
+        try std.testing.expectEqual(@as(u64, 7), timeline.current_value);
+    }
+    const retry = try TimelineSubmitHelper.prepare(&timeline);
+    try std.testing.expectEqual(pending.signal_value, retry.signal_value);
+    try retry.completeSubmit(&timeline, c.VK_SUCCESS);
+    try std.testing.expectEqual(@as(u64, 8), timeline.current_value);
+    timeline.current_value = std.math.maxInt(u64);
+    try std.testing.expectError(error.InvalidState, TimelineSubmitHelper.prepare(&timeline));
+}
+
+test "device loss and unknown submission errors retain synchronization obligations" {
+    for ([_]c.VkResult{ errors.VK_ERROR_DEVICE_LOST, errors.VK_ERROR_UNKNOWN }) |result| {
+        var pool = try FencePool.init(null);
+        pool.in_flight[0] = true;
+        pool.in_flight_count = 1;
+        try std.testing.expectError(errors.map_vk_result(result), pool.completeSubmit(result));
+        try std.testing.expect(pool.has_in_flight());
+        var timeline = TimelineSemaphore{ .semaphore = 11, .available = true };
+        const pending = try TimelineSubmitHelper.prepare(&timeline);
+        try std.testing.expectError(errors.map_vk_result(result), pending.completeSubmit(&timeline, result));
+        try std.testing.expectEqual(@as(u64, 1), timeline.current_value);
+    }
+}
 
 /// Detect timeline semaphore support by querying
 /// VkPhysicalDeviceTimelineSemaphoreFeatures via the Vulkan 1.1+

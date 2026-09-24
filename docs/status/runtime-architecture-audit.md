@@ -12,13 +12,23 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [continued Vulkan audit](../../bench/out/maintenance/20260923-vulkan-audit/README.md)
+repairs rejected-submission reservations, shader source lookup/error propagation,
+elapsed timestamp conversion, and missing-surface admission. Its
+[file conclusions](../../bench/out/maintenance/20260923-vulkan-audit/file-reviews.json)
+retain unresolved sampler, presentation, completion, and error-taxonomy findings.
+The next never-examined file is `src/backend/vulkan/vk_structs.zig`;
+`vk_upload.zig` and `vulkan_types.zig` also remain unexamined in this continuation.
+Supporting caller edits confer no additional review credit. This audit does not
+establish application acceleration or release qualification.
+
 The [product-intent alignment](../../bench/out/maintenance/20260920-product-intent/README.md)
 binds ordinary WebGPU and optional safe reuse into goals, intent, charters, and
 implementation guidance. Compiler meaning, execution ownership, offline
 improvement, numerical acceptance, and deployment claims now have explicit
 boundaries. This documentation change grants no implementation or hardware
 qualification. Shared-guidance changes reopen affected reviews; earlier ledger
-entries remain unchanged. Continue at `src/backend/vulkan/vk_runtime_surface_ops.zig`
+entries remain unchanged. Follow the latest continuation above
 and revalidate earlier scopes against the changed assumptions before restoring
 verified status.
 
@@ -29,7 +39,7 @@ semantics. Its [per-file conclusions](../../bench/out/maintenance/20260920-vulka
 separate retained sound code from unresolved completion lifetimes, capability
 claims, render admission, cache retention and receipt accounting. Host/native
 checks do not close stalled-device or complete graphics qualification. The next
-never-examined file is `src/backend/vulkan/vk_runtime_surface_ops.zig`; supporting
+never-examined file at that checkpoint was `src/backend/vulkan/vk_runtime_surface_ops.zig`; supporting
 edits grant no directory or relationship review credit.
 
 The [Metal notification checkpoint](../../bench/out/maintenance/20260920-metal-notification/README.md)

@@ -1,0 +1,189 @@
+{
+  "reviews": [
+    {
+      "target": "src/backend/vulkan/vk_runtime_surface_ops.zig",
+      "status": "needs_changes",
+      "summary": "Whole-file examination: handle registration, native capability admission, configuration publication, acquisition, presentation and release.",
+      "findings": [
+        "configure_surface destroys the previous swapchain and publishes configured/dimensions before fallible capability and swapchain creation; failed replacement leaves partially published state.",
+        "unconfigure_surface/release_surface destroy swapchain resources without establishing completion of acquired/render/present work; ownership must survive unknown completion."
+      ],
+      "resolvedFindings": [
+        "get_surface_capabilities now rejects handles without a native surface; the regression verifies missing handles, unbacked handles and duplicate creation."
+      ],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vulkan_surface.zig",
+        "runtime/zig/src/contracts/model/model_surface_control_types.zig"
+      ],
+      "nextAction": "Make surface replacement transactional with native completion ownership, then exercise failure/retry on a presentation-capable host."
+    },
+    {
+      "target": "src/backend/vulkan/vk_samplers.zig",
+      "status": "needs_changes",
+      "summary": "Whole-file examination: sampler translation, generation allocation, replacement, native creation and destruction.",
+      "findings": [
+        "create_sampler always disables anisotropy even when max_anisotropy requests it; unsupported requests must fail or enable the qualified feature.",
+        "Filter/address/compare helpers silently coerce unknown values; translation duplicates src/native/vulkan/vulkan_sampler_native.zig.",
+        "destroy_sampler removes and destroys without waiting or retaining references used by pending commands; replacement only checks one deferred-work flag."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/native/vulkan/vulkan_sampler_native.zig",
+        "runtime/zig/src/backend/vulkan/vk_descriptor_identity.zig",
+        "runtime/zig/src/contracts/model/model_render_types.zig"
+      ],
+      "nextAction": "Unify validated sampler translation at its existing owner and connect destruction/replacement to completed command references."
+    },
+    {
+      "target": "src/backend/vulkan/vk_shader_source.zig",
+      "status": "needs_changes",
+      "summary": "Whole-file examination: path resolution, sibling lookup, WGSL translation, SPIR-V decoding and cache allocation/release.",
+      "findings": [
+        "kernel_spirv_cache is keyed only by the supplied name and has no aggregate retention policy or content revision identity; a name hit can outlive changed input bytes.",
+        "words_from_spirv_bytes checks alignment and magic only; full structural/module validation must remain an explicit compiler admission responsibility."
+      ],
+      "resolvedFindings": [
+        "Sibling SPIR-V lookup only replaces the filename extension, preserving dotted parent directories.",
+        "File reads preserve allocation/I/O failures; WGSL translation preserves OutOfMemory. Exhaustive allocator-failure tests cover source loading and compilation cleanup."
+      ],
+      "context": [
+        "runtime/zig/src/backend/common/path_utils.zig",
+        "runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig"
+      ],
+      "nextAction": "Bind source-cache identity to an immutable input contract and define bounded retention; connect external SPIR-V admission to validated compiler metadata."
+    },
+    {
+      "target": "src/backend/vulkan/vk_shared_pipeline.zig",
+      "status": "verified",
+      "summary": "Whole-file examination retains the device-owned registry: exact shader/entrypoint/layout/subgroup equality, owned immutable words, checked references, rollback and final release.",
+      "findings": [],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_pipeline.zig",
+        "runtime/zig/src/backend/vulkan/vk_compute_program.zig",
+        "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig"
+      ],
+      "nextAction": "Revalidate on identity or lifetime changes; this file verdict grants no directory or end-to-end completion qualification."
+    },
+    {
+      "target": "src/backend/vulkan/vk_spirv_inspect.zig",
+      "status": "needs_changes",
+      "summary": "Whole-file examination: bounded instruction scans for literal local size and workgroup storage.",
+      "findings": [
+        "compute_local_size selects the first LocalSize execution mode without matching the selected entrypoint; vk_pipeline uses it for subgroup selection.",
+        "LocalSizeId/specialization and malformed instruction streams return absent/partial facts rather than validated metadata; has_workgroup_storage conflates unknown parsing with absence."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_pipeline.zig"
+      ],
+      "nextAction": "Consume compiler-validated metadata keyed to the selected entrypoint; test multiple entrypoints, specialization and malformed streams without inferring absence from unknown data."
+    },
+    {
+      "target": "src/backend/vulkan/vk_sync.zig",
+      "status": "needs_changes",
+      "summary": "Whole-file examination: fence ring, wait/drain/deinit, timeline creation/query/wait, feature detection and submission bookkeeping.",
+      "findings": [
+        "FencePool.deinit and TimelineSemaphore.deinit swallow native wait errors before destruction; unknown completion must retain native resources.",
+        "wait_for_fence_fast uses a local polling-spin constant while wait budgets/policy remain distributed across upload and runtime owners.",
+        "Native device-loss/unknown results retain synchronization obligations here, but caller resource cleanup still needs complete-path review and failure injection."
+      ],
+      "resolvedFindings": [
+        "Rejected host/device OOM submissions roll back only the latest fence reservation and do not publish unsubmitted timeline values; earlier obligations and retry are preserved.",
+        "Timeline creation failure propagates; value exhaustion fails explicitly. State-transition regressions retain obligations on device loss/unknown status."
+      ],
+      "context": [
+        "runtime/zig/src/backend/vulkan/native_runtime.zig",
+        "runtime/zig/src/backend/vulkan/vk_upload.zig",
+        "runtime/zig/src/backend/vulkan/vk_device.zig",
+        "runtime/zig/src/backend/vulkan/vulkan_errors.zig",
+        "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig"
+      ],
+      "nextAction": "Unify completion-owned retirement across runtime/upload/render/texture callers; inject native submit/wait failures before declaring teardown verified."
+    },
+    {
+      "target": "src/backend/vulkan/vk_timestamp.zig",
+      "status": "needs_changes",
+      "summary": "Whole-file examination: calibrated normalization shader generation, compilation cache, scratch ownership, query transfer and conversion dispatch.",
+      "findings": [
+        "compiled_shader stores a reserved textual key in the same kernel_spirv_cache used for caller kernel names; no tagged namespace separates internal calibration shader identity from file inputs.",
+        "Resolve stores only a resource handle; repeated init and count changes have no local initialized/capacity contract. Make ownership and supported reuse explicit at caller and callee boundaries."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_timestamp_normalize.wgsl",
+        "runtime/zig/src/backend/vulkan/vk_shader_source.zig",
+        "runtime/zig/src/backend/vulkan/vk_resources.zig"
+      ],
+      "nextAction": "Give calibrated shaders a distinct cache identity and make scratch initialization/capacity invariants explicit with lifecycle tests."
+    },
+    {
+      "target": "src/backend/vulkan/vk_texture_commands.zig",
+      "status": "needs_changes",
+      "summary": "Whole-file examination: validated buffer-image copy regions, transitions, command texture upload/copy and synchronous submission.",
+      "findings": [
+        "texture_write constructs its own region using bytes-per-pixel and fixed layer/depth values instead of the block-aware buffer_copy_region contract; compressed formats and layered/volume uploads need common admission.",
+        "texture_copy accepts native image regions without the complete source/destination footprint checks used by buffer copies.",
+        "Synchronous helpers and staging defer cleanup do not retain resources when native completion is unknown."
+      ],
+      "resolvedFindings": [
+        "Timeline submission now delegates result-dependent publication to vk_sync rather than advancing an unsubmitted wait target."
+      ],
+      "context": [
+        "runtime/zig/src/contracts/texture_copy.zig",
+        "runtime/zig/src/backend/vulkan/vk_resources.zig",
+        "runtime/zig/src/backend/vulkan/vk_sync.zig"
+      ],
+      "nextAction": "Route command texture operations through canonical footprint validation and completion-owned staging retirement; exercise compressed, layered, aliased and failed-wait cases."
+    },
+    {
+      "target": "src/backend/vulkan/vulkan_errors.zig",
+      "status": "needs_changes",
+      "summary": "Whole-file examination: raw Vulkan result constants, typed errors and diagnostic names.",
+      "findings": [
+        "map_vk_result collapses allocation failure, device loss and timeout into InvalidState and maps unknown/pool exhaustion to UnsupportedFeature; callers lose original causes and can mistake failure for lack of capability."
+      ],
+      "resolvedFindings": [
+        "Named host/device allocation and device-loss results authorize conservative submission bookkeeping without changing public error taxonomy."
+      ],
+      "context": [
+        "runtime/zig/src/contracts/execution.zig",
+        "runtime/zig/src/backend/vulkan/vk_sync.zig"
+      ],
+      "nextAction": "Extend canonical typed error propagation and audit capability-fallback consumers before remapping native results."
+    },
+    {
+      "target": "src/backend/vulkan/vulkan_surface.zig",
+      "status": "needs_changes",
+      "summary": "Whole-file examination: platform surface constructors, capability enumeration, swapchain selection/creation, semaphores, acquisition and presentation.",
+      "findings": [
+        "create_swapchain publishes native handles before all image/synchronization setup succeeds; failure/retired-old-swapchain ownership is incomplete.",
+        "present_image has no render-finished wait semaphore and returns success for VK_ERROR_OUT_OF_DATE_KHR; acquisition/render/present synchronization and failure outcomes need an end-to-end correction.",
+        "choose_surface_format silently substitutes native formats, including RGBA8UnormSrgb to UNORM; exact format and tone-mapping admission are not preserved.",
+        "desired_maximum_frame_latency is retained in state but does not govern swapchain image count or acquire pacing."
+      ],
+      "resolvedFindings": [],
+      "context": [
+        "runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig",
+        "runtime/zig/src/backend/vulkan/vk_render.zig"
+      ],
+      "nextAction": "Repair exact surface admission and acquire/render/present ownership together, with native windowed tests and submission-failure retention."
+    },
+    {
+      "target": "src/backend/vulkan/vulkan_timing.zig",
+      "status": "verified",
+      "summary": "Whole-file examination retains pure timing aliases/calibration data and checked elapsed-counter conversion.",
+      "findings": [],
+      "resolvedFindings": [
+        "Elapsed subtraction wraps at the reported valid-bit width; invalid periods/widths and unrepresentable nanoseconds fail before conversion.",
+        "Tests cover short/full-width wrap, fractional truncation, equal samples, invalid calibration and overflow. Both runtime consumers pass native queue calibration."
+      ],
+      "context": [
+        "runtime/zig/src/backend/vulkan/native_runtime.zig",
+        "runtime/zig/src/backend/vulkan/vk_dispatch_repeat.zig",
+        "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig"
+      ],
+      "nextAction": "Revalidate when calibration or timing semantics change; elapsed conversion cannot disambiguate multiple counter wraps."
+    }
+  ]
+}

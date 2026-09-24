@@ -514,19 +514,19 @@ pub const NativeVulkanRuntime = struct {
         } else {
             try vk_device.ensure_deferred_submission_state(self);
             if (self.has_timeline_semaphore) {
-                var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+                var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
                 tsi.patch();
                 submit_info.pNext = @ptrCast(&tsi.timeline_info);
                 submit_info.signalSemaphoreCount = 1;
                 submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
-                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+                try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
                 self.has_deferred_submissions = true;
             } else {
                 const deferred_fence = if (self.has_fence_pool)
                     try self.fence_pool_state.acquire(self.device)
                 else
                     VK_NULL_U64;
-                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
+                try vk_sync.submitWithFence(self.queue, &submit_info, deferred_fence, if (self.has_fence_pool) &self.fence_pool_state else null);
                 self.has_deferred_submissions = true;
             }
         }
@@ -548,11 +548,9 @@ pub const NativeVulkanRuntime = struct {
                 @sizeOf(u64),
                 c.VK_QUERY_RESULT_64_BIT | c.VK_QUERY_RESULT_WAIT_BIT,
             ));
-            if (results[1] > results[0]) {
-                const vk_timing = @import("vulkan_timing.zig");
-                gpu_timestamp_ns = vk_timing.computeElapsedNs(results[0], results[1], self.timestamp_period);
-                gpu_timestamp_valid = gpu_timestamp_ns > 0;
-            }
+            const vk_timing = @import("vulkan_timing.zig");
+            gpu_timestamp_ns = try vk_timing.computeElapsedNs(results[0], results[1], self.timestamp_period, self.queue_family_timestamp_valid_bits_value_cache orelse return error.InvalidState);
+            gpu_timestamp_valid = gpu_timestamp_ns > 0;
             if (gpu_timestamp_mode == .require and !gpu_timestamp_valid) return error.TimingPolicyMismatch;
         } else if (gpu_timestamp_mode != .off) {
             if (queue_sync_mode != .per_command and gpu_timestamp_mode == .require) return error.TimingPolicyMismatch;
@@ -689,19 +687,19 @@ pub const NativeVulkanRuntime = struct {
         } else {
             try vk_device.ensure_deferred_submission_state(self);
             if (self.has_timeline_semaphore) {
-                var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+                var tsi = try vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
                 tsi.patch();
                 submit_info.pNext = @ptrCast(&tsi.timeline_info);
                 submit_info.signalSemaphoreCount = 1;
                 submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
-                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+                try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
                 self.has_deferred_submissions = true;
             } else {
                 const deferred_fence = if (self.has_fence_pool)
                     try self.fence_pool_state.acquire(self.device)
                 else
                     VK_NULL_U64;
-                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
+                try vk_sync.submitWithFence(self.queue, &submit_info, deferred_fence, if (self.has_fence_pool) &self.fence_pool_state else null);
                 self.has_deferred_submissions = true;
             }
         }
