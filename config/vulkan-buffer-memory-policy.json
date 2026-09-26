@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "readbackRequiredProperties": [
     "host-visible",
     "host-coherent"
@@ -10,5 +10,6 @@
   "unavailablePreference": "use-required-properties",
   "hostVisiblePreferredProperties": [
     "device-local"
-  ]
+  ],
+  "computeBufferCacheMaxBytes": 67108864
 }

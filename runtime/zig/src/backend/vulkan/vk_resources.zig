@@ -28,6 +28,10 @@ pub const DEFAULT_RUNTIME_TEXTURE_USAGE: model_gpu_types.WGPUFlags = model_gpu_t
 pub const REQUIRED_TEXTURE_UPLOAD_USAGE: model_gpu_types.WGPUFlags = model_gpu_types.WGPUTextureUsage_CopyDst;
 const DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES: u64 = 16 * 1024;
 const BUFFER_WRITE_STAGING_MIN_CAPACITY: u64 = 64 * 1024;
+const COMPUTE_BUFFER_USAGE: c.VkFlags = c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+    c.VK_BUFFER_USAGE_TRANSFER_DST_BIT | c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+    c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT | c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+    c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
 pub const ComputeBufferMemoryKind = enum { host_visible, readback, device_local };
 
@@ -36,6 +40,7 @@ const memory_policy = @import("vk_memory_policy.zig");
 pub const ComputeBuffer = struct {
     generation: u64 = 0,
     memory_property_flags: c.VkFlags = 0,
+    allocation_size: u64 = 0,
     buffer: VkBuffer,
     memory: VkDeviceMemory,
     mapped: ?*anyopaque,
@@ -258,6 +263,22 @@ fn create_compute_buffer_with_kind(
     memory_kind: ComputeBufferMemoryKind,
 ) !ComputeBuffer {
     const generation = try identity.nextGeneration(self);
+    if (memory_kind == .host_visible) {
+        if (vk_upload.vk_pool_pop(&self.compute_buffer_pool, bytes, COMPUTE_BUFFER_USAGE)) |entry| {
+            self.compute_buffer_pool_bytes -= entry.allocation_size;
+            if (initialize_buffers_on_create) @memset(@as([*]u8, @ptrCast(entry.mapped.?))[0..@intCast(bytes)], 0);
+            return .{
+                .generation = generation,
+                .memory_property_flags = entry.memory_property_flags,
+                .allocation_size = entry.allocation_size,
+                .buffer = entry.buffer,
+                .memory = entry.memory,
+                .mapped = entry.mapped,
+                .size = bytes,
+                .memory_kind = memory_kind,
+            };
+        }
+    }
     var buffer: VkBuffer = VK_NULL_U64;
     var memory: VkDeviceMemory = VK_NULL_U64;
     var mapped: ?*anyopaque = null;
@@ -267,13 +288,7 @@ fn create_compute_buffer_with_kind(
         .pNext = null,
         .flags = 0,
         .size = bytes,
-        .usage = c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-            c.VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-            c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-            c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
-            c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
-            c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-            c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        .usage = COMPUTE_BUFFER_USAGE,
         .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = null,
@@ -329,6 +344,7 @@ fn create_compute_buffer_with_kind(
     return .{
         .generation = generation,
         .memory_property_flags = memory_properties.memoryTypes[memory_index].propertyFlags,
+        .allocation_size = requirements.size,
         .buffer = buffer,
         .memory = memory,
         .mapped = mapped,
@@ -466,7 +482,43 @@ pub fn capture_compute_buffer(
 pub fn destroy_compute_buffer(self: anytype, resource_handle: u64) void {
     const cache = @import("vk_pipeline_cache.zig");
     cache.discard_buffer(self, resource_handle);
-    if (self.compute_buffers.fetchRemove(resource_handle)) |entry| release_compute_buffer(self, entry.value);
+    if (self.compute_buffers.fetchRemove(resource_handle)) |entry| {
+        if (!cacheCompletedComputeBuffer(self, entry.value)) release_compute_buffer(self, entry.value);
+    }
+}
+
+fn cacheCompletedComputeBuffer(self: anytype, buffer: ComputeBuffer) bool {
+    const required = c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    if (buffer.memory_kind != .host_visible or buffer.mapped == null or
+        (buffer.memory_property_flags & required) != required or
+        buffer.size < DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES or
+        buffer.allocation_size < buffer.size or
+        buffer.allocation_size > memory_policy.compute_buffer_cache_max_bytes - self.compute_buffer_pool_bytes)
+    {
+        return false;
+    }
+    if (self.replay_recording_active or self.replay_prefix_copy_pending or self.upload_recording_active or
+        self.streaming_copy_active or self.streaming_copy_pending_count != 0 or
+        self.has_deferred_submissions or self.hot_pending_upload != null or self.pending_uploads.items.len != 0)
+    {
+        return false;
+    }
+    // Empty size buckets remain reusable, but cannot grow metadata without a bound.
+    const max_size_buckets = memory_policy.compute_buffer_cache_max_bytes / DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES;
+    if (self.compute_buffer_pool.count() >= max_size_buckets and !self.compute_buffer_pool.contains(buffer.size)) return false;
+    const slot = self.compute_buffer_pool.getOrPut(self.allocator, buffer.size) catch return false;
+    if (!slot.found_existing) slot.value_ptr.* = .{};
+    if (slot.value_ptr.items.len >= vk_upload.MAX_POOL_ENTRIES_PER_SIZE) return false;
+    slot.value_ptr.append(self.allocator, .{
+        .usage = COMPUTE_BUFFER_USAGE,
+        .memory_property_flags = buffer.memory_property_flags,
+        .allocation_size = buffer.allocation_size,
+        .buffer = buffer.buffer,
+        .memory = buffer.memory,
+        .mapped = buffer.mapped,
+    }) catch return false;
+    self.compute_buffer_pool_bytes += buffer.allocation_size;
+    return true;
 }
 
 pub fn release_compute_buffer(self: anytype, compute_buffer: ComputeBuffer) void {

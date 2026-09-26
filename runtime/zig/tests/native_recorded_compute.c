@@ -9,6 +9,7 @@ extern WGPUCommandBuffer doeNativeCreateComputeDispatchCopyCommandBuffer(
 extern WGPUCommandBuffer doeNativeCreateComputeDispatchBatchCopyCommandBuffer(
     WGPUDevice, size_t, WGPUComputePipeline*, WGPUBindGroup*, const uint32_t*, const uint32_t*,
     WGPUBuffer, uint64_t, WGPUBuffer, uint64_t, uint64_t);
+extern uint32_t doeNativeQueueSyncInfo(WGPUQueue);
 
 enum { ELEMENT_COUNT = 4, NATIVE_BIND_GROUP_STRIDE = 4, AMD_PCI_VENDOR_ID = 0x1002,
        TEXTURE_ROW_BYTES = 256, TEXTURE_LAYER_COUNT = 2, RESIDENT_STORAGE_BYTES = 65536 };
@@ -724,6 +725,64 @@ cleanup:
 #undef REQUIRE
 }
 
+static bool write_mapping_waits_for_gpu_reads(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
+    enum { DEFERRED_SUBMISSIONS = 1u << 3, WORD_COUNT = RESIDENT_STORAGE_BYTES / sizeof(uint32_t) };
+    WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
+    desc.size = RESIDENT_STORAGE_BYTES;
+    desc.usage = WGPUBufferUsage_MapWrite | WGPUBufferUsage_CopySrc;
+    desc.mappedAtCreation = true;
+    WGPUBuffer upload = wgpuDeviceCreateBuffer(device, &desc);
+    desc.usage = WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst;
+    desc.mappedAtCreation = false;
+    WGPUBuffer readback = wgpuDeviceCreateBuffer(device, &desc);
+    bool passed = false;
+    if (!upload || !readback) goto cleanup;
+    uint32_t* input = wgpuBufferGetMappedRange(upload, 0, RESIDENT_STORAGE_BYTES);
+    if (!input) goto failure;
+    for (size_t i = 0; i < WORD_COUNT; ++i) input[i] = (uint32_t)i + 7;
+    wgpuBufferUnmap(upload);
+    passed = true;
+    for (unsigned round = 0; round < 2; ++round) {
+        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
+        wgpuCommandEncoderCopyBufferToBuffer(encoder, upload, 0, readback, 0, RESIDENT_STORAGE_BYTES);
+        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
+        wgpuCommandEncoderRelease(encoder);
+        if (!commands) goto failure;
+        wgpuQueueSubmit(queue, 1, &commands);
+        wgpuCommandBufferRelease(commands);
+        const bool pending_before = (doeNativeQueueSyncInfo(queue) & DEFERRED_SUBMISSIONS) != 0;
+        bool mapped = false;
+        WGPUBufferMapCallbackInfo mapping = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
+        mapping.mode = WGPUCallbackMode_AllowSpontaneous;
+        mapping.callback = map_ready;
+        mapping.userdata1 = &mapped;
+        wgpuBufferMapAsync(upload, WGPUMapMode_Write, 0, RESIDENT_STORAGE_BYTES, mapping);
+        wgpuInstanceProcessEvents(instance);
+        const bool pending_after = (doeNativeQueueSyncInfo(queue) & DEFERRED_SUBMISSIONS) != 0;
+        passed &= pending_before && mapped && !pending_after;
+        input = mapped ? wgpuBufferGetMappedRange(upload, 0, RESIDENT_STORAGE_BYTES) : NULL;
+        if (!input) goto failure;
+        for (size_t i = 0; i < WORD_COUNT; ++i) input[i] = (uint32_t)i + 8 + round;
+        wgpuBufferUnmap(upload);
+        mapped = false;
+        wgpuBufferMapAsync(readback, WGPUMapMode_Read, 0, RESIDENT_STORAGE_BYTES, mapping);
+        wgpuInstanceProcessEvents(instance);
+        const uint32_t* output = mapped ? wgpuBufferGetConstMappedRange(readback, 0, RESIDENT_STORAGE_BYTES) : NULL;
+        if (!output) goto failure;
+        for (size_t i = 0; i < WORD_COUNT; ++i) passed &= output[i] == (uint32_t)i + 7 + round;
+        wgpuBufferUnmap(readback);
+        printf("write mapping: round=%u pending_before=%u pending_after=%u passed=%u\n",
+            round, pending_before, pending_after, passed);
+    }
+    goto cleanup;
+failure:
+    passed = false;
+cleanup:
+    if (upload) wgpuBufferRelease(upload);
+    if (readback) wgpuBufferRelease(readback);
+    return passed;
+}
+
 int main(void) {
     int result = 1;
     WGPUInstance instance = wgpuCreateInstance(NULL);
@@ -761,7 +820,8 @@ int main(void) {
     wgpuInstanceProcessEvents(instance);
     if (!device) goto cleanup;
     queue = wgpuDeviceGetQueue(device);
-    if (queue && invalid_pass_lifetimes(instance, device, queue) && invalid_buffer_copies(instance, device, queue) &&
+    if (queue && write_mapping_waits_for_gpu_reads(instance, device, queue) &&
+        invalid_pass_lifetimes(instance, device, queue) && invalid_buffer_copies(instance, device, queue) &&
         unavailable_copy_resources(instance, device, queue) &&
         texture_submission_lifetime(instance, device, queue) &&
         texture_region_copies(instance, device, queue) &&

@@ -3,6 +3,7 @@ const c = @import("vk_constants.zig");
 const options = @import("build_options");
 
 pub const host_visible_preferred_properties = options.vulkan_host_visible_preferred_properties;
+pub const compute_buffer_cache_max_bytes = options.vulkan_compute_buffer_cache_max_bytes;
 
 pub const readback_required_properties = options.vulkan_readback_required_properties;
 pub const readback_preferred_properties = options.vulkan_readback_preferred_properties;

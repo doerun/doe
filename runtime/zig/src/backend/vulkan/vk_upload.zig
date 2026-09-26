@@ -42,6 +42,8 @@ pub const PendingUpload = struct {
 
 pub const VkPoolEntry = struct {
     usage: c.VkFlags = 0,
+    memory_property_flags: c.VkFlags = 0,
+    allocation_size: u64 = 0,
     buffer: VkBuffer,
     memory: VkDeviceMemory,
     mapped: ?*anyopaque = null,

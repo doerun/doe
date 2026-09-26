@@ -310,7 +310,8 @@ pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: u
         return .{ .id = 3 };
     }
     if (comptime has_vulkan) {
-        if (b.backend == .vulkan and (mode & abi_core.WGPUMapMode_Read) != 0) {
+        // A writable mapping must also wait for earlier GPU reads of the buffer.
+        if (b.backend == .vulkan and (mode & (abi_core.WGPUMapMode_Read | abi_core.WGPUMapMode_Write)) != 0) {
             if (b.vk_runtime_ref) |rt_ptr| {
                 const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
                 _ = rt.flush_queue() catch {

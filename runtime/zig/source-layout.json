@@ -1228,7 +1228,7 @@
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "3b910a221dc0136eb64dd098c1b73e50b802868eadcf46a15fbdc17d4b796b88",
+        "moduleSha256": "d9e6fc4e3de6cf9aa9f815daf1832583dcc901638e29e2949171be4deafafcbd",
         "reason": "Keep: Runtime assembly delegates native submission bookkeeping and calibrated timestamp arithmetic to existing owners.",
         "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
@@ -1360,7 +1360,7 @@
       },
       "src/backend/vulkan/vk_resources.zig": {
         "decision": "Keep",
-        "moduleSha256": "16cf8b0fd51ca1a416e788778f8d57e0d10413eef02152e870383bfdb8c154ca",
+        "moduleSha256": "3ed00606ccf4d301682ce91d480940ed6ea2eb2ad01ffb5622d84ccac2ea3460",
         "reason": "Keep: shared native buffer allocation includes the vertex/index usages consumed by rendering and preserves them through storage promotion.",
         "reviewer": "codex-render-validation/2026-09-07"
       },
@@ -1414,7 +1414,7 @@
       },
       "src/backend/vulkan/vk_upload.zig": {
         "decision": "Keep",
-        "moduleSha256": "fc00c723fdd22ed73519d1519f6446640d7ed39bbd07628e395eb45e4faeae30",
+        "moduleSha256": "c17a95c97e730ae2e08bed99aae95beec4fa5e7e01ba96c3eff09faeb3509fdd",
         "reason": "Keep: upload allocation, pooling and recording share the existing owner; native acquisition unwinds transactionally and size-bucket reuse requires compatible usage flags. Completion and aggregate retention findings remain open.",
         "reviewer": "codex-vulkan-upload-audit/2026-09-23"
       },
@@ -3652,7 +3652,7 @@
       },
       "src/native/resource/doe_buffer_ops_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "909d6f77ce20aa6c8851c06f513e04a063fde884cf6f521697943516e4af4418",
+        "moduleSha256": "da8d02e7945eeba896c698eb41e407186e73d011433c04ca0bf697920fea9a87",
         "reason": "Keep: explicit resource ownership and prepared execution preserve ordinary provider semantics; validated by program and queue-ordering regressions.",
         "reviewer": "codex-resource-lifetime/2026-09-06"
       },
@@ -4210,7 +4210,7 @@
       },
       "src/backend/vulkan/vk_memory_policy.zig": {
         "decision": "Keep",
-        "moduleSha256": "9cde310c19793affda7751e5b174d6884e4b7620c3704c0a0b3eecefb07f843c",
+        "moduleSha256": "84ac6a8d9f85f5d64f2860641c043f8ea72e32b436ac0850361caa6483d90220",
         "reason": "Keep: deterministic Vulkan memory-type selection owns required flags, ranked preferences, explicit fallback, and selection tests.",
         "reviewer": "codex-compute-program/2026-09-05"
       },

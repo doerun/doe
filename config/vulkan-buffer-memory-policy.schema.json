@@ -8,11 +8,12 @@
     "readbackRequiredProperties",
     "readbackPreferredProperties",
     "unavailablePreference",
-    "hostVisiblePreferredProperties"
+    "hostVisiblePreferredProperties",
+    "computeBufferCacheMaxBytes"
   ],
   "properties": {
     "schemaVersion": {
-      "const": 2
+      "const": 3
     },
     "readbackRequiredProperties": {
       "const": [
@@ -32,6 +33,9 @@
       "const": [
         "device-local"
       ]
+    },
+    "computeBufferCacheMaxBytes": {
+      "const": 67108864
     }
   }
 }

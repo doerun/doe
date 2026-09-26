@@ -136,6 +136,8 @@ pub const NativeVulkanRuntime = struct {
     hot_dst_pool_size: u64 = 0,
     next_native_resource_generation: u64 = 1,
     compute_buffers: std.AutoHashMapUnmanaged(u64, vk_resources.ComputeBuffer) = .{},
+    compute_buffer_pool: vk_upload.VkPool = .{},
+    compute_buffer_pool_bytes: u64 = 0,
     /// Stable buffer identity used by descriptor and hazard caches. Object
     /// addresses are allocator-reusable and must not serve as resource IDs.
     next_buffer_resource_handle: u64 = 1,
@@ -257,6 +259,8 @@ pub const NativeVulkanRuntime = struct {
         self.shared_pipelines.deinit(self.allocator);
         vk_pipeline.destroy_descriptor_state(self);
         vk_resources.release_compute_buffers(self);
+        vk_upload.vk_release_pool(&self.compute_buffer_pool, self.allocator, self.device);
+        self.compute_buffer_pool_bytes = 0;
         vk_resources.release_textures(self);
         vk_resources.release_samplers(self);
         if (self.has_timeline_semaphore) {

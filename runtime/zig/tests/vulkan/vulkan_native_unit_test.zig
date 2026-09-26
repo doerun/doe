@@ -704,3 +704,44 @@ test "storage promotion retains an already device-local mapped allocation withou
     try std.testing.expectEqual(@as(usize, 0), failing.allocations);
     try std.testing.expectEqualSlices(u8, &(@as([32]u8, @splat(0x5a))), &bytes);
 }
+
+test "completed compute allocation reuse renews identity and clears stale contents without allocation" {
+    const bytes_count = 32 * 1024;
+    var bytes: [bytes_count]u8 = @splat(0x5a);
+    var runtime = native_runtime.NativeVulkanRuntime{
+        .allocator = std.testing.allocator,
+        .kernel_root = "",
+        .next_native_resource_generation = 42,
+    };
+    defer runtime.compute_buffers.deinit(std.testing.allocator);
+    defer {
+        var slots = runtime.compute_buffer_pool.valueIterator();
+        while (slots.next()) |slot| slot.deinit(std.testing.allocator);
+        runtime.compute_buffer_pool.deinit(std.testing.allocator);
+    }
+    const previous = vk_resources.ComputeBuffer{
+        .generation = 41,
+        .memory_property_flags = vk_constants.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk_constants.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | vk_constants.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        .allocation_size = bytes.len,
+        .buffer = 11,
+        .memory = 12,
+        .mapped = &bytes,
+        .size = bytes.len,
+        .memory_kind = .host_visible,
+    };
+    try runtime.compute_buffers.put(std.testing.allocator, 7, previous);
+    vk_resources.destroy_compute_buffer(&runtime, 7);
+    try std.testing.expect(runtime.compute_buffers.get(7) == null);
+    try std.testing.expectEqual(@as(u64, bytes.len), runtime.compute_buffer_pool_bytes);
+    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
+    runtime.allocator = failing.allocator();
+    const reused = try vk_resources.create_compute_buffer(&runtime, bytes.len, true);
+    try std.testing.expectEqual(previous.buffer, reused.buffer);
+    try std.testing.expectEqual(previous.memory, reused.memory);
+    try std.testing.expectEqual(previous.mapped, reused.mapped);
+    try std.testing.expectEqual(@as(u64, 42), reused.generation);
+    try std.testing.expectEqual(previous.memory_property_flags, reused.memory_property_flags);
+    try std.testing.expectEqual(@as(u64, 0), runtime.compute_buffer_pool_bytes);
+    try std.testing.expectEqual(@as(usize, 0), failing.allocations);
+    for (bytes) |byte| try std.testing.expectEqual(@as(u8, 0), byte);
+}
