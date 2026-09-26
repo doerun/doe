@@ -1,0 +1,215 @@
+{
+  "classification": "instrumented-local-diagnostic-not-timing-evidence",
+  "scope": "Entire primary D0 process, including warmup and measured work; exact replay is a separate process.",
+  "variants": {
+    "original": {
+      "counts": {
+        "create-buffer": 41,
+        "allocation": 41,
+        "bind-memory": 41,
+        "copy": 3596,
+        "wait-fence": 200,
+        "destroy-buffer": 40,
+        "free-memory": 40
+      },
+      "allocations": [
+        {
+          "bytes": 16,
+          "type": 2,
+          "count": 4
+        },
+        {
+          "bytes": 48,
+          "type": 2,
+          "count": 4
+        },
+        {
+          "bytes": 192,
+          "type": 2,
+          "count": 8
+        },
+        {
+          "bytes": 192,
+          "type": 5,
+          "count": 4
+        },
+        {
+          "bytes": 480,
+          "type": 2,
+          "count": 20
+        },
+        {
+          "bytes": 65536,
+          "type": 2,
+          "count": 1
+        }
+      ],
+      "copySizes": {
+        "40": 1796,
+        "16": 1796,
+        "192": 4
+      },
+      "maximumObservedBufferBytes": 65536,
+      "oracleAndReplayPassed": true,
+      "maximumStorageCapableBufferBytes": 480
+    },
+    "selection": {
+      "counts": {
+        "create-buffer": 41,
+        "allocation": 41,
+        "bind-memory": 41,
+        "copy": 3596,
+        "wait-fence": 200,
+        "destroy-buffer": 40,
+        "free-memory": 40
+      },
+      "allocations": [
+        {
+          "bytes": 16,
+          "type": 3,
+          "count": 4
+        },
+        {
+          "bytes": 48,
+          "type": 3,
+          "count": 4
+        },
+        {
+          "bytes": 192,
+          "type": 3,
+          "count": 8
+        },
+        {
+          "bytes": 192,
+          "type": 5,
+          "count": 4
+        },
+        {
+          "bytes": 480,
+          "type": 3,
+          "count": 20
+        },
+        {
+          "bytes": 65536,
+          "type": 2,
+          "count": 1
+        }
+      ],
+      "copySizes": {
+        "40": 1796,
+        "16": 1796,
+        "192": 4
+      },
+      "maximumObservedBufferBytes": 65536,
+      "oracleAndReplayPassed": true,
+      "maximumStorageCapableBufferBytes": 480
+    },
+    "avoidance": {
+      "counts": {
+        "create-buffer": 41,
+        "allocation": 41,
+        "bind-memory": 41,
+        "copy": 3596,
+        "wait-fence": 200,
+        "destroy-buffer": 40,
+        "free-memory": 40
+      },
+      "allocations": [
+        {
+          "bytes": 16,
+          "type": 2,
+          "count": 4
+        },
+        {
+          "bytes": 48,
+          "type": 2,
+          "count": 4
+        },
+        {
+          "bytes": 192,
+          "type": 2,
+          "count": 8
+        },
+        {
+          "bytes": 192,
+          "type": 5,
+          "count": 4
+        },
+        {
+          "bytes": 480,
+          "type": 2,
+          "count": 20
+        },
+        {
+          "bytes": 65536,
+          "type": 2,
+          "count": 1
+        }
+      ],
+      "copySizes": {
+        "40": 1796,
+        "16": 1796,
+        "192": 4
+      },
+      "maximumObservedBufferBytes": 65536,
+      "oracleAndReplayPassed": true,
+      "maximumStorageCapableBufferBytes": 480
+    },
+    "both": {
+      "counts": {
+        "create-buffer": 41,
+        "allocation": 41,
+        "bind-memory": 41,
+        "copy": 3596,
+        "wait-fence": 200,
+        "destroy-buffer": 40,
+        "free-memory": 40
+      },
+      "allocations": [
+        {
+          "bytes": 16,
+          "type": 3,
+          "count": 4
+        },
+        {
+          "bytes": 48,
+          "type": 3,
+          "count": 4
+        },
+        {
+          "bytes": 192,
+          "type": 3,
+          "count": 8
+        },
+        {
+          "bytes": 192,
+          "type": 5,
+          "count": 4
+        },
+        {
+          "bytes": 480,
+          "type": 3,
+          "count": 20
+        },
+        {
+          "bytes": 65536,
+          "type": 2,
+          "count": 1
+        }
+      ],
+      "copySizes": {
+        "40": 1796,
+        "16": 1796,
+        "192": 4
+      },
+      "maximumObservedBufferBytes": 65536,
+      "oracleAndReplayPassed": true,
+      "maximumStorageCapableBufferBytes": 480
+    }
+  },
+  "finding": "Observed storage-capable compute buffers are below the existing promotion threshold. The larger transfer-source-only buffer belongs to native upload staging and remains on memory type 2 in every variant. Selection changes compute memory type, but promotion avoidance has no eligible storage buffer here. Selection-only and both have identical allocation/copy/wait counts and memory-type histogram. Compute allocation reuse is ineligible for these storage sizes.",
+  "limitations": [
+    "This diagnostic does not estimate application latency; timings are intercepted.",
+    "One process per variant."
+  ]
+}

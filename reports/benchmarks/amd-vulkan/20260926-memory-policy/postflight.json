@@ -1,0 +1,49 @@
+{
+  "passed": true,
+  "files": [
+    {
+      "path": "/var/tmp/doppler-startup-reuse-20260920/doppler-gpu-0.6.2.tgz",
+      "sha256": "c3166b1a6a480f52dd0661b67b427f6918eb004b015da84d31bbc86ccb57f13c",
+      "passed": true
+    },
+    {
+      "path": "/var/tmp/doppler-startup-reuse-20260920/receipt.json",
+      "sha256": "e222be363e1da2696da04fe865e12dd225ba8cdfadebbb55c58baddbe45d6db5",
+      "passed": true
+    },
+    {
+      "path": "/var/tmp/doppler-startup-reuse-20260920/consumer/package-lock.json",
+      "sha256": "6e64bf95f61e11d64d5a45101bd04bc462c852d21752d4d01edb80b45931b1fa",
+      "passed": true
+    },
+    {
+      "path": "/var/tmp/doppler-release-20260907-restored-02/retained/references/reranker-reference.json",
+      "sha256": "81df00d625d7e8114f82fc4d67f487dde4946b684a809e63376e046a0bc88c4a",
+      "passed": true
+    },
+    {
+      "path": "/var/tmp/doppler-release-20260907-restored-02/retained/node-capsule/distribution/capsule-v3.json",
+      "sha256": "030d8ae7744a54ca7aaddf3464a1e6b19fd8c1ce57ba48d878bb91ac6f56b747",
+      "passed": true
+    },
+    {
+      "path": "/var/tmp/doppler-release-20260907-restored-02/retained/node-capsule/current-open-options.json",
+      "sha256": "ea8e5dfcfc6023851a52c6a27d7f8ac178438425f535dfdb37de636b1f15c758",
+      "passed": true
+    },
+    {
+      "path": "/var/tmp/doppler-release-20260907-restored-02/retained/node-capsule/release-checkpoints.json",
+      "sha256": "4ac865106058b7c4795471ca9555ada3cb9ff05dec7c41461892cdf320371148",
+      "passed": true
+    },
+    {
+      "path": "/home/x/deco/doe/bench/node_modules/webgpu/dist/linux-x64.dawn.node",
+      "sha256": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1",
+      "passed": true
+    }
+  ],
+  "archiveVerifiedInstalledFiles": 1859,
+  "variantLibraryHashesVerified": true,
+  "preservedCompilerAndDriverHashesVerified": true,
+  "source": "b21adb3d0d5bf7ba30ecfffdefe548cb1efa7aec"
+}

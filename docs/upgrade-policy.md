@@ -53,3 +53,17 @@ and contents. Unknown properties retain the existing promotion and copy path.
 This changes ordinary Vulkan allocation policy without changing application,
 shader, public API, or artifact identity contracts. See
 `bench/out/doppler-search/20260925-excess/README.md` for scoped acceptance evidence.
+
+The subsequent policy schema requires `computeBufferCacheMaxBytes`. Older
+policy versions fail at build time. The fixed bound permits retention of
+completed host-visible, coherent, device-local compute allocations through the
+existing Vulkan pool machinery. Retention also observes its per-size capacity;
+unknown properties, pending work, and cache allocation failure retain normal
+allocation or cleanup behavior. Reuse preserves native memory properties and
+mapping, assigns a fresh resource generation, and initializes returned bytes.
+This does not add a runtime ablation switch or change shader semantics.
+
+Writable Vulkan mapping now waits for preceding GPU use, as readable mapping
+already did. Coherence and an available mapping do not establish completion.
+See `reports/benchmarks/amd-vulkan/20260926-memory-policy/README.md` for the
+separated policy evidence, candidate verdict, and lifecycle limitations.

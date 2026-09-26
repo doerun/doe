@@ -1,0 +1,124 @@
+{
+  "classification": "instrumented-local-diagnostic",
+  "query": 2,
+  "scope": "Warmup public rerank; native interposer active; timestamp and CPU observer disabled. Durations include interception effects; nested costs are not additive.",
+  "counts": {
+    "create-buffer": 366,
+    "allocation": 366,
+    "bind-memory": 366,
+    "copy": 36,
+    "wait-fence": 24,
+    "destroy-buffer": 363,
+    "free-memory": 363
+  },
+  "nativeDurationMs": {
+    "create-buffer": 0.09254999999999997,
+    "allocation": 12.334827000000002,
+    "bind-memory": 0.0,
+    "copy": 0.0,
+    "wait-fence": 418.79147,
+    "destroy-buffer": 0.08207899999999997,
+    "free-memory": 4.133434000000002
+  },
+  "allocationBytes": 141557952,
+  "allocationByPurpose": {
+    "residual_output_393216": {
+      "count": 45,
+      "bytes": 17694720,
+      "nativeAllocationMs": 1.4217300000000002
+    },
+    "rmsnorm_output_393216": {
+      "count": 84,
+      "bytes": 33030144,
+      "nativeAllocationMs": 2.966748
+    },
+    "matmul_output_393216": {
+      "count": 168,
+      "bytes": 66060288,
+      "nativeAllocationMs": 5.853580000000002
+    },
+    "fused_prenorm_sum_393216": {
+      "count": 42,
+      "bytes": 16515072,
+      "nativeAllocationMs": 1.291171
+    },
+    "prefill_chunk_carry_393216": {
+      "count": 18,
+      "bytes": 7077888,
+      "nativeAllocationMs": 0.5730080000000001
+    },
+    "prefill_finiteness_carry_393216": {
+      "count": 3,
+      "bytes": 1179648,
+      "nativeAllocationMs": 0.08927800000000001
+    },
+    "rmsnorm_uniforms": {
+      "count": 3,
+      "bytes": 96,
+      "nativeAllocationMs": 0.081443
+    },
+    "lm_head_select_logits_uniforms": {
+      "count": 3,
+      "bytes": 96,
+      "nativeAllocationMs": 0.057869000000000004
+    }
+  },
+  "copiesByPurpose": {
+    "residual_output_393216 -> prefill_chunk_carry_393216": {
+      "count": 18,
+      "bytes": 7077888,
+      "callOffsets": [
+        1078359
+      ]
+    },
+    "residual_output_393216 -> prefill_finiteness_carry_393216": {
+      "count": 3,
+      "bytes": 1179648,
+      "callOffsets": [
+        1078359
+      ]
+    },
+    "native-internal -> staging_read_256": {
+      "count": 3,
+      "bytes": 48,
+      "callOffsets": [
+        1078359
+      ]
+    },
+    "prefill_chunk_carry_393216 -> logits_input_last_4096": {
+      "count": 3,
+      "bytes": 12288,
+      "callOffsets": [
+        1078359
+      ]
+    },
+    "native-internal -> native-internal": {
+      "count": 3,
+      "bytes": 24,
+      "callOffsets": [
+        1626756
+      ]
+    },
+    "native-internal -> lm_head_select_logits_uniforms": {
+      "count": 3,
+      "bytes": 96,
+      "callOffsets": [
+        1626756
+      ]
+    },
+    "lm_head_select_logits_output_256 -> staging_read_256": {
+      "count": 3,
+      "bytes": 24,
+      "callOffsets": [
+        1078359
+      ]
+    }
+  },
+  "createBufferCalls": 702,
+  "createBufferTotalMs": 33.834642000212625,
+  "limitations": [
+    "Fence waits include preceding compute work, not isolated copy latency.",
+    "Handle identity map tracks destruction/recreation; reused native allocation labels reflect initial allocation purpose.",
+    "No device-residency measurement."
+  ]
+}

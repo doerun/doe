@@ -1,0 +1,10 @@
+{
+  "scope": "Sum of observed successful Vulkan vkAllocateMemory allocation sizes minus vkFreeMemory, in one interposed process. Not device residency or RSS; excludes allocations outside the interposed API.",
+  "warmQuery": 2,
+  "liveBytesBefore": 1484806864,
+  "liveBytesAfter": 1484806960,
+  "peakLiveBytesDuringQuery": 1491884816,
+  "peakLiveBytesWholeInstrumentedProcess": 1493408816,
+  "liveBytesAtEnd": 184246880,
+  "remainingObservedAllocationCount": 128
+}

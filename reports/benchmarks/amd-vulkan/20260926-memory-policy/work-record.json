@@ -1,0 +1,67 @@
+{
+  "classification": "local-diagnostic",
+  "retainedCandidate": "77fdc716efd2934e61c21f4c77861ee5164eb55c",
+  "testedSource": "b21adb3d0d5bf7ba30ecfffdefe548cb1efa7aec",
+  "mandatoryGuidanceRead": [
+    "GOALS.md",
+    "CATSCAN.md",
+    "docs/thesis.md",
+    "docs/architecture.md",
+    "docs/process.md",
+    "docs/status.md",
+    "docs/upgrade-policy.md",
+    "docs/licensing.md",
+    "pipeline/agent/README.md",
+    "pipeline/lean/README.md",
+    "runtime/zig/README.md",
+    "runtime/zig/STYLE.md",
+    "bench/README.md",
+    "pipeline/trace/README.md",
+    "SKILLS.md",
+    "docs/performance-strategy.md",
+    "applicable runtime, config, bench, docs/status and reports charters",
+    "bench/STYLE.md",
+    "config/STYLE.md"
+  ],
+  "skill": "skills/doe-debug/SKILL.md",
+  "inspected": [
+    "vk_resources buffer creation, storage promotion, mapped updates, capture, destruction",
+    "vk_upload pending work and completion draining, pool reuse and release",
+    "native buffer write/read mapping and destruction",
+    "native runtime initialization and teardown",
+    "memory selection preferred and required properties",
+    "current original pass/dispatch sequence and native allocation/copy calls"
+  ],
+  "changed": [
+    "temporary source ablations outside accepted binary paths",
+    "bounded completed compute-buffer pool reuse",
+    "write-map completion correctness",
+    "fixed retention bound in versioned policy/schema",
+    "focused regression in existing unit/native fixture surfaces"
+  ],
+  "executed": [
+    "isolated ablation and reuse builds",
+    "aggregate Zig tests and source-layout/import gates",
+    "schema gate",
+    "physical allocation/fault/cache lifecycle probes with explicit interposer preloading",
+    "before/after write-map native fixture",
+    "factorial Qwen and UMAP, same-binary controls",
+    "native calls and original dispatch-sequence observation",
+    "fresh instrument-free Qwen confirmation and unchanged UMAP confirmation; see execution logs for completion"
+  ],
+  "skipped": [
+    "release qualification and claim-index promotion",
+    "broad Zig audit/refactor",
+    "Metal, D3D12 and prepared execution",
+    "new measurement framework",
+    "second additional optimization",
+    "shader scalarization and synchronization tracker",
+    "Vulkan validation-layer execution: Khronos layer unavailable",
+    "device-loss/unknown-completion destruction qualification"
+  ],
+  "limitations": [
+    "Existing flush-before-destroy and runtime teardown may continue after a queue-flush error; this pre-existing path remains outside successful-completion coverage.",
+    "Process boundary monitoring does not observe every transient GPU client.",
+    "Driver-managed memory residency was not measured."
+  ]
+}

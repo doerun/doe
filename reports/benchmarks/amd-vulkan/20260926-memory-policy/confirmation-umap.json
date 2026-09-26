@@ -1,0 +1,905 @@
+{
+  "policy": {
+    "classification": "local-diagnostic",
+    "order": [
+      "both_a",
+      "both_b",
+      "both",
+      "reuse",
+      "reuse",
+      "both",
+      "both",
+      "reuse",
+      "reuse",
+      "both",
+      "both",
+      "reuse",
+      "reuse",
+      "both",
+      "both_b",
+      "both_a"
+    ],
+    "independentInvocationsPerVariant": 6,
+    "unchangedControlLabels": {
+      "both_a": "both",
+      "both_b": "both"
+    },
+    "warmupRuns": 1,
+    "timedRunsPerProcess": 3,
+    "harness": "bench/external-projects/umap-gpu/run-sgd-benchmark.mjs",
+    "invocationBoundary": "GPUSgd.init through 500 epochs, completion and readback; unchanged existing harness",
+    "selection": "Fixed order before execution; retain all admitted samples"
+  },
+  "classification": "local-diagnostic-not-release-claim",
+  "workload": "pinned-upstream-umap-sgd",
+  "checks": {
+    "oraclePassed": true,
+    "exactProviderReplayPassed": true,
+    "unchangedDoeOutputAcrossCandidate": true,
+    "inputAndDispatchShapeMatch": true,
+    "gpuActivityAdmitted": true
+  },
+  "dispatchShape": {
+    "edgeCount": 120,
+    "embeddingElementCount": 48,
+    "epochs": 500,
+    "sgdWorkgroupsPerEpoch": 1,
+    "applyWorkgroupsPerEpoch": 1,
+    "totalDispatches": 1000
+  },
+  "immutableInputs": {
+    "inputs": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.inputs.json",
+      "sha256": "2d453439b8f597fd38d4dddd4e88b4b5de83fa0d18ab4dd68767d674e9184b39"
+    },
+    "oracle": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.oracle.md",
+      "sha256": "7f4937e8fd86fae2a167e80e7d9a6abb52e98cba96f064c7a177ce92d290b552"
+    },
+    "workload": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.workload.test.ts",
+      "sha256": "1f390ee77b6d6a5332d42c4e29ad250f0f9216edaf0634c6bf18b9ac23034e69"
+    },
+    "config": {
+      "path": "bench/external-projects/umap-gpu/vitest-sgd-benchmark.config.mjs",
+      "sha256": "26a3ea47d403f261eba4eebe63355417b32e22c8c033f8a1fe3b3eb4403d2bff"
+    },
+    "runner": {
+      "path": "bench/external-projects/umap-gpu/run-sgd-benchmark.mjs",
+      "sha256": "62d21914ad1495ee50d33bcc0a829be02184a4acdaca2d948089d8cdc0f28798"
+    },
+    "sgdImplementation": {
+      "path": "src/gpu/sgd.ts",
+      "sha256": "1cfa4b71c6f734450f9b8d810a6afb19e3ffb53f1ed2bce7bb018660dfdc2a63"
+    },
+    "sgdShader": {
+      "path": "src/gpu/shaders/sgd.wgsl",
+      "sha256": "3af8e076009f75b17dec45898e026db8f413f76d9992f00619583077a338485d"
+    },
+    "applyForcesShader": {
+      "path": "src/gpu/shaders/apply-forces.wgsl",
+      "sha256": "47e8ca3495ea67f3266b0365860f8eccae9b165c175231cf8c0559ffdc13b272"
+    },
+    "packageLock": {
+      "path": "package-lock.json",
+      "sha256": "b59a0b82e8430962d8a5229d2e04d7c440efa4fbd59bc7ba92e5cc357e65fb91"
+    }
+  },
+  "results": {
+    "both": {
+      "count": 18,
+      "mean": 15.427994777777778,
+      "min": 13.188559999999995,
+      "max": 21.18409200000002,
+      "median": 14.989964999999984,
+      "p95": 21.18409200000002,
+      "p99": 21.18409200000002
+    },
+    "reuse": {
+      "count": 18,
+      "mean": 15.409582333333333,
+      "min": 13.615465000000029,
+      "max": 18.83301,
+      "median": 15.117736000000036,
+      "p95": 18.83301,
+      "p99": 18.83301
+    },
+    "both_a": {
+      "count": 6,
+      "mean": 17.122963166666654,
+      "min": 14.273695999999973,
+      "max": 20.411044000000004,
+      "median": 15.597420999999997,
+      "p95": 20.411044000000004,
+      "p99": 20.411044000000004
+    },
+    "both_b": {
+      "count": 6,
+      "mean": 17.020567166666655,
+      "min": 14.466338999999948,
+      "max": 19.740931999999987,
+      "median": 16.076594,
+      "p95": 19.740931999999987,
+      "p99": 19.740931999999987
+    }
+  },
+  "rows": [
+    {
+      "index": 0,
+      "variant": "both_a",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-0-both_a/raw-benchmark.json",
+      "librarySha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.522992000000006,
+            "min": 13.503923999999984,
+            "max": 21.79285900000002,
+            "median": 14.272193000000016,
+            "p95": 21.79285900000002,
+            "p99": 21.79285900000002
+          },
+          "samplesMs": [
+            14.272193000000016,
+            13.503923999999984,
+            21.79285900000002
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 293896192
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.705357333333325,
+            "min": 14.273695999999973,
+            "max": 20.411044000000004,
+            "median": 18.431331999999998,
+            "p95": 20.411044000000004,
+            "p99": 20.411044000000004
+          },
+          "samplesMs": [
+            20.411044000000004,
+            18.431331999999998,
+            14.273695999999973
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 326643712
+        }
+      }
+    },
+    {
+      "index": 1,
+      "variant": "both_b",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-1-both_b/raw-benchmark.json",
+      "librarySha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.266769333333343,
+            "min": 12.918601000000024,
+            "max": 22.238650000000007,
+            "median": 13.643056999999999,
+            "p95": 22.238650000000007,
+            "p99": 22.238650000000007
+          },
+          "samplesMs": [
+            13.643056999999999,
+            12.918601000000024,
+            22.238650000000007
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 293937152
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.072304666666659,
+            "min": 14.466338999999948,
+            "max": 16.076594,
+            "median": 14.673981000000026,
+            "p95": 16.076594,
+            "p99": 16.076594
+          },
+          "samplesMs": [
+            14.466338999999948,
+            16.076594,
+            14.673981000000026
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 335335424
+        }
+      }
+    },
+    {
+      "index": 2,
+      "variant": "both",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-2-both/raw-benchmark.json",
+      "librarySha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 18.018541333333342,
+            "min": 16.14943100000005,
+            "max": 21.406701999999996,
+            "median": 16.499490999999978,
+            "p95": 21.406701999999996,
+            "p99": 21.406701999999996
+          },
+          "samplesMs": [
+            21.406701999999996,
+            16.499490999999978,
+            16.14943100000005
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 290574336
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.088585000000004,
+            "min": 14.555336999999952,
+            "max": 15.390260000000012,
+            "median": 15.320158000000049,
+            "p95": 15.390260000000012,
+            "p99": 15.390260000000012
+          },
+          "samplesMs": [
+            15.390260000000012,
+            15.320158000000049,
+            14.555336999999952
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327172096
+        }
+      }
+    },
+    {
+      "index": 3,
+      "variant": "reuse",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-3-reuse/raw-benchmark.json",
+      "librarySha256": "22b521f827c6c97b54334c534b1dfa817ec57e1c7c4a089ce67bd9df605912ed",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.307661000000014,
+            "min": 14.04924200000005,
+            "max": 20.400383999999974,
+            "median": 17.47335700000002,
+            "p95": 20.400383999999974,
+            "p99": 20.400383999999974
+          },
+          "samplesMs": [
+            17.47335700000002,
+            14.04924200000005,
+            20.400383999999974
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296542208
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.54521566666667,
+            "min": 15.187558000000024,
+            "max": 15.744227999999964,
+            "median": 15.703861000000018,
+            "p95": 15.744227999999964,
+            "p99": 15.744227999999964
+          },
+          "samplesMs": [
+            15.744227999999964,
+            15.703861000000018,
+            15.187558000000024
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 326852608
+        }
+      }
+    },
+    {
+      "index": 4,
+      "variant": "reuse",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-4-reuse/raw-benchmark.json",
+      "librarySha256": "22b521f827c6c97b54334c534b1dfa817ec57e1c7c4a089ce67bd9df605912ed",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.983198333333329,
+            "min": 14.384343999999999,
+            "max": 18.918622000000028,
+            "median": 14.646628999999962,
+            "p95": 18.918622000000028,
+            "p99": 18.918622000000028
+          },
+          "samplesMs": [
+            14.384343999999999,
+            14.646628999999962,
+            18.918622000000028
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296136704
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.48388166666666,
+            "min": 14.966170999999974,
+            "max": 18.83301,
+            "median": 15.652464000000009,
+            "p95": 18.83301,
+            "p99": 18.83301
+          },
+          "samplesMs": [
+            18.83301,
+            14.966170999999974,
+            15.652464000000009
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 334217216
+        }
+      }
+    },
+    {
+      "index": 5,
+      "variant": "both",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-5-both/raw-benchmark.json",
+      "librarySha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.908526999999992,
+            "min": 13.35904099999999,
+            "max": 19.356667000000016,
+            "median": 15.00987299999997,
+            "p95": 19.356667000000016,
+            "p99": 19.356667000000016
+          },
+          "samplesMs": [
+            15.00987299999997,
+            13.35904099999999,
+            19.356667000000016
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 293478400
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.118848666666642,
+            "min": 13.86091799999997,
+            "max": 16.50566299999997,
+            "median": 14.989964999999984,
+            "p95": 16.50566299999997,
+            "p99": 16.50566299999997
+          },
+          "samplesMs": [
+            13.86091799999997,
+            16.50566299999997,
+            14.989964999999984
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327274496
+        }
+      }
+    },
+    {
+      "index": 6,
+      "variant": "both",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-6-both/raw-benchmark.json",
+      "librarySha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 19.636674666666654,
+            "min": 17.406530999999973,
+            "max": 24.092083000000002,
+            "median": 17.41140999999999,
+            "p95": 24.092083000000002,
+            "p99": 24.092083000000002
+          },
+          "samplesMs": [
+            17.41140999999999,
+            17.406530999999973,
+            24.092083000000002
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296161280
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.786983000000001,
+            "min": 14.211708999999985,
+            "max": 15.700785000000053,
+            "median": 14.448454999999967,
+            "p95": 15.700785000000053,
+            "p99": 15.700785000000053
+          },
+          "samplesMs": [
+            15.700785000000053,
+            14.448454999999967,
+            14.211708999999985
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327581696
+        }
+      }
+    },
+    {
+      "index": 7,
+      "variant": "reuse",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-7-reuse/raw-benchmark.json",
+      "librarySha256": "22b521f827c6c97b54334c534b1dfa817ec57e1c7c4a089ce67bd9df605912ed",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.444510999999997,
+            "min": 13.01428199999998,
+            "max": 16.907489999999996,
+            "median": 13.411761000000013,
+            "p95": 16.907489999999996,
+            "p99": 16.907489999999996
+          },
+          "samplesMs": [
+            13.411761000000013,
+            13.01428199999998,
+            16.907489999999996
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296308736
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.416514999999984,
+            "min": 13.615465000000029,
+            "max": 14.911978999999974,
+            "median": 14.722100999999952,
+            "p95": 14.911978999999974,
+            "p99": 14.911978999999974
+          },
+          "samplesMs": [
+            14.722100999999952,
+            14.911978999999974,
+            13.615465000000029
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 332554240
+        }
+      }
+    },
+    {
+      "index": 8,
+      "variant": "reuse",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-8-reuse/raw-benchmark.json",
+      "librarySha256": "22b521f827c6c97b54334c534b1dfa817ec57e1c7c4a089ce67bd9df605912ed",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.806872666666646,
+            "min": 15.43330199999997,
+            "max": 19.60235,
+            "median": 18.384965999999963,
+            "p95": 19.60235,
+            "p99": 19.60235
+          },
+          "samplesMs": [
+            18.384965999999963,
+            15.43330199999997,
+            19.60235
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295936000
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.37695366666666,
+            "min": 15.067221999999958,
+            "max": 17.33876300000003,
+            "median": 16.724875999999995,
+            "p95": 17.33876300000003,
+            "p99": 17.33876300000003
+          },
+          "samplesMs": [
+            17.33876300000003,
+            16.724875999999995,
+            15.067221999999958
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 331788288
+        }
+      }
+    },
+    {
+      "index": 9,
+      "variant": "both",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-9-both/raw-benchmark.json",
+      "librarySha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 19.470128000000006,
+            "min": 17.960015,
+            "max": 21.205061,
+            "median": 19.245308000000023,
+            "p95": 21.205061,
+            "p99": 21.205061
+          },
+          "samplesMs": [
+            19.245308000000023,
+            17.960015,
+            21.205061
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 293347328
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 18.069497333333363,
+            "min": 14.442684000000042,
+            "max": 21.18409200000002,
+            "median": 18.58171600000003,
+            "p95": 21.18409200000002,
+            "p99": 21.18409200000002
+          },
+          "samplesMs": [
+            21.18409200000002,
+            18.58171600000003,
+            14.442684000000042
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 326770688
+        }
+      }
+    },
+    {
+      "index": 10,
+      "variant": "both",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-10-both/raw-benchmark.json",
+      "librarySha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.535701666666645,
+            "min": 13.757352999999966,
+            "max": 18.04459399999996,
+            "median": 14.805158000000006,
+            "p95": 18.04459399999996,
+            "p99": 18.04459399999996
+          },
+          "samplesMs": [
+            14.805158000000006,
+            13.757352999999966,
+            18.04459399999996
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 294154240
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 13.94685933333333,
+            "min": 13.188559999999995,
+            "max": 15.077841000000035,
+            "median": 13.574176999999963,
+            "p95": 15.077841000000035,
+            "p99": 15.077841000000035
+          },
+          "samplesMs": [
+            15.077841000000035,
+            13.574176999999963,
+            13.188559999999995
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 333451264
+        }
+      }
+    },
+    {
+      "index": 11,
+      "variant": "reuse",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-11-reuse/raw-benchmark.json",
+      "librarySha256": "22b521f827c6c97b54334c534b1dfa817ec57e1c7c4a089ce67bd9df605912ed",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.488385666666678,
+            "min": 14.171943999999996,
+            "max": 18.028834000000018,
+            "median": 14.26437900000002,
+            "p95": 18.028834000000018,
+            "p99": 18.028834000000018
+          },
+          "samplesMs": [
+            14.171943999999996,
+            14.26437900000002,
+            18.028834000000018
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 293490688
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.750057000000007,
+            "min": 14.07146499999999,
+            "max": 15.331109000000026,
+            "median": 14.847597000000007,
+            "p95": 15.331109000000026,
+            "p99": 15.331109000000026
+          },
+          "samplesMs": [
+            15.331109000000026,
+            14.847597000000007,
+            14.07146499999999
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 335462400
+        }
+      }
+    },
+    {
+      "index": 12,
+      "variant": "reuse",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-12-reuse/raw-benchmark.json",
+      "librarySha256": "22b521f827c6c97b54334c534b1dfa817ec57e1c7c4a089ce67bd9df605912ed",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.193452666666664,
+            "min": 13.412742999999978,
+            "max": 18.082294999999988,
+            "median": 14.085320000000024,
+            "p95": 18.082294999999988,
+            "p99": 18.082294999999988
+          },
+          "samplesMs": [
+            13.412742999999978,
+            14.085320000000024,
+            18.082294999999988
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295391232
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.884871000000013,
+            "min": 13.850236999999993,
+            "max": 15.686640000000011,
+            "median": 15.117736000000036,
+            "p95": 15.686640000000011,
+            "p99": 15.686640000000011
+          },
+          "samplesMs": [
+            15.117736000000036,
+            15.686640000000011,
+            13.850236999999993
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 329244672
+        }
+      }
+    },
+    {
+      "index": 13,
+      "variant": "both",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-13-both/raw-benchmark.json",
+      "librarySha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.641104999999982,
+            "min": 13.901413999999988,
+            "max": 21.74439799999999,
+            "median": 14.277502999999967,
+            "p95": 21.74439799999999,
+            "p99": 21.74439799999999
+          },
+          "samplesMs": [
+            14.277502999999967,
+            13.901413999999988,
+            21.74439799999999
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 292687872
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.55719533333333,
+            "min": 14.273907000000008,
+            "max": 16.218080999999984,
+            "median": 16.179598,
+            "p95": 16.218080999999984,
+            "p99": 16.218080999999984
+          },
+          "samplesMs": [
+            16.218080999999984,
+            16.179598,
+            14.273907000000008
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 328200192
+        }
+      }
+    },
+    {
+      "index": 14,
+      "variant": "both_b",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-14-both_b/raw-benchmark.json",
+      "librarySha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.017776666666663,
+            "min": 14.875060000000019,
+            "max": 18.24721599999998,
+            "median": 14.931053999999989,
+            "p95": 18.24721599999998,
+            "p99": 18.24721599999998
+          },
+          "samplesMs": [
+            14.931053999999989,
+            14.875060000000019,
+            18.24721599999998
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295993344
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 18.968829666666654,
+            "min": 18.022603000000004,
+            "max": 19.740931999999987,
+            "median": 19.142953999999975,
+            "p95": 19.740931999999987,
+            "p99": 19.740931999999987
+          },
+          "samplesMs": [
+            19.142953999999975,
+            19.740931999999987,
+            18.022603000000004
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 325816320
+        }
+      }
+    },
+    {
+      "index": 15,
+      "variant": "both_a",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-reuse-15-both_a/raw-benchmark.json",
+      "librarySha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 19.803706333333366,
+            "min": 17.136762000000033,
+            "max": 23.36570400000005,
+            "median": 18.908653000000015,
+            "p95": 23.36570400000005,
+            "p99": 23.36570400000005
+          },
+          "samplesMs": [
+            18.908653000000015,
+            17.136762000000033,
+            23.36570400000005
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296407040
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.540568999999987,
+            "min": 15.43494499999997,
+            "max": 18.58934099999999,
+            "median": 15.597420999999997,
+            "p95": 18.58934099999999,
+            "p99": 18.58934099999999
+          },
+          "samplesMs": [
+            18.58934099999999,
+            15.43494499999997,
+            15.597420999999997
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 333430784
+        }
+      }
+    }
+  ],
+  "candidateOverBaselineMedian": 1.0085237690681768,
+  "candidateOverBaselineP95": 0.8890166262495454,
+  "conclusion": "Reuse preserves correctness and exact replay. Median is slightly higher, mean essentially unchanged and p95 lower; unchanged controls vary. No UMAP speed advantage or equivalence established.",
+  "limitations": [
+    "Six main fresh processes per factorial variant with three timed samples each; unchanged controls and exact replay are separate.",
+    "The upstream harness polls process-tree RSS for both providers; this is its existing diagnostic method.",
+    "This small-buffer fixture does not establish application-scale performance or generality.",
+    "The runner prose has a fixed three-process limitation; actual process counts are recorded in contract and lane rows."
+  ]
+}

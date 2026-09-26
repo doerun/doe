@@ -1,0 +1,22 @@
+{
+  "bench/out/doppler-search/20260925-excess/baseline-native/lib/libwebgpu_doe.so": {
+    "realPath": "/home/x/deco/doe/bench/out/doppler-search/20260925-excess/baseline-native/lib/libwebgpu_doe.so",
+    "sha256": "ae9b8609784deabe991db903263ed063e5d3bcb1f1edbd600fbf5d565a43a1d7"
+  },
+  "bench/out/doppler-search/20260925-excess/candidate-native/lib/libwebgpu_doe.so": {
+    "realPath": "/home/x/deco/doe/bench/out/doppler-search/20260925-excess/candidate-native/lib/libwebgpu_doe.so",
+    "sha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4"
+  },
+  "/usr/lib/x86_64-linux-gnu/libvulkan_radeon.so": {
+    "realPath": "/usr/lib/x86_64-linux-gnu/libvulkan_radeon.so",
+    "sha256": "0949baaa43f5ea34fc785f28f31863ca5ea4949478fae96b37c37675a489f830"
+  },
+  "/usr/bin/node": {
+    "realPath": "/usr/bin/node",
+    "sha256": "d0efb6fcb9d023ba4e2b160ec2384dc28fe4f17732141ef47f676828fa960505"
+  },
+  "/home/x/.local/bin/zig": {
+    "realPath": "/home/x/.local/zig/zig-x86_64-linux-0.15.2/zig",
+    "sha256": "2858dc89dbbfdd08cceda1b841e7fd0a793a1a67b49f150bc3d0d1de44ed7f51"
+  }
+}

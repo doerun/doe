@@ -1,0 +1,435 @@
+diff --git a/config/vulkan-buffer-memory-policy.json b/config/vulkan-buffer-memory-policy.json
+index a23abb507..afafebf1e 100644
+--- a/config/vulkan-buffer-memory-policy.json
++++ b/config/vulkan-buffer-memory-policy.json
+@@ -1,5 +1,5 @@
+ {
+-  "schemaVersion": 2,
++  "schemaVersion": 3,
+   "readbackRequiredProperties": [
+     "host-visible",
+     "host-coherent"
+@@ -10,5 +10,6 @@
+   "unavailablePreference": "use-required-properties",
+   "hostVisiblePreferredProperties": [
+     "device-local"
+-  ]
++  ],
++  "computeBufferCacheMaxBytes": 67108864
+ }
+diff --git a/config/vulkan-buffer-memory-policy.schema.json b/config/vulkan-buffer-memory-policy.schema.json
+index 580db9a84..acac6a60d 100644
+--- a/config/vulkan-buffer-memory-policy.schema.json
++++ b/config/vulkan-buffer-memory-policy.schema.json
+@@ -8,11 +8,12 @@
+     "readbackRequiredProperties",
+     "readbackPreferredProperties",
+     "unavailablePreference",
+-    "hostVisiblePreferredProperties"
++    "hostVisiblePreferredProperties",
++    "computeBufferCacheMaxBytes"
+   ],
+   "properties": {
+     "schemaVersion": {
+-      "const": 2
++      "const": 3
+     },
+     "readbackRequiredProperties": {
+       "const": [
+@@ -32,6 +33,9 @@
+       "const": [
+         "device-local"
+       ]
++    },
++    "computeBufferCacheMaxBytes": {
++      "const": 67108864
+     }
+   }
+ }
+diff --git a/runtime/zig/build.zig b/runtime/zig/build.zig
+index 487751e60..aa6ac80e6 100644
+--- a/runtime/zig/build.zig
++++ b/runtime/zig/build.zig
+@@ -401,11 +401,13 @@ fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.me
+         readbackRequiredProperties: []Property,
+         readbackPreferredProperties: []Property,
+         hostVisiblePreferredProperties: []Property,
++        computeBufferCacheMaxBytes: u64,
+         unavailablePreference: enum { @"use-required-properties" },
+     };
+     const memory = std.json.parseFromSlice(MemoryPolicy, allocator, memory_bytes, .{}) catch
+         @panic("invalid Vulkan buffer memory policy");
+-    if (memory.value.schemaVersion != 2) @panic("unsupported Vulkan buffer memory policy version");
++    if (memory.value.schemaVersion != 3) @panic("unsupported Vulkan buffer memory policy version");
++    if (memory.value.computeBufferCacheMaxBytes == 0) @panic("Vulkan compute buffer cache requires a positive byte bound");
+     const vk = @import("src/backend/vulkan/vk_constants.zig");
+     var flags: [3]u32 = .{ 0, 0, 0 };
+     for ([_][]Property{ memory.value.readbackRequiredProperties, memory.value.readbackPreferredProperties, memory.value.hostVisiblePreferredProperties }, 0..) |properties, index| {
+@@ -421,6 +423,7 @@ fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.me
+     options.addOption(u32, "vulkan_readback_required_properties", flags[0]);
+     options.addOption(u32, "vulkan_readback_preferred_properties", flags[1]);
+     options.addOption(u32, "vulkan_host_visible_preferred_properties", flags[2]);
++    options.addOption(u64, "vulkan_compute_buffer_cache_max_bytes", memory.value.computeBufferCacheMaxBytes);
+     const timestamp_file = std.fs.cwd().openFile("../../config/vulkan-timestamp-policy.json", .{}) catch
+         @panic("config/vulkan-timestamp-policy.json not found");
+     defer timestamp_file.close();
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 8ffec8054..767d3ee7c 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -1228,7 +1228,7 @@
+       },
+       "src/backend/vulkan/native_runtime.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "3b910a221dc0136eb64dd098c1b73e50b802868eadcf46a15fbdc17d4b796b88",
++        "moduleSha256": "d9e6fc4e3de6cf9aa9f815daf1832583dcc901638e29e2949171be4deafafcbd",
+         "reason": "Keep: Runtime assembly delegates native submission bookkeeping and calibrated timestamp arithmetic to existing owners.",
+         "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+@@ -1360,7 +1360,7 @@
+       },
+       "src/backend/vulkan/vk_resources.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "16cf8b0fd51ca1a416e788778f8d57e0d10413eef02152e870383bfdb8c154ca",
++        "moduleSha256": "3ed00606ccf4d301682ce91d480940ed6ea2eb2ad01ffb5622d84ccac2ea3460",
+         "reason": "Keep: shared native buffer allocation includes the vertex/index usages consumed by rendering and preserves them through storage promotion.",
+         "reviewer": "codex-render-validation/2026-09-07"
+       },
+@@ -1414,7 +1414,7 @@
+       },
+       "src/backend/vulkan/vk_upload.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "fc00c723fdd22ed73519d1519f6446640d7ed39bbd07628e395eb45e4faeae30",
++        "moduleSha256": "c17a95c97e730ae2e08bed99aae95beec4fa5e7e01ba96c3eff09faeb3509fdd",
+         "reason": "Keep: upload allocation, pooling and recording share the existing owner; native acquisition unwinds transactionally and size-bucket reuse requires compatible usage flags. Completion and aggregate retention findings remain open.",
+         "reviewer": "codex-vulkan-upload-audit/2026-09-23"
+       },
+@@ -3652,7 +3652,7 @@
+       },
+       "src/native/resource/doe_buffer_ops_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "909d6f77ce20aa6c8851c06f513e04a063fde884cf6f521697943516e4af4418",
++        "moduleSha256": "da8d02e7945eeba896c698eb41e407186e73d011433c04ca0bf697920fea9a87",
+         "reason": "Keep: explicit resource ownership and prepared execution preserve ordinary provider semantics; validated by program and queue-ordering regressions.",
+         "reviewer": "codex-resource-lifetime/2026-09-06"
+       },
+@@ -4210,7 +4210,7 @@
+       },
+       "src/backend/vulkan/vk_memory_policy.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "9cde310c19793affda7751e5b174d6884e4b7620c3704c0a0b3eecefb07f843c",
++        "moduleSha256": "84ac6a8d9f85f5d64f2860641c043f8ea72e32b436ac0850361caa6483d90220",
+         "reason": "Keep: deterministic Vulkan memory-type selection owns required flags, ranked preferences, explicit fallback, and selection tests.",
+         "reviewer": "codex-compute-program/2026-09-05"
+       },
+diff --git a/runtime/zig/src/backend/vulkan/native_runtime.zig b/runtime/zig/src/backend/vulkan/native_runtime.zig
+index e2224feda..3c1aff15b 100644
+--- a/runtime/zig/src/backend/vulkan/native_runtime.zig
++++ b/runtime/zig/src/backend/vulkan/native_runtime.zig
+@@ -136,6 +136,8 @@ pub const NativeVulkanRuntime = struct {
+     hot_dst_pool_size: u64 = 0,
+     next_native_resource_generation: u64 = 1,
+     compute_buffers: std.AutoHashMapUnmanaged(u64, vk_resources.ComputeBuffer) = .{},
++    compute_buffer_pool: vk_upload.VkPool = .{},
++    compute_buffer_pool_bytes: u64 = 0,
+     /// Stable buffer identity used by descriptor and hazard caches. Object
+     /// addresses are allocator-reusable and must not serve as resource IDs.
+     next_buffer_resource_handle: u64 = 1,
+@@ -257,6 +259,8 @@ pub const NativeVulkanRuntime = struct {
+         self.shared_pipelines.deinit(self.allocator);
+         vk_pipeline.destroy_descriptor_state(self);
+         vk_resources.release_compute_buffers(self);
++        vk_upload.vk_release_pool(&self.compute_buffer_pool, self.allocator, self.device);
++        self.compute_buffer_pool_bytes = 0;
+         vk_resources.release_textures(self);
+         vk_resources.release_samplers(self);
+         if (self.has_timeline_semaphore) {
+diff --git a/runtime/zig/src/backend/vulkan/vk_memory_policy.zig b/runtime/zig/src/backend/vulkan/vk_memory_policy.zig
+index 81262e478..ff0455fb7 100644
+--- a/runtime/zig/src/backend/vulkan/vk_memory_policy.zig
++++ b/runtime/zig/src/backend/vulkan/vk_memory_policy.zig
+@@ -3,6 +3,7 @@ const c = @import("vk_constants.zig");
+ const options = @import("build_options");
+ 
+ pub const host_visible_preferred_properties = options.vulkan_host_visible_preferred_properties;
++pub const compute_buffer_cache_max_bytes = options.vulkan_compute_buffer_cache_max_bytes;
+ 
+ pub const readback_required_properties = options.vulkan_readback_required_properties;
+ pub const readback_preferred_properties = options.vulkan_readback_preferred_properties;
+diff --git a/runtime/zig/src/backend/vulkan/vk_resources.zig b/runtime/zig/src/backend/vulkan/vk_resources.zig
+index 65b340313..25cc98783 100644
+--- a/runtime/zig/src/backend/vulkan/vk_resources.zig
++++ b/runtime/zig/src/backend/vulkan/vk_resources.zig
+@@ -28,6 +28,10 @@ pub const DEFAULT_RUNTIME_TEXTURE_USAGE: model_gpu_types.WGPUFlags = model_gpu_t
+ pub const REQUIRED_TEXTURE_UPLOAD_USAGE: model_gpu_types.WGPUFlags = model_gpu_types.WGPUTextureUsage_CopyDst;
+ const DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES: u64 = 16 * 1024;
+ const BUFFER_WRITE_STAGING_MIN_CAPACITY: u64 = 64 * 1024;
++const COMPUTE_BUFFER_USAGE: c.VkFlags = c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
++    c.VK_BUFFER_USAGE_TRANSFER_DST_BIT | c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
++    c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT | c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
++    c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+ 
+ pub const ComputeBufferMemoryKind = enum { host_visible, readback, device_local };
+ 
+@@ -36,6 +40,7 @@ const memory_policy = @import("vk_memory_policy.zig");
+ pub const ComputeBuffer = struct {
+     generation: u64 = 0,
+     memory_property_flags: c.VkFlags = 0,
++    allocation_size: u64 = 0,
+     buffer: VkBuffer,
+     memory: VkDeviceMemory,
+     mapped: ?*anyopaque,
+@@ -258,6 +263,22 @@ fn create_compute_buffer_with_kind(
+     memory_kind: ComputeBufferMemoryKind,
+ ) !ComputeBuffer {
+     const generation = try identity.nextGeneration(self);
++    if (memory_kind == .host_visible) {
++        if (vk_upload.vk_pool_pop(&self.compute_buffer_pool, bytes, COMPUTE_BUFFER_USAGE)) |entry| {
++            self.compute_buffer_pool_bytes -= entry.allocation_size;
++            if (initialize_buffers_on_create) @memset(@as([*]u8, @ptrCast(entry.mapped.?))[0..@intCast(bytes)], 0);
++            return .{
++                .generation = generation,
++                .memory_property_flags = entry.memory_property_flags,
++                .allocation_size = entry.allocation_size,
++                .buffer = entry.buffer,
++                .memory = entry.memory,
++                .mapped = entry.mapped,
++                .size = bytes,
++                .memory_kind = memory_kind,
++            };
++        }
++    }
+     var buffer: VkBuffer = VK_NULL_U64;
+     var memory: VkDeviceMemory = VK_NULL_U64;
+     var mapped: ?*anyopaque = null;
+@@ -267,13 +288,7 @@ fn create_compute_buffer_with_kind(
+         .pNext = null,
+         .flags = 0,
+         .size = bytes,
+-        .usage = c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+-            c.VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+-            c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+-            c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+-            c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+-            c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+-            c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
++        .usage = COMPUTE_BUFFER_USAGE,
+         .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
+         .queueFamilyIndexCount = 0,
+         .pQueueFamilyIndices = null,
+@@ -329,6 +344,7 @@ fn create_compute_buffer_with_kind(
+     return .{
+         .generation = generation,
+         .memory_property_flags = memory_properties.memoryTypes[memory_index].propertyFlags,
++        .allocation_size = requirements.size,
+         .buffer = buffer,
+         .memory = memory,
+         .mapped = mapped,
+@@ -466,7 +482,43 @@ pub fn capture_compute_buffer(
+ pub fn destroy_compute_buffer(self: anytype, resource_handle: u64) void {
+     const cache = @import("vk_pipeline_cache.zig");
+     cache.discard_buffer(self, resource_handle);
+-    if (self.compute_buffers.fetchRemove(resource_handle)) |entry| release_compute_buffer(self, entry.value);
++    if (self.compute_buffers.fetchRemove(resource_handle)) |entry| {
++        if (!cacheCompletedComputeBuffer(self, entry.value)) release_compute_buffer(self, entry.value);
++    }
++}
++
++fn cacheCompletedComputeBuffer(self: anytype, buffer: ComputeBuffer) bool {
++    const required = c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
++    if (buffer.memory_kind != .host_visible or buffer.mapped == null or
++        (buffer.memory_property_flags & required) != required or
++        buffer.size < DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES or
++        buffer.allocation_size < buffer.size or
++        buffer.allocation_size > memory_policy.compute_buffer_cache_max_bytes - self.compute_buffer_pool_bytes)
++    {
++        return false;
++    }
++    if (self.replay_recording_active or self.replay_prefix_copy_pending or self.upload_recording_active or
++        self.streaming_copy_active or self.streaming_copy_pending_count != 0 or
++        self.has_deferred_submissions or self.hot_pending_upload != null or self.pending_uploads.items.len != 0)
++    {
++        return false;
++    }
++    // Empty size buckets remain reusable, but cannot grow metadata without a bound.
++    const max_size_buckets = memory_policy.compute_buffer_cache_max_bytes / DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES;
++    if (self.compute_buffer_pool.count() >= max_size_buckets and !self.compute_buffer_pool.contains(buffer.size)) return false;
++    const slot = self.compute_buffer_pool.getOrPut(self.allocator, buffer.size) catch return false;
++    if (!slot.found_existing) slot.value_ptr.* = .{};
++    if (slot.value_ptr.items.len >= vk_upload.MAX_POOL_ENTRIES_PER_SIZE) return false;
++    slot.value_ptr.append(self.allocator, .{
++        .usage = COMPUTE_BUFFER_USAGE,
++        .memory_property_flags = buffer.memory_property_flags,
++        .allocation_size = buffer.allocation_size,
++        .buffer = buffer.buffer,
++        .memory = buffer.memory,
++        .mapped = buffer.mapped,
++    }) catch return false;
++    self.compute_buffer_pool_bytes += buffer.allocation_size;
++    return true;
+ }
+ 
+ pub fn release_compute_buffer(self: anytype, compute_buffer: ComputeBuffer) void {
+diff --git a/runtime/zig/src/backend/vulkan/vk_upload.zig b/runtime/zig/src/backend/vulkan/vk_upload.zig
+index cf12f27d6..4eea588c5 100644
+--- a/runtime/zig/src/backend/vulkan/vk_upload.zig
++++ b/runtime/zig/src/backend/vulkan/vk_upload.zig
+@@ -42,6 +42,8 @@ pub const PendingUpload = struct {
+ 
+ pub const VkPoolEntry = struct {
+     usage: c.VkFlags = 0,
++    memory_property_flags: c.VkFlags = 0,
++    allocation_size: u64 = 0,
+     buffer: VkBuffer,
+     memory: VkDeviceMemory,
+     mapped: ?*anyopaque = null,
+diff --git a/runtime/zig/src/native/resource/doe_buffer_ops_native.zig b/runtime/zig/src/native/resource/doe_buffer_ops_native.zig
+index 97e588b63..e4e05befd 100644
+--- a/runtime/zig/src/native/resource/doe_buffer_ops_native.zig
++++ b/runtime/zig/src/native/resource/doe_buffer_ops_native.zig
+@@ -310,7 +310,8 @@ pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: u
+         return .{ .id = 3 };
+     }
+     if (comptime has_vulkan) {
+-        if (b.backend == .vulkan and (mode & abi_core.WGPUMapMode_Read) != 0) {
++        // A writable mapping must also wait for earlier GPU reads of the buffer.
++        if (b.backend == .vulkan and (mode & (abi_core.WGPUMapMode_Read | abi_core.WGPUMapMode_Write)) != 0) {
+             if (b.vk_runtime_ref) |rt_ptr| {
+                 const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+                 _ = rt.flush_queue() catch {
+diff --git a/runtime/zig/tests/native_recorded_compute.c b/runtime/zig/tests/native_recorded_compute.c
+index 0e19bfa16..b05a6e0a0 100644
+--- a/runtime/zig/tests/native_recorded_compute.c
++++ b/runtime/zig/tests/native_recorded_compute.c
+@@ -9,6 +9,7 @@ extern WGPUCommandBuffer doeNativeCreateComputeDispatchCopyCommandBuffer(
+ extern WGPUCommandBuffer doeNativeCreateComputeDispatchBatchCopyCommandBuffer(
+     WGPUDevice, size_t, WGPUComputePipeline*, WGPUBindGroup*, const uint32_t*, const uint32_t*,
+     WGPUBuffer, uint64_t, WGPUBuffer, uint64_t, uint64_t);
++extern uint32_t doeNativeQueueSyncInfo(WGPUQueue);
+ 
+ enum { ELEMENT_COUNT = 4, NATIVE_BIND_GROUP_STRIDE = 4, AMD_PCI_VENDOR_ID = 0x1002,
+        TEXTURE_ROW_BYTES = 256, TEXTURE_LAYER_COUNT = 2, RESIDENT_STORAGE_BYTES = 65536 };
+@@ -724,6 +725,64 @@ cleanup:
+ #undef REQUIRE
+ }
+ 
++static bool write_mapping_waits_for_gpu_reads(WGPUInstance instance, WGPUDevice device, WGPUQueue queue) {
++    enum { DEFERRED_SUBMISSIONS = 1u << 3, WORD_COUNT = RESIDENT_STORAGE_BYTES / sizeof(uint32_t) };
++    WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
++    desc.size = RESIDENT_STORAGE_BYTES;
++    desc.usage = WGPUBufferUsage_MapWrite | WGPUBufferUsage_CopySrc;
++    desc.mappedAtCreation = true;
++    WGPUBuffer upload = wgpuDeviceCreateBuffer(device, &desc);
++    desc.usage = WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst;
++    desc.mappedAtCreation = false;
++    WGPUBuffer readback = wgpuDeviceCreateBuffer(device, &desc);
++    bool passed = false;
++    if (!upload || !readback) goto cleanup;
++    uint32_t* input = wgpuBufferGetMappedRange(upload, 0, RESIDENT_STORAGE_BYTES);
++    if (!input) goto failure;
++    for (size_t i = 0; i < WORD_COUNT; ++i) input[i] = (uint32_t)i + 7;
++    wgpuBufferUnmap(upload);
++    passed = true;
++    for (unsigned round = 0; round < 2; ++round) {
++        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, NULL);
++        wgpuCommandEncoderCopyBufferToBuffer(encoder, upload, 0, readback, 0, RESIDENT_STORAGE_BYTES);
++        WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, NULL);
++        wgpuCommandEncoderRelease(encoder);
++        if (!commands) goto failure;
++        wgpuQueueSubmit(queue, 1, &commands);
++        wgpuCommandBufferRelease(commands);
++        const bool pending_before = (doeNativeQueueSyncInfo(queue) & DEFERRED_SUBMISSIONS) != 0;
++        bool mapped = false;
++        WGPUBufferMapCallbackInfo mapping = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
++        mapping.mode = WGPUCallbackMode_AllowSpontaneous;
++        mapping.callback = map_ready;
++        mapping.userdata1 = &mapped;
++        wgpuBufferMapAsync(upload, WGPUMapMode_Write, 0, RESIDENT_STORAGE_BYTES, mapping);
++        wgpuInstanceProcessEvents(instance);
++        const bool pending_after = (doeNativeQueueSyncInfo(queue) & DEFERRED_SUBMISSIONS) != 0;
++        passed &= pending_before && mapped && !pending_after;
++        input = mapped ? wgpuBufferGetMappedRange(upload, 0, RESIDENT_STORAGE_BYTES) : NULL;
++        if (!input) goto failure;
++        for (size_t i = 0; i < WORD_COUNT; ++i) input[i] = (uint32_t)i + 8 + round;
++        wgpuBufferUnmap(upload);
++        mapped = false;
++        wgpuBufferMapAsync(readback, WGPUMapMode_Read, 0, RESIDENT_STORAGE_BYTES, mapping);
++        wgpuInstanceProcessEvents(instance);
++        const uint32_t* output = mapped ? wgpuBufferGetConstMappedRange(readback, 0, RESIDENT_STORAGE_BYTES) : NULL;
++        if (!output) goto failure;
++        for (size_t i = 0; i < WORD_COUNT; ++i) passed &= output[i] == (uint32_t)i + 7 + round;
++        wgpuBufferUnmap(readback);
++        printf("write mapping: round=%u pending_before=%u pending_after=%u passed=%u\n",
++            round, pending_before, pending_after, passed);
++    }
++    goto cleanup;
++failure:
++    passed = false;
++cleanup:
++    if (upload) wgpuBufferRelease(upload);
++    if (readback) wgpuBufferRelease(readback);
++    return passed;
++}
++
+ int main(void) {
+     int result = 1;
+     WGPUInstance instance = wgpuCreateInstance(NULL);
+@@ -761,7 +820,8 @@ int main(void) {
+     wgpuInstanceProcessEvents(instance);
+     if (!device) goto cleanup;
+     queue = wgpuDeviceGetQueue(device);
+-    if (queue && invalid_pass_lifetimes(instance, device, queue) && invalid_buffer_copies(instance, device, queue) &&
++    if (queue && write_mapping_waits_for_gpu_reads(instance, device, queue) &&
++        invalid_pass_lifetimes(instance, device, queue) && invalid_buffer_copies(instance, device, queue) &&
+         unavailable_copy_resources(instance, device, queue) &&
+         texture_submission_lifetime(instance, device, queue) &&
+         texture_region_copies(instance, device, queue) &&
+diff --git a/runtime/zig/tests/vulkan/vulkan_native_unit_test.zig b/runtime/zig/tests/vulkan/vulkan_native_unit_test.zig
+index 2eb07ab29..aa3c7f7b7 100644
+--- a/runtime/zig/tests/vulkan/vulkan_native_unit_test.zig
++++ b/runtime/zig/tests/vulkan/vulkan_native_unit_test.zig
+@@ -704,3 +704,44 @@ test "storage promotion retains an already device-local mapped allocation withou
+     try std.testing.expectEqual(@as(usize, 0), failing.allocations);
+     try std.testing.expectEqualSlices(u8, &(@as([32]u8, @splat(0x5a))), &bytes);
+ }
++
++test "completed compute allocation reuse renews identity and clears stale contents without allocation" {
++    const bytes_count = 32 * 1024;
++    var bytes: [bytes_count]u8 = @splat(0x5a);
++    var runtime = native_runtime.NativeVulkanRuntime{
++        .allocator = std.testing.allocator,
++        .kernel_root = "",
++        .next_native_resource_generation = 42,
++    };
++    defer runtime.compute_buffers.deinit(std.testing.allocator);
++    defer {
++        var slots = runtime.compute_buffer_pool.valueIterator();
++        while (slots.next()) |slot| slot.deinit(std.testing.allocator);
++        runtime.compute_buffer_pool.deinit(std.testing.allocator);
++    }
++    const previous = vk_resources.ComputeBuffer{
++        .generation = 41,
++        .memory_property_flags = vk_constants.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk_constants.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | vk_constants.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
++        .allocation_size = bytes.len,
++        .buffer = 11,
++        .memory = 12,
++        .mapped = &bytes,
++        .size = bytes.len,
++        .memory_kind = .host_visible,
++    };
++    try runtime.compute_buffers.put(std.testing.allocator, 7, previous);
++    vk_resources.destroy_compute_buffer(&runtime, 7);
++    try std.testing.expect(runtime.compute_buffers.get(7) == null);
++    try std.testing.expectEqual(@as(u64, bytes.len), runtime.compute_buffer_pool_bytes);
++    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
++    runtime.allocator = failing.allocator();
++    const reused = try vk_resources.create_compute_buffer(&runtime, bytes.len, true);
++    try std.testing.expectEqual(previous.buffer, reused.buffer);
++    try std.testing.expectEqual(previous.memory, reused.memory);
++    try std.testing.expectEqual(previous.mapped, reused.mapped);
++    try std.testing.expectEqual(@as(u64, 42), reused.generation);
++    try std.testing.expectEqual(previous.memory_property_flags, reused.memory_property_flags);
++    try std.testing.expectEqual(@as(u64, 0), runtime.compute_buffer_pool_bytes);
++    try std.testing.expectEqual(@as(usize, 0), failing.allocations);
++    for (bytes) |byte| try std.testing.expectEqual(@as(u8, 0), byte);
++}

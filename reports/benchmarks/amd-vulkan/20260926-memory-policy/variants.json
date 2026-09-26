@@ -1,0 +1,49 @@
+{
+  "original": {
+    "library": "/home/x/deco/doe/bench/out/doppler-search/20260925-excess/baseline-native/lib/libwebgpu_doe.so",
+    "sha256": "ae9b8609784deabe991db903263ed063e5d3bcb1f1edbd600fbf5d565a43a1d7",
+    "selection": false,
+    "avoidance": false,
+    "sourceCommit": "a64b726276fbb33ea67657ff86c09363ca37cb5b",
+    "diagnosticPatch": null,
+    "patchSha256": null
+  },
+  "selection": {
+    "library": "/home/x/deco/doe/bench/out/doppler-search/20260926-policy/selection-native/lib/libwebgpu_doe.so",
+    "sha256": "551eaf82c08328077052a3cb67f99289cec288c04d3e51cab86a1af688eaa0f7",
+    "selection": true,
+    "avoidance": false,
+    "sourceCommit": "77fdc716efd2934e61c21f4c77861ee5164eb55c",
+    "diagnosticPatch": "selection-only.patch",
+    "patchSha256": "e86ca1ecd5cda52dd730c101f4dcf1732ad8414e717b2f9ab45e45a1f4ce0151"
+  },
+  "avoidance": {
+    "library": "/home/x/deco/doe/bench/out/doppler-search/20260926-policy/avoidance-native/lib/libwebgpu_doe.so",
+    "sha256": "e085fcdca5f2cd8a56ab9c480f064de9cb1f7940a7ccb092818ba750c08ce64f",
+    "selection": false,
+    "avoidance": true,
+    "sourceCommit": "77fdc716efd2934e61c21f4c77861ee5164eb55c",
+    "diagnosticPatch": "avoidance-only.patch",
+    "patchSha256": "67eb34aacf0309a5fe40af7ae9bd73ea702ec82891cade4adf54dee759e180c2"
+  },
+  "both": {
+    "library": "/home/x/deco/doe/bench/out/doppler-search/20260925-excess/candidate-native/lib/libwebgpu_doe.so",
+    "sha256": "ec6c9686cc467640331aaf309ea81ac81b18c37fa85cacf68accfd90a1d723a4",
+    "selection": true,
+    "avoidance": true,
+    "sourceCommit": "77fdc716efd2934e61c21f4c77861ee5164eb55c",
+    "diagnosticPatch": null,
+    "patchSha256": null
+  },
+  "reuse": {
+    "library": "/home/x/deco/doe/bench/out/doppler-search/20260926-policy/reuse-native/lib/libwebgpu_doe.so",
+    "sha256": "22b521f827c6c97b54334c534b1dfa817ec57e1c7c4a089ce67bd9df605912ed",
+    "sourceCommit": "b21adb3d0d5bf7ba30ecfffdefe548cb1efa7aec",
+    "selection": true,
+    "avoidance": true,
+    "additionalChanges": [
+      "bounded completed allocation reuse",
+      "write mapping completion correctness"
+    ]
+  }
+}

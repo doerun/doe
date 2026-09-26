@@ -417,6 +417,13 @@ classified and cannot be promoted by benchmark results.
   properties preserve promotion. Verify mapping, initialization, contents,
   allocation failure, resource identity and final cleanup. The policy migration
   is documented in `docs/upgrade-policy.md`.
+  Completed compute-buffer retention uses the policy's fixed byte bound and
+  existing per-size pool capacity. Reuse requires known host-visible, coherent,
+  device-local properties, matching size and usage, and no pending queue work;
+  it renews resource generation and initializes returned bytes. Verify cache
+  allocation failure and capacity cleanup independently of application timing.
+  Both writable and readable mappings must wait for earlier Vulkan queue use.
+  Successful-completion tests do not qualify destruction after a failed flush.
 - Backend artifact telemetry snapshots perform no collection. The command
   execution boundary explicitly collects after measuring execution, preserves
   capture/output errors, and retains actual execution counts on collection

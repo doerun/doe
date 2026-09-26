@@ -1,0 +1,13 @@
+--- a/runtime/zig/src/backend/vulkan/vk_resources.zig
++++ b/runtime/zig/src/backend/vulkan/vk_resources.zig
+@@ -354,9 +354,7 @@
+     handle: u64,
+ ) !ComputeBufferPromotion {
+     const existing = self.compute_buffers.getPtr(handle) orelse return error.InvalidArgument;
+-    if (existing.memory_kind == .device_local or
+-        (existing.memory_property_flags & c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0)
+-    {
++    if (existing.memory_kind == .device_local) {
+         return .{ .buffer = existing.* };
+     }
+ 

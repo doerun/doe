@@ -1,0 +1,11 @@
+--- a/runtime/zig/src/backend/vulkan/vk_memory_policy.zig
++++ b/runtime/zig/src/backend/vulkan/vk_memory_policy.zig
+@@ -2,7 +2,7 @@
+ const c = @import("vk_constants.zig");
+ const options = @import("build_options");
+ 
+-pub const host_visible_preferred_properties = options.vulkan_host_visible_preferred_properties;
++pub const host_visible_preferred_properties = @as(u32, 0);
+ 
+ pub const readback_required_properties = options.vulkan_readback_required_properties;
+ pub const readback_preferred_properties = options.vulkan_readback_preferred_properties;

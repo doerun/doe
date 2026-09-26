@@ -1,0 +1,176 @@
+{
+  "classification": "local-diagnostic-not-release-qualification",
+  "policyDisposition": "Retain selection plus locality-proven promotion avoidance together; neither isolated half improved Qwen. No permanent ablation switches.",
+  "additionalCandidateDisposition": "Retain bounded completed allocation reuse as a repeatable local Qwen improvement; no general speed claim.",
+  "independentCorrectnessRepair": "Writable Vulkan mapping waits for prior GPU use.",
+  "preservedSource": "77fdc716efd2934e61c21f4c77861ee5164eb55c",
+  "additionalCandidateSource": "b21adb3d0d5bf7ba30ecfffdefe548cb1efa7aec",
+  "qwenConfirmation": {
+    "preservedMs": {
+      "count": 80,
+      "mean": 642.1803702250006,
+      "min": 626.1019139999989,
+      "max": 667.2496390000015,
+      "median": 641.2390139999989,
+      "p95": 657.5933530000038,
+      "p99": 667.2496390000015
+    },
+    "reuseMs": {
+      "count": 80,
+      "mean": 607.3303349624996,
+      "min": 595.8940220000004,
+      "max": 626.460325,
+      "median": 606.1835649999994,
+      "p95": 617.919363999994,
+      "p99": 626.460325
+    },
+    "dawnMs": {
+      "count": 80,
+      "mean": 590.4806720750003,
+      "min": 528.5756649999967,
+      "max": 664.1009620000004,
+      "median": 547.2762809999986,
+      "p95": 656.6461849999978,
+      "p99": 664.1009620000004
+    },
+    "medianReductionMs": 35.0554489999995,
+    "medianReductionPercent": 5.466830344792395,
+    "p95ReductionPercent": 6.033210162331071,
+    "originalGapInThisCohortMs": 93.9627330000003,
+    "remainingGapInThisCohortMs": 58.9072840000008,
+    "fractionOfThisCohortGapRemoved": 0.37307821814845876,
+    "requiredAdditionalReductionForParityPercent": 9.717730305010964,
+    "medianConventionSensitivity": {
+      "both": {
+        "sharedStatsMedianDefinition": "sorted[ceil(n*0.5)-1] (nearest rank; lower central sample for even n)",
+        "centralPairMs": [
+          641.2390139999989,
+          641.3248479999966
+        ],
+        "conventionalMedianMs": 641.2819309999977,
+        "meanMs": 642.1803702250006
+      },
+      "reuse": {
+        "sharedStatsMedianDefinition": "sorted[ceil(n*0.5)-1] (nearest rank; lower central sample for even n)",
+        "centralPairMs": [
+          606.1835649999994,
+          606.8586979999964
+        ],
+        "conventionalMedianMs": 606.5211314999979,
+        "meanMs": 607.3303349624996
+      },
+      "dawn": {
+        "sharedStatsMedianDefinition": "sorted[ceil(n*0.5)-1] (nearest rank; lower central sample for even n)",
+        "centralPairMs": [
+          547.2762809999986,
+          632.8870600000009
+        ],
+        "conventionalMedianMs": 590.0816704999997,
+        "meanMs": 590.4806720750003
+      }
+    },
+    "everyReuseProcessMedianBelowEveryPreservedProcessMedian": true,
+    "conventionalMedianRemainingGapMs": 16.43946099999812,
+    "meanRemainingGapMs": 16.849662887499335
+  },
+  "allocationDiagnostic": {
+    "before": {
+      "create-buffer": 702,
+      "allocation": 702,
+      "bind-memory": 702,
+      "copy": 36,
+      "wait-fence": 24,
+      "destroy-buffer": 699,
+      "free-memory": 699
+    },
+    "after": {
+      "create-buffer": 366,
+      "allocation": 366,
+      "bind-memory": 366,
+      "copy": 36,
+      "wait-fence": 24,
+      "destroy-buffer": 363,
+      "free-memory": 363
+    },
+    "scope": "Native interposer enabled; one warm rerank each. Allocation duration is not uninstrumented wall attribution.",
+    "mechanism": "Reuse completed activation allocations; unchanged original GPU sequence, copies and wait counts."
+  },
+  "umap": {
+    "originalPolicyWarning": "Not consistently reproduced in the larger factorial and A/A cohort; smaller regression/equivalence unresolved.",
+    "reuseMedianRatio": 1.0085237690681768,
+    "reuseP95Ratio": 0.8890166262495454,
+    "processPairs": [
+      {
+        "indices": [
+          2,
+          3
+        ],
+        "preservedMs": 15.320158000000049,
+        "reuseMs": 15.703861000000018,
+        "reuseMinusPreservedMs": 0.3837029999999686
+      },
+      {
+        "indices": [
+          5,
+          4
+        ],
+        "preservedMs": 14.989964999999984,
+        "reuseMs": 15.652464000000009,
+        "reuseMinusPreservedMs": 0.6624990000000253
+      },
+      {
+        "indices": [
+          6,
+          7
+        ],
+        "preservedMs": 14.448454999999967,
+        "reuseMs": 14.722100999999952,
+        "reuseMinusPreservedMs": 0.2736459999999852
+      },
+      {
+        "indices": [
+          9,
+          8
+        ],
+        "preservedMs": 18.58171600000003,
+        "reuseMs": 16.724875999999995,
+        "reuseMinusPreservedMs": -1.8568400000000338
+      },
+      {
+        "indices": [
+          10,
+          11
+        ],
+        "preservedMs": 13.574176999999963,
+        "reuseMs": 14.847597000000007,
+        "reuseMinusPreservedMs": 1.2734200000000442
+      },
+      {
+        "indices": [
+          13,
+          12
+        ],
+        "preservedMs": 16.179598,
+        "reuseMs": 15.117736000000036,
+        "reuseMinusPreservedMs": -1.0618619999999623
+      }
+    ],
+    "speedTransferEstablished": false
+  },
+  "correctness": {
+    "aggregateTestsPassed": 2317,
+    "aggregateTestsSkipped": 11,
+    "physicalProbeTestsPassed": 74,
+    "nativeRecordedFixturePassed": true,
+    "allApplicationOracleAndReplayChecksPassed": true
+  },
+  "limitations": [
+    "Dawn alternates latency bands; nearest-rank and conventional central-pair medians differ materially. Raw order and both summaries are retained; no samples dropped.",
+    "No release qualification, broad conformance or cross-platform claim.",
+    "UMAP is a small-buffer workload and has no established speed benefit or equivalence.",
+    "Existing destruction after failed queue flush remains unqualified; available physical tests exercise successful completion and allocation failure.",
+    "Vulkan synchronization validation layer unavailable.",
+    "Instrumented allocation time explains a mechanism, not an exact additive portion of uninstrumented application latency.",
+    "Model/archive bytes and runnable libraries are identity-pinned but are not redistributed in this evidence bundle."
+  ]
+}
