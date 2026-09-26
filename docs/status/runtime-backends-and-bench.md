@@ -8,8 +8,10 @@ history remains in the archive.
 
 The ordinary Qwen reranker memory-promotion investigation and isolated Vulkan
 candidate are indexed at `bench/out/doppler-search/20260925-excess/README.md`.
-Performance acceptance is pending a clean interleaved cohort; recurring foreign
-GPU qualification work invalidated confirmation attempts.
+The clean interleaved cohort supports a local reranker improvement; Dawn parity
+remains open. The existing UMAP SGD check preserved correctness without a
+transferred speed advantage and records a possible regression. See the indexed
+confirmation and second-workload receipts before broadening the result.
 The evidence separates historical split-pass profiling, original dispatch
 sequences, allocation observations and fresh application comparisons. This does
 not reopen the rejected synchronization tracker or qualify a release.
