@@ -402,11 +402,13 @@ fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.me
         readbackPreferredProperties: []Property,
         hostVisiblePreferredProperties: []Property,
         computeBufferCacheMaxBytes: u64,
+        unresolvedCompletionRetryNs: u64,
         unavailablePreference: enum { @"use-required-properties" },
     };
     const memory = std.json.parseFromSlice(MemoryPolicy, allocator, memory_bytes, .{}) catch
         @panic("invalid Vulkan buffer memory policy");
-    if (memory.value.schemaVersion != 3) @panic("unsupported Vulkan buffer memory policy version");
+    if (memory.value.schemaVersion != 4) @panic("unsupported Vulkan buffer memory policy version");
+    if (memory.value.unresolvedCompletionRetryNs == 0) @panic("Vulkan retirement requires a positive retry interval");
     if (memory.value.computeBufferCacheMaxBytes == 0) @panic("Vulkan compute buffer cache requires a positive byte bound");
     const vk = @import("src/backend/vulkan/vk_constants.zig");
     var flags: [3]u32 = .{ 0, 0, 0 };
@@ -424,6 +426,7 @@ fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.me
     options.addOption(u32, "vulkan_readback_preferred_properties", flags[1]);
     options.addOption(u32, "vulkan_host_visible_preferred_properties", flags[2]);
     options.addOption(u64, "vulkan_compute_buffer_cache_max_bytes", memory.value.computeBufferCacheMaxBytes);
+    options.addOption(u64, "vulkan_unresolved_completion_retry_ns", memory.value.unresolvedCompletionRetryNs);
     const timestamp_file = std.fs.cwd().openFile("../../config/vulkan-timestamp-policy.json", .{}) catch
         @panic("config/vulkan-timestamp-policy.json not found");
     defer timestamp_file.close();

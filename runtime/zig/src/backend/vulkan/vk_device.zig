@@ -343,6 +343,7 @@ pub fn create_timestamp_query_pool(self: anytype) !void {
 }
 
 pub fn ensure_submission_state(self: anytype) !void {
+    try self.retirement.requireActive();
     if (!self.has_command_pool) {
         try create_command_pool_and_primary_buffer(self);
     }

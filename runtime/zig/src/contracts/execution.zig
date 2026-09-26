@@ -16,6 +16,7 @@ pub const ExecutionStatus = enum {
 pub const BackendNativeError = error{
     InvalidArgument,
     InvalidState,
+    DeviceLost,
     Unsupported,
     UnsupportedFeature,
     UnsupportedKernelLanguage,

@@ -22,6 +22,66 @@ pub const FENCE_POOL_CAPACITY: usize = 128;
 pub const FENCE_WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
 pub const IMMEDIATE_FENCE_POLL_SPINS: usize = 2048;
 
+extern fn vkDeviceWaitIdle(device: c.VkDevice) callconv(.c) c.VkResult;
+
+/// A failed wait retains the entire caller's ownership scope. Recovery is for
+/// destruction only: incomplete recording must never be replayed as new work.
+pub const Retirement = struct {
+    phase: enum { active, unresolved, complete, device_lost, destroyed } = .active,
+    observed_device_loss: bool = false,
+
+    pub fn requireActive(self: *const Retirement) common_errors.BackendNativeError!void {
+        if (self.observed_device_loss) return error.DeviceLost;
+        if (self.phase != .active) return error.InvalidState;
+    }
+
+    pub fn failed(self: *Retirement, err: anyerror) void {
+        self.observed_device_loss = self.observed_device_loss or err == error.DeviceLost;
+        self.phase = .unresolved;
+    }
+
+    pub fn waitForDestruction(self: *Retirement, device: c.VkDevice) void {
+        std.debug.assert(self.phase == .unresolved);
+        while (true) {
+            if (self.acceptIdleResult(vkDeviceWaitIdle(device))) return;
+            std.Thread.sleep(@import("build_options").vulkan_unresolved_completion_retry_ns);
+        }
+    }
+
+    fn acceptIdleResult(self: *Retirement, result: c.VkResult) bool {
+        if (result != c.VK_SUCCESS and result != errors.VK_ERROR_DEVICE_LOST) return false;
+        self.observed_device_loss = self.observed_device_loss or result == errors.VK_ERROR_DEVICE_LOST;
+        self.phase = if (self.observed_device_loss) .device_lost else .complete;
+        return true;
+    }
+};
+
+test "retirement requires terminal device idle before destruction and never reopens execution" {
+    var retirement = Retirement{};
+    try retirement.requireActive();
+    retirement.failed(error.InvalidState);
+    for ([_]c.VkResult{ c.VK_TIMEOUT, c.VK_NOT_READY, errors.VK_ERROR_OUT_OF_HOST_MEMORY, errors.VK_ERROR_UNKNOWN }) |result| {
+        try std.testing.expect(!retirement.acceptIdleResult(result));
+        try std.testing.expectEqual(.unresolved, retirement.phase);
+        try std.testing.expectError(error.InvalidState, retirement.requireActive());
+    }
+    try std.testing.expect(retirement.acceptIdleResult(c.VK_SUCCESS));
+    try std.testing.expectEqual(.complete, retirement.phase);
+    try std.testing.expectError(error.InvalidState, retirement.requireActive());
+}
+
+test "confirmed device loss authorizes retirement without successful execution" {
+    var retirement = Retirement{};
+    retirement.failed(error.DeviceLost);
+    try std.testing.expect(!retirement.acceptIdleResult(c.VK_TIMEOUT));
+    try std.testing.expect(retirement.acceptIdleResult(errors.VK_ERROR_DEVICE_LOST));
+    try std.testing.expectEqual(.device_lost, retirement.phase);
+    try std.testing.expectError(error.DeviceLost, retirement.requireActive());
+    retirement.failed(error.DeviceLost);
+    try std.testing.expect(retirement.acceptIdleResult(c.VK_SUCCESS));
+    try std.testing.expectEqual(.device_lost, retirement.phase);
+}
+
 fn submissionRejected(result: c.VkResult) bool {
     return result == errors.VK_ERROR_OUT_OF_HOST_MEMORY or result == errors.VK_ERROR_OUT_OF_DEVICE_MEMORY;
 }
@@ -159,16 +219,11 @@ pub const FencePool = struct {
         return self.in_flight_count != 0;
     }
 
-    /// Destroy all pool fences. Call before device destruction.
+    /// Caller must establish device completion or device loss before release.
     pub fn deinit(self: *FencePool, device: c.VkDevice) void {
         var i: u32 = 0;
         while (i < self.count) : (i += 1) {
             if (self.fences[i] != VK_NULL_U64) {
-                // Best-effort wait before destroy to avoid validation errors
-                if (self.in_flight[i]) {
-                    wait_for_fence_fast(device, self.fences[i]) catch {};
-                    self.in_flight[i] = false;
-                }
                 c.vkDestroyFence(device, self.fences[i], null);
                 self.fences[i] = VK_NULL_U64;
             }
@@ -308,9 +363,6 @@ pub const TimelineSemaphore = struct {
 
     pub fn deinit(self: *TimelineSemaphore, device: c.VkDevice) void {
         if (self.semaphore != VK_NULL_U64) {
-            if (self.available and self.current_value > 0) {
-                self.drain(device) catch {};
-            }
             vkDestroySemaphore(device, self.semaphore, null);
             self.semaphore = VK_NULL_U64;
         }

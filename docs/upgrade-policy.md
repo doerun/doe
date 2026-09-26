@@ -67,3 +67,18 @@ Writable Vulkan mapping now waits for preceding GPU use, as readable mapping
 already did. Coherence and an available mapping do not establish completion.
 See `reports/benchmarks/amd-vulkan/20260926-memory-policy/README.md` for the
 separated policy evidence, candidate verdict, and lifecycle limitations.
+
+The shutdown policy now requires `unresolvedCompletionRetryNs`. Failed flush or
+wait results retain runtime ownership synchronously until device-idle completion
+is known. Confirmed device loss remains a distinct typed backend cause and a
+terminal lifetime outcome; it is not successful workload execution. The retry
+interval is fixed by versioned configuration. If the driver never establishes
+completion or device loss, destruction does not return. Subsequent execution and
+allocation reuse remain rejected after failure, including after retirement
+becomes safe. Repeated completed shutdown is harmless.
+
+The rejected compute-reuse experiment used `computeBufferCacheMaxEntriesPerSize`,
+separate from the upload-pool allowance and subordinate to the existing byte bound.
+That field is absent from the retained policy; the existing per-size allowance
+remains unchanged. See `reports/benchmarks/amd-vulkan/20260926-shutdown-reuse/README.md` for the tested
+source patches, policy versions, frozen comparison rule, and final disposition.

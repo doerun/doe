@@ -1228,7 +1228,7 @@
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "d9e6fc4e3de6cf9aa9f815daf1832583dcc901638e29e2949171be4deafafcbd",
+        "moduleSha256": "f937a31108717ed1317cb03f5bbd60e04f787da72d040569381990785432175e",
         "reason": "Keep: Runtime assembly delegates native submission bookkeeping and calibrated timestamp arithmetic to existing owners.",
         "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
@@ -1270,13 +1270,13 @@
       },
       "src/backend/vulkan/vk_constants.zig": {
         "decision": "Keep",
-        "moduleSha256": "2bb9ef74b74bef85086b0195d372b9cbe035150cffd8c4c8a09c92c891e1dfba",
+        "moduleSha256": "1ede994131c940102345259fcc49c36519ce9ff5ec0a77fb7133240c54569232",
         "reason": "Keep: Owns Vulkan ABI constants including the distinct uniform-read access bit required by the compute synchronization owner.",
         "reviewer": "codex-qwen-owner-sync/2026-09-23"
       },
       "src/backend/vulkan/vk_device.zig": {
         "decision": "Keep",
-        "moduleSha256": "0d2ebf019bb847aaf6c39da775bb698c497e81c3318faa1d5fa1fc4b322c36b0",
+        "moduleSha256": "c599e1d3bd3d5990da88d4319e8ce1e97a10f144c04e957c62038864e8922b76",
         "reason": "Keep: Device capability and synchronization-object creation remain local; supported timeline creation failures propagate.",
         "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
@@ -1360,7 +1360,7 @@
       },
       "src/backend/vulkan/vk_resources.zig": {
         "decision": "Keep",
-        "moduleSha256": "3ed00606ccf4d301682ce91d480940ed6ea2eb2ad01ffb5622d84ccac2ea3460",
+        "moduleSha256": "efb5cd92145f5ab8cc34bf42a62ac090a8c04974572eeb5864bd5df3de2a9c5c",
         "reason": "Keep: shared native buffer allocation includes the vertex/index usages consumed by rendering and preserves them through storage promotion.",
         "reviewer": "codex-render-validation/2026-09-07"
       },
@@ -1402,7 +1402,7 @@
       },
       "src/backend/vulkan/vk_sync.zig": {
         "decision": "Keep",
-        "moduleSha256": "918c05a2340c613797453ca2bdaafb59b007d54c4e28f14c4719c7e5cda0318c",
+        "moduleSha256": "9ce236d8725db3ae3276a277f19da0c9b80bead18d692808629caf756970cbe7",
         "reason": "Keep: Fence and timeline owners handle native submission acceptance and completion; no independent queue-policy authority.",
         "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
@@ -1414,13 +1414,13 @@
       },
       "src/backend/vulkan/vk_upload.zig": {
         "decision": "Keep",
-        "moduleSha256": "c17a95c97e730ae2e08bed99aae95beec4fa5e7e01ba96c3eff09faeb3509fdd",
+        "moduleSha256": "fce6a0ca3e81a3d9d1281b848d2c7dbe843786127df92201e6daca03dbb4541f",
         "reason": "Keep: upload allocation, pooling and recording share the existing owner; native acquisition unwinds transactionally and size-bucket reuse requires compatible usage flags. Completion and aggregate retention findings remain open.",
         "reviewer": "codex-vulkan-upload-audit/2026-09-23"
       },
       "src/backend/vulkan/vulkan_errors.zig": {
         "decision": "Keep",
-        "moduleSha256": "7374722c872767c5407f4bcaeb044408c5eca3188da684c5d6f9c0fb74681d24",
+        "moduleSha256": "a4a6cf978a6e90545d177ab8fdc419c1c4c51da545b1a99259756869028dbbbf",
         "reason": "Keep: Raw Vulkan result constants and error translation have one backend owner; public taxonomy expansion remains open.",
         "reviewer": "codex-vulkan-submission-audit/2026-09-23"
       },
@@ -1438,7 +1438,7 @@
       },
       "src/backend/vulkan/vulkan_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "c8ff888b6970c70bfd4c79987ade157e03dfe80d850c5cbd1e049fbc4df8dc81",
+        "moduleSha256": "c3383b635816af941e9d8e882b5dc97643c626bdf3cc1549f4d9d1a4a9363e32",
         "reason": "Keep: reachable backend implementation shared by 6 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -2704,7 +2704,7 @@
       },
       "src/contracts/execution.zig": {
         "decision": "Keep",
-        "moduleSha256": "a1c44a092e212819c165f16d94d9f43d2e519eef7f8eb56e2c4b2b681200362b",
+        "moduleSha256": "6a81c0c107a89638f15f0f1864cfcd10e36c14e34d87219520a230d92632a21b",
         "reason": "Keep: reachable neutral contract owner at src/contracts/execution.zig.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -3796,7 +3796,7 @@
       },
       "src/native/vulkan/vulkan_lifetime.zig": {
         "decision": "Keep",
-        "moduleSha256": "bf6c15808c45343fa1bc2129bd0c59d113bcb068219ee4c33d28809da0f3acb4",
+        "moduleSha256": "e17bee9c08d20d2e659100b8b7aa6453026f42f3ea4bf0cb8fb35c3d6bd8dd59",
         "reason": "Keep: reachable native implementation shared by 3 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },

@@ -6,6 +6,19 @@ history remains in the archive.
 
 ## Current boundary
 
+The failed-flush shutdown correction and bounded compute-reuse experiment are
+indexed at
+[`reports/benchmarks/amd-vulkan/20260926-shutdown-reuse/README.md`](../../reports/benchmarks/amd-vulkan/20260926-shutdown-reuse/README.md).
+Retain the teardown correction with the previous compute-pool allowance. The
+larger allowance explains the remaining target-family allocation misses and
+improves resident Qwen execution, but fails the predeclared UMAP slowdown bound.
+UMAP uncertainty and unchanged-control variation prevent an equivalence claim;
+no post-result rerun changes the disposition. Dawn parity remains unestablished
+under the frozen rule. Unknown completion now retains synchronous ownership;
+confirmed device loss permits separate terminal cleanup. A driver that never
+resolves either outcome can keep destruction blocked. Physical loss injection
+and release qualification remain outside this local evidence.
+
 The preserved Qwen memory-policy candidate, factorial ablations, unchanged
 controls, and completed-allocation reuse confirmation are published at
 [`reports/benchmarks/amd-vulkan/20260926-memory-policy/README.md`](../../reports/benchmarks/amd-vulkan/20260926-memory-policy/README.md).
@@ -14,8 +27,8 @@ local reranker improvement from bounded reuse. Dawn parity remains open;
 its latest latency bands make the reported gap sensitive to the median convention.
 The earlier UMAP slowdown did not repeat consistently, but smaller regression
 or equivalence remains unresolved and no transferred speed benefit is established.
-Writable Vulkan mapping now waits for preceding GPU use. Destruction after a
-failed queue flush remains a lifecycle limitation. Published raw receipts keep
+Writable Vulkan mapping waits for preceding GPU use. The failed-flush limitation
+recorded by that report is addressed by the later shutdown investigation above. Published raw receipts keep
 historical profiling, current allocation observations and fresh comparisons
 separate; this does not reopen synchronization tracking or qualify a release.
 

@@ -9,11 +9,12 @@
     "readbackPreferredProperties",
     "unavailablePreference",
     "hostVisiblePreferredProperties",
-    "computeBufferCacheMaxBytes"
+    "computeBufferCacheMaxBytes",
+    "unresolvedCompletionRetryNs"
   ],
   "properties": {
     "schemaVersion": {
-      "const": 3
+      "const": 4
     },
     "readbackRequiredProperties": {
       "const": [
@@ -36,6 +37,9 @@
     },
     "computeBufferCacheMaxBytes": {
       "const": 67108864
+    },
+    "unresolvedCompletionRetryNs": {
+      "const": 1000000
     }
   }
 }

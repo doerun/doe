@@ -68,10 +68,13 @@ pub const UploadPathKind = enum {
 pub const VkPool = std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry));
 
 pub fn wait_for_fence_fast(self: anytype, fence: c.VkFence) !void {
+    errdefer |err| self.retirement.failed(err);
     try vk_sync.wait_for_fence_fast(self.device, fence);
 }
 
 pub fn flush_queue(self: anytype) !u64 {
+    try self.retirement.requireActive();
+    errdefer |err| self.retirement.failed(err);
     if (!self.has_device) return 0;
     const start_ns = common_timing.now_ns();
     if (self.replay_recording_active) {
@@ -643,6 +646,8 @@ pub fn copy_buffer_region_and_wait(
 /// Uses a fence-pool fence for deferred tracking or the primary fence
 /// for immediate wait, depending on `wait`.
 pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
+    try self.retirement.requireActive();
+    errdefer |err| self.retirement.failed(err);
     if (!self.streaming_copy_active) return;
     try c.check_vk(c.vkEndCommandBuffer(self.streaming_copy_buffer));
     self.streaming_copy_active = false;

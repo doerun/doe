@@ -183,6 +183,7 @@ pub fn ensure_compute_buffer(
     required_size: u64,
     initialize_buffers_on_create: bool,
 ) !ComputeBuffer {
+    try self.retirement.requireActive();
     if (handle == 0 or required_size == 0) return error.InvalidArgument;
     if (self.compute_buffers.getPtr(handle)) |existing| {
         if (existing.size >= required_size) return existing.*;
@@ -262,6 +263,7 @@ fn create_compute_buffer_with_kind(
     initialize_buffers_on_create: bool,
     memory_kind: ComputeBufferMemoryKind,
 ) !ComputeBuffer {
+    try self.retirement.requireActive();
     const generation = try identity.nextGeneration(self);
     if (memory_kind == .host_visible) {
         if (vk_upload.vk_pool_pop(&self.compute_buffer_pool, bytes, COMPUTE_BUFFER_USAGE)) |entry| {
@@ -369,6 +371,7 @@ pub fn promote_compute_buffer_to_device_local(
     self: anytype,
     handle: u64,
 ) !ComputeBufferPromotion {
+    try self.retirement.requireActive();
     const existing = self.compute_buffers.getPtr(handle) orelse return error.InvalidArgument;
     if (existing.memory_kind == .device_local or
         (existing.memory_property_flags & c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0)
@@ -392,6 +395,7 @@ pub fn stage_compute_buffer_write(
     data_bytes: []const u8,
     upload_path_policy: backend_policy.UploadPathPolicy,
 ) !void {
+    try self.retirement.requireActive();
     if (data_bytes.len == 0) return error.InvalidArgument;
     const end = std.math.add(u64, offset, data_bytes.len) catch return error.InvalidArgument;
     if (end > compute_buffer.size) return error.InvalidArgument;
@@ -480,6 +484,7 @@ pub fn capture_compute_buffer(
 }
 
 pub fn destroy_compute_buffer(self: anytype, resource_handle: u64) void {
+    self.waitForDestruction();
     const cache = @import("vk_pipeline_cache.zig");
     cache.discard_buffer(self, resource_handle);
     if (self.compute_buffers.fetchRemove(resource_handle)) |entry| {
@@ -488,6 +493,7 @@ pub fn destroy_compute_buffer(self: anytype, resource_handle: u64) void {
 }
 
 fn cacheCompletedComputeBuffer(self: anytype, buffer: ComputeBuffer) bool {
+    if (self.retirement.phase != .active) return false;
     const required = c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     if (buffer.memory_kind != .host_visible or buffer.mapped == null or
         (buffer.memory_property_flags & required) != required or
@@ -522,6 +528,7 @@ fn cacheCompletedComputeBuffer(self: anytype, buffer: ComputeBuffer) bool {
 }
 
 pub fn release_compute_buffer(self: anytype, compute_buffer: ComputeBuffer) void {
+    self.waitForDestruction();
     if (compute_buffer.mapped != null) {
         c.vkUnmapMemory(self.device, compute_buffer.memory);
     }
@@ -538,6 +545,7 @@ pub fn release_compute_buffers(self: anytype) void {
 }
 
 pub fn create_host_visible_buffer(self: anytype, bytes: u64, usage: u32) !ComputeBuffer {
+    try self.retirement.requireActive();
     const generation = try identity.nextGeneration(self);
     var buffer: VkBuffer = VK_NULL_U64;
     var memory: VkDeviceMemory = VK_NULL_U64;

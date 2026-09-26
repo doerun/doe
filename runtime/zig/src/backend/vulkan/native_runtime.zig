@@ -60,6 +60,7 @@ pub const NativeVulkanRuntime = struct {
     physical_device: c.VkPhysicalDevice = null,
     device: c.VkDevice = null,
     queue: c.VkQueue = null,
+    retirement: vk_sync.Retirement = .{},
 
     adapter_ordinal_value: ?u32 = null,
     queue_family_index: u32 = 0,
@@ -224,8 +225,10 @@ pub const NativeVulkanRuntime = struct {
     }
 
     pub fn deinit(self: *NativeVulkanRuntime) void {
+        if (self.retirement.phase == .destroyed) return;
+        self.waitForDestruction();
+        if (self.retirement.phase == .active) self.retirement.phase = .complete;
         vk_pipeline.discardPendingSpirv(self);
-        _ = self.flush_queue() catch {};
         vk_pipeline.release_retired_states(self);
         vk_upload.release_pending_uploads(self);
         self.pending_uploads.deinit(self.allocator);
@@ -301,6 +304,31 @@ pub const NativeVulkanRuntime = struct {
             self.instance = null;
             self.physical_device = null;
         }
+        self.retirement.phase = .destroyed;
+    }
+
+    pub fn hasPendingQueueWork(self: *const NativeVulkanRuntime) bool {
+        return self.replay_recording_active or self.replay_prefix_copy_pending or
+            self.upload_recording_active or self.streaming_copy_active or
+            self.streaming_copy_pending_count != 0 or self.has_deferred_submissions or
+            self.hot_pending_upload != null or self.pending_uploads.items.len != 0;
+    }
+
+    /// Synchronous ownership boundary. Unknown completion cannot return to a
+    /// caller that will free this runtime or an object backed by its device.
+    pub fn waitForDestruction(self: *NativeVulkanRuntime) void {
+        switch (self.retirement.phase) {
+            .complete, .device_lost, .destroyed => return,
+            .unresolved => {},
+            .active => {
+                if (!self.hasPendingQueueWork()) return;
+                _ = self.flush_queue() catch |err| {
+                    self.retirement.failed(err);
+                };
+                if (self.retirement.phase == .active) return;
+            },
+        }
+        self.retirement.waitForDestruction(self.device);
     }
 
     // --- Kernel/shader API ---
@@ -733,6 +761,8 @@ pub const NativeVulkanRuntime = struct {
     // --- Queue management ---
 
     pub fn flush_queue(self: *NativeVulkanRuntime) !u64 {
+        try self.retirement.requireActive();
+        errdefer |err| self.retirement.failed(err);
         if (self.streaming_copy_active) {
             try self.flush_streaming_copy(true);
         }

@@ -33,6 +33,7 @@ pub fn check_vk(result: VkResult) common_errors.BackendNativeError!void {
 /// Map a raw VkResult (i32) to a BackendNativeError. Called for non-success codes.
 pub fn map_vk_result(result: VkResult) common_errors.BackendNativeError {
     return switch (result) {
+        VK_ERROR_DEVICE_LOST => error.DeviceLost,
         VK_ERROR_EXTENSION_NOT_PRESENT,
         VK_ERROR_FEATURE_NOT_PRESENT,
         VK_ERROR_INCOMPATIBLE_DRIVER,

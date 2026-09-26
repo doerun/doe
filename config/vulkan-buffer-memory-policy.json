@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "readbackRequiredProperties": [
     "host-visible",
     "host-coherent"
@@ -11,5 +11,6 @@
   "hostVisiblePreferredProperties": [
     "device-local"
   ],
-  "computeBufferCacheMaxBytes": 67108864
+  "computeBufferCacheMaxBytes": 67108864,
+  "unresolvedCompletionRetryNs": 1000000
 }

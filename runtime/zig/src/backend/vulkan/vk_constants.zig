@@ -228,6 +228,7 @@ pub const map_vk_result = functions.map_vk_result;
 
 pub const VK_SUCCESS = vk.VK_SUCCESS;
 pub const VK_NOT_READY = vk.VK_NOT_READY;
+pub const VK_TIMEOUT = vk.VK_TIMEOUT;
 pub const VK_TRUE = vk.VK_TRUE;
 pub const VK_FALSE = vk.VK_FALSE;
 pub const VK_API_VERSION_1_0: u32 = 0x00400000;

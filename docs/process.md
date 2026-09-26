@@ -284,7 +284,13 @@ classified and cannot be promoted by benchmark results.
   [upload audit](../bench/out/maintenance/20260923-vulkan-upload-audit/README.md).
   Usage metadata is backend-private; public policy and serialized schemas retain
   their existing versions. Completion-failure retirement remains separately
-  governed by the resource-lifetime requirements.
+  governed by the resource-lifetime requirements. Failed Vulkan flush/wait must
+  retain the owning runtime and every referenced allocation until completion is
+  established. Device-idle success or confirmed device loss permits teardown;
+  timeout and other unresolved results do not permit pooling or direct release.
+  Physical failure injection covers delayed completion, repeated shutdown, and
+  device-loss cleanup; reported device loss is not successful execution. See
+  [shutdown evidence](../reports/benchmarks/amd-vulkan/20260926-shutdown-reuse/README.md).
 - Program close must release native bindings and pipelines as well as buffers.
   Resource-retention regressions keep closed program objects reachable, repeat
   preparation and execution on the same device, and distinguish driver-reported
