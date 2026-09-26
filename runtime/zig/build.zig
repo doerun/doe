@@ -395,29 +395,32 @@ fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.me
     defer memory_file.close();
     const memory_bytes = memory_file.readToEndAlloc(allocator, 64 * 1024) catch
         @panic("failed to read vulkan-buffer-memory-policy.json");
-    const Property = enum { @"host-visible", @"host-coherent", @"host-cached" };
+    const Property = enum { @"host-visible", @"host-coherent", @"host-cached", @"device-local" };
     const MemoryPolicy = struct {
         schemaVersion: u32,
         readbackRequiredProperties: []Property,
         readbackPreferredProperties: []Property,
+        hostVisiblePreferredProperties: []Property,
         unavailablePreference: enum { @"use-required-properties" },
     };
     const memory = std.json.parseFromSlice(MemoryPolicy, allocator, memory_bytes, .{}) catch
         @panic("invalid Vulkan buffer memory policy");
-    if (memory.value.schemaVersion != 1) @panic("unsupported Vulkan buffer memory policy version");
+    if (memory.value.schemaVersion != 2) @panic("unsupported Vulkan buffer memory policy version");
     const vk = @import("src/backend/vulkan/vk_constants.zig");
-    var flags: [2]u32 = .{ 0, 0 };
-    for ([_][]Property{ memory.value.readbackRequiredProperties, memory.value.readbackPreferredProperties }, 0..) |properties, index| {
+    var flags: [3]u32 = .{ 0, 0, 0 };
+    for ([_][]Property{ memory.value.readbackRequiredProperties, memory.value.readbackPreferredProperties, memory.value.hostVisiblePreferredProperties }, 0..) |properties, index| {
         for (properties) |property| flags[index] |= switch (property) {
             .@"host-visible" => vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
             .@"host-coherent" => vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             .@"host-cached" => vk.VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+            .@"device-local" => vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         };
     }
     const required = vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     if ((flags[0] & required) != required) @panic("readback requires host-visible coherent memory");
     options.addOption(u32, "vulkan_readback_required_properties", flags[0]);
     options.addOption(u32, "vulkan_readback_preferred_properties", flags[1]);
+    options.addOption(u32, "vulkan_host_visible_preferred_properties", flags[2]);
     const timestamp_file = std.fs.cwd().openFile("../../config/vulkan-timestamp-policy.json", .{}) catch
         @panic("config/vulkan-timestamp-policy.json not found");
     defer timestamp_file.close();

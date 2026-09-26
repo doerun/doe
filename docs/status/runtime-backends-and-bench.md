@@ -6,6 +6,14 @@ history remains in the archive.
 
 ## Current boundary
 
+The ordinary Qwen reranker memory-promotion investigation and isolated Vulkan
+candidate are indexed at `bench/out/doppler-search/20260925-excess/README.md`.
+Performance acceptance is pending a clean interleaved cohort; recurring foreign
+GPU qualification work invalidated confirmation attempts.
+The evidence separates historical split-pass profiling, original dispatch
+sequences, allocation observations and fresh application comparisons. This does
+not reopen the rejected synchronization tracker or qualify a release.
+
 Fresh confirmation of the already-landed Qwen ownership batch, expanded cached
 selection allocation checks, and the remaining evidence gaps are indexed at
 `bench/out/doppler-search/20260923-head-confirmation/README.md`. This does not

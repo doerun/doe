@@ -2,6 +2,8 @@ const std = @import("std");
 const c = @import("vk_constants.zig");
 const options = @import("build_options");
 
+pub const host_visible_preferred_properties = options.vulkan_host_visible_preferred_properties;
+
 pub const readback_required_properties = options.vulkan_readback_required_properties;
 pub const readback_preferred_properties = options.vulkan_readback_preferred_properties;
 
@@ -29,4 +31,17 @@ test "readback preference preserves coherence and supported memory type constrai
     try std.testing.expectError(error.UnsupportedFeature, select_memory_type_index(properties, 0b010, coherent, cached));
     try std.testing.expectError(error.UnsupportedFeature, select_memory_type_index(properties, 0, coherent, cached));
     try std.testing.expectEqual(@as(u32, 0), try select_memory_type_index(properties, 0b111, coherent, 0));
+}
+
+test "host-visible preference selects compatible device-local memory or preserves required properties" {
+    var properties = std.mem.zeroes(c.VkPhysicalDeviceMemoryProperties);
+    properties.memoryTypeCount = 3;
+    const required = c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    const local = c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    properties.memoryTypes[0].propertyFlags = local;
+    properties.memoryTypes[1].propertyFlags = required;
+    properties.memoryTypes[2].propertyFlags = required | local;
+    try std.testing.expectEqual(@as(u32, 2), try select_memory_type_index(properties, 0b111, required, local));
+    try std.testing.expectEqual(@as(u32, 1), try select_memory_type_index(properties, 0b011, required, local));
+    try std.testing.expectError(error.UnsupportedFeature, select_memory_type_index(properties, 0b001, required, local));
 }

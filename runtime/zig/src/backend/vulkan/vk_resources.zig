@@ -35,6 +35,7 @@ const memory_policy = @import("vk_memory_policy.zig");
 
 pub const ComputeBuffer = struct {
     generation: u64 = 0,
+    memory_property_flags: c.VkFlags = 0,
     buffer: VkBuffer,
     memory: VkDeviceMemory,
     mapped: ?*anyopaque,
@@ -282,16 +283,23 @@ fn create_compute_buffer_with_kind(
 
     var requirements = std.mem.zeroes(c.VkMemoryRequirements);
     c.vkGetBufferMemoryRequirements(self.device, buffer, &requirements);
-    const memory_properties = switch (memory_kind) {
+    const required_properties = switch (memory_kind) {
         .host_visible => c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         .readback => memory_policy.readback_required_properties,
         .device_local => c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
     };
-    const memory_index = try vk_device.find_memory_type_index_with_preference(
-        self,
-        requirements.memoryTypeBits,
+    const preferred_properties = switch (memory_kind) {
+        .host_visible => memory_policy.host_visible_preferred_properties,
+        .readback => memory_policy.readback_preferred_properties,
+        .device_local => 0,
+    };
+    var memory_properties = std.mem.zeroes(c.VkPhysicalDeviceMemoryProperties);
+    c.vkGetPhysicalDeviceMemoryProperties(self.physical_device, &memory_properties);
+    const memory_index = try memory_policy.select_memory_type_index(
         memory_properties,
-        if (memory_kind == .readback) memory_policy.readback_preferred_properties else 0,
+        requirements.memoryTypeBits,
+        required_properties,
+        preferred_properties,
     );
     var alloc_info = c.VkMemoryAllocateInfo{
         .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -320,6 +328,7 @@ fn create_compute_buffer_with_kind(
 
     return .{
         .generation = generation,
+        .memory_property_flags = memory_properties.memoryTypes[memory_index].propertyFlags,
         .buffer = buffer,
         .memory = memory,
         .mapped = mapped,
@@ -345,7 +354,11 @@ pub fn promote_compute_buffer_to_device_local(
     handle: u64,
 ) !ComputeBufferPromotion {
     const existing = self.compute_buffers.getPtr(handle) orelse return error.InvalidArgument;
-    if (existing.memory_kind == .device_local) return .{ .buffer = existing.* };
+    if (existing.memory_kind == .device_local or
+        (existing.memory_property_flags & c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0)
+    {
+        return .{ .buffer = existing.* };
+    }
 
     const promoted = try create_compute_buffer_with_kind(self, existing.size, false, .device_local);
     errdefer release_compute_buffer(self, promoted);

@@ -406,11 +406,17 @@ classified and cannot be promoted by benchmark results.
   policy bounds decimal rounding; an uninitialized nanosecond assumption is
   never a fallback. Pinned incumbent implementation sources must substantiate
   raw-tick versus nanosecond interpretation.
-- Readback allocation policy is versioned in
+- Buffer allocation policy is versioned in
   `config/vulkan-buffer-memory-policy.json`. Cached memory is a preference;
   coherence and supported memory-type requirements remain mandatory. Validate
   the selection regression and physical ordinary/prepared application controls
   before interpreting an allocation-policy change as an improvement.
+  Host-visible compute-buffer allocations prefer device-local memory without weakening host
+  visibility or coherence. Eliding storage promotion requires the recorded actual
+  device-local property or an explicitly device-local allocation kind; unknown
+  properties preserve promotion. Verify mapping, initialization, contents,
+  allocation failure, resource identity and final cleanup. The policy migration
+  is documented in `docs/upgrade-policy.md`.
 - Backend artifact telemetry snapshots perform no collection. The command
   execution boundary explicitly collects after measuring execution, preserves
   capture/output errors, and retains actual execution counts on collection

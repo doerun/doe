@@ -1360,7 +1360,7 @@
       },
       "src/backend/vulkan/vk_resources.zig": {
         "decision": "Keep",
-        "moduleSha256": "f0613fa0c7e91f8be433074796fbe51cfef270f6505d5dfaa56345ce3714c037",
+        "moduleSha256": "16cf8b0fd51ca1a416e788778f8d57e0d10413eef02152e870383bfdb8c154ca",
         "reason": "Keep: shared native buffer allocation includes the vertex/index usages consumed by rendering and preserves them through storage promotion.",
         "reviewer": "codex-render-validation/2026-09-07"
       },
@@ -4210,7 +4210,7 @@
       },
       "src/backend/vulkan/vk_memory_policy.zig": {
         "decision": "Keep",
-        "moduleSha256": "2ebf081a0b184820b763a328effb5dee77aa23da81e4cededafba7bf0fb3aa1f",
+        "moduleSha256": "9cde310c19793affda7751e5b174d6884e4b7620c3704c0a0b3eecefb07f843c",
         "reason": "Keep: deterministic Vulkan memory-type selection owns required flags, ranked preferences, explicit fallback, and selection tests.",
         "reviewer": "codex-compute-program/2026-09-05"
       },

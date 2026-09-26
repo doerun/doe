@@ -37,3 +37,19 @@ Rollback is config-based:
 - restore previous `toolchains.json`
 - rebuild and rerun gates
 - no manual patching of runtime behavior
+
+## Vulkan buffer memory policy migration
+
+`config/vulkan-buffer-memory-policy.json` advances from schema version 1 to 2.
+The new required `hostVisiblePreferredProperties` field makes host-visible
+compute-buffer allocation prefer device-local memory while retaining the
+host-visible and coherent requirements. Builds reject
+older policy versions. Unsupported preferences retain a compatible required type;
+allocation failures remain explicit errors. Readback preference is unchanged.
+
+Allocations retain their actual memory property flags. Storage binding preserves
+an allocation already known to be device-local, including its mapping, generation,
+and contents. Unknown properties retain the existing promotion and copy path.
+This changes ordinary Vulkan allocation policy without changing application,
+shader, public API, or artifact identity contracts. See
+`bench/out/doppler-search/20260925-excess/README.md` for scoped acceptance evidence.

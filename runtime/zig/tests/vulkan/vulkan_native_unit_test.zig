@@ -681,3 +681,26 @@ test "vulkan: DispatchMetrics stores gpu timestamp fields" {
     try std.testing.expect(m.gpu_timestamp_attempted);
     try std.testing.expect(m.gpu_timestamp_valid);
 }
+
+test "storage promotion retains an already device-local mapped allocation without allocation or copying" {
+    var bytes: [32]u8 = @splat(0x5a);
+    const original = vk_resources.ComputeBuffer{
+        .generation = 9,
+        .memory_property_flags = vk_constants.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk_constants.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | vk_constants.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        .buffer = 11,
+        .memory = 12,
+        .mapped = &bytes,
+        .size = bytes.len,
+        .memory_kind = .host_visible,
+    };
+    var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
+    var runtime = native_runtime.NativeVulkanRuntime{ .allocator = failing.allocator(), .kernel_root = "" };
+    try runtime.compute_buffers.put(std.testing.allocator, 7, original);
+    defer runtime.compute_buffers.deinit(std.testing.allocator);
+    const promoted = try vk_resources.promote_compute_buffer_to_device_local(&runtime, 7);
+    try std.testing.expectEqualDeep(original, promoted.buffer);
+    try std.testing.expectEqualDeep(original, runtime.compute_buffers.get(7).?);
+    try std.testing.expect(promoted.retired_source == null);
+    try std.testing.expectEqual(@as(usize, 0), failing.allocations);
+    try std.testing.expectEqualSlices(u8, &(@as([32]u8, @splat(0x5a))), &bytes);
+}
