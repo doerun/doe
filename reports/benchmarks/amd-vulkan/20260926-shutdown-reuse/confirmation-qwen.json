@@ -1,0 +1,949 @@
+{
+  "schemaVersion": 1,
+  "classification": "local-diagnostic-not-release-claim",
+  "workload": "qwen3-reranker-three-documents",
+  "backend": "amd-vulkan",
+  "comparator": "Retained b21 runtime, teardown-only correction, larger compute reuse allowance and Dawn",
+  "policy": {
+    "schemaVersion": 1,
+    "classification": "local-diagnostic",
+    "workload": "qwen3-reranker-three-documents",
+    "measurement": "await session.rerank; complete public operation wall; oracle outside timing",
+    "warmupRuns": 3,
+    "timedRuns": 20,
+    "order": [
+      "retained",
+      "teardown",
+      "candidate",
+      "dawn",
+      "dawn",
+      "candidate",
+      "teardown",
+      "retained",
+      "teardown",
+      "retained",
+      "dawn",
+      "candidate",
+      "candidate",
+      "dawn",
+      "retained",
+      "teardown",
+      "retained",
+      "candidate",
+      "teardown",
+      "dawn",
+      "dawn",
+      "teardown",
+      "candidate",
+      "retained"
+    ],
+    "createArgs": [
+      "backend=vulkan",
+      "enable-dawn-features=allow_unsafe_apis"
+    ],
+    "dawnNative": "/home/x/deco/doe/bench/node_modules/webgpu/dist/linux-x64.dawn.node",
+    "unmodifiedOracle": "/var/tmp/doppler-release-20260907-restored-02/retained/references/reranker-reference.json",
+    "unchangedPackage": "/var/tmp/doppler-startup-reuse-20260920/consumer/node_modules/doppler-gpu",
+    "candidateHypothesis": "Larger compute-specific per-size allowance within the retained global bound; teardown-only isolates correctness path; candidate chosen only after counters identify misses.",
+    "unchangedControlLabels": {},
+    "experimentPolicySha256": "dcf2640ed3f6a62852e754ba984250a07132d42323ef7eafea18519bb8a4a1da"
+  },
+  "checks": {
+    "independentOraclePassed": true,
+    "retainedPlanAndInputMatch": true,
+    "declaredAndRecordedExecutionShapeMatch": true,
+    "processBoundaryGpuActivityAdmitted": true
+  },
+  "providerObservationDifferences": [
+    "Adapter spelling and architecture labels differ between providers.",
+    "Reported maximum buffer size differs by three bytes; neither changes this workload allocation shape.",
+    "Resolved execution digests include those provider observations and are expected to differ."
+  ],
+  "limitations": [
+    "Process-boundary GPU observation cannot see every short-lived client.",
+    "Recorded operation counters are model observations, not a native GPU trace.",
+    "This measures one warm reranking workload, not complete search or general model performance."
+  ],
+  "results": {
+    "retained": {
+      "queryMs": {
+        "count": 120,
+        "mean": 607.9314904500001,
+        "min": 590.7343529999998,
+        "max": 630.4190660000022,
+        "median": 606.6823159999985,
+        "p95": 621.3429130000004,
+        "p99": 627.2129859999986
+      },
+      "queryCpuMs": {
+        "count": 120,
+        "mean": 210.72025833333333,
+        "min": 185.178,
+        "max": 278.501,
+        "median": 207.086,
+        "p95": 249.577,
+        "p99": 276.6
+      },
+      "memoryScope": "Node process RSS immediately after each timed rerank; includes resident model, native allocations and JS heap; not GPU residency or peak device memory",
+      "rssAfterBytes": {
+        "count": 120,
+        "mean": 1337430152.5333333,
+        "min": 1263099904,
+        "max": 1427066880,
+        "median": 1336479744,
+        "p95": 1394974720,
+        "p99": 1420668928
+      },
+      "runs": [
+        {
+          "index": 0,
+          "queryMs": {
+            "count": 20,
+            "mean": 608.7981130500004,
+            "min": 598.3326949999973,
+            "max": 630.4190660000022,
+            "median": 608.233060999999,
+            "p95": 620.0353799999939,
+            "p99": 630.4190660000022
+          },
+          "loadMs": 30600.85489,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 211.39319999999998,
+            "min": 185.564,
+            "max": 267.226,
+            "median": 206.499,
+            "p95": 248.685,
+            "p99": 267.226
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1365062246.4,
+            "min": 1297960960,
+            "max": 1427066880,
+            "median": 1362571264,
+            "p95": 1420668928,
+            "p99": 1427066880
+          }
+        },
+        {
+          "index": 7,
+          "queryMs": {
+            "count": 20,
+            "mean": 606.1169989499998,
+            "min": 593.9167009999946,
+            "max": 623.8099559999973,
+            "median": 604.660308999999,
+            "p95": 618.9892719999989,
+            "p99": 623.8099559999973
+          },
+          "loadMs": 30881.967948,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 209.65809999999996,
+            "min": 189.533,
+            "max": 269.237,
+            "median": 202.131,
+            "p95": 242.303,
+            "p99": 269.237
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1332650803.2,
+            "min": 1266966528,
+            "max": 1394974720,
+            "median": 1329700864,
+            "p95": 1389072384,
+            "p99": 1394974720
+          }
+        },
+        {
+          "index": 9,
+          "queryMs": {
+            "count": 20,
+            "mean": 612.3287490999999,
+            "min": 600.226496999996,
+            "max": 627.0760569999984,
+            "median": 610.2592450000011,
+            "p95": 622.0285640000002,
+            "p99": 627.0760569999984
+          },
+          "loadMs": 31165.507533,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 214.3011,
+            "min": 188.792,
+            "max": 278.501,
+            "median": 213.752,
+            "p95": 244.503,
+            "p99": 278.501
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1332992409.6,
+            "min": 1265954816,
+            "max": 1394839552,
+            "median": 1330589696,
+            "p95": 1388675072,
+            "p99": 1394839552
+          }
+        },
+        {
+          "index": 14,
+          "queryMs": {
+            "count": 20,
+            "mean": 606.3515672000012,
+            "min": 597.7327099999966,
+            "max": 627.2129859999986,
+            "median": 605.2112940000006,
+            "p95": 622.913744000005,
+            "p99": 627.2129859999986
+          },
+          "loadMs": 30714.45295,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 210.49385,
+            "min": 185.178,
+            "max": 276.6,
+            "median": 204.078,
+            "p95": 249.577,
+            "p99": 276.6
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1332671692.8,
+            "min": 1264508928,
+            "max": 1394888704,
+            "median": 1330114560,
+            "p95": 1388462080,
+            "p99": 1394888704
+          }
+        },
+        {
+          "index": 16,
+          "queryMs": {
+            "count": 20,
+            "mean": 608.9790272999987,
+            "min": 602.1141149999967,
+            "max": 618.5233480000024,
+            "median": 606.7085230000012,
+            "p95": 617.9794030000048,
+            "p99": 618.5233480000024
+          },
+          "loadMs": 31059.954488,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 211.18845000000002,
+            "min": 188.397,
+            "max": 273.979,
+            "median": 208.761,
+            "p95": 234.74,
+            "p99": 273.979
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1328595968,
+            "min": 1263099904,
+            "max": 1390657536,
+            "median": 1325395968,
+            "p95": 1384493056,
+            "p99": 1390657536
+          }
+        },
+        {
+          "index": 23,
+          "queryMs": {
+            "count": 20,
+            "mean": 605.0144870999986,
+            "min": 590.7343529999998,
+            "max": 612.5900909999982,
+            "median": 604.8317600000009,
+            "p95": 612.2551299999977,
+            "p99": 612.5900909999982
+          },
+          "loadMs": 30653.169915000002,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 207.28685000000002,
+            "min": 186.316,
+            "max": 262.867,
+            "median": 203.178,
+            "p95": 229.941,
+            "p99": 262.867
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1332607795.2,
+            "min": 1264164864,
+            "max": 1395269632,
+            "median": 1329831936,
+            "p95": 1388843008,
+            "p99": 1395269632
+          }
+        }
+      ],
+      "librarySha256": "22b521f827c6c97b54334c534b1dfa817ec57e1c7c4a089ce67bd9df605912ed"
+    },
+    "teardown": {
+      "queryMs": {
+        "count": 120,
+        "mean": 606.3939843666667,
+        "min": 594.6953920000014,
+        "max": 628.7845659999948,
+        "median": 605.201939999999,
+        "p95": 620.1761840000036,
+        "p99": 628.429830000001
+      },
+      "queryCpuMs": {
+        "count": 120,
+        "mean": 209.19401666666667,
+        "min": 182.234,
+        "max": 275.648,
+        "median": 206.147,
+        "p95": 248.906,
+        "p99": 273.267
+      },
+      "memoryScope": "Node process RSS immediately after each timed rerank; includes resident model, native allocations and JS heap; not GPU residency or peak device memory",
+      "rssAfterBytes": {
+        "count": 120,
+        "mean": 1356187852.8,
+        "min": 1267933184,
+        "max": 1430618112,
+        "median": 1355702272,
+        "p95": 1419939840,
+        "p99": 1427390464
+      },
+      "runs": [
+        {
+          "index": 1,
+          "queryMs": {
+            "count": 20,
+            "mean": 607.7405121000007,
+            "min": 598.9501739999978,
+            "max": 620.3633360000022,
+            "median": 605.6956740000023,
+            "p95": 620.2315860000017,
+            "p99": 620.3633360000022
+          },
+          "loadMs": 30866.235124,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 210.7614,
+            "min": 187.304,
+            "max": 266.959,
+            "median": 208.083,
+            "p95": 233.142,
+            "p99": 266.959
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1368930099.2,
+            "min": 1302454272,
+            "max": 1430618112,
+            "median": 1366241280,
+            "p95": 1424515072,
+            "p99": 1430618112
+          }
+        },
+        {
+          "index": 6,
+          "queryMs": {
+            "count": 20,
+            "mean": 605.0802785499997,
+            "min": 597.4048279999988,
+            "max": 620.6291569999958,
+            "median": 603.4449849999946,
+            "p95": 616.3078139999998,
+            "p99": 620.6291569999958
+          },
+          "loadMs": 31043.434797,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 208.05775,
+            "min": 183.617,
+            "max": 266.699,
+            "median": 201.182,
+            "p95": 246.509,
+            "p99": 266.699
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1338913177.6,
+            "min": 1272381440,
+            "max": 1400991744,
+            "median": 1336168448,
+            "p95": 1394556928,
+            "p99": 1400991744
+          }
+        },
+        {
+          "index": 8,
+          "queryMs": {
+            "count": 20,
+            "mean": 609.2661048000002,
+            "min": 597.8796180000063,
+            "max": 628.429830000001,
+            "median": 609.3927140000014,
+            "p95": 617.2228310000064,
+            "p99": 628.429830000001
+          },
+          "loadMs": 30868.677235,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 211.04714999999996,
+            "min": 186.26,
+            "max": 273.267,
+            "median": 209.31,
+            "p95": 232.245,
+            "p99": 273.267
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1364575232,
+            "min": 1298018304,
+            "max": 1426104320,
+            "median": 1361948672,
+            "p95": 1419939840,
+            "p99": 1426104320
+          }
+        },
+        {
+          "index": 15,
+          "queryMs": {
+            "count": 20,
+            "mean": 605.8675566499996,
+            "min": 595.7574769999992,
+            "max": 628.7845659999948,
+            "median": 602.3875009999974,
+            "p95": 620.1761840000036,
+            "p99": 628.7845659999948
+          },
+          "loadMs": 30355.371511999998,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 209.1745,
+            "min": 182.234,
+            "max": 270.345,
+            "median": 201.016,
+            "p95": 248.906,
+            "p99": 270.345
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1335039590.4,
+            "min": 1267933184,
+            "max": 1396547584,
+            "median": 1332473856,
+            "p95": 1390120960,
+            "p99": 1396547584
+          }
+        },
+        {
+          "index": 18,
+          "queryMs": {
+            "count": 20,
+            "mean": 604.6879681999997,
+            "min": 594.6953920000014,
+            "max": 614.5526239999963,
+            "median": 603.8572280000008,
+            "p95": 612.5913670000009,
+            "p99": 614.5526239999963
+          },
+          "loadMs": 30447.721638,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 208.29735,
+            "min": 184.238,
+            "max": 275.648,
+            "median": 205.286,
+            "p95": 227.773,
+            "p99": 275.648
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1363839180.8,
+            "min": 1298264064,
+            "max": 1424752640,
+            "median": 1361412096,
+            "p95": 1418559488,
+            "p99": 1424752640
+          }
+        },
+        {
+          "index": 21,
+          "queryMs": {
+            "count": 20,
+            "mean": 605.7214859,
+            "min": 596.1210470000005,
+            "max": 622.1264440000014,
+            "median": 605.1721240000043,
+            "p95": 616.1709799999953,
+            "p99": 622.1264440000014
+          },
+          "loadMs": 30752.10485,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 207.82595,
+            "min": 183.125,
+            "max": 268.686,
+            "median": 206.555,
+            "p95": 226.996,
+            "p99": 268.686
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1365829836.8,
+            "min": 1298923520,
+            "max": 1427390464,
+            "median": 1362894848,
+            "p95": 1421320192,
+            "p99": 1427390464
+          }
+        }
+      ],
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd"
+    },
+    "candidate": {
+      "queryMs": {
+        "count": 120,
+        "mean": 589.1202011749999,
+        "min": 578.9050359999965,
+        "max": 609.0482260000026,
+        "median": 587.8833740000046,
+        "p95": 598.8811580000038,
+        "p99": 605.5747940000001
+      },
+      "queryCpuMs": {
+        "count": 120,
+        "mean": 185.55684999999997,
+        "min": 156.555,
+        "max": 253.276,
+        "median": 181.78,
+        "p95": 227.628,
+        "p99": 245.061
+      },
+      "memoryScope": "Node process RSS immediately after each timed rerank; includes resident model, native allocations and JS heap; not GPU residency or peak device memory",
+      "rssAfterBytes": {
+        "count": 120,
+        "mean": 1343431406.9333334,
+        "min": 1265008640,
+        "max": 1425551360,
+        "median": 1343107072,
+        "p95": 1406701568,
+        "p99": 1419993088
+      },
+      "runs": [
+        {
+          "index": 2,
+          "queryMs": {
+            "count": 20,
+            "mean": 591.5281478500007,
+            "min": 579.8184380000021,
+            "max": 609.0482260000026,
+            "median": 590.751569,
+            "p95": 599.9500530000005,
+            "p99": 609.0482260000026
+          },
+          "loadMs": 30361.376901,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 188.72474999999997,
+            "min": 163.784,
+            "max": 253.276,
+            "median": 182.53,
+            "p95": 230.977,
+            "p99": 253.276
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1335507353.6,
+            "min": 1268297728,
+            "max": 1396957184,
+            "median": 1332736000,
+            "p95": 1390612480,
+            "p99": 1396957184
+          }
+        },
+        {
+          "index": 5,
+          "queryMs": {
+            "count": 20,
+            "mean": 590.9740264000002,
+            "min": 579.0056380000024,
+            "max": 605.5747940000001,
+            "median": 589.6985980000027,
+            "p95": 604.8989810000021,
+            "p99": 605.5747940000001
+          },
+          "loadMs": 30206.010587,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 187.50089999999997,
+            "min": 156.555,
+            "max": 245.061,
+            "median": 178.086,
+            "p95": 222.451,
+            "p99": 245.061
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1334549299.2,
+            "min": 1268154368,
+            "max": 1396322304,
+            "median": 1331724288,
+            "p95": 1389887488,
+            "p99": 1396322304
+          }
+        },
+        {
+          "index": 11,
+          "queryMs": {
+            "count": 20,
+            "mean": 590.3801398999992,
+            "min": 580.0352139999959,
+            "max": 601.1549040000027,
+            "median": 589.5320409999986,
+            "p95": 600.1069789999965,
+            "p99": 601.1549040000027
+          },
+          "loadMs": 30692.6705,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 187.06329999999997,
+            "min": 159.707,
+            "max": 244.175,
+            "median": 184.754,
+            "p95": 216.79,
+            "p99": 244.175
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1359113216,
+            "min": 1294397440,
+            "max": 1419993088,
+            "median": 1356644352,
+            "p95": 1413537792,
+            "p99": 1419993088
+          }
+        },
+        {
+          "index": 12,
+          "queryMs": {
+            "count": 20,
+            "mean": 586.5283208500011,
+            "min": 580.9670879999976,
+            "max": 596.5317799999975,
+            "median": 584.6028800000058,
+            "p95": 593.4117800000022,
+            "p99": 596.5317799999975
+          },
+          "loadMs": 30651.942571,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 182.62214999999998,
+            "min": 159.964,
+            "max": 241.225,
+            "median": 177.407,
+            "p95": 207.242,
+            "p99": 241.225
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1364226662.4,
+            "min": 1297969152,
+            "max": 1425551360,
+            "median": 1361723392,
+            "p95": 1419386880,
+            "p99": 1425551360
+          }
+        },
+        {
+          "index": 17,
+          "queryMs": {
+            "count": 20,
+            "mean": 588.943992049999,
+            "min": 578.9050359999965,
+            "max": 598.2625849999968,
+            "median": 588.6456120000003,
+            "p95": 597.7171979999985,
+            "p99": 598.2625849999968
+          },
+          "loadMs": 30633.34066,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 184.93710000000002,
+            "min": 164.586,
+            "max": 236.289,
+            "median": 182.551,
+            "p95": 209.661,
+            "p99": 236.289
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1331336396.8,
+            "min": 1265008640,
+            "max": 1393758208,
+            "median": 1328517120,
+            "p95": 1387454464,
+            "p99": 1393758208
+          }
+        },
+        {
+          "index": 22,
+          "queryMs": {
+            "count": 20,
+            "mean": 586.3665799999995,
+            "min": 579.3494690000007,
+            "max": 594.3205929999967,
+            "median": 586.559656999998,
+            "p95": 593.5736550000001,
+            "p99": 594.3205929999967
+          },
+          "loadMs": 31366.063141000002,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 182.49290000000002,
+            "min": 158.375,
+            "max": 227.628,
+            "median": 177.992,
+            "p95": 204.944,
+            "p99": 227.628
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1335855513.6,
+            "min": 1271046144,
+            "max": 1396523008,
+            "median": 1332895744,
+            "p95": 1390329856,
+            "p99": 1396523008
+          }
+        }
+      ],
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a"
+    },
+    "dawn": {
+      "queryMs": {
+        "count": 120,
+        "mean": 590.1718993499999,
+        "min": 530.4863780000014,
+        "max": 660.7517109999972,
+        "median": 542.6203160000005,
+        "p95": 654.5648430000001,
+        "p99": 659.6517309999981
+      },
+      "queryCpuMs": {
+        "count": 120,
+        "mean": 682.6601583333335,
+        "min": 581.743,
+        "max": 805.837,
+        "median": 652.963,
+        "p95": 790.116,
+        "p99": 796.999
+      },
+      "memoryScope": "Node process RSS immediately after each timed rerank; includes resident model, native allocations and JS heap; not GPU residency or peak device memory",
+      "rssAfterBytes": {
+        "count": 120,
+        "mean": 1560770935.4666667,
+        "min": 1517096960,
+        "max": 1569513472,
+        "median": 1562673152,
+        "p95": 1566801920,
+        "p99": 1569513472
+      },
+      "runs": [
+        {
+          "index": 3,
+          "queryMs": {
+            "count": 20,
+            "mean": 592.5645950999995,
+            "min": 531.8382290000009,
+            "max": 660.7517109999972,
+            "median": 542.6203160000005,
+            "p95": 656.8414330000014,
+            "p99": 660.7517109999972
+          },
+          "loadMs": 30744.165744,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 686.7214,
+            "min": 587.189,
+            "max": 805.837,
+            "median": 620.899,
+            "p95": 796.999,
+            "p99": 805.837
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1561098649.6,
+            "min": 1545232384,
+            "max": 1566826496,
+            "median": 1562370048,
+            "p95": 1566801920,
+            "p99": 1566826496
+          }
+        },
+        {
+          "index": 4,
+          "queryMs": {
+            "count": 20,
+            "mean": 589.5642086,
+            "min": 531.0178569999989,
+            "max": 653.003555999996,
+            "median": 541.891807,
+            "p95": 649.5607979999986,
+            "p99": 653.003555999996
+          },
+          "loadMs": 31127.201574,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 681.7652,
+            "min": 581.743,
+            "max": 781.925,
+            "median": 652.963,
+            "p95": 771.217,
+            "p99": 781.925
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1561068953.6,
+            "min": 1517096960,
+            "max": 1569513472,
+            "median": 1562603520,
+            "p95": 1569513472,
+            "p99": 1569513472
+          }
+        },
+        {
+          "index": 10,
+          "queryMs": {
+            "count": 20,
+            "mean": 590.939589349999,
+            "min": 532.2188539999988,
+            "max": 659.4321399999972,
+            "median": 538.1881740000026,
+            "p95": 655.0170799999978,
+            "p99": 659.4321399999972
+          },
+          "loadMs": 30639.208678,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 684.00805,
+            "min": 583.49,
+            "max": 794.123,
+            "median": 610.193,
+            "p95": 784.456,
+            "p99": 794.123
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1561360793.6,
+            "min": 1546063872,
+            "max": 1565159424,
+            "median": 1563635712,
+            "p95": 1565159424,
+            "p99": 1565159424
+          }
+        },
+        {
+          "index": 13,
+          "queryMs": {
+            "count": 20,
+            "mean": 590.2789712999999,
+            "min": 531.6055850000048,
+            "max": 649.9092489999966,
+            "median": 540.6124780000027,
+            "p95": 647.8239589999939,
+            "p99": 649.9092489999966
+          },
+          "loadMs": 30654.169318,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 682.0369500000002,
+            "min": 588.564,
+            "max": 791.519,
+            "median": 616.379,
+            "p95": 779.662,
+            "p99": 791.519
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1561301811.2,
+            "min": 1544466432,
+            "max": 1566588928,
+            "median": 1562673152,
+            "p95": 1566588928,
+            "p99": 1566588928
+          }
+        },
+        {
+          "index": 19,
+          "queryMs": {
+            "count": 20,
+            "mean": 589.2655887000012,
+            "min": 530.7015050000045,
+            "max": 659.6517309999981,
+            "median": 538.7334110000011,
+            "p95": 650.9407960000026,
+            "p99": 659.6517309999981
+          },
+          "loadMs": 30451.093986,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 680.8583999999998,
+            "min": 584.245,
+            "max": 791.241,
+            "median": 612.526,
+            "p95": 790.116,
+            "p99": 791.241
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1560820121.6,
+            "min": 1547677696,
+            "max": 1565356032,
+            "median": 1562730496,
+            "p95": 1564831744,
+            "p99": 1565356032
+          }
+        },
+        {
+          "index": 20,
+          "queryMs": {
+            "count": 20,
+            "mean": 588.4184430500005,
+            "min": 530.4863780000014,
+            "max": 657.1744719999988,
+            "median": 538.6771850000005,
+            "p95": 649.010918,
+            "p99": 657.1744719999988
+          },
+          "loadMs": 30657.545731,
+          "queryCpuMs": {
+            "count": 20,
+            "mean": 680.57095,
+            "min": 588.636,
+            "max": 790.914,
+            "median": 612.706,
+            "p95": 782.979,
+            "p99": 790.914
+          },
+          "rssAfterBytes": {
+            "count": 20,
+            "mean": 1558975283.2,
+            "min": 1546117120,
+            "max": 1564692480,
+            "median": 1560338432,
+            "p95": 1564692480,
+            "p99": 1564692480
+          }
+        }
+      ],
+      "librarySha256": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1"
+    }
+  },
+  "candidateOverBaselineMedian": 0.9713838227286672,
+  "candidateOverBaselineP95": 0.965662941355388,
+  "candidateOverDawnMedian": 1.0834157083053337,
+  "candidateOverDawnP95": 0.9149302233453496
+}

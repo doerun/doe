@@ -1,0 +1,393 @@
+{
+  "classification": "local-diagnostic-not-release-qualification",
+  "frozenPolicy": "experiment-policy.json",
+  "qwen": {
+    "statistics": {
+      "retained": {
+        "count": 120,
+        "mean": 607.9314904499998,
+        "nearestRankP50": 606.6823159999985,
+        "centralPairMedian": 606.6954194999998,
+        "p95": 621.3429130000004,
+        "p99": 627.2129859999986,
+        "min": 590.7343529999998,
+        "max": 630.4190660000022
+      },
+      "teardown": {
+        "count": 120,
+        "mean": 606.3939843666666,
+        "nearestRankP50": 605.201939999999,
+        "centralPairMedian": 605.2201989999994,
+        "p95": 620.1761840000036,
+        "p99": 628.429830000001,
+        "min": 594.6953920000014,
+        "max": 628.7845659999948
+      },
+      "candidate": {
+        "count": 120,
+        "mean": 589.1202011749999,
+        "nearestRankP50": 587.8833740000046,
+        "centralPairMedian": 587.9141960000052,
+        "p95": 598.8811580000038,
+        "p99": 605.5747940000001,
+        "min": 578.9050359999965,
+        "max": 609.0482260000026
+      },
+      "dawn": {
+        "count": 120,
+        "mean": 590.17189935,
+        "nearestRankP50": 542.6203160000005,
+        "centralPairMedian": 586.8503799999999,
+        "p95": 654.5648430000001,
+        "p99": 659.6517309999981,
+        "min": 530.4863780000014,
+        "max": 660.7517109999972
+      }
+    },
+    "primaryPairedComparisons": {
+      "candidate-over-teardown": {
+        "independentPairs": 6,
+        "ratio": 0.9715114476411973,
+        "oneSided95Upper": 0.9738039172298987,
+        "twoSided95Interval": [
+          0.9690833800009954,
+          0.9742809870628139
+        ],
+        "pairRatios": [
+          0.9733235419933098,
+          0.9766869741915843,
+          0.969002108026015,
+          0.9680800934334062,
+          0.9739634704542469,
+          0.9680465257539242
+        ],
+        "numeratorProcessMeans": [
+          591.5281478500007,
+          590.9740264000002,
+          590.3801398999992,
+          586.5283208500011,
+          588.943992049999,
+          586.3665799999995
+        ],
+        "denominatorProcessMeans": [
+          607.7405121000007,
+          605.0802785499997,
+          609.2661048000002,
+          605.8675566499996,
+          604.6879681999997,
+          605.7214859
+        ]
+      },
+      "teardown-over-retained": {
+        "independentPairs": 6,
+        "ratio": 0.9974754066768954,
+        "oneSided95Upper": 0.9993149644331667,
+        "twoSided95Interval": [
+          0.9952172704737334,
+          0.99954811218034
+        ],
+        "pairRatios": [
+          0.9982628051445473,
+          0.9982895704925021,
+          0.9949983659847735,
+          0.9992017658134593,
+          0.9929536832836031,
+          1.0011685650758384
+        ],
+        "numeratorProcessMeans": [
+          607.7405121000007,
+          605.0802785499997,
+          609.2661048000002,
+          605.8675566499996,
+          604.6879681999997,
+          605.7214859
+        ],
+        "denominatorProcessMeans": [
+          608.7981130500004,
+          606.1169989499998,
+          612.3287490999999,
+          606.3515672000012,
+          608.9790272999987,
+          605.0144870999986
+        ]
+      },
+      "candidate-over-retained": {
+        "independentPairs": 6,
+        "ratio": 0.9690587763271626,
+        "oneSided95Upper": 0.9715076325161982,
+        "twoSided95Interval": [
+          0.9664140933283705,
+          0.9720362227829098
+        ],
+        "pairRatios": [
+          0.9716326893434681,
+          0.9750164199713383,
+          0.964155514121686,
+          0.9673073388075181,
+          0.9671006153712253,
+          0.9691777511157069
+        ],
+        "numeratorProcessMeans": [
+          591.5281478500007,
+          590.9740264000002,
+          590.3801398999992,
+          586.5283208500011,
+          588.943992049999,
+          586.3665799999995
+        ],
+        "denominatorProcessMeans": [
+          608.7981130500004,
+          606.1169989499998,
+          612.3287490999999,
+          606.3515672000012,
+          608.9790272999987,
+          605.0144870999986
+        ]
+      },
+      "candidate-over-dawn": {
+        "independentPairs": 6,
+        "ratio": 0.9982144740317942,
+        "oneSided95Upper": 1.00003063619987,
+        "twoSided95Interval": [
+          0.9959987034510297,
+          1.0003632421422557
+        ],
+        "pairRatios": [
+          0.9982509126286496,
+          1.0023912879707335,
+          0.9990532882547011,
+          0.993645969732348,
+          0.9994542415912803,
+          0.9965129185289208
+        ],
+        "numeratorProcessMeans": [
+          591.5281478500007,
+          590.9740264000002,
+          590.3801398999992,
+          586.5283208500011,
+          588.943992049999,
+          586.3665799999995
+        ],
+        "denominatorProcessMeans": [
+          592.5645950999995,
+          589.5642086,
+          590.939589349999,
+          590.2789712999999,
+          589.2655887000012,
+          588.4184430500005
+        ]
+      },
+      "teardown-over-dawn": {
+        "independentPairs": 6,
+        "ratio": 1.0274860645805368,
+        "oneSided95Upper": 1.0289254836213464,
+        "twoSided95Interval": [
+          1.0260638182400013,
+          1.0291733248663635
+        ],
+        "pairRatios": [
+          1.0256105699285665,
+          1.0263178627936804,
+          1.0310125024288175,
+          1.0264088441363044,
+          1.0261722045131165,
+          1.0294060171878894
+        ],
+        "numeratorProcessMeans": [
+          607.7405121000007,
+          605.0802785499997,
+          609.2661048000002,
+          605.8675566499996,
+          604.6879681999997,
+          605.7214859
+        ],
+        "denominatorProcessMeans": [
+          592.5645950999995,
+          589.5642086,
+          590.939589349999,
+          590.2789712999999,
+          589.2655887000012,
+          588.4184430500005
+        ]
+      }
+    },
+    "candidatePerformanceAccepted": true,
+    "parityEstablished": false,
+    "absoluteArithmeticMeanDifferenceMs": {
+      "candidateMinusTeardown": -17.273783191666666,
+      "teardownMinusDawn": 16.222085016666597,
+      "candidateMinusDawn": -1.0516981750000696
+    },
+    "nearestRankGapMs": 45.263058000004094,
+    "centralPairMedianGapMs": 1.0638160000053176,
+    "arithmeticGapFractionRemoved": 1.064831257752598
+  },
+  "umap": {
+    "primaryPairedComparison": {
+      "independentPairs": 24,
+      "ratio": 1.0270513199367957,
+      "oneSided95Upper": 1.0512445597387126,
+      "twoSided95Interval": [
+        0.9999863589689298,
+        1.0558325953755978
+      ],
+      "pairRatios": [
+        0.9068879952379131,
+        1.0666414475137294,
+        1.0140579614424972,
+        0.9630746617421065,
+        1.1665787657341613,
+        1.002162408232517,
+        1.0051373595127306,
+        1.047386628235272,
+        0.9961704198950397,
+        1.063628150971237,
+        1.0198863246882808,
+        0.9986667248579486,
+        1.0795991434222834,
+        1.1698637236571217,
+        0.9016196113745157,
+        0.9665463639457496,
+        1.0416484638746204,
+        1.0294643456209713,
+        0.9496520518057475,
+        0.982353804618091,
+        1.1572103857447964,
+        1.0613303925240034,
+        1.0138880033788906,
+        1.1029974895591104
+      ],
+      "numeratorProcessMeans": [
+        14.349972000000017,
+        15.16413000000002,
+        15.179628999999997,
+        15.306621999999985,
+        16.26571933333334,
+        15.424764333333334,
+        15.418332000000001,
+        16.06328133333335,
+        15.02448666666667,
+        16.317172999999986,
+        14.729507666666658,
+        15.331202,
+        15.033109666666652,
+        16.914318666666684,
+        14.545036666666666,
+        15.545538333333317,
+        15.329054000000005,
+        15.726853999999983,
+        15.93806166666669,
+        15.069197666666676,
+        17.11260499999999,
+        16.073246666666666,
+        15.785831333333325,
+        16.081017333333325
+      ],
+      "denominatorProcessMeans": [
+        15.82331233333334,
+        14.216708000000002,
+        14.969192666666686,
+        15.893494666666678,
+        13.943095666666673,
+        15.391481666666701,
+        15.339527333333308,
+        15.336534666666656,
+        15.082245333333333,
+        15.341050333333309,
+        14.442303333333351,
+        15.351669999999976,
+        13.924714333333327,
+        14.458366666666677,
+        16.132121,
+        16.083593000000008,
+        14.716148999999973,
+        15.276734999999993,
+        16.783054000000032,
+        15.339888333333343,
+        14.787808000000004,
+        15.14443266666666,
+        15.569600666666682,
+        14.579378
+      ]
+    },
+    "slowdownBoundAccepted": false,
+    "unchangedControls": {
+      "independentPairs": 2,
+      "ratio": 1.0746505762200171,
+      "oneSided95Upper": 1.1003573148315362,
+      "twoSided95Interval": [
+        1.0495444028986396,
+        1.1003573148315362
+      ],
+      "pairRatios": [
+        1.1003573148315362,
+        1.0495444028986396
+      ],
+      "numeratorProcessMeans": [
+        15.776574000000002,
+        16.381881333333315
+      ],
+      "denominatorProcessMeans": [
+        14.337682666666675,
+        15.608564333333314
+      ]
+    },
+    "statistics": {
+      "candidate": {
+        "count": 72,
+        "mean": 15.57202876388889,
+        "nearestRankP50": 15.497254999999996,
+        "centralPairMedian": 15.505245000000002,
+        "p95": 17.94558900000004,
+        "p99": 18.958477000000016,
+        "min": 13.074378000000024,
+        "max": 18.958477000000016
+      },
+      "teardown": {
+        "count": 72,
+        "mean": 15.163602361111113,
+        "nearestRankP50": 15.096128000000022,
+        "centralPairMedian": 15.124937500000016,
+        "p95": 16.601365000000044,
+        "p99": 17.499918000000036,
+        "min": 13.228748999999993,
+        "max": 17.499918000000036
+      },
+      "teardown_a": {
+        "count": 6,
+        "mean": 14.973123499999994,
+        "nearestRankP50": 14.487912999999992,
+        "centralPairMedian": 14.759413999999992,
+        "p95": 17.30686499999996,
+        "p99": 17.30686499999996,
+        "min": 13.690089,
+        "max": 17.30686499999996
+      },
+      "teardown_b": {
+        "count": 6,
+        "mean": 16.079227666666657,
+        "nearestRankP50": 15.503506000000016,
+        "centralPairMedian": 15.675535499999995,
+        "p95": 19.109771999999964,
+        "p99": 19.109771999999964,
+        "min": 14.188307000000009,
+        "max": 19.109771999999964
+      }
+    },
+    "interpretation": "Inconclusive against the predeclared upper slowdown bound, not a proven large regression or equivalence. Unchanged controls vary substantially; no post-result rerun or threshold change."
+  },
+  "retainReuseCandidate": false,
+  "retainTeardownRepair": true,
+  "allFrozenOraclesPassed": true,
+  "limitations": [
+    "Single AMD/Vulkan host and frozen resident reranking operation; not complete search, external adoption or release qualification.",
+    "UMAP acceptance tests the predeclared slowdown bound, not equivalence or a transferred performance win.",
+    "Both median conventions and every observed latency band remain retained; neither replaces the primary rule.",
+    "Physical fault injection quiesces real GPU work before simulating unresolved waits or device loss; physical hardware reset not exercised.",
+    "Shutdown can remain blocked indefinitely if completion and device loss both remain unresolved.",
+    "Query RSS and process-tree peak RSS are not GPU residency; cached native allocation bytes are a distinct scope.",
+    "Process-boundary DRM observation can miss short-lived foreign clients.",
+    "No Khronos synchronization validation layer was installed."
+  ],
+  "productionDisposition": "Retain teardown correctness repair with original eight-entry compute allowance. Preserve combined memory policy, 64 MiB bounded reuse and writable-mapping repair. Larger allowance rejected by frozen UMAP criterion; keep isolated tested candidate and evidence."
+}

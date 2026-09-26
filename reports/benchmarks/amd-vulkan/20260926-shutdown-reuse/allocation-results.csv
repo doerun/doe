@@ -1,0 +1,7 @@
+variant,query,allocations,allocatedBytes,allocationCallElapsedMs,retainedPoolPeakBytes,perSizeRejections,globalRejections,pendingRejections,incompatibleRejections,copyCalls,fenceWaitCalls
+eight,3,366,141557952,14.880614,15466496,360,0,0,3,36,24
+eight,4,366,141557952,15.050796,15466496,360,0,0,3,36,24
+eight,5,366,141557952,14.00144,15466496,360,0,0,3,36,24
+thirtytwo,3,6,192,0.38963400000000004,22544384,0,0,0,3,36,24
+thirtytwo,4,6,192,0.375087,22544384,0,0,0,3,36,24
+thirtytwo,5,6,192,0.442203,22544384,0,0,0,3,36,24

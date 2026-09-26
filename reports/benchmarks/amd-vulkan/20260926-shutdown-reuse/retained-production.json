@@ -1,0 +1,15 @@
+{
+  "sourceCommit": "0f817f746aba8746ad1a79c55d9c7466a6e5f5e4",
+  "sourceParent": "9c1f45e13ae3d5e0f3df4bf164b1af4df8020b5d",
+  "measuredArm": "teardown",
+  "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+  "identicalToMeasuredTeardownLibrary": true,
+  "runtimeAndConfigMatchMeasuredTeardownPatch": true,
+  "teardownPatchSha256": "0ad78f564e7982400cbd35681ce07b66e090631a6b23822f3dfbbd8e70f34c36",
+  "productionComputeEntriesPerSize": 8,
+  "rejectedCandidateEntriesPerSize": 32,
+  "globalComputeCacheMaxBytes": 67108864,
+  "schemaVersion": 4,
+  "retainedBaseRuntime": "b21adb3d0d5bf7ba30ecfffdefe548cb1efa7aec",
+  "priorEvidencePublication": "9c1f45e13ae3d5e0f3df4bf164b1af4df8020b5d"
+}

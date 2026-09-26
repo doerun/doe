@@ -1,0 +1,78 @@
+1/73 .audit_shutdown_probe.test.shutdown retains owners after failed waiting until delayed device completion...LIFETIME mode=shutdown loss=0 retained=false reuse_rejected=false waits=2 idle_calls=0 premature=10
+FAIL (TestUnexpectedResult)
+2/73 .audit_shutdown_probe.test.registered buffer fallback waits and bypasses reuse after unresolved completion...LIFETIME mode=registered loss=0 retained=false reuse_rejected=false waits=0 idle_calls=0 premature=3
+FAIL (TestUnexpectedResult)
+3/73 .audit_shutdown_probe.test.direct buffer release retains its allocation until device loss permits cleanup...LIFETIME mode=direct loss=1 retained=false reuse_rejected=false waits=0 idle_calls=0 premature=3
+FAIL (TestUnexpectedResult)
+4/73 .audit_shutdown_probe.test.device lost during waiting cleans up without eventual successful execution...LIFETIME mode=shutdown loss=2 retained=false reuse_rejected=false waits=2 idle_calls=0 premature=10
+FAIL (TestUnexpectedResult)
+5/73 src.backend.vulkan.vk_resources.test.texture views reject recycled parent allocations and another attachment owner...OK
+6/73 src.backend.vulkan.vk_resources.test.default_texture_view_dimension preserves non-2d resources...OK
+7/73 src.backend.vulkan.vk_resources.test.copy-only textures do not require Vulkan image views...OK
+8/73 src.backend.vulkan.vk_pipeline_cache_persistent.test.disabled flag suppresses cache creation...OK
+9/73 src.backend.vulkan.vk_pipeline_cache_persistent.test.default state is disabled handle...OK
+10/73 src.backend.vulkan.vk_pipeline_cache_persistent.test.cache configuration is isolated per provider instance...OK
+11/73 src.contracts.backend.test.backend identities and strict selection are stable...OK
+12/73 src.backend.backend_policy.test.lane table round-trips canonical and alias names...OK
+13/73 src.backend.backend_policy.test.default Vulkan comparable policy declares graphics compute queue preference...OK
+14/73 src.backend.backend_policy.test.default Vulkan compute-only diagnostic policy requires compute queue and staged uploads...OK
+15/73 src.backend.backend_policy.test.default Vulkan compute-only fence diagnostic policy requires fence pool...OK
+16/73 src.backend.backend_policy.test.backend runtime policy: compiled defaults match the config for every lane...OK
+17/73 src.backend.backend_policy.test.backend runtime policy: parser ownership and incomplete build table survive allocation failures...OK
+18/73 src.backend.backend_policy.test.backend runtime policy: file loading owns the surviving hash and preserves allocation failures...OK
+19/73 src.backend.backend_policy.test.backend runtime policy: rejects malformed fields and undeclared choices...OK
+20/73 src.backend.vulkan.vk_sync.test.rejected fence submissions preserve earlier work and permit retry...OK
+21/73 src.backend.vulkan.vk_sync.test.rejected sole fence submission does not enter a native wait...OK
+22/73 src.backend.vulkan.vk_sync.test.timeline submission reserves then publishes only potentially submitted values...OK
+23/73 src.backend.vulkan.vk_sync.test.device loss and unknown submission errors retain synchronization obligations...OK
+24/73 src.backend.vulkan.vk_pipeline.test.staged SPIR-V retains the actual shader across selection replacement without allocation...OK
+25/73 src.backend.vulkan.vk_pipeline.test.SPIR-V staging failed acquisition preserves the previous owner...OK
+26/73 src.backend.vulkan.vk_pipeline_cache.test.hot compute state cache activates before hash map fallback...OK
+27/73 src.backend.vulkan.vk_pipeline_cache.test.buffer destruction retires only matching descriptors across cache tiers...OK
+28/73 src.backend.vulkan.vk_runtime_surface_ops.test.surface capability queries require a native surface...OK
+29/73 src.backend.vulkan.vk_compute_sync.test.storage texture write access requires conservative compute synchronization...OK
+30/73 src.backend.vulkan.vk_compute_sync.test.Vulkan indirect visibility retains hazards for later shader consumers...OK
+31/73 src.backend.vulkan.vulkan_errors.test.check_vk succeeds on VK_SUCCESS...OK
+32/73 src.backend.vulkan.vulkan_errors.test.check_vk returns error on failure code...OK
+33/73 src.backend.vulkan.vulkan_errors.test.map_vk_result maps EXTENSION_NOT_PRESENT to UnsupportedFeature...OK
+34/73 src.backend.vulkan.vulkan_errors.test.map_vk_result maps FEATURE_NOT_PRESENT to UnsupportedFeature...OK
+35/73 src.backend.vulkan.vulkan_errors.test.map_vk_result maps INCOMPATIBLE_DRIVER to UnsupportedFeature...OK
+36/73 src.backend.vulkan.vulkan_errors.test.map_vk_result maps TOO_MANY_OBJECTS to UnsupportedFeature...OK
+37/73 src.backend.vulkan.vulkan_errors.test.map_vk_result maps FORMAT_NOT_SUPPORTED to UnsupportedFeature...OK
+38/73 src.backend.vulkan.vulkan_errors.test.map_vk_result maps FRAGMENTED_POOL to UnsupportedFeature...OK
+39/73 src.backend.vulkan.vulkan_errors.test.map_vk_result maps UNKNOWN to UnsupportedFeature...OK
+40/73 src.backend.vulkan.vulkan_errors.test.map_vk_result maps OUT_OF_DATE_KHR to SurfaceUnavailable...OK
+41/73 src.backend.vulkan.vulkan_errors.test.map_vk_result maps other errors to InvalidState...OK
+42/73 src.backend.vulkan.vulkan_errors.test.vulkanResultName returns known names...OK
+43/73 src.contracts.execution.test.backend errors have one unsupported classification...OK
+44/73 src.backend.vulkan.vk_memory_policy.test.readback preference preserves coherence and supported memory type constraints...OK
+45/73 src.backend.vulkan.vk_memory_policy.test.host-visible preference selects compatible device-local memory or preserves required properties...OK
+46/73 src.backend.vulkan.vk_shader_source.test.SPIR-V cache admission releases loaded words on allocation failure...OK
+47/73 src.backend.vulkan.vk_shader_source.test.WGSL source loading and compilation preserve allocation failures...OK
+48/73 src.backend.vulkan.vk_shader_source.test.SPIR-V sibling resolution never treats a parent directory suffix as a file extension...OK
+49/73 src.backend.common.path_utils.test.path probe distinguishes missing paths from invalid paths...OK
+50/73 src.compiler.wgsl.emit.spirv.emit_spirv_shared.test.uncached result instruction reserves id and writes canonical operands...OK
+51/73 src.compiler.wgsl.ir.ir_query.test.canonical IR queries resolve builtin, literal, global base, and runtime stride...OK
+52/73 src.compiler.wgsl.frontend.parser.test.parse simple compute shader...OK
+53/73 src.compiler.wgsl.frontend.parser.test.parse struct...OK
+54/73 src.compiler.wgsl.frontend.parser.test.parse override...OK
+55/73 src.compiler.wgsl.frontend.parser.test.parse multiple entry points...OK
+56/73 src.compiler.wgsl.frontend.lexer.test.lex simple compute shader...OK
+57/73 src.compiler.wgsl.frontend.lexer.test.lex number literals...OK
+58/73 src.compiler.wgsl.frontend.lexer.test.lex compound operators...OK
+59/73 src.compiler.wgsl.frontend.lexer.test.lex comments...OK
+60/73 src.compiler.wgsl.frontend.lexer.test.lex keywords...OK
+61/73 src.compiler.wgsl.frontend.sema_helpers.test.parse wgsl numeric literals trims suffixes and keeps prefixes...OK
+62/73 src.compiler.wgsl.frontend.sema_helpers.test.parse vector swizzles validates component sets...OK
+63/73 src.compiler.wgsl.frontend.sema_type_syntax.test.matrix shape parser accepts WGSL matrix dimensions...OK
+64/73 src.compiler.wgsl.ir.ir_opt_rewrite.test.integer identity rewrites return expression to dynamic operand...OK
+65/73 src.compiler.wgsl.ir.ir_opt_rewrite.test.integer identity rewrites transitive expression users...OK
+66/73 src.compiler.wgsl.ir.ir_opt_rewrite.test.integer const binary folds mutate expression to literal...OK
+67/73 src.compiler.wgsl.ir.ir_opt_rewrite.test.integer const binary folds through local let aliases...OK
+68/73 src.compiler.wgsl.ir.ir_opt_rewrite.test.integer const unary folds through local let aliases...OK
+69/73 src.compiler.wgsl.ir.ir_opt_rewrite.test.absorbing integer identities preserve zero operand...OK
+70/73 src.compiler.wgsl.ir.ir_opt_rewrite.test.bool identity rewrites logical expression roots...OK
+71/73 src.contracts.primitives.byte_scan.test.countLeadingWhitespace handles scalar and vector spans...OK
+72/73 src.contracts.primitives.byte_scan.test.digit and identifier scans stop at first non-matching byte...OK
+73/73 src.contracts.primitives.byte_scan.test.findFirstByte and json escape scan find expected boundaries...OK
+69 passed; 0 skipped; 4 failed.

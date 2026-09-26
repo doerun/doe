@@ -1,0 +1,23 @@
+{
+  "retained": {
+    "library": "/home/x/deco/doe/bench/out/doppler-search/20260926-policy/reuse-native/lib/libwebgpu_doe.so",
+    "sha256": "22b521f827c6c97b54334c534b1dfa817ec57e1c7c4a089ce67bd9df605912ed",
+    "sourceCommit": "b21adb3d0d5bf7ba30ecfffdefe548cb1efa7aec",
+    "patch": null,
+    "patchSha256": null
+  },
+  "teardown": {
+    "library": "/home/x/deco/doe/bench/out/doppler-search/20260926-shutdown-reuse/teardown-native/lib/libwebgpu_doe.so",
+    "sha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+    "sourceCommit": "9c1f45e13ae3d5e0f3df4bf164b1af4df8020b5d",
+    "patch": "teardown.patch",
+    "patchSha256": "0ad78f564e7982400cbd35681ce07b66e090631a6b23822f3dfbbd8e70f34c36"
+  },
+  "candidate": {
+    "library": "/home/x/deco/doe/bench/out/doppler-search/20260926-shutdown-reuse/candidate-native/lib/libwebgpu_doe.so",
+    "sha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+    "sourceCommit": "9c1f45e13ae3d5e0f3df4bf164b1af4df8020b5d",
+    "patch": "candidate.patch",
+    "patchSha256": "e9b4f0c7be4e0fdb7f789b77b91d93682ab472ff723da365107d303665f06d06"
+  }
+}

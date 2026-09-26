@@ -1,0 +1,2666 @@
+{
+  "policy": {
+    "classification": "local-diagnostic",
+    "order": [
+      "teardown_a",
+      "teardown_b",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown",
+      "candidate",
+      "candidate",
+      "teardown",
+      "teardown_b",
+      "teardown_a"
+    ],
+    "unchangedControlLabels": {
+      "teardown_a": "teardown",
+      "teardown_b": "teardown"
+    },
+    "independentPairs": 24,
+    "acceptableSlowdownRatio": 1.05,
+    "sourceExperiment": "../experiment-policy.json"
+  },
+  "classification": "local-diagnostic-not-release-claim",
+  "workload": "pinned-upstream-umap-sgd",
+  "checks": {
+    "oraclePassed": true,
+    "exactProviderReplayPassed": true,
+    "unchangedDoeOutputAcrossCandidate": true,
+    "inputAndDispatchShapeMatch": true,
+    "gpuActivityAdmitted": true
+  },
+  "dispatchShape": {
+    "edgeCount": 120,
+    "embeddingElementCount": 48,
+    "epochs": 500,
+    "sgdWorkgroupsPerEpoch": 1,
+    "applyWorkgroupsPerEpoch": 1,
+    "totalDispatches": 1000
+  },
+  "immutableInputs": {
+    "inputs": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.inputs.json",
+      "sha256": "2d453439b8f597fd38d4dddd4e88b4b5de83fa0d18ab4dd68767d674e9184b39"
+    },
+    "oracle": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.oracle.md",
+      "sha256": "7f4937e8fd86fae2a167e80e7d9a6abb52e98cba96f064c7a177ce92d290b552"
+    },
+    "workload": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.workload.test.ts",
+      "sha256": "1f390ee77b6d6a5332d42c4e29ad250f0f9216edaf0634c6bf18b9ac23034e69"
+    },
+    "config": {
+      "path": "bench/external-projects/umap-gpu/vitest-sgd-benchmark.config.mjs",
+      "sha256": "26a3ea47d403f261eba4eebe63355417b32e22c8c033f8a1fe3b3eb4403d2bff"
+    },
+    "runner": {
+      "path": "bench/external-projects/umap-gpu/run-sgd-benchmark.mjs",
+      "sha256": "62d21914ad1495ee50d33bcc0a829be02184a4acdaca2d948089d8cdc0f28798"
+    },
+    "sgdImplementation": {
+      "path": "src/gpu/sgd.ts",
+      "sha256": "1cfa4b71c6f734450f9b8d810a6afb19e3ffb53f1ed2bce7bb018660dfdc2a63"
+    },
+    "sgdShader": {
+      "path": "src/gpu/shaders/sgd.wgsl",
+      "sha256": "3af8e076009f75b17dec45898e026db8f413f76d9992f00619583077a338485d"
+    },
+    "applyForcesShader": {
+      "path": "src/gpu/shaders/apply-forces.wgsl",
+      "sha256": "47e8ca3495ea67f3266b0365860f8eccae9b165c175231cf8c0559ffdc13b272"
+    },
+    "packageLock": {
+      "path": "package-lock.json",
+      "sha256": "b59a0b82e8430962d8a5229d2e04d7c440efa4fbd59bc7ba92e5cc357e65fb91"
+    }
+  },
+  "results": {
+    "teardown": {
+      "count": 72,
+      "mean": 15.163602361111113,
+      "min": 13.228748999999993,
+      "max": 17.499918000000036,
+      "median": 15.096128000000022,
+      "p95": 16.601365000000044,
+      "p99": 17.499918000000036
+    },
+    "candidate": {
+      "count": 72,
+      "mean": 15.57202876388889,
+      "min": 13.074378000000024,
+      "max": 18.958477000000016,
+      "median": 15.497254999999996,
+      "p95": 17.94558900000004,
+      "p99": 18.958477000000016
+    },
+    "teardown_a": {
+      "count": 6,
+      "mean": 14.973123499999994,
+      "min": 13.690089,
+      "max": 17.30686499999996,
+      "median": 14.487912999999992,
+      "p95": 17.30686499999996,
+      "p99": 17.30686499999996
+    },
+    "teardown_b": {
+      "count": 6,
+      "mean": 16.079227666666657,
+      "min": 14.188307000000009,
+      "max": 19.109771999999964,
+      "median": 15.503506000000016,
+      "p95": 19.109771999999964,
+      "p99": 19.109771999999964
+    }
+  },
+  "rows": [
+    {
+      "index": 0,
+      "variant": "teardown_a",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-0-teardown_a/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.75259699999998,
+            "min": 13.336922999999956,
+            "max": 21.10472199999998,
+            "median": 15.816146000000003,
+            "p95": 21.10472199999998,
+            "p99": 21.10472199999998
+          },
+          "samplesMs": [
+            15.816146000000003,
+            13.336922999999956,
+            21.10472199999998
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296558592
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.337682666666675,
+            "min": 13.690089,
+            "max": 15.103923000000009,
+            "median": 14.219036000000017,
+            "p95": 15.103923000000009,
+            "p99": 15.103923000000009
+          },
+          "samplesMs": [
+            14.219036000000017,
+            15.103923000000009,
+            13.690089
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 328638464
+        }
+      }
+    },
+    {
+      "index": 1,
+      "variant": "teardown_b",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-1-teardown_b/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.883147333333321,
+            "min": 13.028813000000014,
+            "max": 17.329647999999963,
+            "median": 14.290980999999988,
+            "p95": 17.329647999999963,
+            "p99": 17.329647999999963
+          },
+          "samplesMs": [
+            14.290980999999988,
+            13.028813000000014,
+            17.329647999999963
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295518208
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.776574000000002,
+            "min": 15.197769999999991,
+            "max": 16.628445999999997,
+            "median": 15.503506000000016,
+            "p95": 16.628445999999997,
+            "p99": 16.628445999999997
+          },
+          "samplesMs": [
+            16.628445999999997,
+            15.503506000000016,
+            15.197769999999991
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 328572928
+        }
+      }
+    },
+    {
+      "index": 2,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-2-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.117772666666648,
+            "min": 13.538081999999974,
+            "max": 17.36952299999996,
+            "median": 14.445713000000012,
+            "p95": 17.36952299999996,
+            "p99": 17.36952299999996
+          },
+          "samplesMs": [
+            14.445713000000012,
+            13.538081999999974,
+            17.36952299999996
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296783872
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.82331233333334,
+            "min": 15.461858000000007,
+            "max": 16.308964000000003,
+            "median": 15.699115000000006,
+            "p95": 16.308964000000003,
+            "p99": 16.308964000000003
+          },
+          "samplesMs": [
+            15.699115000000006,
+            15.461858000000007,
+            16.308964000000003
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 324763648
+        }
+      }
+    },
+    {
+      "index": 3,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-3-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.80123066666666,
+            "min": 14.19709499999999,
+            "max": 18.245983999999964,
+            "median": 14.960613000000023,
+            "p95": 18.245983999999964,
+            "p99": 18.245983999999964
+          },
+          "samplesMs": [
+            14.960613000000023,
+            14.19709499999999,
+            18.245983999999964
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295755776
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.349972000000017,
+            "min": 13.074378000000024,
+            "max": 16.130025999999987,
+            "median": 13.845512000000042,
+            "p95": 16.130025999999987,
+            "p99": 16.130025999999987
+          },
+          "samplesMs": [
+            16.130025999999987,
+            13.845512000000042,
+            13.074378000000024
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 331997184
+        }
+      }
+    },
+    {
+      "index": 4,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-4-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 19.22962799999999,
+            "min": 17.102890000000002,
+            "max": 23.39946599999996,
+            "median": 17.18652800000001,
+            "p95": 23.39946599999996,
+            "p99": 23.39946599999996
+          },
+          "samplesMs": [
+            17.18652800000001,
+            17.102890000000002,
+            23.39946599999996
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 294408192
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.16413000000002,
+            "min": 14.355552999999986,
+            "max": 16.152348000000018,
+            "median": 14.984489000000053,
+            "p95": 16.152348000000018,
+            "p99": 16.152348000000018
+          },
+          "samplesMs": [
+            16.152348000000018,
+            14.984489000000053,
+            14.355552999999986
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 331251712
+        }
+      }
+    },
+    {
+      "index": 5,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-5-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.767061666666658,
+            "min": 13.014936000000034,
+            "max": 17.76829399999997,
+            "median": 13.517954999999972,
+            "p95": 17.76829399999997,
+            "p99": 17.76829399999997
+          },
+          "samplesMs": [
+            13.014936000000034,
+            13.517954999999972,
+            17.76829399999997
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296722432
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.216708000000002,
+            "min": 13.700047999999981,
+            "max": 14.746550000000013,
+            "median": 14.20352600000001,
+            "p95": 14.746550000000013,
+            "p99": 14.746550000000013
+          },
+          "samplesMs": [
+            14.20352600000001,
+            14.746550000000013,
+            13.700047999999981
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 328368128
+        }
+      }
+    },
+    {
+      "index": 6,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-6-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.22876066666665,
+            "min": 14.382663999999977,
+            "max": 21.76092799999998,
+            "median": 15.542689999999993,
+            "p95": 21.76092799999998,
+            "p99": 21.76092799999998
+          },
+          "samplesMs": [
+            15.542689999999993,
+            14.382663999999977,
+            21.76092799999998
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295260160
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.969192666666686,
+            "min": 13.317797000000041,
+            "max": 15.81016500000004,
+            "median": 15.779615999999976,
+            "p95": 15.81016500000004,
+            "p99": 15.81016500000004
+          },
+          "samplesMs": [
+            15.81016500000004,
+            15.779615999999976,
+            13.317797000000041
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 334098432
+        }
+      }
+    },
+    {
+      "index": 7,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-7-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.236934666666684,
+            "min": 14.515664000000015,
+            "max": 19.046232000000032,
+            "median": 15.148908000000006,
+            "p95": 19.046232000000032,
+            "p99": 19.046232000000032
+          },
+          "samplesMs": [
+            15.148908000000006,
+            14.515664000000015,
+            19.046232000000032
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 293830656
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.179628999999997,
+            "min": 15.141654000000017,
+            "max": 15.208460000000002,
+            "median": 15.18877299999997,
+            "p95": 15.208460000000002,
+            "p99": 15.208460000000002
+          },
+          "samplesMs": [
+            15.18877299999997,
+            15.208460000000002,
+            15.141654000000017
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 326467584
+        }
+      }
+    },
+    {
+      "index": 8,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-8-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 18.179799666666685,
+            "min": 14.73961700000001,
+            "max": 21.642245000000003,
+            "median": 18.157537000000048,
+            "p95": 21.642245000000003,
+            "p99": 21.642245000000003
+          },
+          "samplesMs": [
+            18.157537000000048,
+            14.73961700000001,
+            21.642245000000003
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296407040
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.306621999999985,
+            "min": 14.827682999999979,
+            "max": 15.56688600000001,
+            "median": 15.525296999999966,
+            "p95": 15.56688600000001,
+            "p99": 15.56688600000001
+          },
+          "samplesMs": [
+            15.525296999999966,
+            14.827682999999979,
+            15.56688600000001
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327090176
+        }
+      }
+    },
+    {
+      "index": 9,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-9-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.639563999999968,
+            "min": 14.061218999999994,
+            "max": 21.380851999999948,
+            "median": 14.476620999999966,
+            "p95": 21.380851999999948,
+            "p99": 21.380851999999948
+          },
+          "samplesMs": [
+            14.476620999999966,
+            14.061218999999994,
+            21.380851999999948
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 292757504
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.893494666666678,
+            "min": 15.269645999999966,
+            "max": 16.459598000000028,
+            "median": 15.951240000000041,
+            "p95": 16.459598000000028,
+            "p99": 16.459598000000028
+          },
+          "samplesMs": [
+            15.951240000000041,
+            15.269645999999966,
+            16.459598000000028
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 328515584
+        }
+      }
+    },
+    {
+      "index": 10,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-10-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.881273333333317,
+            "min": 14.128243999999995,
+            "max": 15.748487999999952,
+            "median": 14.767088000000001,
+            "p95": 15.748487999999952,
+            "p99": 15.748487999999952
+          },
+          "samplesMs": [
+            15.748487999999952,
+            14.128243999999995,
+            14.767088000000001
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 288092160
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 13.943095666666673,
+            "min": 13.361649999999997,
+            "max": 14.689031,
+            "median": 13.778606000000025,
+            "p95": 14.689031,
+            "p99": 14.689031
+          },
+          "samplesMs": [
+            14.689031,
+            13.778606000000025,
+            13.361649999999997
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 334778368
+        }
+      }
+    },
+    {
+      "index": 11,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-11-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.937779333333328,
+            "min": 14.984658999999965,
+            "max": 19.069285999999977,
+            "median": 16.759393000000046,
+            "p95": 19.069285999999977,
+            "p99": 19.069285999999977
+          },
+          "samplesMs": [
+            16.759393000000046,
+            14.984658999999965,
+            19.069285999999977
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296574976
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.26571933333334,
+            "min": 14.894158000000004,
+            "max": 17.94558900000004,
+            "median": 15.95741099999998,
+            "p95": 17.94558900000004,
+            "p99": 17.94558900000004
+          },
+          "samplesMs": [
+            15.95741099999998,
+            17.94558900000004,
+            14.894158000000004
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 326901760
+        }
+      }
+    },
+    {
+      "index": 12,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-12-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.35524033333335,
+            "min": 14.111933999999962,
+            "max": 17.048207000000048,
+            "median": 14.905580000000043,
+            "p95": 17.048207000000048,
+            "p99": 17.048207000000048
+          },
+          "samplesMs": [
+            14.905580000000043,
+            14.111933999999962,
+            17.048207000000048
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 293998592
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.424764333333334,
+            "min": 14.32942300000002,
+            "max": 16.12103000000002,
+            "median": 15.823839999999961,
+            "p95": 16.12103000000002,
+            "p99": 16.12103000000002
+          },
+          "samplesMs": [
+            16.12103000000002,
+            15.823839999999961,
+            14.32942300000002
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 328224768
+        }
+      }
+    },
+    {
+      "index": 13,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-13-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.62869866666665,
+            "min": 14.165824999999984,
+            "max": 17.702619999999968,
+            "median": 15.017651,
+            "p95": 17.702619999999968,
+            "p99": 17.702619999999968
+          },
+          "samplesMs": [
+            15.017651,
+            14.165824999999984,
+            17.702619999999968
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296443904
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.391481666666701,
+            "min": 14.358398000000022,
+            "max": 17.219720000000052,
+            "median": 14.59632700000003,
+            "p95": 17.219720000000052,
+            "p99": 17.219720000000052
+          },
+          "samplesMs": [
+            17.219720000000052,
+            14.358398000000022,
+            14.59632700000003
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327897088
+        }
+      }
+    },
+    {
+      "index": 14,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-14-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.932347666666677,
+            "min": 14.273248000000024,
+            "max": 18.57806000000005,
+            "median": 14.945734999999956,
+            "p95": 18.57806000000005,
+            "p99": 18.57806000000005
+          },
+          "samplesMs": [
+            14.945734999999956,
+            14.273248000000024,
+            18.57806000000005
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296882176
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.339527333333308,
+            "min": 14.643264999999985,
+            "max": 15.88604799999996,
+            "median": 15.489268999999979,
+            "p95": 15.88604799999996,
+            "p99": 15.88604799999996
+          },
+          "samplesMs": [
+            15.489268999999979,
+            15.88604799999996,
+            14.643264999999985
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 334753792
+        }
+      }
+    },
+    {
+      "index": 15,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-15-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 18.30026966666666,
+            "min": 16.053932999999972,
+            "max": 22.57265799999999,
+            "median": 16.27421800000002,
+            "p95": 22.57265799999999,
+            "p99": 22.57265799999999
+          },
+          "samplesMs": [
+            16.27421800000002,
+            16.053932999999972,
+            22.57265799999999
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295464960
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.418332000000001,
+            "min": 14.06086700000003,
+            "max": 16.341475000000003,
+            "median": 15.852653999999973,
+            "p95": 16.341475000000003,
+            "p99": 16.341475000000003
+          },
+          "samplesMs": [
+            15.852653999999973,
+            16.341475000000003,
+            14.06086700000003
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 331362304
+        }
+      }
+    },
+    {
+      "index": 16,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-16-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.40753733333334,
+            "min": 14.391029000000003,
+            "max": 23.210820000000012,
+            "median": 14.62076300000001,
+            "p95": 23.210820000000012,
+            "p99": 23.210820000000012
+          },
+          "samplesMs": [
+            14.62076300000001,
+            14.391029000000003,
+            23.210820000000012
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 292827136
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.06328133333335,
+            "min": 15.527822000000015,
+            "max": 16.453417,
+            "median": 16.208605000000034,
+            "p95": 16.453417,
+            "p99": 16.453417
+          },
+          "samplesMs": [
+            16.453417,
+            16.208605000000034,
+            15.527822000000015
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 325537792
+        }
+      }
+    },
+    {
+      "index": 17,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-17-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.857894000000007,
+            "min": 13.99423200000001,
+            "max": 18.710980000000006,
+            "median": 14.868470000000002,
+            "p95": 18.710980000000006,
+            "p99": 18.710980000000006
+          },
+          "samplesMs": [
+            14.868470000000002,
+            13.99423200000001,
+            18.710980000000006
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296304640
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.336534666666656,
+            "min": 14.656970999999999,
+            "max": 15.816977000000009,
+            "median": 15.53565599999996,
+            "p95": 15.816977000000009,
+            "p99": 15.816977000000009
+          },
+          "samplesMs": [
+            15.816977000000009,
+            15.53565599999996,
+            14.656970999999999
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 326246400
+        }
+      }
+    },
+    {
+      "index": 18,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-18-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.250327666666653,
+            "min": 14.497749999999996,
+            "max": 19.296312999999998,
+            "median": 17.95691999999997,
+            "p95": 19.296312999999998,
+            "p99": 19.296312999999998
+          },
+          "samplesMs": [
+            17.95691999999997,
+            14.497749999999996,
+            19.296312999999998
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296517632
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.082245333333333,
+            "min": 14.267766999999992,
+            "max": 15.825221999999997,
+            "median": 15.15374700000001,
+            "p95": 15.825221999999997,
+            "p99": 15.825221999999997
+          },
+          "samplesMs": [
+            15.15374700000001,
+            15.825221999999997,
+            14.267766999999992
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 333041664
+        }
+      }
+    },
+    {
+      "index": 19,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-19-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.992372999999986,
+            "min": 12.892595999999969,
+            "max": 17.819230000000005,
+            "median": 14.265292999999986,
+            "p95": 17.819230000000005,
+            "p99": 17.819230000000005
+          },
+          "samplesMs": [
+            14.265292999999986,
+            12.892595999999969,
+            17.819230000000005
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296079360
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.02448666666667,
+            "min": 14.317119999999989,
+            "max": 15.713892999999985,
+            "median": 15.042447000000038,
+            "p95": 15.713892999999985,
+            "p99": 15.713892999999985
+          },
+          "samplesMs": [
+            15.713892999999985,
+            15.042447000000038,
+            14.317119999999989
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 326811648
+        }
+      }
+    },
+    {
+      "index": 20,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-20-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.351189333333329,
+            "min": 13.820884999999976,
+            "max": 18.14844099999999,
+            "median": 14.084242000000017,
+            "p95": 18.14844099999999,
+            "p99": 18.14844099999999
+          },
+          "samplesMs": [
+            14.084242000000017,
+            13.820884999999976,
+            18.14844099999999
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 297091072
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.317172999999986,
+            "min": 13.778996000000006,
+            "max": 18.42492199999998,
+            "median": 16.747600999999975,
+            "p95": 18.42492199999998,
+            "p99": 18.42492199999998
+          },
+          "samplesMs": [
+            18.42492199999998,
+            16.747600999999975,
+            13.778996000000006
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 334962688
+        }
+      }
+    },
+    {
+      "index": 21,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-21-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.938248999999985,
+            "min": 14.069283999999982,
+            "max": 18.614408999999966,
+            "median": 15.131054000000006,
+            "p95": 18.614408999999966,
+            "p99": 18.614408999999966
+          },
+          "samplesMs": [
+            15.131054000000006,
+            14.069283999999982,
+            18.614408999999966
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296341504
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.341050333333309,
+            "min": 14.246587999999974,
+            "max": 15.928416999999968,
+            "median": 15.848145999999986,
+            "p95": 15.928416999999968,
+            "p99": 15.928416999999968
+          },
+          "samplesMs": [
+            15.848145999999986,
+            15.928416999999968,
+            14.246587999999974
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 330113024
+        }
+      }
+    },
+    {
+      "index": 22,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-22-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.56519799999999,
+            "min": 12.827522999999985,
+            "max": 17.241671999999994,
+            "median": 13.626398999999992,
+            "p95": 17.241671999999994,
+            "p99": 17.241671999999994
+          },
+          "samplesMs": [
+            13.626398999999992,
+            12.827522999999985,
+            17.241671999999994
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 293642240
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.442303333333351,
+            "min": 14.212714000000005,
+            "max": 14.893046000000027,
+            "median": 14.221150000000023,
+            "p95": 14.893046000000027,
+            "p99": 14.893046000000027
+          },
+          "samplesMs": [
+            14.893046000000027,
+            14.212714000000005,
+            14.221150000000023
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 331821056
+        }
+      }
+    },
+    {
+      "index": 23,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-23-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.475982000000005,
+            "min": 13.507334000000014,
+            "max": 18.47024700000003,
+            "median": 17.450364999999977,
+            "p95": 18.47024700000003,
+            "p99": 18.47024700000003
+          },
+          "samplesMs": [
+            17.450364999999977,
+            13.507334000000014,
+            18.47024700000003
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296869888
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.729507666666658,
+            "min": 14.041480999999976,
+            "max": 15.160018999999977,
+            "median": 14.987023000000022,
+            "p95": 15.160018999999977,
+            "p99": 15.160018999999977
+          },
+          "samplesMs": [
+            15.160018999999977,
+            14.987023000000022,
+            14.041480999999976
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 334319616
+        }
+      }
+    },
+    {
+      "index": 24,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-24-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.07247966666667,
+            "min": 14.108317,
+            "max": 21.64226500000001,
+            "median": 15.466857000000005,
+            "p95": 21.64226500000001,
+            "p99": 21.64226500000001
+          },
+          "samplesMs": [
+            15.466857000000005,
+            14.108317,
+            21.64226500000001
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296464384
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.331202,
+            "min": 15.20435299999997,
+            "max": 15.513235000000009,
+            "median": 15.276018000000022,
+            "p95": 15.513235000000009,
+            "p99": 15.513235000000009
+          },
+          "samplesMs": [
+            15.20435299999997,
+            15.276018000000022,
+            15.513235000000009
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 328503296
+        }
+      }
+    },
+    {
+      "index": 25,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-25-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.969867000000002,
+            "min": 12.977636000000018,
+            "max": 18.469214999999963,
+            "median": 13.462750000000028,
+            "p95": 18.469214999999963,
+            "p99": 18.469214999999963
+          },
+          "samplesMs": [
+            12.977636000000018,
+            13.462750000000028,
+            18.469214999999963
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296570880
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.351669999999976,
+            "min": 14.006624999999985,
+            "max": 16.219274999999982,
+            "median": 15.829109999999957,
+            "p95": 16.219274999999982,
+            "p99": 16.219274999999982
+          },
+          "samplesMs": [
+            15.829109999999957,
+            16.219274999999982,
+            14.006624999999985
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327254016
+        }
+      }
+    },
+    {
+      "index": 26,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-26-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.21135133333333,
+            "min": 14.408983999999975,
+            "max": 19.458439,
+            "median": 17.766631000000018,
+            "p95": 19.458439,
+            "p99": 19.458439
+          },
+          "samplesMs": [
+            17.766631000000018,
+            14.408983999999975,
+            19.458439
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295821312
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 13.924714333333327,
+            "min": 13.228748999999993,
+            "max": 15.094065,
+            "median": 13.451328999999987,
+            "p95": 15.094065,
+            "p99": 15.094065
+          },
+          "samplesMs": [
+            15.094065,
+            13.451328999999987,
+            13.228748999999993
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 325148672
+        }
+      }
+    },
+    {
+      "index": 27,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-27-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.774248999999978,
+            "min": 12.969801999999959,
+            "max": 17.524684999999977,
+            "median": 13.82826,
+            "p95": 17.524684999999977,
+            "p99": 17.524684999999977
+          },
+          "samplesMs": [
+            13.82826,
+            12.969801999999959,
+            17.524684999999977
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295890944
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.033109666666652,
+            "min": 14.519632000000001,
+            "max": 15.721777999999972,
+            "median": 14.857918999999981,
+            "p95": 15.721777999999972,
+            "p99": 15.721777999999972
+          },
+          "samplesMs": [
+            15.721777999999972,
+            14.857918999999981,
+            14.519632000000001
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327368704
+        }
+      }
+    },
+    {
+      "index": 28,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-28-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.071073666666678,
+            "min": 14.134486000000038,
+            "max": 18.86432000000002,
+            "median": 18.214414999999974,
+            "p95": 18.86432000000002,
+            "p99": 18.86432000000002
+          },
+          "samplesMs": [
+            18.214414999999974,
+            14.134486000000038,
+            18.86432000000002
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296280064
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.914318666666684,
+            "min": 14.219938000000013,
+            "max": 18.958477000000016,
+            "median": 17.56454100000002,
+            "p95": 18.958477000000016,
+            "p99": 18.958477000000016
+          },
+          "samplesMs": [
+            18.958477000000016,
+            17.56454100000002,
+            14.219938000000013
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 331436032
+        }
+      }
+    },
+    {
+      "index": 29,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-29-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.319213333333323,
+            "min": 13.535968000000025,
+            "max": 21.512389999999982,
+            "median": 13.909281999999962,
+            "p95": 21.512389999999982,
+            "p99": 21.512389999999982
+          },
+          "samplesMs": [
+            13.909281999999962,
+            13.535968000000025,
+            21.512389999999982
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 297250816
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.458366666666677,
+            "min": 13.989422999999988,
+            "max": 15.007331000000022,
+            "median": 14.378346000000022,
+            "p95": 15.007331000000022,
+            "p99": 15.007331000000022
+          },
+          "samplesMs": [
+            13.989422999999988,
+            14.378346000000022,
+            15.007331000000022
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 333258752
+        }
+      }
+    },
+    {
+      "index": 30,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-30-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.277436000000005,
+            "min": 13.917708000000005,
+            "max": 21.927892999999983,
+            "median": 15.986707000000024,
+            "p95": 21.927892999999983,
+            "p99": 21.927892999999983
+          },
+          "samplesMs": [
+            15.986707000000024,
+            13.917708000000005,
+            21.927892999999983
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 292954112
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.132121,
+            "min": 15.296095999999977,
+            "max": 16.744004000000018,
+            "median": 16.356263000000013,
+            "p95": 16.744004000000018,
+            "p99": 16.744004000000018
+          },
+          "samplesMs": [
+            16.356263000000013,
+            16.744004000000018,
+            15.296095999999977
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 334622720
+        }
+      }
+    },
+    {
+      "index": 31,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-31-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 18.845319999999997,
+            "min": 18.019837999999993,
+            "max": 20.163456999999994,
+            "median": 18.352665000000002,
+            "p95": 20.163456999999994,
+            "p99": 20.163456999999994
+          },
+          "samplesMs": [
+            18.019837999999993,
+            18.352665000000002,
+            20.163456999999994
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296046592
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.545036666666666,
+            "min": 13.906106000000023,
+            "max": 15.361398000000008,
+            "median": 14.367605999999967,
+            "p95": 15.361398000000008,
+            "p99": 15.361398000000008
+          },
+          "samplesMs": [
+            14.367605999999967,
+            13.906106000000023,
+            15.361398000000008
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 325898240
+        }
+      }
+    },
+    {
+      "index": 32,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-32-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.96610933333335,
+            "min": 13.37532600000003,
+            "max": 21.115943000000016,
+            "median": 16.407059000000004,
+            "p95": 21.115943000000016,
+            "p99": 21.115943000000016
+          },
+          "samplesMs": [
+            16.407059000000004,
+            13.37532600000003,
+            21.115943000000016
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295874560
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.545538333333317,
+            "min": 15.168714999999963,
+            "max": 15.95368400000001,
+            "median": 15.514215999999976,
+            "p95": 15.95368400000001,
+            "p99": 15.95368400000001
+          },
+          "samplesMs": [
+            15.95368400000001,
+            15.514215999999976,
+            15.168714999999963
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 334516224
+        }
+      }
+    },
+    {
+      "index": 33,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-33-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.69398666666666,
+            "min": 13.660372999999993,
+            "max": 19.55038300000001,
+            "median": 16.871203999999977,
+            "p95": 19.55038300000001,
+            "p99": 19.55038300000001
+          },
+          "samplesMs": [
+            13.660372999999993,
+            16.871203999999977,
+            19.55038300000001
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296361984
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.083593000000008,
+            "min": 15.272481000000028,
+            "max": 16.508670999999993,
+            "median": 16.469627000000003,
+            "p95": 16.508670999999993,
+            "p99": 16.508670999999993
+          },
+          "samplesMs": [
+            16.508670999999993,
+            16.469627000000003,
+            15.272481000000028
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327426048
+        }
+      }
+    },
+    {
+      "index": 34,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-34-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.46370600000002,
+            "min": 13.635796000000028,
+            "max": 21.635182000000043,
+            "median": 14.120139999999992,
+            "p95": 21.635182000000043,
+            "p99": 21.635182000000043
+          },
+          "samplesMs": [
+            13.635796000000028,
+            14.120139999999992,
+            21.635182000000043
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296341504
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.716148999999973,
+            "min": 14.05072899999999,
+            "max": 15.53909299999998,
+            "median": 14.55862499999995,
+            "p95": 15.53909299999998,
+            "p99": 15.53909299999998
+          },
+          "samplesMs": [
+            14.05072899999999,
+            15.53909299999998,
+            14.55862499999995
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 328957952
+        }
+      }
+    },
+    {
+      "index": 35,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-35-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.43080233333336,
+            "min": 13.502425000000017,
+            "max": 18.697235000000035,
+            "median": 14.092747000000031,
+            "p95": 18.697235000000035,
+            "p99": 18.697235000000035
+          },
+          "samplesMs": [
+            13.502425000000017,
+            14.092747000000031,
+            18.697235000000035
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295473152
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.329054000000005,
+            "min": 15.199051999999995,
+            "max": 15.497254999999996,
+            "median": 15.290855000000022,
+            "p95": 15.497254999999996,
+            "p99": 15.497254999999996
+          },
+          "samplesMs": [
+            15.290855000000022,
+            15.497254999999996,
+            15.199051999999995
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 326885376
+        }
+      }
+    },
+    {
+      "index": 36,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-36-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.94526966666666,
+            "min": 13.69001800000001,
+            "max": 22.056745999999976,
+            "median": 15.089044999999999,
+            "p95": 22.056745999999976,
+            "p99": 22.056745999999976
+          },
+          "samplesMs": [
+            15.089044999999999,
+            13.69001800000001,
+            22.056745999999976
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296898560
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.726853999999983,
+            "min": 14.299286999999993,
+            "max": 17.245469000000014,
+            "median": 15.635805999999945,
+            "p95": 17.245469000000014,
+            "p99": 17.245469000000014
+          },
+          "samplesMs": [
+            17.245469000000014,
+            15.635805999999945,
+            14.299286999999993
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 334393344
+        }
+      }
+    },
+    {
+      "index": 37,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-37-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.265640666666666,
+            "min": 13.967761999999993,
+            "max": 22.634374999999977,
+            "median": 15.194785000000024,
+            "p95": 22.634374999999977,
+            "p99": 22.634374999999977
+          },
+          "samplesMs": [
+            15.194785000000024,
+            13.967761999999993,
+            22.634374999999977
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 292810752
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.276734999999993,
+            "min": 14.890469999999993,
+            "max": 15.843606999999963,
+            "median": 15.096128000000022,
+            "p95": 15.843606999999963,
+            "p99": 15.843606999999963
+          },
+          "samplesMs": [
+            15.843606999999963,
+            14.890469999999993,
+            15.096128000000022
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 333357056
+        }
+      }
+    },
+    {
+      "index": 38,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-38-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.853664999999998,
+            "min": 12.472435000000019,
+            "max": 17.462767999999983,
+            "median": 14.62579199999999,
+            "p95": 17.462767999999983,
+            "p99": 17.462767999999983
+          },
+          "samplesMs": [
+            14.62579199999999,
+            12.472435000000019,
+            17.462767999999983
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296730624
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.783054000000032,
+            "min": 16.333901000000026,
+            "max": 17.499918000000036,
+            "median": 16.51534300000003,
+            "p95": 17.499918000000036,
+            "p99": 17.499918000000036
+          },
+          "samplesMs": [
+            17.499918000000036,
+            16.51534300000003,
+            16.333901000000026
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 334028800
+        }
+      }
+    },
+    {
+      "index": 39,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-39-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.823873000000011,
+            "min": 14.33999300000005,
+            "max": 18.318750999999963,
+            "median": 14.81287500000002,
+            "p95": 18.318750999999963,
+            "p99": 18.318750999999963
+          },
+          "samplesMs": [
+            14.81287500000002,
+            14.33999300000005,
+            18.318750999999963
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 297050112
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.93806166666669,
+            "min": 14.144194000000027,
+            "max": 17.058367000000032,
+            "median": 16.611624000000006,
+            "p95": 17.058367000000032,
+            "p99": 17.058367000000032
+          },
+          "samplesMs": [
+            16.611624000000006,
+            17.058367000000032,
+            14.144194000000027
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327331840
+        }
+      }
+    },
+    {
+      "index": 40,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-40-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.101008666666683,
+            "min": 14.348399000000029,
+            "max": 18.87633199999999,
+            "median": 15.078295000000026,
+            "p95": 18.87633199999999,
+            "p99": 18.87633199999999
+          },
+          "samplesMs": [
+            15.078295000000026,
+            14.348399000000029,
+            18.87633199999999
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 295604224
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.069197666666676,
+            "min": 14.275833000000034,
+            "max": 16.053823000000023,
+            "median": 14.877936999999974,
+            "p95": 16.053823000000023,
+            "p99": 16.053823000000023
+          },
+          "samplesMs": [
+            16.053823000000023,
+            14.275833000000034,
+            14.877936999999974
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 335515648
+        }
+      }
+    },
+    {
+      "index": 41,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-41-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.813010666666646,
+            "min": 13.741765999999984,
+            "max": 21.678071999999986,
+            "median": 15.01919399999997,
+            "p95": 21.678071999999986,
+            "p99": 21.678071999999986
+          },
+          "samplesMs": [
+            15.01919399999997,
+            13.741765999999984,
+            21.678071999999986
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 297103360
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.339888333333343,
+            "min": 14.655969000000027,
+            "max": 15.884644999999978,
+            "median": 15.479051000000027,
+            "p95": 15.884644999999978,
+            "p99": 15.884644999999978
+          },
+          "samplesMs": [
+            15.479051000000027,
+            15.884644999999978,
+            14.655969000000027
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 333549568
+        }
+      }
+    },
+    {
+      "index": 42,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-42-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.075027999999993,
+            "min": 13.749981999999989,
+            "max": 22.59275600000001,
+            "median": 14.882345999999984,
+            "p95": 22.59275600000001,
+            "p99": 22.59275600000001
+          },
+          "samplesMs": [
+            14.882345999999984,
+            13.749981999999989,
+            22.59275600000001
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296534016
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.787808000000004,
+            "min": 13.649964000000011,
+            "max": 16.08675599999998,
+            "median": 14.626704000000018,
+            "p95": 16.08675599999998,
+            "p99": 16.08675599999998
+          },
+          "samplesMs": [
+            14.626704000000018,
+            13.649964000000011,
+            16.08675599999998
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 328335360
+        }
+      }
+    },
+    {
+      "index": 43,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-43-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.312875666666667,
+            "min": 13.98186800000002,
+            "max": 22.861752999999965,
+            "median": 15.095006000000012,
+            "p95": 22.861752999999965,
+            "p99": 22.861752999999965
+          },
+          "samplesMs": [
+            15.095006000000012,
+            13.98186800000002,
+            22.861752999999965
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296206336
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 17.11260499999999,
+            "min": 15.666973999999982,
+            "max": 18.739755000000002,
+            "median": 16.931085999999993,
+            "p95": 18.739755000000002,
+            "p99": 18.739755000000002
+          },
+          "samplesMs": [
+            18.739755000000002,
+            15.666973999999982,
+            16.931085999999993
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 332161024
+        }
+      }
+    },
+    {
+      "index": 44,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-44-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 19.949430666666654,
+            "min": 17.308817999999974,
+            "max": 24.863224000000002,
+            "median": 17.676249999999982,
+            "p95": 24.863224000000002,
+            "p99": 24.863224000000002
+          },
+          "samplesMs": [
+            17.676249999999982,
+            17.308817999999974,
+            24.863224000000002
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296497152
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.073246666666666,
+            "min": 15.007761999999957,
+            "max": 17.368100000000027,
+            "median": 15.843878000000018,
+            "p95": 17.368100000000027,
+            "p99": 17.368100000000027
+          },
+          "samplesMs": [
+            15.843878000000018,
+            15.007761999999957,
+            17.368100000000027
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327311360
+        }
+      }
+    },
+    {
+      "index": 45,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-45-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.826784999999992,
+            "min": 13.819060999999977,
+            "max": 17.953532999999993,
+            "median": 15.707761000000005,
+            "p95": 17.953532999999993,
+            "p99": 17.953532999999993
+          },
+          "samplesMs": [
+            15.707761000000005,
+            13.819060999999977,
+            17.953532999999993
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296505344
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.14443266666666,
+            "min": 14.828494000000035,
+            "max": 15.541597999999965,
+            "median": 15.06320599999998,
+            "p95": 15.541597999999965,
+            "p99": 15.541597999999965
+          },
+          "samplesMs": [
+            15.06320599999998,
+            15.541597999999965,
+            14.828494000000035
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 332976128
+        }
+      }
+    },
+    {
+      "index": 46,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-46-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.609519333333347,
+            "min": 13.651346000000046,
+            "max": 18.330693999999994,
+            "median": 14.846518000000003,
+            "p95": 18.330693999999994,
+            "p99": 18.330693999999994
+          },
+          "samplesMs": [
+            14.846518000000003,
+            13.651346000000046,
+            18.330693999999994
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 293335040
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.569600666666682,
+            "min": 14.278827999999976,
+            "max": 16.601365000000044,
+            "median": 15.828609000000029,
+            "p95": 16.601365000000044,
+            "p99": 16.601365000000044
+          },
+          "samplesMs": [
+            15.828609000000029,
+            16.601365000000044,
+            14.278827999999976
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 331665408
+        }
+      }
+    },
+    {
+      "index": 47,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-47-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 19.479652999999985,
+            "min": 16.821960999999988,
+            "max": 23.821933,
+            "median": 17.795064999999965,
+            "p95": 23.821933,
+            "p99": 23.821933
+          },
+          "samplesMs": [
+            17.795064999999965,
+            16.821960999999988,
+            23.821933
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296042496
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.785831333333325,
+            "min": 14.889688999999976,
+            "max": 16.56449600000002,
+            "median": 15.903308999999979,
+            "p95": 16.56449600000002,
+            "p99": 16.56449600000002
+          },
+          "samplesMs": [
+            15.903308999999979,
+            16.56449600000002,
+            14.889688999999976
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 336216064
+        }
+      }
+    },
+    {
+      "index": 48,
+      "variant": "candidate",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-48-candidate/raw-benchmark.json",
+      "librarySha256": "04ebfbb43597522e6b00a18e2cfc53d1ad371b261c871ee979137772464d1a7a",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 20.960305999999985,
+            "min": 17.493606,
+            "max": 27.62886599999996,
+            "median": 17.758445999999992,
+            "p95": 27.62886599999996,
+            "p99": 27.62886599999996
+          },
+          "samplesMs": [
+            17.493606,
+            17.758445999999992,
+            27.62886599999996
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296861696
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.081017333333325,
+            "min": 15.471775999999977,
+            "max": 16.66333099999997,
+            "median": 16.10794500000003,
+            "p95": 16.66333099999997,
+            "p99": 16.66333099999997
+          },
+          "samplesMs": [
+            15.471775999999977,
+            16.66333099999997,
+            16.10794500000003
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 327417856
+        }
+      }
+    },
+    {
+      "index": 49,
+      "variant": "teardown",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-49-teardown/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.789103000000011,
+            "min": 12.88046300000002,
+            "max": 17.22559100000001,
+            "median": 14.261255000000006,
+            "p95": 17.22559100000001,
+            "p99": 17.22559100000001
+          },
+          "samplesMs": [
+            14.261255000000006,
+            12.88046300000002,
+            17.22559100000001
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296603648
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 14.579378,
+            "min": 14.312251000000003,
+            "max": 14.998855000000049,
+            "median": 14.42702799999995,
+            "p95": 14.998855000000049,
+            "p99": 14.998855000000049
+          },
+          "samplesMs": [
+            14.312251000000003,
+            14.42702799999995,
+            14.998855000000049
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 325492736
+        }
+      }
+    },
+    {
+      "index": 50,
+      "variant": "teardown_b",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-50-teardown_b/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.89224333333334,
+            "min": 14.173099000000036,
+            "max": 22.267382999999995,
+            "median": 14.23624799999999,
+            "p95": 22.267382999999995,
+            "p99": 22.267382999999995
+          },
+          "samplesMs": [
+            14.23624799999999,
+            14.173099000000036,
+            22.267382999999995
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296710144
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 16.381881333333315,
+            "min": 14.188307000000009,
+            "max": 19.109771999999964,
+            "median": 15.847564999999975,
+            "p95": 19.109771999999964,
+            "p99": 19.109771999999964
+          },
+          "samplesMs": [
+            19.109771999999964,
+            15.847564999999975,
+            14.188307000000009
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 332406784
+        }
+      }
+    },
+    {
+      "index": 51,
+      "variant": "teardown_a",
+      "raw": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/20260926-shutdown-reuse-51-teardown_a/raw-benchmark.json",
+      "librarySha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+      "lanes": {
+        "W0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.664249333333316,
+            "min": 13.913560000000018,
+            "max": 18.22502499999996,
+            "median": 14.854162999999971,
+            "p95": 18.22502499999996,
+            "p99": 18.22502499999996
+          },
+          "samplesMs": [
+            14.854162999999971,
+            13.913560000000018,
+            18.22502499999996
+          ],
+          "outputHashes": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "processTreePeakRssBytes": 296255488
+        },
+        "D0": {
+          "latencyMs": {
+            "count": 3,
+            "mean": 15.608564333333314,
+            "min": 14.487912999999992,
+            "max": 17.30686499999996,
+            "median": 15.030914999999993,
+            "p95": 17.30686499999996,
+            "p99": 17.30686499999996
+          },
+          "samplesMs": [
+            17.30686499999996,
+            14.487912999999992,
+            15.030914999999993
+          ],
+          "outputHashes": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "processTreePeakRssBytes": 332189696
+        }
+      }
+    }
+  ],
+  "candidateOverBaselineMedian": 1.0265715155568351,
+  "candidateOverBaselineP95": 1.0809706912654466,
+  "conclusion": "Paired-process uncertainty and frozen acceptance are evaluated separately.",
+  "limitations": [
+    "Fresh alternating process pairs with three timed samples per process; unchanged controls and exact replay are separate.",
+    "The upstream harness polls process-tree RSS for both providers; this is its existing diagnostic method.",
+    "This small-buffer fixture does not establish application-scale performance or generality.",
+    "The runner prose has a fixed three-process limitation; actual process counts are recorded in contract and lane rows."
+  ]
+}

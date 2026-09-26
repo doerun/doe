@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "classification": "local-diagnostic",
+  "frozenAt": "2026-09-26T19:22:05.447449+00:00",
+  "startingHead": "9c1f45e13ae3d5e0f3df4bf164b1af4df8020b5d",
+  "retainedRuntime": "b21adb3d0d5bf7ba30ecfffdefe548cb1efa7aec",
+  "priorPublication": "9c1f45e13ae3d5e0f3df4bf164b1af4df8020b5d",
+  "qwen": {
+    "primary": "Geometric mean of paired process-mean resident rerank latency ratios across fixed interleaved blocks; every invocation contributes to its process mean. Absolute arithmetic means and all percentile definitions reported separately.",
+    "warmupRuns": 3,
+    "timedRunsPerProcess": 20,
+    "independentBlocks": 6,
+    "variants": [
+      "retained",
+      "teardown",
+      "candidate",
+      "dawn"
+    ],
+    "orderByBlock": [
+      [
+        "retained",
+        "teardown",
+        "candidate",
+        "dawn"
+      ],
+      [
+        "dawn",
+        "candidate",
+        "teardown",
+        "retained"
+      ],
+      [
+        "teardown",
+        "retained",
+        "dawn",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "dawn",
+        "retained",
+        "teardown"
+      ],
+      [
+        "retained",
+        "candidate",
+        "teardown",
+        "dawn"
+      ],
+      [
+        "dawn",
+        "teardown",
+        "candidate",
+        "retained"
+      ]
+    ],
+    "candidateAcceptance": "Candidate versus teardown primary ratio <=0.98, one-sided 95% paired bootstrap upper ratio <1.0, and pooled nearest-rank p50/p95 no worse; all frozen oracles and equivalence checks pass.",
+    "parityCriterion": "Candidate versus Dawn primary one-sided 95% upper ratio <=1.0 AND pooled nearest-rank p50 and p95 <= Dawn. No metric substitutions.",
+    "percentiles": "bench/shared/lib/stats.js nearest rank sorted[ceil(n*p)-1]; conventional central-pair median is supplementary only; retain every sample and both bands."
+  },
+  "umap": {
+    "primary": "Geometric mean of paired process-mean selected-operation latency ratios across independent alternating process pairs.",
+    "pairs": 24,
+    "warmupRuns": 1,
+    "timedRunsPerProcess": 3,
+    "acceptableSlowdownRatio": 1.05,
+    "acceptance": "One-sided 95% paired bootstrap upper ratio <=1.05; otherwise regression or inconclusive, not equivalence. All original oracles and exact replay pass.",
+    "order": "Alternate teardown,candidate and candidate,teardown in successive pairs; unchanged controls bracket the cohort.",
+    "counterpart": "teardown-only build retains the accepted compute pool allowance and both memory-policy changes."
+  },
+  "uncertainty": {
+    "method": "Deterministic percentile bootstrap over independent paired process log mean ratios; exp(mean(log ratios)); 95th percentile for one-sided upper confidence bound. Secondary raw arithmetic means and all per-process percentiles retained.",
+    "seed": 20260926,
+    "resamples": 20000
+  },
+  "instrumentation": "Temporary source counters only in isolated diagnostic builds; native interposer separate; all disabled in confirmation. UMAP retains its existing symmetric process-tree RSS observer.",
+  "rejection": "Keep teardown correctness repair and retained pool policy if targeted candidate fails. No added waits to increase cache hits. No second optimization."
+}

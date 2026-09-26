@@ -1,0 +1,552 @@
+diff --git a/config/vulkan-buffer-memory-policy.json b/config/vulkan-buffer-memory-policy.json
+index afafebf1e..4fdbba608 100644
+--- a/config/vulkan-buffer-memory-policy.json
++++ b/config/vulkan-buffer-memory-policy.json
+@@ -1,5 +1,5 @@
+ {
+-  "schemaVersion": 3,
++  "schemaVersion": 5,
+   "readbackRequiredProperties": [
+     "host-visible",
+     "host-coherent"
+@@ -11,5 +11,7 @@
+   "hostVisiblePreferredProperties": [
+     "device-local"
+   ],
+-  "computeBufferCacheMaxBytes": 67108864
++  "computeBufferCacheMaxBytes": 67108864,
++  "unresolvedCompletionRetryNs": 1000000,
++  "computeBufferCacheMaxEntriesPerSize": 32
+ }
+diff --git a/config/vulkan-buffer-memory-policy.schema.json b/config/vulkan-buffer-memory-policy.schema.json
+index acac6a60d..6b55bccc4 100644
+--- a/config/vulkan-buffer-memory-policy.schema.json
++++ b/config/vulkan-buffer-memory-policy.schema.json
+@@ -9,11 +9,13 @@
+     "readbackPreferredProperties",
+     "unavailablePreference",
+     "hostVisiblePreferredProperties",
+-    "computeBufferCacheMaxBytes"
++    "computeBufferCacheMaxBytes",
++    "unresolvedCompletionRetryNs",
++    "computeBufferCacheMaxEntriesPerSize"
+   ],
+   "properties": {
+     "schemaVersion": {
+-      "const": 3
++      "const": 5
+     },
+     "readbackRequiredProperties": {
+       "const": [
+@@ -36,6 +38,12 @@
+     },
+     "computeBufferCacheMaxBytes": {
+       "const": 67108864
++    },
++    "unresolvedCompletionRetryNs": {
++      "const": 1000000
++    },
++    "computeBufferCacheMaxEntriesPerSize": {
++      "const": 32
+     }
+   }
+ }
+diff --git a/runtime/zig/build.zig b/runtime/zig/build.zig
+index aa6ac80e6..23f0802ba 100644
+--- a/runtime/zig/build.zig
++++ b/runtime/zig/build.zig
+@@ -402,11 +402,15 @@ fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.me
+         readbackPreferredProperties: []Property,
+         hostVisiblePreferredProperties: []Property,
+         computeBufferCacheMaxBytes: u64,
++        unresolvedCompletionRetryNs: u64,
++        computeBufferCacheMaxEntriesPerSize: usize,
+         unavailablePreference: enum { @"use-required-properties" },
+     };
+     const memory = std.json.parseFromSlice(MemoryPolicy, allocator, memory_bytes, .{}) catch
+         @panic("invalid Vulkan buffer memory policy");
+-    if (memory.value.schemaVersion != 3) @panic("unsupported Vulkan buffer memory policy version");
++    if (memory.value.schemaVersion != 5) @panic("unsupported Vulkan buffer memory policy version");
++    if (memory.value.unresolvedCompletionRetryNs == 0) @panic("Vulkan retirement requires a positive retry interval");
++    if (memory.value.computeBufferCacheMaxEntriesPerSize == 0) @panic("Vulkan compute buffer cache requires a positive per-size bound");
+     if (memory.value.computeBufferCacheMaxBytes == 0) @panic("Vulkan compute buffer cache requires a positive byte bound");
+     const vk = @import("src/backend/vulkan/vk_constants.zig");
+     var flags: [3]u32 = .{ 0, 0, 0 };
+@@ -424,6 +428,8 @@ fn addComputeProgramContract(options: *std.Build.Step.Options, allocator: std.me
+     options.addOption(u32, "vulkan_readback_preferred_properties", flags[1]);
+     options.addOption(u32, "vulkan_host_visible_preferred_properties", flags[2]);
+     options.addOption(u64, "vulkan_compute_buffer_cache_max_bytes", memory.value.computeBufferCacheMaxBytes);
++    options.addOption(u64, "vulkan_unresolved_completion_retry_ns", memory.value.unresolvedCompletionRetryNs);
++    options.addOption(usize, "vulkan_compute_buffer_cache_max_entries_per_size", memory.value.computeBufferCacheMaxEntriesPerSize);
+     const timestamp_file = std.fs.cwd().openFile("../../config/vulkan-timestamp-policy.json", .{}) catch
+         @panic("config/vulkan-timestamp-policy.json not found");
+     defer timestamp_file.close();
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 767d3ee7c..37f3cd4a6 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -1228,7 +1228,7 @@
+       },
+       "src/backend/vulkan/native_runtime.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "d9e6fc4e3de6cf9aa9f815daf1832583dcc901638e29e2949171be4deafafcbd",
++        "moduleSha256": "f937a31108717ed1317cb03f5bbd60e04f787da72d040569381990785432175e",
+         "reason": "Keep: Runtime assembly delegates native submission bookkeeping and calibrated timestamp arithmetic to existing owners.",
+         "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+@@ -1270,13 +1270,13 @@
+       },
+       "src/backend/vulkan/vk_constants.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "2bb9ef74b74bef85086b0195d372b9cbe035150cffd8c4c8a09c92c891e1dfba",
++        "moduleSha256": "1ede994131c940102345259fcc49c36519ce9ff5ec0a77fb7133240c54569232",
+         "reason": "Keep: Owns Vulkan ABI constants including the distinct uniform-read access bit required by the compute synchronization owner.",
+         "reviewer": "codex-qwen-owner-sync/2026-09-23"
+       },
+       "src/backend/vulkan/vk_device.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "0d2ebf019bb847aaf6c39da775bb698c497e81c3318faa1d5fa1fc4b322c36b0",
++        "moduleSha256": "c599e1d3bd3d5990da88d4319e8ce1e97a10f144c04e957c62038864e8922b76",
+         "reason": "Keep: Device capability and synchronization-object creation remain local; supported timeline creation failures propagate.",
+         "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+@@ -1360,7 +1360,7 @@
+       },
+       "src/backend/vulkan/vk_resources.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "3ed00606ccf4d301682ce91d480940ed6ea2eb2ad01ffb5622d84ccac2ea3460",
++        "moduleSha256": "92c531e7b918c544e6b2f8a7c8cb11cd10555f5a7d1592824614000e791d5ee0",
+         "reason": "Keep: shared native buffer allocation includes the vertex/index usages consumed by rendering and preserves them through storage promotion.",
+         "reviewer": "codex-render-validation/2026-09-07"
+       },
+@@ -1402,7 +1402,7 @@
+       },
+       "src/backend/vulkan/vk_sync.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "918c05a2340c613797453ca2bdaafb59b007d54c4e28f14c4719c7e5cda0318c",
++        "moduleSha256": "9ce236d8725db3ae3276a277f19da0c9b80bead18d692808629caf756970cbe7",
+         "reason": "Keep: Fence and timeline owners handle native submission acceptance and completion; no independent queue-policy authority.",
+         "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+@@ -1414,13 +1414,13 @@
+       },
+       "src/backend/vulkan/vk_upload.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "c17a95c97e730ae2e08bed99aae95beec4fa5e7e01ba96c3eff09faeb3509fdd",
++        "moduleSha256": "fce6a0ca3e81a3d9d1281b848d2c7dbe843786127df92201e6daca03dbb4541f",
+         "reason": "Keep: upload allocation, pooling and recording share the existing owner; native acquisition unwinds transactionally and size-bucket reuse requires compatible usage flags. Completion and aggregate retention findings remain open.",
+         "reviewer": "codex-vulkan-upload-audit/2026-09-23"
+       },
+       "src/backend/vulkan/vulkan_errors.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "7374722c872767c5407f4bcaeb044408c5eca3188da684c5d6f9c0fb74681d24",
++        "moduleSha256": "a4a6cf978a6e90545d177ab8fdc419c1c4c51da545b1a99259756869028dbbbf",
+         "reason": "Keep: Raw Vulkan result constants and error translation have one backend owner; public taxonomy expansion remains open.",
+         "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+       },
+@@ -1438,7 +1438,7 @@
+       },
+       "src/backend/vulkan/vulkan_types.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "c8ff888b6970c70bfd4c79987ade157e03dfe80d850c5cbd1e049fbc4df8dc81",
++        "moduleSha256": "c3383b635816af941e9d8e882b5dc97643c626bdf3cc1549f4d9d1a4a9363e32",
+         "reason": "Keep: reachable backend implementation shared by 6 production consumers with no conflicting ownership signal.",
+         "reviewer": "codex-recomposition-review/2026-08-08"
+       },
+@@ -2704,7 +2704,7 @@
+       },
+       "src/contracts/execution.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "a1c44a092e212819c165f16d94d9f43d2e519eef7f8eb56e2c4b2b681200362b",
++        "moduleSha256": "6a81c0c107a89638f15f0f1864cfcd10e36c14e34d87219520a230d92632a21b",
+         "reason": "Keep: reachable neutral contract owner at src/contracts/execution.zig.",
+         "reviewer": "codex-recomposition-review/2026-08-08"
+       },
+@@ -3796,7 +3796,7 @@
+       },
+       "src/native/vulkan/vulkan_lifetime.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "bf6c15808c45343fa1bc2129bd0c59d113bcb068219ee4c33d28809da0f3acb4",
++        "moduleSha256": "e17bee9c08d20d2e659100b8b7aa6453026f42f3ea4bf0cb8fb35c3d6bd8dd59",
+         "reason": "Keep: reachable native implementation shared by 3 production consumers with no conflicting ownership signal.",
+         "reviewer": "codex-recomposition-review/2026-08-08"
+       },
+@@ -4210,7 +4210,7 @@
+       },
+       "src/backend/vulkan/vk_memory_policy.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "84ac6a8d9f85f5d64f2860641c043f8ea72e32b436ac0850361caa6483d90220",
++        "moduleSha256": "4607e056ea22ccc3b9bb3c5f04e87efcedf3cb44bac15da2cd12ed675957e508",
+         "reason": "Keep: deterministic Vulkan memory-type selection owns required flags, ranked preferences, explicit fallback, and selection tests.",
+         "reviewer": "codex-compute-program/2026-09-05"
+       },
+diff --git a/runtime/zig/src/backend/vulkan/native_runtime.zig b/runtime/zig/src/backend/vulkan/native_runtime.zig
+index 3c1aff15b..58d72acdd 100644
+--- a/runtime/zig/src/backend/vulkan/native_runtime.zig
++++ b/runtime/zig/src/backend/vulkan/native_runtime.zig
+@@ -60,6 +60,7 @@ pub const NativeVulkanRuntime = struct {
+     physical_device: c.VkPhysicalDevice = null,
+     device: c.VkDevice = null,
+     queue: c.VkQueue = null,
++    retirement: vk_sync.Retirement = .{},
+ 
+     adapter_ordinal_value: ?u32 = null,
+     queue_family_index: u32 = 0,
+@@ -224,8 +225,10 @@ pub const NativeVulkanRuntime = struct {
+     }
+ 
+     pub fn deinit(self: *NativeVulkanRuntime) void {
++        if (self.retirement.phase == .destroyed) return;
++        self.waitForDestruction();
++        if (self.retirement.phase == .active) self.retirement.phase = .complete;
+         vk_pipeline.discardPendingSpirv(self);
+-        _ = self.flush_queue() catch {};
+         vk_pipeline.release_retired_states(self);
+         vk_upload.release_pending_uploads(self);
+         self.pending_uploads.deinit(self.allocator);
+@@ -301,6 +304,31 @@ pub const NativeVulkanRuntime = struct {
+             self.instance = null;
+             self.physical_device = null;
+         }
++        self.retirement.phase = .destroyed;
++    }
++
++    pub fn hasPendingQueueWork(self: *const NativeVulkanRuntime) bool {
++        return self.replay_recording_active or self.replay_prefix_copy_pending or
++            self.upload_recording_active or self.streaming_copy_active or
++            self.streaming_copy_pending_count != 0 or self.has_deferred_submissions or
++            self.hot_pending_upload != null or self.pending_uploads.items.len != 0;
++    }
++
++    /// Synchronous ownership boundary. Unknown completion cannot return to a
++    /// caller that will free this runtime or an object backed by its device.
++    pub fn waitForDestruction(self: *NativeVulkanRuntime) void {
++        switch (self.retirement.phase) {
++            .complete, .device_lost, .destroyed => return,
++            .unresolved => {},
++            .active => {
++                if (!self.hasPendingQueueWork()) return;
++                _ = self.flush_queue() catch |err| {
++                    self.retirement.failed(err);
++                };
++                if (self.retirement.phase == .active) return;
++            },
++        }
++        self.retirement.waitForDestruction(self.device);
+     }
+ 
+     // --- Kernel/shader API ---
+@@ -733,6 +761,8 @@ pub const NativeVulkanRuntime = struct {
+     // --- Queue management ---
+ 
+     pub fn flush_queue(self: *NativeVulkanRuntime) !u64 {
++        try self.retirement.requireActive();
++        errdefer |err| self.retirement.failed(err);
+         if (self.streaming_copy_active) {
+             try self.flush_streaming_copy(true);
+         }
+diff --git a/runtime/zig/src/backend/vulkan/vk_constants.zig b/runtime/zig/src/backend/vulkan/vk_constants.zig
+index c04fbe4f0..3fb71ce4b 100644
+--- a/runtime/zig/src/backend/vulkan/vk_constants.zig
++++ b/runtime/zig/src/backend/vulkan/vk_constants.zig
+@@ -228,6 +228,7 @@ pub const map_vk_result = functions.map_vk_result;
+ 
+ pub const VK_SUCCESS = vk.VK_SUCCESS;
+ pub const VK_NOT_READY = vk.VK_NOT_READY;
++pub const VK_TIMEOUT = vk.VK_TIMEOUT;
+ pub const VK_TRUE = vk.VK_TRUE;
+ pub const VK_FALSE = vk.VK_FALSE;
+ pub const VK_API_VERSION_1_0: u32 = 0x00400000;
+diff --git a/runtime/zig/src/backend/vulkan/vk_device.zig b/runtime/zig/src/backend/vulkan/vk_device.zig
+index 9bdee343f..65de13148 100644
+--- a/runtime/zig/src/backend/vulkan/vk_device.zig
++++ b/runtime/zig/src/backend/vulkan/vk_device.zig
+@@ -343,6 +343,7 @@ pub fn create_timestamp_query_pool(self: anytype) !void {
+ }
+ 
+ pub fn ensure_submission_state(self: anytype) !void {
++    try self.retirement.requireActive();
+     if (!self.has_command_pool) {
+         try create_command_pool_and_primary_buffer(self);
+     }
+diff --git a/runtime/zig/src/backend/vulkan/vk_memory_policy.zig b/runtime/zig/src/backend/vulkan/vk_memory_policy.zig
+index ff0455fb7..65d745ad1 100644
+--- a/runtime/zig/src/backend/vulkan/vk_memory_policy.zig
++++ b/runtime/zig/src/backend/vulkan/vk_memory_policy.zig
+@@ -3,6 +3,7 @@ const c = @import("vk_constants.zig");
+ const options = @import("build_options");
+ 
+ pub const host_visible_preferred_properties = options.vulkan_host_visible_preferred_properties;
++pub const compute_buffer_cache_max_entries_per_size = options.vulkan_compute_buffer_cache_max_entries_per_size;
+ pub const compute_buffer_cache_max_bytes = options.vulkan_compute_buffer_cache_max_bytes;
+ 
+ pub const readback_required_properties = options.vulkan_readback_required_properties;
+diff --git a/runtime/zig/src/backend/vulkan/vk_resources.zig b/runtime/zig/src/backend/vulkan/vk_resources.zig
+index 25cc98783..62bdbda06 100644
+--- a/runtime/zig/src/backend/vulkan/vk_resources.zig
++++ b/runtime/zig/src/backend/vulkan/vk_resources.zig
+@@ -183,6 +183,7 @@ pub fn ensure_compute_buffer(
+     required_size: u64,
+     initialize_buffers_on_create: bool,
+ ) !ComputeBuffer {
++    try self.retirement.requireActive();
+     if (handle == 0 or required_size == 0) return error.InvalidArgument;
+     if (self.compute_buffers.getPtr(handle)) |existing| {
+         if (existing.size >= required_size) return existing.*;
+@@ -262,6 +263,7 @@ fn create_compute_buffer_with_kind(
+     initialize_buffers_on_create: bool,
+     memory_kind: ComputeBufferMemoryKind,
+ ) !ComputeBuffer {
++    try self.retirement.requireActive();
+     const generation = try identity.nextGeneration(self);
+     if (memory_kind == .host_visible) {
+         if (vk_upload.vk_pool_pop(&self.compute_buffer_pool, bytes, COMPUTE_BUFFER_USAGE)) |entry| {
+@@ -369,6 +371,7 @@ pub fn promote_compute_buffer_to_device_local(
+     self: anytype,
+     handle: u64,
+ ) !ComputeBufferPromotion {
++    try self.retirement.requireActive();
+     const existing = self.compute_buffers.getPtr(handle) orelse return error.InvalidArgument;
+     if (existing.memory_kind == .device_local or
+         (existing.memory_property_flags & c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0)
+@@ -392,6 +395,7 @@ pub fn stage_compute_buffer_write(
+     data_bytes: []const u8,
+     upload_path_policy: backend_policy.UploadPathPolicy,
+ ) !void {
++    try self.retirement.requireActive();
+     if (data_bytes.len == 0) return error.InvalidArgument;
+     const end = std.math.add(u64, offset, data_bytes.len) catch return error.InvalidArgument;
+     if (end > compute_buffer.size) return error.InvalidArgument;
+@@ -480,6 +484,7 @@ pub fn capture_compute_buffer(
+ }
+ 
+ pub fn destroy_compute_buffer(self: anytype, resource_handle: u64) void {
++    self.waitForDestruction();
+     const cache = @import("vk_pipeline_cache.zig");
+     cache.discard_buffer(self, resource_handle);
+     if (self.compute_buffers.fetchRemove(resource_handle)) |entry| {
+@@ -488,6 +493,7 @@ pub fn destroy_compute_buffer(self: anytype, resource_handle: u64) void {
+ }
+ 
+ fn cacheCompletedComputeBuffer(self: anytype, buffer: ComputeBuffer) bool {
++    if (self.retirement.phase != .active) return false;
+     const required = c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+     if (buffer.memory_kind != .host_visible or buffer.mapped == null or
+         (buffer.memory_property_flags & required) != required or
+@@ -508,7 +514,7 @@ fn cacheCompletedComputeBuffer(self: anytype, buffer: ComputeBuffer) bool {
+     if (self.compute_buffer_pool.count() >= max_size_buckets and !self.compute_buffer_pool.contains(buffer.size)) return false;
+     const slot = self.compute_buffer_pool.getOrPut(self.allocator, buffer.size) catch return false;
+     if (!slot.found_existing) slot.value_ptr.* = .{};
+-    if (slot.value_ptr.items.len >= vk_upload.MAX_POOL_ENTRIES_PER_SIZE) return false;
++    if (slot.value_ptr.items.len >= memory_policy.compute_buffer_cache_max_entries_per_size) return false;
+     slot.value_ptr.append(self.allocator, .{
+         .usage = COMPUTE_BUFFER_USAGE,
+         .memory_property_flags = buffer.memory_property_flags,
+@@ -522,6 +528,7 @@ fn cacheCompletedComputeBuffer(self: anytype, buffer: ComputeBuffer) bool {
+ }
+ 
+ pub fn release_compute_buffer(self: anytype, compute_buffer: ComputeBuffer) void {
++    self.waitForDestruction();
+     if (compute_buffer.mapped != null) {
+         c.vkUnmapMemory(self.device, compute_buffer.memory);
+     }
+@@ -538,6 +545,7 @@ pub fn release_compute_buffers(self: anytype) void {
+ }
+ 
+ pub fn create_host_visible_buffer(self: anytype, bytes: u64, usage: u32) !ComputeBuffer {
++    try self.retirement.requireActive();
+     const generation = try identity.nextGeneration(self);
+     var buffer: VkBuffer = VK_NULL_U64;
+     var memory: VkDeviceMemory = VK_NULL_U64;
+diff --git a/runtime/zig/src/backend/vulkan/vk_sync.zig b/runtime/zig/src/backend/vulkan/vk_sync.zig
+index 973ec8f83..e5986c636 100644
+--- a/runtime/zig/src/backend/vulkan/vk_sync.zig
++++ b/runtime/zig/src/backend/vulkan/vk_sync.zig
+@@ -22,6 +22,66 @@ pub const FENCE_POOL_CAPACITY: usize = 128;
+ pub const FENCE_WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
+ pub const IMMEDIATE_FENCE_POLL_SPINS: usize = 2048;
+ 
++extern fn vkDeviceWaitIdle(device: c.VkDevice) callconv(.c) c.VkResult;
++
++/// A failed wait retains the entire caller's ownership scope. Recovery is for
++/// destruction only: incomplete recording must never be replayed as new work.
++pub const Retirement = struct {
++    phase: enum { active, unresolved, complete, device_lost, destroyed } = .active,
++    observed_device_loss: bool = false,
++
++    pub fn requireActive(self: *const Retirement) common_errors.BackendNativeError!void {
++        if (self.observed_device_loss) return error.DeviceLost;
++        if (self.phase != .active) return error.InvalidState;
++    }
++
++    pub fn failed(self: *Retirement, err: anyerror) void {
++        self.observed_device_loss = self.observed_device_loss or err == error.DeviceLost;
++        self.phase = .unresolved;
++    }
++
++    pub fn waitForDestruction(self: *Retirement, device: c.VkDevice) void {
++        std.debug.assert(self.phase == .unresolved);
++        while (true) {
++            if (self.acceptIdleResult(vkDeviceWaitIdle(device))) return;
++            std.Thread.sleep(@import("build_options").vulkan_unresolved_completion_retry_ns);
++        }
++    }
++
++    fn acceptIdleResult(self: *Retirement, result: c.VkResult) bool {
++        if (result != c.VK_SUCCESS and result != errors.VK_ERROR_DEVICE_LOST) return false;
++        self.observed_device_loss = self.observed_device_loss or result == errors.VK_ERROR_DEVICE_LOST;
++        self.phase = if (self.observed_device_loss) .device_lost else .complete;
++        return true;
++    }
++};
++
++test "retirement requires terminal device idle before destruction and never reopens execution" {
++    var retirement = Retirement{};
++    try retirement.requireActive();
++    retirement.failed(error.InvalidState);
++    for ([_]c.VkResult{ c.VK_TIMEOUT, c.VK_NOT_READY, errors.VK_ERROR_OUT_OF_HOST_MEMORY, errors.VK_ERROR_UNKNOWN }) |result| {
++        try std.testing.expect(!retirement.acceptIdleResult(result));
++        try std.testing.expectEqual(.unresolved, retirement.phase);
++        try std.testing.expectError(error.InvalidState, retirement.requireActive());
++    }
++    try std.testing.expect(retirement.acceptIdleResult(c.VK_SUCCESS));
++    try std.testing.expectEqual(.complete, retirement.phase);
++    try std.testing.expectError(error.InvalidState, retirement.requireActive());
++}
++
++test "confirmed device loss authorizes retirement without successful execution" {
++    var retirement = Retirement{};
++    retirement.failed(error.DeviceLost);
++    try std.testing.expect(!retirement.acceptIdleResult(c.VK_TIMEOUT));
++    try std.testing.expect(retirement.acceptIdleResult(errors.VK_ERROR_DEVICE_LOST));
++    try std.testing.expectEqual(.device_lost, retirement.phase);
++    try std.testing.expectError(error.DeviceLost, retirement.requireActive());
++    retirement.failed(error.DeviceLost);
++    try std.testing.expect(retirement.acceptIdleResult(c.VK_SUCCESS));
++    try std.testing.expectEqual(.device_lost, retirement.phase);
++}
++
+ fn submissionRejected(result: c.VkResult) bool {
+     return result == errors.VK_ERROR_OUT_OF_HOST_MEMORY or result == errors.VK_ERROR_OUT_OF_DEVICE_MEMORY;
+ }
+@@ -159,16 +219,11 @@ pub const FencePool = struct {
+         return self.in_flight_count != 0;
+     }
+ 
+-    /// Destroy all pool fences. Call before device destruction.
++    /// Caller must establish device completion or device loss before release.
+     pub fn deinit(self: *FencePool, device: c.VkDevice) void {
+         var i: u32 = 0;
+         while (i < self.count) : (i += 1) {
+             if (self.fences[i] != VK_NULL_U64) {
+-                // Best-effort wait before destroy to avoid validation errors
+-                if (self.in_flight[i]) {
+-                    wait_for_fence_fast(device, self.fences[i]) catch {};
+-                    self.in_flight[i] = false;
+-                }
+                 c.vkDestroyFence(device, self.fences[i], null);
+                 self.fences[i] = VK_NULL_U64;
+             }
+@@ -308,9 +363,6 @@ pub const TimelineSemaphore = struct {
+ 
+     pub fn deinit(self: *TimelineSemaphore, device: c.VkDevice) void {
+         if (self.semaphore != VK_NULL_U64) {
+-            if (self.available and self.current_value > 0) {
+-                self.drain(device) catch {};
+-            }
+             vkDestroySemaphore(device, self.semaphore, null);
+             self.semaphore = VK_NULL_U64;
+         }
+diff --git a/runtime/zig/src/backend/vulkan/vk_upload.zig b/runtime/zig/src/backend/vulkan/vk_upload.zig
+index 4eea588c5..79bb239fa 100644
+--- a/runtime/zig/src/backend/vulkan/vk_upload.zig
++++ b/runtime/zig/src/backend/vulkan/vk_upload.zig
+@@ -68,10 +68,13 @@ pub const UploadPathKind = enum {
+ pub const VkPool = std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry));
+ 
+ pub fn wait_for_fence_fast(self: anytype, fence: c.VkFence) !void {
++    errdefer |err| self.retirement.failed(err);
+     try vk_sync.wait_for_fence_fast(self.device, fence);
+ }
+ 
+ pub fn flush_queue(self: anytype) !u64 {
++    try self.retirement.requireActive();
++    errdefer |err| self.retirement.failed(err);
+     if (!self.has_device) return 0;
+     const start_ns = common_timing.now_ns();
+     if (self.replay_recording_active) {
+@@ -643,6 +646,8 @@ pub fn copy_buffer_region_and_wait(
+ /// Uses a fence-pool fence for deferred tracking or the primary fence
+ /// for immediate wait, depending on `wait`.
+ pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
++    try self.retirement.requireActive();
++    errdefer |err| self.retirement.failed(err);
+     if (!self.streaming_copy_active) return;
+     try c.check_vk(c.vkEndCommandBuffer(self.streaming_copy_buffer));
+     self.streaming_copy_active = false;
+diff --git a/runtime/zig/src/backend/vulkan/vulkan_errors.zig b/runtime/zig/src/backend/vulkan/vulkan_errors.zig
+index 4d51e1905..c4776c30a 100644
+--- a/runtime/zig/src/backend/vulkan/vulkan_errors.zig
++++ b/runtime/zig/src/backend/vulkan/vulkan_errors.zig
+@@ -33,6 +33,7 @@ pub fn check_vk(result: VkResult) common_errors.BackendNativeError!void {
+ /// Map a raw VkResult (i32) to a BackendNativeError. Called for non-success codes.
+ pub fn map_vk_result(result: VkResult) common_errors.BackendNativeError {
+     return switch (result) {
++        VK_ERROR_DEVICE_LOST => error.DeviceLost,
+         VK_ERROR_EXTENSION_NOT_PRESENT,
+         VK_ERROR_FEATURE_NOT_PRESENT,
+         VK_ERROR_INCOMPATIBLE_DRIVER,
+diff --git a/runtime/zig/src/backend/vulkan/vulkan_types.zig b/runtime/zig/src/backend/vulkan/vulkan_types.zig
+index decb1d37c..8e6960916 100644
+--- a/runtime/zig/src/backend/vulkan/vulkan_types.zig
++++ b/runtime/zig/src/backend/vulkan/vulkan_types.zig
+@@ -40,5 +40,6 @@ pub const VK_NULL_U64: u64 = 0;
+ 
+ pub const VK_SUCCESS: i32 = 0;
+ pub const VK_NOT_READY: i32 = 1;
++pub const VK_TIMEOUT: i32 = 2;
+ pub const VK_TRUE: u32 = 1;
+ pub const VK_FALSE: u32 = 0;
+diff --git a/runtime/zig/src/contracts/execution.zig b/runtime/zig/src/contracts/execution.zig
+index 3a025261d..50e0d1f72 100644
+--- a/runtime/zig/src/contracts/execution.zig
++++ b/runtime/zig/src/contracts/execution.zig
+@@ -16,6 +16,7 @@ pub const ExecutionStatus = enum {
+ pub const BackendNativeError = error{
+     InvalidArgument,
+     InvalidState,
++    DeviceLost,
+     Unsupported,
+     UnsupportedFeature,
+     UnsupportedKernelLanguage,
+diff --git a/runtime/zig/src/native/vulkan/vulkan_lifetime.zig b/runtime/zig/src/native/vulkan/vulkan_lifetime.zig
+index 3e6d73b06..f9de45925 100644
+--- a/runtime/zig/src/native/vulkan/vulkan_lifetime.zig
++++ b/runtime/zig/src/native/vulkan/vulkan_lifetime.zig
+@@ -1,5 +1,4 @@
+ const builtin = @import("builtin");
+-const std = @import("std");
+ const native_shared = @import("../support/doe_native_shared_types.zig");
+ 
+ const has_vulkan = (builtin.os.tag == .linux);
+@@ -8,19 +7,5 @@ pub fn flushBeforeDestroy(rt_raw: ?*anyopaque) void {
+     if (comptime !has_vulkan) return;
+     const raw = rt_raw orelse return;
+     const rt: *native_shared.NativeVulkanRuntime = @ptrCast(@alignCast(raw));
+-    if (!hasPendingQueueWork(rt)) return;
+-    _ = rt.flush_queue() catch |err| {
+-        std.log.err("doe_vulkan_lifetime: flush before destroy failed: {s}", .{@errorName(err)});
+-    };
+-}
+-
+-fn hasPendingQueueWork(rt: *const native_shared.NativeVulkanRuntime) bool {
+-    return rt.replay_recording_active or
+-        rt.replay_prefix_copy_pending or
+-        rt.upload_recording_active or
+-        rt.streaming_copy_active or
+-        rt.streaming_copy_pending_count != 0 or
+-        rt.has_deferred_submissions or
+-        rt.hot_pending_upload != null or
+-        rt.pending_uploads.items.len != 0;
++    rt.waitForDestruction();
+ }

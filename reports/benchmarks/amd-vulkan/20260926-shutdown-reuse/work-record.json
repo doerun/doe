@@ -1,0 +1,128 @@
+{
+  "classification": "local-diagnostic",
+  "startingHead": "9c1f45e13ae3d5e0f3df4bf164b1af4df8020b5d",
+  "retainedRuntime": "b21adb3d0d5bf7ba30ecfffdefe548cb1efa7aec",
+  "priorEvidencePublication": "9c1f45e13ae3d5e0f3df4bf164b1af4df8020b5d",
+  "component": "Zig Vulkan completion, destruction and compute allocation retention",
+  "intent": "preserved",
+  "inspected": [
+    "Required architecture, style, process, performance and component charter guidance; doe-debug skill.",
+    "native_runtime.deinit and flush_queue; native flushBeforeDestroy; registered and direct compute-buffer release; pool admission; fence and timeline destruction.",
+    "Prior published measurements and distinctions between nearest-rank, central-pair median and mean in Dawn's alternating latency bands.",
+    "Vulkan submitted-reference destruction requirements and confirmed device-loss lifetime rules.",
+    "Retained native lifecycle fixture and current compute/upload retention policies."
+  ],
+  "changed": [
+    "Explicit retirement state preserves owning caller while completion remains unresolved; terminal device-idle outcome precedes child destruction.",
+    "Confirmed device loss retains its typed cause; recovery permits destruction, not resumed execution or successful output.",
+    "Registered and direct buffer destruction share the ownership boundary; failed-runtime allocations cannot reenter pools.",
+    "Compute-only per-size allowance experiment under unchanged global bound; upload pool policy unchanged.",
+    "Versioned policy/schema, migration/process documentation, source-layout hashes and retained diagnostic evidence."
+  ],
+  "executed": [
+    {
+      "command": "zig build test --summary all",
+      "cwd": "runtime/zig",
+      "log": "tests-candidate.log",
+      "result": "passed"
+    },
+    {
+      "command": "python3 bench/gates/schema_gate.py",
+      "log": "schema.log",
+      "result": "passed"
+    },
+    {
+      "command": "zig build dropin -Doptimize=ReleaseFast --prefix <isolated-prefix> --summary all",
+      "logs": [
+        "build-teardown.log",
+        "build-candidate.log"
+      ],
+      "result": "passed"
+    },
+    {
+      "command": "LD_PRELOAD=<lifetime>/libfault.so timeout 30s <lifetime>/baseline-probe",
+      "log": "lifetime/before.log",
+      "result": "expected failure on unchanged source"
+    },
+    {
+      "command": "LD_PRELOAD=<lifetime>/libfault.so timeout 30s <lifetime>/candidate-probe",
+      "log": "lifetime/candidate-after.log",
+      "result": "passed"
+    },
+    {
+      "command": "<isolated-native-recorded-compute>",
+      "source": "runtime/zig/tests/native_recorded_compute.c",
+      "log": "native-recorded-compute.log",
+      "result": "passed"
+    },
+    {
+      "command": "python3 diagnostic/run-eight.py; python3 diagnostic/run-thirtytwo.py",
+      "result": "passed; separate processes; source counters and native call observer"
+    },
+    {
+      "command": "python3 verify-identities.py preflight",
+      "log": "preflight.json",
+      "result": "passed"
+    },
+    {
+      "command": "python3 confirmation/run.py; node confirmation/compare.mjs",
+      "result": "all fixed processes passed, no exclusions",
+      "log": "confirmation/run.log"
+    },
+    {
+      "command": "python3 umap-confirmation/run.py; node umap-confirmation/compare.mjs",
+      "result": "all fixed process pairs and controls passed correctness/replay and activity checks",
+      "log": "umap-confirmation/run.log"
+    },
+    {
+      "command": "python3 analyze.py",
+      "result": "Qwen improvement accepted; UMAP upper-bound criterion failed; larger capacity rejected",
+      "log": "outcome.json"
+    },
+    {
+      "command": "LD_PRELOAD=<lifetime>/libfault.so timeout 30s <lifetime>/retained-probe",
+      "result": "passed with per-handle duplicate-release assertions",
+      "log": "lifetime/retained-after-handles.log"
+    },
+    {
+      "command": "zig build test --summary all",
+      "cwd": "runtime/zig",
+      "result": "passed on restored production source",
+      "log": "tests-retained.log"
+    },
+    {
+      "command": "python3 verify-identities.py postflight",
+      "result": "passed",
+      "log": "postflight.json"
+    },
+    {
+      "command": "python3 -m unittest bench.tests.test_doc_link_coverage",
+      "result": "passed",
+      "log": "doc-links.log"
+    }
+  ],
+  "developmentFailuresRetained": [
+    "tests-initial.log: cleanup re-entry exposed by aggregate physical Vulkan test; fixed by establishing terminal state before cleanup.",
+    "tests-retry.log: missing VK_TIMEOUT export; corrected before passing aggregate suite.",
+    "diagnostic/build-eight-missing-input.log: private snapshot lacked required Lean provenance input; restored unchanged input access.",
+    "One pre-build helper used an incorrect working directory; interrupted its build, corrected the directory, then rebuilt and tested the final source."
+  ],
+  "skipped": [
+    "No second optimization, dynamic local-array scalarization, rejected synchronization tracker or extra waits to create cache hits.",
+    "No Metal/D3D12 expansion, prepared-program demonstration, broad architectural cleanup or Zig audit completion credit.",
+    "No application/model/package changes, production ablation toggles, replacement measurement framework, accepted-binary overwrite or claim-index promotion.",
+    "No physical device reset injection; simulated loss follows quiesced real GPU work.",
+    "Khronos synchronization validation unavailable on this host.",
+    "No Lean elimination of native completion checks: observed driver completion cannot be established by the existing static proof artifacts."
+  ],
+  "boundaryEffects": [
+    "Synchronous destruction can remain blocked if the driver never resolves completion or loss.",
+    "Unknown completion retains native owners, mappings, allocation generations and descriptor dependencies.",
+    "Compute retention remains subordinate to proven completion, compatible properties, initialization, generation and global-byte constraints.",
+    "Application, WGSL, upload-pool and ordinary provider-substitution contracts are preserved."
+  ],
+  "productionDisposition": "Retain teardown-only correction; restore previous compute allowance. No additional candidate or post-result confirmation cohort.",
+  "retainedSourceEqualsMeasuredTeardownPatch": true,
+  "retainedLibraryEqualsMeasuredTeardownSha256": "c6412ce3d0009db1aff937bef5bd3cb3bb187d12f4848a4429f2057499f5f2dd",
+  "retainedRuntimeCommit": "0f817f746"
+}

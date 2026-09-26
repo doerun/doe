@@ -1,0 +1,9 @@
+{
+  "mechanism": "Compute-only per-size retention capacity raised from 8 to 32 within unchanged 64 MiB total; upload allowance unchanged.",
+  "evidence": "diagnostic/eight-summary.json",
+  "observed384KiBPeakRequiredSlots": 26,
+  "predictedWarmNativeAllocationsPerQuery": 6,
+  "predictedAvoided384KiBAllocationsPerQuery": 360,
+  "selection": "Smallest power-of-two allowance above measured occupancy; generic size-class policy, no workload names.",
+  "acceptancePolicySha256": "dcf2640ed3f6a62852e754ba984250a07132d42323ef7eafea18519bb8a4a1da"
+}
