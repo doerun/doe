@@ -1,139 +1,52 @@
 # Doe status: runtime backends and benchmarks
 
-This front door routes native execution, package qualification, and benchmark
-admission. Retained reports and claim sidecars own verdicts; implementation
-history remains in the archive.
-
 ## Current boundary
 
-The [strategy contract](../../config/doe-product-strategy.json) now governs the
-ordinary-execution, independent-framework, binding-transfer, and browser
-milestones. The ordinary advantage remains unestablished. Retain accepted
-runtime improvements and correctness repairs; the next bounded candidate must
-meet frozen material-advantage and regression criteria. The rejected reuse
-experiment below stays rejected. Further reranker work requires an explicit
-prioritization decision rather than an indefinite milestone.
+The [strategy contract](../../config/doe-product-strategy.json) owns milestone
+order: ordinary execution, independent framework integration, binding transfer,
+and browser replacement. Ordinary material advantage, independent retained
+adoption, and complete transfer acceptance remain unestablished. Further reranker
+work requires explicit prioritization rather than an indefinite milestone.
+[ONNX Runtime substitution](../../runtime/bridge/onnxruntime-ep/README.md) requires
+an executable prototype and feasibility disposition before separate plugin expansion.
 
-ONNX Runtime substitution beneath its existing WebGPU provider is the next
-integration investigation. The [bridge guidance](../../runtime/bridge/onnxruntime-ep/README.md)
-requires a prototype and feasibility disposition before separate plugin expansion.
-Independent framework adoption, the complete proving set, and browser destination
-acceptance remain unestablished. This strategy synchronization executes no new
-GPU comparison and promotes no runtime, support, adoption, or release claim.
-See the [contract migration](../product-strategy-contract.md) for the changed intent.
+Retain the combined Vulkan memory policy, bounded completed-allocation reuse,
+writable-mapping repair, and failed-flush shutdown correction. The larger
+compute-pool allowance remains rejected under the frozen UMAP regression bound;
+the synchronization candidate also remains rejected. Dawn parity and UMAP
+equivalence are unestablished. Latency bands require the predeclared summary
+convention; neither allocation reductions nor selected local improvements prove
+a general application advantage.
 
-Branch integration preserves rejected Vulkan experiments as history and retains
-the accepted native and package implementations. Compatible package-comparability
-checks enter current admission; historical performance receipts are unchanged.
-The [integration record](archive/2026-09-26-branch-integration.md) owns the branch
-dispositions, conflict decisions and executed verification.
+[Memory-policy evidence](../../reports/benchmarks/amd-vulkan/20260926-memory-policy/README.md)
+and [shutdown/reuse evidence](../../reports/benchmarks/amd-vulkan/20260926-shutdown-reuse/README.md)
+own those dispositions and raw observations. Unknown completion retains
+synchronous ownership; a driver that never establishes completion or device loss
+can block destruction. Confirmed device loss permits terminal cleanup, not
+successful execution. Injection is distinct from physical hardware loss.
 
-The [implementation peers view](../implementation-peers.md) is generated from
-the canonical registry used for native provider membership. Inventory, runnable
-profiles, ecosystem scores and retained comparison evidence remain distinct;
-this metadata change promotes no new execution or release coverage.
+## Evidence boundaries
 
-The failed-flush shutdown correction and bounded compute-reuse experiment are
-indexed at
-[`reports/benchmarks/amd-vulkan/20260926-shutdown-reuse/README.md`](../../reports/benchmarks/amd-vulkan/20260926-shutdown-reuse/README.md).
-Retain the teardown correction with the previous compute-pool allowance. The
-larger allowance explains the remaining target-family allocation misses and
-improves resident Qwen execution, but fails the predeclared UMAP slowdown bound.
-UMAP uncertainty and unchanged-control variation prevent an equivalence claim;
-no post-result rerun changes the disposition. Dawn parity remains unestablished
-under the frozen rule. Unknown completion now retains synchronous ownership;
-confirmed device loss permits separate terminal cleanup. A driver that never
-resolves either outcome can keep destruction blocked. Physical loss injection
-and release qualification remain outside this local evidence.
-
-The preserved Qwen memory-policy candidate, factorial ablations, unchanged
-controls, and completed-allocation reuse confirmation are published at
-[`reports/benchmarks/amd-vulkan/20260926-memory-policy/README.md`](../../reports/benchmarks/amd-vulkan/20260926-memory-policy/README.md).
-The separated evidence supports retaining both policy mechanisms and a further
-local reranker improvement from bounded reuse. Dawn parity remains open;
-its latest latency bands make the reported gap sensitive to the median convention.
-The earlier UMAP slowdown did not repeat consistently, but smaller regression
-or equivalence remains unresolved and no transferred speed benefit is established.
-Writable Vulkan mapping waits for preceding GPU use. The failed-flush limitation
-recorded by that report is addressed by the later shutdown investigation above. Published raw receipts keep
-historical profiling, current allocation observations and fresh comparisons
-separate; this does not reopen synchronization tracking or qualify a release.
-
-Fresh confirmation of the already-landed Qwen ownership batch, expanded cached
-selection allocation checks, and the remaining evidence gaps are indexed at
-`bench/out/doppler-search/20260923-head-confirmation/README.md`. This does not
-establish a material application advantage or reopen the rejected synchronization
-candidate. Accepted binaries and the application remain unchanged.
-
-The Qwen reranker ownership correction, rejected synchronization experiment,
-and fresh matched predecessor/Dawn cohorts are indexed at
-`bench/out/doppler-search/20260923-shader-owner/README.md`. The measured deficit
-remains open; removing cached shader copies does not establish a latency gain.
-The runtime keeps conservative replay barriers and corrects uniform visibility.
-These diagnostics do not promote the accepted package or a speed claim.
-
-The Qwen reranker compiler experiment, unchanged numerical oracle, separate
-predecessor and Dawn comparisons, and final-build confirmation are indexed at
-`bench/out/doppler-search/20260920-independent-loops/README.md`. This remains
-local AMD/Vulkan evidence; it does not promote a package or establish superiority.
-
-The retained Node-qualified Qwen reranker executes through Doppler's installed
-public Capsule API on an isolated Doe AMD/Vulkan build. Its frozen source oracle,
-resident repeated execution, compiler repair, and cleanup observations are
-indexed at `bench/out/doppler-search/20260920-admission/README.md`.
-The retained embedding Capsule remains browser-qualified and correctly rejects
-Node admission. Complete document search, package release, browser/Fawn,
-Metal/D3D12, and performance qualification remain separate work. The broader
-shader-semantics suite retains a render-output failure reproduced with an
-unchanged-source control; its passing compute cases do not clear that failure.
-
-CTS readiness now shares the receipt builder's published-artifact selection for
-receipt version 2, verifies the retained bytes, and rejects altered artifact
-identities or query coverage. Legacy receipts keep their original contract.
-The original rejection and unchanged-receipt correction are retained under
-`bench/out/organization/20260905-readiness-subset-failure/` and
-`bench/out/organization/20260905-readiness-subset-correction/`.
-
-The execution program is documented in
-[`reusable-compute-programs.md`](reusable-compute-programs.md). Its current AMD
-Vulkan candidate installs the same retained archives on Node, Bun, and Electron
-main processes. Ordinary WebGPU compatibility, declared program execution,
-package release admission, and browser integration remain distinct evidence
-boundaries. Electron main-process evidence grants no renderer or browser credit.
-
-Native coverage matrix version 2 binds covered artifacts by SHA-256. The gate
-requires matching Doe/backend identity, retained executable bytes, successful
-samples, adapter/driver identity, and native trace replay with matching work.
-Schema examples and renamed examples without execution provenance cannot
-establish coverage. The formerly sample-based rows remain diagnostic until
-physical records satisfy `config/native-backend-coverage-matrix.json`.
-Schema samples remain in place for contract testing.
-
-Public performance state belongs to `reports/claim-index.json` and every
-referenced sidecar. `config/dawn-replacement-frontier.json` routes the retained
-native, package, CTS, browser, and drop-in slices. Narrow Metal, AMD Vulkan,
-and Intel Vulkan results do not establish broad runtime superiority. D3D12
-requires a current physical Windows evidence run. Deno/wgpu driver identity
-remains an admission gap for the strict AMD package comparison.
-
-Native package candidate schema version 2 requires retained wrapper/platform
-archives and implementation hashes resolved from the declared clean commit.
-The earlier package reports under
-`reports/benchmarks/amd-vulkan/20260828T152721Z/` lack those custody and source
-requirements and remain historical diagnostics. The Apple candidate workflow
-builds an exact revision on an approved runner; its passing artifact must be
-produced before qualification can transfer to that tuple.
-
-Provider-neutral DoeProof process, observer, CLI, and read-only Node permission
-interfaces have separately scoped application diagnostics. Declared dependency
-identity and Node permissions do not establish complete operating-system
-isolation. Linux workspace-sealing evidence remains Linux-specific.
-The external registry and reviewed reports under `reports/ecosystem/` preserve
-terminal ownership decisions for HoloScript, vGPU, wgsl-fns, World Labs, Gigi,
-UMAP, and cpp-ml. Their bounded corrections and negative performance controls
-remain evidence; compatibility does not reopen an ownership or promotion claim.
-Doppler's retired performance family and unresolved diagnostic transcript
-localization remain separate from the non-Doppler program demonstration.
+- [Program qualification](reusable-compute-programs.md) separates ordinary WebGPU,
+  declared programs, installed packages, and browser integration. Electron main
+  execution grants no renderer or browser credit. Node reranker qualification
+  does not qualify the browser-only embedding Capsule or complete document search.
+- The broader shader-semantics suite retains an unresolved render-output failure
+  reproduced with an unchanged-source control. Passing compute cases do not clear
+  it; see [compiler status](compiler-and-webgpu.md).
+- Native coverage requires retained executable hashes, successful physical work,
+  backend/driver identity, and replay. Sample-based rows remain diagnostic until
+  they satisfy [coverage policy](../../config/native-backend-coverage-matrix.json).
+- Native/package candidates require retained archives and source-bound hashes.
+  Historical reports lacking that custody cannot qualify a new candidate.
+  Physical Windows execution and the Apple runner's candidate artifact remain
+  separate dependencies. Deno/wgpu driver identity remains an admission gap for
+  strict AMD package comparison.
+- [External-project evidence](../../reports/ecosystem/) retains terminal ownership
+  decisions and negative controls. Compatibility does not reopen adoption claims.
+  DoeProof permission and workspace-sealing diagnostics do not establish complete
+  operating-system isolation. Doppler's retired performance family and unresolved
+  diagnostic transcript localization remain separate from non-Doppler evidence.
 
 ## Admission blockers
 
@@ -161,11 +74,17 @@ localization remain separate from the non-Doppler program demonstration.
 
 ## Ground truth
 
-- Claims: `reports/claim-index.json` and referenced reports/sidecars.
-- Support: [`../doe-support-matrix.md`](../doe-support-matrix.md).
-- Program qualification: [`reusable-compute-programs.md`](reusable-compute-programs.md).
-- Workload admission: [`../workload-system.md`](../workload-system.md).
-- Methodology: [`../performance-strategy.md`](../performance-strategy.md).
-- Prior implementation and diagnostic details:
-  [historical snapshot](archive/2026-09-runtime-backends-and-bench.md), which
-  retains the earlier history pointer and exact artifact references.
+- [Claim index](../../reports/claim-index.json) and its referenced sidecars own
+  public verdicts; narrow backend results do not establish broad superiority.
+- [Replacement frontier](../../config/dawn-replacement-frontier.json) routes native,
+  package, CTS, browser, and drop-in evidence.
+- [Support matrix](../doe-support-matrix.md), [workload admission](../workload-system.md),
+  and [performance strategy](../performance-strategy.md) own qualification rules.
+- [Implementation peers](../implementation-peers.md) is generated from the peer
+  registry; inventory does not imply runnable or qualified coverage.
+
+## History
+
+The [previous backend status snapshot](archive/2026-09-27-runtime-backends-and-bench.md)
+retains prior cohorts, branch dispositions, package checkpoints, and earlier
+archive navigation. This cleanup reruns no GPU comparison and promotes no claim.

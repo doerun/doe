@@ -250,11 +250,9 @@ classified and cannot be promoted by benchmark results.
   Host elapsed-query conversion masks counter wrap to the queue's valid bits
   and rejects invalid calibration or overflow. Shader-file reads preserve I/O
   and allocation errors; sibling SPIR-V lookup changes only the filename suffix.
-  Surface capability queries require a native surface. These internal repairs
-  preserve existing policy, public fields, and serialized receipt schemas;
-  callers must now handle previously swallowed failures. See the
-  [Vulkan audit evidence](../bench/out/maintenance/20260923-vulkan-audit/README.md)
-  for executed checks and remaining completion-lifetime findings.
+  Surface capability queries require a native surface. Callers must preserve
+  typed failures across these boundaries. Executed checks and unresolved lifecycle
+  findings are routed through [architecture status](status/runtime-architecture-audit.md).
 - Compute descriptor version 2 adds explicit invocation/program buffer lifetimes;
   native contract version 2 also accepts historical version 1 declarations.
   Receipt version 4 records GPU state provenance separately from known byte

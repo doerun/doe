@@ -8,7 +8,7 @@ verdicts. Historical narrative lives under [`status/archive/`](status/archive/).
 | Strategy milestones | [`status/runtime-backends-and-bench.md`](status/runtime-backends-and-bench.md) | [`config/doe-product-strategy.json`](../config/doe-product-strategy.json), [migration](product-strategy-contract.md) |
 | Runtime and benchmarks | [`status/runtime-backends-and-bench.md`](status/runtime-backends-and-bench.md) | `reports/claim-index.json`, `bench/out/` |
 | Execution ownership, calibration and shared-GPU interference, measurement resolution, and reusable programs | [`status/reusable-compute-programs.md`](status/reusable-compute-programs.md) | `config/doe-product-strategy.json`, `config/compute-program-decision.json`, `bench/out/compute-program/` |
-| Implementation quality, runtime architecture, command contracts, and snapshot ownership | [`status/runtime-architecture-audit.md`](status/runtime-architecture-audit.md) | `runtime/zig/source-layout.json`, `runtime/zig/reviews/queue.tsv`, formatting, import-fence, and source-layout gates |
+| Implementation quality, runtime architecture, command contracts, and snapshot ownership | [`status/runtime-architecture-audit.md`](status/runtime-architecture-audit.md) | [bounded quality plan](../config/zig-review-plan.json), `runtime/zig/reviews/log.json`, coverage inventory in `runtime/zig/reviews/queue.tsv`, and `runtime/zig/source-layout.json` |
 | Compiler and WebGPU | [`status/compiler-and-webgpu.md`](status/compiler-and-webgpu.md) | `zig build test-wgsl`, schema-registered evidence |
 | TSIR | [`status/tsir.md`](status/tsir.md) | `reports/parity/`, manifest lowering entries |
 | Cerebras and CSL | [`status/cerebras-csl.md`](status/cerebras-csl.md) | `bench/out/r3-cerebras-status/snapshot.{json,md}` |

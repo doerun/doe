@@ -16,10 +16,11 @@ caught the invalid nesting despite correct results on the observed driver.
 Current diagnosis, acceptance commands, original failures, and native identities:
 [`shader semantics evidence`](../../bench/out/maintenance/20260919-shader-semantics/README.md).
 This repair does not replace accepted package binaries, establish performance,
-qualify non-Vulkan hardware, or complete the architecture review queue. The next
-bounded Zig review remains `src/backend/common/artifact_policy.zig`; native object
-state separation, artifact output ownership, and strict installed resolution remain
-separate architecture work.
+qualify non-Vulkan hardware, or complete the architecture review queue. Current
+batch selection belongs to the
+[bounded Zig review plan](../../config/zig-review-plan.json), not this checkpoint.
+Native object state separation, artifact output ownership, and strict installed
+resolution remain separate architecture obligations.
 
 ## Immediate-data admission
 

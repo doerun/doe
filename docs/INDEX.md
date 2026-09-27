@@ -37,7 +37,7 @@ evidence boundaries are clear.
 - [`architecture.md`](architecture.md): system surfaces and execution model
 - [`implementation-peers.md`](implementation-peers.md): generated implementation
   inventory, compiler identities, provider IDs and tracking pointers
-- [`runtime-hexagonal-architecture-plan.md`](runtime-hexagonal-architecture-plan.md): target hexagonal architecture and migration plan for the Zig runtime
+- [`runtime-hexagonal-architecture-plan.md`](runtime-hexagonal-architecture-plan.md): completed Zig migration history and current architecture owners
 - [`process.md`](process.md): stage, gate, and release law
 - [`status.md`](status.md): concise current-status routing
 - [`repo-taxonomy.md`](repo-taxonomy.md): repository ownership

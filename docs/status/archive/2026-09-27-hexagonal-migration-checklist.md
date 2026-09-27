@@ -1,7 +1,12 @@
+> Historical snapshot preserved during documentation cleanup.
+> Original location: `runtime/zig/HEXAGONAL_MIGRATION_TODO.md`.
+> Instructions, next actions, and qualification statements below describe
+> that historical record; they are not the current work schedule.
+
 # Doe Zig Hexagonal Architecture Migration Status
 
-**Target Architecture Spec:** [`docs/runtime-hexagonal-architecture-plan.md`](../../docs/runtime-hexagonal-architecture-plan.md)  
-**Target Box Diagram:** [`assets/architecture/doe-zig-hexagonal-box-diagram.svg`](../../assets/architecture/doe-zig-hexagonal-box-diagram.svg)  
+**Target Architecture Spec:** [`docs/runtime-hexagonal-architecture-plan.md`](../../runtime-hexagonal-architecture-plan.md)\
+**Target Box Diagram:** [`assets/architecture/doe-zig-hexagonal-box-diagram.svg`](../../../assets/architecture/doe-zig-hexagonal-box-diagram.svg)\
 **Last Updated:** 2026-08-23
 
 ---
