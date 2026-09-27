@@ -1,0 +1,19 @@
+{
+  "libraries": [
+    {
+      "arm": "baseline",
+      "path": "/tmp/doe-quality-20260927/baseline/lib/libwebgpu_doe.so",
+      "bytes": 11685432,
+      "sha256": "d77a6cd31b080941cf60ca5125b0825c03130f1df8bd1f20e3f72dc7c6fd9c09",
+      "exportListSha256": "5ccea5d25266ea9d9e0ca65e2f94193009bf819e8da92a998efc22a1b17c791e"
+    },
+    {
+      "arm": "candidate",
+      "path": "/tmp/doe-quality-20260927/candidate/lib/libwebgpu_doe.so",
+      "bytes": 11686816,
+      "sha256": "4bc3393ad35798a37bb8b2acb82f190bcf8b597190dc84b759f3eee7fd3c4e2f",
+      "exportListSha256": "5ccea5d25266ea9d9e0ca65e2f94193009bf819e8da92a998efc22a1b17c791e"
+    }
+  ],
+  "exportNamesAndTypesEqual": true
+}

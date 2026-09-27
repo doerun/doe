@@ -12,6 +12,18 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+The [compiler and allocation ownership checkpoint](../../reports/maintenance/20260927-implementation-quality/README.md)
+consolidates internal analysis requests and explicit diagnostics, moves conservative
+loop eligibility to IR, and gives completed Vulkan allocation retention a typed
+owner. Retained compiler output parity, failure injection, physical buffer reuse,
+native texture/mapping lifetimes, package smoke, and scoped build/timing checks
+support these changes. This is implementation-quality evidence, not a new speed
+claim or release qualification. Continue with Vulkan texture/render ownership,
+remaining broad resource dependencies, and the unfinished SPIR-V helper review.
+Metal and D3D12 examinations remain partial and preserve their native models.
+The report retains the stale stock build-profile edit and the scoped replacement
+used for this checkpoint; repairing that recipe remains tooling follow-up.
+
 The [upload and ABI continuation](../../bench/out/maintenance/20260923-vulkan-upload-audit/README.md)
 consolidates native upload-buffer acquisition, preserves the working fast buffer
 on failed growth, and admits pool reuse only for compatible native usage flags.

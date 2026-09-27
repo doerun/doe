@@ -24577,6 +24577,439 @@
       "targets": [
         "src/backend/vulkan/vk_upload.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/compiler/wgsl/pipeline/diagnostic.zig",
+          "sha256": "bcae40b9688077755f906bbbb854254f209d743f5ee2fd2d9be75f0216f61bee"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig",
+          "sha256": "a4d992334d34c8f99d6368fdecb132ba8d6359c1c69671bce552326d15911b83"
+        },
+        {
+          "path": "runtime/zig/tests/wgsl/mod_error_contract_test.zig",
+          "sha256": "c11cde6d1baac2bf72fa627d610e99608c5a25538fef9f8beace751054716410"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/compiler-artifact-parity.json",
+          "sha256": "9357f541dc47fa20ebaffbf7b6c48c7ee700b38adfee62846aa54104effe84b3"
+        },
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/final-suites.log",
+          "sha256": "cb9c4f0c46be835d3aef2219b2ce4abd70a27405381c0aebc7f9baf11bb69ef7"
+        },
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/raw-evidence.tar.gz",
+          "sha256": "5e9db412ab0ddeeeefeaf2e488d834533ccf7d6caa9d046ccba8bad66c6456cd"
+        }
+      ],
+      "findings": [],
+      "inputHash": "4fc75b153b0151da6b75e5a4feffeeadade18347b86993dadf620c11e16d440f",
+      "level": "file",
+      "nextAction": "Continue the pipeline directory review; file completion does not certify its callers or whole compiler.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Replaced the internal function-name matrix with analyze(Request) and Result; adapters preserve signatures and TLS diagnostic lifetime.",
+        "Replaced anyerror semantic and IR-build mapping with exhaustive concrete error sets; numeric parser overflow remains InvalidWgsl and allocation sweeps verify cleanup."
+      ],
+      "reviewId": "compiler_request_20260927",
+      "reviewedAt": "2026-09-27T22:48:51.921765+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "verified",
+      "summary": "Read the complete analysis owner and caller conversions: allocator and diagnostic ownership, rollback, robustness, overrides, phase timings and compatibility adapters.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/pipeline/analysis.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig",
+          "sha256": "713482a41f3b925ea6ede0984e008a06dfa905718d1b2c9ed87ad42b8c4314d5"
+        },
+        {
+          "path": "runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig",
+          "sha256": "47ea0824e1c0a3967152f1066a6902303bc016056192b46c377aa62a556d273c"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/compiler-artifact-parity.json",
+          "sha256": "9357f541dc47fa20ebaffbf7b6c48c7ee700b38adfee62846aa54104effe84b3"
+        },
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/final-suites.log",
+          "sha256": "cb9c4f0c46be835d3aef2219b2ce4abd70a27405381c0aebc7f9baf11bb69ef7"
+        },
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/raw-evidence.tar.gz",
+          "sha256": "5e9db412ab0ddeeeefeaf2e488d834533ccf7d6caa9d046ccba8bad66c6456cd"
+        }
+      ],
+      "findings": [],
+      "inputHash": "8a7fad8d056865df5ebc0ad8e0828636946dfd75ad6beb143f461793b97933ae",
+      "level": "file",
+      "nextAction": "Review remaining IR query consumers and emitter policy separately; this predicate is not a general dependence proof.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Moved unchanged target-independent eligibility out of SPIR-V helpers; direct IR assertions and emitted-loop checks cover eligibility and rejected recurrence/aliases/side effects."
+      ],
+      "reviewId": "ir_loop_independence_20260927",
+      "reviewedAt": "2026-09-27T22:48:53.347938+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "verified",
+      "summary": "Read the complete bounded loop eligibility analysis, including induction, array bounds, readonly expression and callee checks, and conservative alias rejection.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/ir/ir_loop_independence.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig",
+          "sha256": "713482a41f3b925ea6ede0984e008a06dfa905718d1b2c9ed87ad42b8c4314d5"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/ir/ir_loop_independence.zig",
+          "sha256": "42980dbe3468cca24f617db4e1a63041e0db0198093dd2b346dccc79a87ac508"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/compiler-artifact-parity.json",
+          "sha256": "9357f541dc47fa20ebaffbf7b6c48c7ee700b38adfee62846aa54104effe84b3"
+        },
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/final-suites.log",
+          "sha256": "cb9c4f0c46be835d3aef2219b2ce4abd70a27405381c0aebc7f9baf11bb69ef7"
+        },
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/raw-evidence.tar.gz",
+          "sha256": "5e9db412ab0ddeeeefeaf2e488d834533ccf7d6caa9d046ccba8bad66c6456cd"
+        }
+      ],
+      "findings": [
+        "Instruction-cache ownership, reference queries and scalar construction still share a helper surface and require examination with their consumers before selecting narrower owners."
+      ],
+      "inputHash": "37a9d3b364bb3451033ad980f331a356c71b8523e6410c18c1604c7d437dca22",
+      "level": "file",
+      "nextAction": "Trace result/load cache lifetimes and root-query consumers in emit_spirv_fn before separating a cohesive owner; preserve current emitted bytes.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Independent local-array eligibility now has an IR owner and no SPIR-V dependency."
+      ],
+      "reviewId": "spirv_helper_cohesion_20260927",
+      "reviewedAt": "2026-09-27T22:48:54.818424+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "needs_changes",
+      "summary": "Read the complete remaining helper file; examined instruction-cache entry ownership, scalar construction, root queries and emitted-loop decisions.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "a0a8be17c06b50f1b9a58ba089cbbadcd6895b8c236dfccceed5d86e389155f2"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_buffer_ops_native.zig",
+          "sha256": "da8d02e7945eeba896c698eb41e407186e73d011433c04ca0bf697920fea9a87"
+        },
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_lifetime.zig",
+          "sha256": "e17bee9c08d20d2e659100b8b7aa6453026f42f3ea4bf0cb8fb35c3d6bd8dd59"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "f28425365297d1452a3925d044846142fc7db5348aa2a42bb573b414de86cdc7"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_unit_test.zig",
+          "sha256": "390e09e8320fbd7d9d67e2f299b43df750d540cd1039ec084eea52f9fbbc8fa1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/final-suites.log",
+          "sha256": "cb9c4f0c46be835d3aef2219b2ce4abd70a27405381c0aebc7f9baf11bb69ef7"
+        },
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/raw-evidence.tar.gz",
+          "sha256": "5e9db412ab0ddeeeefeaf2e488d834533ccf7d6caa9d046ccba8bad66c6456cd"
+        }
+      ],
+      "findings": [
+        "Broad runtime anytype dependencies remain in live resource operations; no whole-file completion is claimed."
+      ],
+      "inputHash": "17dd483dd09941b99eeeb52bf5b6e76f5e45b61603e54d0253f05faa81d8bf87",
+      "level": "file",
+      "nextAction": "Read remaining texture/sampler operations, trace render use and command retention, then select a live-resource owner with explicit dependencies.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "CompletedComputeBufferCache owns retained entries/accounting and accepts typed completion facts instead of the runtime. Rejected admission retains caller ownership, including metadata allocation failure."
+      ],
+      "reviewId": "vulkan_resource_owner_20260927",
+      "reviewedAt": "2026-09-27T22:48:56.292724+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "in_progress",
+      "summary": "Examined completed cache and the buffer create, mapping, promotion, destruction and reuse path; texture/sampler sections were not wholly reviewed.",
+      "supersedes": "vulkan_batch_20260920_31_vk_resources",
+      "targets": [
+        "src/backend/vulkan/vk_resources.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_resources.zig",
+          "sha256": "7e91013282097030b03a3a49b46fd57126a80a6d752edcb07730d72be4933124"
+        },
+        {
+          "path": "runtime/zig/tests/native_recorded_compute.c",
+          "sha256": "81003c704d2003cbcb5c87c2a8106fb5bd6919307d2f90e8d62c7239689f3891"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "f28425365297d1452a3925d044846142fc7db5348aa2a42bb573b414de86cdc7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/final-suites.log",
+          "sha256": "cb9c4f0c46be835d3aef2219b2ce4abd70a27405381c0aebc7f9baf11bb69ef7"
+        },
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/raw-evidence.tar.gz",
+          "sha256": "5e9db412ab0ddeeeefeaf2e488d834533ccf7d6caa9d046ccba8bad66c6456cd"
+        }
+      ],
+      "findings": [
+        "The runtime still aggregates independent pipeline, descriptor, upload, texture and submission owners; their complete lifetimes are not certified by this buffer path."
+      ],
+      "inputHash": "57d63e793b11e082d53946a4fe016b9b28e2c071b9e03cf488e7705c678e3f24",
+      "level": "file",
+      "nextAction": "Trace texture/render submission references and failure cleanup through their current owners before changing additional lifecycle state.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Completed allocation storage and accounting now belong to a typed cache; existing hasPendingQueueWork is reused and unknown/device-lost retirement behavior is unchanged."
+      ],
+      "reviewId": "vulkan_runtime_composition_20260927",
+      "reviewedAt": "2026-09-27T22:48:57.716527+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "in_progress",
+      "summary": "Examined runtime cache composition, retirement phases, pending-work facts, destruction and teardown; complete runtime review remains open.",
+      "supersedes": "shader_semantics_runtime_20260919_evidence",
+      "targets": [
+        "src/backend/vulkan/native_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/metal/metal_buffer_pool.zig",
+          "sha256": "f69ff0aec3955a27ffc472acbaa23d4bd628dcc2336039b4a383e68e91ba8a2a"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/README.md",
+          "sha256": "5339de24548c00f4b5072b9cae7d975ee52e337485bf3c7e056ff598ac07f330"
+        }
+      ],
+      "findings": [],
+      "inputHash": "d525bdc773f6b8c73613344ac84a6a897d7e02fbc870f074e38960f6702228f1",
+      "level": "file",
+      "nextAction": "Read the remainder and trace upload pool admission and command reference retirement through Metal bridge callbacks on a Metal host.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_completion_examination_20260927",
+      "reviewedAt": "2026-09-27T22:48:59.128122+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "in_progress",
+      "summary": "Read the public Completion state and reserve/prepare/retain/retire/deinit boundary; internal polling and all tests were not wholly examined.",
+      "supersedes": "metal_completion_notification_20260920_final",
+      "targets": [
+        "src/backend/metal/metal_completion.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/metal/metal_completion.zig",
+          "sha256": "b6b9d790552243a0da316233b45d78fd5ea8b09c0d83674ba860e8757aa83d3a"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/README.md",
+          "sha256": "5339de24548c00f4b5072b9cae7d975ee52e337485bf3c7e056ff598ac07f330"
+        }
+      ],
+      "findings": [
+        "strip_extension performs shader-name parsing in the buffer-pool owner; trace its consumers before moving it to the existing source/path owner.",
+        "Pool admission completion requirements reside in callers and need a complete caller lifecycle review before marking ownership verified."
+      ],
+      "inputHash": "68b9020a1fb9059afe7a74ed5c7fe53147fbaeb05021cfcc387a2c5e8af19cef",
+      "level": "file",
+      "nextAction": "Inspect all pool_push_or_release and strip_extension callers with the completion owner; preserve native reference semantics.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_pool_cohesion_20260927",
+      "reviewedAt": "2026-09-27T22:49:00.553116+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "needs_changes",
+      "summary": "Read the complete buffer-pool module; native reference ownership differs from Vulkan allocation and memory-property ownership.",
+      "supersedes": "metal_ports_20260920_03",
+      "targets": [
+        "src/backend/metal/metal_buffer_pool.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_upload.zig",
+          "sha256": "dd2bc8714efa53829eaf574c2f2c7f4859451db1f524eb6ad3da33fcf8cf5eee"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_buffer_ops_native.zig",
+          "sha256": "da8d02e7945eeba896c698eb41e407186e73d011433c04ca0bf697920fea9a87"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/README.md",
+          "sha256": "5339de24548c00f4b5072b9cae7d975ee52e337485bf3c7e056ff598ac07f330"
+        }
+      ],
+      "findings": [],
+      "inputHash": "68f87cfd3c1cd1c62621cfae63f8726cab13eae7e0ab43f8a85cc5d427c96f6c",
+      "level": "file",
+      "nextAction": "Trace fence-owned COM references through native buffer destruction, mapped access, textures and terminal cleanup, including failed waits; execute on a D3D12 host.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "d3d12_submission_examination_20260927",
+      "reviewedAt": "2026-09-27T22:49:01.967208+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "in_progress",
+      "summary": "Examined PendingSubmitBatch ownership, runtime state and submitted-command tracking excerpts, with upload completion; not the complete runtime.",
+      "supersedes": "batch32_20260919_12_revalidated",
+      "targets": [
+        "src/backend/d3d12/d3d12_native_runtime.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/metal/metal_buffer_pool.zig",
+          "sha256": "f69ff0aec3955a27ffc472acbaa23d4bd628dcc2336039b4a383e68e91ba8a2a"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/README.md",
+          "sha256": "9e416453be05fc8531af62a6b2f8e9cea93faf7829b155a5d120a80e5de4012a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "d525bdc773f6b8c73613344ac84a6a897d7e02fbc870f074e38960f6702228f1",
+      "level": "file",
+      "nextAction": "Read the remainder and trace upload pool admission and command reference retirement through Metal bridge callbacks on a Metal host.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_completion_examination_20260927_evidence",
+      "reviewedAt": "2026-09-27T22:49:46.847378+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "in_progress",
+      "summary": "Read the public Completion state and reserve/prepare/retain/retire/deinit boundary; internal polling and all tests were not wholly examined. Rebound the report after correcting the D3D12 submission symbol; examination scope is unchanged.",
+      "supersedes": "metal_completion_examination_20260927",
+      "targets": [
+        "src/backend/metal/metal_completion.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/metal/metal_completion.zig",
+          "sha256": "b6b9d790552243a0da316233b45d78fd5ea8b09c0d83674ba860e8757aa83d3a"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/README.md",
+          "sha256": "9e416453be05fc8531af62a6b2f8e9cea93faf7829b155a5d120a80e5de4012a"
+        }
+      ],
+      "findings": [
+        "strip_extension performs shader-name parsing in the buffer-pool owner; trace its consumers before moving it to the existing source/path owner.",
+        "Pool admission completion requirements reside in callers and need a complete caller lifecycle review before marking ownership verified."
+      ],
+      "inputHash": "68b9020a1fb9059afe7a74ed5c7fe53147fbaeb05021cfcc387a2c5e8af19cef",
+      "level": "file",
+      "nextAction": "Inspect all pool_push_or_release and strip_extension callers with the completion owner; preserve native reference semantics.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "metal_pool_cohesion_20260927_evidence",
+      "reviewedAt": "2026-09-27T22:49:48.294513+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "needs_changes",
+      "summary": "Read the complete buffer-pool module; native reference ownership differs from Vulkan allocation and memory-property ownership. Rebound the report after correcting the D3D12 submission symbol; examination scope is unchanged.",
+      "supersedes": "metal_pool_cohesion_20260927",
+      "targets": [
+        "src/backend/metal/metal_buffer_pool.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/d3d12/d3d12_runtime_upload.zig",
+          "sha256": "dd2bc8714efa53829eaf574c2f2c7f4859451db1f524eb6ad3da33fcf8cf5eee"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_buffer_ops_native.zig",
+          "sha256": "da8d02e7945eeba896c698eb41e407186e73d011433c04ca0bf697920fea9a87"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-implementation-quality/README.md",
+          "sha256": "9e416453be05fc8531af62a6b2f8e9cea93faf7829b155a5d120a80e5de4012a"
+        }
+      ],
+      "findings": [],
+      "inputHash": "68f87cfd3c1cd1c62621cfae63f8726cab13eae7e0ab43f8a85cc5d427c96f6c",
+      "level": "file",
+      "nextAction": "Trace fence-owned COM references through native buffer destruction, mapped access, textures and terminal cleanup, including failed waits; execute on a D3D12 host.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "d3d12_submission_examination_20260927_evidence",
+      "reviewedAt": "2026-09-27T22:49:49.739087+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+      "status": "in_progress",
+      "summary": "Examined PendingSubmitBatch ownership, runtime state and submitted-command tracking excerpts, with upload completion; not the complete runtime. Rebound the report after correcting the D3D12 submission symbol; examination scope is unchanged.",
+      "supersedes": "d3d12_submission_examination_20260927",
+      "targets": [
+        "src/backend/d3d12/d3d12_native_runtime.zig"
+      ]
     }
   ],
   "schemaVersion": 1

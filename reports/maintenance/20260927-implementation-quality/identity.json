@@ -1,0 +1,47 @@
+{
+  "classification": "local implementation-quality diagnostic; not release qualification",
+  "baselineCommit": "89ecba41ea031da432fa98e32143edd1b608bc29",
+  "compilerCommit": "015751a19257ad5f502683cbdc88f3adaf418283",
+  "vulkanCommit": "a985fbe11988aab2b5a044e19c3b870c17cbf56b",
+  "toolchain": {
+    "zig": "0.15.2",
+    "node": "v22.22.1",
+    "host": "Linux-7.0.0-29-generic-x86_64-with-glibc2.43"
+  },
+  "sourceIdentity": "compiler and Vulkan patches against baseline; build capture retains exact hashed input inventories",
+  "evidenceSha256": {
+    "reports/maintenance/20260927-implementation-quality/README.md": "9e416453be05fc8531af62a6b2f8e9cea93faf7829b155a5d120a80e5de4012a",
+    "reports/maintenance/20260927-implementation-quality/build-summary.json": "2108fe50f65a3f0a9a974a801fed80b6889959bc2d24c7bf61af3c5e07d557c8",
+    "reports/maintenance/20260927-implementation-quality/checks.json": "ec07fab9745734609a20e6a9edcf03c46e4998c325f930b2d3c89ef20bf1029e",
+    "reports/maintenance/20260927-implementation-quality/compiler-artifact-parity.json": "9357f541dc47fa20ebaffbf7b6c48c7ee700b38adfee62846aa54104effe84b3",
+    "reports/maintenance/20260927-implementation-quality/compiler-timing-summary.json": "f1ac38150cfb6931e727d937ef07f9ec9301f5ca92353654cde9a3154fb84aec",
+    "reports/maintenance/20260927-implementation-quality/compiler.patch": "61dec177347e5d00ec52c3d53b08ec64ca3279f4bc231e26914d341217d1d83a",
+    "reports/maintenance/20260927-implementation-quality/doc-links.log": "e92b0ffd03bb5447a0dbd23d6627ba8b9193e54e2b435416328ff01c3080cf06",
+    "reports/maintenance/20260927-implementation-quality/final-suites.log": "cb9c4f0c46be835d3aef2219b2ce4abd70a27405381c0aebc7f9baf11bb69ef7",
+    "reports/maintenance/20260927-implementation-quality/import-fence.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reports/maintenance/20260927-implementation-quality/native-library-identity.json": "d36573295f9d2f04c20a32bed079283ed0f11b2928ab289471a6636974750a85",
+    "reports/maintenance/20260927-implementation-quality/raw-evidence.tar.gz": "5e9db412ab0ddeeeefeaf2e488d834533ccf7d6caa9d046ccba8bad66c6456cd",
+    "reports/maintenance/20260927-implementation-quality/review-log.log": "4c26e6668afce6074faa13f0c7e7b6947b3e7bc3a207ce31235e43db2b49bdff",
+    "reports/maintenance/20260927-implementation-quality/vulkan.patch": "b05856eeaedfe49dac686ff2caa1dbe4d5b5f096d70939114c501c483413188a"
+  },
+  "acceptance": {
+    "wgslPassed": 1128,
+    "runtimePassed": 2321,
+    "runtimeSkipped": 11,
+    "physicalCacheLifecyclePassed": 1,
+    "lifetimeProbePassedIncludingImportedTests": 76,
+    "artifactParityPairs": 24,
+    "packageAndNativeFixtures": "baseline and candidate exit 0",
+    "exportNamesAndTypesEqual": true
+  },
+  "limitations": [
+    "No Dawn or reranker comparison; no application speed claim.",
+    "Package example durations are individual correctness observations, not performance qualification.",
+    "Compiler benchmark retains process percentiles, not every translation sample; fixed tool statistics unchanged.",
+    "Compiler build profile is a scoped diagnostic after the stock leaf-backend edit failed to match current source.",
+    "Build costs have one capture per arm; no statistically established build advantage.",
+    "Device loss is injected after real driver completion; hardware was not reset.",
+    "Metal and D3D12 examination is partial; no physical runs on those platforms.",
+    "This cache owner does not complete Vulkan textures, rendering, mapping, or submission architecture review."
+  ]
+}

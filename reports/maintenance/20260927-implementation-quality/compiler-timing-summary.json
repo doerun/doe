@@ -1,0 +1,276 @@
+{
+  "classification": "diagnostic-only",
+  "summaryDefinition": "central-pair median of eight independent process percentiles for each fixture; no pooling of samples",
+  "rows": [
+    {
+      "target": "msl",
+      "shader": "empty_compute",
+      "baselineP50Ns": 17873.5,
+      "candidateP50Ns": 17613.5,
+      "baselineP95Ns": 23865.0,
+      "candidateP95Ns": 23704.5,
+      "p50ChangePercent": -1.454667524547515,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "msl",
+      "shader": "passthrough_vertex",
+      "baselineP50Ns": 22873.5,
+      "candidateP50Ns": 22923.0,
+      "baselineP95Ns": 30918.5,
+      "candidateP95Ns": 31810.0,
+      "p50ChangePercent": 0.21640763328742985,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "msl",
+      "shader": "scale_compute",
+      "baselineP50Ns": 23439.5,
+      "candidateP50Ns": 20849.0,
+      "baselineP95Ns": 33167.5,
+      "candidateP95Ns": 25293.0,
+      "p50ChangePercent": -11.0518569082105,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "msl",
+      "shader": "color_fragment",
+      "baselineP50Ns": 22211.5,
+      "candidateP50Ns": 22262.0,
+      "baselineP95Ns": 27632.0,
+      "candidateP95Ns": 27441.5,
+      "p50ChangePercent": 0.22735970105576264,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "msl",
+      "shader": "matmul_compute",
+      "baselineP50Ns": 34249.5,
+      "candidateP50Ns": 34364.5,
+      "baselineP95Ns": 38823.0,
+      "candidateP95Ns": 39153.5,
+      "p50ChangePercent": 0.3357713251288308,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "msl",
+      "shader": "vertex_transform",
+      "baselineP50Ns": 20940.0,
+      "candidateP50Ns": 20839.0,
+      "baselineP95Ns": 25082.5,
+      "candidateP95Ns": 25558.0,
+      "p50ChangePercent": -0.48233046800382207,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "msl",
+      "shader": "texture_compute",
+      "baselineP50Ns": 28669.0,
+      "candidateP50Ns": 28909.5,
+      "baselineP95Ns": 32696.5,
+      "candidateP95Ns": 33097.0,
+      "p50ChangePercent": 0.8388852070180253,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "msl",
+      "shader": "multi_binding_compute",
+      "baselineP50Ns": 29546.0,
+      "candidateP50Ns": 29235.5,
+      "baselineP95Ns": 33328.0,
+      "candidateP95Ns": 33412.5,
+      "p50ChangePercent": -1.0509036756244483,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "msl",
+      "shader": "fragment_discard",
+      "baselineP50Ns": 20163.0,
+      "candidateP50Ns": 20163.0,
+      "baselineP95Ns": 24230.5,
+      "candidateP95Ns": 24466.0,
+      "p50ChangePercent": 0.0,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "hlsl",
+      "shader": "empty_compute",
+      "baselineP50Ns": 12759.0,
+      "candidateP50Ns": 12574.0,
+      "baselineP95Ns": 17718.5,
+      "candidateP95Ns": 17528.0,
+      "p50ChangePercent": -1.449956893173443,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "hlsl",
+      "shader": "passthrough_vertex",
+      "baselineP50Ns": 18530.0,
+      "candidateP50Ns": 18580.0,
+      "baselineP95Ns": 22557.5,
+      "candidateP95Ns": 22883.5,
+      "p50ChangePercent": 0.2698327037236936,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "hlsl",
+      "shader": "scale_compute",
+      "baselineP50Ns": 20278.0,
+      "candidateP50Ns": 20303.5,
+      "baselineP95Ns": 24621.5,
+      "candidateP95Ns": 24586.5,
+      "p50ChangePercent": 0.12575204655291827,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "hlsl",
+      "shader": "color_fragment",
+      "baselineP50Ns": 22041.5,
+      "candidateP50Ns": 21886.5,
+      "baselineP95Ns": 26324.5,
+      "candidateP95Ns": 25919.0,
+      "p50ChangePercent": -0.7032189279314038,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "hlsl",
+      "shader": "matmul_compute",
+      "baselineP50Ns": 33833.5,
+      "candidateP50Ns": 33443.0,
+      "baselineP95Ns": 37926.5,
+      "candidateP95Ns": 37766.0,
+      "p50ChangePercent": -1.1541815064950445,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "hlsl",
+      "shader": "vertex_transform",
+      "baselineP50Ns": 20724.0,
+      "candidateP50Ns": 20814.5,
+      "baselineP95Ns": 25007.0,
+      "candidateP95Ns": 25032.0,
+      "p50ChangePercent": 0.43669175834781804,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "hlsl",
+      "shader": "texture_compute",
+      "baselineP50Ns": 28303.0,
+      "candidateP50Ns": 28609.0,
+      "baselineP95Ns": 32441.0,
+      "candidateP95Ns": 32486.0,
+      "p50ChangePercent": 1.0811574744726604,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "hlsl",
+      "shader": "multi_binding_compute",
+      "baselineP50Ns": 29270.0,
+      "candidateP50Ns": 29245.0,
+      "baselineP95Ns": 33297.5,
+      "candidateP95Ns": 33112.0,
+      "p50ChangePercent": -0.08541168431841495,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "hlsl",
+      "shader": "fragment_discard",
+      "baselineP50Ns": 20143.0,
+      "candidateP50Ns": 20138.0,
+      "baselineP95Ns": 24400.5,
+      "candidateP95Ns": 24381.0,
+      "p50ChangePercent": -0.02482251898923149,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "spirv",
+      "shader": "empty_compute",
+      "baselineP50Ns": 18440.0,
+      "candidateP50Ns": 18520.0,
+      "baselineP95Ns": 22647.5,
+      "candidateP95Ns": 23008.0,
+      "p50ChangePercent": 0.433839479392617,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "spirv",
+      "shader": "passthrough_vertex",
+      "baselineP50Ns": 19001.0,
+      "candidateP50Ns": 19176.5,
+      "baselineP95Ns": 23234.0,
+      "candidateP95Ns": 23444.5,
+      "p50ChangePercent": 0.9236355981264044,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "spirv",
+      "shader": "scale_compute",
+      "baselineP50Ns": 26224.5,
+      "candidateP50Ns": 26540.0,
+      "baselineP95Ns": 30332.0,
+      "candidateP95Ns": 30537.0,
+      "p50ChangePercent": 1.2030734618391214,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "spirv",
+      "shader": "color_fragment",
+      "baselineP50Ns": 27166.5,
+      "candidateP50Ns": 27186.0,
+      "baselineP95Ns": 31294.0,
+      "candidateP95Ns": 31189.0,
+      "p50ChangePercent": 0.07177958146982188,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "spirv",
+      "shader": "matmul_compute",
+      "baselineP50Ns": 38463.0,
+      "candidateP50Ns": 38142.0,
+      "baselineP95Ns": 42405.0,
+      "candidateP95Ns": 42119.0,
+      "p50ChangePercent": -0.8345682864051129,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "spirv",
+      "shader": "vertex_transform",
+      "baselineP50Ns": 22031.0,
+      "candidateP50Ns": 21906.5,
+      "baselineP95Ns": 26255.0,
+      "candidateP95Ns": 26004.0,
+      "p50ChangePercent": -0.565112795606193,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "spirv",
+      "shader": "texture_compute",
+      "baselineP50Ns": 30858.0,
+      "candidateP50Ns": 30948.5,
+      "baselineP95Ns": 34761.0,
+      "candidateP95Ns": 34835.5,
+      "p50ChangePercent": 0.29327889040118293,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "spirv",
+      "shader": "multi_binding_compute",
+      "baselineP50Ns": 36884.0,
+      "candidateP50Ns": 36719.5,
+      "baselineP95Ns": 40456.0,
+      "candidateP95Ns": 40586.5,
+      "p50ChangePercent": -0.44599284242490267,
+      "bytesOutEqual": true
+    },
+    {
+      "target": "spirv",
+      "shader": "fragment_discard",
+      "baselineP50Ns": 20960.0,
+      "candidateP50Ns": 20824.5,
+      "baselineP95Ns": 25363.0,
+      "candidateP95Ns": 25623.5,
+      "p50ChangePercent": -0.6464694656488579,
+      "bytesOutEqual": true
+    }
+  ]
+}

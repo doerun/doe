@@ -1,0 +1,16 @@
+{
+  "candidateProductionSourceFilesMatchedBuildInventory": 613,
+  "mismatches": [],
+  "importFence": {
+    "command": "python3 runtime/zig/tools/check_core_import_fence.py",
+    "exitCode": 0
+  },
+  "reviewLedger": {
+    "command": "python3 runtime/zig/tools/review_log.py --check --base-ref 89ecba41ea031da432fa98e32143edd1b608bc29",
+    "exitCode": 0
+  },
+  "docLinks": {
+    "command": "python3 -m unittest bench.tests.test_doc_link_coverage",
+    "exitCode": 0
+  }
+}

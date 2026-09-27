@@ -1,0 +1,84 @@
+{
+  "baseline": {
+    "clean": {
+      "elapsedNs": 20728963741,
+      "peakResidentBytes": 472940544,
+      "residentScope": "wait4-largest-process-in-build-tree",
+      "userCpuNs": 21306169000,
+      "systemCpuNs": 1498020000,
+      "artifacts": [
+        {
+          "path": "$MEASUREMENT_ROOT/prefix/bin/doe-compilation-bench",
+          "sha256": "4df93300aad7836d90a539afdae02812b3dcd800df99069be274e0f6db26df32",
+          "sizeBytes": 5816968
+        }
+      ],
+      "exitCode": 0
+    },
+    "noChange": {
+      "elapsedNs": 47043392,
+      "peakResidentBytes": 51707904,
+      "residentScope": "wait4-largest-process-in-build-tree",
+      "userCpuNs": 32522000,
+      "systemCpuNs": 15985000,
+      "artifacts": null,
+      "exitCode": 0
+    },
+    "compilerEdit": {
+      "elapsedNs": 15620632802,
+      "peakResidentBytes": 432713728,
+      "residentScope": "wait4-largest-process-in-build-tree",
+      "userCpuNs": 15109584000,
+      "systemCpuNs": 652726000,
+      "artifacts": [
+        {
+          "path": "$MEASUREMENT_ROOT/prefix/bin/doe-compilation-bench",
+          "sha256": "be2ebbb49f6e0ccb7b74f1434d9f6953fcf99cb81a1031c27a3782b6111d57f3",
+          "sizeBytes": 5817048
+        }
+      ],
+      "exitCode": 0
+    }
+  },
+  "candidate": {
+    "clean": {
+      "elapsedNs": 20383305524,
+      "peakResidentBytes": 469884928,
+      "residentScope": "wait4-largest-process-in-build-tree",
+      "userCpuNs": 20909113000,
+      "systemCpuNs": 1043468000,
+      "artifacts": [
+        {
+          "path": "$MEASUREMENT_ROOT/prefix/bin/doe-compilation-bench",
+          "sha256": "a27ba08de4bd2fb76bd95710d8b0984861960b2d8bfb1f72228943507c73b4cb",
+          "sizeBytes": 5812032
+        }
+      ],
+      "exitCode": 0
+    },
+    "noChange": {
+      "elapsedNs": 43409355,
+      "peakResidentBytes": 50364416,
+      "residentScope": "wait4-largest-process-in-build-tree",
+      "userCpuNs": 29121000,
+      "systemCpuNs": 16075000,
+      "artifacts": null,
+      "exitCode": 0
+    },
+    "compilerEdit": {
+      "elapsedNs": 15572663582,
+      "peakResidentBytes": 430567424,
+      "residentScope": "wait4-largest-process-in-build-tree",
+      "userCpuNs": 15116416000,
+      "systemCpuNs": 546865000,
+      "artifacts": [
+        {
+          "path": "$MEASUREMENT_ROOT/prefix/bin/doe-compilation-bench",
+          "sha256": "3529dbcfcd4ef35d9247a55a69d05de60c979025cfa02cc5d69bb438c0d03342",
+          "sizeBytes": 5812112
+        }
+      ],
+      "exitCode": 0
+    }
+  }
+}

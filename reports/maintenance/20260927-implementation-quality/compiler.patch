@@ -1,0 +1,1232 @@
+diff --git a/GOALS.md b/GOALS.md
+index b77934c15..3a1a4b485 100644
+--- a/GOALS.md
++++ b/GOALS.md
+@@ -99,6 +99,12 @@ work records. Keep compiler, backend, and host boundaries independently testable
+ Reuse, refactoring, and agent assistance serve these milestones without adding
+ unnecessary execution overhead.
+ 
++Exceptional execution and exceptional implementation are independent standards.
++Deliberate compiler and backend engineering is an active workstream: a change
++that materially clarifies ownership, dependencies, diagnostics, or extension
++points can be worthwhile without a speedup. Preserve behavior and check execution,
++build cost, and binary size through the existing style guide and review ledger.
++
+ ## Explicit exclusions
+ 
+ Doe does not build browser user interfaces, Flutter engine replacements, peer-to-peer compute protocols, or distributed cloud training clusters.
+diff --git a/docs/process.md b/docs/process.md
+index 6bd8daa30..103c1a359 100644
+--- a/docs/process.md
++++ b/docs/process.md
+@@ -639,6 +639,12 @@ Versioned job and receipt contracts and migration are documented in
+ 
+ ## Refactor law
+ 
++Implementation quality is an active workstream alongside execution quality.
++Performance-neutral ownership and interface improvements may be accepted with
++preserved behavior and scoped regression observations. The existing Zig review
++ledger records examination, repairs, tests, and remaining lifecycle obligations;
++neither a structural gate nor a benchmark win substitutes for that review.
++
+ Behavior-preserving refactors follow this evidence sequence:
+ 
+ ```text
+diff --git a/docs/shader-compiler-architecture.md b/docs/shader-compiler-architecture.md
+index db5d41166..12f7f5b24 100644
+--- a/docs/shader-compiler-architecture.md
++++ b/docs/shader-compiler-architecture.md
+@@ -22,6 +22,19 @@ Views returned by that value remain valid until the owner is changed or
+ released. Native shader requests use that explicit path and copy compilation
+ messages into the shader's own storage, including allocation failures.
+ 
++Internal analysis uses `pipeline/analysis.zig`'s `analyze(Request)` entry point.
++The request borrows source and overrides and explicitly supplies its allocator,
++robustness policy, and diagnostic destination. The result owns the lowered
++module and carries the existing phase timings. Historical analysis signatures
++remain compatibility adapters; thread-local diagnostic storage belongs to the
++diagnostic owner. Error translation exhausts the semantic, numeric-parser, and
++IR-builder error sets rather than absorbing unknown causes through `anyerror`.
++
++`ir/ir_loop_independence.zig` owns conservative bounded local-array eligibility.
++It does not choose an unroll hint. SPIR-V emission retains instruction inspection,
++compute-policy selection, and loop-control encoding. This separation changes no
++eligibility rule, reduction order, arithmetic policy, or target bytes.
++
+ Migration: the existing Zig `lastError*` and C `doeNativeCopyLastError*`
+ interfaces remain compatibility adapters. Their state is per calling thread;
+ legacy views expire at the next call on that thread. Retain a `Diagnostic`
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index 76c3ef639..a3953d161 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -2302,15 +2302,15 @@
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "fb705a8fcf706a8a3d6bfa800c80546c59f1ce59d152afe502b6657e14fe59d2",
+-        "reason": "Keep: SPIR-V control-flow emission selects the configured loop hint after inspecting emitted dot operations and the typed independent-element proof; instruction ownership remains with this emitter.",
+-        "reviewer": "codex-independent-dot-loops/2026-09-20"
++        "moduleSha256": "713482a41f3b925ea6ede0984e008a06dfa905718d1b2c9ed87ad42b8c4314d5",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "92664ac007762c8cf4f53cd7eb7b17230a2ab9c692a6fdeb3a6002408c3dee8a",
+-        "reason": "Keep: allocation-free SPIR-V function-emission analyses, including conservative local-array loop independence and emitted instruction inspection; no application, runtime scheduling, or benchmark policy ownership.",
+-        "reviewer": "codex-independent-dot-loops/2026-09-20"
++        "moduleSha256": "6d738f0ad35dfd5295cae1d59ae1ee184ead4cc05b20b7e6ad595349ee763fdb",
++        "reason": "Keep: SPIR-V instruction cache, scalar construction and reference helpers; target-independent loop eligibility moved to its IR owner. Further cache/query separation remains review work.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/emit/spirv/emit_spirv_matrix.zig": {
+         "decision": "Keep",
+@@ -2512,15 +2512,15 @@
+       },
+       "src/compiler/wgsl/pipeline/analysis.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "d15ecf46c5a8bec32ca8e487aea16c372fd6652c975e9c9c9ef14f90327ce5a3",
+-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "moduleSha256": "836eb8f759138ab4d0f4cfe011da8597c8d376761d48216c82ae34400ca842fe",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/pipeline/binding_reflection.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "ceb1aa1bb99349d5f5efa85d7f89f69db7ddbc66c8db81b6dcd25e255fde4bb7",
+-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "moduleSha256": "77789fc77f64c12f0ade5d894f453945aaf3bc3edd4f417b177a64bbb014b727",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/pipeline/overrides.zig": {
+         "decision": "Keep",
+@@ -2530,33 +2530,33 @@
+       },
+       "src/compiler/wgsl/pipeline/translate_csl.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "02a3fe678aac40e504bb768b0b9680ded597780d21cbcc8507dffc2d77434f61",
+-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "moduleSha256": "f7bc1492854af93d865e2ff21c67a13223caf4ffc656a3046066c3556270500c",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/pipeline/translate_dxil.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "ce8294c994ea5290ca28ca7b60a7186c62d81b3aaef46550c56e5801dc345175",
+-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "moduleSha256": "037d07c73c2916bab505ff55d610b5b569d475ca733c761e51fc2f84b0752f7c",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/pipeline/translate_hlsl.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "381e9e8b24b630278e23a8d10cf3ea74e752598ef8352ef50a681ea5a9bd0653",
+-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "moduleSha256": "cf31c1678a4ee3618bc191484d8d5ca2e9602884ff21fb618229985eeeb7d74d",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/pipeline/translate_msl.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "d6b8eacfe59c504628fb0a4fea503600815759ea4d5490faa08299a146ee39f7",
+-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "moduleSha256": "a0bac182f9ea32f8ac881c9d03b90477199495895baf614593e6b23c1bed4f9d",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/pipeline/translate_spirv.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "3605958633eff88d7176d5407816b4a40d766330ad56f26eaed0dc010fa4b99e",
+-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-multi-dot-loops/2026-09-07"
++        "moduleSha256": "a4d992334d34c8f99d6368fdecb132ba8d6359c1c69671bce552326d15911b83",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/proof/dispatch_proof_loop_match.zig": {
+         "decision": "Keep",
+@@ -2596,15 +2596,15 @@
+       },
+       "src/compiler/wgsl/runtime/runtime_compute_translation.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "48baad604f929cb5da210291cd499969f8dfb7027b8bceb4aaa44ff1480c763f",
+-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "moduleSha256": "c23aa7417214c99c58d19d9afa21c5bed633b17f2915ae20cbca979cc56fc331",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/runtime/runtime_graphics_translation.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "c136c0756b8d80b0b69e9db5f8ef91f635a3964cba28d3283c048dae8cb6b08b",
+-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "moduleSha256": "c2682240e5314dd10e542fa375c76ed206b3e38cb6a977675cac8bc1a1468575",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/compiler/wgsl/runtime/runtime_translation_info.zig": {
+         "decision": "Keep",
+@@ -4264,9 +4264,9 @@
+       },
+       "src/compiler/wgsl/pipeline/diagnostic.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "5b2baf9573212d831e2d327a6dd41996883153b6d80a5461abd13baec7d648c3",
+-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
+-        "reviewer": "codex-shader-ownership/2026-09-06"
++        "moduleSha256": "bcae40b9688077755f906bbbb854254f209d743f5ee2fd2d9be75f0216f61bee",
++        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       },
+       "src/native/cache/doe_metal_library_cache.zig": {
+         "decision": "Keep",
+@@ -4363,6 +4363,12 @@
+         "moduleSha256": "67f866def78316b7e50cf763c486c5dfb5691ff1e70761de35a35e40342a0a5f",
+         "reviewer": "codex-metal-wait/2026-09-20",
+         "reason": "Parse the strict versioned Metal command wait policy at build time and expose immutable timeout and polling bounds to its completion owner."
++      },
++      "src/compiler/wgsl/ir/ir_loop_independence.zig": {
++        "decision": "Keep",
++        "moduleSha256": "42980dbe3468cca24f617db4e1a63041e0db0198093dd2b346dccc79a87ac508",
++        "reason": "Keep: target-independent eligibility analysis for bounded independent local-array elements; SPIR-V policy and instruction inspection remain in emission.",
++        "reviewer": "codex-compiler-interface/2026-09-27"
+       }
+     },
+     "linePolicy": {
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
+index b0caf123f..6c48b8c7a 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig
+@@ -1,4 +1,5 @@
+ const std = @import("std");
++const loop_independence = @import("../../ir/ir_loop_independence.zig");
+ const ir = @import("../../ir/ir.zig");
+ const ir_const_eval = @import("../../ir/ir_const_eval.zig");
+ const sema_helpers = @import("../../frontend/sema_helpers.zig");
+@@ -256,7 +257,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
+                         const control = emit_spirv_fn_helpers.multiDotLoopControl(words[body_offset..]);
+                         words[body_offset - 1] = if (control == spirv.LoopControl.DontUnroll and
+                             @import("build_options").spirv_compute_unroll_independent_dot_loops and
+-                            emit_spirv_fn_helpers.independentIndexedLoop(self.emitter.module, self.function, loop_stmt))
++                            loop_independence.independentIndexedLoop(self.emitter.module, self.function, loop_stmt))
+                             spirv.LoopControl.Unroll
+                         else
+                             control;
+diff --git a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig
+index 249c77746..9995fbc36 100644
+--- a/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig
++++ b/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig
+@@ -1,161 +1,6 @@
+ const std = @import("std");
+ const ir = @import("../../ir/ir.zig");
+ const spirv = @import("spirv_spec.zig");
+-const query = @import("../../ir/ir_query.zig");
+-const INDEPENDENCE_MAX_EXPR_DEPTH: u32 = 64;
+-
+-/// Distinct local array elements have no reduction carried between iterations.
+-/// Unknown calls, aliases, index remapping and control flow keep the old hint.
+-pub fn independentIndexedLoop(module: *const ir.Module, function: *const ir.Function, loop: @FieldType(ir.Stmt, "loop_")) bool {
+-    const init = singleStatement(function, loop.init orelse return false);
+-    if (init != .local_decl) return false;
+-    const induction = init.local_decl.local;
+-    if (!ir.is_scalar(&module.types, function.locals.items[induction].ty, .u32)) return false;
+-    if ((fixedInt(module, function, init.local_decl.initializer orelse return false) orelse return false) != 0) return false;
+-    const cond = function.exprs.items[loop.cond orelse return false].data;
+-    if (cond != .binary or cond.binary.op != .less or !inductionRef(function, cond.binary.lhs, induction)) return false;
+-    const limit = fixedInt(module, function, cond.binary.rhs) orelse return false;
+-    if (limit == 0 or limit > std.math.maxInt(u32)) return false;
+-    const step = singleStatement(function, loop.continuing orelse return false);
+-    if (step != .assign or !inductionRef(function, step.assign.lhs, induction)) return false;
+-    if (step.assign.op == .add) {
+-        if ((fixedInt(module, function, step.assign.rhs) orelse return false) != 1) return false;
+-    } else if (step.assign.op == .assign) {
+-        const add = function.exprs.items[step.assign.rhs].data;
+-        if (add != .binary or add.binary.op != .add or !inductionRef(function, add.binary.lhs, induction)) return false;
+-        if ((fixedInt(module, function, add.binary.rhs) orelse return false) != 1) return false;
+-    } else return false;
+-
+-    const body = function.stmts.items[loop.body];
+-    if (body != .block) return false;
+-    const children = function.stmt_children.items[body.block.start..][0..body.block.len];
+-    var target: ?u32 = null;
+-    for (children) |id| switch (function.stmts.items[id]) {
+-        .local_decl => |decl| if (!decl.is_const) return false,
+-        .assign => |assignment| {
+-            if (target != null) return false;
+-            const lhs = function.exprs.items[assignment.lhs].data;
+-            if (lhs != .index) return false;
+-            const base = function.exprs.items[lhs.index.base].data;
+-            if (base != .local_ref or base.local_ref == induction) return false;
+-            const ty = module.types.get(function.locals.items[base.local_ref].ty);
+-            if (ty != .array or limit > (ty.array.len orelse return false)) return false;
+-            if (!ir.is_scalar(&module.types, ty.array.elem, .f32)) return false;
+-            if (!isInductionIndex(module, function, lhs.index.index, induction, limit)) return false;
+-            target = base.local_ref;
+-        },
+-        else => return false,
+-    };
+-    const context = IndependentLoop{ .module = module, .function = function, .induction = induction, .limit = limit, .target = target orelse return false };
+-    for (children) |id| switch (function.stmts.items[id]) {
+-        .local_decl => |decl| {
+-            if (!context.readOnlyExpr(decl.initializer orelse return false, INDEPENDENCE_MAX_EXPR_DEPTH)) return false;
+-        },
+-        .assign => |assignment| if (!context.readOnlyExpr(assignment.rhs, INDEPENDENCE_MAX_EXPR_DEPTH)) return false,
+-        else => unreachable,
+-    };
+-    return true;
+-}
+-
+-fn singleStatement(function: *const ir.Function, id: ir.StmtId) ir.Stmt {
+-    const statement = function.stmts.items[id];
+-    if (statement == .block and statement.block.len == 1) return singleStatement(function, function.stmt_children.items[statement.block.start]);
+-    return statement;
+-}
+-
+-fn fixedInt(module: *const ir.Module, function: *const ir.Function, id: ir.ExprId) ?u64 {
+-    var current = id;
+-    for (0..INDEPENDENCE_MAX_EXPR_DEPTH) |_| {
+-        switch (function.exprs.items[current].data) {
+-            .int_lit => |value| return value,
+-            .load => |inner| current = inner,
+-            .local_ref => |local| current = query.resolveConstLocalInitializer(function, local) orelse return null,
+-            .global_ref => |index| {
+-                const global = module.globals.items[index];
+-                if (global.class != .const_ and global.class != .override_) return null;
+-                if (!ir.is_scalar(&module.types, global.ty, .u32)) return null;
+-                const initializer = global.initializer orelse return null;
+-                return if (initializer == .int) initializer.int else null;
+-            },
+-            else => return null,
+-        }
+-    }
+-    return null;
+-}
+-
+-fn inductionRef(function: *const ir.Function, id: ir.ExprId, induction: u32) bool {
+-    var current = id;
+-    while (function.exprs.items[current].data == .load) current = function.exprs.items[current].data.load;
+-    const expr = function.exprs.items[current].data;
+-    // Numeric conversions are not aliases: float rounding can repeat indices.
+-    return expr == .local_ref and expr.local_ref == induction;
+-}
+-
+-fn isInductionIndex(module: *const ir.Module, function: *const ir.Function, id: ir.ExprId, induction: u32, limit: u64) bool {
+-    if (inductionRef(function, id, induction)) return true;
+-    const expr = function.exprs.items[id].data;
+-    if (expr != .call or !expr.call.robustness_generated or !std.mem.eql(u8, expr.call.name, "min") or expr.call.args.len != 2) return false;
+-    const args = function.expr_args.items[expr.call.args.start..][0..2];
+-    return inductionRef(function, args[0], induction) and (fixedInt(module, function, args[1]) orelse return false) >= limit - 1;
+-}
+-
+-const IndependentLoop = struct {
+-    module: *const ir.Module,
+-    function: *const ir.Function,
+-    induction: u32,
+-    limit: u64,
+-    target: ?u32,
+-
+-    fn readOnlyExpr(self: IndependentLoop, id: ir.ExprId, depth: u32) bool {
+-        if (depth == 0) return false;
+-        return switch (self.function.exprs.items[id].data) {
+-            .bool_lit, .int_lit, .float_lit, .global_ref => true,
+-            .local_ref => |local| (self.target == null or local != self.target.?) and
+-                self.module.types.get(self.function.locals.items[local].ty) != .ref,
+-            .param_ref => |param| self.module.types.get(self.function.params.items[param].ty) != .ref,
+-            .load => |inner| self.readOnlyExpr(inner, depth - 1),
+-            .unary => |value| self.readOnlyExpr(value.operand, depth - 1),
+-            .binary => |value| self.readOnlyExpr(value.lhs, depth - 1) and self.readOnlyExpr(value.rhs, depth - 1),
+-            .member => |value| self.readOnlyExpr(value.base, depth - 1),
+-            .index => |value| blk: {
+-                const base = self.function.exprs.items[value.base].data;
+-                if (self.target != null and base == .local_ref and base.local_ref == self.target.?)
+-                    break :blk isInductionIndex(self.module, self.function, value.index, self.induction, self.limit);
+-                break :blk self.readOnlyExpr(value.base, depth - 1) and self.readOnlyExpr(value.index, depth - 1);
+-            },
+-            .construct => |value| self.readOnlyArgs(value.args, depth - 1),
+-            .call => |call| blk: {
+-                if (!self.readOnlyArgs(call.args, depth - 1)) break :blk false;
+-                if (call.kind == .builtin) break :blk std.mem.eql(u8, call.name, "dot") or std.mem.eql(u8, call.name, "min") or std.mem.eql(u8, call.name, "max") or std.mem.eql(u8, call.name, "clamp") or std.mem.eql(u8, call.name, "arrayLength");
+-                for (self.module.functions.items) |*callee| {
+-                    if (!std.mem.eql(u8, callee.name, call.name)) continue;
+-                    const context = IndependentLoop{ .module = self.module, .function = callee, .induction = 0, .limit = 0, .target = null };
+-                    break :blk context.readOnlyStatement(callee.root_stmt, depth - 1);
+-                }
+-                break :blk false;
+-            },
+-        };
+-    }
+-
+-    fn readOnlyArgs(self: IndependentLoop, range: ir.Range, depth: u32) bool {
+-        for (self.function.expr_args.items[range.start..][0..range.len]) |arg| if (!self.readOnlyExpr(arg, depth)) return false;
+-        return true;
+-    }
+-
+-    fn readOnlyStatement(self: IndependentLoop, id: ir.StmtId, depth: u32) bool {
+-        if (depth == 0) return false;
+-        return switch (self.function.stmts.items[id]) {
+-            .block => |range| blk: {
+-                for (self.function.stmt_children.items[range.start..][0..range.len]) |child| if (!self.readOnlyStatement(child, depth - 1)) break :blk false;
+-                break :blk true;
+-            },
+-            .local_decl => |decl| decl.is_const and self.readOnlyExpr(decl.initializer orelse return false, depth - 1),
+-            .return_ => |expr| self.readOnlyExpr(expr orelse return false, depth - 1),
+-            else => false,
+-        };
+-    }
+-};
+-
+ pub fn multiDotLoopControl(body: []const u32) u32 {
+     const multi_dot_minimum = 2;
+     var dot_count: usize = 0;
+diff --git a/runtime/zig/src/compiler/wgsl/ir/ir_loop_independence.zig b/runtime/zig/src/compiler/wgsl/ir/ir_loop_independence.zig
+new file mode 100644
+index 000000000..bed0c8614
+--- /dev/null
++++ b/runtime/zig/src/compiler/wgsl/ir/ir_loop_independence.zig
+@@ -0,0 +1,157 @@
++const std = @import("std");
++const ir = @import("ir.zig");
++const query = @import("ir_query.zig");
++
++const INDEPENDENCE_MAX_EXPR_DEPTH: u32 = 64;
++
++/// Distinct local array elements have no reduction carried between iterations.
++/// Unknown calls, aliases, index remapping and control flow reject eligibility.
++pub fn independentIndexedLoop(module: *const ir.Module, function: *const ir.Function, loop: @FieldType(ir.Stmt, "loop_")) bool {
++    const init = singleStatement(function, loop.init orelse return false);
++    if (init != .local_decl) return false;
++    const induction = init.local_decl.local;
++    if (!ir.is_scalar(&module.types, function.locals.items[induction].ty, .u32)) return false;
++    if ((fixedInt(module, function, init.local_decl.initializer orelse return false) orelse return false) != 0) return false;
++    const cond = function.exprs.items[loop.cond orelse return false].data;
++    if (cond != .binary or cond.binary.op != .less or !inductionRef(function, cond.binary.lhs, induction)) return false;
++    const limit = fixedInt(module, function, cond.binary.rhs) orelse return false;
++    if (limit == 0 or limit > std.math.maxInt(u32)) return false;
++    const step = singleStatement(function, loop.continuing orelse return false);
++    if (step != .assign or !inductionRef(function, step.assign.lhs, induction)) return false;
++    if (step.assign.op == .add) {
++        if ((fixedInt(module, function, step.assign.rhs) orelse return false) != 1) return false;
++    } else if (step.assign.op == .assign) {
++        const add = function.exprs.items[step.assign.rhs].data;
++        if (add != .binary or add.binary.op != .add or !inductionRef(function, add.binary.lhs, induction)) return false;
++        if ((fixedInt(module, function, add.binary.rhs) orelse return false) != 1) return false;
++    } else return false;
++
++    const body = function.stmts.items[loop.body];
++    if (body != .block) return false;
++    const children = function.stmt_children.items[body.block.start..][0..body.block.len];
++    var target: ?u32 = null;
++    for (children) |id| switch (function.stmts.items[id]) {
++        .local_decl => |decl| if (!decl.is_const) return false,
++        .assign => |assignment| {
++            if (target != null) return false;
++            const lhs = function.exprs.items[assignment.lhs].data;
++            if (lhs != .index) return false;
++            const base = function.exprs.items[lhs.index.base].data;
++            if (base != .local_ref or base.local_ref == induction) return false;
++            const ty = module.types.get(function.locals.items[base.local_ref].ty);
++            if (ty != .array or limit > (ty.array.len orelse return false)) return false;
++            if (!ir.is_scalar(&module.types, ty.array.elem, .f32)) return false;
++            if (!isInductionIndex(module, function, lhs.index.index, induction, limit)) return false;
++            target = base.local_ref;
++        },
++        else => return false,
++    };
++    const context = IndependentLoop{ .module = module, .function = function, .induction = induction, .limit = limit, .target = target orelse return false };
++    for (children) |id| switch (function.stmts.items[id]) {
++        .local_decl => |decl| {
++            if (!context.readOnlyExpr(decl.initializer orelse return false, INDEPENDENCE_MAX_EXPR_DEPTH)) return false;
++        },
++        .assign => |assignment| if (!context.readOnlyExpr(assignment.rhs, INDEPENDENCE_MAX_EXPR_DEPTH)) return false,
++        else => unreachable,
++    };
++    return true;
++}
++
++fn singleStatement(function: *const ir.Function, id: ir.StmtId) ir.Stmt {
++    const statement = function.stmts.items[id];
++    if (statement == .block and statement.block.len == 1) return singleStatement(function, function.stmt_children.items[statement.block.start]);
++    return statement;
++}
++
++fn fixedInt(module: *const ir.Module, function: *const ir.Function, id: ir.ExprId) ?u64 {
++    var current = id;
++    for (0..INDEPENDENCE_MAX_EXPR_DEPTH) |_| {
++        switch (function.exprs.items[current].data) {
++            .int_lit => |value| return value,
++            .load => |inner| current = inner,
++            .local_ref => |local| current = query.resolveConstLocalInitializer(function, local) orelse return null,
++            .global_ref => |index| {
++                const global = module.globals.items[index];
++                if (global.class != .const_ and global.class != .override_) return null;
++                if (!ir.is_scalar(&module.types, global.ty, .u32)) return null;
++                const initializer = global.initializer orelse return null;
++                return if (initializer == .int) initializer.int else null;
++            },
++            else => return null,
++        }
++    }
++    return null;
++}
++
++fn inductionRef(function: *const ir.Function, id: ir.ExprId, induction: u32) bool {
++    var current = id;
++    while (function.exprs.items[current].data == .load) current = function.exprs.items[current].data.load;
++    const expr = function.exprs.items[current].data;
++    // Numeric conversions are not aliases: float rounding can repeat indices.
++    return expr == .local_ref and expr.local_ref == induction;
++}
++
++fn isInductionIndex(module: *const ir.Module, function: *const ir.Function, id: ir.ExprId, induction: u32, limit: u64) bool {
++    if (inductionRef(function, id, induction)) return true;
++    const expr = function.exprs.items[id].data;
++    if (expr != .call or !expr.call.robustness_generated or !std.mem.eql(u8, expr.call.name, "min") or expr.call.args.len != 2) return false;
++    const args = function.expr_args.items[expr.call.args.start..][0..2];
++    return inductionRef(function, args[0], induction) and (fixedInt(module, function, args[1]) orelse return false) >= limit - 1;
++}
++
++const IndependentLoop = struct {
++    module: *const ir.Module,
++    function: *const ir.Function,
++    induction: u32,
++    limit: u64,
++    target: ?u32,
++
++    fn readOnlyExpr(self: IndependentLoop, id: ir.ExprId, depth: u32) bool {
++        if (depth == 0) return false;
++        return switch (self.function.exprs.items[id].data) {
++            .bool_lit, .int_lit, .float_lit, .global_ref => true,
++            .local_ref => |local| (self.target == null or local != self.target.?) and
++                self.module.types.get(self.function.locals.items[local].ty) != .ref,
++            .param_ref => |param| self.module.types.get(self.function.params.items[param].ty) != .ref,
++            .load => |inner| self.readOnlyExpr(inner, depth - 1),
++            .unary => |value| self.readOnlyExpr(value.operand, depth - 1),
++            .binary => |value| self.readOnlyExpr(value.lhs, depth - 1) and self.readOnlyExpr(value.rhs, depth - 1),
++            .member => |value| self.readOnlyExpr(value.base, depth - 1),
++            .index => |value| blk: {
++                const base = self.function.exprs.items[value.base].data;
++                if (self.target != null and base == .local_ref and base.local_ref == self.target.?)
++                    break :blk isInductionIndex(self.module, self.function, value.index, self.induction, self.limit);
++                break :blk self.readOnlyExpr(value.base, depth - 1) and self.readOnlyExpr(value.index, depth - 1);
++            },
++            .construct => |value| self.readOnlyArgs(value.args, depth - 1),
++            .call => |call| blk: {
++                if (!self.readOnlyArgs(call.args, depth - 1)) break :blk false;
++                if (call.kind == .builtin) break :blk std.mem.eql(u8, call.name, "dot") or std.mem.eql(u8, call.name, "min") or std.mem.eql(u8, call.name, "max") or std.mem.eql(u8, call.name, "clamp") or std.mem.eql(u8, call.name, "arrayLength");
++                for (self.module.functions.items) |*callee| {
++                    if (!std.mem.eql(u8, callee.name, call.name)) continue;
++                    const context = IndependentLoop{ .module = self.module, .function = callee, .induction = 0, .limit = 0, .target = null };
++                    break :blk context.readOnlyStatement(callee.root_stmt, depth - 1);
++                }
++                break :blk false;
++            },
++        };
++    }
++
++    fn readOnlyArgs(self: IndependentLoop, range: ir.Range, depth: u32) bool {
++        for (self.function.expr_args.items[range.start..][0..range.len]) |arg| if (!self.readOnlyExpr(arg, depth)) return false;
++        return true;
++    }
++
++    fn readOnlyStatement(self: IndependentLoop, id: ir.StmtId, depth: u32) bool {
++        if (depth == 0) return false;
++        return switch (self.function.stmts.items[id]) {
++            .block => |range| blk: {
++                for (self.function.stmt_children.items[range.start..][0..range.len]) |child| if (!self.readOnlyStatement(child, depth - 1)) break :blk false;
++                break :blk true;
++            },
++            .local_decl => |decl| decl.is_const and self.readOnlyExpr(decl.initializer orelse return false, depth - 1),
++            .return_ => |expr| self.readOnlyExpr(expr orelse return false, depth - 1),
++            else => false,
++        };
++    }
++};
+diff --git a/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig b/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig
+index 9fa12b4fb..ad4f81d74 100644
+--- a/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig
++++ b/runtime/zig/src/compiler/wgsl/pipeline/analysis.zig
+@@ -17,41 +17,17 @@ pub const CompilationStage = diagnostics.CompilationStage;
+ pub const SourceLocation = diagnostics.SourceLocation;
+ pub const LastErrorInfo = diagnostics.LastErrorInfo;
+ 
+-// Legacy last-error views expire at the next compilation on the calling thread.
+-threadlocal var compatibility_diagnostic = Diagnostic{};
+-pub fn compatibilityDiagnostic() *Diagnostic {
+-    return &compatibility_diagnostic;
+-}
+-pub fn clearLastError() void {
+-    return compatibility_diagnostic.clearLastError();
+-}
+-pub fn lastErrorKind() ?TranslateError {
+-    return compatibility_diagnostic.lastErrorKind();
+-}
+-pub fn lastErrorContext() []const u8 {
+-    return compatibility_diagnostic.lastErrorContext();
+-}
+-pub fn lastErrorInfo() LastErrorInfo {
+-    return compatibility_diagnostic.lastErrorInfo();
+-}
+-pub fn lastErrorStage() CompilationStage {
+-    return compatibility_diagnostic.lastErrorStage();
+-}
+-pub fn lastErrorMessage() []const u8 {
+-    return compatibility_diagnostic.lastErrorMessage();
+-}
+-pub fn lastErrorLine() u32 {
+-    return compatibility_diagnostic.lastErrorLine();
+-}
+-pub fn lastErrorColumn() u32 {
+-    return compatibility_diagnostic.lastErrorColumn();
+-}
+-pub fn setLastError(stage: CompilationStage, kind: TranslateError, source: ?[]const u8, loc: ?token.Token.Loc) void {
+-    compatibility_diagnostic.setLastError(stage, kind, source, loc);
+-}
+-pub fn setLastErrorDetailPublic(stage: CompilationStage, kind: TranslateError, detail: []const u8) void {
+-    compatibility_diagnostic.setLastErrorDetailPublic(stage, kind, detail);
+-}
++pub const compatibilityDiagnostic = diagnostics.compatibilityDiagnostic;
++pub const clearLastError = diagnostics.clearLastError;
++pub const lastErrorKind = diagnostics.lastErrorKind;
++pub const lastErrorContext = diagnostics.lastErrorContext;
++pub const lastErrorInfo = diagnostics.lastErrorInfo;
++pub const lastErrorStage = diagnostics.lastErrorStage;
++pub const lastErrorMessage = diagnostics.lastErrorMessage;
++pub const lastErrorLine = diagnostics.lastErrorLine;
++pub const lastErrorColumn = diagnostics.lastErrorColumn;
++pub const setLastError = diagnostics.setLastError;
++pub const setLastErrorDetailPublic = diagnostics.setLastErrorDetailPublic;
+ 
+ pub const CompilePhaseTimingsNs = struct {
+     parse: u64 = 0,
+@@ -61,11 +37,25 @@ pub const CompilePhaseTimingsNs = struct {
+     total: u64 = 0,
+ };
+ 
+-pub const TimedAnalyzeResult = struct {
++/// Source and overrides are borrowed for this call. The caller owns diagnostic
++/// storage, which is reset at entry and retains the failure after return.
++pub const Request = struct {
++    allocator: std.mem.Allocator,
++    source: []const u8,
++    robustness: ir_transform_robustness.Config,
++    overrides: []const ir.OverrideEntry = &.{},
++    diagnostic: *Diagnostic,
++};
++
++/// Owns the lowered module; release it with module.deinit(). Timings do not own
++/// storage and retain the existing parse, semantic and lowering boundaries.
++pub const Result = struct {
+     module: ir.Module,
+     phase_timings_ns: CompilePhaseTimingsNs,
+ };
+ 
++pub const TimedAnalyzeResult = Result;
++
+ fn tokenLoc(tree: *const ast.Ast, token_idx: ?u32) ?token.Token.Loc {
+     const idx = token_idx orelse return null;
+     if (idx >= tree.tokens.items.len) return null;
+@@ -87,33 +77,12 @@ fn elapsedNs(start: i128, end: i128) u64 {
+     return @intCast(end - start);
+ }
+ 
+-pub fn analyzeToIrWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, diagnostic: *Diagnostic) TranslateError!ir.Module {
+-    return analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, default_translation_robustness_config(), diagnostic);
+-}
+-
+-pub fn analyzeToIrTimedWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
+-    return analyzeToIrWithConfigTimedWithDiagnostic(allocator, wgsl, default_translation_robustness_config(), diagnostic);
+-}
+-
+-pub fn analyzeToIrWithConfigWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, diagnostic: *Diagnostic) TranslateError!ir.Module {
+-    const result = try analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, config, &.{}, diagnostic);
+-    return result.module;
+-}
+-
+-pub fn analyzeToIrWithConfigTimedWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
+-    return analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, config, &.{}, diagnostic);
+-}
+-
+-pub fn analyzeToIrWithConfigAndOverridesWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!ir.Module {
+-    const result = try analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, config, overrides, diagnostic);
+-    return result.module;
+-}
+-
+-pub fn analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
+-    return analyzeWithDiagnostic(allocator, wgsl, config, overrides, diagnostic);
+-}
+-
+-pub fn analyzeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
++pub fn analyze(request: Request) TranslateError!Result {
++    const allocator = request.allocator;
++    const wgsl = request.source;
++    const config = request.robustness;
++    const overrides = request.overrides;
++    const diagnostic = request.diagnostic;
+     diagnostic.clearLastError();
+     var parse_failure = parser.FailureContext{};
+     var sema_failure = sema.FailureContext{};
+@@ -178,7 +147,7 @@ pub fn analyzeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, con
+     };
+ }
+ 
+-fn mapSemanticError(err: anyerror) TranslateError {
++fn mapSemanticError(err: (sema.AnalyzeError || std.fmt.ParseIntError)) TranslateError {
+     return switch (err) {
+         error.OutOfMemory => TranslateError.OutOfMemory,
+         error.UnsupportedConstruct => TranslateError.UnsupportedConstruct,
+@@ -190,40 +159,137 @@ fn mapSemanticError(err: anyerror) TranslateError {
+         error.UnknownIdentifier => TranslateError.UnknownIdentifier,
+         error.UnknownType => TranslateError.UnknownType,
+         error.InvalidWgsl => TranslateError.InvalidWgsl,
+-        else => TranslateError.InvalidWgsl,
++        error.InvalidCharacter, error.Overflow => TranslateError.InvalidWgsl,
+     };
+ }
+ 
+-fn mapIrBuildError(err: anyerror) TranslateError {
++fn mapIrBuildError(err: ir_builder.BuildError) TranslateError {
+     return switch (err) {
+         error.OutOfMemory => TranslateError.OutOfMemory,
+         error.UnsupportedConstruct => TranslateError.UnsupportedConstruct,
+-        error.InvalidWgsl => TranslateError.InvalidWgsl,
+         error.InvalidIr => TranslateError.InvalidIr,
+-        else => TranslateError.InvalidIr,
+     };
+ }
+ 
+ pub fn analyzeToIr(allocator: std.mem.Allocator, wgsl: []const u8) TranslateError!ir.Module {
+-    return analyzeToIrWithDiagnostic(allocator, wgsl, &compatibility_diagnostic);
++    return (try analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = default_translation_robustness_config(),
++        .diagnostic = compatibilityDiagnostic(),
++    })).module;
+ }
+ 
+ pub fn analyzeToIrTimed(allocator: std.mem.Allocator, wgsl: []const u8) TranslateError!TimedAnalyzeResult {
+-    return analyzeToIrTimedWithDiagnostic(allocator, wgsl, &compatibility_diagnostic);
++    return analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = default_translation_robustness_config(),
++        .diagnostic = compatibilityDiagnostic(),
++    });
+ }
+ 
+ pub fn analyzeToIrWithConfig(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config) TranslateError!ir.Module {
+-    return analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, config, &compatibility_diagnostic);
++    return (try analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = config,
++        .diagnostic = compatibilityDiagnostic(),
++    })).module;
+ }
+ 
+ pub fn analyzeToIrWithConfigTimed(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config) TranslateError!TimedAnalyzeResult {
+-    return analyzeToIrWithConfigTimedWithDiagnostic(allocator, wgsl, config, &compatibility_diagnostic);
++    return analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = config,
++        .diagnostic = compatibilityDiagnostic(),
++    });
+ }
+ 
+ pub fn analyzeToIrWithConfigAndOverrides(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry) TranslateError!ir.Module {
+-    return analyzeToIrWithConfigAndOverridesWithDiagnostic(allocator, wgsl, config, overrides, &compatibility_diagnostic);
++    return (try analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = config,
++        .diagnostic = compatibilityDiagnostic(),
++        .overrides = overrides,
++    })).module;
+ }
+ 
+ pub fn analyzeToIrWithConfigTimedAndOverrides(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry) TranslateError!TimedAnalyzeResult {
+-    return analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, config, overrides, &compatibility_diagnostic);
++    return analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = config,
++        .diagnostic = compatibilityDiagnostic(),
++        .overrides = overrides,
++    });
++}
++
++// Compatibility entrypoints retain their existing signatures and diagnostic lifetime.
++pub fn analyzeToIrWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, diagnostic: *Diagnostic) TranslateError!ir.Module {
++    return (try analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++    })).module;
++}
++
++pub fn analyzeToIrTimedWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
++    return analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++    });
++}
++
++pub fn analyzeToIrWithConfigWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, diagnostic: *Diagnostic) TranslateError!ir.Module {
++    return (try analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = config,
++        .diagnostic = diagnostic,
++    })).module;
++}
++
++pub fn analyzeToIrWithConfigTimedWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
++    return analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = config,
++        .diagnostic = diagnostic,
++    });
++}
++
++pub fn analyzeToIrWithConfigAndOverridesWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!ir.Module {
++    return (try analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = config,
++        .diagnostic = diagnostic,
++        .overrides = overrides,
++    })).module;
++}
++
++pub fn analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
++    return analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = config,
++        .diagnostic = diagnostic,
++        .overrides = overrides,
++    });
++}
++
++pub fn analyzeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
++    return analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = config,
++        .diagnostic = diagnostic,
++        .overrides = overrides,
++    });
+ }
+diff --git a/runtime/zig/src/compiler/wgsl/pipeline/binding_reflection.zig b/runtime/zig/src/compiler/wgsl/pipeline/binding_reflection.zig
+index 78c04b4c3..47477850a 100644
+--- a/runtime/zig/src/compiler/wgsl/pipeline/binding_reflection.zig
++++ b/runtime/zig/src/compiler/wgsl/pipeline/binding_reflection.zig
+@@ -56,7 +56,12 @@ fn markFunctionResources(module_ir: *const ir.Module, function_id: usize, visite
+ }
+ 
+ pub fn extractBindingsForEntryPointWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, entry_point: []const u8, out: []BindingMeta, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
+-    var module_ir = try analysis.analyzeToIrWithDiagnostic(allocator, wgsl, diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = analysis.default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++    })).module;
+     defer module_ir.deinit();
+     return extractEntryPointBindings(allocator, &module_ir, entry_point, out);
+ }
+@@ -90,7 +95,12 @@ pub fn extractEntryPointBindings(allocator: std.mem.Allocator, module_ir: *const
+ }
+ 
+ pub fn extractBindingsWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []BindingMeta, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
+-    var module_ir = try analysis.analyzeToIrWithDiagnostic(allocator, wgsl, diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = analysis.default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++    })).module;
+     defer module_ir.deinit();
+     var count: usize = 0;
+     for (module_ir.globals.items) |global| {
+diff --git a/runtime/zig/src/compiler/wgsl/pipeline/diagnostic.zig b/runtime/zig/src/compiler/wgsl/pipeline/diagnostic.zig
+index 4cc91613c..3a621fd9a 100644
+--- a/runtime/zig/src/compiler/wgsl/pipeline/diagnostic.zig
++++ b/runtime/zig/src/compiler/wgsl/pipeline/diagnostic.zig
+@@ -186,3 +186,39 @@ pub const Diagnostic = struct {
+         return self.last_error_column;
+     }
+ };
++
++// Legacy last-error views expire at the next compilation on the calling thread.
++threadlocal var compatibility_diagnostic = Diagnostic{};
++pub fn compatibilityDiagnostic() *Diagnostic {
++    return &compatibility_diagnostic;
++}
++pub fn clearLastError() void {
++    return compatibility_diagnostic.clearLastError();
++}
++pub fn lastErrorKind() ?TranslateError {
++    return compatibility_diagnostic.lastErrorKind();
++}
++pub fn lastErrorContext() []const u8 {
++    return compatibility_diagnostic.lastErrorContext();
++}
++pub fn lastErrorInfo() LastErrorInfo {
++    return compatibility_diagnostic.lastErrorInfo();
++}
++pub fn lastErrorStage() CompilationStage {
++    return compatibility_diagnostic.lastErrorStage();
++}
++pub fn lastErrorMessage() []const u8 {
++    return compatibility_diagnostic.lastErrorMessage();
++}
++pub fn lastErrorLine() u32 {
++    return compatibility_diagnostic.lastErrorLine();
++}
++pub fn lastErrorColumn() u32 {
++    return compatibility_diagnostic.lastErrorColumn();
++}
++pub fn setLastError(stage: CompilationStage, kind: TranslateError, source: ?[]const u8, loc: ?token.Token.Loc) void {
++    compatibility_diagnostic.setLastError(stage, kind, source, loc);
++}
++pub fn setLastErrorDetailPublic(stage: CompilationStage, kind: TranslateError, detail: []const u8) void {
++    compatibility_diagnostic.setLastErrorDetailPublic(stage, kind, detail);
++}
+diff --git a/runtime/zig/src/compiler/wgsl/pipeline/translate_csl.zig b/runtime/zig/src/compiler/wgsl/pipeline/translate_csl.zig
+index 2ff5ee245..c855c6f33 100644
+--- a/runtime/zig/src/compiler/wgsl/pipeline/translate_csl.zig
++++ b/runtime/zig/src/compiler/wgsl/pipeline/translate_csl.zig
+@@ -13,7 +13,12 @@ pub const CSLC_ENV_VAR = validation.CSLC_ENV_VAR;
+ pub const CSLC_PATH_SENTINEL = validation.CSLC_PATH_SENTINEL;
+ 
+ pub fn translateToCslWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
+-    var module_ir = try analysis.analyzeToIrWithDiagnostic(allocator, wgsl, diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = analysis.default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++    })).module;
+     defer module_ir.deinit();
+ 
+     return emitter.emit(&module_ir, out) catch |err| {
+diff --git a/runtime/zig/src/compiler/wgsl/pipeline/translate_dxil.zig b/runtime/zig/src/compiler/wgsl/pipeline/translate_dxil.zig
+index 7927a3382..ada90c5ae 100644
+--- a/runtime/zig/src/compiler/wgsl/pipeline/translate_dxil.zig
++++ b/runtime/zig/src/compiler/wgsl/pipeline/translate_dxil.zig
+@@ -11,7 +11,12 @@ pub const ToolchainDiscovery = emitter.ToolchainDiscovery;
+ pub fn translateToDxilWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
+     var arena = std.heap.ArenaAllocator.init(allocator);
+     defer arena.deinit();
+-    var module_ir = try analysis.analyzeToIrWithDiagnostic(arena.allocator(), wgsl, diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = arena.allocator(),
++        .source = wgsl,
++        .robustness = analysis.default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++    })).module;
+ 
+     var emission = analysis.Diagnostic{};
+     return emitter.emitWithDiagnostic(&module_ir, out, &emission) catch |err| {
+@@ -33,7 +38,12 @@ pub fn translateToDxilWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const
+ }
+ 
+ pub fn translateToDxilWithToolchainConfigWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, config: emitter.ToolchainConfig, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
+-    var module_ir = try analysis.analyzeToIrWithDiagnostic(allocator, wgsl, diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = analysis.default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++    })).module;
+     defer module_ir.deinit();
+ 
+     var emission = analysis.Diagnostic{};
+diff --git a/runtime/zig/src/compiler/wgsl/pipeline/translate_hlsl.zig b/runtime/zig/src/compiler/wgsl/pipeline/translate_hlsl.zig
+index 7f12393bc..daf79212a 100644
+--- a/runtime/zig/src/compiler/wgsl/pipeline/translate_hlsl.zig
++++ b/runtime/zig/src/compiler/wgsl/pipeline/translate_hlsl.zig
+@@ -17,7 +17,13 @@ pub fn translateToHlslWithOverridesWithDiagnostic(allocator: std.mem.Allocator,
+         overrides.?[0..override_count]
+     else
+         &.{};
+-    var module_ir = try analysis.analyzeToIrWithConfigAndOverridesWithDiagnostic(arena.allocator(), wgsl, analysis.default_translation_robustness_config(), override_slice, diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = arena.allocator(),
++        .source = wgsl,
++        .robustness = analysis.default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++        .overrides = override_slice,
++    })).module;
+ 
+     if (override_slice.len > 0) override_values.applyOverrides(&module_ir, override_slice);
+ 
+diff --git a/runtime/zig/src/compiler/wgsl/pipeline/translate_msl.zig b/runtime/zig/src/compiler/wgsl/pipeline/translate_msl.zig
+index d6cb783c8..2e3a600fb 100644
+--- a/runtime/zig/src/compiler/wgsl/pipeline/translate_msl.zig
++++ b/runtime/zig/src/compiler/wgsl/pipeline/translate_msl.zig
+@@ -17,7 +17,13 @@ pub fn translateToMslWithOverridesWithDiagnostic(allocator: std.mem.Allocator, w
+         overrides.?[0..override_count]
+     else
+         &.{};
+-    var module_ir = try analysis.analyzeToIrWithConfigAndOverridesWithDiagnostic(arena.allocator(), wgsl, analysis.default_translation_robustness_config(), override_slice, diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = arena.allocator(),
++        .source = wgsl,
++        .robustness = analysis.default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++        .overrides = override_slice,
++    })).module;
+ 
+     if (override_slice.len > 0) override_values.applyOverrides(&module_ir, override_slice);
+ 
+diff --git a/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig b/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig
+index 2350e8006..6d0c71b21 100644
+--- a/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig
++++ b/runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig
+@@ -23,7 +23,12 @@ pub fn prepareComputeIrWithDiagnostic(module: *ir.Module, diagnostic: *analysis.
+ pub fn translateToSpirvWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
+     var arena = std.heap.ArenaAllocator.init(allocator);
+     defer arena.deinit();
+-    var module_ir = try analysis.analyzeToIrWithDiagnostic(arena.allocator(), wgsl, diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = arena.allocator(),
++        .source = wgsl,
++        .robustness = analysis.default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++    })).module;
+     try prepareComputeIrWithDiagnostic(&module_ir, diagnostic);
+ 
+     return emitter.emit(&module_ir, out) catch |err| {
+diff --git a/runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig b/runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig
+index f07d2adc1..08a1ecfed 100644
+--- a/runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig
++++ b/runtime/zig/src/compiler/wgsl/runtime/runtime_compute_translation.zig
+@@ -25,7 +25,12 @@ pub const EntryPointTranslation = struct {
+ /// The emitted program and metadata come from the same analyzed source and
+ /// selected compute entry point. The caller owns info; bindings are values.
+ pub fn translateMslEntryPoint(allocator: std.mem.Allocator, wgsl: []const u8, entry_point: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!EntryPointTranslation {
+-    var module_ir = try analysis.analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, compute_runtime_robustness_config(), diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = compute_runtime_robustness_config(),
++        .diagnostic = diagnostic,
++    })).module;
+     defer module_ir.deinit();
+     const workgroup_size = for (module_ir.entry_points.items) |entry| {
+         if (entry.stage == .compute and std.mem.eql(u8, module_ir.functions.items[entry.function].name, entry_point)) break entry.workgroup_size;
+@@ -112,7 +117,13 @@ pub fn translateToMslForComputeRuntimeTimedWithDiagnostic(allocator: std.mem.All
+         overrides.?[0..override_count]
+     else
+         &.{};
+-    var analyzed = try analysis.analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, compute_runtime_robustness_config(), override_slice, diagnostic);
++    var analyzed = try analysis.analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = compute_runtime_robustness_config(),
++        .diagnostic = diagnostic,
++        .overrides = override_slice,
++    });
+     defer analyzed.module.deinit();
+ 
+     if (override_slice.len > 0) override_values.applyOverrides(&analyzed.module, override_slice);
+@@ -134,7 +145,12 @@ pub fn translateToMslForComputeRuntimeTimedWithDiagnostic(allocator: std.mem.All
+ }
+ 
+ pub fn translateToSpirvForComputeRuntimeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!TranslationResult {
+-    var module_ir = try analysis.analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, compute_runtime_robustness_config(), diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = compute_runtime_robustness_config(),
++        .diagnostic = diagnostic,
++    })).module;
+     defer module_ir.deinit();
+ 
+     const len = try emitSpirv(&module_ir, out, diagnostic);
+@@ -149,7 +165,12 @@ pub fn translateToSpirvTimedWithDiagnostic(allocator: std.mem.Allocator, wgsl: [
+     defer arena.deinit();
+ 
+     const total_start_ns = nowNs();
+-    var analyzed = try analysis.analyzeToIrTimedWithDiagnostic(arena.allocator(), wgsl, diagnostic);
++    var analyzed = try analysis.analyze(.{
++        .allocator = arena.allocator(),
++        .source = wgsl,
++        .robustness = analysis.default_translation_robustness_config(),
++        .diagnostic = diagnostic,
++    });
+ 
+     const emit_start_ns = nowNs();
+     const len = try emitSpirv(&analyzed.module, out, diagnostic);
+@@ -173,7 +194,13 @@ pub fn translateToSpirvForVulkanComputeRuntimeWithOverridesWithDiagnostic(alloca
+         overrides.?[0..override_count]
+     else
+         &.{};
+-    var module_ir = try analysis.analyzeToIrWithConfigAndOverridesWithDiagnostic(allocator, wgsl, vulkan_compute_runtime_robustness_config(), override_slice, diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = vulkan_compute_runtime_robustness_config(),
++        .diagnostic = diagnostic,
++        .overrides = override_slice,
++    })).module;
+     defer module_ir.deinit();
+ 
+     if (override_slice.len > 0) override_values.applyOverrides(&module_ir, override_slice);
+diff --git a/runtime/zig/src/compiler/wgsl/runtime/runtime_graphics_translation.zig b/runtime/zig/src/compiler/wgsl/runtime/runtime_graphics_translation.zig
+index be094069f..3664514b3 100644
+--- a/runtime/zig/src/compiler/wgsl/runtime/runtime_graphics_translation.zig
++++ b/runtime/zig/src/compiler/wgsl/runtime/runtime_graphics_translation.zig
+@@ -50,7 +50,12 @@ fn graphics_runtime_robustness_config() robustness.Config {
+ /// for each stage found, plus extracted vertex input and inter-stage interface
+ /// metadata for pipeline reflection.
+ pub fn translateToSpirvForGraphicsRuntimeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!GraphicsTranslationResult {
+-    var module_ir = try analysis.analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, graphics_runtime_robustness_config(), diagnostic);
++    var module_ir = (try analysis.analyze(.{
++        .allocator = allocator,
++        .source = wgsl,
++        .robustness = graphics_runtime_robustness_config(),
++        .diagnostic = diagnostic,
++    })).module;
+     defer module_ir.deinit();
+ 
+     var result = GraphicsTranslationResult{};
+diff --git a/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig b/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig
+index 52c3f63c2..bdf54030c 100644
+--- a/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig
++++ b/runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig
+@@ -6,7 +6,7 @@ const mod = @import("../../src/compiler/wgsl/mod.zig");
+ const parser = @import("../../src/compiler/wgsl/frontend/parser.zig");
+ const sema = @import("../../src/compiler/wgsl/frontend/sema.zig");
+ const ir_builder = @import("../../src/compiler/wgsl/ir/ir_builder.zig");
+-const loop_helpers = @import("../../src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig");
++const loop_independence = @import("../../src/compiler/wgsl/ir/ir_loop_independence.zig");
+ 
+ const testing = std.testing;
+ const allocator = testing.allocator;
+@@ -85,6 +85,17 @@ test "spirv unrolls independent dot outputs but preserves recurrence alias and s
+     inline for (cases) |case| {
+         var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
+         const source = prefix ++ case[0] ++ "output[0] = results[0] + total; }";
++        var analyzed = try mod.analyzeToIr(allocator, source);
++        defer analyzed.deinit();
++        var analyzed_loops: usize = 0;
++        for (analyzed.functions.items) |*function| {
++            for (function.stmts.items) |statement| {
++                if (statement != .loop_) continue;
++                analyzed_loops += 1;
++                try testing.expectEqual(case[1], loop_independence.independentIndexedLoop(&analyzed, function, statement.loop_));
++            }
++        }
++        try testing.expectEqual(@as(usize, 1), analyzed_loops);
+         const len = try translateToSpirv(allocator, source, &binary);
+         var offset: usize = 5;
+         var unrolled: u32 = 0;
+@@ -125,7 +136,7 @@ test "spirv independence analysis rejects pointer aliases before emission" {
+         for (function.stmts.items) |statement| {
+             if (statement != .loop_) continue;
+             examined += 1;
+-            try testing.expect(!loop_helpers.independentIndexedLoop(&module, function, statement.loop_));
++            try testing.expect(!loop_independence.independentIndexedLoop(&module, function, statement.loop_));
+         }
+     }
+     try testing.expectEqual(@as(usize, 1), examined);
+diff --git a/runtime/zig/tests/wgsl/mod_error_contract_test.zig b/runtime/zig/tests/wgsl/mod_error_contract_test.zig
+index 73d94f055..0ae749216 100644
+--- a/runtime/zig/tests/wgsl/mod_error_contract_test.zig
++++ b/runtime/zig/tests/wgsl/mod_error_contract_test.zig
+@@ -125,3 +125,79 @@ test "emission failures belong to the provided diagnostic" {
+     _ = analyzeToIr(std.testing.allocator, "fn bad(") catch {};
+     try std.testing.expectEqual(CompilationStage.msl_emit, diagnostic.lastErrorStage());
+ }
++
++const REQUEST_SOURCE =
++    \\override COUNT: u32 = 2u;
++    \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;
++    \\@compute @workgroup_size(COUNT) fn main(@builtin(global_invocation_id) id: vec3<u32>) {
++    \\  data[id.x] = COUNT;
++    \\}
++;
++
++fn exerciseAnalysisRequest(allocator: std.mem.Allocator) !void {
++    var diagnostic = analysis.Diagnostic{};
++    var result = analysis.analyze(.{
++        .allocator = allocator,
++        .source = REQUEST_SOURCE,
++        .robustness = analysis.default_translation_robustness_config(),
++        .overrides = &.{.{ .key = "COUNT", .value = 4.0 }},
++        .diagnostic = &diagnostic,
++    }) catch |err| {
++        try std.testing.expectEqual(error.OutOfMemory, err);
++        try std.testing.expectEqual(error.OutOfMemory, diagnostic.lastErrorKind().?);
++        return err;
++    };
++    defer result.module.deinit();
++    try std.testing.expectEqual(@as(u32, 4), result.module.entry_points.items[0].workgroup_size[0]);
++    try std.testing.expectEqual(CompilationStage.none, diagnostic.lastErrorStage());
++}
++
++test "analysis request owns rollback through every allocation failure" {
++    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseAnalysisRequest, .{});
++}
++
++test "analysis request preserves overrides robustness and compatibility diagnostics" {
++    const overrides = [_]mod.ir.OverrideEntry{.{ .key = "COUNT", .value = 4.0 }};
++    const config = analysis.default_translation_robustness_config();
++    _ = analyzeToIr(std.testing.allocator, "fn broken(") catch {};
++    var legacy_error = analysis.compatibilityDiagnostic().*;
++    var diagnostic = analysis.Diagnostic{};
++    var result = try analysis.analyze(.{
++        .allocator = std.testing.allocator,
++        .source = REQUEST_SOURCE,
++        .robustness = config,
++        .overrides = &overrides,
++        .diagnostic = &diagnostic,
++    });
++    defer result.module.deinit();
++    try std.testing.expectEqualStrings(legacy_error.lastErrorMessage(), lastErrorMessage());
++    try std.testing.expectEqual(@as(u32, 4), result.module.entry_points.items[0].workgroup_size[0]);
++    var legacy = try analysis.analyzeToIrWithConfigAndOverrides(std.testing.allocator, REQUEST_SOURCE, config, &overrides);
++    defer legacy.deinit();
++    try std.testing.expectEqual(mod.ir_digest.computeHex(&legacy), mod.ir_digest.computeHex(&result.module));
++    try std.testing.expectEqual(CompilationStage.none, lastErrorStage());
++
++    for (DIAGNOSTIC_CASES) |case| {
++        try std.testing.expectError(case.kind, analysis.analyze(.{
++            .allocator = std.testing.allocator,
++            .source = case.source,
++            .robustness = config,
++            .diagnostic = &diagnostic,
++        }));
++        try std.testing.expectEqual(case.stage, diagnostic.lastErrorStage());
++        try std.testing.expectError(case.kind, analyzeToIr(std.testing.allocator, case.source));
++        try std.testing.expectEqualStrings(lastErrorMessage(), diagnostic.lastErrorMessage());
++        try std.testing.expectEqualStrings(lastErrorContext(), diagnostic.lastErrorContext());
++    }
++}
++
++test "analysis request preserves numeric parse overflow as invalid WGSL" {
++    var diagnostic = analysis.Diagnostic{};
++    try std.testing.expectError(error.InvalidWgsl, analysis.analyze(.{
++        .allocator = std.testing.allocator,
++        .source = "@group(4294967296) @binding(0) var<storage> data: array<u32>; @compute @workgroup_size(1) fn main() {}",
++        .robustness = analysis.default_translation_robustness_config(),
++        .diagnostic = &diagnostic,
++    }));
++    try std.testing.expectEqual(CompilationStage.sema, diagnostic.lastErrorStage());
++}
