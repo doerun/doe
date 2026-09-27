@@ -262,7 +262,25 @@
     "packageResidentBufferLoads": { "type": "boolean" },
     "packageReadbackMode": {
       "type": "string",
-      "enum": ["native-map-read-copy-unmap", "mapAsync"]
+      "enum": ["native-map-read-copy-unmap", "mapAsync", "mapAsync-host-copy"]
+    },
+    "packageReadbackActualPaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["map-read-copy-unmap", "mapped-native-read-copy", "mapped-range-host-copy"]
+      },
+      "uniqueItems": true
+    },
+    "packageReadbackPathCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "propertyNames": {
+        "enum": ["map-read-copy-unmap", "mapped-native-read-copy", "mapped-range-host-copy"]
+      },
+      "patternProperties": {
+        ".*": { "type": "integer", "minimum": 0 }
+      }
     },
     "packageEffectiveReadbackPaths": {
       "type": "array",

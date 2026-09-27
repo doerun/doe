@@ -17,6 +17,27 @@ Required rules:
 The normative stage and gate order lives in [`process.md`](process.md).
 Machine-owned tool boundaries live in `config/tool-surfaces.json`.
 
+## Package comparability branch integration
+
+The comparability contract adds package readback-mode, actual readback-scope,
+and plan-identity obligations. Strict admission evaluates them alongside the
+existing effective-path, shader identity, result-output and structural checks.
+Submit-scope comparison groups equivalent command materialization and completion
+work without changing selected timing. Each submit bucket uses its largest
+reported component as a conservative materiality bound, since aggregate fields
+overlap their subfields; these fractions are not additive cost accounting.
+Regenerate the Lean contract after
+editing the obligation registry; fixture version 2 includes the additional facts.
+
+Trace metadata version 1 gains optional `packageReadbackActualPaths` and
+`packageReadbackPathCounts` telemetry. Current package executors emit them;
+strict readback-scope admission requires complete observations when applicable.
+Historical receipts are preserved, and schema parseability does not establish
+eligibility under the updated gate. The repo-only `mapAsync-host-copy` mode is
+schema-declared and bypasses combined/native-copy helpers after mapping. Existing
+readback selection policies keep their current modes; no production runtime or
+package binding changes accompany this integration.
+
 ## Implementation peers and benchmark cube migration
 
 `config/implementation-peers.json` introduces the canonical implementation-family

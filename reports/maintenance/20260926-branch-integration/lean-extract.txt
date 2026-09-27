@@ -1,0 +1,7 @@
+/home/x/deco/doe/pipeline/lean/Doe/Core/RenderPassStateMachine.lean:117:4: warning: unused variable `s`
+note: this linter can be disabled with `set_option linter.unusedVariables false`
+/home/x/deco/doe/pipeline/lean/Doe/Core/BufferDispatchPrecondition.lean:99:64: warning: unused variable `hs`
+note: this linter can be disabled with `set_option linter.unusedVariables false`
+/home/x/deco/doe/pipeline/lean/Doe/Shader/TextureSampleBounds.lean:344:5: warning: unused variable `h_mip_pos`
+note: this linter can be disabled with `set_option linter.unusedVariables false`
+lean-extract: artifact written to /home/x/deco/doe/pipeline/lean/artifacts/proven-conditions.json (leanprover/lean4:v4.16.0)

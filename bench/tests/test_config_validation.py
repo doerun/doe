@@ -361,6 +361,22 @@ class TestRealConfigs(unittest.TestCase):
         with self.assertRaises(jsonschema.ValidationError):
             jsonschema.validate(invalid_sync_policy, schema)
 
+    def test_trace_meta_readback_extension_preserves_legacy_parsing(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        sch = repo_root / "config" / "trace-meta.schema.json"
+        schema = json.loads(sch.read_text(encoding="utf-8"))
+        package_required = set(schema["anyOf"][1]["required"])
+        self.assertNotIn("packageReadbackActualPaths", package_required)
+        self.assertNotIn("packageReadbackPathCounts", package_required)
+        properties = schema["properties"]
+        jsonschema.validate("mapAsync-host-copy", properties["packageReadbackMode"])
+        jsonschema.validate(
+            {"mapped-range-host-copy": 1}, properties["packageReadbackPathCounts"],
+        )
+        for counts in ({"mapped-range-host-copy": -1}, {"unknown": 1}):
+            with self.assertRaises(jsonschema.ValidationError):
+                jsonschema.validate(counts, properties["packageReadbackPathCounts"])
+
     def test_trace_meta_determinism_accepts_stable_token_summary(self):
         repo_root = Path(__file__).resolve().parents[2]
         sch = repo_root / "config" / "trace-meta.schema.json"

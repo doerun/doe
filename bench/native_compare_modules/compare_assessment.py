@@ -15,6 +15,7 @@ from native_compare_modules.comparability import (
 from native_compare_modules.comparability_runtime import (
     _sample_normalized_wall_ms,
     assess_native_shader_artifact_equivalence,
+    assess_package_readback_scope_equivalence,
     assess_submit_scope_equivalence,
     assess_timing_phase_equivalence,
 )
@@ -188,6 +189,42 @@ def compare_assessment(
     right_effective_readback_paths = collect_effective_readback_paths(right_samples)
     left_readback_counts = collect_readback_counts(left_samples)
     right_readback_counts = collect_readback_counts(right_samples)
+
+    def collect_package_readback_modes(samples: list[dict[str, Any]]) -> set[str]:
+        modes: set[str] = set()
+        for sample in samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            value = trace_meta.get("packageReadbackMode")
+            if isinstance(value, str) and value.strip():
+                modes.add(value.strip())
+        return modes
+
+    left_package_readback_modes = collect_package_readback_modes(left_samples)
+    right_package_readback_modes = collect_package_readback_modes(right_samples)
+
+    def collect_package_plan_identities(samples: list[dict[str, Any]]) -> set[tuple[str, str]]:
+        identities: set[tuple[str, str]] = set()
+        for sample in samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            plan_id = trace_meta.get("planId")
+            plan_hash = trace_meta.get("planHash")
+            if not isinstance(plan_id, str) or not plan_id.strip():
+                continue
+            if not isinstance(plan_hash, str) or not plan_hash.strip():
+                continue
+            identities.add((plan_id.strip(), plan_hash.strip()))
+        return identities
+
+    left_package_plan_identities = collect_package_plan_identities(left_samples)
+    right_package_plan_identities = collect_package_plan_identities(right_samples)
 
     left_shader_source_receipt_hashes = collect_shader_source_receipt_hashes(left_samples)
     right_shader_source_receipt_hashes = collect_shader_source_receipt_hashes(right_samples)
@@ -473,6 +510,98 @@ def compare_assessment(
             "baselineExecutionBackends": sorted(left_execution_backends),
             "comparisonExecutionBackends": sorted(right_execution_backends),
             **submit_scope_details,
+        },
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_package_readback_mode_match",
+        blocking=True,
+        applicable=(
+            comparability_mode == "strict"
+            and package_execution_applies
+            and (
+                bool(left_package_readback_modes)
+                or bool(right_package_readback_modes)
+            )
+        ),
+        passes=(
+            len(left_package_readback_modes) == 1
+            and len(right_package_readback_modes) == 1
+            and left_package_readback_modes == right_package_readback_modes
+        ),
+        failure_reason=(
+            "baseline/comparison package readback mode mismatch: "
+            f"{left_package_readback_modes} vs {right_package_readback_modes}"
+        ),
+        details={
+            "baselinePackageReadbackModes": sorted(left_package_readback_modes),
+            "comparisonPackageReadbackModes": sorted(right_package_readback_modes),
+        },
+    )
+    (
+        readback_scope_match_applies,
+        readback_scope_match,
+        readback_scope_details,
+        readback_scope_failure_reason,
+    ) = assess_package_readback_scope_equivalence(
+        left_command_samples=left_samples,
+        right_command_samples=right_samples,
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_package_readback_scope_match",
+        blocking=True,
+        applicable=(
+            comparability_mode == "strict"
+            and package_execution_applies
+            and readback_scope_match_applies
+        ),
+        passes=readback_scope_match,
+        failure_reason=(
+            "baseline/comparison package readback scope mismatch: " + readback_scope_failure_reason
+            if readback_scope_failure_reason
+            else ""
+        ),
+        details={
+            "comparabilityMode": comparability_mode,
+            "baselineExecutionBackends": sorted(left_execution_backends),
+            "comparisonExecutionBackends": sorted(right_execution_backends),
+            **readback_scope_details,
+        },
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_package_plan_identity_match",
+        blocking=True,
+        applicable=(
+            comparability_mode == "strict"
+            and package_execution_applies
+            and (
+                bool(left_package_plan_identities)
+                or bool(right_package_plan_identities)
+            )
+        ),
+        passes=(
+            len(left_package_plan_identities) == 1
+            and len(right_package_plan_identities) == 1
+            and left_package_plan_identities == right_package_plan_identities
+        ),
+        failure_reason=(
+            "baseline/comparison package plan identity mismatch: "
+            f"{left_package_plan_identities} vs {right_package_plan_identities}"
+        ),
+        details={
+            "baselinePackagePlanIdentities": [
+                {"planId": plan_id, "planHash": plan_hash}
+                for plan_id, plan_hash in sorted(left_package_plan_identities)
+            ],
+            "comparisonPackagePlanIdentities": [
+                {"planId": plan_id, "planHash": plan_hash}
+                for plan_id, plan_hash in sorted(right_package_plan_identities)
+            ],
         },
     )
     (

@@ -6,6 +6,12 @@ history remains in the archive.
 
 ## Current boundary
 
+Branch integration preserves rejected Vulkan experiments as history and retains
+the accepted native and package implementations. Compatible package-comparability
+checks enter current admission; historical performance receipts are unchanged.
+The [integration record](archive/2026-09-26-branch-integration.md) owns the branch
+dispositions, conflict decisions and executed verification.
+
 The [implementation peers view](../implementation-peers.md) is generated from
 the canonical registry used for native provider membership. Inventory, runnable
 profiles, ecosystem scores and retained comparison evidence remain distinct;

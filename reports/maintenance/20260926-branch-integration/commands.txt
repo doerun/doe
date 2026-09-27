@@ -1,0 +1,11 @@
+python3 -m unittest bench.tests.test_compare_assessment bench.tests.test_node_webgpu_executor bench.tests.test_bun_webgpu_executor bench.tests.test_comparability_coherence_smoke_floor bench.tests.test_config_validation bench.tests.test_package_dispatch_prefix_profile
+python3 -m unittest bench.tests.test_native_shader_comparability bench.tests.test_timing_interpretation bench.tests.test_compute_program_gate bench.tests.test_compute_program_tail_experiment bench.tests.test_implementation_peers
+python3 bench/gates/schema_gate.py
+python3 bench/gates/comparability_obligation_parity_gate.py
+bash pipeline/lean/check.sh
+bash pipeline/lean/extract.sh
+python3 -m unittest discover -s pipeline/lean -p test_proof_pipeline.py
+node --check bench/executors/node-webgpu/executor.js
+python3 bench/gates/catscan_gate.py
+python3 -m unittest bench.tests.test_doc_link_coverage
+git diff --quiet 95107e6eff7e18aadc88f92e4dc5b08c6cc8ca59 -- runtime packages

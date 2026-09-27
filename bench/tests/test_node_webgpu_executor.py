@@ -422,6 +422,11 @@ console.log(JSON.stringify({{
         self.assertIn("result.queueFamilyPolicy = info.queueFamilyPolicy;", executor_source)
         self.assertIn("result.deferredSubmissionSyncPolicy = info.deferredSubmissionSyncPolicy;", executor_source)
         self.assertIn("result.queueFamilySupportsGraphics = info.queueFamilySupportsGraphics;", executor_source)
+        self.assertIn("const readbackPathCounts = new Map();", executor_source)
+        self.assertIn("readbackPathCounts.set(readback.path, (readbackPathCounts.get(readback.path) ?? 0) + 1);", executor_source)
+        self.assertIn("packageReadbackActualPaths", executor_source)
+        self.assertIn("packageReadbackPathCounts", executor_source)
+        self.assertIn("mapAsync-host-copy", executor_source)
 
     def test_bun_package_exports_native_fast_path_identity(self) -> None:
         public_bun_source = PACKAGE_BUN_PATH.read_text(encoding="utf-8")
@@ -1133,6 +1138,60 @@ console.log(JSON.stringify({{
         self.assertEqual(payload["bytes"], [9, 10, 11, 12])
         self.assertEqual(payload["path"], "mapped-range-host-copy")
 
+    def test_readback_copy_helper_can_force_map_async_host_copy_path(self) -> None:
+        script = f"""
+import {{ copyReadBufferBytes }} from {json.dumps(EXECUTOR_MODULE_URL)};
+const calls = [];
+const buffer = {{
+  size: 4,
+  _mapReadCopyUnmap() {{
+    calls.push(['combined']);
+    return new Uint8Array([1, 2, 3, 4]).buffer;
+  }},
+  async mapAsync(mode) {{
+    calls.push(['mapAsync', mode]);
+  }},
+  _readCopy(offset, size) {{
+    calls.push(['readCopy', offset, size]);
+    return new Uint8Array([5, 6, 7, 8]).buffer;
+  }},
+  getMappedRange(offset, size) {{
+    calls.push(['getMappedRange', offset, size]);
+    return new Uint8Array([9, 10, 11, 12]).buffer;
+  }},
+  unmap() {{
+    calls.push(['unmap']);
+  }},
+}};
+const result = await copyReadBufferBytes({{
+  buffer,
+  globals: {{ GPUMapMode: {{ READ: 1 }} }},
+  sizeBytes: 4,
+  readbackMode: 'mapAsync-host-copy',
+}});
+console.log(JSON.stringify({{
+  calls,
+  bytes: Array.from(result.bytes),
+  path: result.path,
+  nativeReadCopyNs: result.breakdownNs.readbackNativeReadCopyTotalNs,
+  hostCopyNsPositive: result.breakdownNs.readbackHostCopyTotalNs >= 0,
+}}));
+"""
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["calls"], [["mapAsync", 1], ["getMappedRange", 0, 4], ["unmap"]])
+        self.assertEqual(payload["bytes"], [9, 10, 11, 12])
+        self.assertEqual(payload["path"], "mapped-range-host-copy")
+        self.assertEqual(payload["nativeReadCopyNs"], 0)
+        self.assertTrue(payload["hostCopyNsPositive"])
+
     def test_readback_copy_helper_keeps_standard_host_copy_fallback(self) -> None:
         script = f"""
 import {{ copyReadBufferBytes }} from {json.dumps(EXECUTOR_MODULE_URL)};
@@ -1624,14 +1683,13 @@ console.log(JSON.stringify({{
         self.assertIn("doe_queue_submit_one", napi_source)
         self.assertIn("addon.queueSubmitOne(queueNative, singleNative)", source)
 
-    def test_node_doe_package_source_bounds_large_buffer_host_shadows(self) -> None:
+    def test_node_doe_package_source_uses_native_buffers_without_host_shadows(self) -> None:
         source = (
             REPO_ROOT / "packages" / "doe-gpu" / "src" / "vendor" / "webgpu" / "index.js"
         ).read_text(encoding="utf-8")
-        self.assertIn("const NODE_BUFFER_HOST_SHADOW_MAX_BYTES", source)
-        self.assertIn("buffer.size > NODE_BUFFER_HOST_SHADOW_MAX_BYTES", source)
-        self.assertIn("buffer._hostShadow = null;", source)
-        self.assertIn("buffer._hostShadowValid = buffer.size <= NODE_BUFFER_HOST_SHADOW_MAX_BYTES;", source)
+        self.assertIn("const native = addon.createBuffer(", source)
+        self.assertNotIn("_hostShadow", source)
+        self.assertNotIn("NODE_BUFFER_HOST_SHADOW_MAX_BYTES", source)
 
     def test_runtime_copy_buffer_records_doe_buffers_for_submit_replay(self) -> None:
         source = RUNTIME_ENCODER_NATIVE_PATH.read_text(encoding="utf-8")

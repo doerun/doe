@@ -355,6 +355,10 @@ The current advisory owners and next semantic split targets are:
   compilation setup, execution, comparison, and receipt emission in
   `bench/native-compare/compare_doe_vs_tint_compilation.py` and
   `bench/tools/check_tint_compiler_frontier_bundle.py`.
+- Benchmark comparability owner: extract package mode, plan identity, and
+  readback-scope assessment from `bench/native_compare_modules/compare_assessment.py`
+  into a focused package-assessment module. Preserve obligation IDs and strict
+  failure behavior; the corresponding regression fixtures own acceptance.
 - Ecosystem and Node evidence owner: split registry parsing, contract
   validation, and receipt projection in `bench/lib/ecosystem_registry.py`;
   split the Node executor tests by adapter identity, package execution,

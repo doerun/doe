@@ -19,7 +19,14 @@ from native_compare_modules.comparability import (  # noqa: E402
 )
 
 
-def _sample(*, backend: str, command_replay_ns: int) -> dict:
+def _sample(
+    *,
+    backend: str,
+    command_replay_ns: int,
+    encoder_finish_ns: int = 0,
+    addon_flush_ns: int = 0,
+    queue_wait_ns: int = 0,
+) -> dict:
     return {
         "runIndex": 0,
         "measuredMs": 1.0,
@@ -39,10 +46,20 @@ def _sample(*, backend: str, command_replay_ns: int) -> dict:
             "executionRowCount": 3,
             "executionSuccessCount": 3,
             "queueSyncMode": "per-command",
+            "packageReadbackMode": "native-map-read-copy-unmap",
+            "planId": "plan-alpha",
+            "planHash": "hash-alpha",
             "packageStepBreakdownNs": {
+                "submitCommandEncoderFinishTotalNs": encoder_finish_ns,
                 "submitAddonCommandReplayTotalNs": command_replay_ns,
-                "submitAddonFlushTotalNs": 0,
-                "submitQueueWaitTotalNs": 0,
+                "submitAddonCommandReplayPrepareTotalNs": 0,
+                "submitAddonCommandReplayRecordTotalNs": 0,
+                "submitAddonCommandReplayCopyTotalNs": 0,
+                "submitAddonCommandBufferEndTotalNs": 0,
+                "submitAddonFlushTotalNs": addon_flush_ns,
+                "submitQueueFlushTotalNs": 0,
+                "submitQueueFlushWaitCompletedTotalNs": 0,
+                "submitQueueWaitTotalNs": queue_wait_ns,
             },
             "shaderSourceReceiptsHash": "a" * 64,
             "shaderSourceReceipts": [
@@ -104,6 +121,198 @@ def _provider_result_sample(*, backend: str, digest: str) -> dict:
 
 
 class CompareAssessmentTests(unittest.TestCase):
+    def test_submit_scope_does_not_double_count_rollup_and_children(self) -> None:
+        from native_compare_modules.comparability import (
+            _PHASE_MATERIAL_FLOOR_FRACTION,
+            _PHASE_MATERIAL_MIN_SAMPLES,
+        )
+        from native_compare_modules.comparability_runtime import (
+            assess_submit_scope_equivalence,
+        )
+
+        left = _sample(backend="doe_node_webgpu", command_replay_ns=0)
+        right = _sample(backend="node_webgpu_package", command_replay_ns=0)
+        submit_ns = left["traceMeta"]["executionSubmitWaitTotalNs"]
+        component_ns = int(submit_ns * _PHASE_MATERIAL_FLOOR_FRACTION * 0.75)
+        left["traceMeta"]["packageStepBreakdownNs"].update({
+            "submitAddonCommandReplayTotalNs": component_ns,
+            "submitAddonCommandReplayPrepareTotalNs": component_ns,
+        })
+        applies, matches, details, reason = assess_submit_scope_equivalence(
+            left_command_samples=[left] * _PHASE_MATERIAL_MIN_SAMPLES,
+            right_command_samples=[right] * _PHASE_MATERIAL_MIN_SAMPLES,
+        )
+        self.assertTrue(applies)
+        self.assertTrue(matches, reason)
+        self.assertEqual(
+            details["baselineMedianSubmitScopeFractions"]["commandMaterialization"],
+            component_ns / submit_ns,
+        )
+
+    def test_submit_scope_allows_equivalent_command_materialization_bucket(self) -> None:
+        result = compare_assessment(
+            workload_id="package_upload_readback",
+            workload_comparable=True,
+            workload_domain="upload-readback",
+            workload_api="webgpu",
+            workload_commands_path="",
+            workload_path_asymmetry=False,
+            workload_path_asymmetry_note="",
+            baseline_command_repeat=1,
+            comparison_command_repeat=1,
+            baseline={
+                "commandSamples": [
+                    _sample(backend="doe_node_webgpu", command_replay_ns=2_000_000)
+                    for _ in range(7)
+                ],
+            },
+            comparison={
+                "commandSamples": [
+                    _sample(
+                        backend="node_webgpu_package",
+                        command_replay_ns=0,
+                        encoder_finish_ns=2_000_000,
+                    )
+                    for _ in range(7)
+                ],
+            },
+            required_timing_class="operation",
+            allow_baseline_no_execution=False,
+            resource_probe="none",
+            comparability_mode="strict",
+            resource_sample_target_count=0,
+        )
+
+        self.assertTrue(result["comparable"], result["reasons"])
+        self.assertNotIn(
+            "baseline_comparison_submit_scope_match",
+            result["blockingFailedObligations"],
+        )
+
+    def test_package_readback_mode_mismatch_blocks_strict_package_compare(self) -> None:
+        baseline_sample = _sample(backend="doe_node_webgpu", command_replay_ns=0)
+        comparison_sample = _sample(backend="node_webgpu_package", command_replay_ns=0)
+        comparison_sample["traceMeta"]["packageReadbackMode"] = "map-async"
+
+        result = compare_assessment(
+            workload_id="inference_gemma3_270m_prefill_64tok_decode_64tok",
+            workload_comparable=True,
+            workload_domain="compute",
+            workload_api="webgpu",
+            workload_commands_path="bench/plans/generated/compat/inference_commands.json",
+            workload_path_asymmetry=False,
+            workload_path_asymmetry_note="",
+            baseline_command_repeat=1,
+            comparison_command_repeat=1,
+            baseline={"commandSamples": [baseline_sample]},
+            comparison={"commandSamples": [comparison_sample]},
+            required_timing_class="operation",
+            allow_baseline_no_execution=False,
+            resource_probe="none",
+            comparability_mode="strict",
+            resource_sample_target_count=0,
+        )
+
+        self.assertFalse(result["comparable"])
+        self.assertIn(
+            "baseline_comparison_package_readback_mode_match",
+            result["blockingFailedObligations"],
+        )
+
+    def test_package_readback_scope_mismatch_blocks_strict_package_compare(self) -> None:
+        def with_readback_scope(sample: dict, *, actual_path: str, native_ns: int, map_async_ns: int) -> dict:
+            updated = _sample(
+                backend=sample["traceMeta"]["executionBackend"],
+                command_replay_ns=0,
+            )
+            updated["traceMeta"]["packageReadbackMode"] = "native-map-read-copy-unmap"
+            updated["traceMeta"]["packageReadbackActualPaths"] = [actual_path]
+            updated["traceMeta"]["packageReadbackPathCounts"] = {actual_path: 1}
+            updated["traceMeta"]["packageStepBreakdownNs"].update({
+                "readbackTotalNs": 4_000_000,
+                "readbackMapReadCopyUnmapTotalNs": native_ns,
+                "readbackMapAsyncTotalNs": map_async_ns,
+                "readbackNativeReadCopyTotalNs": 0,
+                "readbackGetMappedRangeTotalNs": 0,
+                "readbackHostCopyTotalNs": 0,
+                "readbackUnmapTotalNs": 0,
+            })
+            return updated
+
+        baseline_samples = [
+            with_readback_scope(
+                _sample(backend="doe_node_webgpu", command_replay_ns=0),
+                actual_path="map-read-copy-unmap",
+                native_ns=3_500_000,
+                map_async_ns=0,
+            )
+            for _ in range(7)
+        ]
+        comparison_samples = [
+            with_readback_scope(
+                _sample(backend="node_webgpu_package", command_replay_ns=0),
+                actual_path="mapped-range-host-copy",
+                native_ns=0,
+                map_async_ns=3_500_000,
+            )
+            for _ in range(7)
+        ]
+
+        result = compare_assessment(
+            workload_id="inference_gemma3_270m_prefill_64tok_decode_64tok",
+            workload_comparable=True,
+            workload_domain="compute",
+            workload_api="webgpu",
+            workload_commands_path="bench/plans/generated/compat/inference_commands.json",
+            workload_path_asymmetry=False,
+            workload_path_asymmetry_note="",
+            baseline_command_repeat=1,
+            comparison_command_repeat=1,
+            baseline={"commandSamples": baseline_samples},
+            comparison={"commandSamples": comparison_samples},
+            required_timing_class="operation",
+            allow_baseline_no_execution=False,
+            resource_probe="none",
+            comparability_mode="strict",
+            resource_sample_target_count=0,
+        )
+
+        self.assertFalse(result["comparable"])
+        self.assertIn(
+            "baseline_comparison_package_readback_scope_match",
+            result["blockingFailedObligations"],
+        )
+
+    def test_package_plan_identity_mismatch_blocks_strict_package_compare(self) -> None:
+        baseline_sample = _sample(backend="doe_node_webgpu", command_replay_ns=0)
+        comparison_sample = _sample(backend="node_webgpu_package", command_replay_ns=0)
+        comparison_sample["traceMeta"]["planHash"] = "hash-beta"
+
+        result = compare_assessment(
+            workload_id="inference_gemma3_270m_prefill_64tok_decode_64tok",
+            workload_comparable=True,
+            workload_domain="compute",
+            workload_api="webgpu",
+            workload_commands_path="bench/plans/generated/compat/inference_commands.json",
+            workload_path_asymmetry=False,
+            workload_path_asymmetry_note="",
+            baseline_command_repeat=1,
+            comparison_command_repeat=1,
+            baseline={"commandSamples": [baseline_sample]},
+            comparison={"commandSamples": [comparison_sample]},
+            required_timing_class="operation",
+            allow_baseline_no_execution=False,
+            resource_probe="none",
+            comparability_mode="strict",
+            resource_sample_target_count=0,
+        )
+
+        self.assertFalse(result["comparable"])
+        self.assertIn(
+            "baseline_comparison_package_plan_identity_match",
+            result["blockingFailedObligations"],
+        )
+
     def test_result_output_mismatch_blocks_strict_provider_compare(self) -> None:
         result = compare_assessment(
             workload_id="doppler_provider_compare",

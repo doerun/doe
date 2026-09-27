@@ -150,6 +150,7 @@ const ADAPTER_INFO_FIELDS = Object.freeze([
   'deviceID',
   'driverVersion',
 ]);
+const PACKAGE_READBACK_MODE_MAP_ASYNC_HOST_COPY = 'mapAsync-host-copy';
 let packageExecutionPolicyPromise = null;
 
 export const PROVIDER_FAILURE_REASONS = Object.freeze([
@@ -859,6 +860,9 @@ function packageReadbackModeFromEnv() {
   if (process.env.DOE_PACKAGE_READBACK_MODE === PACKAGE_READBACK_MODE_MAP_ASYNC) {
     return PACKAGE_READBACK_MODE_MAP_ASYNC;
   }
+  if (process.env.DOE_PACKAGE_READBACK_MODE === PACKAGE_READBACK_MODE_MAP_ASYNC_HOST_COPY) {
+    return PACKAGE_READBACK_MODE_MAP_ASYNC_HOST_COPY;
+  }
   if (process.env.DOE_PACKAGE_READBACK_MODE === PACKAGE_READBACK_MODE_NATIVE) {
     return PACKAGE_READBACK_MODE_NATIVE;
   }
@@ -879,9 +883,11 @@ export async function copyReadBufferBytes({
 }) {
   const expectedBytes = normalizePositiveInt(sizeBytes, 'readBuffer.sizeBytes');
   const breakdownNs = emptyReadbackBreakdownNs();
+  const forceMappedRangeHostCopy = readbackMode === PACKAGE_READBACK_MODE_MAP_ASYNC_HOST_COPY;
 
   if (
     readbackMode !== PACKAGE_READBACK_MODE_MAP_ASYNC
+    && !forceMappedRangeHostCopy
     && typeof buffer?._mapReadCopyUnmap === 'function'
   ) {
     const fastStartedAt = performance.now();
@@ -906,7 +912,7 @@ export async function copyReadBufferBytes({
   breakdownNs.readbackMapAsyncTotalNs += nsDelta(mapStartedAt);
 
   try {
-    if (typeof buffer?._readCopy === 'function') {
+    if (!forceMappedRangeHostCopy && typeof buffer?._readCopy === 'function') {
       const readCopyStartedAt = performance.now();
       const copied = buffer._readCopy(0, expectedBytes);
       breakdownNs.readbackNativeReadCopyTotalNs += nsDelta(readCopyStartedAt);
@@ -1353,7 +1359,7 @@ function prepareQueueWriteBufferBatch(method, entries, compactCache, cacheKey) {
 }
 
 function queueWriteBufferBatch(queue, method, entries, preparedCompact = null) {
-    if (method === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
+  if (method === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
     const compact = preparedCompact ?? buildCompactQueueWriteBatch(entries);
     return queue.writeBufferBatch(compact.buffers, compact.offsets, compact.sizes, compact.data);
   }
@@ -2089,9 +2095,7 @@ function packageReadbackModeForExecution(policy, {
     workloadId,
     packagePreparedSession,
   });
-  return entry?.mode === PACKAGE_READBACK_MODE_MAP_ASYNC
-    ? PACKAGE_READBACK_MODE_MAP_ASYNC
-    : PACKAGE_READBACK_MODE_NATIVE;
+  return entry?.mode ?? PACKAGE_READBACK_MODE_NATIVE;
 }
 
 function packagePolicyProvider(runtime) {
@@ -2809,6 +2813,7 @@ async function executeSample(
   const validationTemplates = normalizedPlan.steps.map((step) => (
     step.kind === 'readBuffer' ? buildValidationTemplate(step.validate) : null
   ));
+  const readbackPathCounts = new Map();
   const materializedWriteDataCache = new Map();
   const compactWriteBatchCache = new Map();
   const packageFastPathStatsStart = snapshotPackageFastPathStats(runtime.providerModule);
@@ -2820,6 +2825,15 @@ async function executeSample(
     workloadId: normalizedPlan.workloadId,
     packagePreparedSession: !includeSetupInSelectedTiming,
   });
+  const writeBatchMethod = packageWriteBatchMethod(runtime.queue);
+  const writeBatchMinConsecutiveWrites = packageWriteBatchMinConsecutiveWrites(
+    packageExecutionPolicy,
+    {
+      runtimeHost,
+      provider: policyProvider,
+      method: writeBatchMethod,
+    },
+  );
   let executionSetupTotalNs = 0;
   let executionEncodeTotalNs = 0;
   let executionSubmitWaitTotalNs = 0;
@@ -3041,9 +3055,8 @@ async function executeSample(
         continue;
       }
       if (step.kind === 'writeBuffer') {
-        const batchMethod = packageWriteBatchMethod(runtime.queue);
         const batchedSteps = [];
-        if (batchMethod !== PACKAGE_WRITE_BATCH_METHOD_NONE && isDynamicWriteBufferStep(step)) {
+        if (writeBatchMethod !== PACKAGE_WRITE_BATCH_METHOD_NONE && isDynamicWriteBufferStep(step)) {
           for (
             let batchIndex = index;
             batchIndex < normalizedPlan.steps.length;
@@ -3057,13 +3070,7 @@ async function executeSample(
           }
         }
 
-        const minConsecutiveWrites = packageWriteBatchMinConsecutiveWrites(packageExecutionPolicy, {
-          runtimeHost,
-          provider: runtime.policyProvider ?? runtime.providerSpec.provider,
-          method: batchMethod,
-        });
-
-        if (batchedSteps.length >= minConsecutiveWrites) {
+        if (batchedSteps.length >= writeBatchMinConsecutiveWrites) {
           await flushEncoder({ waitForCompletion: false });
           const batchEntries = [];
           const batchRows = [];
@@ -3095,10 +3102,10 @@ async function executeSample(
             recordPackageWriteBreakdown(writeBreakdown, batched.step, materialized.byteLength);
           }
           let preparedCompact = null;
-          if (batchMethod === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
+          if (writeBatchMethod === PACKAGE_WRITE_BATCH_METHOD_DIRECT_QUEUE) {
             const compactStartedAt = performance.now();
             preparedCompact = prepareQueueWriteBufferBatch(
-              batchMethod,
+              writeBatchMethod,
               batchEntries,
               compactWriteBatchCache,
               compactWriteBatchCacheKey(batchedSteps),
@@ -3106,9 +3113,9 @@ async function executeSample(
             materializeTotalNs += nsDelta(compactStartedAt);
           }
           const writeStartedAt = performance.now();
-          queueWriteBufferBatch(runtime.queue, batchMethod, batchEntries, preparedCompact);
+          queueWriteBufferBatch(runtime.queue, writeBatchMethod, batchEntries, preparedCompact);
           const queueWriteNs = nsDelta(writeStartedAt);
-          recordPackageBatchedWrites(writeBreakdown, batchedSteps.length, batchMethod);
+          recordPackageBatchedWrites(writeBreakdown, batchedSteps.length, writeBatchMethod);
           queueCompletionKnown = false;
           stepBreakdownNs.writeMaterializeTotalNs += materializeTotalNs;
           stepBreakdownNs.writeQueueWriteTotalNs += queueWriteNs;
@@ -3306,6 +3313,7 @@ async function executeSample(
         readbackMode: packageReadbackMode,
       });
       packageEffectiveReadbackPaths.add(effectivePackageReadbackPath(readback.path));
+      readbackPathCounts.set(readback.path, (readbackPathCounts.get(readback.path) ?? 0) + 1);
       const validationStartedAt = performance.now();
       const validation = validatePreparedSampleExpectation(
         readback.bytes,
@@ -3444,6 +3452,10 @@ async function executeSample(
     dispatchStates: runtime.dispatchStates,
     readbackCaptures,
   });
+  const packageReadbackPathCounts = Object.fromEntries(
+    Array.from(readbackPathCounts.entries()).sort(([left], [right]) => left.localeCompare(right)),
+  );
+  const packageReadbackActualPaths = Object.keys(packageReadbackPathCounts);
 
   const meta = {
     schemaVersion: 1,
@@ -3503,6 +3515,8 @@ async function executeSample(
     packageResidentBufferLoadBreakdown: residentBufferLoadBreakdown,
     packageReadbackMode,
     packageEffectiveReadbackPaths: Array.from(packageEffectiveReadbackPaths).sort(),
+    packageReadbackActualPaths,
+    packageReadbackPathCounts,
     ...(packageNativeFastPaths ? { packageNativeFastPaths } : {}),
     ...(packageNativeQueueSyncInfo ? { packageNativeQueueSyncInfo } : {}),
     ...(pipelineCache ? { pipelineCache } : {}),

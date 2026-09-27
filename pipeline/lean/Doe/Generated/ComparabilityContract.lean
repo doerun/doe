@@ -1,6 +1,6 @@
 import Doe.Core.Model
 
-def comparabilityContractSha256 : String := "122a21b854428b45c6c4dc17780057eda8c0b16d56739b1625a580f8ba0af3db"
+def comparabilityContractSha256 : String := "59c4173fc3ad9fb465a4dba399b87dab30db287f6459ec95b8f741ec5f0716bd"
 
 inductive ComparabilityObligationId where
   | workloadMarkedComparable
@@ -17,6 +17,9 @@ inductive ComparabilityObligationId where
   | baselineComparisonQueueSyncModeMatch
   | baselineComparisonSubmitScopeMatch
   | baselineComparisonEffectiveReadbackPathMatch
+  | baselineComparisonPackageReadbackModeMatch
+  | baselineComparisonPackageReadbackScopeMatch
+  | baselineComparisonPackagePlanIdentityMatch
   | baselineComparisonTimingPhaseMatch
   | baselineComparisonPackageResidentBufferLoadModeMatch
   | baselineComparisonPackageResidentBufferLoadShapeMatch
@@ -86,6 +89,12 @@ structure ComparabilityFacts where
   baselineComparisonSubmitScopeMatch : Bool
   effectiveReadbackPathMatchApplies : Bool
   baselineComparisonEffectiveReadbackPathMatch : Bool
+  packageReadbackModeMatchApplies : Bool
+  baselineComparisonPackageReadbackModeMatch : Bool
+  packageReadbackScopeMatchApplies : Bool
+  baselineComparisonPackageReadbackScopeMatch : Bool
+  packagePlanIdentityMatchApplies : Bool
+  baselineComparisonPackagePlanIdentityMatch : Bool
   timingPhaseMatchApplies : Bool
   baselineComparisonTimingPhaseMatch : Bool
   packageResidentBufferLoadModeMatchApplies : Bool
@@ -187,6 +196,18 @@ def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObliga
       blocking := true
       applicable := facts.effectiveReadbackPathMatchApplies
       passes := facts.baselineComparisonEffectiveReadbackPathMatch },
+    { id := .baselineComparisonPackageReadbackModeMatch
+      blocking := true
+      applicable := facts.packageReadbackModeMatchApplies
+      passes := facts.baselineComparisonPackageReadbackModeMatch },
+    { id := .baselineComparisonPackageReadbackScopeMatch
+      blocking := true
+      applicable := facts.packageReadbackScopeMatchApplies
+      passes := facts.baselineComparisonPackageReadbackScopeMatch },
+    { id := .baselineComparisonPackagePlanIdentityMatch
+      blocking := true
+      applicable := facts.packagePlanIdentityMatchApplies
+      passes := facts.baselineComparisonPackagePlanIdentityMatch },
     { id := .baselineComparisonTimingPhaseMatch
       blocking := true
       applicable := facts.timingPhaseMatchApplies

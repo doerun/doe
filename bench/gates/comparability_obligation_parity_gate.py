@@ -99,8 +99,8 @@ def validate_fixture_schema(payload: Any, *, path: Path) -> list[str]:
     failures: list[str] = []
     if not isinstance(payload, dict):
         return [f"{path}: expected object"]
-    if payload.get("schemaVersion") != 1:
-        failures.append(f"{path}: schemaVersion must be 1")
+    if payload.get("schemaVersion") != 2:
+        failures.append(f"{path}: schemaVersion must be 2")
     fixtures = payload.get("fixtures")
     if not isinstance(fixtures, list) or not fixtures:
         failures.append(f"{path}: fixtures must be a non-empty list")

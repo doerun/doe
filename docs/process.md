@@ -75,6 +75,10 @@ classified and cannot be promoted by benchmark results.
 - A workload declares immutable input identity, oracle, executor, policy,
   required artifacts, and evidence extensions.
 - Correctness precedes performance interpretation.
+- Package comparison admission checks declared readback modes, observed readback
+  scopes and plan identities alongside effective-path and output equivalence.
+  Equivalent command-materialization and completion scopes are grouped explicitly;
+  optional telemetry and a historical verdict cannot replace current admission.
 - Calibration, candidate execution, and evidence replay must bind the same
   explicit experiment and invocation policies. A warmup revision requires fresh
   accepted-package A/A qualification; coherent output under a different policy
