@@ -1,4 +1,5 @@
 const std = @import("std");
+const loop_independence = @import("../../ir/ir_loop_independence.zig");
 const ir = @import("../../ir/ir.zig");
 const ir_const_eval = @import("../../ir/ir_const_eval.zig");
 const sema_helpers = @import("../../frontend/sema_helpers.zig");
@@ -256,7 +257,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
                         const control = emit_spirv_fn_helpers.multiDotLoopControl(words[body_offset..]);
                         words[body_offset - 1] = if (control == spirv.LoopControl.DontUnroll and
                             @import("build_options").spirv_compute_unroll_independent_dot_loops and
-                            emit_spirv_fn_helpers.independentIndexedLoop(self.emitter.module, self.function, loop_stmt))
+                            loop_independence.independentIndexedLoop(self.emitter.module, self.function, loop_stmt))
                             spirv.LoopControl.Unroll
                         else
                             control;

@@ -25,7 +25,12 @@ pub const EntryPointTranslation = struct {
 /// The emitted program and metadata come from the same analyzed source and
 /// selected compute entry point. The caller owns info; bindings are values.
 pub fn translateMslEntryPoint(allocator: std.mem.Allocator, wgsl: []const u8, entry_point: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!EntryPointTranslation {
-    var module_ir = try analysis.analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, compute_runtime_robustness_config(), diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = compute_runtime_robustness_config(),
+        .diagnostic = diagnostic,
+    })).module;
     defer module_ir.deinit();
     const workgroup_size = for (module_ir.entry_points.items) |entry| {
         if (entry.stage == .compute and std.mem.eql(u8, module_ir.functions.items[entry.function].name, entry_point)) break entry.workgroup_size;
@@ -112,7 +117,13 @@ pub fn translateToMslForComputeRuntimeTimedWithDiagnostic(allocator: std.mem.All
         overrides.?[0..override_count]
     else
         &.{};
-    var analyzed = try analysis.analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, compute_runtime_robustness_config(), override_slice, diagnostic);
+    var analyzed = try analysis.analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = compute_runtime_robustness_config(),
+        .diagnostic = diagnostic,
+        .overrides = override_slice,
+    });
     defer analyzed.module.deinit();
 
     if (override_slice.len > 0) override_values.applyOverrides(&analyzed.module, override_slice);
@@ -134,7 +145,12 @@ pub fn translateToMslForComputeRuntimeTimedWithDiagnostic(allocator: std.mem.All
 }
 
 pub fn translateToSpirvForComputeRuntimeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!TranslationResult {
-    var module_ir = try analysis.analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, compute_runtime_robustness_config(), diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = compute_runtime_robustness_config(),
+        .diagnostic = diagnostic,
+    })).module;
     defer module_ir.deinit();
 
     const len = try emitSpirv(&module_ir, out, diagnostic);
@@ -149,7 +165,12 @@ pub fn translateToSpirvTimedWithDiagnostic(allocator: std.mem.Allocator, wgsl: [
     defer arena.deinit();
 
     const total_start_ns = nowNs();
-    var analyzed = try analysis.analyzeToIrTimedWithDiagnostic(arena.allocator(), wgsl, diagnostic);
+    var analyzed = try analysis.analyze(.{
+        .allocator = arena.allocator(),
+        .source = wgsl,
+        .robustness = analysis.default_translation_robustness_config(),
+        .diagnostic = diagnostic,
+    });
 
     const emit_start_ns = nowNs();
     const len = try emitSpirv(&analyzed.module, out, diagnostic);
@@ -173,7 +194,13 @@ pub fn translateToSpirvForVulkanComputeRuntimeWithOverridesWithDiagnostic(alloca
         overrides.?[0..override_count]
     else
         &.{};
-    var module_ir = try analysis.analyzeToIrWithConfigAndOverridesWithDiagnostic(allocator, wgsl, vulkan_compute_runtime_robustness_config(), override_slice, diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = vulkan_compute_runtime_robustness_config(),
+        .diagnostic = diagnostic,
+        .overrides = override_slice,
+    })).module;
     defer module_ir.deinit();
 
     if (override_slice.len > 0) override_values.applyOverrides(&module_ir, override_slice);

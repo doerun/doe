@@ -17,7 +17,13 @@ pub fn translateToHlslWithOverridesWithDiagnostic(allocator: std.mem.Allocator, 
         overrides.?[0..override_count]
     else
         &.{};
-    var module_ir = try analysis.analyzeToIrWithConfigAndOverridesWithDiagnostic(arena.allocator(), wgsl, analysis.default_translation_robustness_config(), override_slice, diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = arena.allocator(),
+        .source = wgsl,
+        .robustness = analysis.default_translation_robustness_config(),
+        .diagnostic = diagnostic,
+        .overrides = override_slice,
+    })).module;
 
     if (override_slice.len > 0) override_values.applyOverrides(&module_ir, override_slice);
 

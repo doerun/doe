@@ -23,7 +23,12 @@ pub fn prepareComputeIrWithDiagnostic(module: *ir.Module, diagnostic: *analysis.
 pub fn translateToSpirvWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
-    var module_ir = try analysis.analyzeToIrWithDiagnostic(arena.allocator(), wgsl, diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = arena.allocator(),
+        .source = wgsl,
+        .robustness = analysis.default_translation_robustness_config(),
+        .diagnostic = diagnostic,
+    })).module;
     try prepareComputeIrWithDiagnostic(&module_ir, diagnostic);
 
     return emitter.emit(&module_ir, out) catch |err| {

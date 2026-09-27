@@ -125,3 +125,79 @@ test "emission failures belong to the provided diagnostic" {
     _ = analyzeToIr(std.testing.allocator, "fn bad(") catch {};
     try std.testing.expectEqual(CompilationStage.msl_emit, diagnostic.lastErrorStage());
 }
+
+const REQUEST_SOURCE =
+    \\override COUNT: u32 = 2u;
+    \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;
+    \\@compute @workgroup_size(COUNT) fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    \\  data[id.x] = COUNT;
+    \\}
+;
+
+fn exerciseAnalysisRequest(allocator: std.mem.Allocator) !void {
+    var diagnostic = analysis.Diagnostic{};
+    var result = analysis.analyze(.{
+        .allocator = allocator,
+        .source = REQUEST_SOURCE,
+        .robustness = analysis.default_translation_robustness_config(),
+        .overrides = &.{.{ .key = "COUNT", .value = 4.0 }},
+        .diagnostic = &diagnostic,
+    }) catch |err| {
+        try std.testing.expectEqual(error.OutOfMemory, err);
+        try std.testing.expectEqual(error.OutOfMemory, diagnostic.lastErrorKind().?);
+        return err;
+    };
+    defer result.module.deinit();
+    try std.testing.expectEqual(@as(u32, 4), result.module.entry_points.items[0].workgroup_size[0]);
+    try std.testing.expectEqual(CompilationStage.none, diagnostic.lastErrorStage());
+}
+
+test "analysis request owns rollback through every allocation failure" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseAnalysisRequest, .{});
+}
+
+test "analysis request preserves overrides robustness and compatibility diagnostics" {
+    const overrides = [_]mod.ir.OverrideEntry{.{ .key = "COUNT", .value = 4.0 }};
+    const config = analysis.default_translation_robustness_config();
+    _ = analyzeToIr(std.testing.allocator, "fn broken(") catch {};
+    var legacy_error = analysis.compatibilityDiagnostic().*;
+    var diagnostic = analysis.Diagnostic{};
+    var result = try analysis.analyze(.{
+        .allocator = std.testing.allocator,
+        .source = REQUEST_SOURCE,
+        .robustness = config,
+        .overrides = &overrides,
+        .diagnostic = &diagnostic,
+    });
+    defer result.module.deinit();
+    try std.testing.expectEqualStrings(legacy_error.lastErrorMessage(), lastErrorMessage());
+    try std.testing.expectEqual(@as(u32, 4), result.module.entry_points.items[0].workgroup_size[0]);
+    var legacy = try analysis.analyzeToIrWithConfigAndOverrides(std.testing.allocator, REQUEST_SOURCE, config, &overrides);
+    defer legacy.deinit();
+    try std.testing.expectEqual(mod.ir_digest.computeHex(&legacy), mod.ir_digest.computeHex(&result.module));
+    try std.testing.expectEqual(CompilationStage.none, lastErrorStage());
+
+    for (DIAGNOSTIC_CASES) |case| {
+        try std.testing.expectError(case.kind, analysis.analyze(.{
+            .allocator = std.testing.allocator,
+            .source = case.source,
+            .robustness = config,
+            .diagnostic = &diagnostic,
+        }));
+        try std.testing.expectEqual(case.stage, diagnostic.lastErrorStage());
+        try std.testing.expectError(case.kind, analyzeToIr(std.testing.allocator, case.source));
+        try std.testing.expectEqualStrings(lastErrorMessage(), diagnostic.lastErrorMessage());
+        try std.testing.expectEqualStrings(lastErrorContext(), diagnostic.lastErrorContext());
+    }
+}
+
+test "analysis request preserves numeric parse overflow as invalid WGSL" {
+    var diagnostic = analysis.Diagnostic{};
+    try std.testing.expectError(error.InvalidWgsl, analysis.analyze(.{
+        .allocator = std.testing.allocator,
+        .source = "@group(4294967296) @binding(0) var<storage> data: array<u32>; @compute @workgroup_size(1) fn main() {}",
+        .robustness = analysis.default_translation_robustness_config(),
+        .diagnostic = &diagnostic,
+    }));
+    try std.testing.expectEqual(CompilationStage.sema, diagnostic.lastErrorStage());
+}

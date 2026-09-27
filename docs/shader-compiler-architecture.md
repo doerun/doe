@@ -22,6 +22,19 @@ Views returned by that value remain valid until the owner is changed or
 released. Native shader requests use that explicit path and copy compilation
 messages into the shader's own storage, including allocation failures.
 
+Internal analysis uses `pipeline/analysis.zig`'s `analyze(Request)` entry point.
+The request borrows source and overrides and explicitly supplies its allocator,
+robustness policy, and diagnostic destination. The result owns the lowered
+module and carries the existing phase timings. Historical analysis signatures
+remain compatibility adapters; thread-local diagnostic storage belongs to the
+diagnostic owner. Error translation exhausts the semantic, numeric-parser, and
+IR-builder error sets rather than absorbing unknown causes through `anyerror`.
+
+`ir/ir_loop_independence.zig` owns conservative bounded local-array eligibility.
+It does not choose an unroll hint. SPIR-V emission retains instruction inspection,
+compute-policy selection, and loop-control encoding. This separation changes no
+eligibility rule, reduction order, arithmetic policy, or target bytes.
+
 Migration: the existing Zig `lastError*` and C `doeNativeCopyLastError*`
 interfaces remain compatibility adapters. Their state is per calling thread;
 legacy views expire at the next call on that thread. Retain a `Diagnostic`

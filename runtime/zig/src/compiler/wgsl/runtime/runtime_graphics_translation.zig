@@ -50,7 +50,12 @@ fn graphics_runtime_robustness_config() robustness.Config {
 /// for each stage found, plus extracted vertex input and inter-stage interface
 /// metadata for pipeline reflection.
 pub fn translateToSpirvForGraphicsRuntimeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!GraphicsTranslationResult {
-    var module_ir = try analysis.analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, graphics_runtime_robustness_config(), diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = graphics_runtime_robustness_config(),
+        .diagnostic = diagnostic,
+    })).module;
     defer module_ir.deinit();
 
     var result = GraphicsTranslationResult{};

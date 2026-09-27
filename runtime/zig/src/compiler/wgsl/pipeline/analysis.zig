@@ -17,41 +17,17 @@ pub const CompilationStage = diagnostics.CompilationStage;
 pub const SourceLocation = diagnostics.SourceLocation;
 pub const LastErrorInfo = diagnostics.LastErrorInfo;
 
-// Legacy last-error views expire at the next compilation on the calling thread.
-threadlocal var compatibility_diagnostic = Diagnostic{};
-pub fn compatibilityDiagnostic() *Diagnostic {
-    return &compatibility_diagnostic;
-}
-pub fn clearLastError() void {
-    return compatibility_diagnostic.clearLastError();
-}
-pub fn lastErrorKind() ?TranslateError {
-    return compatibility_diagnostic.lastErrorKind();
-}
-pub fn lastErrorContext() []const u8 {
-    return compatibility_diagnostic.lastErrorContext();
-}
-pub fn lastErrorInfo() LastErrorInfo {
-    return compatibility_diagnostic.lastErrorInfo();
-}
-pub fn lastErrorStage() CompilationStage {
-    return compatibility_diagnostic.lastErrorStage();
-}
-pub fn lastErrorMessage() []const u8 {
-    return compatibility_diagnostic.lastErrorMessage();
-}
-pub fn lastErrorLine() u32 {
-    return compatibility_diagnostic.lastErrorLine();
-}
-pub fn lastErrorColumn() u32 {
-    return compatibility_diagnostic.lastErrorColumn();
-}
-pub fn setLastError(stage: CompilationStage, kind: TranslateError, source: ?[]const u8, loc: ?token.Token.Loc) void {
-    compatibility_diagnostic.setLastError(stage, kind, source, loc);
-}
-pub fn setLastErrorDetailPublic(stage: CompilationStage, kind: TranslateError, detail: []const u8) void {
-    compatibility_diagnostic.setLastErrorDetailPublic(stage, kind, detail);
-}
+pub const compatibilityDiagnostic = diagnostics.compatibilityDiagnostic;
+pub const clearLastError = diagnostics.clearLastError;
+pub const lastErrorKind = diagnostics.lastErrorKind;
+pub const lastErrorContext = diagnostics.lastErrorContext;
+pub const lastErrorInfo = diagnostics.lastErrorInfo;
+pub const lastErrorStage = diagnostics.lastErrorStage;
+pub const lastErrorMessage = diagnostics.lastErrorMessage;
+pub const lastErrorLine = diagnostics.lastErrorLine;
+pub const lastErrorColumn = diagnostics.lastErrorColumn;
+pub const setLastError = diagnostics.setLastError;
+pub const setLastErrorDetailPublic = diagnostics.setLastErrorDetailPublic;
 
 pub const CompilePhaseTimingsNs = struct {
     parse: u64 = 0,
@@ -61,10 +37,24 @@ pub const CompilePhaseTimingsNs = struct {
     total: u64 = 0,
 };
 
-pub const TimedAnalyzeResult = struct {
+/// Source and overrides are borrowed for this call. The caller owns diagnostic
+/// storage, which is reset at entry and retains the failure after return.
+pub const Request = struct {
+    allocator: std.mem.Allocator,
+    source: []const u8,
+    robustness: ir_transform_robustness.Config,
+    overrides: []const ir.OverrideEntry = &.{},
+    diagnostic: *Diagnostic,
+};
+
+/// Owns the lowered module; release it with module.deinit(). Timings do not own
+/// storage and retain the existing parse, semantic and lowering boundaries.
+pub const Result = struct {
     module: ir.Module,
     phase_timings_ns: CompilePhaseTimingsNs,
 };
+
+pub const TimedAnalyzeResult = Result;
 
 fn tokenLoc(tree: *const ast.Ast, token_idx: ?u32) ?token.Token.Loc {
     const idx = token_idx orelse return null;
@@ -87,33 +77,12 @@ fn elapsedNs(start: i128, end: i128) u64 {
     return @intCast(end - start);
 }
 
-pub fn analyzeToIrWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, diagnostic: *Diagnostic) TranslateError!ir.Module {
-    return analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, default_translation_robustness_config(), diagnostic);
-}
-
-pub fn analyzeToIrTimedWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
-    return analyzeToIrWithConfigTimedWithDiagnostic(allocator, wgsl, default_translation_robustness_config(), diagnostic);
-}
-
-pub fn analyzeToIrWithConfigWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, diagnostic: *Diagnostic) TranslateError!ir.Module {
-    const result = try analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, config, &.{}, diagnostic);
-    return result.module;
-}
-
-pub fn analyzeToIrWithConfigTimedWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
-    return analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, config, &.{}, diagnostic);
-}
-
-pub fn analyzeToIrWithConfigAndOverridesWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!ir.Module {
-    const result = try analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, config, overrides, diagnostic);
-    return result.module;
-}
-
-pub fn analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
-    return analyzeWithDiagnostic(allocator, wgsl, config, overrides, diagnostic);
-}
-
-pub fn analyzeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
+pub fn analyze(request: Request) TranslateError!Result {
+    const allocator = request.allocator;
+    const wgsl = request.source;
+    const config = request.robustness;
+    const overrides = request.overrides;
+    const diagnostic = request.diagnostic;
     diagnostic.clearLastError();
     var parse_failure = parser.FailureContext{};
     var sema_failure = sema.FailureContext{};
@@ -178,7 +147,7 @@ pub fn analyzeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, con
     };
 }
 
-fn mapSemanticError(err: anyerror) TranslateError {
+fn mapSemanticError(err: (sema.AnalyzeError || std.fmt.ParseIntError)) TranslateError {
     return switch (err) {
         error.OutOfMemory => TranslateError.OutOfMemory,
         error.UnsupportedConstruct => TranslateError.UnsupportedConstruct,
@@ -190,40 +159,137 @@ fn mapSemanticError(err: anyerror) TranslateError {
         error.UnknownIdentifier => TranslateError.UnknownIdentifier,
         error.UnknownType => TranslateError.UnknownType,
         error.InvalidWgsl => TranslateError.InvalidWgsl,
-        else => TranslateError.InvalidWgsl,
+        error.InvalidCharacter, error.Overflow => TranslateError.InvalidWgsl,
     };
 }
 
-fn mapIrBuildError(err: anyerror) TranslateError {
+fn mapIrBuildError(err: ir_builder.BuildError) TranslateError {
     return switch (err) {
         error.OutOfMemory => TranslateError.OutOfMemory,
         error.UnsupportedConstruct => TranslateError.UnsupportedConstruct,
-        error.InvalidWgsl => TranslateError.InvalidWgsl,
         error.InvalidIr => TranslateError.InvalidIr,
-        else => TranslateError.InvalidIr,
     };
 }
 
 pub fn analyzeToIr(allocator: std.mem.Allocator, wgsl: []const u8) TranslateError!ir.Module {
-    return analyzeToIrWithDiagnostic(allocator, wgsl, &compatibility_diagnostic);
+    return (try analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = default_translation_robustness_config(),
+        .diagnostic = compatibilityDiagnostic(),
+    })).module;
 }
 
 pub fn analyzeToIrTimed(allocator: std.mem.Allocator, wgsl: []const u8) TranslateError!TimedAnalyzeResult {
-    return analyzeToIrTimedWithDiagnostic(allocator, wgsl, &compatibility_diagnostic);
+    return analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = default_translation_robustness_config(),
+        .diagnostic = compatibilityDiagnostic(),
+    });
 }
 
 pub fn analyzeToIrWithConfig(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config) TranslateError!ir.Module {
-    return analyzeToIrWithConfigWithDiagnostic(allocator, wgsl, config, &compatibility_diagnostic);
+    return (try analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = config,
+        .diagnostic = compatibilityDiagnostic(),
+    })).module;
 }
 
 pub fn analyzeToIrWithConfigTimed(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config) TranslateError!TimedAnalyzeResult {
-    return analyzeToIrWithConfigTimedWithDiagnostic(allocator, wgsl, config, &compatibility_diagnostic);
+    return analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = config,
+        .diagnostic = compatibilityDiagnostic(),
+    });
 }
 
 pub fn analyzeToIrWithConfigAndOverrides(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry) TranslateError!ir.Module {
-    return analyzeToIrWithConfigAndOverridesWithDiagnostic(allocator, wgsl, config, overrides, &compatibility_diagnostic);
+    return (try analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = config,
+        .diagnostic = compatibilityDiagnostic(),
+        .overrides = overrides,
+    })).module;
 }
 
 pub fn analyzeToIrWithConfigTimedAndOverrides(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry) TranslateError!TimedAnalyzeResult {
-    return analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator, wgsl, config, overrides, &compatibility_diagnostic);
+    return analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = config,
+        .diagnostic = compatibilityDiagnostic(),
+        .overrides = overrides,
+    });
+}
+
+// Compatibility entrypoints retain their existing signatures and diagnostic lifetime.
+pub fn analyzeToIrWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, diagnostic: *Diagnostic) TranslateError!ir.Module {
+    return (try analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = default_translation_robustness_config(),
+        .diagnostic = diagnostic,
+    })).module;
+}
+
+pub fn analyzeToIrTimedWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
+    return analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = default_translation_robustness_config(),
+        .diagnostic = diagnostic,
+    });
+}
+
+pub fn analyzeToIrWithConfigWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, diagnostic: *Diagnostic) TranslateError!ir.Module {
+    return (try analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = config,
+        .diagnostic = diagnostic,
+    })).module;
+}
+
+pub fn analyzeToIrWithConfigTimedWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
+    return analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = config,
+        .diagnostic = diagnostic,
+    });
+}
+
+pub fn analyzeToIrWithConfigAndOverridesWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!ir.Module {
+    return (try analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = config,
+        .diagnostic = diagnostic,
+        .overrides = overrides,
+    })).module;
+}
+
+pub fn analyzeToIrWithConfigTimedAndOverridesWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
+    return analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = config,
+        .diagnostic = diagnostic,
+        .overrides = overrides,
+    });
+}
+
+pub fn analyzeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, config: ir_transform_robustness.Config, overrides: []const ir.OverrideEntry, diagnostic: *Diagnostic) TranslateError!TimedAnalyzeResult {
+    return analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = config,
+        .diagnostic = diagnostic,
+        .overrides = overrides,
+    });
 }

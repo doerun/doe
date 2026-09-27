@@ -56,7 +56,12 @@ fn markFunctionResources(module_ir: *const ir.Module, function_id: usize, visite
 }
 
 pub fn extractBindingsForEntryPointWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, entry_point: []const u8, out: []BindingMeta, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
-    var module_ir = try analysis.analyzeToIrWithDiagnostic(allocator, wgsl, diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = analysis.default_translation_robustness_config(),
+        .diagnostic = diagnostic,
+    })).module;
     defer module_ir.deinit();
     return extractEntryPointBindings(allocator, &module_ir, entry_point, out);
 }
@@ -90,7 +95,12 @@ pub fn extractEntryPointBindings(allocator: std.mem.Allocator, module_ir: *const
 }
 
 pub fn extractBindingsWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []BindingMeta, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
-    var module_ir = try analysis.analyzeToIrWithDiagnostic(allocator, wgsl, diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = analysis.default_translation_robustness_config(),
+        .diagnostic = diagnostic,
+    })).module;
     defer module_ir.deinit();
     var count: usize = 0;
     for (module_ir.globals.items) |global| {

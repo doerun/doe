@@ -2302,15 +2302,15 @@
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
         "decision": "Keep",
-        "moduleSha256": "fb705a8fcf706a8a3d6bfa800c80546c59f1ce59d152afe502b6657e14fe59d2",
-        "reason": "Keep: SPIR-V control-flow emission selects the configured loop hint after inspecting emitted dot operations and the typed independent-element proof; instruction ownership remains with this emitter.",
-        "reviewer": "codex-independent-dot-loops/2026-09-20"
+        "moduleSha256": "713482a41f3b925ea6ede0984e008a06dfa905718d1b2c9ed87ad42b8c4314d5",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": {
         "decision": "Keep",
-        "moduleSha256": "92664ac007762c8cf4f53cd7eb7b17230a2ab9c692a6fdeb3a6002408c3dee8a",
-        "reason": "Keep: allocation-free SPIR-V function-emission analyses, including conservative local-array loop independence and emitted instruction inspection; no application, runtime scheduling, or benchmark policy ownership.",
-        "reviewer": "codex-independent-dot-loops/2026-09-20"
+        "moduleSha256": "6d738f0ad35dfd5295cae1d59ae1ee184ead4cc05b20b7e6ad595349ee763fdb",
+        "reason": "Keep: SPIR-V instruction cache, scalar construction and reference helpers; target-independent loop eligibility moved to its IR owner. Further cache/query separation remains review work.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_matrix.zig": {
         "decision": "Keep",
@@ -2512,15 +2512,15 @@
       },
       "src/compiler/wgsl/pipeline/analysis.zig": {
         "decision": "Keep",
-        "moduleSha256": "d15ecf46c5a8bec32ca8e487aea16c372fd6652c975e9c9c9ef14f90327ce5a3",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "836eb8f759138ab4d0f4cfe011da8597c8d376761d48216c82ae34400ca842fe",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/pipeline/binding_reflection.zig": {
         "decision": "Keep",
-        "moduleSha256": "ceb1aa1bb99349d5f5efa85d7f89f69db7ddbc66c8db81b6dcd25e255fde4bb7",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "77789fc77f64c12f0ade5d894f453945aaf3bc3edd4f417b177a64bbb014b727",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/pipeline/overrides.zig": {
         "decision": "Keep",
@@ -2530,33 +2530,33 @@
       },
       "src/compiler/wgsl/pipeline/translate_csl.zig": {
         "decision": "Keep",
-        "moduleSha256": "02a3fe678aac40e504bb768b0b9680ded597780d21cbcc8507dffc2d77434f61",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "f7bc1492854af93d865e2ff21c67a13223caf4ffc656a3046066c3556270500c",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/pipeline/translate_dxil.zig": {
         "decision": "Keep",
-        "moduleSha256": "ce8294c994ea5290ca28ca7b60a7186c62d81b3aaef46550c56e5801dc345175",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "037d07c73c2916bab505ff55d610b5b569d475ca733c761e51fc2f84b0752f7c",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/pipeline/translate_hlsl.zig": {
         "decision": "Keep",
-        "moduleSha256": "381e9e8b24b630278e23a8d10cf3ea74e752598ef8352ef50a681ea5a9bd0653",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "cf31c1678a4ee3618bc191484d8d5ca2e9602884ff21fb618229985eeeb7d74d",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/pipeline/translate_msl.zig": {
         "decision": "Keep",
-        "moduleSha256": "d6b8eacfe59c504628fb0a4fea503600815759ea4d5490faa08299a146ee39f7",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "a0bac182f9ea32f8ac881c9d03b90477199495895baf614593e6b23c1bed4f9d",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/pipeline/translate_spirv.zig": {
         "decision": "Keep",
-        "moduleSha256": "3605958633eff88d7176d5407816b4a40d766330ad56f26eaed0dc010fa4b99e",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-multi-dot-loops/2026-09-07"
+        "moduleSha256": "a4d992334d34c8f99d6368fdecb132ba8d6359c1c69671bce552326d15911b83",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/proof/dispatch_proof_loop_match.zig": {
         "decision": "Keep",
@@ -2596,15 +2596,15 @@
       },
       "src/compiler/wgsl/runtime/runtime_compute_translation.zig": {
         "decision": "Keep",
-        "moduleSha256": "48baad604f929cb5da210291cd499969f8dfb7027b8bceb4aaa44ff1480c763f",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "c23aa7417214c99c58d19d9afa21c5bed633b17f2915ae20cbca979cc56fc331",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/runtime/runtime_graphics_translation.zig": {
         "decision": "Keep",
-        "moduleSha256": "c136c0756b8d80b0b69e9db5f8ef91f635a3964cba28d3283c048dae8cb6b08b",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "c2682240e5314dd10e542fa375c76ed206b3e38cb6a977675cac8bc1a1468575",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/compiler/wgsl/runtime/runtime_translation_info.zig": {
         "decision": "Keep",
@@ -4264,9 +4264,9 @@
       },
       "src/compiler/wgsl/pipeline/diagnostic.zig": {
         "decision": "Keep",
-        "moduleSha256": "5b2baf9573212d831e2d327a6dd41996883153b6d80a5461abd13baec7d648c3",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "bcae40b9688077755f906bbbb854254f209d743f5ee2fd2d9be75f0216f61bee",
+        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       },
       "src/native/cache/doe_metal_library_cache.zig": {
         "decision": "Keep",
@@ -4363,6 +4363,12 @@
         "moduleSha256": "67f866def78316b7e50cf763c486c5dfb5691ff1e70761de35a35e40342a0a5f",
         "reviewer": "codex-metal-wait/2026-09-20",
         "reason": "Parse the strict versioned Metal command wait policy at build time and expose immutable timeout and polling bounds to its completion owner."
+      },
+      "src/compiler/wgsl/ir/ir_loop_independence.zig": {
+        "decision": "Keep",
+        "moduleSha256": "42980dbe3468cca24f617db4e1a63041e0db0198093dd2b346dccc79a87ac508",
+        "reason": "Keep: target-independent eligibility analysis for bounded independent local-array elements; SPIR-V policy and instruction inspection remain in emission.",
+        "reviewer": "codex-compiler-interface/2026-09-27"
       }
     },
     "linePolicy": {

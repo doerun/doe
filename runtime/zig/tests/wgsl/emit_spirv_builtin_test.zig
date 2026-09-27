@@ -6,7 +6,7 @@ const mod = @import("../../src/compiler/wgsl/mod.zig");
 const parser = @import("../../src/compiler/wgsl/frontend/parser.zig");
 const sema = @import("../../src/compiler/wgsl/frontend/sema.zig");
 const ir_builder = @import("../../src/compiler/wgsl/ir/ir_builder.zig");
-const loop_helpers = @import("../../src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig");
+const loop_independence = @import("../../src/compiler/wgsl/ir/ir_loop_independence.zig");
 
 const testing = std.testing;
 const allocator = testing.allocator;
@@ -85,6 +85,17 @@ test "spirv unrolls independent dot outputs but preserves recurrence alias and s
     inline for (cases) |case| {
         var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
         const source = prefix ++ case[0] ++ "output[0] = results[0] + total; }";
+        var analyzed = try mod.analyzeToIr(allocator, source);
+        defer analyzed.deinit();
+        var analyzed_loops: usize = 0;
+        for (analyzed.functions.items) |*function| {
+            for (function.stmts.items) |statement| {
+                if (statement != .loop_) continue;
+                analyzed_loops += 1;
+                try testing.expectEqual(case[1], loop_independence.independentIndexedLoop(&analyzed, function, statement.loop_));
+            }
+        }
+        try testing.expectEqual(@as(usize, 1), analyzed_loops);
         const len = try translateToSpirv(allocator, source, &binary);
         var offset: usize = 5;
         var unrolled: u32 = 0;
@@ -125,7 +136,7 @@ test "spirv independence analysis rejects pointer aliases before emission" {
         for (function.stmts.items) |statement| {
             if (statement != .loop_) continue;
             examined += 1;
-            try testing.expect(!loop_helpers.independentIndexedLoop(&module, function, statement.loop_));
+            try testing.expect(!loop_independence.independentIndexedLoop(&module, function, statement.loop_));
         }
     }
     try testing.expectEqual(@as(usize, 1), examined);

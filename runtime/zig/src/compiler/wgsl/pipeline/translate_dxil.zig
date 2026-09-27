@@ -11,7 +11,12 @@ pub const ToolchainDiscovery = emitter.ToolchainDiscovery;
 pub fn translateToDxilWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
-    var module_ir = try analysis.analyzeToIrWithDiagnostic(arena.allocator(), wgsl, diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = arena.allocator(),
+        .source = wgsl,
+        .robustness = analysis.default_translation_robustness_config(),
+        .diagnostic = diagnostic,
+    })).module;
 
     var emission = analysis.Diagnostic{};
     return emitter.emitWithDiagnostic(&module_ir, out, &emission) catch |err| {
@@ -33,7 +38,12 @@ pub fn translateToDxilWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const
 }
 
 pub fn translateToDxilWithToolchainConfigWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, config: emitter.ToolchainConfig, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
-    var module_ir = try analysis.analyzeToIrWithDiagnostic(allocator, wgsl, diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = analysis.default_translation_robustness_config(),
+        .diagnostic = diagnostic,
+    })).module;
     defer module_ir.deinit();
 
     var emission = analysis.Diagnostic{};

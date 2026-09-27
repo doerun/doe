@@ -99,6 +99,12 @@ work records. Keep compiler, backend, and host boundaries independently testable
 Reuse, refactoring, and agent assistance serve these milestones without adding
 unnecessary execution overhead.
 
+Exceptional execution and exceptional implementation are independent standards.
+Deliberate compiler and backend engineering is an active workstream: a change
+that materially clarifies ownership, dependencies, diagnostics, or extension
+points can be worthwhile without a speedup. Preserve behavior and check execution,
+build cost, and binary size through the existing style guide and review ledger.
+
 ## Explicit exclusions
 
 Doe does not build browser user interfaces, Flutter engine replacements, peer-to-peer compute protocols, or distributed cloud training clusters.

@@ -13,7 +13,12 @@ pub const CSLC_ENV_VAR = validation.CSLC_ENV_VAR;
 pub const CSLC_PATH_SENTINEL = validation.CSLC_PATH_SENTINEL;
 
 pub fn translateToCslWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, diagnostic: *analysis.Diagnostic) analysis.TranslateError!usize {
-    var module_ir = try analysis.analyzeToIrWithDiagnostic(allocator, wgsl, diagnostic);
+    var module_ir = (try analysis.analyze(.{
+        .allocator = allocator,
+        .source = wgsl,
+        .robustness = analysis.default_translation_robustness_config(),
+        .diagnostic = diagnostic,
+    })).module;
     defer module_ir.deinit();
 
     return emitter.emit(&module_ir, out) catch |err| {

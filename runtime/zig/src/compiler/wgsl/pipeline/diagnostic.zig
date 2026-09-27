@@ -186,3 +186,39 @@ pub const Diagnostic = struct {
         return self.last_error_column;
     }
 };
+
+// Legacy last-error views expire at the next compilation on the calling thread.
+threadlocal var compatibility_diagnostic = Diagnostic{};
+pub fn compatibilityDiagnostic() *Diagnostic {
+    return &compatibility_diagnostic;
+}
+pub fn clearLastError() void {
+    return compatibility_diagnostic.clearLastError();
+}
+pub fn lastErrorKind() ?TranslateError {
+    return compatibility_diagnostic.lastErrorKind();
+}
+pub fn lastErrorContext() []const u8 {
+    return compatibility_diagnostic.lastErrorContext();
+}
+pub fn lastErrorInfo() LastErrorInfo {
+    return compatibility_diagnostic.lastErrorInfo();
+}
+pub fn lastErrorStage() CompilationStage {
+    return compatibility_diagnostic.lastErrorStage();
+}
+pub fn lastErrorMessage() []const u8 {
+    return compatibility_diagnostic.lastErrorMessage();
+}
+pub fn lastErrorLine() u32 {
+    return compatibility_diagnostic.lastErrorLine();
+}
+pub fn lastErrorColumn() u32 {
+    return compatibility_diagnostic.lastErrorColumn();
+}
+pub fn setLastError(stage: CompilationStage, kind: TranslateError, source: ?[]const u8, loc: ?token.Token.Loc) void {
+    compatibility_diagnostic.setLastError(stage, kind, source, loc);
+}
+pub fn setLastErrorDetailPublic(stage: CompilationStage, kind: TranslateError, detail: []const u8) void {
+    compatibility_diagnostic.setLastErrorDetailPublic(stage, kind, detail);
+}

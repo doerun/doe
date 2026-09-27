@@ -639,6 +639,12 @@ Versioned job and receipt contracts and migration are documented in
 
 ## Refactor law
 
+Implementation quality is an active workstream alongside execution quality.
+Performance-neutral ownership and interface improvements may be accepted with
+preserved behavior and scoped regression observations. The existing Zig review
+ledger records examination, repairs, tests, and remaining lifecycle obligations;
+neither a structural gate nor a benchmark win substitutes for that review.
+
 Behavior-preserving refactors follow this evidence sequence:
 
 ```text
