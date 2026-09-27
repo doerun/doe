@@ -102,11 +102,13 @@
         "bench/executors/run-doppler-logit-divergence-correction.mjs",
         "bench/executors/run-doppler-kv-divergence.mjs",
         "bench/tools/generate_backend_workloads.py",
-        "bench/gates/tint_compiler_evidence_gate.py"
+        "bench/gates/tint_compiler_evidence_gate.py",
+        "bench/tools/render_implementation_peers.py"
       ],
       "docs": [
         "bench/README.md",
-        "docs/internal-tooling.md"
+        "docs/internal-tooling.md",
+        "docs/implementation-peers.md"
       ]
     },
     {

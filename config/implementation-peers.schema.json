@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "peers": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "compiler": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "sourceUrl": {
+                "format": "uri",
+                "pattern": "^https://",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "sourceUrl"
+            ],
+            "type": "object"
+          },
+          "evidencePaths": {
+            "items": {
+              "pattern": "^[^/\\\\]+(?:/[^/\\\\]+)*$",
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "integrationNote": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maintainers": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "nativeProviderId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "repositoryUrl": {
+            "format": "uri",
+            "pattern": "^https://",
+            "type": "string"
+          },
+          "trackingNote": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "trackingPaths": {
+            "items": {
+              "pattern": "^[^/\\\\]+(?:/[^/\\\\]+)*$",
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "upstreamSources": {
+            "items": {
+              "format": "uri",
+              "pattern": "^https://",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "maintainers",
+          "nativeProviderId",
+          "integrationNote",
+          "trackingNote",
+          "repositoryUrl",
+          "compiler",
+          "trackingPaths",
+          "evidencePaths",
+          "upstreamSources"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "schemaVersion": {
+      "const": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "peers"
+  ],
+  "title": "WebGPU implementation peers",
+  "type": "object"
+}

@@ -6,6 +6,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from bench.lib.implementation_peers import native_providers
+
 # -- Canonical benchmark surfaces -------------------------------------------
 
 SURFACE_SHORT_NAMES: dict[str, str] = {
@@ -117,9 +119,10 @@ class ComparisonViewMeta:
     providers: tuple[str, ...]
 
 
+_NATIVE_PROVIDERS = native_providers()
 PROVIDER_SETS: dict[str, tuple[str, ...]] = {
-    "backend_native_providers": ("doe", "dawn", "webkit", "wgpu-native"),
-    "direct_plan_providers": ("doe", "dawn", "webkit", "wgpu-native"),
+    "backend_native_providers": _NATIVE_PROVIDERS,
+    "direct_plan_providers": _NATIVE_PROVIDERS,
     "package_node_providers": ("doe", "node-webgpu"),
     "package_node_native_direct_providers": ("doe-direct", "node-webgpu"),
     "package_bun_providers": ("doe", "bun-webgpu"),

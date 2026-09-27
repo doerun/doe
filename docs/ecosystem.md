@@ -14,6 +14,11 @@ its actor inventory, scores, or benchmark results.
 
 ## Actors and independent scores
 
+Implementation-family identities and their tracking links live in the separate
+[implementation peers registry](implementation-peers.md). Its generated view
+does not assign actor scores or imply adoption. This registry continues to own
+actor evaluations, including evaluations of individual package bindings.
+
 A registry subject is an **actor** with an explicit type: project, package,
 company, foundation, or runtime. Projects and packages remain separate from
 their owning organizations so one company's repositories can have different

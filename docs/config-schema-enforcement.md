@@ -17,6 +17,24 @@ Required rules:
 The normative stage and gate order lives in [`process.md`](process.md).
 Machine-owned tool boundaries live in `config/tool-surfaces.json`.
 
+## Implementation peers and benchmark cube migration
+
+`config/implementation-peers.json` introduces the canonical implementation-family
+inventory and native provider IDs. Its schema is registered in the blocking
+schema gate, which also validates local references and generated documentation.
+Edit the registry and regenerate `docs/implementation-peers.md`; do not maintain
+a parallel peer inventory in prose or Python.
+
+Benchmark cube policy version 2 replaces the native provider list with
+`sourceRegistryPath`. A provider-set entry must contain either that reference
+or an explicit `providers` list; native membership must use the reference.
+Package provider sets retain explicit membership because bindings describe
+different integration surfaces. Cube consumers resolve the reference through
+`bench.lib.implementation_peers.resolve_provider_sets`; `compare_axes` derives
+native and direct-plan membership from the same registry. Existing profiles,
+runtime selection, timing, evidence and claim rules are unchanged. No historical
+benchmark receipt is migrated or requalified.
+
 ## Schema target registry migration
 
 Registry version 2 preserves fixed `schema` targets and adds `schemasByKind`

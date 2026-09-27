@@ -14,6 +14,11 @@ Use it when you need to answer:
 For the canonical axis language that powers promoted compare profiles, use
 this document and `config/compare-taxonomy.json`.
 
+Implementation-family identities and native provider membership come from
+[`config/implementation-peers.json`](../config/implementation-peers.json),
+with a generated [implementation peers view](implementation-peers.md).
+Membership does not create runnable profiles or qualify comparisons.
+
 ## Canonical source of truth
 
 The single source of truth for compare axis values is:

@@ -31,6 +31,10 @@ Unless the manifest says otherwise, these are contributor/operator tooling:
 `bench/gates/catscan_gate.py` is the internal component-charter validator and
 generated-index owner. It is a contributor gate, not a public package API.
 
+`python3 -m bench.tools.render_implementation_peers` regenerates the internal
+[implementation peers view](implementation-peers.md) from its canonical config.
+Its `--check` mode and the schema gate reject documentation drift.
+
 `bench/tools/program_execution_identity_receipt.py` is the internal
 source-to-backend execution receipt builder and verifier. Its optional blocking
 gate rebuilds the receipt from every referenced byte; the tool is not an npm

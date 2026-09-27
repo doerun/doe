@@ -6,6 +6,11 @@ history remains in the archive.
 
 ## Current boundary
 
+The [implementation peers view](../implementation-peers.md) is generated from
+the canonical registry used for native provider membership. Inventory, runnable
+profiles, ecosystem scores and retained comparison evidence remain distinct;
+this metadata change promotes no new execution or release coverage.
+
 The failed-flush shutdown correction and bounded compute-reuse experiment are
 indexed at
 [`reports/benchmarks/amd-vulkan/20260926-shutdown-reuse/README.md`](../../reports/benchmarks/amd-vulkan/20260926-shutdown-reuse/README.md).

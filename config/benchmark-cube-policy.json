@@ -99,12 +99,7 @@
   "providerSets": [
     {
       "id": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn",
-        "webkit",
-        "wgpu-native"
-      ]
+      "sourceRegistryPath": "config/implementation-peers.json"
     },
     {
       "id": "package_node_providers",
@@ -121,7 +116,7 @@
       ]
     }
   ],
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "surfaces": [
     {
       "defaultMissingStatus": "unimplemented",

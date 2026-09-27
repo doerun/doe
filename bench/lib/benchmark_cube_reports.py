@@ -13,6 +13,7 @@ from bench.lib import output_paths
 from bench.lib import report_conformance
 from bench.lib import compare_axes as compare_axes_mod
 from bench.lib.bench_utils import load_json, load_json_object
+from bench.lib.implementation_peers import resolve_provider_sets
 from native_compare_modules import timing_sanity
 from native_compare_modules.reporting import safe_float
 
@@ -103,6 +104,7 @@ def validate_backend_report_shape(payload: dict[str, Any], *, report_label: str)
 def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
     payload = load_json_object(policy_path)
     validate_schema(root / "config" / "benchmark-cube-policy.schema.json", payload)
+    provider_sets = resolve_provider_sets(payload.get("providerSets", []), root)
     host_profiles = {item["id"]: item for item in payload["hostProfiles"]}
     raw_comparison_views = payload.get("comparisonViews") or payload["providerPairs"]
     comparison_views = {item["id"]: item for item in raw_comparison_views}
@@ -151,6 +153,7 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
 
     return {
         "raw": payload,
+        "providerSets": provider_sets,
         "hostProfiles": host_profiles,
         "products": products,
         "comparisonViews": comparison_views,

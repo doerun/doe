@@ -23,6 +23,7 @@ import jsonschema
 
 from bench.lib.bench_utils import detect_repo_root, load_json
 from bench.lib.python_import_boundaries import validate_python_import_boundaries
+from bench.lib.implementation_peers import validate_peer_document
 
 
 @dataclass(frozen=True)
@@ -409,6 +410,7 @@ def main() -> int:
         failures.extend(validate_target(root, target))
     failures.extend(validate_backend_lane_map_invariants(root))
     failures.extend(validate_python_import_boundaries(root))
+    failures.extend(validate_peer_document(root))
 
     if failures:
         print("FAIL: schema gate")

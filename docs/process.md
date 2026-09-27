@@ -669,6 +669,10 @@ remain only while an exercised consumer requires them.
 - Domain thresholds, ABI values, retry counts, sizes, and timing policy live in
   named constants or versioned config, with one source of truth.
 - Generated guides and views are checked against their canonical registries.
+- Implementation peer identities and native provider membership come from
+  `config/implementation-peers.json`. The schema gate checks its references and
+  generated documentation; comparison profiles and evidence retain their own
+  authority over runnable coverage and qualification.
 - Current commands belong in the operator runbook or generated help, not in
   this process law.
 - Toolchain upgrades follow `docs/upgrade-policy.md` and must regenerate and

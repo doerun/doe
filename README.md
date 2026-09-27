@@ -136,6 +136,7 @@ status table, and Chromium remains diagnostic.
 - [Component authority index](docs/component-index.md)
 - [Product strategy](docs/thesis.md)
 - [Architecture](docs/architecture.md)
+- [WebGPU implementation peers](docs/implementation-peers.md)
 - [Process and release law](docs/process.md)
 - [Support matrix](docs/doe-support-matrix.md)
 - [Current status](docs/status.md)
