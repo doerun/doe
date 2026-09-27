@@ -29,6 +29,68 @@ const REUSE_BUFFER_BYTES = 4 * @sizeOf(u32);
 const DEVICE_LOCAL_FAILURE_BYTES = 64 * 1024;
 const ALIGNED_STORAGE_BINDING_OFFSET: u64 = 256;
 
+test "Vulkan inline index allocations survive submission and preserve rendered pixels" {
+    const texture_types = @import("../../src/contracts/model/model_texture_value_types.zig");
+    const render_types = @import("../../src/contracts/model/model_render_types.zig");
+    const texture_commands = @import("../../src/backend/vulkan/vk_texture_commands.zig");
+    const vertex_source =
+        \\@vertex fn main(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
+        \\    var p = vec2f(-1.0, -1.0);
+        \\    if (i == 1u) { p = vec2f(3.0, -1.0); }
+        \\    if (i == 2u) { p = vec2f(-1.0, 3.0); }
+        \\    return vec4f(p, 0.0, 1.0);
+        \\}
+    ;
+    const fragment_source = "@fragment fn main() -> @location(0) vec4f { return vec4f(1.0, 0.0, 0.0, 1.0); }";
+    const target_handle = 980;
+    const readback_handle = 981;
+    const extent = 4;
+    const row_bytes = 256;
+    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
+        error.UnsupportedFeature => return error.SkipZigTest,
+        else => return err,
+    };
+    defer rt.deinit();
+    var vertex: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
+    var fragment: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
+    const vertex_length = try compiler.translateToSpirv(std.testing.allocator, vertex_source, &vertex);
+    const fragment_length = try compiler.translateToSpirv(std.testing.allocator, fragment_source, &fragment);
+    const target = try resources.ensure_texture_resource(&rt, .{
+        .handle = target_handle,
+        .width = extent,
+        .height = extent,
+        .format = texture_types.WGPUTextureFormat_RGBA8Unorm,
+        .usage = texture_types.WGPUTextureUsage_RenderAttachment | texture_types.WGPUTextureUsage_CopySrc,
+    });
+    const readback = try resources.ensure_compute_buffer(&rt, readback_handle, row_bytes * extent, true);
+    for ([_]render_types.RenderIndexData{ .{ .uint16 = &.{ 0, 1, 2 } }, .{ .uint32 = &.{ 0, 1, 2 } } }) |indices| {
+        _ = try rt.run_render_draw(.{
+            .draw_count = 1,
+            .target_handle = target_handle,
+            .target_width = extent,
+            .target_height = extent,
+            .index_data = indices,
+            .vertex_spirv = std.mem.bytesAsSlice(u32, vertex[0..vertex_length]),
+            .fragment_spirv = std.mem.bytesAsSlice(u32, fragment[0..fragment_length]),
+        });
+        rt.recorded_submit_replay_active = true;
+        _ = try texture_commands.record_texture_to_buffer(&rt, target, readback, .{
+            .offset = 0,
+            .bytes_per_row = row_bytes,
+            .rows_per_image = extent,
+            .mip = 0,
+            .width = extent,
+            .height = extent,
+            .depth_or_layers = 1,
+        });
+        _ = try rt.flush_queue();
+        const pixels: [*]const u8 = @ptrCast(readback.mapped.?);
+        for (0..extent) |y| for (0..extent) |x| {
+            try std.testing.expectEqualSlices(u8, &.{ 255, 0, 0, 255 }, pixels[y * row_bytes + x * 4 ..][0..4]);
+        };
+    }
+}
+
 test "Vulkan deferred fence and timeline submissions preserve dependent results" {
     for ([_]@import("../../src/contracts/backend.zig").DeferredSubmissionSyncPolicy{ .require_fence_pool, .prefer_timeline_semaphore }) |policy| {
         var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {

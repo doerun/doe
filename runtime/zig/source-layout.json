@@ -1348,9 +1348,9 @@
       },
       "src/backend/vulkan/vk_render.zig": {
         "decision": "Keep",
-        "moduleSha256": "19d1788f87b0c3b3b20b039443345d7df75fa3be9f7998050cbf0009a3875d46",
-        "reason": "Keep: Render recording delegates timeline submission acceptance to the synchronization owner.",
-        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+        "moduleSha256": "c87f2460656b75cede84bf58683a2bad48b01a9d7885ad6d6192e036d22c6b83",
+        "reason": "Keep: render state owns inline index storage through submission; typed retirement dependency prevents failed submit/wait from unwinding GPU references before terminal completion. Other rendering findings remain open.",
+        "reviewer": "codex-render-lifetime/2026-09-27"
       },
       "src/backend/vulkan/vk_render_pipeline.zig": {
         "decision": "Keep",
@@ -1402,9 +1402,9 @@
       },
       "src/backend/vulkan/vk_sync.zig": {
         "decision": "Keep",
-        "moduleSha256": "9ce236d8725db3ae3276a277f19da0c9b80bead18d692808629caf756970cbe7",
-        "reason": "Keep: Fence and timeline owners handle native submission acceptance and completion; no independent queue-policy authority.",
-        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+        "moduleSha256": "9b4156b530f505b0a1a92a956bcb09ad77730ba4f69373870438c50488e23c51",
+        "reason": "Keep: existing synchronization and retirement owner; expose the existing allocation-rejection predicate for render submission cleanup and retry without changing synchronization policy.",
+        "reviewer": "codex-render-lifetime/2026-09-27"
       },
       "src/backend/vulkan/vk_texture_commands.zig": {
         "decision": "Keep",

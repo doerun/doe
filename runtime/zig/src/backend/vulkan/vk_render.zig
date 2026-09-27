@@ -8,6 +8,7 @@ const vk_sync = @import("vk_sync.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
+const BackendNativeError = @import("../../contracts/execution.zig").BackendNativeError;
 const model_resource_types = @import("../../contracts/model/model_resource_types.zig");
 const model_gpu_types = @import("../../contracts/model/model_texture_value_types.zig");
 const model_render_types = @import("../../contracts/model/model_render_types.zig");
@@ -49,6 +50,7 @@ pub const RenderState = struct {
     target_format: u32 = 0,
     owns_render_target: bool = false,
     owns_depth_stencil_target: bool = false,
+    index_buffer: ?vk_resources.ComputeBuffer = null,
 };
 
 fn destroyVkHandle(device: c.VkDevice, handle: *u64, destroy_fn: anytype) void {
@@ -59,6 +61,12 @@ fn destroyVkHandle(device: c.VkDevice, handle: *u64, destroy_fn: anytype) void {
 }
 
 pub fn release_render_state(device: c.VkDevice, state: *RenderState) void {
+    if (state.index_buffer) |buffer| {
+        if (buffer.mapped != null) c.vkUnmapMemory(device, buffer.memory);
+        c.vkDestroyBuffer(device, buffer.buffer, null);
+        c.vkFreeMemory(device, buffer.memory, null);
+        state.index_buffer = null;
+    }
     destroyVkHandle(device, &state.descriptor_pool, c.vkDestroyDescriptorPool);
     state.descriptor_set = VK_NULL_U64;
     destroyVkHandle(device, &state.descriptor_set_layout, c.vkDestroyDescriptorSetLayout);
@@ -83,6 +91,7 @@ pub fn execute_render_draw(
     self: anytype,
     cmd: model_render_types.RenderDrawCommand,
 ) !DispatchMetrics {
+    try self.retirement.requireActive();
     const draw_count = if (cmd.draw_count > 0) cmd.draw_count else 1;
     const target_width = if (cmd.target_width > 0) cmd.target_width else model_render_types.DEFAULT_RENDER_TARGET_WIDTH;
     const target_height = if (cmd.target_height > 0) cmd.target_height else model_render_types.DEFAULT_RENDER_TARGET_HEIGHT;
@@ -128,6 +137,7 @@ pub fn execute_render_clear(
     self: anytype,
     cmd: model_render_types.RenderDrawCommand,
 ) !DispatchMetrics {
+    try self.retirement.requireActive();
     const target_width = if (cmd.target_width > 0) cmd.target_width else model_render_types.DEFAULT_RENDER_TARGET_WIDTH;
     const target_height = if (cmd.target_height > 0) cmd.target_height else model_render_types.DEFAULT_RENDER_TARGET_HEIGHT;
     const vk_format = try vk_resources.texture_format_to_vk(cmd.target_format);
@@ -706,7 +716,7 @@ fn record_and_submit_draws(
             c.vkCmdDrawIndirect(self.primary_command_buffer, indirect_vk_buf, cmd.indirect_offset, 1, c.VK_DRAW_INDIRECT_COMMAND_STRIDE);
         }
     } else if (cmd.index_data != null or cmd.index_binding != null or cmd.index_count != null) {
-        try record_indexed_draws(self, cmd, draw_count);
+        try record_indexed_draws(self, state, cmd, draw_count);
     } else {
         var draw_index: u32 = 0;
         while (draw_index < draw_count) : (draw_index += 1) {
@@ -806,8 +816,24 @@ fn submit_clear_and_wait(self: anytype, surface_sync: SurfaceSubmitSync) !void {
         .pSignalSemaphores = if (signal_semaphore != VK_NULL_U64) @ptrCast(&signal_semaphore) else null,
     };
     try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
-    try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+    try submit_render_with_fence(&self.retirement, self.device, self.queue, &submit_info, self.fence);
+    errdefer |err| retire_failed_submission(&self.retirement, self.device, err);
     try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+}
+
+fn submit_render_with_fence(retirement: *vk_sync.Retirement, device: c.VkDevice, queue: c.VkQueue, info: *const c.VkSubmitInfo, fence: c.VkFence) BackendNativeError!void {
+    const result = c.vkQueueSubmit(queue, 1, @ptrCast(info), fence);
+    c.check_vk(result) catch |err| {
+        if (!vk_sync.submissionRejected(result)) retire_failed_submission(retirement, device, err);
+        return err;
+    };
+}
+
+fn retire_failed_submission(retirement: *vk_sync.Retirement, device: c.VkDevice, err: BackendNativeError) void {
+    // These commands own stack-scoped attachments and index storage. An error
+    // cannot unwind that scope until native completion or device loss permits it.
+    retirement.failed(err);
+    retirement.waitForDestruction(device);
 }
 
 fn submit_and_wait(self: anytype) !void {
@@ -828,17 +854,26 @@ fn submit_and_wait(self: anytype) !void {
         submit_info.pNext = @ptrCast(&tsi.timeline_info);
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
-        try tsi.submit(&self.timeline_semaphore, self.queue, &submit_info);
+        tsi.submit(&self.timeline_semaphore, self.queue, &submit_info) catch |err| {
+            // Timeline submission publishes its reserved value only when work
+            // may have reached the queue; allocation rejection permits retry.
+            if (self.timeline_semaphore.current_value == tsi.signal_value)
+                retire_failed_submission(&self.retirement, self.device, err);
+            return err;
+        };
+        errdefer |err| retire_failed_submission(&self.retirement, self.device, err);
         try self.timeline_semaphore.wait(self.device, tsi.signal_value);
     } else {
         try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
-        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+        try submit_render_with_fence(&self.retirement, self.device, self.queue, &submit_info, self.fence);
+        errdefer |err| retire_failed_submission(&self.retirement, self.device, err);
         try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
     }
 }
 
 fn record_indexed_draws(
     self: anytype,
+    state: *RenderState,
     cmd: model_render_types.RenderDrawCommand,
     draw_count: u32,
 ) !void {
@@ -876,7 +911,7 @@ fn record_indexed_draws(
         index_buffer_size,
         c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
     );
-    defer vk_resources.destroy_host_visible_buffer(self, index_buffer);
+    state.index_buffer = index_buffer;
 
     // Copy index data
     if (index_buffer.mapped) |raw| {
@@ -916,6 +951,7 @@ pub fn execute_render_bundles(
     color_format: u32,
     sample_count: u32,
 ) !DispatchMetrics {
+    try self.retirement.requireActive();
     if (bundles.len == 0) return .{};
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0)
         _ = try vk_upload.flush_queue(self);

@@ -82,7 +82,7 @@ test "confirmed device loss authorizes retirement without successful execution" 
     try std.testing.expectEqual(.device_lost, retirement.phase);
 }
 
-fn submissionRejected(result: c.VkResult) bool {
+pub fn submissionRejected(result: c.VkResult) bool {
     return result == errors.VK_ERROR_OUT_OF_HOST_MEMORY or result == errors.VK_ERROR_OUT_OF_DEVICE_MEMORY;
 }
 
