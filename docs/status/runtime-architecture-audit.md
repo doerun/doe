@@ -21,6 +21,14 @@ batch. Changes to this planning protocol/checker reopen historical
 coverage under the existing hash rules; they do not erase evidence or authorize
 bulk renewal. Subsequent priority-only plan edits leave review hashes unchanged.
 
+The [planning-driven render ownership repair](../../reports/maintenance/20260927-quality-planning/README.md)
+retains inline index allocations through submission and render state through
+failed waiting until terminal completion. Retained predecessor failures, physical
+pixel checks, fence/timeline injection, rejected-submission retry and native/package
+checks support the repair. Bundle replay failure propagation and other render
+admission findings remain open; the bounded plan selects that next correction.
+These are local correctness diagnostics, not graphics or release qualification.
+
 The [compiler and allocation ownership checkpoint](../../reports/maintenance/20260927-implementation-quality/README.md)
 consolidates internal analysis requests and explicit diagnostics, moves conservative
 loop eligibility to IR, and gives completed Vulkan allocation retention a typed

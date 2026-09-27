@@ -25010,6 +25010,66 @@
       "targets": [
         "src/backend/d3d12/d3d12_native_runtime.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "a0a8be17c06b50f1b9a58ba089cbbadcd6895b8c236dfccceed5d86e389155f2"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_resources.zig",
+          "sha256": "7e91013282097030b03a3a49b46fd57126a80a6d752edcb07730d72be4933124"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_sync.zig",
+          "sha256": "9b4156b530f505b0a1a92a956bcb09ad77730ba4f69373870438c50488e23c51"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "2a91cc05c176a768999c6d8707fe75eb9f2c0282f2d9aa17dc9a1f44ad7536f3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260927-quality-planning/raw-evidence.tar.gz",
+          "sha256": "2170fb6714fe74ecd2a2dae7b878e006a1b2ab8ef89a0a5d9b0aa0db09af2401"
+        },
+        {
+          "path": "reports/maintenance/20260927-quality-planning/render-final.log",
+          "sha256": "a5d50ba67e67595ef4130dbac832807770e4a968b78d9e060b3060642b0b7e4f"
+        },
+        {
+          "path": "reports/maintenance/20260927-quality-planning/render-pinned-baseline.log",
+          "sha256": "36bae401d99d03465f633356a80b3677bb7c98a043a9fc0e65723189c0f781e1"
+        },
+        {
+          "path": "reports/maintenance/20260927-quality-planning/runtime-suite.log",
+          "sha256": "78644bf85e00c810db97d904b9c31c0ae63a0a430bc867eb55fe8c1990a51620"
+        }
+      ],
+      "findings": [
+        "Bundle replay errors are still logged and skipped in execute_render_bundles, allowing rejected work to return success. Reproduce and propagate rejection before submission.",
+        "Draw path surface acquire/signal synchronization, in-pass query reset placement, attachment/sample admission and indirect/index ranges remain unresolved from the prior render review."
+      ],
+      "inputHash": "fee6f87cad57e2d43a8d3e1da61fb8c0a937ca5ec2b3704165b710f1bec6debd",
+      "level": "file",
+      "nextAction": "Execute the bounded vulkan_render_error_admission batch: reproduce bundle replay rejection reported as success, repair propagation and prove abandoned recording cleanup; preserve the other findings separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "RenderState now owns inline index buffers until operation cleanup instead of freeing them after recording. Both index formats produce independently expected physical pixels; a destruction-before-submit guard rejects the predecessor.",
+        "Failed fence and timeline waits retain render attachments until the existing retirement owner resolves completion or device loss. The identical physical fault probe fails retained ownership on the predecessor and passes on the candidate; rejected allocation submissions still permit retry."
+      ],
+      "reviewId": "vulkan_render_ownership_20260927",
+      "reviewedAt": "2026-09-27T23:38:02.685466+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "b3f4adc684dc5aaa64695dd8cbb6a71d962bbd42",
+      "status": "in_progress",
+      "summary": "Reconfirmed retained inline-index and failed-completion findings through current render entrypoints, resource cleanup, fence/timeline submission and retirement dependencies. This is a scoped execution-path continuation; remaining render admission, presentation and bundle semantics remain unfinished.",
+      "supersedes": "vulkan_batch_20260920_29_vk_render",
+      "targets": [
+        "src/backend/vulkan/vk_render.zig"
+      ]
     }
   ],
   "schemaVersion": 1

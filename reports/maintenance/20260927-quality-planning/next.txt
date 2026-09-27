@@ -1,0 +1,38 @@
+Zig quality work plan (planning only; coverage remains in queue.tsv)
+Source: config/zig-review-plan.json
+
+active: vulkan_render_error_admission
+Outcome: Propagate render-bundle replay rejection before submission and preserve cleanup of abandoned recording.
+Why: The planning-driven index and failed-wait ownership repair is complete. The retained render review also reports replay errors being logged and skipped; correctness findings remain ahead of emitter cohesion.
+Next: Reproduce a rejected render bundle returning success through execute_render_bundles; trace recording abandonment and subsequent reuse, then repair error propagation in the existing owner.
+Finding history: vulkan_render_ownership_20260927
+  file:src/backend/vulkan/vk_render.zig: in_progress (latest: vulkan_render_ownership_20260927)
+    Retained finding; reconfirm if stale: Bundle replay errors are still logged and skipped in execute_render_bundles, allowing rejected work to return success. Reproduce and propagate rejection before submission.
+    Retained finding; reconfirm if stale: Draw path surface acquire/signal synchronization, in-pass query reset placement, attachment/sample admission and indirect/index ranges remain unresolved from the prior render review.
+  file:src/runtime/render/render_bundle.zig: pending (latest: none)
+Acceptance:
+  - The rejected bundle returns its original typed error and submits no partial commands.
+  - Abandoned recording releases owned resources safely; a following valid render operation still succeeds.
+  - Run focused failure injection, independent render-output checks, and zig build test; retain exact source and native-library identities.
+  - Append the disposition to the existing review ledger without granting whole-file or directory completion.
+Stop: Stop after one rejection/cleanup correction with original-failure reproduction and successful ordinary rendering checks; do not expand into unrelated attachment or presentation redesign.
+Environment: Linux AMD/Vulkan for physical acceptance; host-only inspection does not qualify GPU lifetime behavior.
+
+ready: spirv_function_ownership
+Outcome: Give SPIR-V function emission explicit instruction-cache ownership and keep target-independent reference queries with IR.
+Why: The preceding compiler batch removed loop eligibility from the helper file but retained unrelated cache, query, and scalar responsibilities. Continue that concrete finding before opening another compiler reorganization.
+Next: Trace cache creation, lookup, invalidation and teardown through function emission; compare root-reference queries with ir_query before choosing the smallest owner change.
+Finding history: spirv_helper_cohesion_20260927
+  file:src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig: stale (latest: spirv_helper_cohesion_20260927)
+    Retained finding; reconfirm if stale: Instruction-cache ownership, reference queries and scalar construction still share a helper surface and require examination with their consumers before selecting narrower owners.
+  file:src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig: pending (latest: none)
+  file:src/compiler/wgsl/ir/ir_query.zig: pending (latest: none)
+Acceptance:
+  - Name each changed responsibility and its caller dependencies; retain ownership on allocation failure and preserve cache invalidation boundaries.
+  - Run focused alias, mutation, control-flow and allocation-failure tests plus zig build test-wgsl.
+  - Compare selected emitted bytes against the pinned predecessor; retain compiler timing, build-cost and binary-size observations without requiring a speedup.
+  - Append examined file reviews and unresolved findings; do not certify containing directories from this batch.
+Stop: Stop after one cohesive ownership correction and its evidence, or a documented decision to retain the current owner based on complete inspection. Do not expand into a pass framework or blanket emitter rewrite.
+Environment: Host Zig toolchain; no physical GPU required for compiler inspection and emission checks.
+
+A batch disposition does not complete its files or parent reviews.

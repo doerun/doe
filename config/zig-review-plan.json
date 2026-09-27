@@ -23,7 +23,7 @@
         }
       ],
       "findingReviewIds": [
-        "vulkan_batch_20260920_29_vk_render"
+        "vulkan_render_ownership_20260927"
       ],
       "nextAction": "Reproduce a rejected render bundle returning success through execute_render_bundles; trace recording abandonment and subsequent reuse, then repair error propagation in the existing owner.",
       "acceptance": [

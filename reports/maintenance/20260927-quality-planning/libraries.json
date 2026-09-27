@@ -1,0 +1,16 @@
+[
+  {
+    "arm": "baseline",
+    "path": "/tmp/doe-quality-20260927/candidate/lib/libwebgpu_doe.so",
+    "sha256": "4bc3393ad35798a37bb8b2acb82f190bcf8b597190dc84b759f3eee7fd3c4e2f",
+    "bytes": 11686816,
+    "exportNamesAndTypesSha256": "9f501794a0e8da69492f0bb9bae37ba6c03a70c4233c861cf53a74b907b87de5"
+  },
+  {
+    "arm": "candidate",
+    "path": "/tmp/doe-zig-quality-plan/candidate/lib/libwebgpu_doe.so",
+    "sha256": "e81e2fd99727fc622ba6dc647a4d53b30fb8be49a7f780e9520c4d8d8cadb5b3",
+    "bytes": 11700504,
+    "exportNamesAndTypesSha256": "9f501794a0e8da69492f0bb9bae37ba6c03a70c4233c861cf53a74b907b87de5"
+  }
+]

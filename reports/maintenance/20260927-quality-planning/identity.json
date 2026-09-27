@@ -1,0 +1,55 @@
+{
+  "classification": "local quality and correctness diagnostics; not release qualification",
+  "predecessorCommit": "d8a273512a3c3eea34b6e7008205954f75273d74",
+  "planningCommit": "fc5d7b7c41ba408032b468c8f930e7a180be5147",
+  "runtimeCommit": "b3f4adc684dc5aaa64695dd8cbb6a71d962bbd42",
+  "toolchain": {
+    "zig": "0.15.2",
+    "node": "v22.22.1"
+  },
+  "sourceSha256": {
+    "runtime/zig/source-layout.json": "edf04ec9d8dad18e6c6a23079eb128fc42a7e12c3d6505172b5871feaaccf27b",
+    "runtime/zig/src/backend/vulkan/vk_render.zig": "c87f2460656b75cede84bf58683a2bad48b01a9d7885ad6d6192e036d22c6b83",
+    "runtime/zig/src/backend/vulkan/vk_sync.zig": "9b4156b530f505b0a1a92a956bcb09ad77730ba4f69373870438c50488e23c51",
+    "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig": "2a91cc05c176a768999c6d8707fe75eb9f2c0282f2d9aa17dc9a1f44ad7536f3"
+  },
+  "outcomes": {
+    "planningTestsPassed": 18,
+    "runtimeTestsPassed": 2322,
+    "runtimeTestsSkipped": 11,
+    "predecessorCompletionProbe": {
+      "passed": 72,
+      "failed": 6,
+      "skipped": 0
+    },
+    "candidateCompletionProbe": {
+      "passed": 78,
+      "failed": 0,
+      "skipped": 0
+    },
+    "indexedPixelAndLifetimeGuard": "predecessor guard fails before invalid GPU execution; final guarded and ordinary physical tests pass",
+    "schemaGate": "PASS",
+    "packageSmoke": "exit 0; expected doubled vector output",
+    "nativeRecordedComputeTextureFixture": "exit 0"
+  },
+  "limitations": [
+    "Submission wait and device-loss results are injected after actual native work; no hardware reset.",
+    "Surface-semaphore path shares checked submission but was not independently failure-injected.",
+    "No application performance or build-time comparison; library size and exports retained only.",
+    "Remaining rendering admission/replay findings are unclosed in the ledger.",
+    "Plan/checker protocol updates invalidate older coverage under the existing guidance hash.",
+    "No physical Metal, D3D12 or Chromium execution."
+  ],
+  "evidenceSha256": {
+    "README.md": "f45a8e890056842b4a62781e103656412952ee593edf0d872d77fe21b08d13f6",
+    "doc-links.log": "c3a83593d26384c7ba197fc59d784f63c97d392d7d404bd5e99e5f1e4a48395d",
+    "libraries.json": "64da43c3a35c9a029479bea2e72c6b1931223cd7b595265d2b5baed0539a2bb6",
+    "next.txt": "53a1f2a9fdee501da1ebfab7661434b1b318d831ffcdeaa50f45a4620e70c0bb",
+    "planning-tests.log": "9c44f0d101214ae973764e042c82455ef49059dbbb3d83feb5c03780b1be0870",
+    "raw-evidence.tar.gz": "2170fb6714fe74ecd2a2dae7b878e006a1b2ab8ef89a0a5d9b0aa0db09af2401",
+    "render-final.log": "a5d50ba67e67595ef4130dbac832807770e4a968b78d9e060b3060642b0b7e4f",
+    "render-pinned-baseline.log": "36bae401d99d03465f633356a80b3677bb7c98a043a9fc0e65723189c0f781e1",
+    "review-check.log": "4c26e6668afce6074faa13f0c7e7b6947b3e7bc3a207ce31235e43db2b49bdff",
+    "runtime-suite.log": "78644bf85e00c810db97d904b9c31c0ae63a0a430bc867eb55fe8c1990a51620"
+  }
+}

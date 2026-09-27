@@ -126,7 +126,7 @@ file	src/backend/vulkan/vk_metrics.zig	stale	vulkan_batch_20260920_25_vk_metrics
 file	src/backend/vulkan/vk_pipeline.zig	stale	vulkan_batch_20260920_26_vk_pipeline		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_pipeline_cache.zig	stale	vulkan_batch_20260920_27_vk_pipeline_cache		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_pipeline_cache_persistent.zig	stale	vulkan_batch_20260920_28_vk_pipeline_cache_persistent		Resolve the named findings with owner-specific failure and integration tests before verification.
-file	src/backend/vulkan/vk_render.zig	stale	vulkan_batch_20260920_29_vk_render		Resolve the named findings with owner-specific failure and integration tests before verification.
+file	src/backend/vulkan/vk_render.zig	in_progress	vulkan_render_ownership_20260927		Execute the bounded vulkan_render_error_admission batch: reproduce bundle replay rejection reported as success, repair propagation and prove abandoned recording cleanup; preserve the other findings separately.
 file	src/backend/vulkan/vk_render_pipeline.zig	stale	vulkan_batch_20260920_30_vk_render_pipeline		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_resources.zig	stale	vulkan_resource_owner_20260927		Read remaining texture/sampler operations, trace render use and command retention, then select a live-resource owner with explicit dependencies.
 file	src/backend/vulkan/vk_runtime_probe_ops.zig	stale	vulkan_batch_20260920_32_vk_runtime_probe_ops		Resolve the named findings with owner-specific failure and integration tests before verification.
