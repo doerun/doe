@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bounded Zig quality work plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "maxActiveBatches", "maxReadyBatches", "batches"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "maxActiveBatches": {"type": "integer", "minimum": 1},
+    "maxReadyBatches": {"type": "integer", "minimum": 0},
+    "batches": {"type": "array", "items": {"$ref": "#/$defs/batch"}}
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "texts": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "scope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["level", "targets"],
+      "properties": {
+        "level": {"enum": ["file", "directory", "within_directory", "cross_directory", "system"]},
+        "targets": {"$ref": "#/$defs/texts"}
+      }
+    },
+    "batch": {
+      "type": "object", "additionalProperties": false,
+      "required": ["batchId", "state", "objective", "rationale", "scopes", "findingReviewIds", "nextAction", "acceptance", "stopCondition", "requiredEnvironment"],
+      "properties": {
+        "batchId": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "state": {"enum": ["active", "ready"]},
+        "objective": {"$ref": "#/$defs/text"},
+        "rationale": {"$ref": "#/$defs/text"},
+        "scopes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/scope"}},
+        "findingReviewIds": {"$ref": "#/$defs/texts"},
+        "nextAction": {"$ref": "#/$defs/text"},
+        "acceptance": {"$ref": "#/$defs/texts"},
+        "stopCondition": {"$ref": "#/$defs/text"},
+        "requiredEnvironment": {"$ref": "#/$defs/texts"}
+      }
+    }
+  }
+}

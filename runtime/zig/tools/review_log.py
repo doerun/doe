@@ -25,6 +25,8 @@ RUNTIME = "runtime/zig"
 LOG = RUNTIME + "/reviews/log.json"
 SCHEMA = "config/zig-review-log.schema.json"
 QUEUE = RUNTIME + "/reviews/queue.tsv"
+PLAN = "config/zig-review-plan.json"
+PLAN_SCHEMA = "config/zig-review-plan.schema.json"
 GUIDANCE = (
     "AGENTS.md", "GOALS.md", "docs/architecture.md", "docs/process.md",
     RUNTIME + "/STYLE.md", RUNTIME + "/reviews/README.md", SCHEMA,
@@ -281,12 +283,90 @@ def bound_files(repo: Path, paths: list[str]) -> list[dict[str, str]]:
     ]
 
 
+def validate_plan(
+    repo: Path, plan: dict[str, Any],
+    scopes: dict[Scope, tuple[Scope, ...]], reviews: list[dict[str, Any]],
+) -> None:
+    """Validate scheduling references without granting coverage or changing history."""
+    Draft202012Validator(load_json_strict(repo / PLAN_SCHEMA)).validate(plan)
+    review_ids = {review["reviewId"] for review in reviews}
+    batch_ids: set[str] = set()
+    counts = {"active": 0, "ready": 0}
+    for batch in plan["batches"]:
+        batch_id = batch["batchId"]
+        if batch_id in batch_ids:
+            raise ValueError(f"duplicate quality batch: {batch_id}")
+        batch_ids.add(batch_id)
+        counts[batch["state"]] += 1
+        for reference in batch["scopes"]:
+            scope = review_scope(reference)
+            if scope.targets != tuple(sorted(scope.targets)):
+                raise ValueError(f"quality scope targets must be sorted: {scope.key}")
+            if scope not in scopes:
+                raise ValueError(f"quality scope is missing or retired: {scope.key}")
+        for review_id in batch["findingReviewIds"]:
+            if review_id not in review_ids:
+                raise ValueError(f"unknown finding review in {batch_id}: {review_id}")
+    for state, limit in (
+        ("active", plan["maxActiveBatches"]),
+        ("ready", plan["maxReadyBatches"]),
+    ):
+        if counts[state] > limit:
+            raise ValueError(
+                f"quality plan has {counts[state]} {state} batches; limit is {limit}"
+            )
+
+
+def render_plan(
+    plan: dict[str, Any], scopes: dict[Scope, tuple[Scope, ...]],
+    statuses: dict[Scope, str], latest: dict[Scope, dict[str, Any]],
+) -> str:
+    """Show declared work order with live coverage, never inferred completion."""
+    lines = [
+        "Zig quality work plan (planning only; coverage remains in queue.tsv)",
+        f"Source: {PLAN}",
+    ]
+    if not any(batch["state"] == "active" for batch in plan["batches"]):
+        lines.append("No active batch. Select explicitly; ready work is not auto-started.")
+    for state in ("active", "ready"):
+        for batch in plan["batches"]:
+            if batch["state"] != state:
+                continue
+            lines.extend([
+                "", f"{state}: {batch['batchId']}",
+                f"Outcome: {batch['objective']}", f"Why: {batch['rationale']}",
+                f"Next: {batch['nextAction']}",
+                "Finding history: " + ", ".join(batch["findingReviewIds"]),
+            ])
+            for reference in batch["scopes"]:
+                scope = review_scope(reference)
+                review = latest.get(scope, {})
+                lines.append(
+                    f"  {scope.key}: {statuses[scope]} "
+                    f"(latest: {review.get('reviewId', 'none')})"
+                )
+                for finding in review.get("findings", []):
+                    lines.append(f"    Retained finding; reconfirm if stale: {finding}")
+                unfinished = sum(
+                    statuses[item] != "verified" for item in scopes[scope]
+                )
+                if unfinished:
+                    lines.append(f"    Unfinished direct prerequisites: {unfinished}")
+            lines.append("Acceptance:")
+            lines.extend(f"  - {item}" for item in batch["acceptance"])
+            lines.append(f"Stop: {batch['stopCondition']}")
+            lines.extend(f"Environment: {item}" for item in batch["requiredEnvironment"])
+    lines.append("\nA batch disposition does not complete its files or parent reviews.")
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--write", action="store_true", help="regenerate queue only")
     action.add_argument("--check", action="store_true", help="validate history and queue")
     action.add_argument("--draft", choices=LEVELS, help="print an unfinished review record")
+    action.add_argument("--next", action="store_true", help="show bounded quality plan and live coverage")
     parser.add_argument("--target", action="append", default=[], help="runtime-relative review target")
     parser.add_argument("--context", action="append", default=[], help="additional repository-relative input")
     parser.add_argument("--evidence", action="append", default=[], help="repository-relative verification artifact")
@@ -316,6 +396,11 @@ def main() -> int:
     if source_files(REPO) != files:
         raise ValueError("Zig source changed during review inventory; retry")
     statuses, latest = current_statuses(REPO, scopes, fingerprints, reviews)
+    plan = load_json_strict(REPO / PLAN)
+    validate_plan(REPO, plan, scopes, reviews)
+    if args.next:
+        print(render_plan(plan, scopes, statuses, latest), end="")
+        return 0
     if args.draft:
         scope = Scope(args.draft, tuple(sorted(set(args.target))))
         if scope not in scopes:

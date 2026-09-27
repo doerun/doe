@@ -18,6 +18,10 @@
       "data": "runtime/zig/reviews/log.json"
     },
     {
+      "schema": "config/zig-review-plan.schema.json",
+      "data": "config/zig-review-plan.json"
+    },
+    {
       "schema": "config/compute-program-resolution.schema.json",
       "data": "config/compute-program-resolution.json"
     },

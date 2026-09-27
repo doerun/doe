@@ -38,7 +38,7 @@ file	src/backend/d3d12/d3d12_constants.zig	stale	batch32_20260919_08		Retain cen
 file	src/backend/d3d12/d3d12_descriptors.zig	stale	batch32_20260919_09		Build tables from actual binding/register identities and make retirement part of descriptor reuse; test sparse groups, sampler-only groups, failure rollback and in-flight allocations.
 file	src/backend/d3d12/d3d12_device_caps.zig	stale	batch32_20260919_10_revalidated		Replace bridge placeholders with actual CheckFeatureSupport results, propagate required cache failures, and qualify advertised features against native/compiler implementation tests.
 file	src/backend/d3d12/d3d12_formats.zig	stale	batch32_20260919_11		Retain the pure format mapping and pinned-value tests; plane-specific copy legality remains owned by the copy contract and native adapter.
-file	src/backend/d3d12/d3d12_native_runtime.zig	in_progress	d3d12_submission_examination_20260927_evidence		Trace fence-owned COM references through native buffer destruction, mapped access, textures and terminal cleanup, including failed waits; execute on a D3D12 host.
+file	src/backend/d3d12/d3d12_native_runtime.zig	stale	d3d12_submission_examination_20260927_evidence		Trace fence-owned COM references through native buffer destruction, mapped access, textures and terminal cleanup, including failed waits; execute on a D3D12 host.
 file	src/backend/d3d12/d3d12_query_set.zig	stale	batch32_20260919_13_revalidated		Establish a real consumer and typed query recording/availability contract, then repair transactional creation, readback lifetime and checked conversion; do not inherit dispatch timestamp qualification.
 file	src/backend/d3d12/d3d12_runtime_compute.zig	stale	batch32_20260919_14_revalidated		Bind source and compiled artifacts explicitly, make pipeline replacement transactional after retirement, and implement request entrypoint/resource layouts before qualifying general kernel execution.
 file	src/backend/d3d12/d3d12_runtime_upload.zig	stale	batch32_20260919_15_revalidated		Define an explicit total retention policy for both upload/default pools and test varied sizes, allocator failures, budget exhaustion and cleanup without changing measured work.
@@ -61,9 +61,9 @@ file	src/backend/metal/artifact_emit.zig	stale	batch32_20260919_31		Retain this 
 file	src/backend/metal/backend_execute.zig	stale	batch32_20260919_32		Implement the requested asynchronous diagnostic operations with measured callback/completion events and a named execution dependency contract; retain capture/flush regressions and validate on Metal hardware.
 file	src/backend/metal/metal_async_runtime.zig	stale	metal_async_completion_20260920		Retain this bounded command path; ordinary WebGPU asynchronous mapping/callback semantics require their separate native review.
 file	src/backend/metal/metal_bridge_decls.zig	stale	metal_ports_20260920_02		Retain declarations; extend signature/layout parity checks alongside native changes. Native sampler and completion semantics remain findings in their owning scopes.
-file	src/backend/metal/metal_buffer_pool.zig	needs_changes	metal_pool_cohesion_20260927_evidence		Inspect all pool_push_or_release and strip_extension callers with the completion owner; preserve native reference semantics.
+file	src/backend/metal/metal_buffer_pool.zig	stale	metal_pool_cohesion_20260927_evidence		Inspect all pool_push_or_release and strip_extension callers with the completion owner; preserve native reference semantics.
 file	src/backend/metal/metal_cleanup.zig	stale	metal_ports_20260920_04		Retain this file; re-examine when its bound contract or consumer changes.
-file	src/backend/metal/metal_completion.zig	in_progress	metal_completion_examination_20260927_evidence		Read the remainder and trace upload pool admission and command reference retirement through Metal bridge callbacks on a Metal host.
+file	src/backend/metal/metal_completion.zig	stale	metal_completion_examination_20260927_evidence		Read the remainder and trace upload pool admission and command reference retirement through Metal bridge callbacks on a Metal host.
 file	src/backend/metal/metal_copy_runtime.zig	stale	metal_copy_runtime_texture_20260920		Give native encode/completion failures an explicit return contract and qualify direct/temporary copies plus retirement on Metal hardware.
 file	src/backend/metal/metal_deferred_release.zig	stale	metal_deferred_release_sampler_20260920		Complete checked native retirement and physical sampler use/release plus concurrent-device sampling; preserve the cache owner and single bridge translation.
 file	src/backend/metal/metal_dispatch_runtime.zig	stale	metal_dispatch_notification_20260920_final		Run Apple SDK and physical direct/indirect output and guard fixtures, resolve destruction ownership, and narrow the command context without changing operation or timing semantics.
@@ -102,7 +102,7 @@ file	src/backend/ports/transfer.zig	stale	vulkan_batch_20260920_02_transfer		Ret
 file	src/backend/vulkan/artifact_emit.zig	stale	vulkan_batch_20260920_03_artifact_emit		Retain this responsibility; revalidate when the bound inputs change.
 file	src/backend/vulkan/backend_execute.zig	stale	vulkan_batch_20260920_04_backend_execute		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/mod.zig	stale	vulkan_batch_20260920_05_mod		Resolve the named findings with owner-specific failure and integration tests before verification.
-file	src/backend/vulkan/native_runtime.zig	in_progress	vulkan_runtime_composition_20260927		Trace texture/render submission references and failure cleanup through their current owners before changing additional lifecycle state.
+file	src/backend/vulkan/native_runtime.zig	stale	vulkan_runtime_composition_20260927		Trace texture/render submission references and failure cleanup through their current owners before changing additional lifecycle state.
 file	src/backend/vulkan/vk_adapter_probe.zig	stale	vulkan_batch_20260920_06_vk_adapter_probe		Retain this responsibility; revalidate when the bound inputs change.
 file	src/backend/vulkan/vk_async_dispatch.zig	stale	vulkan_batch_20260920_07_vk_async_dispatch		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_async_probes.zig	stale	vulkan_batch_20260920_08_vk_async_probes		Resolve the named findings with owner-specific failure and integration tests before verification.
@@ -128,7 +128,7 @@ file	src/backend/vulkan/vk_pipeline_cache.zig	stale	vulkan_batch_20260920_27_vk_
 file	src/backend/vulkan/vk_pipeline_cache_persistent.zig	stale	vulkan_batch_20260920_28_vk_pipeline_cache_persistent		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_render.zig	stale	vulkan_batch_20260920_29_vk_render		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_render_pipeline.zig	stale	vulkan_batch_20260920_30_vk_render_pipeline		Resolve the named findings with owner-specific failure and integration tests before verification.
-file	src/backend/vulkan/vk_resources.zig	in_progress	vulkan_resource_owner_20260927		Read remaining texture/sampler operations, trace render use and command retention, then select a live-resource owner with explicit dependencies.
+file	src/backend/vulkan/vk_resources.zig	stale	vulkan_resource_owner_20260927		Read remaining texture/sampler operations, trace render use and command retention, then select a live-resource owner with explicit dependencies.
 file	src/backend/vulkan/vk_runtime_probe_ops.zig	stale	vulkan_batch_20260920_32_vk_runtime_probe_ops		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_runtime_surface_ops.zig	stale	vk_runtime_surface_ops_20260923_submission_audit		Make surface replacement transactional with native completion ownership, then exercise failure/retry on a presentation-capable host.
 file	src/backend/vulkan/vk_samplers.zig	stale	vk_samplers_20260923_submission_audit		Unify validated sampler translation at its existing owner and connect destruction/replacement to completed command references.
@@ -288,7 +288,7 @@ file	src/compiler/wgsl/emit/operator_text.zig	pending			Read and review the comp
 file	src/compiler/wgsl/emit/spirv/emit_spirv.zig	stale	shader_semantics_spirv_20260919_evidence		Review all type lowering and decoration identities, allocation-failure cleanup and entrypoint emission; this focused storage-block repair does not complete the emitter review.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig	pending			Read and review the complete scope.
-file	src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig	needs_changes	spirv_helper_cohesion_20260927		Trace result/load cache lifetimes and root-query consumers in emit_spirv_fn before separating a cohesive owner; preserve current emitted bytes.
+file	src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig	stale	spirv_helper_cohesion_20260927		Trace result/load cache lifetimes and root-query consumers in emit_spirv_fn before separating a cohesive owner; preserve current emitted bytes.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_matrix.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_shared.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_stages.zig	pending			Read and review the complete scope.
@@ -316,7 +316,7 @@ file	src/compiler/wgsl/ir/ir.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/ir/ir_builder.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/ir/ir_const_eval.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/ir/ir_digest.zig	pending			Read and review the complete scope.
-file	src/compiler/wgsl/ir/ir_loop_independence.zig	verified	ir_loop_independence_20260927		Review remaining IR query consumers and emitter policy separately; this predicate is not a general dependence proof.
+file	src/compiler/wgsl/ir/ir_loop_independence.zig	stale	ir_loop_independence_20260927		Review remaining IR query consumers and emitter policy separately; this predicate is not a general dependence proof.
 file	src/compiler/wgsl/ir/ir_opt_rewrite.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/ir/ir_query.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/ir/ir_transform_float_fusion.zig	pending			Read and review the complete scope.
@@ -324,7 +324,7 @@ file	src/compiler/wgsl/ir/ir_transform_robustness.zig	pending			Read and review 
 file	src/compiler/wgsl/ir/ir_validate.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/ir/layout_utils.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/mod.zig	pending			Read and review the complete scope.
-file	src/compiler/wgsl/pipeline/analysis.zig	verified	compiler_request_20260927		Continue the pipeline directory review; file completion does not certify its callers or whole compiler.
+file	src/compiler/wgsl/pipeline/analysis.zig	stale	compiler_request_20260927		Continue the pipeline directory review; file completion does not certify its callers or whole compiler.
 file	src/compiler/wgsl/pipeline/binding_reflection.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/pipeline/diagnostic.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/pipeline/overrides.zig	pending			Read and review the complete scope.

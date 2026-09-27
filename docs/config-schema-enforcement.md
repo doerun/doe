@@ -90,3 +90,14 @@ reviews, findings, additional inputs, and verification evidence. The generated
 queue derives current coverage and invalidation; it does not own architecture
 policy or convert old module decisions into completed code reviews. No runtime,
 public API, or existing artifact field changes meaning.
+
+## Zig review planning introduction
+
+`config/zig-review-plan.json` adds schema-versioned scheduling to the existing
+review tool. It declares active/ready limits and ordered batches with outcomes,
+scope references, finding review IDs, acceptance, environment, and stop conditions.
+`review_log.py --next` derives current coverage from the ledger; `--check` also
+validates plan references and capacity. The log and TSV contracts are unchanged.
+Plan edits do not grant review credit or enter source-review fingerprints. Review
+protocol and checker changes retain their existing invalidation behavior; stale
+reviews are not automatically renewed. There is no runtime behavior change.

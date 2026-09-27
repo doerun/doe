@@ -246,7 +246,10 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 ## Systematic Zig review
 
 For systematic Zig cleanup, use [`runtime/zig/reviews/README.md`](runtime/zig/reviews/README.md)
-and its append-only log. Review each file, directory organization, relationships
+and its append-only log. Begin with `python3 runtime/zig/tools/review_log.py --next`;
+`config/zig-review-plan.json` owns the bounded active and ready batches, while
+`queue.tsv` retains complete coverage rather than prescribing alphabetical work.
+Review each file, directory organization, relationships
 within directories, cross-directory boundaries, and complete execution paths as
 separate passes. Existing module decisions and passing gates do not grant code
 review credit. Partial inspection remains unfinished; higher-level completion

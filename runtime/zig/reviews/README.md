@@ -5,6 +5,54 @@ ownership decisions, and architectural exceptions remain in the applicable
 `CATSCAN.md` chain and [`../source-layout.json`](../source-layout.json). Existing
 module decisions and passing gates do not count as completed code reviews here.
 
+## Planning the next batch
+
+`queue.tsv` is the complete coverage inventory. Its alphabetical order and
+historical `nextAction` text are not the current work schedule. Start with:
+
+```bash
+python3 runtime/zig/tools/review_log.py --next
+```
+
+[`config/zig-review-plan.json`](../../../config/zig-review-plan.json) is the
+single source of truth for current batch selection. It keeps a bounded active
+set and an ordered ready list, with limits declared in that file. Each batch
+names an implementation outcome, the retained finding that motivates it, initial
+review scopes, a concrete next action, acceptance evidence, required environment,
+and a stopping condition. The tool resolves live coverage and findings from the
+existing ledger. It rejects missing scopes, unknown finding references, duplicate
+batch identities, and work exceeding the declared limits.
+
+Select work in this order: reproduced correctness/ownership failures; unfinished
+cohesive compiler or lifecycle work with a concrete finding; then a bounded
+unexamined execution path. A correctness failure can interrupt the active batch;
+update the plan explicitly and retain the displaced work in the ledger. Select
+unexamined paths across compiler, compute, rendering, textures, mapping, and
+recovery, including each backend's actual native model. Available hardware affects
+acceptance, not whether the unexamined obligation remains visible. No numerical
+priority score or file-size ranking substitutes for the rationale.
+
+Inspect callers and callees together from the start. The bottom-up rules below
+govern completion credit, not permission to trace an execution path. Starting a
+cross-directory investigation does not require completing every lower review
+first; marking it verified does. Generated-source examination includes its
+generator and contract, rather than scheduling mechanical output edits.
+
+Close a batch with a justified implementation disposition and retained evidence:
+repair, preserve an owner after inspection, or record the exact unresolved
+dependency. Append affected reviews before removing that batch from the plan.
+Select the next ready outcome deliberately; the tool never auto-starts or
+auto-completes work. Performance-neutral improvements can qualify through clearer
+ownership or dependencies, preserved behavior, and scoped cost checks. File
+coverage, line reduction, and passing tests alone do not establish that outcome.
+
+The plan is mutable scheduling data, not another review history. Changing its
+order or rationale does not invalidate source reviews. Changes to review rules
+or the checker still invalidate coverage through the existing guidance hash;
+never bulk-mark those stale reviews verified. Reconfirm relevant findings as
+their batches are opened. The full inventory continues to retain unplanned,
+stale, blocked, and retired scopes.
+
 ## Review order
 
 | Level | Review unit | Required examination before completion |
@@ -70,7 +118,7 @@ python3 runtime/zig/tools/review_log.py --draft file --target build.zig \
 ```
 
 `--write` regenerates [`queue.tsv`](queue.tsv) without changing the log.
-`--check` validates the log, checks append-only history against `HEAD`, and
+`--check` validates the log and bounded plan, checks append-only history against `HEAD`, and
 rejects a stale generated queue. Pending, stale, or blocked review coverage
 remains visible; it does not block ordinary runtime development or release by
 itself. Existing correctness and architecture gates retain their authority.

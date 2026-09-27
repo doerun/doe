@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "maxActiveBatches": 1,
+  "maxReadyBatches": 2,
+  "batches": [
+    {
+      "batchId": "vulkan_render_error_admission",
+      "state": "active",
+      "objective": "Propagate render-bundle replay rejection before submission and preserve cleanup of abandoned recording.",
+      "rationale": "The planning-driven index and failed-wait ownership repair is complete. The retained render review also reports replay errors being logged and skipped; correctness findings remain ahead of emitter cohesion.",
+      "scopes": [
+        {
+          "level": "file",
+          "targets": [
+            "src/backend/vulkan/vk_render.zig"
+          ]
+        },
+        {
+          "level": "file",
+          "targets": [
+            "src/runtime/render/render_bundle.zig"
+          ]
+        }
+      ],
+      "findingReviewIds": [
+        "vulkan_batch_20260920_29_vk_render"
+      ],
+      "nextAction": "Reproduce a rejected render bundle returning success through execute_render_bundles; trace recording abandonment and subsequent reuse, then repair error propagation in the existing owner.",
+      "acceptance": [
+        "The rejected bundle returns its original typed error and submits no partial commands.",
+        "Abandoned recording releases owned resources safely; a following valid render operation still succeeds.",
+        "Run focused failure injection, independent render-output checks, and zig build test; retain exact source and native-library identities.",
+        "Append the disposition to the existing review ledger without granting whole-file or directory completion."
+      ],
+      "stopCondition": "Stop after one rejection/cleanup correction with original-failure reproduction and successful ordinary rendering checks; do not expand into unrelated attachment or presentation redesign.",
+      "requiredEnvironment": [
+        "Linux AMD/Vulkan for physical acceptance; host-only inspection does not qualify GPU lifetime behavior."
+      ]
+    },
+    {
+      "batchId": "spirv_function_ownership",
+      "state": "ready",
+      "objective": "Give SPIR-V function emission explicit instruction-cache ownership and keep target-independent reference queries with IR.",
+      "rationale": "The preceding compiler batch removed loop eligibility from the helper file but retained unrelated cache, query, and scalar responsibilities. Continue that concrete finding before opening another compiler reorganization.",
+      "scopes": [
+        {
+          "level": "file",
+          "targets": [
+            "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig"
+          ]
+        },
+        {
+          "level": "file",
+          "targets": [
+            "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig"
+          ]
+        },
+        {
+          "level": "file",
+          "targets": [
+            "src/compiler/wgsl/ir/ir_query.zig"
+          ]
+        }
+      ],
+      "findingReviewIds": [
+        "spirv_helper_cohesion_20260927"
+      ],
+      "nextAction": "Trace cache creation, lookup, invalidation and teardown through function emission; compare root-reference queries with ir_query before choosing the smallest owner change.",
+      "acceptance": [
+        "Name each changed responsibility and its caller dependencies; retain ownership on allocation failure and preserve cache invalidation boundaries.",
+        "Run focused alias, mutation, control-flow and allocation-failure tests plus zig build test-wgsl.",
+        "Compare selected emitted bytes against the pinned predecessor; retain compiler timing, build-cost and binary-size observations without requiring a speedup.",
+        "Append examined file reviews and unresolved findings; do not certify containing directories from this batch."
+      ],
+      "stopCondition": "Stop after one cohesive ownership correction and its evidence, or a documented decision to retain the current owner based on complete inspection. Do not expand into a pass framework or blanket emitter rewrite.",
+      "requiredEnvironment": [
+        "Host Zig toolchain; no physical GPU required for compiler inspection and emission checks."
+      ]
+    }
+  ]
+}

@@ -12,6 +12,15 @@ structural roadmap lives in [`../runtime-hexagonal-architecture-plan.md`](../run
 
 ## Hierarchical code review
 
+Current quality batch selection lives in
+[`config/zig-review-plan.json`](../../config/zig-review-plan.json), displayed by
+`python3 runtime/zig/tools/review_log.py --next`. It schedules bounded implementation
+outcomes against retained findings; the full TSV remains coverage inventory.
+Retained Vulkan rendering failures take priority over the ready compiler ownership
+batch. Changes to this planning protocol/checker reopen historical
+coverage under the existing hash rules; they do not erase evidence or authorize
+bulk renewal. Subsequent priority-only plan edits leave review hashes unchanged.
+
 The [compiler and allocation ownership checkpoint](../../reports/maintenance/20260927-implementation-quality/README.md)
 consolidates internal analysis requests and explicit diagnostics, moves conservative
 loop eligibility to IR, and gives completed Vulkan allocation retention a typed

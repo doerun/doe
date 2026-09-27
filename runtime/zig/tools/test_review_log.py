@@ -11,8 +11,9 @@ import unittest
 from jsonschema.exceptions import ValidationError
 
 from review_log import (
-    GUIDANCE, LOG, REPO, SCHEMA, Scope, canonical_json, check_history,
-    current_statuses, digest, input_hash, make_scopes, source_files, validate_log,
+    GUIDANCE, LOG, PLAN, PLAN_SCHEMA, REPO, SCHEMA, Scope, canonical_json,
+    check_history, current_statuses, digest, input_hash, make_scopes,
+    render_plan, source_files, validate_log, validate_plan,
 )
 
 
@@ -26,6 +27,7 @@ class ReviewLogTests(unittest.TestCase):
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_text("fixture guidance\n", encoding="utf-8")
         (self.repo / SCHEMA).write_bytes((REPO / SCHEMA).read_bytes())
+        (self.repo / PLAN_SCHEMA).write_bytes((REPO / PLAN_SCHEMA).read_bytes())
         self.evidence = self.repo / "evidence.txt"
         self.evidence.write_text("passed\n", encoding="utf-8")
         self.files = {"src/a/a.zig": "a" * 64, "src/b/b.zig": "b" * 64}
@@ -209,6 +211,106 @@ class ReviewLogTests(unittest.TestCase):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("const value = 1;\n", encoding="utf-8")
         self.assertEqual(set(source_files(self.repo)), {"src/new.zig", "tests/new.zig"})
+
+    def plan(self) -> dict:
+        return {
+            "schemaVersion": 1, "maxActiveBatches": 1, "maxReadyBatches": 1,
+            "batches": [{
+                "batchId": "ownership", "state": "active",
+                "objective": "Make allocation ownership explicit.",
+                "rationale": "Continue the retained ownership finding.",
+                "scopes": [{"level": "file", "targets": ["src/a/a.zig"]}],
+                "findingReviewIds": ["file_review"],
+                "nextAction": "Trace ownership through release.",
+                "acceptance": ["Exercise delayed completion and failed allocation."],
+                "stopCondition": "Stop after the selected ownership correction.",
+                "requiredEnvironment": ["Host toolchain."],
+            }],
+        }
+
+    def test_plan_rejects_overcommit_duplicate_ids_and_dangling_references(self) -> None:
+        record = self.record(Scope("file", ("src/a/a.zig",)), "file_review")
+        for failure in ("active", "ready", "duplicate", "scope", "review"):
+            with self.subTest(failure=failure):
+                plan = self.plan()
+                batch = plan["batches"][0]
+                if failure in ("active", "ready", "duplicate"):
+                    other = copy.deepcopy(batch)
+                    if failure != "duplicate":
+                        other["batchId"] = "other"
+                    if failure == "ready":
+                        batch["state"] = other["state"] = "ready"
+                    plan["batches"].append(other)
+                elif failure == "scope":
+                    batch["scopes"][0]["targets"] = ["src/removed.zig"]
+                else:
+                    batch["findingReviewIds"] = ["missing_review"]
+                with self.assertRaises(ValueError):
+                    validate_plan(self.repo, plan, self.scopes, [record])
+
+    def test_plan_schema_rejects_completion_and_missing_acceptance(self) -> None:
+        for update in ({"state": "complete"}, {"acceptance": []}):
+            plan = self.plan()
+            plan["batches"][0].update(update)
+            with self.assertRaises(ValidationError):
+                validate_plan(self.repo, plan, self.scopes, [])
+
+    def test_plan_priorities_do_not_change_review_hash_or_coverage(self) -> None:
+        record = self.record(Scope("file", ("src/a/a.zig",)), "file_review")
+        records = [record]
+        original = copy.deepcopy(records)
+        plan = self.plan()
+        (self.repo / PLAN).write_text(canonical_json(plan), encoding="utf-8")
+        hashes = self.hashes(self.files)
+        plan["batches"][0]["state"] = "ready"
+        plan["batches"][0]["nextAction"] = "Reproduce the retained failure first."
+        (self.repo / PLAN).write_text(canonical_json(plan), encoding="utf-8")
+        validate_plan(self.repo, plan, self.scopes, records)
+        self.assertEqual(hashes, self.hashes(self.files))
+        statuses, latest = current_statuses(
+            self.repo, self.scopes, hashes, records,
+        )
+        before = dict(statuses)
+        rendered = render_plan(plan, self.scopes, statuses, latest)
+        self.assertIn("No active batch", rendered)
+        self.assertIn("ready: ownership", rendered)
+        self.assertEqual(statuses, before)
+        self.assertEqual(records, original)
+        self.assertEqual(statuses[Scope("directory", ("src/a",))], "pending")
+
+    def test_plan_shows_stale_findings_and_blocked_prerequisites(self) -> None:
+        scope = Scope("file", ("src/a/a.zig",))
+        record = self.record(scope, "file_review")
+        record.update(status="needs_changes", findings=["Borrowed lifetime is unclear."])
+        directory = Scope("directory", ("src/a",))
+        parent = self.record(directory, "premature_directory")
+        changed = dict(self.fingerprints)
+        changed[scope] = "f" * 64
+        statuses, latest = current_statuses(
+            self.repo, self.scopes, changed, [record, parent],
+        )
+        plan = self.plan()
+        plan["batches"][0]["scopes"].append(
+            {"level": "directory", "targets": ["src/a"]}
+        )
+        validate_plan(self.repo, plan, self.scopes, [record, parent])
+        rendered = render_plan(plan, self.scopes, statuses, latest)
+        self.assertIn("file:src/a/a.zig: stale", rendered)
+        self.assertIn("Borrowed lifetime is unclear.", rendered)
+        self.assertIn("directory:src/a: blocked", rendered)
+        self.assertIn("Unfinished direct prerequisites: 1", rendered)
+
+    def test_plan_puts_active_before_ready_without_auto_starting(self) -> None:
+        plan = self.plan()
+        ready = copy.deepcopy(plan["batches"][0])
+        ready.update(batchId="later", state="ready")
+        plan["batches"].insert(0, ready)
+        statuses, latest = current_statuses(
+            self.repo, self.scopes, self.fingerprints, [],
+        )
+        rendered = render_plan(plan, self.scopes, statuses, latest)
+        self.assertLess(rendered.index("active: ownership"), rendered.index("ready: later"))
+        self.assertEqual(set(statuses.values()), {"pending"})
 
 
 if __name__ == "__main__":
