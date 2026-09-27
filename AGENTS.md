@@ -1,5 +1,17 @@
 # Doe code agent
 
+## Git workflow: direct to main
+
+- Work and commit directly on the owning repository's `main` branch, then push
+  directly to its existing `origin/main` remote branch.
+- Do not create feature/task branches, branch-backed worktrees, or GitHub pull
+  requests. Do not use a branch/PR workflow unless the user explicitly requests it.
+- If the checkout is on another branch, preserve its work and move the task to
+  `main` safely; never discard changes to switch branches.
+- Stage only task-related changes, run the applicable checks, and integrate remote
+  updates without overwriting unrelated work. Never force-push `main`.
+- Report the pushed commit or the concrete blocker. A local commit is not a push.
+
 ## Scope
 
 This file is the source of truth for Doe work only.
@@ -243,8 +255,8 @@ requires current lower-level reviews and its own findings and evidence.
 Append findings, fixes, verification artifacts, and the next concrete action
 before handing off a review. Regenerate and check the queue with
 `python3 runtime/zig/tools/review_log.py --write` and `--check`. When checking a
-committed change, pass `--base-ref` with its predecessor or PR base to enforce
-history preservation across the change. Source ownership policy remains in the
+committed change, pass `--base-ref` with its predecessor or an explicitly selected
+baseline on `main` to enforce history preservation across the change. Source ownership policy remains in the
 existing charter chain and architecture manifest.
 
 ## Implementation style
