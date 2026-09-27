@@ -1228,9 +1228,9 @@
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "f937a31108717ed1317cb03f5bbd60e04f787da72d040569381990785432175e",
-        "reason": "Keep: Runtime assembly delegates native submission bookkeeping and calibrated timestamp arithmetic to existing owners.",
-        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+        "moduleSha256": "a0a8be17c06b50f1b9a58ba089cbbadcd6895b8c236dfccceed5d86e389155f2",
+        "reason": "Keep: composition owns completion before destruction and supplies typed cache admission facts; completed buffer cache state and accounting have one subordinate owner.",
+        "reviewer": "codex-buffer-lifecycle/2026-09-27"
       },
       "src/backend/vulkan/vk_adapter_probe.zig": {
         "decision": "Keep",
@@ -1360,9 +1360,9 @@
       },
       "src/backend/vulkan/vk_resources.zig": {
         "decision": "Keep",
-        "moduleSha256": "efb5cd92145f5ab8cc34bf42a62ac090a8c04974572eeb5864bd5df3de2a9c5c",
-        "reason": "Keep: shared native buffer allocation includes the vertex/index usages consumed by rendering and preserves them through storage promotion.",
-        "reviewer": "codex-render-validation/2026-09-07"
+        "moduleSha256": "7e91013282097030b03a3a49b46fd57126a80a6d752edcb07730d72be4933124",
+        "reason": "Keep: buffer allocation and resource operations remain backend-private; completed allocation caching now owns entries and accounting through typed admission facts, without a whole-runtime parameter. Remaining allocation, texture and sampler concerns require separate review.",
+        "reviewer": "codex-buffer-lifecycle/2026-09-27"
       },
       "src/backend/vulkan/vk_runtime_probe_ops.zig": {
         "decision": "Keep",

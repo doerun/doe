@@ -48,6 +48,62 @@ pub const ComputeBuffer = struct {
     memory_kind: ComputeBufferMemoryKind,
 };
 
+/// Owns only completed native allocations removed from the live registry.
+/// Admission borrows completion facts; this owner never waits or submits work.
+/// Metadata uses the caller's allocator, as with the other unmanaged caches.
+pub const CompletedComputeBufferCache = struct {
+    entries: vk_upload.VkPool = .{},
+    retained_bytes: u64 = 0,
+
+    pub const Admission = struct {
+        runtime_active: bool,
+        queue_work_pending: bool,
+    };
+
+    pub fn acquire(self: *CompletedComputeBufferCache, bytes: u64) ?vk_upload.VkPoolEntry {
+        const entry = vk_upload.vk_pool_pop(&self.entries, bytes, COMPUTE_BUFFER_USAGE) orelse return null;
+        self.retained_bytes -= entry.allocation_size;
+        return entry;
+    }
+
+    /// Success transfers the allocation; rejection leaves it with the caller.
+    pub fn retain(self: *CompletedComputeBufferCache, allocator: std.mem.Allocator, buffer: ComputeBuffer, admission: Admission) bool {
+        if (!admission.runtime_active or admission.queue_work_pending) return false;
+        const required = c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        if (buffer.memory_kind != .host_visible or buffer.mapped == null or
+            (buffer.memory_property_flags & required) != required or
+            buffer.size < DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES or
+            buffer.allocation_size < buffer.size or
+            buffer.allocation_size > memory_policy.compute_buffer_cache_max_bytes - self.retained_bytes)
+        {
+            return false;
+        }
+        // Empty size buckets remain reusable, but cannot grow metadata without a bound.
+        const max_size_buckets = memory_policy.compute_buffer_cache_max_bytes / DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES;
+        if (self.entries.count() >= max_size_buckets and !self.entries.contains(buffer.size)) return false;
+        const slot = self.entries.getOrPut(allocator, buffer.size) catch return false;
+        if (!slot.found_existing) slot.value_ptr.* = .{};
+        if (slot.value_ptr.items.len >= vk_upload.MAX_POOL_ENTRIES_PER_SIZE) return false;
+        slot.value_ptr.append(allocator, .{
+            .usage = COMPUTE_BUFFER_USAGE,
+            .memory_property_flags = buffer.memory_property_flags,
+            .allocation_size = buffer.allocation_size,
+            .buffer = buffer.buffer,
+            .memory = buffer.memory,
+            .mapped = buffer.mapped,
+        }) catch return false;
+        self.retained_bytes += buffer.allocation_size;
+        return true;
+    }
+
+    /// Entries were completed before admission and cannot be submitted while
+    /// owned by this cache. The device must still be alive during destruction.
+    pub fn deinit(self: *CompletedComputeBufferCache, allocator: std.mem.Allocator, device: c.VkDevice) void {
+        vk_upload.vk_release_pool(&self.entries, allocator, device);
+        self.* = .{};
+    }
+};
+
 pub const ComputeBufferPromotion = struct {
     buffer: ComputeBuffer,
     retired_source: ?ComputeBuffer = null,
@@ -266,8 +322,7 @@ fn create_compute_buffer_with_kind(
     try self.retirement.requireActive();
     const generation = try identity.nextGeneration(self);
     if (memory_kind == .host_visible) {
-        if (vk_upload.vk_pool_pop(&self.compute_buffer_pool, bytes, COMPUTE_BUFFER_USAGE)) |entry| {
-            self.compute_buffer_pool_bytes -= entry.allocation_size;
+        if (self.compute_buffer_cache.acquire(bytes)) |entry| {
             if (initialize_buffers_on_create) @memset(@as([*]u8, @ptrCast(entry.mapped.?))[0..@intCast(bytes)], 0);
             return .{
                 .generation = generation,
@@ -488,43 +543,11 @@ pub fn destroy_compute_buffer(self: anytype, resource_handle: u64) void {
     const cache = @import("vk_pipeline_cache.zig");
     cache.discard_buffer(self, resource_handle);
     if (self.compute_buffers.fetchRemove(resource_handle)) |entry| {
-        if (!cacheCompletedComputeBuffer(self, entry.value)) release_compute_buffer(self, entry.value);
+        if (!self.compute_buffer_cache.retain(self.allocator, entry.value, .{
+            .runtime_active = self.retirement.phase == .active,
+            .queue_work_pending = self.hasPendingQueueWork(),
+        })) release_compute_buffer(self, entry.value);
     }
-}
-
-fn cacheCompletedComputeBuffer(self: anytype, buffer: ComputeBuffer) bool {
-    if (self.retirement.phase != .active) return false;
-    const required = c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    if (buffer.memory_kind != .host_visible or buffer.mapped == null or
-        (buffer.memory_property_flags & required) != required or
-        buffer.size < DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES or
-        buffer.allocation_size < buffer.size or
-        buffer.allocation_size > memory_policy.compute_buffer_cache_max_bytes - self.compute_buffer_pool_bytes)
-    {
-        return false;
-    }
-    if (self.replay_recording_active or self.replay_prefix_copy_pending or self.upload_recording_active or
-        self.streaming_copy_active or self.streaming_copy_pending_count != 0 or
-        self.has_deferred_submissions or self.hot_pending_upload != null or self.pending_uploads.items.len != 0)
-    {
-        return false;
-    }
-    // Empty size buckets remain reusable, but cannot grow metadata without a bound.
-    const max_size_buckets = memory_policy.compute_buffer_cache_max_bytes / DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES;
-    if (self.compute_buffer_pool.count() >= max_size_buckets and !self.compute_buffer_pool.contains(buffer.size)) return false;
-    const slot = self.compute_buffer_pool.getOrPut(self.allocator, buffer.size) catch return false;
-    if (!slot.found_existing) slot.value_ptr.* = .{};
-    if (slot.value_ptr.items.len >= vk_upload.MAX_POOL_ENTRIES_PER_SIZE) return false;
-    slot.value_ptr.append(self.allocator, .{
-        .usage = COMPUTE_BUFFER_USAGE,
-        .memory_property_flags = buffer.memory_property_flags,
-        .allocation_size = buffer.allocation_size,
-        .buffer = buffer.buffer,
-        .memory = buffer.memory,
-        .mapped = buffer.mapped,
-    }) catch return false;
-    self.compute_buffer_pool_bytes += buffer.allocation_size;
-    return true;
 }
 
 pub fn release_compute_buffer(self: anytype, compute_buffer: ComputeBuffer) void {

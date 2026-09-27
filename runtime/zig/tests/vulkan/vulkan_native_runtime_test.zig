@@ -710,3 +710,36 @@ test "Vulkan staged upload reuses compatible native buffers without new allocati
     try upload.copy_buffer_region_and_wait(&rt, pending.dst_buffer, 0, readback.buffer, 0, bytes);
     try std.testing.expectEqualSlices(u8, std.mem.sliceAsBytes(&expected), @as([*]u8, @ptrCast(readback.mapped.?))[0..bytes]);
 }
+
+test "Vulkan completed buffer owner preserves mapping dispatch readback and replacement generations" {
+    var rt = try native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null);
+    defer rt.deinit();
+    const bytes = 32 * 1024;
+    const handle = 901;
+    const original = try resources.ensure_compute_buffer(&rt, handle, bytes, true);
+    const required = vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    if ((original.memory_property_flags & required) != required) return error.SkipZigTest;
+    var output: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
+    const length = try compiler.translateToSpirv(std.testing.allocator, REUSE_SHADER, &output);
+    const words = std.mem.bytesAsSlice(u32, output[0..length]);
+    const binding = compute.KernelBinding{ .binding = 0, .resource_kind = .buffer, .resource_handle = handle, .buffer_size = bytes, .buffer_type = binding_types.WGPUBufferBindingType_Storage };
+    const input = [_]u32{ 1, 2, 3, 4 };
+    @memcpy(@as([*]u8, @ptrCast(original.mapped.?))[0..@sizeOf(@TypeOf(input))], std.mem.asBytes(&input));
+    try rt.set_compute_shader_spirv(words, "main", &.{binding}, true);
+    _ = try rt.run_dispatch(4, 1, 1, .deferred, .wait_any, .off);
+    try expect_reuse_output(&rt, handle, &.{ 8, 10, 12, 14 });
+    resources.destroy_compute_buffer(&rt, handle);
+    try std.testing.expectEqual(original.allocation_size, rt.compute_buffer_cache.retained_bytes);
+    const replacement = try resources.ensure_compute_buffer(&rt, handle, bytes, true);
+    try std.testing.expectEqual(original.buffer, replacement.buffer);
+    try std.testing.expectEqual(original.mapped, replacement.mapped);
+    try std.testing.expect(replacement.generation > original.generation);
+    try expect_reuse_output(&rt, handle, &.{ 0, 0, 0, 0 });
+    try rt.set_compute_shader_spirv(words, "main", &.{binding}, true);
+    _ = try rt.run_dispatch(4, 1, 1, .deferred, .wait_any, .off);
+    try expect_reuse_output(&rt, handle, &.{ 7, 8, 9, 10 });
+    resources.destroy_compute_buffer(&rt, handle);
+    rt.deinit();
+    try std.testing.expectEqual(@as(u64, 0), rt.compute_buffer_cache.retained_bytes);
+    rt.deinit();
+}

@@ -715,9 +715,9 @@ test "completed compute allocation reuse renews identity and clears stale conten
     };
     defer runtime.compute_buffers.deinit(std.testing.allocator);
     defer {
-        var slots = runtime.compute_buffer_pool.valueIterator();
+        var slots = runtime.compute_buffer_cache.entries.valueIterator();
         while (slots.next()) |slot| slot.deinit(std.testing.allocator);
-        runtime.compute_buffer_pool.deinit(std.testing.allocator);
+        runtime.compute_buffer_cache.entries.deinit(std.testing.allocator);
     }
     const previous = vk_resources.ComputeBuffer{
         .generation = 41,
@@ -732,7 +732,7 @@ test "completed compute allocation reuse renews identity and clears stale conten
     try runtime.compute_buffers.put(std.testing.allocator, 7, previous);
     vk_resources.destroy_compute_buffer(&runtime, 7);
     try std.testing.expect(runtime.compute_buffers.get(7) == null);
-    try std.testing.expectEqual(@as(u64, bytes.len), runtime.compute_buffer_pool_bytes);
+    try std.testing.expectEqual(@as(u64, bytes.len), runtime.compute_buffer_cache.retained_bytes);
     var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = 0 });
     runtime.allocator = failing.allocator();
     const reused = try vk_resources.create_compute_buffer(&runtime, bytes.len, true);
@@ -741,7 +741,47 @@ test "completed compute allocation reuse renews identity and clears stale conten
     try std.testing.expectEqual(previous.mapped, reused.mapped);
     try std.testing.expectEqual(@as(u64, 42), reused.generation);
     try std.testing.expectEqual(previous.memory_property_flags, reused.memory_property_flags);
-    try std.testing.expectEqual(@as(u64, 0), runtime.compute_buffer_pool_bytes);
+    try std.testing.expectEqual(@as(u64, 0), runtime.compute_buffer_cache.retained_bytes);
     try std.testing.expectEqual(@as(usize, 0), failing.allocations);
     for (bytes) |byte| try std.testing.expectEqual(@as(u8, 0), byte);
+}
+
+test "completed compute cache rejects pending retired incompatible and failed metadata admissions" {
+    var bytes: [32 * 1024]u8 = undefined;
+    const buffer = vk_resources.ComputeBuffer{
+        .generation = 1,
+        .memory_property_flags = vk_constants.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk_constants.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | vk_constants.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        .allocation_size = bytes.len,
+        .buffer = 11,
+        .memory = 12,
+        .mapped = &bytes,
+        .size = bytes.len,
+        .memory_kind = .host_visible,
+    };
+    var cache = vk_resources.CompletedComputeBufferCache{};
+    defer cache.deinit(std.testing.allocator, null);
+    try std.testing.expect(!cache.retain(std.testing.allocator, buffer, .{ .runtime_active = true, .queue_work_pending = true }));
+    try std.testing.expect(!cache.retain(std.testing.allocator, buffer, .{ .runtime_active = false, .queue_work_pending = false }));
+    var incompatible = buffer;
+    incompatible.memory_property_flags = 0;
+    const ready = vk_resources.CompletedComputeBufferCache.Admission{ .runtime_active = true, .queue_work_pending = false };
+    try std.testing.expect(!cache.retain(std.testing.allocator, incompatible, ready));
+    try std.testing.expectEqual(@as(usize, 0), cache.entries.count());
+    // The native allocation remains caller-owned when either metadata allocation fails.
+    for (0..2) |fail_index| {
+        var failing = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = fail_index });
+        try std.testing.expect(!cache.retain(failing.allocator(), buffer, ready));
+        try std.testing.expectEqual(@as(u64, 0), cache.retained_bytes);
+        try std.testing.expect(cache.acquire(bytes.len) == null);
+        cache.deinit(std.testing.allocator, null);
+    }
+    // A subsequent successful transfer can be returned without a driver call.
+    try std.testing.expect(cache.retain(std.testing.allocator, buffer, ready));
+    try std.testing.expect(cache.acquire(bytes.len + 1) == null);
+    const entry = cache.acquire(bytes.len).?;
+    try std.testing.expectEqual(buffer.buffer, entry.buffer);
+    try std.testing.expectEqual(buffer.mapped, entry.mapped);
+    try std.testing.expectEqual(@as(u64, 0), cache.retained_bytes);
+    cache.deinit(std.testing.allocator, null);
+    cache.deinit(std.testing.allocator, null);
 }
