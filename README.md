@@ -3,13 +3,18 @@
 DoeRuntime is Doe's primary product: a source-preserving WGSL compiler and GPU
 runtime that applications can select through their normal provider seam.
 DoeProof is its supporting qualification and evidence feature, usable with both
-DoeRuntime and an incumbent. Fawn is a secondary browser product and potential
-DoeRuntime distribution surface. The `doe/` repository owns these components.
+DoeRuntime and an incumbent. Browser replacement is the destination; Fawn is
+the separately qualified Chromium integration surface. The `doe/` repository owns these components.
 
 ## Mission, goal, and value
 
-Doe’s mission is to make GPU execution inspectable and controllable at the
-runtime boundary.
+Doe’s product is better execution for existing local applications: materially
+faster operations, lower memory demands, and less CPU overhead through ordinary
+WebGPU substitution. [Goals](GOALS.md) and the [strategy](docs/thesis.md) order
+ordinary execution, independent framework integration through ONNX Runtime,
+binding application transfer, and bounded Chromium integration toward browser
+replacement. A milestone requires material advantage under declared regression
+limits, not simultaneous victory in every metric.
 
 The primary goal is voluntary adoption by an unchanged external non-Doppler
 application for a predeclared measured advantage, followed by retention across

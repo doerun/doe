@@ -1,7 +1,7 @@
 {
   "$schema": "doe-product-strategy.schema.json",
-  "schemaVersion": 4,
-  "strategyVersion": "3.1.0",
+  "schemaVersion": 5,
+  "strategyVersion": "4.0.0",
   "artifactKind": "doe-product-strategy",
   "authority": {
     "goals": "GOALS.md",
@@ -11,13 +11,13 @@
     "currentClaims": "reports/claim-index.json"
   },
   "positioning": {
-    "category": "Independent compiler and runtime for reusable GPU programs",
-    "promise": "Make useful GPU computation easy to create, cheap to repeat, inspectable, and portable across supported hardware.",
+    "category": "Independent WebGPU compiler and runtime for existing applications",
+    "promise": "Make existing local applications materially faster, less memory intensive, and cheaper in CPU overhead through ordinary WebGPU provider substitution.",
     "governingQuestion": "Did this exact workload run correctly on the declared hardware and provider without hidden fallback, and did runtime ownership materially improve the application outcome?",
     "operatingLaw": "Hexagonal inside; vertically integrated outside."
   },
   "independenceBoundary": {
-    "rule": "DoeRuntime must prove safe reuse and mechanism transfer in non-Doppler applications, then earn independent adoption. Compatibility substitution and explicit declared-program integration are distinct treatments. DoeProof qualifies providers impartially; browser construction is not a prerequisite.",
+    "rule": "Doppler remains a demanding inference customer and owns models and inference. Independent unchanged applications must establish execution-layer transfer and voluntary adoption. Ordinary execution comes first, ONNX Runtime substitution investigation next, binding application transfer next, and browser replacement is the destination. Prepared-program integration is a separate optional treatment.",
     "requiredEvidence": [
       "externally owned unchanged non-Doppler application",
       "independent application oracle and clean-process replay",
@@ -31,7 +31,7 @@
       "id": "doeruntime",
       "portfolioRole": "primary-product",
       "marketRole": "runtime-adoption",
-      "job": "Own source-preserving GPU compilation, safe reusable programs, resources, synchronization, and backend execution through provider compatibility and optional declared computation.",
+      "job": "Own source-preserving shader compilation, resource management, synchronization, and GPU execution beneath unchanged application interfaces; safe reuse supports these outcomes.",
       "promotionGate": "A frozen non-Doppler application demonstrates a material advantage over the strongest eligible controls; declared-program changes are disclosed; external adoption and repeat retention remain independently evidenced.",
       "authorityPaths": [
         "docs/runtime-ownership-decision.md",
@@ -53,7 +53,7 @@
       "id": "fawn",
       "portfolioRole": "experimental-distribution",
       "marketRole": "runtime-distribution",
-      "job": "Carry the same execution runtime into a separately qualified Chromium distribution after transferred application wins.",
+      "job": "Pursue browser replacement as the destination through a bounded Chromium integration after independent native wins and application transfer.",
       "promotionGate": "Requires prior transferred runtime application wins and a separately hash-bound browser integration with unchanged causal controls.",
       "authorityPaths": [
         "docs/browser-lane.md",
@@ -77,7 +77,7 @@
     "id": "doeruntime-application-adoption",
     "name": "DoeRuntime Application Integration",
     "deliveryMode": "provider-substitution-or-declared-program",
-    "promise": "Enter through provider compatibility; offer explicit repeated-computation integration and earn voluntary use through independently measured application advantage.",
+    "promise": "Earn voluntary use through independently measured ordinary provider-substitution advantage; optional declared computation remains a separate treatment.",
     "buyers": [
       "local-AI vendors",
       "Electron application teams",
@@ -332,99 +332,77 @@
     {
       "order": 1,
       "id": "provider-qualification-v1",
-      "outcome": "First prove a repeatable ordinary Node provider-substitution advantage with pinned installation, unchanged application/WGSL/inputs/tests, complete-operation accounting and immediate rollback; other hosts earn separate qualification without gating that first result.",
+      "outcome": "Close ordinary execution with a repeatable material application advantage against the frozen baseline. Retain accepted improvements and correctness repairs; finish one bounded evidence-backed optimization and record acceptance or rejection without extending one reranker indefinitely.",
       "requiredEvidence": [
-        "retained package hashes",
-        "unchanged Node application, WGSL, inputs and acceptance tests",
-        "repeatable ordinary-execution advantage against strongest eligible control",
-        "immediate rollback and subsequent application reuse",
-        "native library and backend identity",
-        "physical GPU and driver identity",
-        "shader and numerical output",
-        "explicit fallback state",
-        "lifecycle and recovery"
+        "unchanged application, shaders, inputs, installation and independent oracle",
+        "pinned source, libraries, compiler, adapter, driver and incumbent identities",
+        "predeclared primary complete-operation outcome, material threshold, regression limits and percentile definitions",
+        "fresh interleaved independent processes, raw samples and process variation with diagnostics disabled",
+        "startup separate from resident execution; latency tails, CPU consumption and explicitly scoped memory observations",
+        "correctness, resource lifecycle, recovery and rollback preserved",
+        "candidate disposition against frozen criteria; failure preserves accepted baseline and leaves advantage unestablished",
+        "material improvement in the primary outcome with other outcomes within declared bounds; simultaneous latency, CPU and memory victory is not required"
       ],
       "currentAssessment": "unestablished",
       "stateAuthorityPaths": [
-        "docs/status/reusable-compute-programs.md",
+        "docs/status/runtime-backends-and-bench.md",
         "reports/claim-index.json"
       ]
     },
     {
       "order": 2,
-      "id": "prepared-doeplan-v1",
-      "outcome": "After ordinary-execution value, demonstrate interactive editing or simulation with retained compatible state, checked shader activation, explicit reset approval, cancellation, bounded memory, cleanup and reopening against an ordinary WebGPU control.",
+      "id": "framework-substitution-v1",
+      "outcome": "Investigate Doe beneath ONNX Runtime's existing native WebGPU provider before expanding a separate inference plugin or operator stack. Preserve existing operators and application interfaces; do not assume a drop-in seam.",
       "requiredEvidence": [
-        "versioned program contract",
-        "persistent allocations and pipelines",
-        "source and shape invalidation",
-        "device and runtime-policy identity",
-        "replay correctness",
-        "transactional updates",
-        "ordinary execution control"
+        "pinned ONNX Runtime and Dawn build plus existing provider baseline",
+        "inventory of ABI, bindings, extensions, resource ownership, synchronization and build integration dependencies",
+        "minimal executable substitution prototype with unchanged model and application interfaces",
+        "independent output oracle and complete-operation comparison",
+        "explicit compatibility gaps, required implementation changes and continuing integration costs",
+        "feasible, conditional or infeasible decision with reproducible evidence; unresolved prototype remains unestablished",
+        "separate plugin-provider documentation reconciled before implementation expands"
       ],
       "currentAssessment": "unestablished",
       "stateAuthorityPaths": [
-        "docs/status/reusable-compute-programs.md",
+        "docs/status/runtime-backends-and-bench.md",
         "reports/claim-index.json"
       ]
     },
     {
       "order": 3,
-      "id": "external-application-qualification-v1",
-      "outcome": "Demonstrate agent-assisted acceleration of unfamiliar numerical work against fixed independent reference tests and resource limits, then transfer useful-operation advantages across frozen non-Doppler applications against the strongest eligible incumbent.",
+      "id": "application-transfer-v1",
+      "outcome": "Make transfer evidence binding across the compact proving set before broad claims or browser promotion. Independent framework integration must earn externally operated adoption separately from Doppler diagnostics.",
       "requiredEvidence": [
-        "pinned upstream applications and WGSL",
-        "incumbent, ordinary Doe and prepared Doe lanes",
-        "independent numerical oracle",
-        "cold and first execution",
-        "preparation amortization",
-        "repeated latency tails",
-        "CPU overhead and GPU time",
-        "peak memory and allocation counts",
-        "submission work",
-        "teardown and recovery",
-        "AMD Vulkan and Apple Metal physical transfer"
+        "all families in provingSet exercised through unchanged applications",
+        "independent correctness references and frozen acceptance for every family",
+        "complete-operation startup, resident latency, CPU, scoped memory and responsiveness measurements where applicable",
+        "primary material advantage and declared regression bounds assessed across the proving set",
+        "no model-name recognition, hidden application changes or missing GPU work",
+        "external maintainer adoption and retained use across another revision or workload",
+        "additional hardware selected around demonstrated advantages and separately qualified"
       ],
       "currentAssessment": "unestablished",
       "stateAuthorityPaths": [
-        "docs/status/reusable-compute-programs.md",
+        "docs/status/runtime-backends-and-bench.md",
         "reports/claim-index.json"
       ]
     },
     {
       "order": 4,
-      "id": "transferable-corrections-v1",
-      "outcome": "DoeLab turns reproduced application failures into permanent compiler or runtime corrections validated across applications and physical backends.",
+      "id": "chromium-substitution-v1",
+      "outcome": "Attempt bounded Chromium integration after independent native advantage and binding transfer evidence; browser replacement is the destination, with broader adoption conditional on compatibility, security, maintainability and application benefit.",
       "requiredEvidence": [
-        "small reproduction",
-        "responsible layer",
-        "unchanged semantic regression",
-        "candidate correction",
-        "physical cross-backend evaluation",
-        "source-to-backend identity"
+        "prior ordinary-execution advantage and independent native framework and transfer evidence",
+        "pinned Chromium artifact and narrow unchanged application with independent oracle",
+        "ordinary WebGPU semantics preserved through validation and process boundaries",
+        "hostile-input handling, graphics correctness, sandbox boundaries and device recovery",
+        "complete-operation application benefit with declared regression bounds and integration maintenance costs",
+        "separate browser qualification and unchanged browser causal controls; native evidence grants no browser promotion"
       ],
       "currentAssessment": "unestablished",
       "stateAuthorityPaths": [
-        "docs/status/reusable-compute-programs.md",
-        "reports/claim-index.json"
-      ]
-    },
-    {
-      "order": 5,
-      "id": "embedding-expansion-v1",
-      "outcome": "Distribution integrations expand the same execution system after demonstrated application wins.",
-      "requiredEvidence": [
-        "prior provider qualification",
-        "prior transferred application advantage",
-        "separate integration artifact",
-        "physical lifecycle and correctness evidence",
-        "independent repeat use"
-      ],
-      "currentAssessment": "unestablished",
-      "stateAuthorityPaths": [
-        "docs/status/reusable-compute-programs.md",
-        "reports/claim-index.json"
+        "docs/browser-lane.md",
+        "browser/chromium/bench/workflows/browser-milestones.json"
       ]
     }
   ],
@@ -453,7 +431,7 @@
     "adoptionBoundary": "Repository demonstrations do not establish external voluntary adoption or retention."
   },
   "executionOwnership": {
-    "operatingObjective": "Prove ordinary compiler/runtime value in unchanged applications first, interactive reuse second, and agent-assisted numerical acceleration third; framework, equipment and chip-platform integrations distribute and improve the same runtime.",
+    "operatingObjective": "Ordinary execution first, independent ONNX Runtime framework substitution next, binding inference/computation/rendering transfer, and browser replacement as the destination.",
     "allocationPercent": {
       "runtimeCompilerAndPlans": 60,
       "externalWorkloadQualification": 25,
@@ -464,6 +442,23 @@
       "minimum": 3,
       "maximum": 5
     },
-    "expansionPrerequisite": "Transferred physical application wins; Chromium/Fawn, Flutter/Impeller, ONNX Runtime EP and TSIR/Cerebras remain distribution experiments until this gate passes."
+    "expansionPrerequisite": "Expand hardware around demonstrated application advantages. Reuse, refactoring and agent assistance support these milestones. Other framework, equipment, Flutter/Impeller and TSIR/Cerebras expansion remains subordinate and independently admitted."
+  },
+  "provingSet": {
+    "families": [
+      "inference",
+      "general-computation",
+      "interactive-rendering"
+    ],
+    "isBinding": true,
+    "applicationRule": "Unchanged applications and independent correctness references; Doppler exposes inference problems, while another framework establishes independent adoption.",
+    "measurementRule": "Freeze complete-operation scope, primary advantage and regression limits before execution; retain startup, resident costs, responsiveness, uncertainty and raw samples."
+  },
+  "developmentEffectiveness": {
+    "metric": "reproduction-to-verified-improvement",
+    "start": "Timestamp of a retained reproducible problem with pinned source and inputs.",
+    "stop": "Timestamp of independently verified improvement against frozen correctness and application acceptance.",
+    "recordingRule": "Record elapsed time and evidence links in existing work records; retain unresolved and rejected attempts separately. No new measurement framework is required.",
+    "engineeringRule": "Keep compiler, backends and host adapters independently testable. Reuse, refactoring and agent assistance serve the ordered milestones; avoid abstractions that add execution overhead."
   }
 }

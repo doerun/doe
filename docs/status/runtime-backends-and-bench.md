@@ -6,6 +6,22 @@ history remains in the archive.
 
 ## Current boundary
 
+The [strategy contract](../../config/doe-product-strategy.json) now governs the
+ordinary-execution, independent-framework, binding-transfer, and browser
+milestones. The ordinary advantage remains unestablished. Retain accepted
+runtime improvements and correctness repairs; the next bounded candidate must
+meet frozen material-advantage and regression criteria. The rejected reuse
+experiment below stays rejected. Further reranker work requires an explicit
+prioritization decision rather than an indefinite milestone.
+
+ONNX Runtime substitution beneath its existing WebGPU provider is the next
+integration investigation. The [bridge guidance](../../runtime/bridge/onnxruntime-ep/README.md)
+requires a prototype and feasibility disposition before separate plugin expansion.
+Independent framework adoption, the complete proving set, and browser destination
+acceptance remain unestablished. This strategy synchronization executes no new
+GPU comparison and promotes no runtime, support, adoption, or release claim.
+See the [contract migration](../product-strategy-contract.md) for the changed intent.
+
 Branch integration preserves rejected Vulkan experiments as history and retains
 the accepted native and package implementations. Compatible package-comparability
 checks enter current admission; historical performance receipts are unchanged.

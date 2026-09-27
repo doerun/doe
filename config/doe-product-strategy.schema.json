@@ -4,10 +4,10 @@
   "title": "Doe product strategy contract",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "schemaVersion", "strategyVersion", "artifactKind", "authority", "positioning", "independenceBoundary", "surfaces", "commercialOffer", "comparisonLaw", "externalProductComparison", "evidenceSpine", "customerEvidencePolicy", "platformSequence", "milestones", "claimBoundary", "reusableProgram", "executionOwnership"],
+  "required": ["$schema", "schemaVersion", "strategyVersion", "artifactKind", "authority", "positioning", "independenceBoundary", "surfaces", "commercialOffer", "comparisonLaw", "externalProductComparison", "evidenceSpine", "customerEvidencePolicy", "platformSequence", "milestones", "claimBoundary", "reusableProgram", "executionOwnership", "provingSet", "developmentEffectiveness"],
   "properties": {
     "$schema": { "type": "string", "const": "doe-product-strategy.schema.json" },
-    "schemaVersion": { "type": "integer", "const": 4 },
+    "schemaVersion": { "type": "integer", "const": 5 },
     "strategyVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
     "artifactKind": { "type": "string", "const": "doe-product-strategy" },
     "authority": {
@@ -20,6 +20,76 @@
         "runtimeOwnership": { "$ref": "#/$defs/path" },
         "support": { "$ref": "#/$defs/path" },
         "currentClaims": { "$ref": "#/$defs/path" }
+      }
+    },
+    "provingSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "families",
+        "isBinding",
+        "applicationRule",
+        "measurementRule"
+      ],
+      "properties": {
+        "families": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "inference",
+              "general-computation",
+              "interactive-rendering"
+            ]
+          }
+        },
+        "isBinding": {
+          "type": "boolean",
+          "const": true
+        },
+        "applicationRule": {
+          "type": "string",
+          "minLength": 1
+        },
+        "measurementRule": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "developmentEffectiveness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric",
+        "start",
+        "stop",
+        "recordingRule",
+        "engineeringRule"
+      ],
+      "properties": {
+        "metric": {
+          "type": "string",
+          "const": "reproduction-to-verified-improvement"
+        },
+        "start": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stop": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recordingRule": {
+          "type": "string",
+          "minLength": 1
+        },
+        "engineeringRule": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "positioning": {
@@ -132,9 +202,79 @@
     },
     "milestones": {
       "type": "array",
-      "minItems": 5,
-      "maxItems": 5,
-      "items": { "$ref": "#/$defs/milestone" }
+      "minItems": 4,
+      "maxItems": 4,
+      "items": false,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/milestone"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": "provider-qualification-v1"
+                },
+                "order": {
+                  "const": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/milestone"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": "framework-substitution-v1"
+                },
+                "order": {
+                  "const": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/milestone"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": "application-transfer-v1"
+                },
+                "order": {
+                  "const": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/milestone"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": "chromium-substitution-v1"
+                },
+                "order": {
+                  "const": 4
+                }
+              }
+            }
+          ]
+        }
+      ]
     },
     "claimBoundary": {
       "type": "object",
@@ -490,8 +630,8 @@
       "additionalProperties": false,
       "required": ["order", "id", "outcome", "requiredEvidence", "currentAssessment", "stateAuthorityPaths"],
       "properties": {
-        "order": { "type": "integer", "minimum": 1, "maximum": 5 },
-        "id": { "type": "string", "enum": ["provider-qualification-v1", "prepared-doeplan-v1", "external-application-qualification-v1", "transferable-corrections-v1", "embedding-expansion-v1"] },
+        "order": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "id": { "type": "string", "enum": ["provider-qualification-v1", "framework-substitution-v1", "application-transfer-v1", "chromium-substitution-v1"] },
         "outcome": { "type": "string", "minLength": 1 },
         "requiredEvidence": { "$ref": "#/$defs/stringList" },
         "currentAssessment": { "type": "string", "enum": ["unestablished","diagnostic","claimable"] },

@@ -4,9 +4,10 @@ Parent: none
 
 ## Target
 
-Earn adoption through ordinary WebGPU, then safe reuse on another application,
-using one portable compiler/runtime. DoeProof evaluates impartially; browser
-distribution is optional.
+Earn adoption through ordinary WebGPU execution, independent framework
+integration, and demonstrated application transfer. Browser replacement is the
+destination, separately qualified through bounded Chromium integration. One
+portable compiler/runtime owns execution; DoeProof evaluates impartially.
 
 ## Authority
 

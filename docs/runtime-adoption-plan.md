@@ -1,6 +1,7 @@
 # Doe runtime adoption plan
 
-Status: code-aligned portfolio alternative  
+Status: adoption gates under the [canonical strategy](thesis.md)
+
 Strategy unit: Doe alone  
 Repository owner: Doe
 
@@ -38,7 +39,8 @@ driver, adapter, or hardware change. A one-off benchmark win is insufficient.
 
 - Doppler may supply a workload but cannot supply Doe adoption evidence.
 - Reploid and Poolday are not required.
-- Fawn is not required for the independent runtime strategy.
+- Native adoption does not require a browser build. Browser replacement is the
+  destination after independent native advantage and binding transfer evidence.
 - DoeProof may qualify an incumbent without opening DoeRuntime adoption.
 - Ordinary browser use of `navigator.gpu` remains browser-owned unless a
   controlled browser build actually installs Doe beneath that seam.
@@ -54,6 +56,27 @@ uneven across hosts and backends. It establishes implementation and bounded
 execution, not voluntary external provider adoption or general WebGPU
 replacement.
 
+## Current integration priority
+
+Follow the ordered milestones and binding proving set in
+[`doe-product-strategy.json`](../config/doe-product-strategy.json), rather than
+maintaining a separate project order here. Close the bounded ordinary-execution
+candidate against predeclared material advantage and regression limits; an
+ineffective candidate leaves the milestone open without extending one reranker
+indefinitely. Preserve accepted improvements and correctness repairs.
+
+Next investigate Doe beneath ONNX Runtime's existing WebGPU provider. Preserve
+its operators and application interfaces; the
+[bridge investigation](../runtime/bridge/onnxruntime-ep/README.md) must deliver an
+executable prototype, compatibility gaps, integration costs, and a feasibility
+decision before expanding the separate plugin. These are intended deliverables,
+not established compatibility or adoption.
+
+Inference, general computation, and interactive rendering are binding transfer
+checks using unchanged applications and independent references. Doppler exposes
+inference problems; another framework must earn independent retained adoption.
+Bounded Chromium integration follows these native and transfer requirements.
+
 ## Execution gates
 
 | Gate | Required work | Exit evidence | Does not prove |
@@ -61,7 +84,7 @@ replacement.
 | W0: adopter contract | Select one unrelated application and freeze its source revision, workload, incumbent, provider seam, shaders, commands, oracle, hardware tuple, lifecycle requirements, and material-advantage threshold. | Owner-authorized comparison contract with a credible incumbent. | Doe correctness. |
 | W1: clean substitution | Install Doe from the supported package or native artifact and run the unchanged application contract through the declared provider seam. | Clean-environment reproduction with explicit Doe provider and backend identity. | Equivalent work or correctness. |
 | W2: semantic and structural parity | Run the same commands and GPU work, pass the independent output oracle, and exercise initialization, concurrency, teardown, cancellation, device loss, and readback required by the application. | Comparable traces, outputs, lifecycle observations, and replay artifacts. | Material advantage. |
-| W3: material advantage | Beat the incumbent on one predeclared application-valued outcome without violating W2. | Repeated application-level evidence for performance, reliability, diagnostics, deployment size, hardware reach, control, or correction cost. | Adoption. |
+| W3: material advantage | Beat the incumbent materially on one predeclared complete-operation outcome within declared regression limits for other outcomes, without violating W2. | Repeated application-level evidence for performance, reliability, diagnostics, deployment size, hardware reach, control, or correction cost. | Adoption. |
 | W4: voluntary adoption | The external application owner selects Doe for the supported path and makes Doe a maintained dependency or distribution component. | Owner-attributed decision, integration revision, support scope, rollback path, and release evidence. | Repeatability across change. |
 | W5: retained adoption | Requalify Doe after a consequential application, driver, runtime, adapter, or hardware change. | A second passing release decision under the maintained application contract. | Broad WebGPU replacement. |
 
@@ -129,7 +152,10 @@ Stop or narrow this strategy when:
 
 ## Repository work queue
 
-1. Select one application and record W0 before runtime tuning.
+Apply these gates to each application selected by the canonical milestone order:
+
+1. Record W0 before runtime tuning; ONNX Runtime substitution is the next
+   independent framework investigation.
 2. Reproduce its incumbent path and exact output oracle in a clean environment.
 3. Route the unchanged contract through the narrowest supported Doe provider
    seam.

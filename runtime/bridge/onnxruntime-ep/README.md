@@ -8,13 +8,36 @@ Audience:
 This directory is the experimental bridge surface for a Doe-backed ONNX Runtime
 plugin execution provider.
 
-Why it exists:
+## Integration priority
 
-- ONNX Runtime's WebGPU execution path is a concrete incumbent integration seam
-- Doe needs a real plugin-EP entrypoint if we want to compare `ORT + incumbent`
-  against `ORT + Doe` honestly
-- the plugin EP is a narrower and more winnable lane than claiming browser
-  runtime replacement
+The next integration milestone in the [strategy contract](../../../config/doe-product-strategy.json)
+is substitution beneath ONNX Runtime's existing native WebGPU provider, preserving
+its operators and application interfaces. [ONNX Runtime documents that provider](https://onnxruntime.ai/docs/execution-providers/WebGPU-ExecutionProvider.html)
+as using Dawn. This is a seam to investigate, not an established drop-in boundary.
+
+The separate plugin EP below is a retained experiment, not the primary route to
+framework substitution. Its operator implementations and smoke results do not
+prove replacement beneath the existing provider. Do not expand its operator stack
+before recording the substitution feasibility decision.
+
+The investigation must:
+
+- Pin ONNX Runtime, Dawn, Doe, build dependencies, and an unchanged model and
+  application; first reproduce the existing WebGPU provider and independent oracle.
+- Inventory required C/C++ APIs, extensions, bindings, validation and robustness,
+  resource ownership, synchronization, readback, and build/link assumptions.
+  Distinguish a supported provider-loading seam from source adaptation costs.
+- Build and execute a minimal prototype replacing only the underlying WebGPU
+  implementation. Keep operators, application interfaces, work, and accepted
+  outputs unchanged; identify the actual provider and any unsupported boundary.
+- Retain compatibility gaps, required code changes, integration and maintenance
+  costs, complete-operation comparisons, and a feasible/conditional/infeasible
+  decision. Missing execution leaves the prototype milestone unestablished.
+
+If substitution is infeasible, document the exact obstruction before choosing a
+new integration route. Plugin smoke success is not a substitute for this result.
+
+## Retained plugin experiment
 
 What is implemented today:
 
@@ -195,5 +218,6 @@ The vendored ORT headers and license are copied from the public ONNX Runtime
 repository and remain under the upstream MIT license in
 `vendor/onnxruntime/LICENSE`.
 
-The next honest milestone is extending the strict native compare from this
-basic-ops scaffold into broader Doe-backed graph execution slices.
+Further plugin implementation is subordinate to the substitution feasibility
+decision above. Retain these smoke tools and historical results without treating
+them as evidence that the existing ONNX WebGPU provider runs through Doe.

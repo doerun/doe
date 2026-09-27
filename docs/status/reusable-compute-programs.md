@@ -1,5 +1,13 @@
 # Reusable compute programs
 
+## Strategy boundary
+
+Reuse and its calibration work support the ordered milestones in the
+[strategy contract](../../config/doe-product-strategy.json). They do not precede
+ONNX Runtime substitution or replace ordinary-execution and transfer acceptance.
+The observations below retain their original scope; their local next actions
+do not define the product work order.
+
 ## Completed A/A series and unresolved precision
 
 The [quiet-window calibration](../../bench/out/compute-program/20260920-calibration-retry-04/README.md)

@@ -63,7 +63,8 @@ and binds specialized evidence through typed extensions; see
    No browser-specific globals, no direct cross-backend imports.
 2. **Outside the Zig Runtime:** Applications select `DoeRuntime` through the
    package or native embedding. `DoeLab` supplies correction workflows and
-   `DoeProof` evaluates execution. Fawn is an optional distribution integration.
+   `DoeProof` evaluates execution. Browser replacement is the destination,
+   gated by independent native wins, transfer, and bounded Chromium integration.
 3. **Cross-Layer Optimization:** Governed through explicit contracts
    (`WorkloadProfile`, `SpecializationPolicy`, `PromotionReceipt`), never
    through hidden runtime heuristics or implicit environment checks.
@@ -73,7 +74,7 @@ and binds specialized evidence through typed extensions; see
 The important boundary distinctions are:
 
 - `runtime/zig` is the real runtime implementation
-- `runtime/bridge/onnxruntime-ep` is a repo-only integration seam for a future Doe-backed ONNX Runtime plugin EP
+- `runtime/bridge/onnxruntime-ep` retains a repo-only plugin experiment and documents the priority investigation beneath ONNX Runtime’s existing WebGPU provider
 - `doe-gpu` is the package surface over that runtime
 - `doe-gpu/browser` is a browser wrapper, not the Doe runtime running inside the browser
 - `browser/chromium` owns the experimental Fawn browser-runtime integration
@@ -83,8 +84,8 @@ Current scope:
 
 - Dawn is the comparison baseline
 - Doe runs in Node.js, Bun, Deno, drop-in, and embedded/native lanes
-- a Doe-backed ONNX Runtime plugin EP is a repo-only experimental integration seam
-- browser `navigator.gpu` replacement is an optional independently gated distribution lane
+- ONNX Runtime substitution is the next integration investigation; the separate plugin EP does not establish that seam
+- browser `navigator.gpu` replacement is the strategic destination, with independently gated Chromium integration after native and transfer evidence
 
 That separation is deliberate. It keeps package ergonomics, runtime behavior,
 and browser integration from getting blurred together in docs or benchmarks.

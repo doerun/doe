@@ -6,8 +6,8 @@ DoeRuntime is the independent, provider-neutral GPU compiler and native runtime 
 
 **GPU programs should be ordinary software: executable, inspectable, and portable across hardware.**
 
-Make existing applications easier to accelerate, and repeated computations
-cheaper to execute safely. Developers should be able to substitute Doe beneath
+Make existing local applications materially faster, less memory intensive, and
+cheaper in CPU overhead through replacement of their WebGPU implementation. Developers should be able to substitute Doe beneath
 supported WebGPU workloads while preserving shaders, application logic, and
 declared numerical requirements. Exact outputs are required where justified;
 other workloads use frozen, independently evaluated tolerances. Universal bit
@@ -67,7 +67,37 @@ requires its declared evidence independently of what ordinary applications enabl
 - Deployment: No mandatory browser or cloud service. Platform drivers and frameworks remain dependencies; there is no universal zero-dependency or zero-allocation claim.
 - Support: Metal, Vulkan, D3D12, and additional operating systems earn support separately. iOS and Android require implemented paths and physical tests before support is promised.
 - Diagnostics: Report the best established source, validation, resource, submission, or native failure location. Do not invent a shader location for an unattributed hardware fault.
-- Acceptance sequence: Demonstrate a dependable ordinary-provider application advantage, then demonstrate safe reuse benefiting another application. Measure allocation reductions and latency on named paths, not through universal promises.
+- Acceptance sequence: Ordinary execution first, independent framework integration next, browser replacement as the destination. The ordered milestones and binding proving set live in [the strategy contract](config/doe-product-strategy.json), projected from [the thesis](docs/thesis.md).
+
+## Execution milestones
+
+Retain accepted improvements and correctness repairs. Close a bounded ordinary
+execution optimization with a material complete-application advantage under
+predeclared regression limits; simultaneous latency, CPU, and memory victory is
+not required. Reject ineffective candidates without extending one reranker
+indefinitely or declaring the advantage achieved.
+
+Next investigate replacing the implementation beneath ONNX Runtime’s existing
+WebGPU provider while preserving its operators and application interfaces.
+Deliver a minimal executable prototype, compatibility gaps, integration costs,
+and an explicit feasibility decision before expanding the separate plugin EP.
+
+Make inference, general computation, and interactive rendering binding transfer
+evidence through unchanged applications, independent correctness references, and
+complete-operation measurements. Doppler owns models and inference and remains a
+demanding customer; another framework must establish independent adoption.
+Expand hardware coverage around demonstrated advantages.
+
+After independent native wins and transfer evidence, attempt bounded Chromium
+integration preserving ordinary WebGPU behavior through validation and process
+boundaries. Broader browser adoption depends on compatibility, security,
+maintainability, and application benefits; it is a destination, not an achieved
+support claim.
+
+Measure development by reproduction-to-verified-improvement time using existing
+work records. Keep compiler, backend, and host boundaries independently testable.
+Reuse, refactoring, and agent assistance serve these milestones without adding
+unnecessary execution overhead.
 
 ## Explicit exclusions
 

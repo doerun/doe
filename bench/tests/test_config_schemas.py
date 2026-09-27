@@ -73,6 +73,14 @@ class SchemaTargetEntry:
         return self.data_path.name
 
 
+def load_target_records(entry: SchemaTargetEntry) -> list[object]:
+    """Match the canonical gate's per-record JSON and JSONL validation."""
+    if entry.is_jsonl:
+        return load_jsonl(entry.data_path)
+    data = load_json(entry.data_path)
+    return data if isinstance(data, list) else [data]
+
+
 def load_targets() -> list[SchemaTargetEntry]:
     targets_path = REPO_ROOT / "config" / "schema-targets.json"
     raw = load_json(targets_path)
@@ -100,20 +108,16 @@ def _make_positive_test(entry: SchemaTargetEntry):
 
     def test(self: unittest.TestCase) -> None:
         schema = load_json(entry.schema_path)
-        if entry.is_jsonl:
-            records = load_jsonl(entry.data_path)
-            self.assertGreater(len(records), 0, f"{entry.label}: JSONL file is empty")
-            for i, record in enumerate(records):
-                try:
-                    jsonschema.validate(record, schema)
-                except jsonschema.ValidationError as exc:
-                    self.fail(f"{entry.label} line {i}: positive validation failed: {exc.message}")
-        else:
-            data = load_json(entry.data_path)
+        records = load_target_records(entry)
+        self.assertGreater(len(records), 0, f"{entry.label}: file is empty")
+        for i, record in enumerate(records):
             try:
-                jsonschema.validate(data, schema)
+                jsonschema.validate(record, schema)
             except jsonschema.ValidationError as exc:
-                self.fail(f"{entry.label}: positive validation failed: {exc.message}")
+                self.fail(
+                    f"{entry.label} record {i}: positive validation failed: "
+                    f"{exc.message}"
+                )
 
     return test
 
@@ -128,14 +132,11 @@ def _make_missing_required_test(entry: SchemaTargetEntry):
             self.skipTest(f"{entry.label}: schema has no required fields")
             return
 
-        if entry.is_jsonl:
-            records = load_jsonl(entry.data_path)
-            if not records:
-                self.skipTest(f"{entry.label}: JSONL file is empty")
-                return
-            data = records[0]
-        else:
-            data = load_json(entry.data_path)
+        records = load_target_records(entry)
+        if not records:
+            self.skipTest(f"{entry.label}: file is empty")
+            return
+        data = records[0]
 
         if not isinstance(data, dict):
             self.skipTest(f"{entry.label}: top-level value is not an object")
@@ -164,14 +165,11 @@ def _make_additional_properties_test(entry: SchemaTargetEntry):
             self.skipTest(f"{entry.label}: additionalProperties is not false at top level")
             return
 
-        if entry.is_jsonl:
-            records = load_jsonl(entry.data_path)
-            if not records:
-                self.skipTest(f"{entry.label}: JSONL file is empty")
-                return
-            data = records[0]
-        else:
-            data = load_json(entry.data_path)
+        records = load_target_records(entry)
+        if not records:
+            self.skipTest(f"{entry.label}: file is empty")
+            return
+        data = records[0]
 
         if not isinstance(data, dict):
             self.skipTest(f"{entry.label}: top-level value is not an object")
@@ -198,14 +196,11 @@ def _make_type_mismatch_test(entry: SchemaTargetEntry):
             self.skipTest(f"{entry.label}: no string properties found in schema")
             return
 
-        if entry.is_jsonl:
-            records = load_jsonl(entry.data_path)
-            if not records:
-                self.skipTest(f"{entry.label}: JSONL file is empty")
-                return
-            data = records[0]
-        else:
-            data = load_json(entry.data_path)
+        records = load_target_records(entry)
+        if not records:
+            self.skipTest(f"{entry.label}: file is empty")
+            return
+        data = records[0]
 
         if not isinstance(data, dict):
             self.skipTest(f"{entry.label}: top-level value is not an object")

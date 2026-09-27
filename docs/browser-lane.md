@@ -2,6 +2,14 @@
 
 This is a routing note, not a task list or status log.
 
+Browser replacement is the destination in the [strategy](thesis.md). Its bounded
+Chromium milestone follows ordinary execution, independent framework integration,
+and binding application transfer. Preserve WebGPU behavior through validation and
+process boundaries; broader adoption also requires compatibility, hostile-input
+security, graphics correctness, device recovery, maintainability, and application
+benefit. Existing browser artifacts retain their separate assessments; the
+strategy change grants no browser promotion.
+
 - Product and package boundary:
   [`runtime-surface-boundary.md`](runtime-surface-boundary.md)
 - Canonical browser tasks:

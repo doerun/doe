@@ -1,29 +1,37 @@
 # Doe product strategy contract
 
 `config/doe-product-strategy.json` is the schema-validated projection of
-[`thesis.md`](thesis.md). The current intent migration adds an explicitly
-declared reusable-program entry alongside provider substitution. DoeRuntime
-executes, DoeProof evaluates impartially, and browser construction is outside
-the first demonstration. Schema history remains readable through its original
-receipts; the current schema requires the reusable-program contract and
-demonstration gate. Milestones now follow provider qualification, declared plans,
-external applications, transferable corrections, and subsequent embedding
-expansion. The current priority requires an ordinary Node provider-substitution
-advantage before the declared-program demonstration. Interactive reuse and
-agent-assisted acceleration are the next direct demonstrations; framework,
-equipment, and chip-platform integrations extend the same runtime afterward.
-Named platform examples are prospective evaluations, not existing customers or
-support claims. The execution-ownership allocation is configuration, not independent
-browser, compiler, proof, and accelerator roadmaps. This change grants no
-evidence promotion.
+[`thesis.md`](thesis.md), beneath the durable goals in [`GOALS.md`](../GOALS.md).
+It is the machine-readable source for milestone order, the binding proving set,
+and development-effectiveness recording. Status routes evidence; it does not
+maintain another roadmap.
+
+## Migration to ordinary execution and independent integration
+
+Schema version 5 and strategy version 4.0.0 replace the former sequence of
+provider qualification, declared plans, agent-assisted applications, corrections,
+and embedding expansion. The current order is ordinary execution, ONNX Runtime
+substitution feasibility, binding application transfer, and bounded Chromium
+integration toward browser replacement. The schema enforces milestone identity
+and order. The new `provingSet` requires inference, general computation, and
+interactive rendering; `developmentEffectiveness` records reproduction-to-verified-
+improvement time using existing evidence rather than new infrastructure.
+
+The retained provider milestone ID keeps its ordinary-execution meaning. Removed
+milestone IDs remain readable in historical receipts; they must not be relabeled
+as new achievements. Reuse, refactoring, and agent assistance become supporting
+work. No runtime API or comparison law changes, and no evidence is promoted.
+The separate ONNX plugin EP remains an experiment while the existing-provider
+substitution seam is investigated. Browser destination does not imply browser
+readiness or a requirement to ship a browser before native adoption.
 
 ## Product roles
 
 | Surface | Role | Acceptance |
 | --- | --- | --- |
-| DoeRuntime | Primary product | Safe reuse transfers between non-Doppler applications and hardware; separately evidenced external adoption follows measured advantage |
+| DoeRuntime | Primary product | Ordinary execution earns material application advantage; binding transfer and independent retained adoption follow |
 | DoeProof | Supporting feature | Independently qualifies incumbent and DoeRuntime without interfering with execution |
-| Fawn | Experimental distribution channel | Enters the main milestone only after transferred runtime wins and separately proved browser substitution |
+| Fawn | Experimental distribution channel | Browser replacement destination; bounded Chromium integration follows independent native wins and binding transfer, with separate browser admission |
 | DoeLab | Operating model | Turns retained failures into minimized regressions and qualified corrections |
 
 ## Comparison and adoption law
@@ -60,8 +68,26 @@ Fawn milestone artifacts remain the evidence authorities. Reordered milestones
 retain their unestablished or diagnostic assessments. No result is promoted by
 this intent change.
 
+The config-schema test loader now treats JSON row arrays like the canonical
+schema gate, validating each record rather than the collection as one object.
+This repairs a pre-existing compiler-report check without changing its schema
+or evidence. Positive checks cover every record; adversarial checks retain
+the existing representative-record scope.
+
 Validate with:
 
 ```bash
-python3 -m unittest bench.tests.test_config_schemas bench.tests.test_browser_product_comparison_policy
+python3 bench/gates/schema_gate.py
+python3 bench/gates/catscan_gate.py
+python3 -m unittest bench.tests.test_config_schemas bench.tests.test_browser_product_comparison_policy bench.tests.test_doc_link_coverage
 ```
+
+Component: Doe strategy, configuration, documentation, and integration guidance.
+Intent: changed — ordered execution milestones replace reuse-first expansion.
+Acceptance evidence: schema, CATSCAN, policy, and documentation checks above;
+manual schema mutations reject reordered milestones, missing proving families,
+and optional transfer.
+Boundary effects: ONNX bridge work prioritizes existing-provider substitution;
+compiler, backend, host API, comparison, and release-gate ownership are preserved.
+No GPU experiment, integration prototype, or release qualification ran in this
+strategy synchronization.
