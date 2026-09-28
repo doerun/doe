@@ -17,19 +17,29 @@ or compatibility facade.
 
 ## Current work selection
 
+The [surface handoff checkpoint](../../reports/maintenance/20260928-surface-handoff/README.md)
+repairs ordinary Vulkan acquire/render/present synchronization and native texture
+references through a real windowed consumer. Acquisition completion and
+presentation completion have distinct ownership. Rejection, delayed completion,
+recreation and caller-held views are covered by retained local evidence. Native
+windowed presentation requires the declared presentation-fence capability;
+offscreen operation remains available without it. Surface capability/format
+admission, other window systems and broader pacing remain open. This closes the
+bounded handoff, not the whole surface review.
+
 The [attachment admission checkpoint](../../reports/maintenance/20260928-attachment-admission/README.md)
 rejects incompatible ordinary Vulkan pass/pipeline layouts before publication.
 Native objects own validation; recorded leases and queue preflight preserve
 caller-release and explicit-destruction distinctions. Unsupported attachment
-topologies fail explicitly. Backend command-oriented admission and surface
-synchronization remain separate obligations.
+topologies fail explicitly. Backend command-oriented admission and broader surface
+capability admission remain separate obligations.
 
 The [render recording checkpoint](../../reports/maintenance/20260928-render-recording/README.md)
 now gives the live draw recorder typed borrowed dependencies. Allocation, image
 transitions and completion remain with the render owner. Public indexed draws
 also consume the native adapter's buffer identity correctly. Physical query and
 pixel checks and injected completion failures cover this boundary; broader setup,
-command-oriented attachment admission and surface synchronization remain open.
+command-oriented attachment admission and broader surface admission remain open.
 
 The [production query checkpoint](../../reports/maintenance/20260928-production-query/README.md)
 repairs pool type, reset placement, and logical visibility across native draws.
@@ -50,7 +60,7 @@ rules; its [log](../../runtime/zig/reviews/log.json) is append-only and its
 coverage under existing hashes; never renew reviews without examination.
 
 The [render ownership evidence](../../reports/maintenance/20260927-quality-planning/README.md)
-supports retained index storage and safe failed-wait retirement. Surface synchronization and command-oriented attachment admission remain open.
+supports retained index storage and safe failed-wait retirement. The bounded surface handoff is superseded by the checkpoint above; command-oriented attachment admission remains open.
 The [bundle rejection evidence](../../reports/maintenance/20260928-render-rejection/README.md)
 supports typed failure, no partial submission, native cleanup, and subsequent
 rendering in the standalone replay helper. That helper has no current production

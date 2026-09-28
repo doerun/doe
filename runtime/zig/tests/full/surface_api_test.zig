@@ -147,3 +147,13 @@ test "full surface is strict superset of core surface" {
         try std.testing.expect(found);
     }
 }
+
+test "surface present rejects an unconfigured native surface instead of reporting success" {
+    if (comptime builtin.os.tag != .linux) return error.SkipZigTest;
+    const inst_raw = instance_device.doeNativeCreateInstance(null) orelse return error.TestExpectedEqual;
+    defer instance_device.doeNativeInstanceRelease(inst_raw);
+    var desc = surface_procs.SurfaceDescriptor{ .nextInChain = null, .label = .{ .data = null, .length = 0 } };
+    const surf_raw = surface_native.doeAbiBridgeInstanceCreateSurface(inst_raw, &desc) orelse return error.TestExpectedEqual;
+    defer surface_native.doeNativeSurfaceRelease(surf_raw);
+    try std.testing.expectEqual(@as(u32, 2), surface_native.doeAbiBridgeSurfacePresent(surf_raw));
+}

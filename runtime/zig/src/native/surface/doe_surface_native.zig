@@ -23,7 +23,8 @@ const native_rt_helpers = @import("../support/doe_native_runtime_helpers.zig");
 const vk_surf = backend_surface_ops;
 const vk_constants = if (has_vulkan) backend_resource_ops.vk_constants else struct {};
 const vk_resources = if (has_vulkan) backend_resource_ops.vk_resources else struct {};
-const vulkan_texture_native = @import("../vulkan/vulkan_texture_native.zig");
+const texture_native = @import("../resource/doe_texture_sampler_native.zig");
+const device_native = @import("../lifecycle/doe_instance_device_native.zig");
 
 const alloc = native_helpers.alloc;
 const make = native_helpers.make;
@@ -40,8 +41,13 @@ const NativeVulkanRuntime = native_shared.NativeVulkanRuntime;
 const MAGIC_SURFACE: u32 = 0xD0E1_0013;
 const MAX_SURFACE_DESCRIPTOR_CHAIN_NODES: u32 = 16;
 
+const WGPU_STATUS_SUCCESS: u32 = 0x00000001;
+const WGPU_STATUS_ERROR: u32 = 0x00000002;
 const WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_SUCCESS: u32 = 0x00000001;
+const WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_SUBOPTIMAL: u32 = 0x00000002;
 const WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_TIMEOUT: u32 = 0x00000003;
+const WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_ERROR: u32 = 0x00000006;
+const WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_OUTDATED: u32 = 0x00000004;
 
 pub const DoeSurface = struct {
     pub const TYPE_MAGIC = MAGIC_SURFACE;
@@ -52,6 +58,7 @@ pub const DoeSurface = struct {
     instance_ref: ?*DoeInstance = null,
     vk_runtime_ref: ?*anyopaque = null,
     current_tex: ?*DoeTexture = null,
+    device_ref: ?*DoeDevice = null,
     pending_xcb_connection: ?*anyopaque = null,
     pending_xcb_window: u32 = 0,
     pending_wayland_display: ?*anyopaque = null,
@@ -170,21 +177,23 @@ fn bind_surface_runtime(surf: *DoeSurface, dev_raw: ?*anyopaque) bool {
         return false;
     };
     surf.vk_runtime_ref = rt_opaque;
+    surf.device_ref = dev;
+    native_helpers.object_add_ref(DoeDevice, dev_raw);
     _ = attach_pending_platform_surface(surf, rt);
     return true;
 }
 
 fn release_current_surface_texture(surf: *DoeSurface) void {
     if (surf.current_tex) |tex| {
-        vulkan_texture_native.vulkan_destroy_texture(tex);
-        alloc.destroy(tex);
+        tex.destroyed = true;
         surf.current_tex = null;
+        texture_native.doeNativeTextureRelease(toOpaque(tex));
     }
 }
 
 fn register_acquired_surface_texture(
     rt: *NativeVulkanRuntime,
-    surface_state: *const backend_surface_ops.VulkanSurface,
+    surface_state: *backend_surface_ops.VulkanSurface,
     tex: *DoeTexture,
 ) bool {
     const image_count: usize = @intCast(surface_state.swapchain_image_count);
@@ -209,12 +218,18 @@ fn register_acquired_surface_texture(
         vk_constants.VK_IMAGE_LAYOUT_UNDEFINED,
     );
     resource.generation = rt.next_resource_generation() catch return false;
-    const result = rt.textures.getOrPut(rt.allocator, handle) catch return false;
+    resource.view = vk_resources.create_texture_view(rt, resource, surface_state.format, model_gpu_types.WGPUTextureViewDimension_2D, 0, 1, 0, 1, model_gpu_types.WGPUTextureAspect_All, 0, 0, 0, 0) catch return false;
+    resource.owns_view = true;
+    const result = rt.textures.getOrPut(rt.allocator, handle) catch {
+        vk_resources.release_texture_resource(rt, resource);
+        return false;
+    };
     if (result.found_existing) {
         vk_resources.release_texture_resource(rt, result.value_ptr.*);
     }
     result.value_ptr.* = resource;
     tex.vk_id = handle;
+    surface_state.acquired_texture_handle = handle;
     return true;
 }
 
@@ -342,12 +357,13 @@ fn doeNativeSurfaceConfigureForDevice(
     if (comptime !has_vulkan) return;
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (surf.backend != .vulkan) return;
-    if (surf.vk_runtime_ref == null and !bind_surface_runtime(surf, dev_raw)) {
+    if ((dev_raw != null or surf.vk_runtime_ref == null) and !bind_surface_runtime(surf, dev_raw)) {
         std.log.err("doe_surface_native: configure_surface failed: missing Vulkan device binding", .{});
         return;
     }
     const rt_ptr = surf.vk_runtime_ref orelse return;
     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+    release_current_surface_texture(surf);
     rt.configure_surface(model_surface_control_types.SurfaceConfigureCommand{
         .handle = surf.handle,
         .width = width,
@@ -369,7 +385,7 @@ pub export fn doeNativeSurfaceGetCurrentTexture(
     out_suboptimal: ?*u32,
     out_status: ?*u32,
 ) callconv(.c) void {
-    if (out_status) |s| s.* = WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_TIMEOUT;
+    if (out_status) |s| s.* = WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_ERROR;
     if (out_suboptimal) |s| s.* = 0;
     if (out_texture) |t| t.* = null;
     if (comptime !has_vulkan) return;
@@ -379,15 +395,35 @@ pub export fn doeNativeSurfaceGetCurrentTexture(
     const rt_ptr = surf.vk_runtime_ref orelse return;
     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
 
+    const acquisition = rt.surfaces.getPtr(surf.handle) orelse return;
+    if (!acquisition.configured) return;
+    if (surf.current_tex) |existing| {
+        if (existing.destroyed) return;
+        if (out_texture) |t| {
+            native_helpers.object_add_ref(DoeTexture, toOpaque(existing));
+            t.* = toOpaque(existing);
+        }
+        if (out_suboptimal) |s| s.* = if (acquisition.last_acquire_suboptimal) 1 else 0;
+        if (out_status) |s| s.* = if (acquisition.last_acquire_suboptimal) WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_SUBOPTIMAL else WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_SUCCESS;
+        return;
+    }
+    const tex = make(DoeTexture) orelse return;
     rt.acquire_surface(surf.handle) catch |err| {
+        alloc.destroy(tex);
+        if (out_status) |s| s.* = switch (err) {
+            error.SurfaceUnavailable => WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_OUTDATED,
+            error.SyncUnavailable => WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_TIMEOUT,
+            else => WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_ERROR,
+        };
         std.log.err("doe_surface_native: acquire_surface failed: {s}", .{@errorName(err)});
         return;
     };
 
-    const surface_state = rt.surfaces.getPtr(surf.handle) orelse return;
+    const surface_state = rt.surfaces.getPtr(surf.handle) orelse {
+        alloc.destroy(tex);
+        return;
+    };
 
-    release_current_surface_texture(surf);
-    const tex = make(DoeTexture) orelse return;
     tex.* = .{
         .backend = .vulkan,
         .format = surface_state.format,
@@ -400,26 +436,24 @@ pub export fn doeNativeSurfaceGetCurrentTexture(
         .usage = surface_state.usage,
         .texture_binding_view_dimension = model_gpu_types.WGPUTextureViewDimension_2D,
         .vk_runtime_ref = surf.vk_runtime_ref,
+        .device_ref = surf.device_ref,
     };
     if (!register_acquired_surface_texture(rt, surface_state, tex)) {
         alloc.destroy(tex);
         return;
     }
+    native_helpers.object_add_ref(DoeDevice, toOpaque(surf.device_ref.?));
     surf.current_tex = tex;
-    if (out_texture) |t| t.* = toOpaque(tex);
+    if (out_texture) |t| {
+        native_helpers.object_add_ref(DoeTexture, toOpaque(tex));
+        t.* = toOpaque(tex);
+    }
     if (out_suboptimal) |s| s.* = if (surface_state.last_acquire_suboptimal or surface_state.last_present_suboptimal) 1 else 0;
-    if (out_status) |s| s.* = WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_SUCCESS;
+    if (out_status) |s| s.* = if (surface_state.last_acquire_suboptimal) WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_SUBOPTIMAL else WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_SUCCESS;
 }
 
 pub export fn doeNativeSurfacePresent(surf_raw: ?*anyopaque) callconv(.c) void {
-    if (comptime !has_vulkan) return;
-    const surf = cast(DoeSurface, surf_raw) orelse return;
-    if (surf.backend != .vulkan) return;
-    const rt_ptr = surf.vk_runtime_ref orelse return;
-    const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
-    rt.present_surface(surf.handle) catch |err| {
-        std.log.err("doe_surface_native: present_surface failed: {s}", .{@errorName(err)});
-    };
+    _ = doeAbiBridgeSurfacePresent(surf_raw);
 }
 
 pub export fn doeNativeSurfaceUnconfigure(surf_raw: ?*anyopaque) callconv(.c) void {
@@ -428,19 +462,17 @@ pub export fn doeNativeSurfaceUnconfigure(surf_raw: ?*anyopaque) callconv(.c) vo
     if (surf.backend != .vulkan) return;
     const rt_ptr = surf.vk_runtime_ref orelse return;
     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+    release_current_surface_texture(surf);
     rt.unconfigure_surface(surf.handle) catch |err| {
         std.log.err("doe_surface_native: unconfigure_surface failed: {s}", .{@errorName(err)});
     };
-    if (surf.current_tex) |tex| {
-        _ = tex;
-        release_current_surface_texture(surf);
-    }
 }
 
 pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
     if (comptime !has_vulkan) return;
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (!native_helpers.object_should_destroy(surf)) return;
+    release_current_surface_texture(surf);
     if (surf.backend == .vulkan) {
         if (surf.vk_runtime_ref) |rt_ptr| {
             const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
@@ -449,7 +481,7 @@ pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
             };
         }
     }
-    release_current_surface_texture(surf);
+    if (surf.device_ref) |dev| device_native.doeNativeDeviceRelease(toOpaque(dev));
     release_surface_instance(surf);
     alloc.destroy(surf);
 }
@@ -546,8 +578,25 @@ pub fn doeAbiBridgeSurfaceGetCurrentTexture(
 }
 
 /// ABI bridge for wgpuSurfacePresent.
-/// Native returns void; C ABI expects u32 (WGPUStatus).
+/// Preserve the backend outcome in the public WGPUStatus result.
 pub fn doeAbiBridgeSurfacePresent(surf_raw: ?*anyopaque) callconv(.c) u32 {
-    doeNativeSurfacePresent(surf_raw);
-    return 1; // WGPUStatus_Success
+    if (comptime !has_vulkan) return WGPU_STATUS_ERROR;
+    const surf = cast(DoeSurface, surf_raw) orelse return WGPU_STATUS_ERROR;
+    const rt_ptr = surf.vk_runtime_ref orelse return WGPU_STATUS_ERROR;
+    const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+    rt.present_surface(surf.handle) catch |err| {
+        // A rejected queue operation can be retried; an accepted presentation
+        // expires this texture even when the surface becomes out of date.
+        if (rt.surfaces.get(surf.handle)) |state| {
+            if (!state.acquired) {
+                release_current_surface_texture(surf);
+            } else if (state.completion.present_ready) {
+                if (surf.current_tex) |tex| tex.destroyed = true;
+            }
+        }
+        log.warn("surface present: {s}", .{@errorName(err)});
+        return WGPU_STATUS_ERROR;
+    };
+    release_current_surface_texture(surf);
+    return WGPU_STATUS_SUCCESS;
 }

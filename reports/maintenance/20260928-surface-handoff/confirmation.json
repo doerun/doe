@@ -1,0 +1,16 @@
+[
+  {
+    "arm": "baseline",
+    "mode": "baseline",
+    "exitCode": 1,
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 errors=0 pixels failed\n",
+    "instrumentation": "disabled"
+  },
+  {
+    "arm": "candidate",
+    "mode": "normal",
+    "exitCode": 0,
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nscope type=2 message=render attachment requires a live texture view and pipeline\n",
+    "instrumentation": "disabled"
+  }
+]

@@ -1,0 +1,2 @@
+# Retained unified patches contain significant spaces on empty context lines.
+reports/maintenance/**/source.diff -whitespace

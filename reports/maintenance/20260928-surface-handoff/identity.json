@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "classification": "local-diagnostic-correctness",
+  "sourceBaseCommit": "2f2c495f63a01e3f0bed26acd80c7e63ad3ed5b7",
+  "sourceDiff": {
+    "path": "reports/maintenance/20260928-surface-handoff/source.diff",
+    "sha256": "691adb6e6fc265d004fb4742b73259a70c3266b06dafc7f086cdcbde2c5ab6d0",
+    "sizeBytes": 78278
+  },
+  "changedSourceFiles": [
+    {
+      "path": "config/webgpu-capability-inventory.json",
+      "sha256": "fc1e734af9b3d705b56850445c37aa9dc9a2910ad2ded45c1296c03d07366f43",
+      "sizeBytes": 70262
+    },
+    {
+      "path": "config/zig-test-inventory.json",
+      "sha256": "62453f4ee7ee8bfbf08e3a44aba91c0b6716bdbe486212dcd8c75add98923487",
+      "sizeBytes": 36946
+    },
+    {
+      "path": "runtime/zig/source-layout.json",
+      "sha256": "61ad4ff9a9524d42d338232db16f55b43d41f0c42cd95dc62bd0703e45710c0e",
+      "sizeBytes": 256582
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+      "sha256": "0ecbf490190c8002d0163ccf4f19063a4706e8168e5d1c1d68638431997eb65b",
+      "sizeBytes": 47206
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vk_device.zig",
+      "sha256": "f47efe142debf5d58f54a1960e454429f0f56d9afd7ae04521d62d526d761ac2",
+      "sizeBytes": 19793
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vk_render.zig",
+      "sha256": "d61de7e663220c3d96204bfd5f7f313b65066834c5a5c27eed832baa3b525b8b",
+      "sizeBytes": 34370
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig",
+      "sha256": "bff5ae86ebd001a8d7356905c2cd51d4c62fc77874b24c872f025bb2729125ec",
+      "sizeBytes": 10395
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vk_surface_sync.zig",
+      "sha256": "7652fdf18cfcfae843a3c3ef5985b45863a3e27833123409b61156ab25b0eb87",
+      "sizeBytes": 4990
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vulkan_surface.zig",
+      "sha256": "932c149acb348109fe377753518c76934ec66e3b4f108ce80b26b749bb56aadc",
+      "sizeBytes": 31799
+    },
+    {
+      "path": "runtime/zig/src/native/surface/doe_surface_native.zig",
+      "sha256": "5f2a4bb009be9cc72d33faa5f7456c078d4c8022f3e4643312bc0f7c3f65b6be",
+      "sizeBytes": 24576
+    },
+    {
+      "path": "runtime/zig/test_suite.zig",
+      "sha256": "8e57e59a4f87937e07d0d9407aafb521ad14d5270e4bf6f74a226a8964131133",
+      "sizeBytes": 21639
+    },
+    {
+      "path": "runtime/zig/tests/full/surface_api_test.zig",
+      "sha256": "2343f0a622dbfc9e9a5cb413e3d0193498b72a3d13e3147922ec4ef8d3b32e8b",
+      "sizeBytes": 8238
+    },
+    {
+      "path": "runtime/zig/tests/native_surface_handoff.c",
+      "sha256": "3ef93d83ca27553dd15f76c22aaeab52e35ce194a4d140d95b0cba9677618971",
+      "sizeBytes": 13687
+    },
+    {
+      "path": "runtime/zig/tests/native_surface_observer.c",
+      "sha256": "e8e1bdea048e4fbbc1a57b710760fe68c980f2773e3f1e2c13271b743e9f0e4d",
+      "sizeBytes": 6862
+    }
+  ],
+  "libraries": {
+    "baseline": {
+      "path": "/tmp/doe-surface-20260928/baseline/lib/libwebgpu_doe.so",
+      "sha256": "1f67eca58e81c9a13bb48f3f8856e9c666b0ca7e6294fe036c7ea84cc7057d9b",
+      "sizeBytes": 11728016
+    },
+    "candidate": {
+      "path": "/tmp/doe-surface-20260928/candidate/lib/libwebgpu_doe.so",
+      "sha256": "b35032cf2bac96830c61fee3b3cc9e6f4abbf75bef8e9c2ab31773137dc78cce",
+      "sizeBytes": 11759808
+    }
+  },
+  "baselineOrigin": "reports/maintenance/20260928-attachment-admission/identity.json; accepted library copied before editing",
+  "compiler": {
+    "zig": "0.15.2",
+    "cc": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0"
+  },
+  "host": {
+    "platform": "Linux 7.0.0-29-generic x86_64",
+    "gpu": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "icd": {
+      "path": "/usr/share/vulkan/icd.d/radeon_icd.json",
+      "sha256": "ea05ad7109cee152ef4e801a022dfa40b655dc06a08da7d0d7b042f619a0947c",
+      "sizeBytes": 138
+    },
+    "windowSystem": "XCB on local Xwayland :0",
+    "validationLayers": "VK_LAYER_KHRONOS_validation unavailable"
+  },
+  "executables": [
+    {
+      "path": "/tmp/doe-surface-20260928/candidate-test",
+      "sha256": "7863522a2decb5ecfffd9d6b7571f1dffa3809901d8dd441dca45b16a15c2d5d",
+      "sizeBytes": 32872
+    },
+    {
+      "path": "/tmp/doe-surface-20260928/query-test",
+      "sha256": "e2923d7f13571832a1872cf59ad1e15d65e594e9a50843a6df51d5b6dca98fd9",
+      "sizeBytes": 28496
+    },
+    {
+      "path": "/tmp/doe-surface-20260928/observer.so",
+      "sha256": "851674df4f4b60ffd17d938abe8d7ad1385ce708b4e86ae71340c30b6fc30e07",
+      "sizeBytes": 49368
+    }
+  ],
+  "commands": {
+    "aggregateAndFullTests": "zig build test test-full --summary all",
+    "isolatedBuild": "zig build dropin -Doptimize=ReleaseFast --prefix /tmp/doe-surface-20260928/candidate",
+    "publicCases": "python3 /tmp/doe-surface-20260928/run-tests.py",
+    "costs": "python3 /tmp/doe-surface-20260928/process-cost.py",
+    "buildMeasurements": "python3 runtime/zig/tools/capture_build_measurements.py --profile /tmp/doe-attachment-20260928/leaf-build-profile.json --output /tmp/doe-surface-20260928/build-measurements.json"
+  },
+  "unitResults": {
+    "aggregate": {
+      "passed": 2331,
+      "skipped": 11
+    },
+    "full": {
+      "passed": 2361,
+      "skipped": 11
+    },
+    "overlap": "Suites overlap; totals must not be added."
+  },
+  "buildCapture": {
+    "status": "captured",
+    "sourceChangedDuringCapture": false,
+    "captureToolChangedDuringCapture": false
+  },
+  "acceptance": "Baseline fails the first rendered-frame readback oracle; candidate passes public frames and failure/ownership cases. Local correctness disposition; no performance or release claim.",
+  "limitations": [
+    "Validation layers unavailable",
+    "Physical device loss and natural out-of-date presentation not induced; fault injection is diagnostic",
+    "No compositor screenshot oracle",
+    "Wayland, Xlib, other GPUs and simultaneous windows not exercised",
+    "Host allocation failures not exhaustively injected",
+    "Offscreen process CPU increased in this small cohort; no equivalence claim",
+    "Capability/format admission and frame pacing remain separate"
+  ]
+}

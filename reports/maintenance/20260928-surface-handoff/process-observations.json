@@ -1,0 +1,344 @@
+{
+  "classification": "diagnostic-only",
+  "scope": "Complete direct public fixture process including startup, shader/pipeline compilation, draws, query resolve, readback and teardown; no resident-operation timing.",
+  "cpu": 0,
+  "instrumentation": "disabled",
+  "warmupProcessPairsExcluded": 1,
+  "summaryDefinition": "Central-pair median and nearest-rank p95 across independent processes; no sample pooling.",
+  "samples": [
+    {
+      "pair": 0,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 22187949,
+      "userSeconds": 0.010705,
+      "systemSeconds": 0.010705,
+      "peakProcessRssBytes": 56336384
+    },
+    {
+      "pair": 0,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 21277123,
+      "userSeconds": 0.005771,
+      "systemSeconds": 0.014426999999999999,
+      "peakProcessRssBytes": 56373248
+    },
+    {
+      "pair": 1,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 23082283,
+      "userSeconds": 0.006977,
+      "systemSeconds": 0.014952,
+      "peakProcessRssBytes": 56393728
+    },
+    {
+      "pair": 1,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 21787986,
+      "userSeconds": 0.010261,
+      "systemSeconds": 0.011287,
+      "peakProcessRssBytes": 56377344
+    },
+    {
+      "pair": 2,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24279239,
+      "userSeconds": 0.005876,
+      "systemSeconds": 0.017627999999999998,
+      "peakProcessRssBytes": 56365056
+    },
+    {
+      "pair": 2,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 23652658,
+      "userSeconds": 0.01134,
+      "systemSeconds": 0.01134,
+      "peakProcessRssBytes": 56152064
+    },
+    {
+      "pair": 3,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 22998646,
+      "userSeconds": 0.004209,
+      "systemSeconds": 0.016836999999999998,
+      "peakProcessRssBytes": 56442880
+    },
+    {
+      "pair": 3,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 26484052,
+      "userSeconds": 0.008284,
+      "systemSeconds": 0.015534,
+      "peakProcessRssBytes": 56356864
+    },
+    {
+      "pair": 4,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24626613,
+      "userSeconds": 0.008203,
+      "systemSeconds": 0.016406999999999998,
+      "peakProcessRssBytes": 56360960
+    },
+    {
+      "pair": 4,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 26351452,
+      "userSeconds": 0.010036,
+      "systemSeconds": 0.01405,
+      "peakProcessRssBytes": 56365056
+    },
+    {
+      "pair": 5,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 22717697,
+      "userSeconds": 0.008713,
+      "systemSeconds": 0.01198,
+      "peakProcessRssBytes": 56426496
+    },
+    {
+      "pair": 5,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24330155,
+      "userSeconds": 0.012364,
+      "systemSeconds": 0.009273,
+      "peakProcessRssBytes": 56328192
+    },
+    {
+      "pair": 6,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 28230312,
+      "userSeconds": 0.007258,
+      "systemSeconds": 0.015552,
+      "peakProcessRssBytes": 56369152
+    },
+    {
+      "pair": 6,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 27144226,
+      "userSeconds": 0.011136,
+      "systemSeconds": 0.014173,
+      "peakProcessRssBytes": 56373248
+    },
+    {
+      "pair": 7,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 27258451,
+      "userSeconds": 0.010704,
+      "systemSeconds": 0.015569,
+      "peakProcessRssBytes": 56397824
+    },
+    {
+      "pair": 7,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 20754469,
+      "userSeconds": 0.008796,
+      "systemSeconds": 0.011727999999999999,
+      "peakProcessRssBytes": 56344576
+    },
+    {
+      "pair": 8,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 21194467,
+      "userSeconds": 0.0051129999999999995,
+      "systemSeconds": 0.015338999999999998,
+      "peakProcessRssBytes": 56352768
+    },
+    {
+      "pair": 8,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 25523302,
+      "userSeconds": 0.00435,
+      "systemSeconds": 0.020666,
+      "peakProcessRssBytes": 56406016
+    },
+    {
+      "pair": 9,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 26576166,
+      "userSeconds": 0.009439999999999999,
+      "systemSeconds": 0.016783,
+      "peakProcessRssBytes": 56119296
+    },
+    {
+      "pair": 9,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-surface-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 25733909,
+      "userSeconds": 0.008017999999999999,
+      "systemSeconds": 0.017039,
+      "peakProcessRssBytes": 56090624
+    }
+  ],
+  "summary": {
+    "baseline": {
+      "medianWallMs": 24.304697,
+      "p95WallMs": 28.230312,
+      "medianCpuMs": 22.2235,
+      "medianPeakProcessRssBytes": 56354816.0
+    },
+    "candidate": {
+      "medianWallMs": 24.58798,
+      "p95WallMs": 27.258451,
+      "medianCpuMs": 23.383,
+      "medianPeakProcessRssBytes": 56383488.0
+    }
+  }
+}

@@ -499,6 +499,13 @@
         {
           "path": "src/backend/vulkan/vk_descriptors.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/backend/vulkan/vk_surface_sync.zig",
+          "kind": "inline",
+          "platforms": [
+            "linux"
+          ]
         }
       ]
     },

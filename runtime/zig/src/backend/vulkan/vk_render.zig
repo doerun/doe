@@ -26,11 +26,6 @@ const VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT = c.VK_ACCESS_DEPTH_STENCIL_A
 const WGPU_INDEX_FORMAT_UINT16: u32 = 0x00000001;
 const VK_PIPELINE_STAGE_GRAPHICS_SHADER_BITS: u32 = c.VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | c.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
-const SurfaceSubmitSync = struct {
-    wait_semaphore: c.VkSemaphore = VK_NULL_U64,
-    signal_semaphore: c.VkSemaphore = VK_NULL_U64,
-};
-
 pub const RenderState = struct {
     render_pass: c.VkRenderPass = VK_NULL_U64,
     framebuffer: c.VkFramebuffer = VK_NULL_U64,
@@ -158,11 +153,7 @@ pub fn execute_render_clear(
         cmd.target_format,
         cmd.depth_stencil_format,
     );
-    const surface_sync = surface_sync_for_target(self, cmd.target_handle);
-    const color_final_layout = if (surface_sync.signal_semaphore != VK_NULL_U64)
-        c.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-    else
-        c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    const color_final_layout = c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     const has_depth_stencil = cmd.depth_stencil_format != model_gpu_types.WGPUTextureFormat_Undefined;
     const depth_stencil_vk_format = if (has_depth_stencil) try vk_resources.texture_format_to_vk(cmd.depth_stencil_format) else 0;
     try create_render_pass(
@@ -178,7 +169,7 @@ pub fn execute_render_clear(
     const encode_end = common_timing.now_ns();
 
     const submit_start = common_timing.now_ns();
-    try record_and_submit_clear(self, &render_state, cmd, target_width, target_height, surface_sync);
+    try record_and_submit_clear(self, &render_state, cmd, target_width, target_height);
     const submit_end = common_timing.now_ns();
     mark_attachment_layouts(self, &render_state, color_final_layout);
     return .{
@@ -514,28 +505,6 @@ fn resolve_vk_buffer_handle(self: anytype, handle: ?*anyopaque) ?c.VkBuffer {
     return cb.buffer;
 }
 
-fn surface_sync_for_target(self: anytype, target_handle: u64) SurfaceSubmitSync {
-    if (target_handle == 0) return .{};
-    const texture = self.textures.get(target_handle) orelse return .{};
-    var it = self.surfaces.valueIterator();
-    while (it.next()) |surface| {
-        if (!surface.configured or !surface.acquired) continue;
-        if (surface.current_image_index >= surface.swapchain_image_count) continue;
-        const image_index: usize = @intCast(surface.current_image_index);
-        if (surface.swapchain_images[image_index] != texture.image) continue;
-        if (surface.image_available_semaphore == VK_NULL_U64 or
-            surface.render_finished_semaphore == VK_NULL_U64)
-        {
-            return .{};
-        }
-        return .{
-            .wait_semaphore = surface.image_available_semaphore,
-            .signal_semaphore = surface.render_finished_semaphore,
-        };
-    }
-    return .{};
-}
-
 fn transition_bound_textures(self: anytype, cmd: model_render_types.RenderDrawCommand) void {
     var ti: u32 = 0;
     while (ti < cmd.bind_texture_count and ti < model_render_types.MAX_RENDER_BIND_ENTRIES) : (ti += 1) {
@@ -617,7 +586,6 @@ fn record_and_submit_clear(
     cmd: model_render_types.RenderDrawCommand,
     target_width: u32,
     target_height: u32,
-    surface_sync: SurfaceSubmitSync,
 ) !void {
     try begin_primary_recording(self);
 
@@ -640,32 +608,7 @@ fn record_and_submit_clear(
     c.vkCmdBeginRenderPass(self.primary_command_buffer, &render_pass_begin, c.VK_SUBPASS_CONTENTS_INLINE);
     c.vkCmdEndRenderPass(self.primary_command_buffer);
     try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
-    try submit_clear_and_wait(self, surface_sync);
-}
-
-fn submit_clear_and_wait(self: anytype, surface_sync: SurfaceSubmitSync) !void {
-    if (surface_sync.wait_semaphore == VK_NULL_U64 and surface_sync.signal_semaphore == VK_NULL_U64) {
-        return submit_and_wait(self);
-    }
-
-    var wait_stage = c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    var wait_semaphore = surface_sync.wait_semaphore;
-    var signal_semaphore = surface_sync.signal_semaphore;
-    var submit_info = c.VkSubmitInfo{
-        .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pNext = null,
-        .waitSemaphoreCount = if (wait_semaphore != VK_NULL_U64) 1 else 0,
-        .pWaitSemaphores = if (wait_semaphore != VK_NULL_U64) @ptrCast(&wait_semaphore) else null,
-        .pWaitDstStageMask = if (wait_semaphore != VK_NULL_U64) @ptrCast(&wait_stage) else null,
-        .commandBufferCount = 1,
-        .pCommandBuffers = @ptrCast(&self.primary_command_buffer),
-        .signalSemaphoreCount = if (signal_semaphore != VK_NULL_U64) 1 else 0,
-        .pSignalSemaphores = if (signal_semaphore != VK_NULL_U64) @ptrCast(&signal_semaphore) else null,
-    };
-    try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
-    try submit_render_with_fence(&self.retirement, self.device, self.queue, &submit_info, self.fence);
-    errdefer |err| retire_failed_submission(&self.retirement, self.device, err);
-    try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, vk_upload.WAIT_TIMEOUT_NS));
+    try submit_and_wait(self);
 }
 
 fn submit_render_with_fence(retirement: *vk_sync.Retirement, device: c.VkDevice, queue: c.VkQueue, info: *const c.VkSubmitInfo, fence: c.VkFence) BackendNativeError!void {

@@ -1,0 +1,249 @@
+[
+  {
+    "mode": "normal",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "empty",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 10,
+        "presents": 9,
+        "signals": 9,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":10,\"presents\":9,\"signals\":9,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "submit-reject",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nwarning(doe_surface_native): surface present: InvalidState\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "present-reject",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nwarning(doe_surface_native): surface present: InvalidState\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "outdated",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nwarning(doe_surface_native): surface present: SurfaceUnavailable\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "acquire-wait",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 10,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 3,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nerror: doe_surface_native: acquire_surface failed: SyncUnavailable\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":10,\"presents\":8,\"signals\":8,\"injectedFailures\":3,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "present-wait",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 3,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":3,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "create-fence",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nerror: doe_surface_native: configure_surface failed: InvalidState\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "create-view",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "create-semaphore",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nerror: doe_surface_native: configure_surface failed: InvalidState\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "images",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nerror: doe_surface_native: configure_surface failed: InvalidState\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "unsupported",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 0,
+        "presents": 0,
+        "signals": 0,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nerror: doe_surface_native: configure_surface failed: UnsupportedFeature\n{\"observer\":true,\"acquires\":0,\"presents\":0,\"signals\":0,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "device-lost",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 1,
+        "presents": 0,
+        "signals": 0,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nerror: doe_surface_native: acquire_surface failed: DeviceLost\n{\"observer\":true,\"acquires\":1,\"presents\":0,\"signals\":0,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  }
+]

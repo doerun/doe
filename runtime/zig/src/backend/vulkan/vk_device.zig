@@ -7,6 +7,7 @@ const std = @import("std");
 const webgpu = @import("../../contracts/runtime_types.zig");
 const c = @import("vk_constants.zig");
 const vk_feature_caps = @import("vk_feature_caps.zig");
+const surface_sync = @import("vk_surface_sync.zig");
 const vk_sync = @import("vk_sync.zig");
 const vulkan_surface = @import("vulkan_surface.zig");
 
@@ -40,7 +41,7 @@ pub fn bootstrap(self: anytype) !void {
 
 pub fn create_instance(self: anytype) !void {
     const surface_exts = vulkan_surface.required_instance_extensions();
-    var enabled_exts: [4][*:0]const u8 = undefined;
+    var enabled_exts: [6][*:0]const u8 = undefined;
     var enabled_ext_count: usize = 0;
     const surface_extension_available = detect_instance_extension(vulkan_surface.INSTANCE_SURFACE_EXTENSION);
     if (surface_extension_available) {
@@ -52,6 +53,15 @@ pub fn create_instance(self: anytype) !void {
             enabled_exts[enabled_ext_count] = ext;
             enabled_ext_count += 1;
         }
+    }
+    const capabilities2: [*:0]const u8 = "VK_KHR_get_surface_capabilities2";
+    const maintenance: [*:0]const u8 = "VK_EXT_surface_maintenance1";
+    self.has_surface_maintenance_instance = surface_extension_available and
+        detect_instance_extension(capabilities2) and detect_instance_extension(maintenance);
+    if (self.has_surface_maintenance_instance) {
+        enabled_exts[enabled_ext_count] = capabilities2;
+        enabled_exts[enabled_ext_count + 1] = maintenance;
+        enabled_ext_count += 2;
     }
     var app_info = c.VkApplicationInfo{
         .sType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -121,6 +131,15 @@ pub fn create_device_and_queue(self: anytype) !void {
         self.physical_device,
         c.VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME,
     );
+    var surface_features = surface_sync.Features{};
+    const surface_completion_available = self.has_surface_maintenance_instance and detect_device_extension(self.physical_device, surface_sync.extension);
+    if (surface_completion_available) {
+        var query = std.mem.zeroes(c.VkPhysicalDeviceFeatures2);
+        query.sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        query.pNext = @ptrCast(&surface_features);
+        c.vkGetPhysicalDeviceFeatures2(self.physical_device, &query);
+    }
+    const enable_surface_completion = surface_completion_available and surface_features.swapchainMaintenance1 != 0;
     var feature_query = vk_feature_caps.query(self.physical_device);
     if (!feature_query.caps.robust_buffer_access) return error.UnsupportedFeature;
     feature_query.enabled_storage16_features.pNext = @ptrCast(&feature_query.enabled_variable_pointers_features);
@@ -148,6 +167,11 @@ pub fn create_device_and_queue(self: anytype) !void {
         total_ext_count += 1;
     }
 
+    if (enable_surface_completion) {
+        all_exts[total_ext_count] = surface_sync.extension;
+        total_ext_count += 1;
+        surface_features.pNext = @ptrCast(&feature_query.enabled_vulkan12_features);
+    }
     var priority: f32 = 1.0;
     var queue_info = c.VkDeviceQueueCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -159,7 +183,7 @@ pub fn create_device_and_queue(self: anytype) !void {
     };
     var device_info = c.VkDeviceCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext = @ptrCast(&feature_query.enabled_vulkan12_features),
+        .pNext = if (enable_surface_completion) @ptrCast(&surface_features) else @ptrCast(&feature_query.enabled_vulkan12_features),
         .flags = 0,
         .queueCreateInfoCount = 1,
         .pQueueCreateInfos = @ptrCast(&queue_info),
@@ -171,6 +195,7 @@ pub fn create_device_and_queue(self: anytype) !void {
     };
     try c.check_vk(c.vkCreateDevice(self.physical_device, &device_info, null, &self.device));
     self.has_device = true;
+    self.has_surface_completion = enable_surface_completion;
     self.has_depth_clip_enable_ext = depth_clip_available;
     self.has_subgroup_size_control_ext = enable_subgroup_size_control;
     self.required_compute_subgroup_size = if (enable_subgroup_size_control and

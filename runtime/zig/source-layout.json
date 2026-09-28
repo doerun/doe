@@ -1228,9 +1228,9 @@
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "a0a8be17c06b50f1b9a58ba089cbbadcd6895b8c236dfccceed5d86e389155f2",
-        "reason": "Keep: composition owns completion before destruction and supplies typed cache admission facts; completed buffer cache state and accounting have one subordinate owner.",
-        "reviewer": "codex-buffer-lifecycle/2026-09-27"
+        "moduleSha256": "0ecbf490190c8002d0163ccf4f19063a4706e8168e5d1c1d68638431997eb65b",
+        "reviewer": "codex-surface-handoff/2026-09-28",
+        "reason": "Keep: composition owns completion before destruction and supplies typed cache admission facts; completed buffer cache state and accounting have one subordinate owner."
       },
       "src/backend/vulkan/vk_adapter_probe.zig": {
         "decision": "Keep",
@@ -1276,9 +1276,9 @@
       },
       "src/backend/vulkan/vk_device.zig": {
         "decision": "Keep",
-        "moduleSha256": "c599e1d3bd3d5990da88d4319e8ce1e97a10f144c04e957c62038864e8922b76",
-        "reason": "Keep: Device capability and synchronization-object creation remain local; supported timeline creation failures propagate.",
-        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+        "moduleSha256": "f47efe142debf5d58f54a1960e454429f0f56d9afd7ae04521d62d526d761ac2",
+        "reviewer": "codex-surface-handoff/2026-09-28",
+        "reason": "Keep: Device capability and synchronization-object creation remain local; supported timeline creation failures propagate."
       },
       "src/backend/vulkan/vk_device_caps.zig": {
         "decision": "Keep",
@@ -1348,9 +1348,9 @@
       },
       "src/backend/vulkan/vk_render.zig": {
         "decision": "Keep",
-        "moduleSha256": "d3d2d7523a3a983fd78ccec3201552324b3ae8b4cc30b398d5071b272eda232e",
-        "reason": "Keep: scope owner for render allocation, image transitions, submission and completion; prepares retained index storage before borrowing it for typed draw recording.",
-        "reviewer": "codex-render-recording/2026-09-28"
+        "moduleSha256": "d61de7e663220c3d96204bfd5f7f313b65066834c5a5c27eed832baa3b525b8b",
+        "reviewer": "codex-surface-handoff/2026-09-28",
+        "reason": "Keep: scope owner for render allocation, image transitions, submission and completion; prepares retained index storage before borrowing it for typed draw recording."
       },
       "src/backend/vulkan/vk_render_pipeline.zig": {
         "decision": "Keep",
@@ -1372,9 +1372,9 @@
       },
       "src/backend/vulkan/vk_runtime_surface_ops.zig": {
         "decision": "Keep",
-        "moduleSha256": "070f0c8e0334c364587e99615d0512e657e7e7fa53f8cce3476c9311beb6daff",
-        "reason": "Keep: Runtime surface operations delegate native capability and swapchain execution; missing native surfaces fail explicitly.",
-        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+        "moduleSha256": "bff5ae86ebd001a8d7356905c2cd51d4c62fc77874b24c872f025bb2729125ec",
+        "reviewer": "codex-surface-handoff/2026-09-28",
+        "reason": "Keep: Runtime surface operations delegate native capability and swapchain execution; missing native surfaces fail explicitly."
       },
       "src/backend/vulkan/vk_samplers.zig": {
         "decision": "Keep",
@@ -1426,9 +1426,9 @@
       },
       "src/backend/vulkan/vulkan_surface.zig": {
         "decision": "Keep",
-        "moduleSha256": "dd6bf4913c417a303aefafa64dcd7a32999363dfc15affc5fdc17dd596be115b",
-        "reason": "Keep: platform/FFI-facing Vulkan surface and presentation lifecycle capsule.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "932c149acb348109fe377753518c76934ec66e3b4f108ce80b26b749bb56aadc",
+        "reviewer": "codex-surface-handoff/2026-09-28",
+        "reason": "Keep: platform/FFI-facing Vulkan surface and presentation lifecycle capsule."
       },
       "src/backend/vulkan/vulkan_timing.zig": {
         "decision": "Keep",
@@ -3772,9 +3772,9 @@
       },
       "src/native/surface/doe_surface_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "6f68b414c9a848cdbdfd9ebc4a4bfc0f53440b8e651a55b6e3b7072faffa5d16",
-        "reason": "Keep: acquired surface images receive native resource identity when published through the existing Vulkan surface integration.",
-        "reviewer": "codex-descriptor-identity/2026-09-05"
+        "moduleSha256": "5f2a4bb009be9cc72d33faa5f7456c078d4c8022f3e4643312bc0f7c3f65b6be",
+        "reviewer": "codex-surface-handoff/2026-09-28",
+        "reason": "Keep: acquired surface images receive native resource identity when published through the existing Vulkan surface integration."
       },
       "src/native/vulkan/vulkan_compute_bindings.zig": {
         "decision": "Keep",
@@ -4387,6 +4387,12 @@
         "moduleSha256": "74cf74a5aad6134906c7f8a75183c517517bcfa548d26bd0906e9c9ba2b6adb7",
         "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
         "reviewer": "codex-attachment-admission/2026-09-28"
+      },
+      "src/backend/vulkan/vk_surface_sync.zig": {
+        "decision": "Keep",
+        "moduleSha256": "7652fdf18cfcfae843a3c3ef5985b45863a3e27833123409b61156ab25b0eb87",
+        "reviewer": "codex-surface-handoff/2026-09-28",
+        "reason": "Keep: swapchain-owned acquisition and presentation completion; the native surface owns WebGPU references and the backend owns Vulkan synchronization."
       }
     },
     "linePolicy": {

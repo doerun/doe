@@ -1,16 +1,10 @@
-// Vulkan surface/swapchain lifecycle for Linux (Wayland/X11/headless).
-//
-// Platform detection is compile-time: Wayland and XCB surface extensions
-// are enabled only on Linux. Headless fallback is always available.
-// Swapchain images are backed by real VkImageKHR handles when a windowed
-// surface is present.
-
+// Native window-system surfaces, swapchain configuration, acquisition and presentation.
 const std = @import("std");
 const builtin = @import("builtin");
 const model_gpu_types = @import("../../contracts/model/model_texture_value_types.zig");
 const common_errors = @import("../../contracts/execution.zig");
-const common_timing = @import("../common/timing.zig");
 const vk = @import("vulkan_types.zig");
+const c = @import("vk_constants.zig");
 const vulkan_errors = @import("vulkan_errors.zig");
 const VkResult = vk.VkResult;
 const VkBool32 = vk.VkBool32;
@@ -38,7 +32,6 @@ const VK_STRUCTURE_TYPE_PRESENT_INFO_KHR: i32 = 1000001001;
 const VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR: i32 = 1000006000;
 const VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR: i32 = 1000005000;
 const VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR: i32 = 1000004000;
-const VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO: i32 = 9;
 // VkFormat for swapchain
 const VK_FORMAT_B8G8R8A8_SRGB: u32 = 50;
 const VK_FORMAT_B8G8R8A8_UNORM: u32 = 44;
@@ -123,11 +116,6 @@ const VkPresentInfoKHR = extern struct {
     pImageIndices: [*]const u32,
     pResults: ?[*]VkResult,
 };
-const VkSemaphoreCreateInfo = extern struct {
-    sType: VkStructureType,
-    pNext: ?*const anyopaque,
-    flags: VkFlags,
-};
 const VkWaylandSurfaceCreateInfoKHR = extern struct {
     sType: VkStructureType,
     pNext: ?*const anyopaque,
@@ -160,9 +148,6 @@ extern fn vkDestroySwapchainKHR(device: VkDevice, swapchain: VkSwapchainKHR, pAl
 extern fn vkGetSwapchainImagesKHR(device: VkDevice, swapchain: VkSwapchainKHR, pSwapchainImageCount: *u32, pSwapchainImages: ?[*]VkImage) callconv(.c) VkResult;
 extern fn vkAcquireNextImageKHR(device: VkDevice, swapchain: VkSwapchainKHR, timeout: u64, semaphore: VkSemaphore, fence: VkFence, pImageIndex: *u32) callconv(.c) VkResult;
 extern fn vkQueuePresentKHR(queue: VkQueue, pPresentInfo: *const VkPresentInfoKHR) callconv(.c) VkResult;
-extern fn vkCreateSemaphore(device: VkDevice, pCreateInfo: *const VkSemaphoreCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pSemaphore: *VkSemaphore) callconv(.c) VkResult;
-extern fn vkDestroySemaphore(device: VkDevice, semaphore: VkSemaphore, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
-extern fn vkQueueWaitIdle(queue: VkQueue) callconv(.c) VkResult;
 // Platform-conditional surface creation externs (Wayland/XCB only on linux)
 const is_linux = builtin.os.tag == .linux;
 
@@ -191,6 +176,8 @@ pub const SurfaceCapabilities = struct {
     present_modes: [MAX_PRESENT_MODES]u32 = std.mem.zeroes([MAX_PRESENT_MODES]u32),
     present_supported: bool = false,
 };
+const surface_sync = @import("vk_surface_sync.zig");
+
 pub const VulkanSurface = struct {
     // Vulkan surface object
     vk_surface: VkSurfaceKHR = VK_NULL_U64,
@@ -202,12 +189,12 @@ pub const VulkanSurface = struct {
     swapchain_format: u32 = VK_FORMAT_B8G8R8A8_SRGB,
     swapchain_extent: VkExtent2D = .{ .width = 0, .height = 0 },
     // Synchronization
-    image_available_semaphore: VkSemaphore = VK_NULL_U64,
-    render_finished_semaphore: VkSemaphore = VK_NULL_U64,
+    completion: surface_sync.Completion = .{},
     // Configuration state (mirrors WebGPU surface semantics)
     configured: bool = false,
     acquired: bool = false,
     current_image_index: u32 = 0,
+    acquired_texture_handle: u64 = 0,
     width: u32 = 0,
     height: u32 = 0,
     requested_format: model_gpu_types.WGPUTextureFormat = model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
@@ -401,36 +388,6 @@ pub fn query_surface_capabilities(
     }
 
     return result;
-}
-
-/// Create synchronization semaphores needed for swapchain acquire/present.
-pub fn create_sync_objects(device: VkDevice) common_errors.BackendNativeError!struct { image_available: VkSemaphore, render_finished: VkSemaphore } {
-    const sem_info = VkSemaphoreCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-    };
-    var image_available: VkSemaphore = VK_NULL_U64;
-    try check_vk(vkCreateSemaphore(device, &sem_info, null, &image_available));
-    errdefer if (image_available != VK_NULL_U64) vkDestroySemaphore(device, image_available, null);
-
-    var render_finished: VkSemaphore = VK_NULL_U64;
-    try check_vk(vkCreateSemaphore(device, &sem_info, null, &render_finished));
-
-    return .{
-        .image_available = image_available,
-        .render_finished = render_finished,
-    };
-}
-
-/// Destroy synchronization semaphores.
-pub fn destroy_sync_objects(
-    device: VkDevice,
-    image_available: VkSemaphore,
-    render_finished: VkSemaphore,
-) void {
-    if (image_available != VK_NULL_U64) vkDestroySemaphore(device, image_available, null);
-    if (render_finished != VK_NULL_U64) vkDestroySemaphore(device, render_finished, null);
 }
 
 /// Select the best surface format from available formats.
@@ -648,7 +605,7 @@ pub fn create_swapchain(
         image_count = caps.maxImageCount;
     }
 
-    const old_swapchain = surface_state.swapchain;
+    std.debug.assert(surface_state.swapchain == VK_NULL_U64);
 
     const create_info = VkSwapchainCreateInfoKHR{
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -668,17 +625,12 @@ pub fn create_swapchain(
         .compositeAlpha = chosen_alpha_mode,
         .presentMode = chosen_present_mode,
         .clipped = VK_TRUE,
-        .oldSwapchain = old_swapchain,
+        .oldSwapchain = VK_NULL_U64,
     };
 
     try check_vk(vkCreateSwapchainKHR(device, &create_info, null, &surface_state.swapchain));
+    errdefer destroy_swapchain(device, surface_state);
 
-    // Destroy old swapchain after new one is created
-    if (old_swapchain != VK_NULL_U64) {
-        vkDestroySwapchainKHR(device, old_swapchain, null);
-    }
-
-    // Retrieve swapchain images
     var actual_image_count: u32 = 0;
     try check_vk(vkGetSwapchainImagesKHR(device, surface_state.swapchain, &actual_image_count, null));
     if (actual_image_count == 0) return error.InvalidState;
@@ -696,16 +648,12 @@ pub fn create_swapchain(
     surface_state.last_acquire_suboptimal = false;
     surface_state.last_present_suboptimal = false;
 
-    // Create sync objects if not yet created
-    if (surface_state.image_available_semaphore == VK_NULL_U64) {
-        const sync = try create_sync_objects(device);
-        surface_state.image_available_semaphore = sync.image_available;
-        surface_state.render_finished_semaphore = sync.render_finished;
-    }
+    surface_state.completion = try surface_sync.Completion.init(device);
 }
 
 /// Destroy the swapchain and associated resources (not the VkSurfaceKHR itself).
 pub fn destroy_swapchain(device: VkDevice, surface_state: *VulkanSurface) void {
+    surface_state.completion.deinit(device);
     if (surface_state.swapchain != VK_NULL_U64) {
         vkDestroySwapchainKHR(device, surface_state.swapchain, null);
         surface_state.swapchain = VK_NULL_U64;
@@ -722,22 +670,31 @@ pub fn acquire_next_image(
 ) common_errors.BackendNativeError!u32 {
     if (surface_state.swapchain == VK_NULL_U64) return error.SurfaceUnavailable;
 
+    try surface_state.completion.waitPresent(device);
+    if (surface_state.acquired) {
+        try surface_state.completion.waitAcquire(device);
+        return surface_state.current_image_index;
+    }
+    try check_vk(c.vkResetFences(device, 1, @ptrCast(&surface_state.completion.acquire_fence)));
     var image_index: u32 = 0;
     const result = vkAcquireNextImageKHR(
         device,
         surface_state.swapchain,
         ACQUIRE_TIMEOUT_NS,
-        surface_state.image_available_semaphore,
         VK_NULL_U64,
+        surface_state.completion.acquire_fence,
         &image_index,
     );
     switch (result) {
         VK_SUCCESS, VK_SUBOPTIMAL_KHR => {
             surface_state.current_image_index = image_index;
             surface_state.acquired = true;
+            surface_state.completion.acquire_pending = true;
+            try surface_state.completion.waitAcquire(device);
             surface_state.last_acquire_suboptimal = result == VK_SUBOPTIMAL_KHR;
             return image_index;
         },
+        c.VK_TIMEOUT => return error.SyncUnavailable,
         VK_ERROR_OUT_OF_DATE_KHR => {
             // Swapchain needs recreation; caller should reconfigure
             return error.SurfaceUnavailable;
@@ -751,6 +708,7 @@ pub fn acquire_next_image(
 
 /// Present the acquired swapchain image.
 pub fn present_image(
+    device: VkDevice,
     queue: VkQueue,
     surface_state: *VulkanSurface,
 ) common_errors.BackendNativeError!void {
@@ -758,11 +716,14 @@ pub fn present_image(
         return error.SurfaceUnavailable;
     }
 
+    if (!surface_state.completion.present_ready) return error.InvalidState;
+    try check_vk(c.vkResetFences(device, 1, @ptrCast(&surface_state.completion.present_fence)));
+    const fence_info = surface_sync.PresentFenceInfo{ .pFences = &surface_state.completion.present_fence };
     const present_info = VkPresentInfoKHR{
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .pNext = null,
-        .waitSemaphoreCount = 0,
-        .pWaitSemaphores = null,
+        .pNext = @ptrCast(&fence_info),
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = @ptrCast(&surface_state.completion.render_finished),
         .swapchainCount = 1,
         .pSwapchains = @ptrCast(&surface_state.swapchain),
         .pImageIndices = @ptrCast(&surface_state.current_image_index),
@@ -770,14 +731,17 @@ pub fn present_image(
     };
 
     const result = vkQueuePresentKHR(queue, &present_info);
+    if (@import("vk_sync.zig").submissionRejected(result)) return check_vk(result);
+    surface_state.completion.present_ready = false;
+    surface_state.completion.present_pending = true;
+    surface_state.completion.device_lost = result == vulkan_errors.VK_ERROR_DEVICE_LOST;
     surface_state.acquired = false;
     surface_state.last_present_suboptimal = result == VK_SUBOPTIMAL_KHR;
 
     switch (result) {
         VK_SUCCESS, VK_SUBOPTIMAL_KHR => return,
         VK_ERROR_OUT_OF_DATE_KHR => {
-            // Swapchain will need recreation on next configure
-            return;
+            return error.SurfaceUnavailable;
         },
         else => return check_vk(result),
     }
@@ -789,14 +753,6 @@ pub fn destroy_all(
     device: VkDevice,
     surface_state: *VulkanSurface,
 ) void {
-    destroy_sync_objects(
-        device,
-        surface_state.image_available_semaphore,
-        surface_state.render_finished_semaphore,
-    );
-    surface_state.image_available_semaphore = VK_NULL_U64;
-    surface_state.render_finished_semaphore = VK_NULL_U64;
-
     destroy_swapchain(device, surface_state);
     destroy_surface(instance, surface_state.vk_surface);
     surface_state.vk_surface = VK_NULL_U64;

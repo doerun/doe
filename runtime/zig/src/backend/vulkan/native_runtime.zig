@@ -61,6 +61,8 @@ pub const NativeVulkanRuntime = struct {
     device: c.VkDevice = null,
     queue: c.VkQueue = null,
     retirement: vk_sync.Retirement = .{},
+    has_surface_maintenance_instance: bool = false,
+    has_surface_completion: bool = false,
 
     adapter_ordinal_value: ?u32 = null,
     queue_family_index: u32 = 0,

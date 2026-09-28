@@ -4,10 +4,10 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "vulkan_surface_submission_handoff",
+      "batchId": "vulkan_surface_configuration_admission",
       "state": "ready",
-      "objective": "Trace and repair one complete ordinary Vulkan acquire/render/present ownership handoff with explicit failure outcomes.",
-      "rationale": "The native attachment-admission batch is closed. The retained surface audit identifies missing presentation waits and success on out-of-date presentation; present_image still declares no wait semaphores. Reconfirm the actual consumer and submission handoff before changing synchronization.",
+      "objective": "Make ordinary Vulkan surface capability/configuration admission preserve the requested format and reject unsupported properties explicitly.",
+      "rationale": "The acquired-image handoff is repaired and physically exercised. The retained surface audit and current native consumer still show static capability arrays and silent format substitution; these are separate live correctness obligations.",
       "scopes": [
         {
           "level": "file",
@@ -18,23 +18,23 @@
         {
           "level": "file",
           "targets": [
-            "src/backend/vulkan/vk_render.zig"
+            "src/native/surface/doe_surface_native.zig"
           ]
         }
       ],
       "findingReviewIds": [
-        "vulkan_surface_20260923_submission_audit",
-        "vulkan_attachment_backend_20260928"
+        "vulkan_surface_handoff_20260928",
+        "vulkan_native_surface_lifetime_20260928"
       ],
-      "nextAction": "Identify the public surface consumer, acquisition semaphore, draw submission and presentation dependencies; freeze windowed reproduction and failure/lifetime cases before editing.",
+      "nextAction": "Trace public GetCapabilities and Configure against the selected device/window surface; reproduce a reported capability that cannot execute or a substituted requested format before editing.",
       "acceptance": [
-        "Preserve acquired-image identity and retain resources through known completion, including rejected submission, out-of-date presentation and recreation.",
-        "Observe native acquire/render/present ordering and independent pixels through an ordinary public consumer; report unavailable windowed or validation-layer evidence explicitly.",
-        "Retain focused tests, source identities and scoped cost observations without claiming whole-backend or release qualification."
+        "Preserve declared format/color-space and usage identities or return an explicit unsupported/validation result before swapchain publication.",
+        "Exercise public capability/configuration and rendering through a real window with independent pixel checks and rejected-configuration recovery.",
+        "Retain source identities and scoped cost checks; do not re-open completed query, SPIR-V, bundle, attachment or surface-handoff batches."
       ],
-      "stopCondition": "Stop after one complete surface submission handoff and retained evidence. Direct-command attachment admission and broader backend cleanup remain separate; completed query, native attachment, compiler, bundle and build-recipe batches stay closed.",
+      "stopCondition": "Stop after capability/configuration admission and its consumer evidence. Frame pacing, other window systems and broader backend decomposition remain separate.",
       "requiredEnvironment": [
-        "Linux Vulkan and an actual supported window-system surface; platform and validation-layer availability must be recorded."
+        "Linux Vulkan and a supported window-system surface; record unavailable validation layers and platform evidence."
       ]
     }
   ]

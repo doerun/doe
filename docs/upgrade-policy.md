@@ -82,3 +82,18 @@ separate from the upload-pool allowance and subordinate to the existing byte bou
 That field is absent from the retained policy; the existing per-size allowance
 remains unchanged. See `reports/benchmarks/amd-vulkan/20260926-shutdown-reuse/README.md` for the tested
 source patches, policy versions, frozen comparison rule, and final disposition.
+
+
+## Native Vulkan surface completion
+
+Native Vulkan windowed presentation now requires `VK_EXT_swapchain_maintenance1`,
+`swapchainMaintenance1`, and its instance extension dependencies. Unsupported
+hosts retain offscreen execution but reject surface configuration. The requirement
+is recorded in `config/webgpu-capability-inventory.json`; no public configuration
+field or ABI layout changes. Surface acquisition waits before exposing an image;
+presentation fences authorize semaphore reuse and destruction. Unknown completion
+retains resources using the existing configured retirement retry interval.
+Out-of-date presentation returns an error, and presented/unconfigured textures
+expire while caller-held objects remain reference counted. See
+`reports/maintenance/20260928-surface-handoff/README.md` for scoped evidence and
+remaining capability-admission limits.

@@ -25873,6 +25873,384 @@
       "targets": [
         "src/native/support/doe_native_object_types.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "fc1e734af9b3d705b56850445c37aa9dc9a2910ad2ded45c1296c03d07366f43"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "3ef93d83ca27553dd15f76c22aaeab52e35ce194a4d140d95b0cba9677618971"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "e8e1bdea048e4fbbc1a57b710760fe68c980f2773e3f1e2c13271b743e9f0e4d"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/build-measurements.json",
+          "sha256": "75eb672a8688d29ec0063816ce7931b3854a123a3867777d4d3cf1f752b4fef5"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/identity.json",
+          "sha256": "afad603b0b149331e18dbbb20c7b6b0c0f98b9631e1a342b028481fbd6380cef"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/process-observations.json",
+          "sha256": "1b23cd6096a154a93315661ae5ce859caf710269142dd07b3df7315c70f9d0d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/public-results.json",
+          "sha256": "04c9d180072e8835e1b5b78ba1ad55b77f4c30aada0c9c05fe11db9d950521bf"
+        }
+      ],
+      "findings": [
+        "Exact format/tone-mapping admission still silently substitutes formats; desired maximum frame latency does not govern pacing."
+      ],
+      "inputHash": "f5209fdb1c1f9505ed38c0866ee0a732e581dea9f899dc97d246af99c566de29",
+      "level": "file",
+      "nextAction": "Reconfirm exact public capability/configuration admission through the same windowed consumer. Preserve the completed handoff; broader pacing and runtime decomposition remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Replaced per-clear synchronization with swapchain-owned completion. Present returns SurfaceUnavailable on out-of-date; partial swapchain setup and native sync allocation failures roll back."
+      ],
+      "reviewId": "vulkan_surface_handoff_20260928",
+      "reviewedAt": "2026-09-28T18:34:22.716362+00:00",
+      "reviewer": "codex-surface-handoff",
+      "sourceCommit": "2f2c495f63a01e3f0bed26acd80c7e63ad3ed5b7",
+      "status": "in_progress",
+      "summary": "Swapchain setup rollback, acquisition fence wait, presentation wait/fence and native out-of-date outcomes now share the live public surface path.",
+      "supersedes": "vulkan_surface_20260923_submission_audit",
+      "targets": [
+        "src/backend/vulkan/vulkan_surface.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "fc1e734af9b3d705b56850445c37aa9dc9a2910ad2ded45c1296c03d07366f43"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "3ef93d83ca27553dd15f76c22aaeab52e35ce194a4d140d95b0cba9677618971"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "e8e1bdea048e4fbbc1a57b710760fe68c980f2773e3f1e2c13271b743e9f0e4d"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/build-measurements.json",
+          "sha256": "75eb672a8688d29ec0063816ce7931b3854a123a3867777d4d3cf1f752b4fef5"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/identity.json",
+          "sha256": "afad603b0b149331e18dbbb20c7b6b0c0f98b9631e1a342b028481fbd6380cef"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/process-observations.json",
+          "sha256": "1b23cd6096a154a93315661ae5ce859caf710269142dd07b3df7315c70f9d0d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/public-results.json",
+          "sha256": "04c9d180072e8835e1b5b78ba1ad55b77f4c30aada0c9c05fe11db9d950521bf"
+        }
+      ],
+      "findings": [
+        "Broader window-system/device-loss qualification remains unavailable; injected device-loss cleanup is scoped evidence."
+      ],
+      "inputHash": "92a17267e40aef29cc63d5e60a226a03d462c2a41c383427b2d2102873e1f89c",
+      "level": "file",
+      "nextAction": "Reconfirm exact public capability/configuration admission through the same windowed consumer. Preserve the completed handoff; broader pacing and runtime decomposition remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Local native fault cases verify delayed completion, rejected submission/presentation, partial construction and teardown; unit test preserves pending state and distinguishes timeout/device loss."
+      ],
+      "reviewId": "vulkan_surface_completion_20260928",
+      "reviewedAt": "2026-09-28T18:34:24.202735+00:00",
+      "reviewer": "codex-surface-handoff",
+      "sourceCommit": "2f2c495f63a01e3f0bed26acd80c7e63ad3ed5b7",
+      "status": "in_progress",
+      "summary": "Typed swapchain completion owner retains acquire and presentation fences across unknown completion and releases native handles exactly once when allowed.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_surface_sync.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "fc1e734af9b3d705b56850445c37aa9dc9a2910ad2ded45c1296c03d07366f43"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "3ef93d83ca27553dd15f76c22aaeab52e35ce194a4d140d95b0cba9677618971"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "e8e1bdea048e4fbbc1a57b710760fe68c980f2773e3f1e2c13271b743e9f0e4d"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/build-measurements.json",
+          "sha256": "75eb672a8688d29ec0063816ce7931b3854a123a3867777d4d3cf1f752b4fef5"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/identity.json",
+          "sha256": "afad603b0b149331e18dbbb20c7b6b0c0f98b9631e1a342b028481fbd6380cef"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/process-observations.json",
+          "sha256": "1b23cd6096a154a93315661ae5ce859caf710269142dd07b3df7315c70f9d0d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/public-results.json",
+          "sha256": "04c9d180072e8835e1b5b78ba1ad55b77f4c30aada0c9c05fe11db9d950521bf"
+        }
+      ],
+      "findings": [
+        "Capability/format admission and frame pacing remain open; whole-file generic runtime dependency reduction is unfinished."
+      ],
+      "inputHash": "568f14eb7b247a5957949b45557391f30bfe82a95f7a0f43648a7ad4c8170f9c",
+      "level": "file",
+      "nextAction": "Reconfirm exact public capability/configuration admission through the same windowed consumer. Preserve the completed handoff; broader pacing and runtime decomposition remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Surface destruction waits GPU work and presentation ownership separately; configuration is published only after setup succeeds. Rejected presentation reuses its existing signal safely."
+      ],
+      "reviewId": "vulkan_surface_submission_20260928",
+      "reviewedAt": "2026-09-28T18:34:25.696035+00:00",
+      "reviewer": "codex-surface-handoff",
+      "sourceCommit": "2f2c495f63a01e3f0bed26acd80c7e63ad3ed5b7",
+      "status": "in_progress",
+      "summary": "Final presentation submission uses the registered acquired texture identity, flushes preceding work, transitions its current layout and signals for presentation.",
+      "supersedes": "vk_runtime_surface_ops_20260923_submission_audit",
+      "targets": [
+        "src/backend/vulkan/vk_runtime_surface_ops.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "fc1e734af9b3d705b56850445c37aa9dc9a2910ad2ded45c1296c03d07366f43"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "3ef93d83ca27553dd15f76c22aaeab52e35ce194a4d140d95b0cba9677618971"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "e8e1bdea048e4fbbc1a57b710760fe68c980f2773e3f1e2c13271b743e9f0e4d"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/build-measurements.json",
+          "sha256": "75eb672a8688d29ec0063816ce7931b3854a123a3867777d4d3cf1f752b4fef5"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/identity.json",
+          "sha256": "afad603b0b149331e18dbbb20c7b6b0c0f98b9631e1a342b028481fbd6380cef"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/process-observations.json",
+          "sha256": "1b23cd6096a154a93315661ae5ce859caf710269142dd07b3df7315c70f9d0d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/public-results.json",
+          "sha256": "04c9d180072e8835e1b5b78ba1ad55b77f4c30aada0c9c05fe11db9d950521bf"
+        }
+      ],
+      "findings": [
+        "Backend command-oriented attachment admission and remaining broad render dependencies are separate unfinished work."
+      ],
+      "inputHash": "c946ad8d7af390772c4fb72c9f0f723797b0f4ed6a5cf0ce57e1566c7eab4a61",
+      "level": "file",
+      "nextAction": "Reconfirm exact public capability/configuration admission through the same windowed consumer. Preserve the completed handoff; broader pacing and runtime decomposition remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Removed repeated binary acquire wait/render signal from clear execution; public repeated clears plus draw, pixels, query regressions and native ordering pass."
+      ],
+      "reviewId": "vulkan_surface_render_20260928",
+      "reviewedAt": "2026-09-28T18:34:27.245296+00:00",
+      "reviewer": "codex-surface-handoff",
+      "sourceCommit": "2f2c495f63a01e3f0bed26acd80c7e63ad3ed5b7",
+      "status": "in_progress",
+      "summary": "Clears and draws use ordinary render submission; swapchain completion is no longer owned by each clear.",
+      "supersedes": "vulkan_attachment_backend_20260928",
+      "targets": [
+        "src/backend/vulkan/vk_render.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "fc1e734af9b3d705b56850445c37aa9dc9a2910ad2ded45c1296c03d07366f43"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "3ef93d83ca27553dd15f76c22aaeab52e35ce194a4d140d95b0cba9677618971"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "e8e1bdea048e4fbbc1a57b710760fe68c980f2773e3f1e2c13271b743e9f0e4d"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/build-measurements.json",
+          "sha256": "75eb672a8688d29ec0063816ce7931b3854a123a3867777d4d3cf1f752b4fef5"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/identity.json",
+          "sha256": "afad603b0b149331e18dbbb20c7b6b0c0f98b9631e1a342b028481fbd6380cef"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/process-observations.json",
+          "sha256": "1b23cd6096a154a93315661ae5ce859caf710269142dd07b3df7315c70f9d0d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/public-results.json",
+          "sha256": "04c9d180072e8835e1b5b78ba1ad55b77f4c30aada0c9c05fe11db9d950521bf"
+        }
+      ],
+      "findings": [
+        "GetCapabilities still reports static capability arrays; exact configuration admission and broader error-scope delivery remain open."
+      ],
+      "inputHash": "03f7783661a5109a1b5017678693c76040783c0792c169aa8d61b8e2f78202bc",
+      "level": "file",
+      "nextAction": "Reconfirm exact public capability/configuration admission through the same windowed consumer. Preserve the completed handoff; broader pacing and runtime decomposition remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Public acquired textures now pass same-device attachment admission. Repeated acquisition retains the same object; teardown and recreation preserve caller views and device leases. Public present preserves failure and acquisition distinguishes timeout/outdated outcomes."
+      ],
+      "reviewId": "vulkan_native_surface_lifetime_20260928",
+      "reviewedAt": "2026-09-28T18:34:28.761693+00:00",
+      "reviewer": "codex-surface-handoff",
+      "sourceCommit": "2f2c495f63a01e3f0bed26acd80c7e63ad3ed5b7",
+      "status": "in_progress",
+      "summary": "Native surfaces and acquired textures retain device ownership, use ordinary texture refcounts, and expire public use at present/unconfigure without freeing caller-held objects.",
+      "supersedes": null,
+      "targets": [
+        "src/native/surface/doe_surface_native.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "fc1e734af9b3d705b56850445c37aa9dc9a2910ad2ded45c1296c03d07366f43"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "3ef93d83ca27553dd15f76c22aaeab52e35ce194a4d140d95b0cba9677618971"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "e8e1bdea048e4fbbc1a57b710760fe68c980f2773e3f1e2c13271b743e9f0e4d"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/build-measurements.json",
+          "sha256": "75eb672a8688d29ec0063816ce7931b3854a123a3867777d4d3cf1f752b4fef5"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/identity.json",
+          "sha256": "afad603b0b149331e18dbbb20c7b6b0c0f98b9631e1a342b028481fbd6380cef"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/process-observations.json",
+          "sha256": "1b23cd6096a154a93315661ae5ce859caf710269142dd07b3df7315c70f9d0d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/public-results.json",
+          "sha256": "04c9d180072e8835e1b5b78ba1ad55b77f4c30aada0c9c05fe11db9d950521bf"
+        }
+      ],
+      "findings": [
+        "Existing adapter/device bootstrap and other feature families were not fully re-reviewed. Startup discovery cost merits follow-up; local process CPU is higher in this small cohort."
+      ],
+      "inputHash": "445edb51a85a266f89dffa7629baba99cfd95283db0fe1448a837805b6be2708",
+      "level": "file",
+      "nextAction": "Reconfirm exact public capability/configuration admission through the same windowed consumer. Preserve the completed handoff; broader pacing and runtime decomposition remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Unavailable feature injection rejects windowed configuration explicitly while permitting device creation; public windowed and offscreen regression fixtures pass."
+      ],
+      "reviewId": "vulkan_surface_capability_20260928",
+      "reviewedAt": "2026-09-28T18:34:30.271927+00:00",
+      "reviewer": "codex-surface-handoff",
+      "sourceCommit": "2f2c495f63a01e3f0bed26acd80c7e63ad3ed5b7",
+      "status": "in_progress",
+      "summary": "Bootstrap queries/enables swapchain-maintenance presentation fences and the required instance extensions without requiring them for offscreen execution.",
+      "supersedes": "vulkan_batch_20260920_16_vk_device",
+      "targets": [
+        "src/backend/vulkan/vk_device.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "fc1e734af9b3d705b56850445c37aa9dc9a2910ad2ded45c1296c03d07366f43"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "3ef93d83ca27553dd15f76c22aaeab52e35ce194a4d140d95b0cba9677618971"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "e8e1bdea048e4fbbc1a57b710760fe68c980f2773e3f1e2c13271b743e9f0e4d"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/build-measurements.json",
+          "sha256": "75eb672a8688d29ec0063816ce7931b3854a123a3867777d4d3cf1f752b4fef5"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/identity.json",
+          "sha256": "afad603b0b149331e18dbbb20c7b6b0c0f98b9631e1a342b028481fbd6380cef"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/process-observations.json",
+          "sha256": "1b23cd6096a154a93315661ae5ce859caf710269142dd07b3df7315c70f9d0d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-handoff/public-results.json",
+          "sha256": "04c9d180072e8835e1b5b78ba1ad55b77f4c30aada0c9c05fe11db9d950521bf"
+        }
+      ],
+      "findings": [
+        "Complete runtime decomposition and other execution/lifetime paths remain unfinished."
+      ],
+      "inputHash": "16efe66dd4401f62d7dc2af336f5b81aa16618d98b484f62be280cca21d92750",
+      "level": "file",
+      "nextAction": "Reconfirm exact public capability/configuration admission through the same windowed consumer. Preserve the completed handoff; broader pacing and runtime decomposition remain separate.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Traced runtime shutdown and native device retention through the public surface consumer; presentation engine completion remains in the narrower surface owner."
+      ],
+      "reviewId": "vulkan_surface_runtime_20260928",
+      "reviewedAt": "2026-09-28T18:34:31.848156+00:00",
+      "reviewer": "codex-surface-handoff",
+      "sourceCommit": "2f2c495f63a01e3f0bed26acd80c7e63ad3ed5b7",
+      "status": "in_progress",
+      "summary": "Runtime retains explicit discovered surface completion availability; existing retirement owns GPU completion before surface teardown.",
+      "supersedes": "vulkan_runtime_composition_20260927",
+      "targets": [
+        "src/backend/vulkan/native_runtime.zig"
+      ]
     }
   ],
   "schemaVersion": 1
