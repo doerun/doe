@@ -5,6 +5,11 @@ runtime path. Artifacts and executable tests own pass/fail state.
 
 ## Function emission and ordinary Vulkan queries
 
+[Typed render recording](../../reports/maintenance/20260928-render-recording/README.md)
+now consumes prepared index bindings through ordinary native submission, fixing
+direct indexed draws that ignored the adapter's buffer handle. The recorder
+borrows explicit inputs while the existing owner retains allocation and completion.
+
 The [SPIR-V ownership checkpoint](../../reports/maintenance/20260928-spirv-ownership/README.md)
 places instruction storage and cleanup in a typed owner while preserving distinct
 invalidation rules and IR reference semantics. Selected artifacts retain byte

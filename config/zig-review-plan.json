@@ -4,10 +4,10 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "vulkan_render_recording_dependencies",
+      "batchId": "vulkan_attachment_admission",
       "state": "ready",
-      "objective": "Expose the resource and submission dependencies of the live ordinary Vulkan draw-recording path through narrow typed interfaces.",
-      "rationale": "The public query regression establishes a real native render-pass to queue submitter to run_render_draw consumer path. Its command recording still receives the whole runtime. Completed query and SPIR-V ownership batches remain closed.",
+      "objective": "Establish explicit attachment compatibility admission along ordinary native Vulkan render-pass execution.",
+      "rationale": "The completed typed draw-recording batch exposed backend attachment adoption of caller extent/format and resource sample count. Upstream admission must be traced before declaring a reproduced defect or adding duplicate checks.",
       "scopes": [
         {
           "level": "file",
@@ -18,22 +18,22 @@
         {
           "level": "file",
           "targets": [
-            "src/native/queue/doe_queue_submit_vulkan.zig"
+            "src/native/vulkan/vulkan_render_pass_native.zig"
           ]
         }
       ],
       "findingReviewIds": [
-        "vulkan_public_query_20260928"
+        "vulkan_draw_render_20260928"
       ],
-      "nextAction": "Trace native render-pass snapshots through the queue caller, render resource acquisition, recording and completion; enumerate read-only inputs and permitted mutations before choosing one typed owner boundary.",
+      "nextAction": "Trace public render-pass descriptors and view identity through native admission, queue snapshots and ensure_render_target; identify the existing authority for format, extent and sample compatibility.",
       "acceptance": [
-        "Identify the actual production consumer, complete execution path and observable consequence before editing.",
-        "Preserve public query/pixel output, recorded resource retention, failed-completion ownership and subsequent valid execution.",
-        "Retain focused checks and cost observations; give no parent review credit for interface extraction."
+        "Exercise public compatible and incompatible attachments, independent pixel checks, rejection without invalid submission and a subsequent valid operation.",
+        "Preserve caller resource leases and completion-aware cleanup; retain focused failure and cost observations.",
+        "Record the actual consumer and observable consequence; leave surface synchronization and other backends separate."
       ],
-      "stopCondition": "Stop after one cohesive typed render-recording boundary and its evidence. Surface synchronization, attachment admission and other backends remain separately bounded obligations.",
+      "stopCondition": "Stop after one complete attachment-admission boundary and its evidence. Query ordering, bundle rejection, SPIR-V ownership, typed recording and the build recipe remain closed.",
       "requiredEnvironment": [
-        "Linux Vulkan for ordinary query/rendering output; platform-specific qualification remains separate."
+        "Linux Vulkan for ordinary public rendering; validation-layer coverage where installed."
       ]
     }
   ]

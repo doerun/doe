@@ -21,7 +21,13 @@ static void error_seen(WGPUDevice const *d, WGPUErrorType t, WGPUStringView m, v
 }
 static WGPUStringView text(const char *s) { return (WGPUStringView){s, strlen(s)}; }
 
-int main(void) {
+int main(int argc, char **argv) {
+    const char *mode = argc > 1 ? argv[1] : "direct";
+    const bool indexed = strcmp(mode, "indexed16") == 0 || strcmp(mode, "indexed32") == 0 || strcmp(mode, "indexed-indirect") == 0;
+    const bool indirect = strcmp(mode, "indirect") == 0 || strcmp(mode, "indexed-indirect") == 0;
+    const bool index16 = strcmp(mode, "indexed16") == 0;
+    if (!indexed && !indirect && strcmp(mode, "direct") != 0) return 2;
+    printf("mode=%s\n", mode);
     WGPUInstance instance = wgpuCreateInstance(NULL);
     WGPUAdapter adapter = NULL;
     WGPUDevice device = NULL;
@@ -68,6 +74,30 @@ int main(void) {
     bd.size = READBACK_BYTES; bd.usage = WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst;
     WGPUBuffer readback = wgpuDeviceCreateBuffer(device, &bd);
     if (!pipeline || !view || !queries || !resolved || !readback) { fprintf(stderr, "creation failed: pipeline=%p view=%p queries=%p resolved=%p readback=%p\n", (void*)pipeline,(void*)view,(void*)queries,(void*)resolved,(void*)readback); return 1; }
+    WGPUBuffer index_buffer = NULL;
+    WGPUBuffer indirect_buffer = NULL;
+    const uint16_t indices16[] = {999, 999, 0, 1, 2};
+    const uint32_t indices32[] = {999, 999, 0, 1, 2};
+    const size_t index_bytes = index16 ? sizeof(indices16) : sizeof(indices32);
+    const size_t index_offset = index16 ? sizeof(uint16_t) : sizeof(uint32_t);
+    bd.mappedAtCreation = WGPU_TRUE;
+    if (indexed) {
+        bd.size = (index_bytes + 3) & ~(size_t)3; bd.usage = WGPUBufferUsage_Index;
+        index_buffer = wgpuDeviceCreateBuffer(device, &bd);
+        void *mapped = wgpuBufferGetMappedRange(index_buffer, 0, bd.size);
+        if (!mapped) return 1;
+        memcpy(mapped, index16 ? (const void *)indices16 : (const void *)indices32, index_bytes);
+        wgpuBufferUnmap(index_buffer);
+    }
+    if (indirect) {
+        const uint32_t args[] = {3, 1, indexed ? 1 : 0, 0, 0};
+        bd.size = sizeof(args); bd.usage = WGPUBufferUsage_Indirect;
+        indirect_buffer = wgpuDeviceCreateBuffer(device, &bd);
+        void *mapped = wgpuBufferGetMappedRange(indirect_buffer, 0, bd.size);
+        if (!mapped) return 1;
+        memcpy(mapped, args, sizeof(args));
+        wgpuBufferUnmap(indirect_buffer);
+    }
     bool passed = true;
     // Reuse the same queries. Empty queries in the next submission must erase
     // previous visibility; a later visible submission must work again.
@@ -81,6 +111,8 @@ int main(void) {
         rd.colorAttachmentCount = 1; rd.colorAttachments = &attachment; rd.occlusionQuerySet = queries;
         WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &rd);
         wgpuRenderPassEncoderSetPipeline(pass, pipeline);
+        if (indexed) wgpuRenderPassEncoderSetIndexBuffer(pass, index_buffer,
+            index16 ? WGPUIndexFormat_Uint16 : WGPUIndexFormat_Uint32, index_offset, index_bytes - index_offset);
         for (unsigned query = 0; query < 3; ++query) {
             wgpuRenderPassEncoderBeginOcclusionQuery(pass, query);
             if (draw) {
@@ -89,7 +121,10 @@ int main(void) {
                 for (unsigned part = 0; part < 2; ++part) {
                     const bool visible = query < 2 && query == part;
                     wgpuRenderPassEncoderSetScissorRect(pass, 0, 0, visible ? WIDTH : 0, WIDTH);
-                    wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+                    if (indexed && indirect) wgpuRenderPassEncoderDrawIndexedIndirect(pass, indirect_buffer, 0);
+                    else if (indirect) wgpuRenderPassEncoderDrawIndirect(pass, indirect_buffer, 0);
+                    else if (indexed) wgpuRenderPassEncoderDrawIndexed(pass, 3, 1, 1, 0, 0);
+                    else wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
                 }
             }
             wgpuRenderPassEncoderEndOcclusionQuery(pass);
@@ -105,7 +140,11 @@ int main(void) {
         dst.buffer = readback; dst.layout.offset = QUERY_BYTES; dst.layout.bytesPerRow = ROW_BYTES; dst.layout.rowsPerImage = WIDTH;
         WGPUExtent3D extent = {WIDTH, WIDTH, 1}; wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
         WGPUCommandBuffer command = wgpuCommandEncoderFinish(enc, NULL); wgpuCommandEncoderRelease(enc);
-        if (round == 2) { wgpuQuerySetRelease(queries); queries = NULL; }
+        if (round == 2) {
+            wgpuQuerySetRelease(queries); queries = NULL;
+            if (index_buffer) { wgpuBufferRelease(index_buffer); index_buffer = NULL; }
+            if (indirect_buffer) { wgpuBufferRelease(indirect_buffer); indirect_buffer = NULL; }
+        }
         wgpuQueueSubmit(queue, 1, &command); wgpuCommandBufferRelease(command);
         bool mapped = false;
         WGPUBufferMapCallbackInfo mc = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;

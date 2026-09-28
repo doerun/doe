@@ -1,0 +1,52 @@
+[
+  {
+    "arm": "baseline",
+    "mode": "direct",
+    "exitCode": 0
+  },
+  {
+    "arm": "baseline",
+    "mode": "indexed16",
+    "exitCode": 86
+  },
+  {
+    "arm": "baseline",
+    "mode": "indexed32",
+    "exitCode": 86
+  },
+  {
+    "arm": "baseline",
+    "mode": "indirect",
+    "exitCode": 0
+  },
+  {
+    "arm": "baseline",
+    "mode": "indexed-indirect",
+    "exitCode": 0
+  },
+  {
+    "arm": "candidate",
+    "mode": "direct",
+    "exitCode": 0
+  },
+  {
+    "arm": "candidate",
+    "mode": "indexed16",
+    "exitCode": 0
+  },
+  {
+    "arm": "candidate",
+    "mode": "indexed32",
+    "exitCode": 0
+  },
+  {
+    "arm": "candidate",
+    "mode": "indirect",
+    "exitCode": 0
+  },
+  {
+    "arm": "candidate",
+    "mode": "indexed-indirect",
+    "exitCode": 0
+  }
+]

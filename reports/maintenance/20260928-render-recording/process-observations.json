@@ -1,0 +1,343 @@
+{
+  "classification": "diagnostic-only",
+  "scope": "Complete direct public fixture process including startup, shader/pipeline compilation, draws, query resolve, readback and teardown; no resident-operation timing.",
+  "cpu": 0,
+  "instrumentation": "disabled",
+  "summaryDefinition": "Central-pair median and nearest-rank p95 across independent processes; no sample pooling.",
+  "samples": [
+    {
+      "pair": 0,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 29560197,
+      "userSeconds": 0.010801,
+      "systemSeconds": 0.017282,
+      "peakProcessRssBytes": 56483840
+    },
+    {
+      "pair": 0,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24598974,
+      "userSeconds": 0.007946,
+      "systemSeconds": 0.015892,
+      "peakProcessRssBytes": 56475648
+    },
+    {
+      "pair": 1,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24512260,
+      "userSeconds": 0.009158999999999999,
+      "systemSeconds": 0.013738,
+      "peakProcessRssBytes": 56475648
+    },
+    {
+      "pair": 1,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24885423,
+      "userSeconds": 0.007462,
+      "systemSeconds": 0.017057,
+      "peakProcessRssBytes": 56295424
+    },
+    {
+      "pair": 2,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 23967935,
+      "userSeconds": 0.009152,
+      "systemSeconds": 0.013219,
+      "peakProcessRssBytes": 56500224
+    },
+    {
+      "pair": 2,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24003392,
+      "userSeconds": 0.007711,
+      "systemSeconds": 0.015423,
+      "peakProcessRssBytes": 56487936
+    },
+    {
+      "pair": 3,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 23057831,
+      "userSeconds": 0.009071,
+      "systemSeconds": 0.012471999999999999,
+      "peakProcessRssBytes": 56287232
+    },
+    {
+      "pair": 3,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 25164318,
+      "userSeconds": 0.010498,
+      "systemSeconds": 0.013647,
+      "peakProcessRssBytes": 56508416
+    },
+    {
+      "pair": 4,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 22817639,
+      "userSeconds": 0.008421,
+      "systemSeconds": 0.013099999999999999,
+      "peakProcessRssBytes": 56434688
+    },
+    {
+      "pair": 4,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 22906306,
+      "userSeconds": 0.008479,
+      "systemSeconds": 0.011659,
+      "peakProcessRssBytes": 56422400
+    },
+    {
+      "pair": 5,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 28216756,
+      "userSeconds": 0.005542,
+      "systemSeconds": 0.018845,
+      "peakProcessRssBytes": 56365056
+    },
+    {
+      "pair": 5,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 23786995,
+      "userSeconds": 0.007388,
+      "systemSeconds": 0.015830999999999998,
+      "peakProcessRssBytes": 56455168
+    },
+    {
+      "pair": 6,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 25576133,
+      "userSeconds": 0.005079,
+      "systemSeconds": 0.019301,
+      "peakProcessRssBytes": 56483840
+    },
+    {
+      "pair": 6,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 23965981,
+      "userSeconds": 0.006939,
+      "systemSeconds": 0.014868999999999999,
+      "peakProcessRssBytes": 56553472
+    },
+    {
+      "pair": 7,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24068134,
+      "userSeconds": 0.004266,
+      "systemSeconds": 0.015999,
+      "peakProcessRssBytes": 56565760
+    },
+    {
+      "pair": 7,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 22961479,
+      "userSeconds": 0.010941,
+      "systemSeconds": 0.011935999999999999,
+      "peakProcessRssBytes": 56442880
+    },
+    {
+      "pair": 8,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 27848614,
+      "userSeconds": 0.006802,
+      "systemSeconds": 0.017006999999999998,
+      "peakProcessRssBytes": 56496128
+    },
+    {
+      "pair": 8,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 26009760,
+      "userSeconds": 0.010683999999999999,
+      "systemSeconds": 0.014244999999999999,
+      "peakProcessRssBytes": 56532992
+    },
+    {
+      "pair": 9,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 21997285,
+      "userSeconds": 0.008192999999999999,
+      "systemSeconds": 0.013314,
+      "peakProcessRssBytes": 56504320
+    },
+    {
+      "pair": 9,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-render-context-20260928/public-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 23440892,
+      "userSeconds": 0.00947,
+      "systemSeconds": 0.013679,
+      "peakProcessRssBytes": 56451072
+    }
+  ],
+  "summary": {
+    "baseline": {
+      "medianWallMs": 24.426679,
+      "p95WallMs": 29.560197,
+      "medianCpuMs": 23.513999999999996,
+      "medianPeakProcessRssBytes": 56469504.0
+    },
+    "candidate": {
+      "medianWallMs": 24.035763000000003,
+      "p95WallMs": 28.216756,
+      "medianCpuMs": 22.3525,
+      "medianPeakProcessRssBytes": 56481792.0
+    }
+  }
+}

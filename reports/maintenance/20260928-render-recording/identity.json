@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "classification": "local diagnostic; no release or application-performance qualification",
+  "baseCommit": "4b3d5da89332070fc7c339e70d0768c889c039f3",
+  "sourceTreeSha256": "1a39dfcf5c1a7974f47441bf8d54e52a315e4f7a2fcf346a980d71864f90f826",
+  "sourceTreeScope": "Frozen build-receipt snapshot; subsequent documentation and review scheduling changes excluded from execution claims.",
+  "toolchain": {
+    "path": "/home/x/.local/zig/zig-x86_64-linux-0.15.2/zig",
+    "sha256": "2858dc89dbbfdd08cceda1b841e7fd0a793a1a67b49f150bc3d0d1de44ed7f51",
+    "version": "0.15.2"
+  },
+  "host": {
+    "machine": "x86_64",
+    "operatingSystem": "Linux",
+    "release": "7.0.0-29-generic"
+  },
+  "driver": {
+    "icd": "/usr/share/vulkan/icd.d/radeon_icd.json",
+    "icdSha256": "ea05ad7109cee152ef4e801a022dfa40b655dc06a08da7d0d7b042f619a0947c",
+    "adapter": "AMD Radeon 8060S (RADV STRIX_HALO)",
+    "mesaVersion": "26.0.3-1ubuntu1",
+    "khronosValidationAvailable": false
+  },
+  "libraries": {
+    "baseline": {
+      "path": "/tmp/doe-render-context-20260928/baseline/lib/libwebgpu_doe.so",
+      "sha256": "4b5d96250da98fb77ecce6f4a51af8033775b7f75dd10ce8a2abdea72069b9ca",
+      "sizeBytes": 11705128
+    },
+    "candidate": {
+      "path": "/tmp/doe-render-context-20260928/candidate/lib/libwebgpu_doe.so",
+      "sha256": "9bcab290e12b776f49d4ac0ff1202afa4dae6ce3bb84b3f80563e0f24d0855d5",
+      "sizeBytes": 11705200
+    }
+  },
+  "sources": {
+    "vk_render.zig": "d3d2d7523a3a983fd78ccec3201552324b3ae8b4cc30b398d5071b272eda232e",
+    "vk_draw_recording.zig": "5b9378fbe30c2cfb8d69b28b9332c86d208427d5e04c74b8f987f9449b7b75e0",
+    "native_occlusion_query.c": "d125dbc406135fb8e92dcb24fa57f14c3ac3af4ba01f15df450043351962ed29",
+    "implementation.patch": "7a52d09b7aa36c54bcf3fe9f38991f4efb02cb8db8426cbbe8db604325e23afc",
+    "order.c": "24933a2b98d9e2b15ccb95a8724e515117a3396af7a2fe93500c73a4921e1a26",
+    "fault.c": "6dc74b08cbcfb92c5451e5f243b9453f81a7507b5162e9696f03e8994eb40b8b",
+    "draw-probe.zig": "809b2fe06d39d233c0f916d71a9ceb5fba52033f50634991a04bedf13f7c0458",
+    "build-options.zig": "b26eac31c4d824d3efcaa710519748bff4e43f01add0ba7da50b46381e1a16e1",
+    "public-check.py": "188642e888b9f10903332407464059cc1192614dac7d8f762bdddb0351de0220",
+    "process-cost.py": "ba302e894807e8829d50aa148334370fd8f79a834839b4176c29631f29063218"
+  },
+  "artifacts": {
+    "raw-evidence.tar.gz": "ade72414b3b29c074aaf75ab0d0811e056155e4014cc3dc2faf965568e8cc69c",
+    "public-results.json": "0375ef1f545673ea1f34bc6fe8c77270eed1d4ed3c2b49c9ab0d5fda2d94749b",
+    "process-observations.json": "ddba5cdcd99ea33927caaa9e8b28860147905b8072e9a4bef9c820637e0c2192",
+    "build-measurements.json": "dcbc62642fc2bd265f351091eb898fe50d5a7d3bcc6d556784e6ed3352b066c6"
+  },
+  "outcomes": {
+    "runtimeSuite": {
+      "passed": 2327,
+      "skipped": 11,
+      "command": "zig build test --summary all"
+    },
+    "failureProbe": {
+      "passedIncludingImportedTests": 82,
+      "focusedCases": 8,
+      "deviceLoss": "injected after real completion; not physical loss"
+    },
+    "candidatePublicModesPassed": [
+      "direct",
+      "indexed16",
+      "indexed32",
+      "indirect",
+      "indexed-indirect"
+    ],
+    "baselineFailingModes": [
+      "indexed16",
+      "indexed32"
+    ],
+    "identicalBaselineCandidateLogs": [
+      "direct",
+      "indirect",
+      "indexed-indirect"
+    ],
+    "elfSectionBytes": {
+      "baseline": 2359970,
+      "candidate": 2359970
+    },
+    "finalBuildSourceChanged": false
+  }
+}

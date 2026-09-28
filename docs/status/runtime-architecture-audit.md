@@ -17,6 +17,13 @@ or compatibility facade.
 
 ## Current work selection
 
+The [render recording checkpoint](../../reports/maintenance/20260928-render-recording/README.md)
+now gives the live draw recorder typed borrowed dependencies. Allocation, image
+transitions and completion remain with the render owner. Public indexed draws
+also consume the native adapter's buffer identity correctly. Physical query and
+pixel checks and injected completion failures cover this boundary; broader setup,
+attachment admission and surface synchronization remain open.
+
 The [production query checkpoint](../../reports/maintenance/20260928-production-query/README.md)
 repairs pool type, reset placement, and logical visibility across native draws.
 Public recording, resolve/readback, pixel oracles, query reuse and caller release

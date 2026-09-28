@@ -1348,9 +1348,9 @@
       },
       "src/backend/vulkan/vk_render.zig": {
         "decision": "Keep",
-        "moduleSha256": "e5ad9a6317e8ca7a0334ba6f50e9feea0f793b62ef29dae1511373ee5ec219da",
-        "reason": "Keep: existing native recording, query ownership, queue submission or Vulkan ABI owner. Logical occlusion spans completed native draws; native query metadata does not cross the public ABI.",
-        "reviewer": "codex-production-query/2026-09-28"
+        "moduleSha256": "d3d2d7523a3a983fd78ccec3201552324b3ae8b4cc30b398d5071b272eda232e",
+        "reason": "Keep: scope owner for render allocation, image transitions, submission and completion; prepares retained index storage before borrowing it for typed draw recording.",
+        "reviewer": "codex-render-recording/2026-09-28"
       },
       "src/backend/vulkan/vk_render_pipeline.zig": {
         "decision": "Keep",
@@ -4375,6 +4375,12 @@
         "moduleSha256": "d481bfb70658fecdb50d043da0d39ecd1cfdb04bc42b7a07b61a1416414451e2",
         "reviewer": "codex-spirv-ownership/2026-09-28",
         "reason": "Keep: instruction_cache owns keyed storage and distinct invalidations; function emission chooses boundaries and instruction policy; target-independent reference traversal belongs to ir_query. No new pass framework."
+      },
+      "src/backend/vulkan/vk_draw_recording.zig": {
+        "decision": "Keep",
+        "moduleSha256": "5b9378fbe30c2cfb8d69b28b9332c86d208427d5e04c74b8f987f9449b7b75e0",
+        "reason": "Keep: typed native draw recording borrows only command buffer, immutable buffer lookup, pass/pipeline handles and prepared index binding; no allocation, submission, layout mutation or retirement authority.",
+        "reviewer": "codex-render-recording/2026-09-28"
       }
     },
     "linePolicy": {

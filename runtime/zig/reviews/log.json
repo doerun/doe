@@ -25362,6 +25362,133 @@
       "targets": [
         "src/compiler/wgsl/emit/spirv/instruction_cache.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_render_pass_native.zig",
+          "sha256": "abfe8ddfaf8dc63b2da5accf253bae4fb05f9c014240277246dcc8b3719ea007"
+        },
+        {
+          "path": "runtime/zig/tests/native_occlusion_query.c",
+          "sha256": "d125dbc406135fb8e92dcb24fa57f14c3ac3af4ba01f15df450043351962ed29"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-render-recording/identity.json",
+          "sha256": "1299063921f0175fef17ae9ef32dfda7effb235c84876f5f2ded5498030e33d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-render-recording/public-results.json",
+          "sha256": "0375ef1f545673ea1f34bc6fe8c77270eed1d4ed3c2b49c9ab0d5fda2d94749b"
+        }
+      ],
+      "findings": [
+        "bind_existing_render_target adopts caller extent/format with resource sample count; trace upstream attachment admission before deciding which owner must reject incompatible views. Surface synchronization and other setup remain unexamined."
+      ],
+      "inputHash": "1d67809d706af1f689b280835a0cfc304d328732faef9173d9a9528c6a6289d7",
+      "level": "file",
+      "nextAction": "Trace attachment compatibility from public render-pass descriptors through native admission to ensure_render_target; preserve the completed recorder boundary.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Replaced full-runtime command recording with typed borrowed DrawRecording inputs.",
+        "Public direct indexed recording ignored native index_buffer_handle; shared index preparation now consumes it, with both index widths, offset/first-index and query/pixel regressions. Inline index allocation remains RenderState-owned through completion."
+      ],
+      "reviewId": "vulkan_draw_render_20260928",
+      "reviewedAt": "2026-09-28T17:29:00.935328+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4b3d5da89332070fc7c339e70d0768c889c039f3",
+      "status": "in_progress",
+      "summary": "Traced ordinary native draw acquisition, index preparation, recording and completion cleanup; broader render examination remains partial.",
+      "supersedes": "vulkan_public_query_20260928",
+      "targets": [
+        "src/backend/vulkan/vk_render.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_render_pass_native.zig",
+          "sha256": "abfe8ddfaf8dc63b2da5accf253bae4fb05f9c014240277246dcc8b3719ea007"
+        },
+        {
+          "path": "runtime/zig/tests/native_occlusion_query.c",
+          "sha256": "d125dbc406135fb8e92dcb24fa57f14c3ac3af4ba01f15df450043351962ed29"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-render-recording/identity.json",
+          "sha256": "1299063921f0175fef17ae9ef32dfda7effb235c84876f5f2ded5498030e33d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-render-recording/public-results.json",
+          "sha256": "0375ef1f545673ea1f34bc6fe8c77270eed1d4ed3c2b49c9ab0d5fda2d94749b"
+        }
+      ],
+      "findings": [
+        "Legacy optional vertex_bindings still skips unresolved handles; complete invalid-resource admission and depth/stencil coverage remain separate examinations."
+      ],
+      "inputHash": "91f0e87aa2679b3a9da6acb7183f880e2ca83567a2e5be871c3df472f47c1477",
+      "level": "file",
+      "nextAction": "Continue only along a named admission or draw-semantics consumer; do not grant parent completion credit.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Typed inputs separate recording from resource acquisition, image transitions, submission and retirement. Existing successful public modes preserve exact observed output/order; failure probes cover retained indexed resources."
+      ],
+      "reviewId": "vulkan_draw_recorder_20260928",
+      "reviewedAt": "2026-09-28T17:29:02.361998+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4b3d5da89332070fc7c339e70d0768c889c039f3",
+      "status": "in_progress",
+      "summary": "Examined borrowed command recording through the actual native queue consumer; no allocator or completion authority enters the recorder.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan/vk_draw_recording.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_render_pass_native.zig",
+          "sha256": "abfe8ddfaf8dc63b2da5accf253bae4fb05f9c014240277246dcc8b3719ea007"
+        },
+        {
+          "path": "runtime/zig/tests/native_occlusion_query.c",
+          "sha256": "d125dbc406135fb8e92dcb24fa57f14c3ac3af4ba01f15df450043351962ed29"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-render-recording/identity.json",
+          "sha256": "1299063921f0175fef17ae9ef32dfda7effb235c84876f5f2ded5498030e33d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-render-recording/public-results.json",
+          "sha256": "0375ef1f545673ea1f34bc6fe8c77270eed1d4ed3c2b49c9ab0d5fda2d94749b"
+        }
+      ],
+      "findings": [
+        "Complete queue validation and attachment admission are not established by the focused draw tests."
+      ],
+      "inputHash": "c13a6000c442e4b910ecebbef9d03f284c7c9a03422b406d01f3db69e4d8979f",
+      "level": "file",
+      "nextAction": "Trace attachment admission with the native render-pass recorder before changing backend compatibility checks.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Confirmed actual production consumer and caller-release retention across direct, indexed and indirect public paths. No queue source change was required."
+      ],
+      "reviewId": "vulkan_draw_queue_20260928",
+      "reviewedAt": "2026-09-28T17:29:03.803106+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "4b3d5da89332070fc7c339e70d0768c889c039f3",
+      "status": "in_progress",
+      "summary": "Traced render snapshots and recorded resource leases through ordinary run_render_draw and completion; other queue command families remain partially examined.",
+      "supersedes": null,
+      "targets": [
+        "src/native/queue/doe_queue_submit_vulkan.zig"
+      ]
     }
   ],
   "schemaVersion": 1
