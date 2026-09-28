@@ -30,6 +30,15 @@ const DEVICE_LOCAL_FAILURE_BYTES = 64 * 1024;
 const ALIGNED_STORAGE_BINDING_OFFSET: u64 = 256;
 
 test "Vulkan inline index allocations survive submission and preserve rendered pixels" {
+    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
+        error.UnsupportedFeature => return error.SkipZigTest,
+        else => return err,
+    };
+    defer rt.deinit();
+    try expectIndexedRenderPixels(&rt);
+}
+
+fn expectIndexedRenderPixels(rt: *native_runtime.NativeVulkanRuntime) !void {
     const texture_types = @import("../../src/contracts/model/model_texture_value_types.zig");
     const render_types = @import("../../src/contracts/model/model_render_types.zig");
     const texture_commands = @import("../../src/backend/vulkan/vk_texture_commands.zig");
@@ -46,23 +55,18 @@ test "Vulkan inline index allocations survive submission and preserve rendered p
     const readback_handle = 981;
     const extent = 4;
     const row_bytes = 256;
-    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
-        error.UnsupportedFeature => return error.SkipZigTest,
-        else => return err,
-    };
-    defer rt.deinit();
     var vertex: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
     var fragment: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
     const vertex_length = try compiler.translateToSpirv(std.testing.allocator, vertex_source, &vertex);
     const fragment_length = try compiler.translateToSpirv(std.testing.allocator, fragment_source, &fragment);
-    const target = try resources.ensure_texture_resource(&rt, .{
+    const target = try resources.ensure_texture_resource(rt, .{
         .handle = target_handle,
         .width = extent,
         .height = extent,
         .format = texture_types.WGPUTextureFormat_RGBA8Unorm,
         .usage = texture_types.WGPUTextureUsage_RenderAttachment | texture_types.WGPUTextureUsage_CopySrc,
     });
-    const readback = try resources.ensure_compute_buffer(&rt, readback_handle, row_bytes * extent, true);
+    const readback = try resources.ensure_compute_buffer(rt, readback_handle, row_bytes * extent, true);
     for ([_]render_types.RenderIndexData{ .{ .uint16 = &.{ 0, 1, 2 } }, .{ .uint32 = &.{ 0, 1, 2 } } }) |indices| {
         _ = try rt.run_render_draw(.{
             .draw_count = 1,
@@ -74,7 +78,7 @@ test "Vulkan inline index allocations survive submission and preserve rendered p
             .fragment_spirv = std.mem.bytesAsSlice(u32, fragment[0..fragment_length]),
         });
         rt.recorded_submit_replay_active = true;
-        _ = try texture_commands.record_texture_to_buffer(&rt, target, readback, .{
+        _ = try texture_commands.record_texture_to_buffer(rt, target, readback, .{
             .offset = 0,
             .bytes_per_row = row_bytes,
             .rows_per_image = extent,
@@ -804,4 +808,49 @@ test "Vulkan completed buffer owner preserves mapping dispatch readback and repl
     rt.deinit();
     try std.testing.expectEqual(@as(u64, 0), rt.compute_buffer_cache.retained_bytes);
     rt.deinit();
+}
+
+test "Vulkan bundle rejection preserves typed errors and allows subsequent rendering" {
+    const render = @import("../../src/backend/vulkan/vk_render.zig");
+    const bundle = @import("../../src/runtime/render/render_bundle.zig");
+    const texture_types = @import("../../src/contracts/model/model_texture_value_types.zig");
+    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
+        error.UnsupportedFeature => return error.SkipZigTest,
+        else => return err,
+    };
+    defer rt.deinit();
+
+    const vertex = try resources.create_host_visible_buffer(&rt, 16, vk.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    defer {
+        if (vertex.mapped != null) vk.vkUnmapMemory(rt.device, vertex.memory);
+        vk.vkDestroyBuffer(rt.device, vertex.buffer, null);
+        vk.vkFreeMemory(rt.device, vertex.memory, null);
+    }
+    var commands = [_]bundle.BundleCmd{.{ .set_vertex_buffer = .{
+        .slot = 0,
+        .buffer_handle = @ptrFromInt(vertex.buffer),
+        .offset = 0,
+        .size = 16,
+    } }};
+    const valid = bundle.DoeRenderBundle{
+        .allocator = std.testing.allocator,
+        .backend = .vulkan,
+        .color_format = texture_types.WGPUTextureFormat_RGBA8Unorm,
+        .depth_stencil_format = texture_types.WGPUTextureFormat_Undefined,
+        .sample_count = 1,
+        .cmds = &commands,
+    };
+    for ([_]bundle.ReplayError{ error.InvalidBundle, error.FormatMismatch, error.SampleCountMismatch }) |expected| {
+        var invalid = valid;
+        switch (expected) {
+            error.InvalidBundle => invalid.error_object = true,
+            error.FormatMismatch => invalid.color_format = texture_types.WGPUTextureFormat_BGRA8Unorm,
+            error.SampleCountMismatch => invalid.sample_count = 4,
+        }
+        for ([_][]const *const bundle.DoeRenderBundle{ &.{&invalid}, &.{ &valid, &invalid } }) |sequence| {
+            try std.testing.expectError(expected, render.execute_render_bundles(&rt, sequence, 4, 4, valid.color_format, 1));
+            _ = try render.execute_render_bundles(&rt, &.{&valid}, 4, 4, valid.color_format, 1);
+            try expectIndexedRenderPixels(&rt);
+        }
+    }
 }

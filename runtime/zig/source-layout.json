@@ -1348,9 +1348,9 @@
       },
       "src/backend/vulkan/vk_render.zig": {
         "decision": "Keep",
-        "moduleSha256": "c87f2460656b75cede84bf58683a2bad48b01a9d7885ad6d6192e036d22c6b83",
-        "reason": "Keep: render state owns inline index storage through submission; typed retirement dependency prevents failed submit/wait from unwinding GPU references before terminal completion. Other rendering findings remain open.",
-        "reviewer": "codex-render-lifetime/2026-09-27"
+        "moduleSha256": "a6ba7fdc5d3afd26d9ab6ee6b09ed7e3b2cc5984119a04495d62056c4e0286d1",
+        "reason": "Keep: standalone bundle replay propagates typed rejection before submission; scope-owned render resources unwind and the command pool resets before reuse. Render admission and narrower dependency work remain open.",
+        "reviewer": "codex-render-rejection/2026-09-28"
       },
       "src/backend/vulkan/vk_render_pipeline.zig": {
         "decision": "Keep",
