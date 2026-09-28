@@ -115,5 +115,5 @@ root. The tool measures a clean build, a no-change rebuild, and each exact sourc
 edit in `config/zig-build-measurements.json`, using a private source snapshot and
 cache. Every edit starts from a restored baseline. The report separates elapsed
 time, per-build process RSS, and artifact size; it does not modify active work.
-See the [architecture audit](../../docs/status/runtime-architecture-audit.md#source-edit-build-measurements)
-for receipt migration and memory scope.
+See the [architecture audit](../../docs/status/runtime-architecture-audit.md)
+for the current recipe disposition and scoped evidence.

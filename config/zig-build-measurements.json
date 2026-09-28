@@ -13,8 +13,8 @@
     {
       "id": "leaf-backend",
       "path": "src/backend/vulkan/vk_formats.zig",
-      "before": "pub fn bytes_per_pixel(format: model_gpu_types.WGPUTextureFormat) !u32 {\n    return switch (format) {",
-      "after": "pub fn bytes_per_pixel(texture_format: model_gpu_types.WGPUTextureFormat) !u32 {\n    return switch (texture_format) {"
+      "before": "pub fn wgpu_format_to_vk_format(format: model_gpu_types.WGPUTextureFormat) !u32 {\n    return switch (format) {",
+      "after": "pub fn wgpu_format_to_vk_format(texture_format: model_gpu_types.WGPUTextureFormat) !u32 {\n    return switch (texture_format) {"
     },
     {
       "id": "shared-contract",
