@@ -25158,6 +25158,44 @@
       "targets": [
         "src/runtime/render/render_bundle.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig",
+          "sha256": "c059e543ee44e3bbda0fec9c7e12f1a28189f836453b3497d50161f88990b184"
+        },
+        {
+          "path": "runtime/zig/src/native/resource/doe_query_native.zig",
+          "sha256": "5a94773adc7a87fe88bae75e3d81658cae17a6106158c537f05f233dfb0ee707"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-production-query/identity.json",
+          "sha256": "5f92fec506f611a9d64d5a2079a8c6a489adf29bf8d6247ec3d874d977c0cc1b"
+        }
+      ],
+      "findings": [
+        "Surface synchronization and attachment admission remain separate open findings. Full query validation, Metal/D3D12 and other rendering paths are not qualified."
+      ],
+      "inputHash": "4601e5499421bbe999b0274b157fc92b824868ad82bee6e0c120e80cc1d389bd",
+      "level": "file",
+      "nextAction": "Finish active SPIR-V ownership batch, then select a real Vulkan resource-to-submission consumer before narrowing its interfaces.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reset precedes pass entry; ordinary query type, multi-draw visibility, empty/reused queries and caller release pass physical public API and native-order checks."
+      ],
+      "reviewId": "vulkan_public_query_20260928",
+      "reviewedAt": "2026-09-28T16:46:33.016590+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "628f8dd39c626735a727201f90f35ac2b5c29841",
+      "status": "in_progress",
+      "summary": "Partial production query path inspection and correction; no whole-file completion.",
+      "supersedes": "vulkan_render_rejection_20260928",
+      "targets": [
+        "src/backend/vulkan/vk_render.zig"
+      ]
     }
   ],
   "schemaVersion": 1

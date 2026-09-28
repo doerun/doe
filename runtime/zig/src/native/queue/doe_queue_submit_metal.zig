@@ -757,7 +757,7 @@ pub fn submit_metal_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*an
                     }
                     has_gpu_work = true;
                 },
-                .vulkan_render => {
+                .vulkan_render, .vulkan_begin_occlusion => {
                     q.dev.error_scopes.deliver(error_scope.ERROR_TYPE_VALIDATION, "Metal submission received Vulkan render commands");
                     return;
                 },

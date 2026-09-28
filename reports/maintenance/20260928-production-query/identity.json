@@ -1,0 +1,48 @@
+{
+  "classification": "local-correctness-diagnostic",
+  "baseCommit": "628f8dd39c626735a727201f90f35ac2b5c29841",
+  "candidateDiffSha256": "b4bf1eeaecdeee4d963ab094d5451cafa23e2534b343df4c337c9d8307140f3e",
+  "zig": "0.15.2",
+  "icd": "/usr/share/vulkan/icd.d/radeon_icd.json",
+  "adapter": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+  "driver": "Mesa 26.0.3-1ubuntu1",
+  "files": {
+    "baseline/lib/libwebgpu_doe.so": {
+      "sha256": "6d607bb4b8cad473a225de0ece0d85d517d0e7c326684968bf0a16464a462e44",
+      "bytes": 11700504
+    },
+    "candidate/lib/libwebgpu_doe.so": {
+      "sha256": "5880fada9c07041518b826bb008a6107ec31000230be4aea07f17509585f83c1",
+      "bytes": 11702296
+    },
+    "query-test": {
+      "sha256": "2d8056233f8168e4f78dc7f2a69e7fd2dfa306f2d3723bf026bc98f75caab1ed",
+      "bytes": 28120
+    },
+    "order.c": {
+      "sha256": "28f7a1105b2b21958cbbd8692af52a6d1ba85d58a0a50f69dada6ce00ac05e11",
+      "bytes": 1958
+    },
+    "order.so": {
+      "sha256": "fbe1285e4365a8fd78ceee065c66ea5607ac62b54602a49d6a6c105c51fe9095",
+      "bytes": 40328
+    }
+  },
+  "results": {
+    "baseline": "query creation fails InvalidState in eager reset",
+    "candidate": "passed",
+    "nativeOrder": {
+      "pools": 1,
+      "resets": 12,
+      "begins": 12,
+      "draws": 12,
+      "ends": 12,
+      "failures": 0
+    },
+    "runtimeTests": {
+      "passed": 2323,
+      "skipped": 11
+    }
+  },
+  "validationLayer": "unavailable"
+}

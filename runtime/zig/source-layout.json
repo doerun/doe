@@ -1270,9 +1270,9 @@
       },
       "src/backend/vulkan/vk_constants.zig": {
         "decision": "Keep",
-        "moduleSha256": "1ede994131c940102345259fcc49c36519ce9ff5ec0a77fb7133240c54569232",
-        "reason": "Keep: Owns Vulkan ABI constants including the distinct uniform-read access bit required by the compute synchronization owner.",
-        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+        "moduleSha256": "2d2bf7a44697ab6164ee4a1cdca5a43af40d7e442ce09bf92d9eff315cbb9d25",
+        "reason": "Keep: existing native recording, query ownership, queue submission or Vulkan ABI owner. Logical occlusion spans completed native draws; native query metadata does not cross the public ABI.",
+        "reviewer": "codex-production-query/2026-09-28"
       },
       "src/backend/vulkan/vk_device.zig": {
         "decision": "Keep",
@@ -1318,9 +1318,9 @@
       },
       "src/backend/vulkan/vk_functions.zig": {
         "decision": "Keep",
-        "moduleSha256": "e4ea23136384864f2821079d5b6fcf7926b2d4a39473291e2056babe580a9b0a",
-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "329f4092d2b6e8fd90a1de254c0077e8490b890d152617e799b014d7b414732a",
+        "reason": "Keep: existing native recording, query ownership, queue submission or Vulkan ABI owner. Logical occlusion spans completed native draws; native query metadata does not cross the public ABI.",
+        "reviewer": "codex-production-query/2026-09-28"
       },
       "src/backend/vulkan/vk_metrics.zig": {
         "decision": "Keep",
@@ -1348,9 +1348,9 @@
       },
       "src/backend/vulkan/vk_render.zig": {
         "decision": "Keep",
-        "moduleSha256": "a6ba7fdc5d3afd26d9ab6ee6b09ed7e3b2cc5984119a04495d62056c4e0286d1",
-        "reason": "Keep: standalone bundle replay propagates typed rejection before submission; scope-owned render resources unwind and the command pool resets before reuse. Render admission and narrower dependency work remain open.",
-        "reviewer": "codex-render-rejection/2026-09-28"
+        "moduleSha256": "e5ad9a6317e8ca7a0334ba6f50e9feea0f793b62ef29dae1511373ee5ec219da",
+        "reason": "Keep: existing native recording, query ownership, queue submission or Vulkan ABI owner. Logical occlusion spans completed native draws; native query metadata does not cross the public ABI.",
+        "reviewer": "codex-production-query/2026-09-28"
       },
       "src/backend/vulkan/vk_render_pipeline.zig": {
         "decision": "Keep",
@@ -3592,9 +3592,9 @@
       },
       "src/native/queue/doe_queue_submit_metal.zig": {
         "decision": "Keep",
-        "moduleSha256": "aa25ffeeb029d6f7ea2463c617481c8d95248151c00ffac50fc27d6373179392",
-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
-        "reviewer": "codex-texture-copy-regions/2026-09-07"
+        "moduleSha256": "47273289df0ba2c562a2a72f92767b31f5652b68bde10e4ccfd75f5a924ee2a4",
+        "reason": "Keep: existing native recording, query ownership, queue submission or Vulkan ABI owner. Logical occlusion spans completed native draws; native query metadata does not cross the public ABI.",
+        "reviewer": "codex-production-query/2026-09-28"
       },
       "src/native/queue/doe_queue_submit_native.zig": {
         "decision": "Keep",
@@ -3610,9 +3610,9 @@
       },
       "src/native/queue/doe_queue_submit_vulkan.zig": {
         "decision": "Keep",
-        "moduleSha256": "4aabc5fa7cbc48c1470ef3f423deeee997e01d161ead176eed79b79e05a40bee",
-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
-        "reviewer": "codex-texture-copy-regions/2026-09-07"
+        "moduleSha256": "c059e543ee44e3bbda0fec9c7e12f1a28189f836453b3497d50161f88990b184",
+        "reason": "Keep: existing native recording, query ownership, queue submission or Vulkan ABI owner. Logical occlusion spans completed native draws; native query metadata does not cross the public ABI.",
+        "reviewer": "codex-production-query/2026-09-28"
       },
       "src/native/render/doe_bundle_native.zig": {
         "decision": "Keep",
@@ -3670,9 +3670,9 @@
       },
       "src/native/resource/doe_query_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "ba22b6a85933a96959391c1861d9c0b6e34ad1c1eef374e9d4f0c22af1c007e2",
-        "reason": "Keep: typed retained resources share queue-time availability validation and preserve explicit destruction versus caller release.",
-        "reviewer": "codex-submit-availability/2026-09-07"
+        "moduleSha256": "5a94773adc7a87fe88bae75e3d81658cae17a6106158c537f05f233dfb0ee707",
+        "reason": "Keep: existing native recording, query ownership, queue submission or Vulkan ABI owner. Logical occlusion spans completed native draws; native query metadata does not cross the public ABI.",
+        "reviewer": "codex-production-query/2026-09-28"
       },
       "src/native/resource/doe_texture_sampler_native.zig": {
         "decision": "Keep",
@@ -3736,9 +3736,9 @@
       },
       "src/native/support/doe_native_command_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "973612ca269ab09d8a57f2ce94f32e0735d48d37e971da36ab38ef84f1ebdb56",
-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
-        "reviewer": "codex-texture-copy-regions/2026-09-07"
+        "moduleSha256": "c09323863ab47aa09a32fefe91dbc58bcc40f90273b109a58d72a6a950b25010",
+        "reason": "Keep: existing native recording, query ownership, queue submission or Vulkan ABI owner. Logical occlusion spans completed native draws; native query metadata does not cross the public ABI.",
+        "reviewer": "codex-production-query/2026-09-28"
       },
       "src/native/support/doe_native_exports.zig": {
         "decision": "Keep",
@@ -3814,9 +3814,9 @@
       },
       "src/native/vulkan/vulkan_render_pass_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "6413b196da4204532f5eee5886f18ae3519284fd8a077fc81a418b1df1dd170b",
-        "reason": "Keep: explicit recording state and owned resources preserve failure and submission ordering at the existing component boundary.",
-        "reviewer": "codex-recording-ownership/2026-09-06"
+        "moduleSha256": "abfe8ddfaf8dc63b2da5accf253bae4fb05f9c014240277246dcc8b3719ea007",
+        "reason": "Keep: existing native recording, query ownership, queue submission or Vulkan ABI owner. Logical occlusion spans completed native draws; native query metadata does not cross the public ABI.",
+        "reviewer": "codex-production-query/2026-09-28"
       },
       "src/native/vulkan/vulkan_render_pipeline_native.zig": {
         "decision": "Keep",

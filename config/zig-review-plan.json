@@ -4,35 +4,8 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "vulkan_occlusion_reset_order",
-      "state": "active",
-      "objective": "Record occlusion-query reset before render-pass entry while preserving query begin/end around drawing.",
-      "rationale": "Bundle rejection/cleanup is repaired with retained physical evidence. The same render review confirms a separate Vulkan command-order violation; correctness stays ahead of the ready SPIR-V ownership batch.",
-      "scopes": [
-        {
-          "level": "file",
-          "targets": [
-            "src/backend/vulkan/vk_render.zig"
-          ]
-        }
-      ],
-      "findingReviewIds": [
-        "vulkan_render_rejection_20260928"
-      ],
-      "nextAction": "Reproduce reset occurring inside the render pass with an observed command-order regression, move reset before pass entry, and verify successful drawing and query completion.",
-      "acceptance": [
-        "Independent command-order observation rejects the predecessor and confirms reset before pass entry, with query begin/end around the intended draw.",
-        "Execute physical rendering/query checks and Khronos validation-layer coverage where available; record unavailable validation explicitly.",
-        "Run focused regressions and zig build test, retain identities and append the partial review disposition without granting whole-file completion."
-      ],
-      "stopCondition": "Stop after the query-reset ordering correction and its evidence. Surface synchronization and attachment admission remain separate bounded follow-ups.",
-      "requiredEnvironment": [
-        "Linux AMD/Vulkan for physical acceptance; Khronos validation layer where available."
-      ]
-    },
-    {
       "batchId": "spirv_function_ownership",
-      "state": "ready",
+      "state": "active",
       "objective": "Give SPIR-V function emission explicit instruction-cache ownership and keep target-independent reference queries with IR.",
       "rationale": "The preceding compiler batch removed loop eligibility from the helper file but retained unrelated cache, query, and scalar responsibilities. Continue that concrete finding before opening another compiler reorganization.",
       "scopes": [

@@ -108,6 +108,11 @@ with the same C build recipe. The Zig suite also injects snapshot allocation and
 worker-start failures, compares exact request identities, and verifies callback
 leases for compute and rendering.
 
+[`tests/native_occlusion_query.c`](tests/native_occlusion_query.c) checks ordinary
+public recording, submission, query resolve and pixel readback on Linux Vulkan.
+The [query checkpoint](../../reports/maintenance/20260928-production-query/README.md)
+retains the isolated build recipe and native command-order observation.
+
 ## Build edit measurements
 
 Run `python3 runtime/zig/tools/capture_build_measurements.py` from the repository

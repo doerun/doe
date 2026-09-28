@@ -961,7 +961,7 @@ test "CmdTag: all expected variants exist" {
 
 test "CmdTag: includes the submitted Vulkan render snapshot" {
     const fields = @typeInfo(native.CmdTag).@"enum".fields;
-    try std.testing.expectEqual(@as(usize, 11), fields.len);
+    try std.testing.expectEqual(@as(usize, 12), fields.len);
 }
 
 // ============================================================

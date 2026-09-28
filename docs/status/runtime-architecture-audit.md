@@ -17,6 +17,14 @@ or compatibility facade.
 
 ## Current work selection
 
+The [production query checkpoint](../../reports/maintenance/20260928-production-query/README.md)
+repairs pool type, reset placement, and logical visibility across native draws.
+Public recording, resolve/readback, pixel oracles, query reuse and caller release
+pass on physical Vulkan. Validation layers are unavailable; this is scoped
+correctness evidence, not release qualification. The ready compiler ownership
+batch follows; completed bundle and build-recipe repairs remain closed.
+
+
 [`config/zig-review-plan.json`](../../config/zig-review-plan.json) is the sole
 schedule for bounded Zig quality batches. Display it with
 `python3 runtime/zig/tools/review_log.py --next`. The
@@ -27,7 +35,7 @@ rules; its [log](../../runtime/zig/reviews/log.json) is append-only and its
 coverage under existing hashes; never renew reviews without examination.
 
 The [render ownership evidence](../../reports/maintenance/20260927-quality-planning/README.md)
-supports retained index storage and safe failed-wait retirement. Query placement, surface synchronization, and attachment admission remain open.
+supports retained index storage and safe failed-wait retirement. Surface synchronization and attachment admission remain open.
 The [bundle rejection evidence](../../reports/maintenance/20260928-render-rejection/README.md)
 supports typed failure, no partial submission, native cleanup, and subsequent
 rendering in the standalone replay helper. That helper has no current production

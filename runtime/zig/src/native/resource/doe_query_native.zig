@@ -1,12 +1,4 @@
 const recording = @import("../command/doe_command_recording.zig");
-// doe_query_native.zig — QuerySet (GPU timestamp query) support for Doe Metal and Vulkan backends.
-//
-// Metal: Uses MTLCounterSampleBuffer for GPU timeline timestamps.
-// Vulkan: Uses VkQueryPool with VK_QUERY_TYPE_TIMESTAMP.
-//
-// Timestamps are sampled at command recording time and resolved to a
-// destination buffer after GPU completion.
-
 const std = @import("std");
 const builtin = @import("builtin");
 const references = @import("../command/doe_command_references.zig");
@@ -32,7 +24,8 @@ const MAGIC_QUERY_SET: u32 = 0xD0E1_0020;
 const TIMESTAMP_BYTES: usize = @sizeOf(u64);
 const WGPU_QUERY_TYPE_OCCLUSION: u32 = 0x00000001;
 const WGPU_QUERY_TYPE_TIMESTAMP: u32 = 0x00000002;
-const VK_QUERY_TYPE_OCCLUSION: u32 = 1;
+const VK_QUERY_TYPE_OCCLUSION: u32 = 0;
+const MAX_UPDATE_BYTES: usize = 65536; // Vulkan vkCmdUpdateBuffer limit.
 
 pub const DoeQuerySet = struct {
     pub const TYPE_MAGIC = MAGIC_QUERY_SET;
@@ -51,6 +44,9 @@ pub const DoeQuerySet = struct {
     vk_device: c.VkDevice = null,
     /// Vulkan: back-reference to NativeVulkanRuntime for command buffer access.
     vk_runtime_ref: ?*anyopaque = null,
+    // Logical WebGPU queries span separately submitted native draws. Only
+    // completed hardware observations contribute to these zero/nonzero results.
+    vk_occlusion_results: []u64 = &.{},
     vk_timestamp_resolve: if (has_vulkan) resource_ops.vk_timestamp.Resolve else void = if (has_vulkan) .{} else {},
 };
 
@@ -243,16 +239,20 @@ pub fn vulkanRecordResolveQuerySet(
         return;
     }
     const command_buffer = try rt.begin_prepared_dispatch_replay();
-    c.vkCmdCopyQueryPoolResults(
-        command_buffer,
-        qs.vk_query_pool,
-        first_query,
-        query_count,
-        destination.buffer,
-        dst_offset,
-        TIMESTAMP_BYTES,
-        c.VK_QUERY_RESULT_64_BIT | c.VK_QUERY_RESULT_WAIT_BIT,
-    );
+    const dependency = c.VkMemoryBarrier{
+        .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        .pNext = null,
+        .srcAccessMask = c.VK_ACCESS_MEMORY_READ_BIT | c.VK_ACCESS_MEMORY_WRITE_BIT,
+        .dstAccessMask = c.VK_ACCESS_TRANSFER_WRITE_BIT,
+    };
+    c.vkCmdPipelineBarrier(command_buffer, c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, @ptrCast(&dependency), 0, null, 0, null);
+    const bytes = std.mem.sliceAsBytes(qs.vk_occlusion_results[first_query..][0..query_count]);
+    var written: usize = 0;
+    while (written < bytes.len) {
+        const length = @min(MAX_UPDATE_BYTES, bytes.len - written);
+        c.vkCmdUpdateBuffer(command_buffer, destination.buffer, dst_offset + written, length, bytes[written..].ptr);
+        written += length;
+    }
     rt.has_pending_transfer_writes = true;
 }
 
@@ -264,6 +264,8 @@ fn releaseQuerySetResources(qs: *DoeQuerySet) void {
     if (comptime has_vulkan) {
         if (qs.backend == .vulkan) {
             vulkan_lifetime.flushBeforeDestroy(qs.vk_runtime_ref);
+            native_helpers.alloc.free(qs.vk_occlusion_results);
+            qs.vk_occlusion_results = &.{};
             if (qs.vk_runtime_ref) |raw| {
                 const rt: *native_shared.NativeVulkanRuntime = @ptrCast(@alignCast(raw));
                 qs.vk_timestamp_resolve.deinit(rt);
@@ -313,8 +315,6 @@ pub export fn doeNativeQuerySetGetType(qs_raw: ?*anyopaque) callconv(.c) u32 {
 // Vulkan implementation
 // ============================================================
 
-const WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
-
 fn vulkan_create_query_set(dev: *native_types.DoeDevice, query_type: u32, count: u32) ?*anyopaque {
     const rt = native_rt_helpers.device_vk_runtime(dev) orelse return null;
     if (!rt.has_device) return null;
@@ -356,80 +356,36 @@ fn vulkan_create_query_set(dev: *native_types.DoeDevice, query_type: u32, count:
         };
     }
 
-    if (query_type != WGPU_QUERY_TYPE_TIMESTAMP) {
-        vk_reset_query_pool(rt, query_pool, 0, count) catch |err| {
-            std.log.err("doe_query_native: initial query pool reset failed: {s}", .{@errorName(err)});
+    if (query_type == WGPU_QUERY_TYPE_OCCLUSION) {
+        qs.vk_occlusion_results = native_helpers.alloc.alloc(u64, count) catch {
             c.vkDestroyQueryPool(rt.device, query_pool, null);
             native_helpers.alloc.destroy(qs);
             return null;
         };
+        @memset(qs.vk_occlusion_results, 0);
     }
 
     return native_helpers.toOpaque(qs);
 }
 
-/// Reset query pool entries via a transient one-shot command buffer.
-/// The query helpers allocate their own command buffer so they do not borrow
-/// or mutate the runtime's primary command buffer.
-fn vk_reset_query_pool(
-    rt: *native_shared.NativeVulkanRuntime,
-    query_pool: c.VkQueryPool,
-    first_query: u32,
-    query_count: u32,
-) !void {
-    _ = rt.flush_queue() catch |err| {
-        log.warn("flush before reset_query_pool: {s}", .{@errorName(err)});
-    };
-    const command_buffer = try begin_one_shot_command_buffer(rt);
-    c.vkCmdResetQueryPool(command_buffer, query_pool, first_query, query_count);
-    try submit_one_shot_command_buffer(rt, command_buffer);
+fn vulkanOcclusionQuery(rt: *native_shared.NativeVulkanRuntime, raw: ?*anyopaque, index: u32) !*DoeQuerySet {
+    const qs = native_helpers.cast(DoeQuerySet, raw) orelse return error.InvalidArgument;
+    if (qs.destroyed or qs.backend != .vulkan or qs.query_type != WGPU_QUERY_TYPE_OCCLUSION or
+        index >= qs.count or qs.vk_runtime_ref != @as(?*anyopaque, @ptrCast(rt))) return error.InvalidArgument;
+    return qs;
 }
 
-fn begin_one_shot_command_buffer(rt: *native_shared.NativeVulkanRuntime) !c.VkCommandBuffer {
-    if (!rt.has_command_pool or !rt.has_fence or rt.device == null or rt.queue == null) return error.InvalidState;
-
-    var command_buffer: c.VkCommandBuffer = null;
-    var alloc_info = c.VkCommandBufferAllocateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .pNext = null,
-        .commandPool = rt.command_pool,
-        .level = c.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 1,
-    };
-    try c.check_vk(c.vkAllocateCommandBuffers(rt.device, &alloc_info, @ptrCast(&command_buffer)));
-
-    var begin_info = c.VkCommandBufferBeginInfo{
-        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .pNext = null,
-        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        .pInheritanceInfo = null,
-    };
-    errdefer c.vkFreeCommandBuffers(rt.device, rt.command_pool, 1, @ptrCast(&command_buffer));
-    try c.check_vk(c.vkBeginCommandBuffer(command_buffer, &begin_info));
-    return command_buffer;
+pub fn vulkanBeginOcclusion(rt: *native_shared.NativeVulkanRuntime, raw: ?*anyopaque, index: u32) !void {
+    const qs = try vulkanOcclusionQuery(rt, raw, index);
+    qs.vk_occlusion_results[index] = 0;
 }
 
-fn submit_one_shot_command_buffer(rt: *native_shared.NativeVulkanRuntime, command_buffer: c.VkCommandBuffer) !void {
-    if (!rt.has_fence or rt.device == null or rt.queue == null) return error.InvalidState;
-
-    defer c.vkFreeCommandBuffers(rt.device, rt.command_pool, 1, @ptrCast(&command_buffer));
-
-    try c.check_vk(c.vkEndCommandBuffer(command_buffer));
-
-    var submit_info = c.VkSubmitInfo{
-        .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pNext = null,
-        .waitSemaphoreCount = 0,
-        .pWaitSemaphores = null,
-        .pWaitDstStageMask = null,
-        .commandBufferCount = 1,
-        .pCommandBuffers = @ptrCast(&command_buffer),
-        .signalSemaphoreCount = 0,
-        .pSignalSemaphores = null,
-    };
-    try c.check_vk(c.vkResetFences(rt.device, 1, @ptrCast(&rt.fence)));
-    try c.check_vk(c.vkQueueSubmit(rt.queue, 1, @ptrCast(&submit_info), rt.fence));
-    try c.check_vk(c.vkWaitForFences(rt.device, 1, @ptrCast(&rt.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
+/// Called only after run_render_draw has confirmed submission completion.
+pub fn vulkanCollectOcclusion(rt: *native_shared.NativeVulkanRuntime, raw: ?*anyopaque, index: u32) !void {
+    const qs = try vulkanOcclusionQuery(rt, raw, index);
+    var observed: u64 = 0;
+    try c.check_vk(c.vkGetQueryPoolResults(rt.device, qs.vk_query_pool, index, 1, @sizeOf(u64), &observed, @sizeOf(u64), c.VK_QUERY_RESULT_64_BIT));
+    qs.vk_occlusion_results[index] |= @intFromBool(observed != 0);
 }
 
 pub export fn doeNativeRenderPassBeginOcclusionQuery(
@@ -441,7 +397,14 @@ pub export fn doeNativeRenderPassBeginOcclusionQuery(
     const qs_raw = pass.occlusion_query_set orelse return;
     const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return;
     if (qs.query_type != WGPU_QUERY_TYPE_OCCLUSION) return;
-    if (query_index >= qs.count) return;
+    if (query_index >= qs.count or pass.occlusion_query_active or qs.destroyed) {
+        recording.fail(pass.enc, error.InvalidState);
+        return;
+    }
+    if (qs.backend == .vulkan and !recording.append(pass.enc, .{ .vulkan_begin_occlusion = .{
+        .query_set = qs_raw,
+        .query_index = query_index,
+    } })) return;
     pass.occlusion_query_active = true;
     pass.occlusion_query_index = query_index;
 }
@@ -464,4 +427,3 @@ pub export fn doeNativeRenderPassEndOcclusionQuery(
     if (!recording.requirePass(pass.enc, @intFromPtr(pass))) return;
     pass.occlusion_query_active = false;
 }
-const log = std.log.scoped(.doe_query_native);

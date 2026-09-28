@@ -593,11 +593,14 @@ fn record_and_submit_draws(
         .clearValueCount = if (state.depth_stencil_target != null) 2 else 1,
         .pClearValues = clear_values[0..if (state.depth_stencil_target != null) 2 else 1].ptr,
     };
+    if (cmd.occlusion_query_pool != 0) {
+        if (cmd.occlusion_query_index) |query_index|
+            c.vkCmdResetQueryPool(self.primary_command_buffer, @intCast(cmd.occlusion_query_pool), query_index, 1);
+    }
     c.vkCmdBeginRenderPass(self.primary_command_buffer, &render_pass_begin, c.VK_SUBPASS_CONTENTS_INLINE);
     if (cmd.occlusion_query_pool != 0) {
         if (cmd.occlusion_query_index) |query_index| {
             const query_pool: c.VkQueryPool = @intCast(cmd.occlusion_query_pool);
-            c.vkCmdResetQueryPool(self.primary_command_buffer, query_pool, query_index, 1);
             c.vkCmdBeginQuery(self.primary_command_buffer, query_pool, query_index, VK_QUERY_CONTROL_NONE);
         }
     }

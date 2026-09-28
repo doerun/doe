@@ -287,6 +287,12 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                     shared.deliverInternalError(q.dev, "Vulkan submission received commands recorded for another backend", .{});
                     return;
                 },
+                .vulkan_begin_occlusion => |query| {
+                    query_native.vulkanBeginOcclusion(rt, query.query_set, query.query_index) catch |err| {
+                        shared.deliverInternalError(q.dev, "Vulkan begin occlusion: {s}", .{@errorName(err)});
+                        return;
+                    };
+                },
                 .vulkan_render => |render| {
                     if (!flushRecordedReplay(q, rt, &recorded_replay_work, "before render")) return;
                     resetPreparedDispatchState(&prepared_dispatch);
@@ -295,6 +301,12 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                         shared.deliverInternalError(q.dev, "Vulkan recorded render: {s}", .{@errorName(err)});
                         return;
                     };
+                    if (render.query_set) |query_set| {
+                        query_native.vulkanCollectOcclusion(rt, query_set, render.command.occlusion_query_index.?) catch |err| {
+                            shared.deliverInternalError(q.dev, "Vulkan collect occlusion: {s}", .{@errorName(err)});
+                            return;
+                        };
+                    }
                     if (!render.clear_only and render.command.index_count == null and render.command.indirect_buffer_handle == 0) {
                         if (cast(native_types.DoeRenderPipeline, render.pipeline)) |pipeline| {
                             program_identity_trace.recordVulkanRenderDraw(pipeline, render.command.vertex_count, render.command.instance_count, render.command.first_vertex, render.command.first_instance);

@@ -45,6 +45,7 @@ pub const CmdTag = enum {
     write_timestamp,
     resolve_query_set,
     vulkan_render,
+    vulkan_begin_occlusion,
 };
 
 pub const TimestampWritePosition = enum {
@@ -231,10 +232,12 @@ pub const RecordedCmd = union(CmdTag) {
         dst_offset: u64,
     },
     vulkan_render: struct {
+        query_set: ?*anyopaque = null,
         command: model_render_types.RenderDrawCommand,
         pipeline: ?*anyopaque,
         clear_only: bool = false,
     },
+    vulkan_begin_occlusion: struct { query_set: ?*anyopaque, query_index: u32 },
 };
 
 pub const RecordedDispatch = std.meta.TagPayload(RecordedCmd, .dispatch);
