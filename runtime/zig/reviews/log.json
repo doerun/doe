@@ -26873,6 +26873,90 @@
       "targets": [
         "src/backend/vulkan/vulkan_errors.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/native_runtime.zig",
+          "sha256": "70629b153d72307e7056c25b924d11675b5f853467072bf129c389a18be53b8f"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-dependencies/build-measurements.json",
+          "sha256": "bb36a9cf1f30dab313f3460e362e30542970d0d47da0cdd917e91a41b58b3d74"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-dependencies/process-observations.json",
+          "sha256": "a8ebe2235b022dc991ed77db07150dfdf797f10acdc9a6c23acb14b7921ac8d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-dependencies/windowed-results.json",
+          "sha256": "c71e466f13cb1d343626a5ea3ee2e384b9c5b2b92f4f4384625e762c66b53380"
+        }
+      ],
+      "findings": [
+        "Broader public surface validation and frame pacing remain outside this exercised path."
+      ],
+      "inputHash": "b247a9f5bb86b425ebfeb7ae1bc510be31c04967521a19d727f2d11d4fd12c52",
+      "level": "file",
+      "nextAction": "Preserve the verified surface interface; address broader validation, pacing and runtime decomposition under separately selected batches.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The exercised surface path no longer passes NativeVulkanRuntime through anytype; registry, resource, device, retirement and submission inputs are named and typed."
+      ],
+      "reviewId": "vulkan_surface_dependencies_20260928",
+      "reviewedAt": "2026-09-28T20:22:37.374272+00:00",
+      "reviewer": "codex-surface-dependencies",
+      "sourceCommit": "d97c663ffa4f5c987ee6058f1be1e680f8b6bea4",
+      "status": "in_progress",
+      "summary": "Examined the complete surface helper and its configure, acquire, present, unconfigure and release calls. Typed registry and execution views replace the implicit full-runtime dependency; the submission port names each operation needed for presentation and retirement.",
+      "supersedes": "vulkan_surface_admission_handoff_20260928_final",
+      "targets": [
+        "src/backend/vulkan/vk_runtime_surface_ops.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig",
+          "sha256": "dbd8c6d2cabef7d046d1fd025f2f90293e24276bf09db64fe40919d08569eda2"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-dependencies/build-measurements.json",
+          "sha256": "bb36a9cf1f30dab313f3460e362e30542970d0d47da0cdd917e91a41b58b3d74"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-dependencies/process-observations.json",
+          "sha256": "a8ebe2235b022dc991ed77db07150dfdf797f10acdc9a6c23acb14b7921ac8d8"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-dependencies/windowed-results.json",
+          "sha256": "c71e466f13cb1d343626a5ea3ee2e384b9c5b2b92f4f4384625e762c66b53380"
+        }
+      ],
+      "findings": [
+        "The rest of native_runtime.zig still has broad resource and submission dependencies outside the bounded surface handoff."
+      ],
+      "inputHash": "1556874860ae225fce9b750dbbc923aec050ebb947a8c4c75cf30031fcdee60e",
+      "level": "file",
+      "nextAction": "Preserve the verified surface interface; address broader validation, pacing and runtime decomposition under separately selected batches.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The exercised surface path no longer passes NativeVulkanRuntime through anytype; registry, resource, device, retirement and submission inputs are named and typed."
+      ],
+      "reviewId": "vulkan_surface_composition_20260928",
+      "reviewedAt": "2026-09-28T20:22:38.866362+00:00",
+      "reviewer": "codex-surface-dependencies",
+      "sourceCommit": "d97c663ffa4f5c987ee6058f1be1e680f8b6bea4",
+      "status": "in_progress",
+      "summary": "Traced native surface callers, registry storage, queue flushing, render clear, submission setup and destruction waits. Composition supplies only the surface fields and four named operations; full runtime decomposition remains a separate review.",
+      "supersedes": "vulkan_surface_runtime_20260928",
+      "targets": [
+        "src/backend/vulkan/native_runtime.zig"
+      ]
     }
   ],
   "schemaVersion": 1

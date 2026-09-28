@@ -2,39 +2,5 @@
   "schemaVersion": 1,
   "maxActiveBatches": 1,
   "maxReadyBatches": 2,
-  "batches": [
-    {
-      "batchId": "vulkan_surface_runtime_dependencies",
-      "state": "ready",
-      "objective": "Expose narrow typed dependencies for the ordinary Vulkan surface resource-to-submission handoff.",
-      "rationale": "The public windowed path now has retained capability, pixel, rejection and completion evidence. Its runtime surface operations still accept the full runtime through anytype, hiding which registry, device and submission facts they mutate.",
-      "scopes": [
-        {
-          "level": "file",
-          "targets": [
-            "src/backend/vulkan/vk_runtime_surface_ops.zig"
-          ]
-        },
-        {
-          "level": "file",
-          "targets": [
-            "src/backend/vulkan/native_runtime.zig"
-          ]
-        }
-      ],
-      "findingReviewIds": [
-        "vulkan_surface_submission_20260928"
-      ],
-      "nextAction": "Trace configure/acquire/present/unconfigure from the native consumer and enumerate required state and mutations before selecting a typed owner or context; preserve the completed admission and synchronization behavior.",
-      "acceptance": [
-        "Make the selected surface handoff dependencies visible without merely passing the whole runtime under another name.",
-        "Preserve public windowed pixels, exact native configuration, failure/retry outcomes and reference/completion lifetimes using retained fixtures.",
-        "Retain scoped process/build/binary-size observations; no speedup is required for clearer ownership."
-      ],
-      "stopCondition": "Stop after this exercised surface resource/submission interface; pacing, additional platforms and broader runtime decomposition remain separate.",
-      "requiredEnvironment": [
-        "Linux Vulkan with the retained Xwayland public consumer; report unavailable validation layers."
-      ]
-    }
-  ]
+  "batches": []
 }

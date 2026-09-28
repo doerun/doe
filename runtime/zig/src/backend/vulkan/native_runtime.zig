@@ -237,7 +237,7 @@ pub const NativeVulkanRuntime = struct {
         self.retired_descriptor_states.deinit(self.allocator);
         self.streaming_copy_buffers.deinit(self.allocator);
         self.deferred_command_buffers.deinit(self.allocator);
-        surface_ops.release_all_surfaces(self);
+        surface_ops.release_all_surfaces(self.surfaceExecution());
         vk_upload.release_pool_entry(self.device, self.hot_src_pool_entry);
         vk_upload.release_pool_entry(self.device, self.hot_dst_pool_entry);
         self.hot_src_pool_entry = null;
@@ -989,36 +989,86 @@ pub const NativeVulkanRuntime = struct {
 
     // --- Surface lifecycle ---
 
+    fn surfaceRegistry(self: *NativeVulkanRuntime) surface_ops.Registry {
+        return .{
+            .allocator = self.allocator,
+            .surfaces = &self.surfaces,
+            .physical_device = self.physical_device,
+            .queue_family_index = self.queue_family_index,
+        };
+    }
+
+    fn surfaceExecution(self: *NativeVulkanRuntime) surface_ops.Execution {
+        return .{
+            .registry = self.surfaceRegistry(),
+            .instance = self.instance,
+            .device = self.device,
+            .queue = self.queue,
+            .retirement = &self.retirement,
+            .has_surface_completion = self.has_surface_completion,
+            .textures = &self.textures,
+            .primary_command_buffer = &self.primary_command_buffer,
+            .fence = &self.fence,
+            .submission = .{
+                .owner = self,
+                .flush = surfaceFlush,
+                .ensure = surfaceEnsure,
+                .clear = surfaceClear,
+                .wait_for_destruction = surfaceWaitForDestruction,
+            },
+        };
+    }
+
+    fn surfaceFlush(owner: *anyopaque) anyerror!void {
+        const self: *NativeVulkanRuntime = @ptrCast(@alignCast(owner));
+        _ = try self.flush_queue();
+    }
+
+    fn surfaceEnsure(owner: *anyopaque) anyerror!void {
+        const self: *NativeVulkanRuntime = @ptrCast(@alignCast(owner));
+        try vk_device.ensure_submission_state(self);
+    }
+
+    fn surfaceClear(owner: *anyopaque, cmd: model_render_types.RenderDrawCommand) anyerror!void {
+        const self: *NativeVulkanRuntime = @ptrCast(@alignCast(owner));
+        _ = try self.run_render_clear(cmd);
+    }
+
+    fn surfaceWaitForDestruction(owner: *anyopaque) void {
+        const self: *NativeVulkanRuntime = @ptrCast(@alignCast(owner));
+        self.waitForDestruction();
+    }
+
     pub fn create_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        return surface_ops.create_surface(self, handle);
+        return surface_ops.create_surface(self.surfaceRegistry(), handle);
     }
 
     pub fn get_surface_capabilities(self: *NativeVulkanRuntime, handle: u64) !void {
-        return surface_ops.get_surface_capabilities(self, handle);
+        return surface_ops.get_surface_capabilities(self.surfaceRegistry(), handle);
     }
 
     pub fn preferred_canvas_format(self: *NativeVulkanRuntime) surface_ops.WGPUTextureFormat {
-        return surface_ops.preferred_canvas_format(self);
+        return surface_ops.preferred_canvas_format(self.surfaceRegistry());
     }
 
     pub fn configure_surface(self: *NativeVulkanRuntime, cmd_arg: surface_ops.SurfaceConfigureCommand) !void {
-        return surface_ops.configure_surface(self, cmd_arg);
+        return surface_ops.configure_surface(self.surfaceExecution(), cmd_arg);
     }
 
     pub fn acquire_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        return surface_ops.acquire_surface(self, handle);
+        return surface_ops.acquire_surface(self.surfaceExecution(), handle);
     }
 
     pub fn present_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        return surface_ops.present_surface(self, handle);
+        return surface_ops.present_surface(self.surfaceExecution(), handle);
     }
 
     pub fn unconfigure_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        return surface_ops.unconfigure_surface(self, handle);
+        return surface_ops.unconfigure_surface(self.surfaceExecution(), handle);
     }
 
     pub fn release_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        return surface_ops.release_surface(self, handle);
+        return surface_ops.release_surface(self.surfaceExecution(), handle);
     }
 
     // --- Internal ---

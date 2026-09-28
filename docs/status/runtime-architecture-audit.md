@@ -17,6 +17,13 @@ or compatibility facade.
 
 ## Current work selection
 
+The [surface dependency checkpoint](../../reports/maintenance/20260928-surface-dependencies/README.md)
+narrows the exercised Vulkan surface resource and submission interface to
+typed registry/execution views and named submission operations. Public windowed
+pixels and native lifetime checks pass. Scoped process tails remain variable,
+so the observations make no speed claim. Pacing, other window systems, broader
+validation and complete runtime decomposition remain open.
+
 The [surface admission checkpoint](../../reports/maintenance/20260928-surface-admission/README.md)
 replaces fixed public capabilities with adapter/window queries and rejects
 unsupported configuration before retiring a working swapchain. Native format,
@@ -25,7 +32,7 @@ public errors and capability-array ownership have focused regressions. The
 existing surface completion repair remains intact. Physical evidence covers XCB
 on Xwayland; HDR, alternate view formats, other window systems, frame pacing and
 broader surface validation remain separate. The bounded admission batch closes;
-the plan next narrows the runtime dependencies along this exercised path.
+the subsequent dependency batch is recorded above.
 
 
 The [surface handoff checkpoint](../../reports/maintenance/20260928-surface-handoff/README.md)

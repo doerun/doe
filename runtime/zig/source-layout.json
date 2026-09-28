@@ -1228,9 +1228,9 @@
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "0ecbf490190c8002d0163ccf4f19063a4706e8168e5d1c1d68638431997eb65b",
-        "reviewer": "codex-surface-handoff/2026-09-28",
-        "reason": "Keep: composition owns completion before destruction and supplies typed cache admission facts; completed buffer cache state and accounting have one subordinate owner."
+        "moduleSha256": "70629b153d72307e7056c25b924d11675b5f853467072bf129c389a18be53b8f",
+        "reviewer": "codex-surface-dependencies/2026-09-28",
+        "reason": "Keep: composition owns completion before destruction and supplies bounded surface registry and submission operations to the Vulkan surface owner."
       },
       "src/backend/vulkan/vk_adapter_probe.zig": {
         "decision": "Keep",
@@ -1372,9 +1372,9 @@
       },
       "src/backend/vulkan/vk_runtime_surface_ops.zig": {
         "decision": "Keep",
-        "moduleSha256": "75c9d5a0ad2621b40adeac6f25fd887105a95ed0fe6ccac925f23d48291fe937",
-        "reviewer": "codex-surface-admission/2026-09-28",
-        "reason": "Keep: runtime orchestration validates surface configuration before swapchain retirement and delegates exact admitted native configuration."
+        "moduleSha256": "dbd8c6d2cabef7d046d1fd025f2f90293e24276bf09db64fe40919d08569eda2",
+        "reviewer": "codex-surface-dependencies/2026-09-28",
+        "reason": "Keep: typed registry and execution views expose surface resource and submission requirements while preserving exact configuration and retirement."
       },
       "src/backend/vulkan/vk_samplers.zig": {
         "decision": "Keep",

@@ -1,0 +1,227 @@
+{
+  "classification": "diagnostic-only",
+  "scope": "Unchanged public windowed fixture process including startup, shader compilation, repeated frames, readback and teardown; no GetCapabilities call or resident latency isolation.",
+  "cpu": 0,
+  "warmupProcessPairsExcluded": 1,
+  "fixtureSha256": "ff802bc72c15e5b1cd4dcad475bb8541557015d447aeff6780267946215b56d5",
+  "libraries": {
+    "prior": {
+      "sha256": "2224e9186e995a79d8732f1a32d2d74b95d4c86b149a2ebdfcfb0864a9dd6b14",
+      "sizeBytes": 11783064
+    },
+    "current": {
+      "sha256": "cf6a032be74087be93d19a269a39f701f4901f5486ef0fd26f9558283523e1cf",
+      "sizeBytes": 11787832
+    }
+  },
+  "samples": [
+    {
+      "pair": 0,
+      "arm": "prior",
+      "exitCode": 0,
+      "wallNs": 1053232632,
+      "userSeconds": 0.015482,
+      "systemSeconds": 0.031996,
+      "peakProcessRssBytes": 65806336,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 0,
+      "arm": "current",
+      "exitCode": 0,
+      "wallNs": 1049139555,
+      "userSeconds": 0.013137,
+      "systemSeconds": 0.031328,
+      "peakProcessRssBytes": 65990656,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 1,
+      "arm": "current",
+      "exitCode": 0,
+      "wallNs": 1044417344,
+      "userSeconds": 0.013619,
+      "systemSeconds": 0.027238,
+      "peakProcessRssBytes": 66183168,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 1,
+      "arm": "prior",
+      "exitCode": 0,
+      "wallNs": 1044539795,
+      "userSeconds": 0.011944,
+      "systemSeconds": 0.027871,
+      "peakProcessRssBytes": 66318336,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 2,
+      "arm": "prior",
+      "exitCode": 0,
+      "wallNs": 1049382643,
+      "userSeconds": 0.009503,
+      "systemSeconds": 0.032733,
+      "peakProcessRssBytes": 65949696,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 2,
+      "arm": "current",
+      "exitCode": 0,
+      "wallNs": 1044508405,
+      "userSeconds": 0.014846,
+      "systemSeconds": 0.02545,
+      "peakProcessRssBytes": 66232320,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 3,
+      "arm": "current",
+      "exitCode": 0,
+      "wallNs": 1048856272,
+      "userSeconds": 0.014742,
+      "systemSeconds": 0.025272,
+      "peakProcessRssBytes": 66011136,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 3,
+      "arm": "prior",
+      "exitCode": 0,
+      "wallNs": 1043562365,
+      "userSeconds": 0.014225999999999999,
+      "systemSeconds": 0.024387,
+      "peakProcessRssBytes": 66232320,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 4,
+      "arm": "prior",
+      "exitCode": 0,
+      "wallNs": 1042997311,
+      "userSeconds": 0.015259,
+      "systemSeconds": 0.024413999999999998,
+      "peakProcessRssBytes": 65986560,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 4,
+      "arm": "current",
+      "exitCode": 0,
+      "wallNs": 1043390221,
+      "userSeconds": 0.017568999999999998,
+      "systemSeconds": 0.022449,
+      "peakProcessRssBytes": 66043904,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 5,
+      "arm": "current",
+      "exitCode": 0,
+      "wallNs": 2058145218,
+      "userSeconds": 0.019511,
+      "systemSeconds": 0.025672999999999998,
+      "peakProcessRssBytes": 66052096,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 5,
+      "arm": "prior",
+      "exitCode": 0,
+      "wallNs": 1042267347,
+      "userSeconds": 0.016781,
+      "systemSeconds": 0.022375,
+      "peakProcessRssBytes": 65974272,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 6,
+      "arm": "prior",
+      "exitCode": 0,
+      "wallNs": 1044753127,
+      "userSeconds": 0.021394999999999997,
+      "systemSeconds": 0.020376,
+      "peakProcessRssBytes": 65961984,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 6,
+      "arm": "current",
+      "exitCode": 0,
+      "wallNs": 1044952342,
+      "userSeconds": 0.014433,
+      "systemSeconds": 0.026803999999999998,
+      "peakProcessRssBytes": 65953792,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 7,
+      "arm": "current",
+      "exitCode": 0,
+      "wallNs": 2055060530,
+      "userSeconds": 0.01669,
+      "systemSeconds": 0.025526,
+      "peakProcessRssBytes": 66211840,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 7,
+      "arm": "prior",
+      "exitCode": 0,
+      "wallNs": 1042570748,
+      "userSeconds": 0.017248,
+      "systemSeconds": 0.021081,
+      "peakProcessRssBytes": 66068480,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 8,
+      "arm": "prior",
+      "exitCode": 0,
+      "wallNs": 1045151738,
+      "userSeconds": 0.016748,
+      "systemSeconds": 0.024075,
+      "peakProcessRssBytes": 66228224,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    },
+    {
+      "pair": 8,
+      "arm": "current",
+      "exitCode": 0,
+      "wallNs": 1045053523,
+      "userSeconds": 0.016078,
+      "systemSeconds": 0.025122,
+      "peakProcessRssBytes": 65974272,
+      "pixelPassLines": 8,
+      "output": "scope type=2 message=render attachment requires a live texture view and pipeline\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n"
+    }
+  ],
+  "summary": {
+    "prior": {
+      "medianWallNs": 1044051080,
+      "nearestRankP95WallNs": 1049382643
+    },
+    "current": {
+      "medianWallNs": 1045002932,
+      "nearestRankP95WallNs": 2058145218
+    }
+  }
+}
