@@ -112,6 +112,12 @@ pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc:
         .recorded_command_start = enc.cmds.items.len,
     };
     enc.state = .{ .pass = @intFromPtr(pass) };
+    if (enc.dev.backend == .vulkan) {
+        @import("../vulkan/vulkan_render_attachments.zig").validateDescriptor(enc.dev, desc) catch |err| {
+            recording.fail(enc, err);
+            return toOpaque(pass);
+        };
+    }
     if (desc) |d| {
         pass.max_draw_count = renderPassMaxDrawCount(d);
         pass.occlusion_query_set = d.occlusionQuerySet;

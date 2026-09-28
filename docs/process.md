@@ -610,6 +610,17 @@ internal render command. Native architecture checks, Zig regressions, and
 same-package controlled-host qualification remain required. This evidence does
 not qualify depth/stencil, store/discard, resolve, or render-query behavior.
 
+Ordinary Vulkan attachment admission validates the native view and declared
+pipeline layout before publishing draw commands. Incompatible format, extent,
+sample count, device, usage or unavailable resources poison the encoder and retain
+the original validation cause. Regressions include earlier valid work that must
+not submit, selected mip/layer views, caller release, explicit destruction and
+subsequent valid rendering. Unsupported attachment topologies fail explicitly.
+Internal pipeline metadata and typed errors change behind existing public
+descriptors; ABI and serialized schemas remain unchanged. See the
+[attachment checkpoint](../reports/maintenance/20260928-attachment-admission/README.md)
+for the executed boundary and remaining rendering obligations.
+
 Depth ownership extends the same native-addon regression with near/far geometry,
 later load passes, read-only depth, empty depth clears, depth readback, and
 released caller references. Vulkan uses the caller's retained attachment and the same parent

@@ -1388,3 +1388,48 @@ test "doeNativeInstanceProcessEvents with valid instance does not crash" {
     defer instance_device.doeNativeInstanceRelease(inst);
     native.doeNativeInstanceProcessEvents(inst);
 }
+
+fn attachmentRecordingFailures(allocator: std.mem.Allocator) !void {
+    const objects = @import("../../src/native/support/doe_native_object_types.zig");
+    const references = @import("../../src/contracts/resource_lease.zig");
+    var device = objects.DoeDevice{ .backend = .vulkan };
+    var texture = objects.DoeTexture{ .device_ref = &device, .width = 8, .height = 8 };
+    var view = objects.DoeTextureView{
+        .tex = &texture,
+        .format = types.WGPUTextureFormat_RGBA8Unorm,
+        .dimension = types.WGPUTextureViewDimension_2D,
+        .mip_level_count = 1,
+        .array_layer_count = 1,
+        .aspect = types.WGPUTextureAspect_All,
+        .usage = types.WGPUTextureUsage_RenderAttachment,
+    };
+    var pipeline = objects.DoeRenderPipeline{ .device_ref = &device, .color_target_count = 1, .color_target_format = view.format };
+    var encoder = objects.DoeCommandEncoder{ .allocator = allocator, .dev = &device };
+    defer {
+        references.releaseAll(allocator, &encoder.references);
+        encoder.cmds.deinit(allocator);
+        for ([_]u32{ encoder.ref_count, view.ref_count, pipeline.ref_count, device.ref_count }) |count|
+            std.testing.expectEqual(@as(u32, 1), count) catch @panic("attachment recording leaked a reference");
+    }
+    var attachment = std.mem.zeroes(types.WGPURenderPassColorAttachment);
+    attachment.view = @ptrCast(&view);
+    var descriptor = std.mem.zeroes(types.WGPURenderPassDescriptor);
+    descriptor.colorAttachmentCount = 1;
+    descriptor.colorAttachments = @ptrCast(&attachment);
+    const pass = render.doeNativeCommandEncoderBeginRenderPass(@ptrCast(&encoder), &descriptor) orelse return error.OutOfMemory;
+    defer render.doeNativeRenderPassRelease(pass);
+    render.doeNativeRenderPassSetPipeline(pass, @ptrCast(&pipeline));
+    render.doeNativeRenderPassDraw(pass, 3, 1, 0, 0);
+    if (encoder.state == .failed) return encoder.state.failed;
+    try std.testing.expectEqual(@as(usize, 1), encoder.cmds.items.len);
+    pipeline.sample_count = 4;
+    render.doeNativeRenderPassDraw(pass, 3, 1, 0, 0);
+    try std.testing.expectEqual(error.RenderAttachmentSampleMismatch, encoder.state.failed);
+    try std.testing.expectEqual(@as(usize, 1), encoder.cmds.items.len);
+    render.doeNativeRenderPassEnd(pass);
+    try std.testing.expectEqual(error.RenderAttachmentSampleMismatch, encoder.state.failed);
+}
+
+test "native attachment rejection and recording allocation failures release every retained reference" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, attachmentRecordingFailures, .{});
+}

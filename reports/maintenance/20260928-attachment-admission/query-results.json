@@ -1,0 +1,22 @@
+[
+  {
+    "mode": "direct",
+    "exitCode": 0
+  },
+  {
+    "mode": "indexed16",
+    "exitCode": 0
+  },
+  {
+    "mode": "indexed32",
+    "exitCode": 0
+  },
+  {
+    "mode": "indirect",
+    "exitCode": 0
+  },
+  {
+    "mode": "indexed-indirect",
+    "exitCode": 0
+  }
+]

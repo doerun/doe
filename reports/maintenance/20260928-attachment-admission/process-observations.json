@@ -1,0 +1,343 @@
+{
+  "classification": "diagnostic-only",
+  "scope": "Complete direct public fixture process including startup, shader/pipeline compilation, draws, query resolve, readback and teardown; no resident-operation timing.",
+  "cpu": 0,
+  "instrumentation": "disabled",
+  "summaryDefinition": "Central-pair median and nearest-rank p95 across independent processes; no sample pooling.",
+  "samples": [
+    {
+      "pair": 0,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 29901187,
+      "userSeconds": 0.011457,
+      "systemSeconds": 0.016665,
+      "peakProcessRssBytes": 56561664
+    },
+    {
+      "pair": 0,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 23595578,
+      "userSeconds": 0.008751,
+      "systemSeconds": 0.014584999999999999,
+      "peakProcessRssBytes": 56291328
+    },
+    {
+      "pair": 1,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 22886803,
+      "userSeconds": 0.006946,
+      "systemSeconds": 0.015875999999999998,
+      "peakProcessRssBytes": 56221696
+    },
+    {
+      "pair": 1,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 28014546,
+      "userSeconds": 0.005458,
+      "systemSeconds": 0.017468,
+      "peakProcessRssBytes": 56504320
+    },
+    {
+      "pair": 2,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 27390571,
+      "userSeconds": 0.007817,
+      "systemSeconds": 0.016611,
+      "peakProcessRssBytes": 56414208
+    },
+    {
+      "pair": 2,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 22991490,
+      "userSeconds": 0.009009999999999999,
+      "systemSeconds": 0.013014,
+      "peakProcessRssBytes": 56193024
+    },
+    {
+      "pair": 3,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 28962009,
+      "userSeconds": 0.011243999999999999,
+      "systemSeconds": 0.015333,
+      "peakProcessRssBytes": 56209408
+    },
+    {
+      "pair": 3,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 28318658,
+      "userSeconds": 0.014057,
+      "systemSeconds": 0.013052999999999999,
+      "peakProcessRssBytes": 56131584
+    },
+    {
+      "pair": 4,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24338235,
+      "userSeconds": 0.009138,
+      "systemSeconds": 0.012183999999999999,
+      "peakProcessRssBytes": 56500224
+    },
+    {
+      "pair": 4,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24146685,
+      "userSeconds": 0.009984999999999999,
+      "systemSeconds": 0.01298,
+      "peakProcessRssBytes": 56238080
+    },
+    {
+      "pair": 5,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 20974022,
+      "userSeconds": 0.008749999999999999,
+      "systemSeconds": 0.012031,
+      "peakProcessRssBytes": 55959552
+    },
+    {
+      "pair": 5,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 25144633,
+      "userSeconds": 0.007121,
+      "systemSeconds": 0.017294,
+      "peakProcessRssBytes": 56377344
+    },
+    {
+      "pair": 6,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 23005867,
+      "userSeconds": 0.011602,
+      "systemSeconds": 0.010548,
+      "peakProcessRssBytes": 56516608
+    },
+    {
+      "pair": 6,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 20412776,
+      "userSeconds": 0.008253,
+      "systemSeconds": 0.011347999999999999,
+      "peakProcessRssBytes": 56262656
+    },
+    {
+      "pair": 7,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 23778151,
+      "userSeconds": 0.009238999999999999,
+      "systemSeconds": 0.011292,
+      "peakProcessRssBytes": 55947264
+    },
+    {
+      "pair": 7,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 22017326,
+      "userSeconds": 0.0071059999999999995,
+      "systemSeconds": 0.014213,
+      "peakProcessRssBytes": 56463360
+    },
+    {
+      "pair": 8,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 24663718,
+      "userSeconds": 0.010926,
+      "systemSeconds": 0.012912999999999999,
+      "peakProcessRssBytes": 56492032
+    },
+    {
+      "pair": 8,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 22403583,
+      "userSeconds": 0.005921,
+      "systemSeconds": 0.015791,
+      "peakProcessRssBytes": 56258560
+    },
+    {
+      "pair": 9,
+      "arm": "candidate",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 20783804,
+      "userSeconds": 0.006084,
+      "systemSeconds": 0.013182999999999999,
+      "peakProcessRssBytes": 56197120
+    },
+    {
+      "pair": 9,
+      "arm": "baseline",
+      "command": [
+        "taskset",
+        "-c",
+        "0",
+        "/tmp/doe-attachment-20260928/query-test",
+        "direct"
+      ],
+      "exitCode": 0,
+      "wallNs": 26664384,
+      "userSeconds": 0.010117,
+      "systemSeconds": 0.013151999999999999,
+      "peakProcessRssBytes": 56356864
+    }
+  ],
+  "summary": {
+    "baseline": {
+      "medianWallMs": 25.9045085,
+      "p95WallMs": 29.901187,
+      "medianCpuMs": 23.554,
+      "medianPeakProcessRssBytes": 56477696.0
+    },
+    "candidate": {
+      "medianWallMs": 22.9391465,
+      "p95WallMs": 28.962009,
+      "medianCpuMs": 21.868,
+      "medianPeakProcessRssBytes": 56215552.0
+    }
+  }
+}

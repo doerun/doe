@@ -4,36 +4,37 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "vulkan_attachment_admission",
+      "batchId": "vulkan_surface_submission_handoff",
       "state": "ready",
-      "objective": "Establish explicit attachment compatibility admission along ordinary native Vulkan render-pass execution.",
-      "rationale": "The completed typed draw-recording batch exposed backend attachment adoption of caller extent/format and resource sample count. Upstream admission must be traced before declaring a reproduced defect or adding duplicate checks.",
+      "objective": "Trace and repair one complete ordinary Vulkan acquire/render/present ownership handoff with explicit failure outcomes.",
+      "rationale": "The native attachment-admission batch is closed. The retained surface audit identifies missing presentation waits and success on out-of-date presentation; present_image still declares no wait semaphores. Reconfirm the actual consumer and submission handoff before changing synchronization.",
       "scopes": [
         {
           "level": "file",
           "targets": [
-            "src/backend/vulkan/vk_render.zig"
+            "src/backend/vulkan/vulkan_surface.zig"
           ]
         },
         {
           "level": "file",
           "targets": [
-            "src/native/vulkan/vulkan_render_pass_native.zig"
+            "src/backend/vulkan/vk_render.zig"
           ]
         }
       ],
       "findingReviewIds": [
-        "vulkan_draw_render_20260928"
+        "vulkan_surface_20260923_submission_audit",
+        "vulkan_attachment_backend_20260928"
       ],
-      "nextAction": "Trace public render-pass descriptors and view identity through native admission, queue snapshots and ensure_render_target; identify the existing authority for format, extent and sample compatibility.",
+      "nextAction": "Identify the public surface consumer, acquisition semaphore, draw submission and presentation dependencies; freeze windowed reproduction and failure/lifetime cases before editing.",
       "acceptance": [
-        "Exercise public compatible and incompatible attachments, independent pixel checks, rejection without invalid submission and a subsequent valid operation.",
-        "Preserve caller resource leases and completion-aware cleanup; retain focused failure and cost observations.",
-        "Record the actual consumer and observable consequence; leave surface synchronization and other backends separate."
+        "Preserve acquired-image identity and retain resources through known completion, including rejected submission, out-of-date presentation and recreation.",
+        "Observe native acquire/render/present ordering and independent pixels through an ordinary public consumer; report unavailable windowed or validation-layer evidence explicitly.",
+        "Retain focused tests, source identities and scoped cost observations without claiming whole-backend or release qualification."
       ],
-      "stopCondition": "Stop after one complete attachment-admission boundary and its evidence. Query ordering, bundle rejection, SPIR-V ownership, typed recording and the build recipe remain closed.",
+      "stopCondition": "Stop after one complete surface submission handoff and retained evidence. Direct-command attachment admission and broader backend cleanup remain separate; completed query, native attachment, compiler, bundle and build-recipe batches stay closed.",
       "requiredEnvironment": [
-        "Linux Vulkan for ordinary public rendering; validation-layer coverage where installed."
+        "Linux Vulkan and an actual supported window-system surface; platform and validation-layer availability must be recorded."
       ]
     }
   ]

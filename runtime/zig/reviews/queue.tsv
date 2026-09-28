@@ -117,7 +117,7 @@ file	src/backend/vulkan/vk_device.zig	stale	vulkan_batch_20260920_16_vk_device		
 file	src/backend/vulkan/vk_device_caps.zig	stale	vulkan_batch_20260920_17_vk_device_caps		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_dispatch_indirect.zig	stale	vulkan_batch_20260920_18_vk_dispatch_indirect		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_dispatch_repeat.zig	stale	vulkan_batch_20260920_19_vk_dispatch_repeat		Resolve the named findings with owner-specific failure and integration tests before verification.
-file	src/backend/vulkan/vk_draw_recording.zig	in_progress	vulkan_draw_recorder_20260928		Continue only along a named admission or draw-semantics consumer; do not grant parent completion credit.
+file	src/backend/vulkan/vk_draw_recording.zig	stale	vulkan_draw_recorder_20260928		Continue only along a named admission or draw-semantics consumer; do not grant parent completion credit.
 file	src/backend/vulkan/vk_feature_caps.zig	stale	vulkan_batch_20260920_20_vk_feature_caps		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_feature_probe.zig	stale	vulkan_batch_20260920_21_vk_feature_probe		Retain this responsibility; revalidate when the bound inputs change.
 file	src/backend/vulkan/vk_formats.zig	stale	vulkan_batch_20260920_22_vk_formats		Retain this responsibility; revalidate when the bound inputs change.
@@ -127,7 +127,7 @@ file	src/backend/vulkan/vk_metrics.zig	stale	vulkan_batch_20260920_25_vk_metrics
 file	src/backend/vulkan/vk_pipeline.zig	stale	vulkan_batch_20260920_26_vk_pipeline		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_pipeline_cache.zig	stale	vulkan_batch_20260920_27_vk_pipeline_cache		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_pipeline_cache_persistent.zig	stale	vulkan_batch_20260920_28_vk_pipeline_cache_persistent		Resolve the named findings with owner-specific failure and integration tests before verification.
-file	src/backend/vulkan/vk_render.zig	in_progress	vulkan_draw_render_20260928		Trace attachment compatibility from public render-pass descriptors through native admission to ensure_render_target; preserve the completed recorder boundary.
+file	src/backend/vulkan/vk_render.zig	in_progress	vulkan_attachment_backend_20260928		Trace acquire/render/present ownership and failure outcomes through an actual surface consumer; keep direct-command admission explicit as a separate follow-up.
 file	src/backend/vulkan/vk_render_pipeline.zig	stale	vulkan_batch_20260920_30_vk_render_pipeline		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_resources.zig	stale	vulkan_resource_owner_20260927		Read remaining texture/sampler operations, trace render use and command retention, then select a live-resource owner with explicit dependencies.
 file	src/backend/vulkan/vk_runtime_probe_ops.zig	stale	vulkan_batch_20260920_32_vk_runtime_probe_ops		Resolve the named findings with owner-specific failure and integration tests before verification.
@@ -288,13 +288,13 @@ file	src/compiler/wgsl/emit/msl/emit_msl_workgroup_zero.zig	pending			Read and r
 file	src/compiler/wgsl/emit/operator_text.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv.zig	stale	shader_semantics_spirv_20260919_evidence		Review all type lowering and decoration identities, allocation-failure cleanup and entrypoint emission; this focused storage-block repair does not complete the emitter review.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig	pending			Read and review the complete scope.
-file	src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig	in_progress	spirv_ownership_function_20260928		Trace named pointer-alias lowering from validated IR to emit_ref_expr before selecting a separate compatibility repair.
-file	src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig	in_progress	spirv_ownership_helpers_20260928		Review scalar conversion consumers independently of the completed cache ownership correction.
+file	src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig	stale	spirv_ownership_function_20260928		Trace named pointer-alias lowering from validated IR to emit_ref_expr before selecting a separate compatibility repair.
+file	src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig	stale	spirv_ownership_helpers_20260928		Review scalar conversion consumers independently of the completed cache ownership correction.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_matrix.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_shared.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_stages.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_texture.zig	pending			Read and review the complete scope.
-file	src/compiler/wgsl/emit/spirv/instruction_cache.zig	verified	spirv_ownership_cache_20260928		Preserve these distinct invalidation contracts when extending instruction reuse; parent emitter review remains partial.
+file	src/compiler/wgsl/emit/spirv/instruction_cache.zig	stale	spirv_ownership_cache_20260928		Preserve these distinct invalidation contracts when extending instruction reuse; parent emitter review remains partial.
 file	src/compiler/wgsl/emit/spirv/spirv_builder.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/spirv_spec.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/toolchain.zig	pending			Read and review the complete scope.
@@ -320,7 +320,7 @@ file	src/compiler/wgsl/ir/ir_const_eval.zig	pending			Read and review the comple
 file	src/compiler/wgsl/ir/ir_digest.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/ir/ir_loop_independence.zig	stale	ir_loop_independence_20260927		Review remaining IR query consumers and emitter policy separately; this predicate is not a general dependence proof.
 file	src/compiler/wgsl/ir/ir_opt_rewrite.zig	pending			Read and review the complete scope.
-file	src/compiler/wgsl/ir/ir_query.zig	in_progress	spirv_ownership_queries_20260928		Continue query-family review only along a named compiler consumer; preserve storage versus value alias semantics.
+file	src/compiler/wgsl/ir/ir_query.zig	stale	spirv_ownership_queries_20260928		Continue query-family review only along a named compiler consumer; preserve storage versus value alias semantics.
 file	src/compiler/wgsl/ir/ir_transform_float_fusion.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/ir/ir_transform_robustness.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/ir/ir_validate.zig	pending			Read and review the complete scope.
@@ -354,7 +354,7 @@ file	src/contracts/binding.zig	pending			Read and review the complete scope.
 file	src/contracts/capability.zig	pending			Read and review the complete scope.
 file	src/contracts/command.zig	pending			Read and review the complete scope.
 file	src/contracts/command_metadata.zig	pending			Read and review the complete scope.
-file	src/contracts/command_recording.zig	pending			Read and review the complete scope.
+file	src/contracts/command_recording.zig	in_progress	vulkan_attachment_errors_20260928		Preserve original causes when extending recording admission; other recording taxonomies remain separately reviewed.
 file	src/contracts/command_storage.zig	pending			Read and review the complete scope.
 file	src/contracts/compute.zig	pending			Read and review the complete scope.
 file	src/contracts/error.zig	pending			Read and review the complete scope.
@@ -524,10 +524,10 @@ file	src/native/queue/doe_queue_submit_d3d12.zig	pending			Read and review the c
 file	src/native/queue/doe_queue_submit_metal.zig	pending			Read and review the complete scope.
 file	src/native/queue/doe_queue_submit_native.zig	pending			Read and review the complete scope.
 file	src/native/queue/doe_queue_submit_shared.zig	pending			Read and review the complete scope.
-file	src/native/queue/doe_queue_submit_vulkan.zig	in_progress	vulkan_draw_queue_20260928		Trace attachment admission with the native render-pass recorder before changing backend compatibility checks.
+file	src/native/queue/doe_queue_submit_vulkan.zig	stale	vulkan_draw_queue_20260928		Trace attachment admission with the native render-pass recorder before changing backend compatibility checks.
 file	src/native/queue/doe_submission_validation.zig	pending			Read and review the complete scope.
 file	src/native/render/doe_bundle_native.zig	pending			Read and review the complete scope.
-file	src/native/render/doe_render_native.zig	pending			Read and review the complete scope.
+file	src/native/render/doe_render_native.zig	in_progress	vulkan_attachment_begin_20260928		Keep native admission separate from backend realization; do not treat the partial path review as whole-file completion.
 file	src/native/render/doe_render_pass_controls_native.zig	pending			Read and review the complete scope.
 file	src/native/render/doe_render_pipeline_native.zig	pending			Read and review the complete scope.
 file	src/native/render/doe_render_state_native.zig	pending			Read and review the complete scope.
@@ -550,7 +550,7 @@ file	src/native/support/doe_label_store.zig	pending			Read and review the comple
 file	src/native/support/doe_native_command_types.zig	pending			Read and review the complete scope.
 file	src/native/support/doe_native_exports.zig	pending			Read and review the complete scope.
 file	src/native/support/doe_native_object_helpers.zig	pending			Read and review the complete scope.
-file	src/native/support/doe_native_object_types.zig	stale	shader_semantics_objects_20260919_evidence		Review each object family and backend payload ownership; the single layout field change is not a whole-file or backend-state review.
+file	src/native/support/doe_native_object_types.zig	in_progress	vulkan_attachment_metadata_20260928		Preserve declaration identity through future pipeline work; backend-state decomposition remains incomplete.
 file	src/native/support/doe_native_runtime_helpers.zig	pending			Read and review the complete scope.
 file	src/native/support/doe_native_shared_types.zig	pending			Read and review the complete scope.
 file	src/native/surface/doe_surface_native.zig	pending			Read and review the complete scope.
@@ -559,9 +559,10 @@ file	src/native/vulkan/vulkan_compute_native.zig	stale	shader_semantics_compute_
 file	src/native/vulkan/vulkan_feature_cache.zig	pending			Read and review the complete scope.
 file	src/native/vulkan/vulkan_lifetime.zig	pending			Read and review the complete scope.
 file	src/native/vulkan/vulkan_pipeline_hash.zig	pending			Read and review the complete scope.
+file	src/native/vulkan/vulkan_render_attachments.zig	in_progress	vulkan_attachment_admission_20260928		Preserve this native admission owner; examine additional semantics only against a concrete public consumer.
 file	src/native/vulkan/vulkan_render_native.zig	pending			Read and review the complete scope.
-file	src/native/vulkan/vulkan_render_pass_native.zig	pending			Read and review the complete scope.
-file	src/native/vulkan/vulkan_render_pipeline_native.zig	pending			Read and review the complete scope.
+file	src/native/vulkan/vulkan_render_pass_native.zig	in_progress	vulkan_attachment_draw_20260928		Continue along the selected surface handoff without reopening completed query or recording extraction work.
+file	src/native/vulkan/vulkan_render_pipeline_native.zig	in_progress	vulkan_attachment_pipeline_20260928		Preserve immutable pipeline identity when extending target support.
 file	src/native/vulkan/vulkan_render_shared.zig	pending			Read and review the complete scope.
 file	src/native/vulkan/vulkan_sampler_native.zig	pending			Read and review the complete scope.
 file	src/native/vulkan/vulkan_texture_native.zig	pending			Read and review the complete scope.
@@ -584,7 +585,7 @@ file	src/quirk/toggle_registry.zig	pending			Read and review the complete scope.
 file	src/runtime/cache/pipeline_cache.zig	pending			Read and review the complete scope.
 file	src/runtime/callback_dispatch.zig	pending			Read and review the complete scope.
 file	src/runtime/device/multi_adapter.zig	pending			Read and review the complete scope.
-file	src/runtime/diagnostics/error_scope.zig	pending			Read and review the complete scope.
+file	src/runtime/diagnostics/error_scope.zig	in_progress	vulkan_attachment_scopes_20260928		Continue scope review only against a named callback/lifetime consumer; this is not whole-file completion.
 file	src/runtime/env_flags.zig	pending			Read and review the complete scope.
 file	src/runtime/execution.zig	pending			Read and review the complete scope.
 file	src/runtime/execution_receipt.zig	pending			Read and review the complete scope.
@@ -841,7 +842,7 @@ directory	src/native/resource	pending		file:src/native/resource/doe_bind_group_n
 directory	src/native/shader	pending		file:src/native/shader/doe_shader_compilation_info_native.zig;file:src/native/shader/doe_shader_native.zig;file:src/native/shader/doe_shader_translation_cache.zig;file:src/native/shader/shader_binding_reflection.zig;file:src/native/shader/shader_diagnostic.zig	Read and review the complete scope.
 directory	src/native/support	pending		file:src/native/support/doe_adapter_info_native.zig;file:src/native/support/doe_device_caps.zig;file:src/native/support/doe_future_ids.zig;file:src/native/support/doe_label_store.zig;file:src/native/support/doe_native_command_types.zig;file:src/native/support/doe_native_exports.zig;file:src/native/support/doe_native_object_helpers.zig;file:src/native/support/doe_native_object_types.zig;file:src/native/support/doe_native_runtime_helpers.zig;file:src/native/support/doe_native_shared_types.zig	Read and review the complete scope.
 directory	src/native/surface	pending		file:src/native/surface/doe_surface_native.zig	Read and review the complete scope.
-directory	src/native/vulkan	pending		file:src/native/vulkan/vulkan_compute_bindings.zig;file:src/native/vulkan/vulkan_compute_native.zig;file:src/native/vulkan/vulkan_feature_cache.zig;file:src/native/vulkan/vulkan_lifetime.zig;file:src/native/vulkan/vulkan_pipeline_hash.zig;file:src/native/vulkan/vulkan_render_native.zig;file:src/native/vulkan/vulkan_render_pass_native.zig;file:src/native/vulkan/vulkan_render_pipeline_native.zig;file:src/native/vulkan/vulkan_render_shared.zig;file:src/native/vulkan/vulkan_sampler_native.zig;file:src/native/vulkan/vulkan_texture_native.zig	Read and review the complete scope.
+directory	src/native/vulkan	pending		file:src/native/vulkan/vulkan_compute_bindings.zig;file:src/native/vulkan/vulkan_compute_native.zig;file:src/native/vulkan/vulkan_feature_cache.zig;file:src/native/vulkan/vulkan_lifetime.zig;file:src/native/vulkan/vulkan_pipeline_hash.zig;file:src/native/vulkan/vulkan_render_attachments.zig;file:src/native/vulkan/vulkan_render_native.zig;file:src/native/vulkan/vulkan_render_pass_native.zig;file:src/native/vulkan/vulkan_render_pipeline_native.zig;file:src/native/vulkan/vulkan_render_shared.zig;file:src/native/vulkan/vulkan_sampler_native.zig;file:src/native/vulkan/vulkan_texture_native.zig	Read and review the complete scope.
 directory	src/plan	pending		file:src/plan/dawn_plan_types.zig;file:src/plan/doe_plan_executor.zig;file:src/plan/mod.zig;file:src/plan/plan_validation.zig;file:src/plan/synthetic_assets.zig;file:src/plan/webgpu_plan_executor.zig;file:src/plan/webgpu_plan_executor_cli.zig;file:src/plan/webgpu_plan_executor_config.zig;file:src/plan/webgpu_plan_executor_core.zig;file:src/plan/webgpu_plan_executor_emit.zig;file:src/plan/webgpu_plan_executor_support.zig	Read and review the complete scope.
 directory	src/quirk	pending		file:src/quirk/mod.zig;file:src/quirk/quirk_actions.zig;file:src/quirk/quirk_json.zig;file:src/quirk/runtime.zig;file:src/quirk/toggle_registry.zig	Read and review the complete scope.
 directory	src/runtime	pending		file:src/runtime/callback_dispatch.zig;file:src/runtime/env_flags.zig;file:src/runtime/execution.zig;file:src/runtime/execution_receipt.zig;file:src/runtime/mod.zig;file:src/runtime/output_oracle.zig;file:src/runtime/pipeline_singleflight.zig;file:src/runtime/process_roots.zig;file:src/runtime/task_pool.zig	Read and review the complete scope.

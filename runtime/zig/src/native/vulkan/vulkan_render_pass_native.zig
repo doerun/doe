@@ -190,6 +190,10 @@ fn base_vulkan_render_cmd(pass: *shared.DoeRenderPass) model_render_types.Render
 }
 
 fn recordRender(pass: *shared.DoeRenderPass, cmd: model_render_types.RenderDrawCommand, clear_only: bool) void {
+    @import("vulkan_render_attachments.zig").validateDraw(pass, clear_only) catch |err| {
+        recording.fail(pass.enc, err);
+        return;
+    };
     if (!recording.append(pass.enc, .{ .vulkan_render = .{
         .command = cmd,
         .query_set = if (!clear_only and pass.occlusion_query_active) pass.occlusion_query_set else null,

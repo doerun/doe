@@ -1,0 +1,179 @@
+[
+  {
+    "arm": "baseline",
+    "mode": "samples",
+    "exitCode": 1
+  },
+  {
+    "arm": "baseline",
+    "mode": "format",
+    "exitCode": 1
+  },
+  {
+    "arm": "candidate",
+    "mode": "samples",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=render attachments and pipeline sample counts must match",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "format",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=render attachment formats must match their roles and pipeline targets",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "foreign-pipeline",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=render attachments and pipeline must belong to the encoder device",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "depth-extent",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=render color and depth attachment mip extents must match",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "depth-samples",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=render attachments and pipeline sample counts must match",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "depth-format",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=render attachment formats must match their roles and pipeline targets",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "usage",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=render attachment view requires RENDER_ATTACHMENT usage",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "mips",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=render attachment requires a single mip and layer with all format aspects",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "layers",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=Vulkan rendering supports one 2D color attachment and optional depth/stencil; resolve and depth-only passes are unsupported",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "foreign-view",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=render attachments and pipeline must belong to the encoder device",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "destroyed",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=render attachment requires a live texture view and pipeline",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "destroy-after-record",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=queue submission uses an invalid or destroyed texture"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "resolve",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=Vulkan rendering supports one 2D color attachment and optional depth/stencil; resolve and depth-only passes are unsupported",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "multiple",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=Vulkan rendering supports one 2D color attachment and optional depth/stencil; resolve and depth-only passes are unsupported",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "depth-only",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 0,
+    "scopeMessages": [
+      "scope type=2 message=Vulkan rendering supports one 2D color attachment and optional depth/stencil; resolve and depth-only passes are unsupported",
+      "scope type=2 message=queue submission rejected failed recording or a different device"
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "valid-mip-layer",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 2,
+    "scopeMessages": [
+      "scope type=1 message="
+    ]
+  },
+  {
+    "arm": "candidate",
+    "mode": "valid-depth",
+    "exitCode": 0,
+    "nativeSubmitsInWindow": 2,
+    "scopeMessages": [
+      "scope type=1 message="
+    ]
+  }
+]

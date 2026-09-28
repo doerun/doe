@@ -7,10 +7,29 @@ pub const BufferCopyError = error{
     BufferCopyAliasing,
 };
 
-pub const Failure = BufferCopyError || @import("texture_copy.zig").Error || error{ OutOfMemory, InvalidState, ImmediateDataUnsupported, TextureCopyDeviceMismatch, TextureCopyUsageMissing };
+pub const RenderAttachmentError = error{
+    RenderAttachmentUnavailable,
+    RenderAttachmentDeviceMismatch,
+    RenderAttachmentUsageMissing,
+    RenderAttachmentViewInvalid,
+    RenderAttachmentExtentMismatch,
+    RenderAttachmentSampleMismatch,
+    RenderAttachmentFormatMismatch,
+    RenderAttachmentUnsupported,
+};
+
+pub const Failure = RenderAttachmentError || BufferCopyError || @import("texture_copy.zig").Error || error{ OutOfMemory, InvalidState, ImmediateDataUnsupported, TextureCopyDeviceMismatch, TextureCopyUsageMissing };
 
 pub fn message(cause: Failure) []const u8 {
     return switch (cause) {
+        error.RenderAttachmentUnavailable => "render attachment requires a live texture view and pipeline",
+        error.RenderAttachmentDeviceMismatch => "render attachments and pipeline must belong to the encoder device",
+        error.RenderAttachmentUsageMissing => "render attachment view requires RENDER_ATTACHMENT usage",
+        error.RenderAttachmentViewInvalid => "render attachment requires a single mip and layer with all format aspects",
+        error.RenderAttachmentExtentMismatch => "render color and depth attachment mip extents must match",
+        error.RenderAttachmentSampleMismatch => "render attachments and pipeline sample counts must match",
+        error.RenderAttachmentFormatMismatch => "render attachment formats must match their roles and pipeline targets",
+        error.RenderAttachmentUnsupported => "Vulkan rendering supports one 2D color attachment and optional depth/stencil; resolve and depth-only passes are unsupported",
         error.OutOfMemory => "GPU command recording could not allocate owned storage",
         error.InvalidState => "GPU command recording requires an open encoder or its active pass",
         error.InvalidArgument => "GPU command recording received an invalid dependency or payload",

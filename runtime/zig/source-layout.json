@@ -3622,9 +3622,9 @@
       },
       "src/native/render/doe_render_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "7adc8da7c689dbb24cb3e014b5b0e2eb5bf2345f486bb3a25b034012c27c15b0",
-        "reason": "Keep: the encoder owns pass identity and recording lifetime; native adapters validate operations against that single state.",
-        "reviewer": "codex-pass-lifecycle/2026-09-06"
+        "moduleSha256": "9cac7998e281300b84c53dcc0784c3cd27d314a3a9e6b4147a2b670806d84d58",
+        "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
+        "reviewer": "codex-attachment-admission/2026-09-28"
       },
       "src/native/render/doe_render_pass_controls_native.zig": {
         "decision": "Keep",
@@ -3754,9 +3754,9 @@
       },
       "src/native/support/doe_native_object_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "66e19d9214ec17c19639972d9d1f9ad52465981541acb9f3393c30ecffbe5e93",
-        "reason": "Keep: shared native handle ownership now retains each bind group layout through final release; this does not complete backend-state separation.",
-        "reviewer": "codex-shader-semantics/2026-09-19"
+        "moduleSha256": "d32b8f48c05d2b1796739d375b5a72a110901e242340182936cc6fab8aefbea9",
+        "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
+        "reviewer": "codex-attachment-admission/2026-09-28"
       },
       "src/native/support/doe_native_runtime_helpers.zig": {
         "decision": "Keep",
@@ -3814,15 +3814,15 @@
       },
       "src/native/vulkan/vulkan_render_pass_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "abfe8ddfaf8dc63b2da5accf253bae4fb05f9c014240277246dcc8b3719ea007",
-        "reason": "Keep: existing native recording, query ownership, queue submission or Vulkan ABI owner. Logical occlusion spans completed native draws; native query metadata does not cross the public ABI.",
-        "reviewer": "codex-production-query/2026-09-28"
+        "moduleSha256": "8c2e6f257c182d0c824e2639a4017a14cc6a20579213c11c175b756eece5aad0",
+        "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
+        "reviewer": "codex-attachment-admission/2026-09-28"
       },
       "src/native/vulkan/vulkan_render_pipeline_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "eb2e06370066910c450cb239ff6dfa6b805e967a60f5c90ae5edaf487d2d0706",
-        "reason": "Keep: Vulkan pipeline shader code and entry points are cloned transactionally; allocation failures publish no partial resources and missing compiled stages are validation errors.",
-        "reviewer": "codex-render-ownership/2026-09-06"
+        "moduleSha256": "118a41ce4523c1cbcf4b1350bd963a857aa7e0e4421075d900f4fcd018b56e70",
+        "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
+        "reviewer": "codex-attachment-admission/2026-09-28"
       },
       "src/native/vulkan/vulkan_render_shared.zig": {
         "decision": "Keep",
@@ -3958,9 +3958,9 @@
       },
       "src/runtime/diagnostics/error_scope.zig": {
         "decision": "Keep",
-        "moduleSha256": "7622fef89dc9d1689780089d5098189d859ddf0d4f9b2bb701b428c24e5848ca",
-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
-        "reviewer": "codex-texture-copy-regions/2026-09-07"
+        "moduleSha256": "5f6a200ec8c36fcbabce057d6fe87ff563f505d3091166ccf8fc81ed4b61e681",
+        "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
+        "reviewer": "codex-attachment-admission/2026-09-28"
       },
       "src/runtime/env_flags.zig": {
         "decision": "Keep",
@@ -4300,9 +4300,9 @@
       },
       "src/contracts/command_recording.zig": {
         "decision": "Keep",
-        "moduleSha256": "e5f4db7f8b6a500c8637717d5eafaf738cb98540c3865cdf7a19754b24e91d4b",
-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
-        "reviewer": "codex-texture-copy-regions/2026-09-07"
+        "moduleSha256": "c5fce7da3204744d4d0d42c7c3eef2dd654564987c07d54260ca1e5804c8c335",
+        "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
+        "reviewer": "codex-attachment-admission/2026-09-28"
       },
       "src/native/command/doe_command_recording.zig": {
         "decision": "Keep",
@@ -4381,6 +4381,12 @@
         "moduleSha256": "5b9378fbe30c2cfb8d69b28b9332c86d208427d5e04c74b8f987f9449b7b75e0",
         "reason": "Keep: typed native draw recording borrows only command buffer, immutable buffer lookup, pass/pipeline handles and prepared index binding; no allocation, submission, layout mutation or retirement authority.",
         "reviewer": "codex-render-recording/2026-09-28"
+      },
+      "src/native/vulkan/vulkan_render_attachments.zig": {
+        "decision": "Keep",
+        "moduleSha256": "74cf74a5aad6134906c7f8a75183c517517bcfa548d26bd0906e9c9ba2b6adb7",
+        "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
+        "reviewer": "codex-attachment-admission/2026-09-28"
       }
     },
     "linePolicy": {

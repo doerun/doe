@@ -153,8 +153,10 @@ pub fn vulkan_create_render_pipeline(
     }
 
     if (d.fragment) |frag| {
+        pip.color_target_count = frag.targetCount;
         if (frag.targetCount > 0 and frag.targets != null) {
             const target0 = frag.targets.?[0];
+            pip.color_target_format = target0.format;
             pip.color_write_mask = @intCast(target0.writeMask);
             if (target0.blend) |blend| {
                 pip.blend_enabled = true;

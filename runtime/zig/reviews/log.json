@@ -25489,6 +25489,390 @@
       "targets": [
         "src/native/queue/doe_queue_submit_vulkan.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/contracts/command_recording.zig",
+          "sha256": "c5fce7da3204744d4d0d42c7c3eef2dd654564987c07d54260ca1e5804c8c335"
+        },
+        {
+          "path": "runtime/zig/src/native/queue/doe_submission_validation.zig",
+          "sha256": "acda1d9a23e62cbe03043688372e6561363c4d1ee6ed114c5c94874a98c62098"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+          "sha256": "d32b8f48c05d2b1796739d375b5a72a110901e242340182936cc6fab8aefbea9"
+        },
+        {
+          "path": "runtime/zig/tests/core/native_shader_render_test.zig",
+          "sha256": "150dccea4192fa655481e4ecc4cfdec5eeb1629839946315d79f9eb5070eb14f"
+        },
+        {
+          "path": "runtime/zig/tests/native_render_attachments.c",
+          "sha256": "d94877a3046cd6ef63d007abb6c762491c027f070fbce708129e7dc4f86ad4d3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/identity.json",
+          "sha256": "55d142666047b68130a0e42d4ef69527448312c72cf33d99d187e3c04c467579"
+        },
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/public-results.json",
+          "sha256": "5c91b206f37eabcbf6c07416afaacd154c913ddae63578c89fd259d63a0eddbb"
+        }
+      ],
+      "findings": [
+        "Complete view creation validation, depth/stencil write permissions, store/discard and unsupported attachment execution remain open."
+      ],
+      "inputHash": "a52b41422c00e16b088319a94cc8a15c5b0bd57e9255d9d92eaf1e76274c0515",
+      "level": "file",
+      "nextAction": "Preserve this native admission owner; examine additional semantics only against a concrete public consumer.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Validated original pipeline color format/count, depth format and sample count against live native views. Matching mip extents preserve selected subresources. Typed failures poison recording before publication; no resources transfer into the validator."
+      ],
+      "reviewId": "vulkan_attachment_admission_20260928",
+      "reviewedAt": "2026-09-28T17:47:41.929239+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ff7a38c1b5e06e4c89abc40cde62aec42ad060fe",
+      "status": "in_progress",
+      "summary": "Examined descriptor admission and per-draw view/pipeline compatibility through public recording, submission rejection and recovery.",
+      "supersedes": null,
+      "targets": [
+        "src/native/vulkan/vulkan_render_attachments.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/contracts/command_recording.zig",
+          "sha256": "c5fce7da3204744d4d0d42c7c3eef2dd654564987c07d54260ca1e5804c8c335"
+        },
+        {
+          "path": "runtime/zig/src/native/queue/doe_submission_validation.zig",
+          "sha256": "acda1d9a23e62cbe03043688372e6561363c4d1ee6ed114c5c94874a98c62098"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+          "sha256": "d32b8f48c05d2b1796739d375b5a72a110901e242340182936cc6fab8aefbea9"
+        },
+        {
+          "path": "runtime/zig/tests/core/native_shader_render_test.zig",
+          "sha256": "150dccea4192fa655481e4ecc4cfdec5eeb1629839946315d79f9eb5070eb14f"
+        },
+        {
+          "path": "runtime/zig/tests/native_render_attachments.c",
+          "sha256": "d94877a3046cd6ef63d007abb6c762491c027f070fbce708129e7dc4f86ad4d3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/identity.json",
+          "sha256": "55d142666047b68130a0e42d4ef69527448312c72cf33d99d187e3c04c467579"
+        },
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/public-results.json",
+          "sha256": "5c91b206f37eabcbf6c07416afaacd154c913ddae63578c89fd259d63a0eddbb"
+        }
+      ],
+      "findings": [
+        "Other backend admission and complete render state validation remain unexamined."
+      ],
+      "inputHash": "fa9ca20f1df7d2872dd15a145bf1bcba87033bbf0988f94570f1d8af76a5b737",
+      "level": "file",
+      "nextAction": "Keep native admission separate from backend realization; do not treat the partial path review as whole-file completion.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Reject invalid/unsupported Vulkan attachment descriptors before view retention; return a failed pass whose encoder preserves the cause. Allocation sweeps and public rejection/recovery cover cleanup."
+      ],
+      "reviewId": "vulkan_attachment_begin_20260928",
+      "reviewedAt": "2026-09-28T17:47:43.478381+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ff7a38c1b5e06e4c89abc40cde62aec42ad060fe",
+      "status": "in_progress",
+      "summary": "Traced Vulkan begin-pass admission before retaining attachments, and existing pass/encoder cleanup. Other backend paths are not requalified.",
+      "supersedes": null,
+      "targets": [
+        "src/native/render/doe_render_native.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/contracts/command_recording.zig",
+          "sha256": "c5fce7da3204744d4d0d42c7c3eef2dd654564987c07d54260ca1e5804c8c335"
+        },
+        {
+          "path": "runtime/zig/src/native/queue/doe_submission_validation.zig",
+          "sha256": "acda1d9a23e62cbe03043688372e6561363c4d1ee6ed114c5c94874a98c62098"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+          "sha256": "d32b8f48c05d2b1796739d375b5a72a110901e242340182936cc6fab8aefbea9"
+        },
+        {
+          "path": "runtime/zig/tests/core/native_shader_render_test.zig",
+          "sha256": "150dccea4192fa655481e4ecc4cfdec5eeb1629839946315d79f9eb5070eb14f"
+        },
+        {
+          "path": "runtime/zig/tests/native_render_attachments.c",
+          "sha256": "d94877a3046cd6ef63d007abb6c762491c027f070fbce708129e7dc4f86ad4d3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/identity.json",
+          "sha256": "55d142666047b68130a0e42d4ef69527448312c72cf33d99d187e3c04c467579"
+        },
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/public-results.json",
+          "sha256": "5c91b206f37eabcbf6c07416afaacd154c913ddae63578c89fd259d63a0eddbb"
+        }
+      ],
+      "findings": [
+        "Complete pipeline descriptor validation and arbitrary target layouts remain unexamined."
+      ],
+      "inputHash": "b98b066a3a28e53ca5386dd035f1938b246b14a44c54bbb671d6144823f17d2a",
+      "level": "file",
+      "nextAction": "Preserve immutable pipeline identity when extending target support.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Retained target count/format that were previously discarded; public mismatched-format and sample-count regressions now reject rather than silently recompiling a compatible backend pipeline."
+      ],
+      "reviewId": "vulkan_attachment_pipeline_20260928",
+      "reviewedAt": "2026-09-28T17:47:44.959468+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ff7a38c1b5e06e4c89abc40cde62aec42ad060fe",
+      "status": "in_progress",
+      "summary": "Inspected retention of the pipeline color attachment declaration through native construction and deferred drawing.",
+      "supersedes": null,
+      "targets": [
+        "src/native/vulkan/vulkan_render_pipeline_native.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/contracts/command_recording.zig",
+          "sha256": "c5fce7da3204744d4d0d42c7c3eef2dd654564987c07d54260ca1e5804c8c335"
+        },
+        {
+          "path": "runtime/zig/src/native/queue/doe_submission_validation.zig",
+          "sha256": "acda1d9a23e62cbe03043688372e6561363c4d1ee6ed114c5c94874a98c62098"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+          "sha256": "d32b8f48c05d2b1796739d375b5a72a110901e242340182936cc6fab8aefbea9"
+        },
+        {
+          "path": "runtime/zig/tests/core/native_shader_render_test.zig",
+          "sha256": "150dccea4192fa655481e4ecc4cfdec5eeb1629839946315d79f9eb5070eb14f"
+        },
+        {
+          "path": "runtime/zig/tests/native_render_attachments.c",
+          "sha256": "d94877a3046cd6ef63d007abb6c762491c027f070fbce708129e7dc4f86ad4d3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/identity.json",
+          "sha256": "55d142666047b68130a0e42d4ef69527448312c72cf33d99d187e3c04c467579"
+        },
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/public-results.json",
+          "sha256": "5c91b206f37eabcbf6c07416afaacd154c913ddae63578c89fd259d63a0eddbb"
+        }
+      ],
+      "findings": [
+        "Binding and complete dynamic render-state validation remain separate obligations."
+      ],
+      "inputHash": "d3badecbbcac71899b452f5b1c28c8a50f73da65f3ce8b9ce202ec02d820c8a4",
+      "level": "file",
+      "nextAction": "Continue along the selected surface handoff without reopening completed query or recording extraction work.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Shared recordRender admission covers every draw family and empty passes. Existing query/pixel outputs pass; an incompatible draw after a valid draw poisons the entire encoder."
+      ],
+      "reviewId": "vulkan_attachment_draw_20260928",
+      "reviewedAt": "2026-09-28T17:47:46.447581+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ff7a38c1b5e06e4c89abc40cde62aec42ad060fe",
+      "status": "in_progress",
+      "summary": "Traced direct/indexed/indirect and empty-pass recording through shared per-operation attachment validation.",
+      "supersedes": null,
+      "targets": [
+        "src/native/vulkan/vulkan_render_pass_native.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/contracts/command_recording.zig",
+          "sha256": "c5fce7da3204744d4d0d42c7c3eef2dd654564987c07d54260ca1e5804c8c335"
+        },
+        {
+          "path": "runtime/zig/src/native/queue/doe_submission_validation.zig",
+          "sha256": "acda1d9a23e62cbe03043688372e6561363c4d1ee6ed114c5c94874a98c62098"
+        },
+        {
+          "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+          "sha256": "d32b8f48c05d2b1796739d375b5a72a110901e242340182936cc6fab8aefbea9"
+        },
+        {
+          "path": "runtime/zig/tests/core/native_shader_render_test.zig",
+          "sha256": "150dccea4192fa655481e4ecc4cfdec5eeb1629839946315d79f9eb5070eb14f"
+        },
+        {
+          "path": "runtime/zig/tests/native_render_attachments.c",
+          "sha256": "d94877a3046cd6ef63d007abb6c762491c027f070fbce708129e7dc4f86ad4d3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/identity.json",
+          "sha256": "55d142666047b68130a0e42d4ef69527448312c72cf33d99d187e3c04c467579"
+        },
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/public-results.json",
+          "sha256": "5c91b206f37eabcbf6c07416afaacd154c913ddae63578c89fd259d63a0eddbb"
+        }
+      ],
+      "findings": [
+        "Command-oriented callers still need independent backend attachment admission; native object checks do not validate arbitrary RenderDrawCommand inputs. Surface completion and acquisition remain open."
+      ],
+      "inputHash": "52930d7421f1c5cb1573549bed89e599093470ec1a3940ae1223a756e13cc030",
+      "level": "file",
+      "nextAction": "Trace acquire/render/present ownership and failure outcomes through an actual surface consumer; keep direct-command admission explicit as a separate follow-up.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Located first missing WebGPU compatibility authority in native object recording rather than adding duplicate broad-runtime checks in framebuffer setup."
+      ],
+      "reviewId": "vulkan_attachment_backend_20260928",
+      "reviewedAt": "2026-09-28T17:47:47.970437+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ff7a38c1b5e06e4c89abc40cde62aec42ad060fe",
+      "status": "in_progress",
+      "summary": "Re-examined attachment adoption against its ordinary native caller; no backend code changed in this batch.",
+      "supersedes": "vulkan_draw_render_20260928",
+      "targets": [
+        "src/backend/vulkan/vk_render.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_render_attachments.zig",
+          "sha256": "74cf74a5aad6134906c7f8a75183c517517bcfa548d26bd0906e9c9ba2b6adb7"
+        },
+        {
+          "path": "runtime/zig/tests/native_render_attachments.c",
+          "sha256": "d94877a3046cd6ef63d007abb6c762491c027f070fbce708129e7dc4f86ad4d3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/identity.json",
+          "sha256": "55d142666047b68130a0e42d4ef69527448312c72cf33d99d187e3c04c467579"
+        }
+      ],
+      "findings": [
+        "Examination is limited to attachment admission; other responsibilities retain their existing review obligations."
+      ],
+      "inputHash": "28b1ab6b57c1e58301451c1bf67bf9cc787fefb39f926aa23457c25d1dd0bfa1",
+      "level": "file",
+      "nextAction": "Preserve original causes when extending recording admission; other recording taxonomies remain separately reviewed.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Added actionable typed attachment causes with exhaustive message translation; public validation and poisoned-encoder tests exercise delivery."
+      ],
+      "reviewId": "vulkan_attachment_errors_20260928",
+      "reviewedAt": "2026-09-28T17:49:12.818871+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ff7a38c1b5e06e4c89abc40cde62aec42ad060fe",
+      "status": "in_progress",
+      "summary": "Examined attachment failure taxonomy and original-cause preservation within existing encoder failure state.",
+      "supersedes": null,
+      "targets": [
+        "src/contracts/command_recording.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_render_attachments.zig",
+          "sha256": "74cf74a5aad6134906c7f8a75183c517517bcfa548d26bd0906e9c9ba2b6adb7"
+        },
+        {
+          "path": "runtime/zig/tests/native_render_attachments.c",
+          "sha256": "d94877a3046cd6ef63d007abb6c762491c027f070fbce708129e7dc4f86ad4d3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/identity.json",
+          "sha256": "55d142666047b68130a0e42d4ef69527448312c72cf33d99d187e3c04c467579"
+        }
+      ],
+      "findings": [
+        "Examination is limited to attachment admission; other responsibilities retain their existing review obligations."
+      ],
+      "inputHash": "85a020c8a826abfe68fe15e29524296f96dab39743024edb5932f48dac39b152",
+      "level": "file",
+      "nextAction": "Continue scope review only against a named callback/lifetime consumer; this is not whole-file completion.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "All added attachment failures map to validation; ordinary public error scopes observe rejection and later recovery."
+      ],
+      "reviewId": "vulkan_attachment_scopes_20260928",
+      "reviewedAt": "2026-09-28T17:49:14.300887+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ff7a38c1b5e06e4c89abc40cde62aec42ad060fe",
+      "status": "in_progress",
+      "summary": "Examined translation of attachment recording failures into existing WebGPU validation scopes.",
+      "supersedes": null,
+      "targets": [
+        "src/runtime/diagnostics/error_scope.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_render_attachments.zig",
+          "sha256": "74cf74a5aad6134906c7f8a75183c517517bcfa548d26bd0906e9c9ba2b6adb7"
+        },
+        {
+          "path": "runtime/zig/tests/native_render_attachments.c",
+          "sha256": "d94877a3046cd6ef63d007abb6c762491c027f070fbce708129e7dc4f86ad4d3"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-attachment-admission/identity.json",
+          "sha256": "55d142666047b68130a0e42d4ef69527448312c72cf33d99d187e3c04c467579"
+        }
+      ],
+      "findings": [
+        "Examination is limited to attachment admission; other responsibilities retain their existing review obligations."
+      ],
+      "inputHash": "6f98ea23aba0aa955170e5f3bed1920438bfb799bf3bebad290bdc9167a9b4a2",
+      "level": "file",
+      "nextAction": "Preserve declaration identity through future pipeline work; backend-state decomposition remains incomplete.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Retained declared Vulkan color target count and format; no new allocator, public ABI field or serialized descriptor."
+      ],
+      "reviewId": "vulkan_attachment_metadata_20260928",
+      "reviewedAt": "2026-09-28T17:49:15.760556+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ff7a38c1b5e06e4c89abc40cde62aec42ad060fe",
+      "status": "in_progress",
+      "summary": "Examined pipeline metadata required for immutable attachment identity, with unchanged object ownership.",
+      "supersedes": "shader_semantics_objects_20260919_evidence",
+      "targets": [
+        "src/native/support/doe_native_object_types.zig"
+      ]
     }
   ],
   "schemaVersion": 1
