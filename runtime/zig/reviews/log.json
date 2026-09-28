@@ -25070,6 +25070,94 @@
       "targets": [
         "src/backend/vulkan/vk_render.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/native/render/doe_bundle_native.zig",
+          "sha256": "fb857f70f2bda8fb4ffde88d4106e16297541c13a1517a0d70c814779363ef5e"
+        },
+        {
+          "path": "runtime/zig/src/runtime/render/render_bundle.zig",
+          "sha256": "89d24b1ca9d0cc191dfb751e3d05877f6f92974304e398fb4458a6ed9d1fcbc6"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "5c8e9c55309416f0d0414f07e253c269191da1250ba82bb0119452057ec5460d"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-render-rejection/identity.json",
+          "sha256": "e0364bad7f7845539bd803ef39714f5010cd7da1998453e552a2202c28d48234"
+        },
+        {
+          "path": "reports/maintenance/20260928-render-rejection/raw-evidence.tar.gz",
+          "sha256": "ed0e2f57aaa76c53151cc41fe75bac19d9ef5147ee492a6e0973a96ff678d5f3"
+        }
+      ],
+      "findings": [
+        "record_and_submit_draws still records vkCmdResetQueryPool after vkCmdBeginRenderPass. Reset must precede pass entry; retain begin/end around drawing and add an order regression.",
+        "Surface acquisition/signal synchronization, attachment/sample admission, indirect/index ranges, and narrow typed render dependencies remain unresolved from the retained review.",
+        "Standalone execute_render_bundles has no current production caller. Ordinary native WebGPU bundle replay follows doe_bundle_native and is not qualified by this correction; whole-file and end-to-end reviews remain incomplete."
+      ],
+      "inputHash": "2fa7dd59a1614a09a44d5a5102e8f9fe2b6bc34f91ac399b510ecb5a5ac7d1d2",
+      "level": "file",
+      "nextAction": "Execute the bounded query-reset ordering batch, retaining surface/attachment/dependency findings separately. Do not claim ordinary native bundle or whole-file completion.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Standalone bundle replay previously logged and skipped InvalidBundle, FormatMismatch, and SampleCountMismatch. The caller now returns the typed error before any queue submission; physical fence/timeline probes show prior valid binding, no partial submission, complete native handle cleanup and subsequent valid rendering.",
+        "First test instantiation exposed missing draw_count initialization and distinct opaque Vulkan command-buffer types; explicit initialization and an FFI-boundary cast make the helper compile. A compile-only predecessor control preserves and reproduces the swallowed-error failure."
+      ],
+      "reviewId": "vulkan_render_rejection_20260928",
+      "reviewedAt": "2026-09-28T15:54:49.119366+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "76ed9ebcb8df1d202e3a295c30dc0f91408a17a6",
+      "status": "in_progress",
+      "summary": "Partial render replay/failure-lifecycle examination; standalone replay now preserves rejection before submission and unwinds unsubmitted native resources. Full render file examination remains incomplete.",
+      "supersedes": "vulkan_render_ownership_20260927",
+      "targets": [
+        "src/backend/vulkan/vk_render.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_render.zig",
+          "sha256": "a6ba7fdc5d3afd26d9ab6ee6b09ed7e3b2cc5984119a04495d62056c4e0286d1"
+        },
+        {
+          "path": "runtime/zig/src/native/render/doe_bundle_native.zig",
+          "sha256": "fb857f70f2bda8fb4ffde88d4106e16297541c13a1517a0d70c814779363ef5e"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-render-rejection/identity.json",
+          "sha256": "e0364bad7f7845539bd803ef39714f5010cd7da1998453e552a2202c28d48234"
+        }
+      ],
+      "findings": [
+        "Vulkan and D3D12 direct replay still contain skipped null-handle commands and externally owned bind-group handling. Reconcile their actual consumers and admission contracts before claiming complete bundle replay semantics.",
+        "Metal/D3D12 replay, encoder reference ownership, and remaining module paths were not completely examined in this batch; no whole-file completion credit."
+      ],
+      "inputHash": "63b9bd985144bfaa19bf9f0ebdb7e59ed185cb4f866a053b1b06b6611706d1a7",
+      "level": "file",
+      "nextAction": "Continue consumer-aware examination of direct versus native replay and retained resource ownership; keep the rendering correction separate from platform qualification.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Preserved existing ReplayError ownership and check_compatibility semantics; no duplicate compatibility validator or cross-backend error mapping was introduced."
+      ],
+      "reviewId": "bundle_replay_boundary_20260928",
+      "reviewedAt": "2026-09-28T15:54:49.091391+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "76ed9ebcb8df1d202e3a295c30dc0f91408a17a6",
+      "status": "in_progress",
+      "summary": "Partial examination of bundle compatibility, Vulkan replay rejection, and ownership handoff. Shared replay already returns typed errors; correction belongs to its standalone Vulkan caller.",
+      "supersedes": null,
+      "targets": [
+        "src/runtime/render/render_bundle.zig"
+      ]
     }
   ],
   "schemaVersion": 1

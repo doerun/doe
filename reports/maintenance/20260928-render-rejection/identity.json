@@ -1,0 +1,103 @@
+{
+  "classification": "local-correctness-and-build-workflow-diagnostic",
+  "observedAt": "2026-09-28T15:54:27.366682+00:00",
+  "predecessorCommit": "466a8d70a679ee831ae2a8e5f080be2d926e11e5",
+  "runtimeCommit": "7d04b7842b827688eee1d24658f5b97ac763f4be",
+  "recipeCommit": "76ed9ebcb8df1d202e3a295c30dc0f91408a17a6",
+  "sources": {
+    "runtime/zig/src/backend/vulkan/vk_render.zig": "a6ba7fdc5d3afd26d9ab6ee6b09ed7e3b2cc5984119a04495d62056c4e0286d1",
+    "runtime/zig/src/runtime/render/render_bundle.zig": "89d24b1ca9d0cc191dfb751e3d05877f6f92974304e398fb4458a6ed9d1fcbc6",
+    "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig": "5c8e9c55309416f0d0414f07e253c269191da1250ba82bb0119452057ec5460d",
+    "runtime/zig/src/native/render/doe_bundle_native.zig": "fb857f70f2bda8fb4ffde88d4106e16297541c13a1517a0d70c814779363ef5e",
+    "config/zig-build-measurements.json": "8c530c8a0cfd8fc60ccdbb29e1e2b79577594ce10248f6a6dbd342b8f54e5353"
+  },
+  "artifacts": {
+    "raw-evidence.tar.gz": "ed0e2f57aaa76c53151cc41fe75bac19d9ef5147ee492a6e0973a96ff678d5f3",
+    "build-measurements.json": "46ca66d64fdc812a0cd0e444659da1309a5fd189374b5f5b05e982deceab067c"
+  },
+  "diagnosticExecutables": {
+    "probe": "d88fc94e7a9b3698851707c6945069d4030ab8dbf49e81a39adc9346a79c513a",
+    "control-probe": "41ff1fb948785b470e85ebb6813f2e813853655b15082b30cfb75507c33ec941",
+    "libprobe.so": "f72b627b024538fb1107863a63f9710e1c9e04ecfa0c9a7f9b0e742749607de1"
+  },
+  "host": {
+    "backend": "vulkan",
+    "icd": "/usr/share/vulkan/icd.d/radeon_icd.json",
+    "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "driver": "Mesa 26.0.3-1ubuntu1",
+    "zig": "0.15.2",
+    "khronosValidationLayerAvailable": false
+  },
+  "results": {
+    "originalPredecessor": "helper instantiation fails: missing draw_count and distinct opaque command-buffer pointer types",
+    "compileOnlyControl": {
+      "patch": "control-compile-only.patch",
+      "expected": "InvalidBundle",
+      "observed": "success with native submission",
+      "nativeSubmissions": 1
+    },
+    "candidateProbe": {
+      "testsPassed": 73,
+      "testsSkipped": 0,
+      "physicalTests": 1,
+      "rejectionCases": 12,
+      "synchronization": [
+        "fence",
+        "timeline"
+      ],
+      "errors": [
+        "InvalidBundle",
+        "FormatMismatch",
+        "SampleCountMismatch"
+      ],
+      "rejectedSequenceSubmissions": 0,
+      "retainedTemporaryResourcesAfterRejection": 0,
+      "finalTrackedNativeHandles": 0,
+      "framebufferAllocationFailureAndRetry": true,
+      "allocationFailureTaxonomy": "InvalidState"
+    },
+    "runtimeSuite": {
+      "passed": 2323,
+      "skipped": 11,
+      "failed": 0
+    },
+    "focusedRegression": {
+      "passed": 1,
+      "failed": 0,
+      "oracle": "RGBA8 opaque red pixels for uint16 and uint32 indexed draws after each rejection"
+    },
+    "buildProfile": {
+      "status": "captured",
+      "sourceChangedDuringCapture": false,
+      "edits": [
+        {
+          "id": "leaf-backend",
+          "exitCode": 0,
+          "restoreExitCode": 0
+        },
+        {
+          "id": "shared-contract",
+          "exitCode": 0,
+          "restoreExitCode": 0
+        },
+        {
+          "id": "compiler-stage",
+          "exitCode": 0,
+          "restoreExitCode": 0
+        },
+        {
+          "id": "public-entrypoint",
+          "exitCode": 0,
+          "restoreExitCode": 0
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Standalone helper has no current production caller; native WebGPU bundles use a separate path.",
+    "Valid leading bundle records a vertex binding, not a draw.",
+    "No Khronos validation layer, installed package, application performance, Chromium, physical Metal/D3D12, surface synchronization, or hardware-loss qualification.",
+    "Whole-file and containing-directory reviews remain incomplete.",
+    "Query reset ordering and attachment admission remain open."
+  ]
+}

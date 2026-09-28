@@ -4,37 +4,30 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "vulkan_render_error_admission",
+      "batchId": "vulkan_occlusion_reset_order",
       "state": "active",
-      "objective": "Propagate render-bundle replay rejection before submission and preserve cleanup of abandoned recording.",
-      "rationale": "The planning-driven index and failed-wait ownership repair is complete. The retained render review also reports replay errors being logged and skipped; correctness findings remain ahead of emitter cohesion.",
+      "objective": "Record occlusion-query reset before render-pass entry while preserving query begin/end around drawing.",
+      "rationale": "Bundle rejection/cleanup is repaired with retained physical evidence. The same render review confirms a separate Vulkan command-order violation; correctness stays ahead of the ready SPIR-V ownership batch.",
       "scopes": [
         {
           "level": "file",
           "targets": [
             "src/backend/vulkan/vk_render.zig"
           ]
-        },
-        {
-          "level": "file",
-          "targets": [
-            "src/runtime/render/render_bundle.zig"
-          ]
         }
       ],
       "findingReviewIds": [
-        "vulkan_render_ownership_20260927"
+        "vulkan_render_rejection_20260928"
       ],
-      "nextAction": "Reproduce a rejected render bundle returning success through execute_render_bundles; trace recording abandonment and subsequent reuse, then repair error propagation in the existing owner.",
+      "nextAction": "Reproduce reset occurring inside the render pass with an observed command-order regression, move reset before pass entry, and verify successful drawing and query completion.",
       "acceptance": [
-        "The rejected bundle returns its original typed error and submits no partial commands.",
-        "Abandoned recording releases owned resources safely; a following valid render operation still succeeds.",
-        "Run focused failure injection, independent render-output checks, and zig build test; retain exact source and native-library identities.",
-        "Append the disposition to the existing review ledger without granting whole-file or directory completion."
+        "Independent command-order observation rejects the predecessor and confirms reset before pass entry, with query begin/end around the intended draw.",
+        "Execute physical rendering/query checks and Khronos validation-layer coverage where available; record unavailable validation explicitly.",
+        "Run focused regressions and zig build test, retain identities and append the partial review disposition without granting whole-file completion."
       ],
-      "stopCondition": "Stop after one rejection/cleanup correction with original-failure reproduction and successful ordinary rendering checks; do not expand into unrelated attachment or presentation redesign.",
+      "stopCondition": "Stop after the query-reset ordering correction and its evidence. Surface synchronization and attachment admission remain separate bounded follow-ups.",
       "requiredEnvironment": [
-        "Linux AMD/Vulkan for physical acceptance; host-only inspection does not qualify GPU lifetime behavior."
+        "Linux AMD/Vulkan for physical acceptance; Khronos validation layer where available."
       ]
     },
     {

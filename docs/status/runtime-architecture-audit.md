@@ -27,9 +27,11 @@ rules; its [log](../../runtime/zig/reviews/log.json) is append-only and its
 coverage under existing hashes; never renew reviews without examination.
 
 The [render ownership evidence](../../reports/maintenance/20260927-quality-planning/README.md)
-supports retained index storage and safe failed-wait retirement. Bundle rejection
-propagation, query placement, surface synchronization, and attachment admission
-remain open. The plan selects the next repair and its stopping condition.
+supports retained index storage and safe failed-wait retirement. Query placement, surface synchronization, and attachment admission remain open.
+The [bundle rejection evidence](../../reports/maintenance/20260928-render-rejection/README.md)
+supports typed failure, no partial submission, native cleanup, and subsequent
+rendering in the standalone replay helper. That helper has no current production
+caller; its correction does not qualify ordinary native WebGPU bundle execution. The plan selects the next repair and its stopping condition.
 The [compiler and allocation ownership evidence](../../reports/maintenance/20260927-implementation-quality/README.md)
 supports explicit compiler requests/diagnostics, IR loop eligibility, and a typed
 completed-allocation cache. SPIR-V instruction-cache and reference-query ownership
@@ -48,7 +50,7 @@ current source before implementing a correction.
 | Metal lifecycle and resources | Reentrant teardown, void encoder error boundaries, aggregate retention, binding/copy/query/render semantics, cache identity and native callback qualification need their own dispositions and physical acceptance. Host checks do not qualify Apple execution. | [Wait contract](../metal-command-waits.md), [notification checkpoint](../../bench/out/maintenance/20260920-metal-notification/README.md), [resource findings](../../bench/out/maintenance/20260920-zig-metal-sampler-resource/README.md), [port findings](../../bench/out/maintenance/20260920-zig-metal-ports-audit/README.md) |
 | D3D12 and common backend paths | Native binding/copy/query/presentation and completion findings require current review; cross-compilation does not establish Windows execution or timestamp accuracy. | [Backend findings](../../bench/out/maintenance/20260919-zig-batch32/README.md), [timestamps](../../bench/out/maintenance/20260919-zig-d3d12-timestamps/README.md), [common backend](../../bench/out/maintenance/20260919-zig-common-audit/README.md) |
 | Review completeness | Complete file, directory, relationship, and execution-path passes independently. Supporting caller edits, structural gates, and naming cleanup confer no automatic review credit. | [Review ledger](../../runtime/zig/reviews/README.md) |
-| Build measurements | Repair the stale leaf-backend source-edit recipe before using the stock profile. Keep the retained failed attempt and scoped compiler replacement distinct. | [Implementation-quality evidence](../../reports/maintenance/20260927-implementation-quality/README.md), [build measurement config](../../config/zig-build-measurements.json) |
+| Build measurements | The stock leaf-backend recipe targets the current format owner. Keep the earlier failed recipe and scoped compiler replacement separate from the complete profile rerun; timing remains diagnostic. | [Recipe and full-profile evidence](../../reports/maintenance/20260928-render-rejection/README.md), [build measurement config](../../config/zig-build-measurements.json) |
 | Recomposition and ABI | Symbol-scoped approval and source digests remain required. Physical AMD Vulkan, Windows D3D12, and browser promotion require receipts bound to the frozen release candidate. | [ABI approval](../../runtime/zig/reports/recomposition/abi-contract-approval.json), [backend status](runtime-backends-and-bench.md) |
 | Further consolidation | Consumer-aware review remains for test-only compatibility aggregators, TSIR emitter identity/selection, backend artifact/timing, and module request parsing. Preserve platform-specific mechanics and require semantic tests before merging owners. | [Architecture reports](../../runtime/zig/reports/architecture/), [source layout](../../runtime/zig/source-layout.json) |
 
