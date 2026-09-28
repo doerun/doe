@@ -275,6 +275,7 @@ fn create_adapter_for_instance(inst: ?*anyopaque) CreateAdapterError!*DoeAdapter
                 adapter.* = .{
                     .backend = .vulkan,
                     .instance = retained_instance,
+                    .vulkan_queue_family_policy = selected_policy.queue_family_policy,
                     .vendor_id = identity.vendor_id,
                     .device_id = identity.device_id,
                     .driver_version = identity.driver_version,
@@ -345,7 +346,7 @@ fn create_device_for_adapter(
             rt.* = NativeVulkanRuntime.init_with_backend_policy(
                 alloc,
                 null,
-                selected_policy.queue_family_policy,
+                adapter.vulkan_queue_family_policy,
                 selected_policy.deferred_submission_sync_policy,
                 selected_policy.vulkan_subgroup_size_policy,
             ) catch {

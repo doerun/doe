@@ -646,6 +646,16 @@ sidecars remain rejection evidence.
 Versioned job and receipt contracts and migration are documented in
 [`reusable-compute-programs.md`](reusable-compute-programs.md#bounded-candidate-jobs).
 
+Ordinary Vulkan surface admission uses the selected adapter and native window's
+capabilities. Verify the pinned ABI's present/alpha translations, exact format and
+usage identities, rejection before retiring valid configuration, public error
+delivery and independently owned capability arrays. Exercise public windowed
+recording and GPU pixel readback alongside native configuration and completion
+observation. Preserve unsupported-property and allocation-failure recovery.
+Physical Xwayland evidence does not qualify other window systems, compositor
+output, HDR or pacing. See the
+[surface admission checkpoint](../reports/maintenance/20260928-surface-admission/README.md).
+
 ## Refactor law
 
 Implementation quality is an active workstream alongside execution quality.

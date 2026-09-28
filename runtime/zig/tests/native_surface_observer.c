@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#define VK_USE_PLATFORM_XCB_KHR
 #include <vulkan/vulkan.h>
 #include <dlfcn.h>
 #include <stdio.h>
@@ -8,6 +9,7 @@
 // Test-only interposition. All accepted operations execute on the real driver.
 static const char *fault = "";
 static unsigned delayed, violations, acquisitions, presentations, signals, failures;
+static unsigned live_surfaces;
 static unsigned live_swapchains, live_fences, live_semaphores, live_views;
 static VkFence acquisition, presentation;
 static VkSemaphore finished;
@@ -16,6 +18,12 @@ static int acquisition_pending, presentation_pending, signal_pending;
 #define CHECK(condition) do { if (!(condition)) { ++violations; fprintf(stderr,"order violation line=%d\n",__LINE__); } } while (0)
 void doe_surface_test_arm(const char *mode) { fault = mode; delayed = 3; }
 static int take(const char *name) { if (strcmp(fault,name)) return 0; fault=""; ++failures; return 1; }
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateXcbSurfaceKHR(VkInstance instance,const VkXcbSurfaceCreateInfoKHR *i,const VkAllocationCallbacks *a,VkSurfaceKHR *surface) {
+    REAL(vkCreateXcbSurfaceKHR); VkResult r=real(instance,i,a,surface); if(r==VK_SUCCESS) ++live_surfaces; return r;
+}
+VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(VkInstance instance,VkSurfaceKHR surface,const VkAllocationCallbacks *a) {
+    CHECK(live_surfaces); --live_surfaces; REAL(vkDestroySurfaceKHR); real(instance,surface,a);
+}
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImageView(VkDevice d,const VkImageViewCreateInfo *i,const VkAllocationCallbacks *a,VkImageView *v) {
     if(take("create-view")) return VK_ERROR_OUT_OF_HOST_MEMORY;
     REAL(vkCreateImageView); VkResult r=real(d,i,a,v); if(r==VK_SUCCESS) ++live_views; return r;
@@ -31,6 +39,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(VkPhysicalDevice d,VkPhy
         }
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(VkDevice d,const VkSwapchainCreateInfoKHR *i,const VkAllocationCallbacks *a,VkSwapchainKHR *s) {
+    fprintf(stderr,"{\"swapchainCreate\":true,\"format\":%u,\"colorSpace\":%u,\"presentMode\":%u,\"alpha\":%u,\"usage\":%u,\"width\":%u,\"height\":%u}\n",i->imageFormat,i->imageColorSpace,i->presentMode,i->compositeAlpha,i->imageUsage,i->imageExtent.width,i->imageExtent.height);
     REAL(vkCreateSwapchainKHR); VkResult r=real(d,i,a,s); if(r==VK_SUCCESS) ++live_swapchains; return r;
 }
 VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(VkDevice d,VkSwapchainKHR s,const VkAllocationCallbacks *a) {
@@ -101,7 +110,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(VkQueue q,const VkPresentInfoKH
     return r;
 }
 __attribute__((destructor)) static void report(void) {
-    CHECK(!live_swapchains && !live_fences && !live_semaphores && !live_views);
+    CHECK(!live_surfaces && !live_swapchains && !live_fences && !live_semaphores && !live_views);
     fprintf(stderr,"{\"observer\":true,\"acquires\":%u,\"presents\":%u,\"signals\":%u,\"injectedFailures\":%u,\"violations\":%u,\"liveSwapchains\":%u,\"liveFences\":%u,\"liveSemaphores\":%u,\"liveImageViews\":%u}\n",acquisitions,presentations,signals,failures,violations,live_swapchains,live_fences,live_semaphores,live_views);
     if(violations) abort();
 }

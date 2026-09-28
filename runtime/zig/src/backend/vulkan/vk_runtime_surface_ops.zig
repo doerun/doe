@@ -47,6 +47,8 @@ pub fn configure_surface(self: anytype, cmd_arg: model_surface_control_types.Sur
     if (cmd_arg.width == 0 or cmd_arg.height == 0) return error.InvalidArgument;
     const surface = self.surfaces.getPtr(cmd_arg.handle) orelse return error.SurfaceUnavailable;
     if (surface.vk_surface == 0) return error.SurfaceUnavailable;
+    try get_surface_capabilities(self, cmd_arg.handle);
+    const admitted = try vulkan_surface.admitConfiguration(surface.cached_capabilities, cmd_arg);
     _ = try self.flush_queue();
     if (surface.swapchain != 0) {
         surface.completion.device_lost = surface.completion.device_lost or self.retirement.observed_device_loss;
@@ -56,11 +58,11 @@ pub fn configure_surface(self: anytype, cmd_arg: model_surface_control_types.Sur
     surface.acquired = false;
     surface.width = cmd_arg.width;
     surface.height = cmd_arg.height;
-    surface.requested_format = if (cmd_arg.format == 0) preferred_canvas_format(self) else cmd_arg.format;
+    surface.requested_format = cmd_arg.format;
     surface.format = surface.requested_format;
-    surface.usage = if (cmd_arg.usage == 0) model_gpu_types.WGPUTextureUsage_RenderAttachment else cmd_arg.usage;
-    surface.alpha_mode = if (cmd_arg.alpha_mode == 0) c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR else cmd_arg.alpha_mode;
-    surface.present_mode = if (cmd_arg.present_mode == 0) c.VK_PRESENT_MODE_FIFO_KHR else cmd_arg.present_mode;
+    surface.usage = cmd_arg.usage;
+    surface.alpha_mode = cmd_arg.alpha_mode;
+    surface.present_mode = cmd_arg.present_mode;
     surface.tone_mapping_mode = if (cmd_arg.tone_mapping_mode == 0)
         model_surface_control_types.WGPUCanvasToneMappingMode_Standard
     else
@@ -69,12 +71,11 @@ pub fn configure_surface(self: anytype, cmd_arg: model_surface_control_types.Sur
         c.DEFAULT_SURFACE_MAX_FRAME_LATENCY
     else
         cmd_arg.desired_maximum_frame_latency;
-    try get_surface_capabilities(self, cmd_arg.handle);
     try vulkan_surface.create_swapchain(
         self.device,
-        self.physical_device,
         surface,
         self.queue_family_index,
+        admitted,
     );
     surface.configured = true;
 }

@@ -438,7 +438,7 @@ test "rejected fence submissions preserve earlier work and permit retry" {
         pool.in_flight_count = 2;
         pool.last_in_flight_index = 1;
         pool.next_index = 2;
-        try std.testing.expectError(error.InvalidState, pool.completeSubmit(result));
+        try std.testing.expectError(error.OutOfMemory, pool.completeSubmit(result));
         try std.testing.expect(pool.in_flight[0]);
         try std.testing.expect(!pool.in_flight[1]);
         try std.testing.expectEqual(@as(u32, 1), pool.in_flight_count);
@@ -455,7 +455,7 @@ test "rejected sole fence submission does not enter a native wait" {
     pool.fences[0] = 11;
     pool.in_flight[0] = true;
     pool.in_flight_count = 1;
-    try std.testing.expectError(error.InvalidState, pool.completeSubmit(errors.VK_ERROR_OUT_OF_HOST_MEMORY));
+    try std.testing.expectError(error.OutOfMemory, pool.completeSubmit(errors.VK_ERROR_OUT_OF_HOST_MEMORY));
     try pool.drain(null);
     try std.testing.expect(!pool.has_in_flight());
 }
@@ -465,7 +465,7 @@ test "timeline submission reserves then publishes only potentially submitted val
     const pending = try TimelineSubmitHelper.prepare(&timeline);
     try std.testing.expectEqual(@as(u64, 7), timeline.current_value);
     for ([_]c.VkResult{ errors.VK_ERROR_OUT_OF_HOST_MEMORY, errors.VK_ERROR_OUT_OF_DEVICE_MEMORY }) |result| {
-        try std.testing.expectError(error.InvalidState, pending.completeSubmit(&timeline, result));
+        try std.testing.expectError(error.OutOfMemory, pending.completeSubmit(&timeline, result));
         try std.testing.expectEqual(@as(u64, 7), timeline.current_value);
     }
     const retry = try TimelineSubmitHelper.prepare(&timeline);

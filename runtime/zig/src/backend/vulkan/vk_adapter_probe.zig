@@ -41,6 +41,36 @@ pub fn probe_selected_adapter(
     };
 }
 
+pub const SurfaceSource = union(enum) {
+    xcb: struct { connection: *anyopaque, window: u32 },
+    xlib: struct { display: *anyopaque, window: u64 },
+    wayland: struct { display: *anyopaque, surface: *anyopaque },
+};
+
+/// Query before device creation without publishing a runtime or retaining window ownership.
+/// Selection must still match the adapter whose public handle authorized the query.
+pub fn probeSurfaceCapabilities(
+    allocator: std.mem.Allocator,
+    queue_family_policy: backend_contract.QueueFamilyPolicy,
+    expected: native_runtime.AdapterIdentity,
+    source: SurfaceSource,
+) !@import("vulkan_surface.zig").CanvasCapabilities {
+    const surfaces = @import("vulkan_surface.zig");
+    var probe = native_runtime.NativeVulkanRuntime{ .allocator = allocator, .kernel_root = null, .queue_family_policy = queue_family_policy };
+    try vk_device.create_instance(&probe);
+    defer vk_device.destroy_instance_only(&probe);
+    try vk_device.select_physical_device(&probe);
+    if (!identity_matches(expected, query_identity(probe.physical_device))) return error.InvalidArgument;
+    if (!vk_device.supportsSurfaceCompletion(probe.physical_device, probe.has_surface_maintenance_instance)) return error.UnsupportedFeature;
+    const surface = try switch (source) {
+        .xcb => |window| surfaces.create_xcb_surface(probe.instance, window.connection, window.window),
+        .xlib => |window| surfaces.create_xlib_surface(probe.instance, window.display, window.window),
+        .wayland => |window| surfaces.create_wayland_surface(probe.instance, window.display, window.surface),
+    };
+    defer surfaces.destroy_surface(probe.instance, surface);
+    return surfaces.canvasCapabilities(try surfaces.query_surface_capabilities(probe.physical_device, probe.queue_family_index, surface));
+}
+
 pub fn query_identity(physical_device: c.VkPhysicalDevice) native_runtime.AdapterIdentity {
     var properties2 = std.mem.zeroes(c.VkPhysicalDeviceProperties2);
     properties2.sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;

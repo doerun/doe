@@ -97,3 +97,24 @@ Out-of-date presentation returns an error, and presented/unconfigured textures
 expire while caller-held objects remain reference counted. See
 `reports/maintenance/20260928-surface-handoff/README.md` for scoped evidence and
 remaining capability-admission limits.
+
+## Native Vulkan surface admission
+
+The public surface capability query now inspects the requested adapter and window
+and returns owned arrays; consumers must call `wgpuSurfaceCapabilitiesFreeMembers`
+once per successful result. Pre-device probing uses the adapter's captured queue
+selection policy and checks its retained identity. Configuration admits exact
+linear/sRGB formats, native usage, extent, alpha and present modes. Unavailable
+formats, HDR, additional view formats, descriptor extensions and unsupported usage
+bits reject explicitly rather than substituting formats or truncating flags.
+Invalid reconfiguration leaves an existing texture/swapchain usable; a native
+creation failure after retirement leaves the surface unconfigured and permits
+retry. The existing public descriptor layout and serialized schemas are unchanged.
+
+FIFO's neutral command default and Vulkan present/alpha translations now match
+the pinned WebGPU header and existing JSON command parser. Vulkan host/device
+allocation failures preserve `OutOfMemory` through the shared backend error set
+and public error scopes; they previously became `InvalidState`. This is an
+internal error taxonomy addition, with no new wire field. Retained evidence and
+platform limitations live in
+`reports/maintenance/20260928-surface-admission/README.md`.

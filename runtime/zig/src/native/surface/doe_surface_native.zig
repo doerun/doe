@@ -10,6 +10,7 @@
 // and acquire fail explicitly until a real platform surface is attached.
 
 const std = @import("std");
+const error_scope = @import("../../runtime/diagnostics/error_scope.zig");
 const log = std.log.scoped(.doe_surface_native);
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
@@ -161,6 +162,8 @@ fn attach_pending_platform_surface(surf: *DoeSurface, rt: *NativeVulkanRuntime) 
 fn bind_surface_runtime(surf: *DoeSurface, dev_raw: ?*anyopaque) bool {
     const dev = cast(DoeDevice, dev_raw) orelse return false;
     if (dev.backend != .vulkan) return false;
+    const adapter = dev.adapter orelse return false;
+    if (adapter.instance != surf.instance_ref) return false;
     const rt = native_rt_helpers.device_vk_runtime(dev) orelse return false;
     const rt_opaque: *anyopaque = @ptrCast(rt);
     if (surf.vk_runtime_ref) |existing| {
@@ -358,13 +361,12 @@ fn doeNativeSurfaceConfigureForDevice(
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (surf.backend != .vulkan) return;
     if ((dev_raw != null or surf.vk_runtime_ref == null) and !bind_surface_runtime(surf, dev_raw)) {
-        std.log.err("doe_surface_native: configure_surface failed: missing Vulkan device binding", .{});
+        reportConfigurationError(cast(DoeDevice, dev_raw), error.InvalidArgument);
         return;
     }
     const rt_ptr = surf.vk_runtime_ref orelse return;
     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
-    release_current_surface_texture(surf);
-    rt.configure_surface(model_surface_control_types.SurfaceConfigureCommand{
+    const request = model_surface_control_types.SurfaceConfigureCommand{
         .handle = surf.handle,
         .width = width,
         .height = height,
@@ -372,9 +374,21 @@ fn doeNativeSurfaceConfigureForDevice(
         .usage = usage,
         .alpha_mode = alpha_mode,
         .present_mode = present_mode,
-        .tone_mapping_mode = tone_mapping_mode,
-    }) catch |err| {
-        std.log.err("doe_surface_native: configure_surface failed: {s}", .{@errorName(err)});
+        .tone_mapping_mode = if (tone_mapping_mode == 0) model_surface_control_types.WGPUCanvasToneMappingMode_Standard else tone_mapping_mode,
+    };
+    // Reject unsupported changes before expiring caller-held textures or retiring the swapchain.
+    rt.get_surface_capabilities(surf.handle) catch |err| {
+        reportConfigurationError(surf.device_ref, err);
+        return;
+    };
+    const state = rt.surfaces.getPtr(surf.handle) orelse return;
+    _ = vk_surf.admitConfiguration(state.cached_capabilities, request) catch |err| {
+        reportConfigurationError(surf.device_ref, err);
+        return;
+    };
+    release_current_surface_texture(surf);
+    rt.configure_surface(request) catch |err| {
+        reportConfigurationError(surf.device_ref, err);
     };
 }
 
@@ -490,43 +504,73 @@ pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
 // Capabilities query
 // ============================================================
 
-// Default surface format for Doe Vulkan surfaces.
-const DOE_SURFACE_DEFAULT_FORMAT: u32 = model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
-
-// Present mode constants matching WGPUPresentMode values.
-const DOE_PRESENT_MODE_FIFO: u32 = 0x00000003;
-
-// Composite alpha mode constants matching WGPUCompositeAlphaMode values.
-const DOE_COMPOSITE_ALPHA_MODE_OPAQUE: u32 = 0x00000002;
-
-// Static capability arrays — returned by pointer, never freed.
-const DEFAULT_FORMATS = [_]u32{DOE_SURFACE_DEFAULT_FORMAT};
-const DEFAULT_PRESENT_MODES = [_]u32{DOE_PRESENT_MODE_FIFO};
-const DEFAULT_ALPHA_MODES = [_]u32{DOE_COMPOSITE_ALPHA_MODE_OPAQUE};
-
-/// Minimal capabilities query: reports BGRA8Unorm, Fifo, Opaque.
-pub export fn doeNativeSurfaceGetCapabilities(
-    surf_raw: ?*anyopaque,
-    _: ?*anyopaque,
-    out: ?*surface_procs.SurfaceCapabilities,
-) callconv(.c) u32 {
-    const surf = cast(DoeSurface, surf_raw) orelse return 0;
-    _ = surf;
-    const caps = out orelse return 0;
-    caps.nextInChain = null;
-    caps.usages = 0x00000010; // WGPUTextureUsage_RenderAttachment
-    caps.formatCount = DEFAULT_FORMATS.len;
-    caps.formats = &DEFAULT_FORMATS;
-    caps.presentModeCount = DEFAULT_PRESENT_MODES.len;
-    caps.presentModes = &DEFAULT_PRESENT_MODES;
-    caps.alphaModeCount = DEFAULT_ALPHA_MODES.len;
-    caps.alphaModes = &DEFAULT_ALPHA_MODES;
-    return 1; // WGPUStatus_Success
+fn reportConfigurationError(device: ?*DoeDevice, cause: anyerror) void {
+    const dev = device orelse return;
+    const kind = switch (cause) {
+        error.UnsupportedFeature, error.SurfaceUnavailable => error_scope.ERROR_TYPE_VALIDATION,
+        else => error_scope.zig_error_to_type(cause),
+    };
+    var message: [160]u8 = undefined;
+    const text = std.fmt.bufPrint(&message, "surface configuration rejected: {s}", .{@errorName(cause)}) catch unreachable;
+    dev.error_scopes.deliver(kind, text);
 }
 
-/// Free members from a capabilities query. Static arrays need no deallocation.
-pub export fn doeNativeSurfaceCapabilitiesFreeMembers(_: surface_procs.SurfaceCapabilities) callconv(.c) void {
-    // Static arrays — nothing to free.
+fn queryCanvasCapabilities(surf: *DoeSurface, adapter: *native_types.DoeAdapter) !vk_surf.CanvasCapabilities {
+    if (surf.backend != .vulkan or adapter.backend != .vulkan or adapter.instance != surf.instance_ref) return error.InvalidArgument;
+    if (surf.device_ref) |dev| {
+        if (dev.adapter != adapter) return error.InvalidArgument;
+        const rt = native_rt_helpers.device_vk_runtime(dev) orelse return error.InvalidState;
+        if (!rt.has_surface_completion) return error.UnsupportedFeature;
+        try rt.get_surface_capabilities(surf.handle);
+        return vk_surf.canvasCapabilities(rt.surfaces.get(surf.handle).?.cached_capabilities);
+    }
+    const source: vk_surf.SurfaceSource = if (surf.pending_xcb_connection) |connection|
+        .{ .xcb = .{ .connection = connection, .window = surf.pending_xcb_window } }
+    else if (surf.pending_wayland_display) |display|
+        .{ .wayland = .{ .display = display, .surface = surf.pending_wayland_surface orelse return error.InvalidArgument } }
+    else if (surf.pending_xlib_display) |display|
+        .{ .xlib = .{ .display = display, .window = surf.pending_xlib_window } }
+    else
+        return error.SurfaceUnavailable;
+    return vk_surf.probeSurfaceCapabilities(alloc, adapter.vulkan_queue_family_policy, .{
+        .vendor_id = adapter.vendor_id,
+        .device_id = adapter.device_id,
+        .driver_version = adapter.driver_version,
+        .device_name = adapter.device_name,
+        .device_name_len = adapter.device_name_len,
+    }, source);
+}
+
+fn copyCapabilities(allocator: std.mem.Allocator, caps: vk_surf.CanvasCapabilities) !surface_procs.SurfaceCapabilities {
+    const formats = try allocator.dupe(u32, caps.formats[0..caps.format_count]);
+    errdefer allocator.free(formats);
+    const modes = try allocator.dupe(u32, caps.present_modes[0..caps.present_mode_count]);
+    errdefer allocator.free(modes);
+    const alpha = try allocator.dupe(u32, caps.alpha_modes[0..caps.alpha_mode_count]);
+    return .{ .nextInChain = null, .usages = caps.usages, .formatCount = formats.len, .formats = formats.ptr, .presentModeCount = modes.len, .presentModes = modes.ptr, .alphaModeCount = alpha.len, .alphaModes = alpha.ptr };
+}
+
+pub export fn doeNativeSurfaceGetCapabilities(
+    surf_raw: ?*anyopaque,
+    adapter_raw: ?*anyopaque,
+    out: ?*surface_procs.SurfaceCapabilities,
+) callconv(.c) u32 {
+    const output = out orelse return WGPU_STATUS_ERROR;
+    const unsupported_chain = output.nextInChain != null;
+    output.* = std.mem.zeroes(surface_procs.SurfaceCapabilities);
+    if (comptime !has_vulkan) return WGPU_STATUS_ERROR;
+    if (unsupported_chain) return WGPU_STATUS_ERROR;
+    const surf = cast(DoeSurface, surf_raw) orelse return WGPU_STATUS_ERROR;
+    const adapter = cast(native_types.DoeAdapter, adapter_raw) orelse return WGPU_STATUS_ERROR;
+    const caps = queryCanvasCapabilities(surf, adapter) catch return WGPU_STATUS_ERROR;
+    output.* = copyCapabilities(alloc, caps) catch return WGPU_STATUS_ERROR;
+    return WGPU_STATUS_SUCCESS;
+}
+
+pub export fn doeNativeSurfaceCapabilitiesFreeMembers(caps: surface_procs.SurfaceCapabilities) callconv(.c) void {
+    if (caps.formats) |values| alloc.free(values[0..caps.formatCount]);
+    if (caps.presentModes) |values| alloc.free(values[0..caps.presentModeCount]);
+    if (caps.alphaModes) |values| alloc.free(values[0..caps.alphaModeCount]);
 }
 
 // ============================================================
@@ -550,13 +594,22 @@ pub fn doeAbiBridgeSurfaceConfigure(
     surf_raw: ?*anyopaque,
     config: *const surface_procs.SurfaceConfiguration,
 ) callconv(.c) void {
+    if (config.device == null) {
+        const surf = cast(DoeSurface, surf_raw) orelse return;
+        reportConfigurationError(surf.device_ref, error.InvalidArgument);
+        return;
+    }
+    if (config.nextInChain != null or config.viewFormatCount != 0 or config.usage > std.math.maxInt(u32)) {
+        reportConfigurationError(cast(DoeDevice, config.device), error.UnsupportedFeature);
+        return;
+    }
     doeNativeSurfaceConfigureForDevice(
         surf_raw,
         config.device,
         config.width,
         config.height,
         config.format,
-        @truncate(config.usage), // WGPUTextureUsage is u64; native uses u32
+        @intCast(config.usage),
         config.alphaMode,
         config.presentMode,
         0, // tone_mapping_mode — not in C ABI struct; default to standard
@@ -599,4 +652,24 @@ pub fn doeAbiBridgeSurfacePresent(surf_raw: ?*anyopaque) callconv(.c) u32 {
     };
     release_current_surface_texture(surf);
     return WGPU_STATUS_SUCCESS;
+}
+
+fn capabilityAllocationCase(allocator: std.mem.Allocator) !void {
+    var caps = vk_surf.CanvasCapabilities{};
+    caps.formats[0] = model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
+    caps.format_count = 1;
+    caps.present_modes[0] = 1;
+    caps.present_mode_count = 1;
+    caps.alpha_modes[0] = 1;
+    caps.alpha_mode_count = 1;
+    const copied = try copyCapabilities(allocator, caps);
+    defer allocator.free(copied.formats.?[0..copied.formatCount]);
+    defer allocator.free(copied.presentModes.?[0..copied.presentModeCount]);
+    defer allocator.free(copied.alphaModes.?[0..copied.alphaModeCount]);
+    caps.formats[0] = 0;
+    try std.testing.expectEqual(model_gpu_types.WGPUTextureFormat_BGRA8Unorm, copied.formats.?[0]);
+}
+
+test "surface capabilities roll back every allocation and own independent copies" {
+    if (comptime has_vulkan) try std.testing.checkAllAllocationFailures(std.testing.allocator, capabilityAllocationCase, .{});
 }

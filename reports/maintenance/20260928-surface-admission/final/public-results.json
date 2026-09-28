@@ -1,0 +1,439 @@
+[
+  {
+    "mode": "invalid-first",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\nscope type=2 message=surface configuration rejected: UnsupportedFeature\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "usage",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":23,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":23,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "admission",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nrejected=0 existing-texture=preserved\nrejected=1 existing-texture=preserved\nrejected=2 existing-texture=preserved\nrejected=3 existing-texture=preserved\nrejected=4 existing-texture=preserved\nrejected=5 existing-texture=preserved\nrejected=6 existing-texture=preserved\nrejected=7 existing-texture=preserved\nrejected=8 existing-texture=preserved\nrejected=9 existing-texture=preserved\nrejected=10 existing-texture=preserved\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: InvalidArgument\nscope type=2 message=surface configuration rejected: InvalidArgument\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "srgb",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":50,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":50,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "fifo",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "relaxed",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":1,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":1,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "immediate",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":0,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":0,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "mailbox",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":3,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":3,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "opaque",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":1,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":1,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "inherit",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "normal",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "empty",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 10,
+        "presents": 9,
+        "signals": 9,
+        "injectedFailures": 0,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":10,\"presents\":9,\"signals\":9,\"injectedFailures\":0,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "submit-reject",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nwarning(doe_surface_native): surface present: OutOfMemory\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "present-reject",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nwarning(doe_surface_native): surface present: OutOfMemory\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "outdated",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nwarning(doe_surface_native): surface present: SurfaceUnavailable\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "acquire-wait",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 10,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 3,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nerror: doe_surface_native: acquire_surface failed: SyncUnavailable\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":10,\"presents\":8,\"signals\":8,\"injectedFailures\":3,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "present-wait",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 3,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":3,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "create-fence",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=3 message=surface configuration rejected: OutOfMemory\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "create-view",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "create-semaphore",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=3 message=surface configuration rejected: OutOfMemory\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "images",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 9,
+        "presents": 8,
+        "signals": 8,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=3 message=surface configuration rejected: OutOfMemory\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nscope type=2 message=render attachment requires a live texture view and pipeline\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\n{\"observer\":true,\"acquires\":9,\"presents\":8,\"signals\":8,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "unsupported",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 0,
+        "presents": 0,
+        "signals": 0,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nscope type=2 message=surface configuration rejected: UnsupportedFeature\n{\"observer\":true,\"acquires\":0,\"presents\":0,\"signals\":0,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  },
+  {
+    "mode": "device-lost",
+    "exitCode": 0,
+    "observations": [
+      {
+        "observer": true,
+        "acquires": 1,
+        "presents": 0,
+        "signals": 0,
+        "injectedFailures": 1,
+        "violations": 0,
+        "liveSwapchains": 0,
+        "liveFences": 0,
+        "liveSemaphores": 0,
+        "liveImageViews": 0
+      }
+    ],
+    "output": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\n{\"swapchainCreate\":true,\"format\":44,\"colorSpace\":0,\"presentMode\":2,\"alpha\":8,\"usage\":17,\"width\":8,\"height\":8}\nerror: doe_surface_native: acquire_surface failed: DeviceLost\n{\"observer\":true,\"acquires\":1,\"presents\":0,\"signals\":0,\"injectedFailures\":1,\"violations\":0,\"liveSwapchains\":0,\"liveFences\":0,\"liveSemaphores\":0,\"liveImageViews\":0}\n"
+  }
+]

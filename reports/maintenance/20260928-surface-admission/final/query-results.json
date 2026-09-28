@@ -1,0 +1,32 @@
+[
+  {
+    "mode": "direct",
+    "exitCode": 0,
+    "stdout": "mode=direct\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nround=0 query=[1,1,0,0] query_and_pixel_oracles=pass\nround=1 query=[0,0,0,0] query_and_pixel_oracles=pass\nround=2 query=[1,1,0,0] query_and_pixel_oracles=pass\n",
+    "stderr": ""
+  },
+  {
+    "mode": "indexed16",
+    "exitCode": 0,
+    "stdout": "mode=indexed16\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nround=0 query=[1,1,0,0] query_and_pixel_oracles=pass\nround=1 query=[0,0,0,0] query_and_pixel_oracles=pass\nround=2 query=[1,1,0,0] query_and_pixel_oracles=pass\n",
+    "stderr": ""
+  },
+  {
+    "mode": "indexed32",
+    "exitCode": 0,
+    "stdout": "mode=indexed32\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nround=0 query=[1,1,0,0] query_and_pixel_oracles=pass\nround=1 query=[0,0,0,0] query_and_pixel_oracles=pass\nround=2 query=[1,1,0,0] query_and_pixel_oracles=pass\n",
+    "stderr": ""
+  },
+  {
+    "mode": "indirect",
+    "exitCode": 0,
+    "stdout": "mode=indirect\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nround=0 query=[1,1,0,0] query_and_pixel_oracles=pass\nround=1 query=[0,0,0,0] query_and_pixel_oracles=pass\nround=2 query=[1,1,0,0] query_and_pixel_oracles=pass\n",
+    "stderr": ""
+  },
+  {
+    "mode": "indexed-indirect",
+    "exitCode": 0,
+    "stdout": "mode=indexed-indirect\nadapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\nround=0 query=[1,1,0,0] query_and_pixel_oracles=pass\nround=1 query=[0,0,0,0] query_and_pixel_oracles=pass\nround=2 query=[1,1,0,0] query_and_pixel_oracles=pass\n",
+    "stderr": ""
+  }
+]

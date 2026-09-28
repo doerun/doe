@@ -761,7 +761,7 @@ test "SurfaceConfigureCommand defaults" {
     try std.testing.expectEqual(gpu.WGPUTextureFormat_RGBA8Unorm, cmd.format);
     try std.testing.expectEqual(gpu.WGPUTextureUsage_RenderAttachment, cmd.usage);
     try std.testing.expectEqual(@as(u32, 0x00000001), cmd.alpha_mode);
-    try std.testing.expectEqual(@as(u32, 0x00000002), cmd.present_mode);
+    try std.testing.expectEqual(@as(u32, 0x00000001), cmd.present_mode);
     try std.testing.expectEqual(surface.WGPUCanvasToneMappingMode_Standard, cmd.tone_mapping_mode);
     try std.testing.expectEqual(@as(u32, 2), cmd.desired_maximum_frame_latency);
 }

@@ -26251,6 +26251,628 @@
       "targets": [
         "src/backend/vulkan/native_runtime.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "f05cb2e946ffcffca8ec654562eb10761a638d6eaf604b2dd0855cf56f5e477c"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+          "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-admission/build-measurements.json",
+          "sha256": "d05a64665ece6ef27b5ceba5094af67a975fcc77b8b9c6775fd2192846554750"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/confirmation.json",
+          "sha256": "e04a9cbf0413f2be6e229dc2c533a74f45e32e0d6cddce23ec1033209981237d"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/identity.json",
+          "sha256": "23015e3a294f060083954802097fa5643fa0919f7952a2c89d418d80b4cdbd71"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/process-observations.json",
+          "sha256": "38c01180cb535570d2f1060fada641acb30f91a1163909c1ef0973f8559c5dd1"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/public-results.json",
+          "sha256": "4c44a026df4a62e5d458dda2e1f8e1015b4f25fafed83700517e14eb9c61fcdf"
+        }
+      ],
+      "findings": [
+        "Frame-latency policy and pacing remain unfinished; non-XCB surface realization is not physically exercised in this batch."
+      ],
+      "inputHash": "a876b28d8484930708318a49bdc073018f86255c59115343a95f5832c60132ff",
+      "level": "file",
+      "nextAction": "Preserve the closed admission and completion batches. Narrow the exercised runtime surface resource/submission dependencies next; retain the listed platform and validation limits.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Static format preference fallback, RGBA sRGB-to-UNORM mapping, alpha-bit confusion and stale present-mode constants are removed. Public pixel/native-configuration regressions and pure negative cases pass."
+      ],
+      "reviewId": "vulkan_surface_admission_20260928",
+      "reviewedAt": "2026-09-28T19:21:36.019323+00:00",
+      "reviewer": "codex-surface-admission",
+      "sourceCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+      "status": "in_progress",
+      "summary": "Native capability intersection and exact admission now share one mapping owner; swapchain creation consumes admitted native values.",
+      "supersedes": "vulkan_surface_handoff_20260928",
+      "targets": [
+        "src/backend/vulkan/vulkan_surface.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "f05cb2e946ffcffca8ec654562eb10761a638d6eaf604b2dd0855cf56f5e477c"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+          "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-admission/build-measurements.json",
+          "sha256": "d05a64665ece6ef27b5ceba5094af67a975fcc77b8b9c6775fd2192846554750"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/confirmation.json",
+          "sha256": "e04a9cbf0413f2be6e229dc2c533a74f45e32e0d6cddce23ec1033209981237d"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/identity.json",
+          "sha256": "23015e3a294f060083954802097fa5643fa0919f7952a2c89d418d80b4cdbd71"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/process-observations.json",
+          "sha256": "38c01180cb535570d2f1060fada641acb30f91a1163909c1ef0973f8559c5dd1"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/public-results.json",
+          "sha256": "4c44a026df4a62e5d458dda2e1f8e1015b4f25fafed83700517e14eb9c61fcdf"
+        }
+      ],
+      "findings": [
+        "Broader creation/descriptor-chain validation, reconfiguration across devices and non-configuration error delivery remain unexamined or limited."
+      ],
+      "inputHash": "db0644b0d91f9c91ede02cada53a8e0ea513ec894b191c7905c908da963f7f9c",
+      "level": "file",
+      "nextAction": "Preserve the closed admission and completion batches. Narrow the exercised runtime surface resource/submission dependencies next; retain the listed platform and validation limits.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Capabilities query the selected adapter/window before device creation and use the bound runtime after configuration; allocation failure rolls back and arrays survive surface destruction.",
+        "Unknown usage bits, additional view formats and descriptor chains now reject explicitly. Unsupported replacement preserves caller-held acquired textures; native allocation errors reach out-of-memory scopes."
+      ],
+      "reviewId": "vulkan_public_surface_admission_20260928",
+      "reviewedAt": "2026-09-28T19:21:37.487904+00:00",
+      "reviewer": "codex-surface-admission",
+      "sourceCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+      "status": "in_progress",
+      "summary": "Public adapter/window queries own returned arrays and configuration errors reach device scopes before unsupported replacement retires valid resources.",
+      "supersedes": "vulkan_native_surface_lifetime_20260928",
+      "targets": [
+        "src/native/surface/doe_surface_native.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "f05cb2e946ffcffca8ec654562eb10761a638d6eaf604b2dd0855cf56f5e477c"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+          "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-admission/build-measurements.json",
+          "sha256": "d05a64665ece6ef27b5ceba5094af67a975fcc77b8b9c6775fd2192846554750"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/confirmation.json",
+          "sha256": "e04a9cbf0413f2be6e229dc2c533a74f45e32e0d6cddce23ec1033209981237d"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/identity.json",
+          "sha256": "23015e3a294f060083954802097fa5643fa0919f7952a2c89d418d80b4cdbd71"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/process-observations.json",
+          "sha256": "38c01180cb535570d2f1060fada641acb30f91a1163909c1ef0973f8559c5dd1"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/public-results.json",
+          "sha256": "4c44a026df4a62e5d458dda2e1f8e1015b4f25fafed83700517e14eb9c61fcdf"
+        }
+      ],
+      "findings": [
+        "Generic runtime dependencies still hide surface registry, submission and retirement inputs. Pacing remains separate."
+      ],
+      "inputHash": "0fbc5652b6605db847e46102d7bbde288bdbc4abc688e09ce0c3cf32ca41d37d",
+      "level": "file",
+      "nextAction": "Preserve the closed admission and completion batches. Narrow the exercised runtime surface resource/submission dependencies next; retain the listed platform and validation limits.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Unsupported configuration is rejected before destruction; successful creation alone publishes configured state and native creation failure can retry."
+      ],
+      "reviewId": "vulkan_surface_admission_handoff_20260928",
+      "reviewedAt": "2026-09-28T19:21:38.998892+00:00",
+      "reviewer": "codex-surface-admission",
+      "sourceCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+      "status": "in_progress",
+      "summary": "Configuration preflights exact native facts before old-swapchain retirement; successful construction still owns publication.",
+      "supersedes": "vulkan_surface_submission_20260928",
+      "targets": [
+        "src/backend/vulkan/vk_runtime_surface_ops.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "f05cb2e946ffcffca8ec654562eb10761a638d6eaf604b2dd0855cf56f5e477c"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+          "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-admission/build-measurements.json",
+          "sha256": "d05a64665ece6ef27b5ceba5094af67a975fcc77b8b9c6775fd2192846554750"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/confirmation.json",
+          "sha256": "e04a9cbf0413f2be6e229dc2c533a74f45e32e0d6cddce23ec1033209981237d"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/identity.json",
+          "sha256": "23015e3a294f060083954802097fa5643fa0919f7952a2c89d418d80b4cdbd71"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/process-observations.json",
+          "sha256": "38c01180cb535570d2f1060fada641acb30f91a1163909c1ef0973f8559c5dd1"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/public-results.json",
+          "sha256": "4c44a026df4a62e5d458dda2e1f8e1015b4f25fafed83700517e14eb9c61fcdf"
+        }
+      ],
+      "findings": [
+        "Identity matching retains the existing vendor/device/driver/name tuple; same-model multi-adapter identity is not physically demonstrated."
+      ],
+      "inputHash": "b2855d50aaa2da21c0a56831307db9977582be81d69344d587a1e18a81f4e922",
+      "level": "file",
+      "nextAction": "Preserve the closed admission and completion batches. Narrow the exercised runtime surface resource/submission dependencies next; retain the listed platform and validation limits.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Temporary instance/surface ownership is scoped and cleaned on query failure; the adapter captures queue-selection policy for later probing and device construction."
+      ],
+      "reviewId": "vulkan_surface_adapter_probe_20260928",
+      "reviewedAt": "2026-09-28T19:21:40.475905+00:00",
+      "reviewer": "codex-surface-admission",
+      "sourceCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+      "status": "in_progress",
+      "summary": "Pre-device surface discovery reuses adapter selection, retained identity matching and temporary native ownership.",
+      "supersedes": "vulkan_batch_20260920_06_vk_adapter_probe",
+      "targets": [
+        "src/backend/vulkan/vk_adapter_probe.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "f05cb2e946ffcffca8ec654562eb10761a638d6eaf604b2dd0855cf56f5e477c"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+          "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-admission/build-measurements.json",
+          "sha256": "d05a64665ece6ef27b5ceba5094af67a975fcc77b8b9c6775fd2192846554750"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/confirmation.json",
+          "sha256": "e04a9cbf0413f2be6e229dc2c533a74f45e32e0d6cddce23ec1033209981237d"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/identity.json",
+          "sha256": "23015e3a294f060083954802097fa5643fa0919f7952a2c89d418d80b4cdbd71"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/process-observations.json",
+          "sha256": "38c01180cb535570d2f1060fada641acb30f91a1163909c1ef0973f8559c5dd1"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/public-results.json",
+          "sha256": "4c44a026df4a62e5d458dda2e1f8e1015b4f25fafed83700517e14eb9c61fcdf"
+        }
+      ],
+      "findings": [
+        "The remaining native error translation and its non-surface consumers have not received a complete error-taxonomy review in this batch."
+      ],
+      "inputHash": "a60692f47c72129a30930f65df6e40d9ee855814f84a1c07d2a501dfd90ea940",
+      "level": "file",
+      "nextAction": "Preserve the closed admission and completion batches. Narrow the exercised runtime surface resource/submission dependencies next; retain the listed platform and validation limits.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Vulkan allocation failure no longer collapses into InvalidState. Pure mapping/submission regressions and physical injected surface setup failure/retry pass."
+      ],
+      "reviewId": "vulkan_surface_allocation_errors_20260928",
+      "reviewedAt": "2026-09-28T19:21:41.964254+00:00",
+      "reviewer": "codex-surface-admission",
+      "sourceCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+      "status": "in_progress",
+      "summary": "The shared native result translation preserves host/device allocation failure through surface configuration and submission rejection.",
+      "supersedes": "vulkan_errors_20260923_submission_audit",
+      "targets": [
+        "src/backend/vulkan/vulkan_errors.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "8f26656d804858d521cf02140275e704a2fbdf2256133ab3c42815cb79f41071"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+          "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/build-measurements.json",
+          "sha256": "dd31299893dabbfd5513500c46060f09c2ee5b1220c44355c25e713d77044216"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/confirmation.json",
+          "sha256": "72ba47d7b092caffa7dca48922826dcaed8f7d72e07940aca16799c0e5f13a10"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/identity.json",
+          "sha256": "448f5f9c71f9ca7377b3f46c4547041999689332e197b0b206342e045c58b1fa"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/process-observations.json",
+          "sha256": "aae5952be4e4bdf15e3b7a42e7adeda4ff71c551a8df9e28498cb97cbd282de1"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/public-results.json",
+          "sha256": "bdeda9324348e2b533156236c260092eb8811b3a395d46cced62aae274184aee"
+        }
+      ],
+      "findings": [
+        "Frame-latency policy and pacing remain unfinished; non-XCB surface realization is not physically exercised in this batch."
+      ],
+      "inputHash": "a876b28d8484930708318a49bdc073018f86255c59115343a95f5832c60132ff",
+      "level": "file",
+      "nextAction": "Preserve the closed admission and completion batches. Narrow the exercised runtime surface resource/submission dependencies next; retain the listed platform and validation limits.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Static format preference fallback, RGBA sRGB-to-UNORM mapping, alpha-bit confusion and stale present-mode constants are removed. Public pixel/native-configuration regressions and pure negative cases pass."
+      ],
+      "reviewId": "vulkan_surface_admission_20260928_final",
+      "reviewedAt": "2026-09-28T19:29:49.890303+00:00",
+      "reviewer": "codex-surface-admission",
+      "sourceCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+      "status": "in_progress",
+      "summary": "Native capability intersection and exact admission now share one mapping owner; swapchain creation consumes admitted native values. Final evidence includes explicit rejection of a null public configuration device and renewed verification.",
+      "supersedes": "vulkan_surface_admission_20260928",
+      "targets": [
+        "src/backend/vulkan/vulkan_surface.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "8f26656d804858d521cf02140275e704a2fbdf2256133ab3c42815cb79f41071"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+          "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/build-measurements.json",
+          "sha256": "dd31299893dabbfd5513500c46060f09c2ee5b1220c44355c25e713d77044216"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/confirmation.json",
+          "sha256": "72ba47d7b092caffa7dca48922826dcaed8f7d72e07940aca16799c0e5f13a10"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/identity.json",
+          "sha256": "448f5f9c71f9ca7377b3f46c4547041999689332e197b0b206342e045c58b1fa"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/process-observations.json",
+          "sha256": "aae5952be4e4bdf15e3b7a42e7adeda4ff71c551a8df9e28498cb97cbd282de1"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/public-results.json",
+          "sha256": "bdeda9324348e2b533156236c260092eb8811b3a395d46cced62aae274184aee"
+        }
+      ],
+      "findings": [
+        "Broader creation/descriptor-chain validation, reconfiguration across devices and non-configuration error delivery remain unexamined or limited."
+      ],
+      "inputHash": "5d06a9704f3fb7c2569a64d9710200638ff548ea1d628da54dab812f9d4ec03d",
+      "level": "file",
+      "nextAction": "Preserve the closed admission and completion batches. Narrow the exercised runtime surface resource/submission dependencies next; retain the listed platform and validation limits.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Capabilities query the selected adapter/window before device creation and use the bound runtime after configuration; allocation failure rolls back and arrays survive surface destruction.",
+        "Unknown usage bits, additional view formats and descriptor chains now reject explicitly. Unsupported replacement preserves caller-held acquired textures; native allocation errors reach out-of-memory scopes."
+      ],
+      "reviewId": "vulkan_public_surface_admission_20260928_final",
+      "reviewedAt": "2026-09-28T19:29:51.398637+00:00",
+      "reviewer": "codex-surface-admission",
+      "sourceCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+      "status": "in_progress",
+      "summary": "Public adapter/window queries own returned arrays and configuration errors reach device scopes before unsupported replacement retires valid resources. Final evidence includes explicit rejection of a null public configuration device and renewed verification.",
+      "supersedes": "vulkan_public_surface_admission_20260928",
+      "targets": [
+        "src/native/surface/doe_surface_native.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "8f26656d804858d521cf02140275e704a2fbdf2256133ab3c42815cb79f41071"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+          "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/build-measurements.json",
+          "sha256": "dd31299893dabbfd5513500c46060f09c2ee5b1220c44355c25e713d77044216"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/confirmation.json",
+          "sha256": "72ba47d7b092caffa7dca48922826dcaed8f7d72e07940aca16799c0e5f13a10"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/identity.json",
+          "sha256": "448f5f9c71f9ca7377b3f46c4547041999689332e197b0b206342e045c58b1fa"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/process-observations.json",
+          "sha256": "aae5952be4e4bdf15e3b7a42e7adeda4ff71c551a8df9e28498cb97cbd282de1"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/public-results.json",
+          "sha256": "bdeda9324348e2b533156236c260092eb8811b3a395d46cced62aae274184aee"
+        }
+      ],
+      "findings": [
+        "Generic runtime dependencies still hide surface registry, submission and retirement inputs. Pacing remains separate."
+      ],
+      "inputHash": "0fbc5652b6605db847e46102d7bbde288bdbc4abc688e09ce0c3cf32ca41d37d",
+      "level": "file",
+      "nextAction": "Preserve the closed admission and completion batches. Narrow the exercised runtime surface resource/submission dependencies next; retain the listed platform and validation limits.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Unsupported configuration is rejected before destruction; successful creation alone publishes configured state and native creation failure can retry."
+      ],
+      "reviewId": "vulkan_surface_admission_handoff_20260928_final",
+      "reviewedAt": "2026-09-28T19:29:52.896499+00:00",
+      "reviewer": "codex-surface-admission",
+      "sourceCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+      "status": "in_progress",
+      "summary": "Configuration preflights exact native facts before old-swapchain retirement; successful construction still owns publication. Final evidence includes explicit rejection of a null public configuration device and renewed verification.",
+      "supersedes": "vulkan_surface_admission_handoff_20260928",
+      "targets": [
+        "src/backend/vulkan/vk_runtime_surface_ops.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "8f26656d804858d521cf02140275e704a2fbdf2256133ab3c42815cb79f41071"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+          "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/build-measurements.json",
+          "sha256": "dd31299893dabbfd5513500c46060f09c2ee5b1220c44355c25e713d77044216"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/confirmation.json",
+          "sha256": "72ba47d7b092caffa7dca48922826dcaed8f7d72e07940aca16799c0e5f13a10"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/identity.json",
+          "sha256": "448f5f9c71f9ca7377b3f46c4547041999689332e197b0b206342e045c58b1fa"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/process-observations.json",
+          "sha256": "aae5952be4e4bdf15e3b7a42e7adeda4ff71c551a8df9e28498cb97cbd282de1"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/public-results.json",
+          "sha256": "bdeda9324348e2b533156236c260092eb8811b3a395d46cced62aae274184aee"
+        }
+      ],
+      "findings": [
+        "Identity matching retains the existing vendor/device/driver/name tuple; same-model multi-adapter identity is not physically demonstrated."
+      ],
+      "inputHash": "b2855d50aaa2da21c0a56831307db9977582be81d69344d587a1e18a81f4e922",
+      "level": "file",
+      "nextAction": "Preserve the closed admission and completion batches. Narrow the exercised runtime surface resource/submission dependencies next; retain the listed platform and validation limits.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Temporary instance/surface ownership is scoped and cleaned on query failure; the adapter captures queue-selection policy for later probing and device construction."
+      ],
+      "reviewId": "vulkan_surface_adapter_probe_20260928_final",
+      "reviewedAt": "2026-09-28T19:29:54.395069+00:00",
+      "reviewer": "codex-surface-admission",
+      "sourceCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+      "status": "in_progress",
+      "summary": "Pre-device surface discovery reuses adapter selection, retained identity matching and temporary native ownership. Final evidence includes explicit rejection of a null public configuration device and renewed verification.",
+      "supersedes": "vulkan_surface_adapter_probe_20260928",
+      "targets": [
+        "src/backend/vulkan/vk_adapter_probe.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/webgpu-capability-inventory.json",
+          "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_handoff.c",
+          "sha256": "8f26656d804858d521cf02140275e704a2fbdf2256133ab3c42815cb79f41071"
+        },
+        {
+          "path": "runtime/zig/tests/native_surface_observer.c",
+          "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+          "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/build-measurements.json",
+          "sha256": "dd31299893dabbfd5513500c46060f09c2ee5b1220c44355c25e713d77044216"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/confirmation.json",
+          "sha256": "72ba47d7b092caffa7dca48922826dcaed8f7d72e07940aca16799c0e5f13a10"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/identity.json",
+          "sha256": "448f5f9c71f9ca7377b3f46c4547041999689332e197b0b206342e045c58b1fa"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/process-observations.json",
+          "sha256": "aae5952be4e4bdf15e3b7a42e7adeda4ff71c551a8df9e28498cb97cbd282de1"
+        },
+        {
+          "path": "reports/maintenance/20260928-surface-admission/final/public-results.json",
+          "sha256": "bdeda9324348e2b533156236c260092eb8811b3a395d46cced62aae274184aee"
+        }
+      ],
+      "findings": [
+        "The remaining native error translation and its non-surface consumers have not received a complete error-taxonomy review in this batch."
+      ],
+      "inputHash": "6eddf261512f0ae4883f0d2360fbacc5f74106996f8571c03ec4a2ee0ad46e64",
+      "level": "file",
+      "nextAction": "Preserve the closed admission and completion batches. Narrow the exercised runtime surface resource/submission dependencies next; retain the listed platform and validation limits.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Vulkan allocation failure no longer collapses into InvalidState. Pure mapping/submission regressions and physical injected surface setup failure/retry pass."
+      ],
+      "reviewId": "vulkan_surface_allocation_errors_20260928_final",
+      "reviewedAt": "2026-09-28T19:29:55.901378+00:00",
+      "reviewer": "codex-surface-admission",
+      "sourceCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+      "status": "in_progress",
+      "summary": "The shared native result translation preserves host/device allocation failure through surface configuration and submission rejection. Final evidence includes explicit rejection of a null public configuration device and renewed verification.",
+      "supersedes": "vulkan_surface_allocation_errors_20260928",
+      "targets": [
+        "src/backend/vulkan/vulkan_errors.zig"
+      ]
     }
   ],
   "schemaVersion": 1

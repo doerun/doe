@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "classification": "local-diagnostic-correctness",
+  "sourceBaseCommit": "b04e08122f0a7c61f5372405d42eb70366334468",
+  "recordedAt": "2026-09-28T19:29:11.332261+00:00",
+  "sourceDiff": {
+    "path": "reports/maintenance/20260928-surface-admission/final/source.diff",
+    "sha256": "007af3eeb37f70b685d6abd628c67d6003df98031853362d91401f7574fc7f71",
+    "sizeBytes": 82892
+  },
+  "changedSourceFiles": [
+    {
+      "path": "config/webgpu-capability-inventory.json",
+      "sha256": "3a38b8116c4b529ef21ca017b8fd2341515d72879399522a084074bfbc5fa591",
+      "sizeBytes": 70501
+    },
+    {
+      "path": "config/zig-test-inventory.json",
+      "sha256": "b32a04c45e91b06d37455916a51a3be5f97b760c412d537293516adc256dc588",
+      "sizeBytes": 37290
+    },
+    {
+      "path": "runtime/zig/source-layout.json",
+      "sha256": "45e125454799ed5181a6f496fcf5758055a5863baca7f73ff21b44712bd6c1a7",
+      "sizeBytes": 256593
+    },
+    {
+      "path": "runtime/zig/src/backend/dropin_surface_ops.zig",
+      "sha256": "06e2aa7413382f76b74f6b42f41723f44afffb3839521aa3feabbca4de25e515",
+      "sizeBytes": 1553
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vk_adapter_probe.zig",
+      "sha256": "6ff6623f652e3ae7ea957e1c9ec1f1430af3b1cd4a82a17f43a6490e113c11d1",
+      "sizeBytes": 5762
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vk_device.zig",
+      "sha256": "de745ddabb7b39860f5e166e46c3cda8398b31f65b62b778d542837e0493e8b6",
+      "sizeBytes": 19964
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig",
+      "sha256": "75c9d5a0ad2621b40adeac6f25fd887105a95ed0fe6ccac925f23d48291fe937",
+      "sizeBytes": 10209
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vk_sync.zig",
+      "sha256": "b8e314e330e20eb6a2dca24e58cfb34b1a33780c0d3c6e645f3b11f5cf49abc6",
+      "sizeBytes": 22970
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vulkan_errors.zig",
+      "sha256": "421eee009e5bfb2a315fa472c18b1458db42e4160522b416aab8aa8689e2c7b5",
+      "sizeBytes": 5798
+    },
+    {
+      "path": "runtime/zig/src/backend/vulkan/vulkan_surface.zig",
+      "sha256": "f095055b695e9c6b9fd3821b98f1f54f949746c701660d4568207046cf3c2ba3",
+      "sizeBytes": 30575
+    },
+    {
+      "path": "runtime/zig/src/contracts/execution.zig",
+      "sha256": "c32ac8a27c4bfd0df1918b3ed9fea717ee48b8f666d2477e18a12e15818f6e50",
+      "sizeBytes": 3334
+    },
+    {
+      "path": "runtime/zig/src/contracts/model/model_surface_control_types.zig",
+      "sha256": "49b44fb9fcefb41c648335db346a004d87376a2ba0f4282c63b29dfc135f71be",
+      "sizeBytes": 989
+    },
+    {
+      "path": "runtime/zig/src/native/lifecycle/doe_instance_device_native.zig",
+      "sha256": "1fb9e3ad5a1aabe320157391c4b2b731c6905ebf05bc731d87c5913186d02bcf",
+      "sizeBytes": 30077
+    },
+    {
+      "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+      "sha256": "254fde54078ef7c0f39acb4cbf238265360a33dbb49d5b6be72772d98e9f75d8",
+      "sizeBytes": 20308
+    },
+    {
+      "path": "runtime/zig/src/native/surface/doe_surface_native.zig",
+      "sha256": "0f26751437153c7d5dbaefd82bf59a7c2a5e67c5816b21f5747d20b38431959b",
+      "sizeBytes": 28892
+    },
+    {
+      "path": "runtime/zig/test_suite.zig",
+      "sha256": "3e48250b1163b0cfd07cb8b590e29402c953c58c1903e23dd68fa8b18e548c4d",
+      "sizeBytes": 22110
+    },
+    {
+      "path": "runtime/zig/tests/core/model_test.zig",
+      "sha256": "463a51dff4fc71cb8dab9cdf1cfd5f518ebb35c53618300b58d1a359531d63d2",
+      "sizeBytes": 61214
+    },
+    {
+      "path": "runtime/zig/tests/native_surface_handoff.c",
+      "sha256": "8f26656d804858d521cf02140275e704a2fbdf2256133ab3c42815cb79f41071",
+      "sizeBytes": 19007
+    },
+    {
+      "path": "runtime/zig/tests/native_surface_observer.c",
+      "sha256": "ec779e9cd02f0768c92d757981bdde220818fca6aea2c9791ec865328bfb057c",
+      "sizeBytes": 7726
+    },
+    {
+      "path": "runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig",
+      "sha256": "c4bd4f6bd87a8ae5257494d04eb08c6f1299fd4e00908e86f26555edb7266555",
+      "sizeBytes": 4599
+    }
+  ],
+  "libraries": {
+    "baseline": {
+      "path": "/tmp/doe-surface-admission-20260928/baseline/lib/libwebgpu_doe.so",
+      "sha256": "b35032cf2bac96830c61fee3b3cc9e6f4abbf75bef8e9c2ab31773137dc78cce",
+      "sizeBytes": 11759808
+    },
+    "candidate": {
+      "path": "/tmp/doe-surface-admission-20260928/candidate/lib/libwebgpu_doe.so",
+      "sha256": "2224e9186e995a79d8732f1a32d2d74b95d4c86b149a2ebdfcfb0864a9dd6b14",
+      "sizeBytes": 11783064
+    }
+  },
+  "compiler": "0.15.2",
+  "webgpuAbi": {
+    "kind": "vendored-pinned-header",
+    "path": "runtime/zig/vendor/webgpu-headers/webgpu.h",
+    "sha256": "7691d76ceb67056f89e97b9ff0b62163eacf19a8e0e09a8fa7dbb32069b7978c",
+    "repository": "https://chromium.googlesource.com/external/github.com/webgpu-native/webgpu-headers",
+    "commit": "01addc4ba8a2915a061b7095a6768b512071ab96",
+    "licensePath": "runtime/zig/vendor/webgpu-headers/LICENSE"
+  },
+  "hardware": {
+    "os": "Linux",
+    "windowSystem": "XCB on Xwayland :0",
+    "gpu": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "driver": "Mesa 26.0.3-1ubuntu1",
+    "icd": {
+      "path": "/usr/share/vulkan/icd.d/radeon_icd.json",
+      "sha256": "ea05ad7109cee152ef4e801a022dfa40b655dc06a08da7d0d7b042f619a0947c",
+      "sizeBytes": 138
+    },
+    "validationLayers": "Khronos validation layer unavailable; no validation-layer qualification"
+  },
+  "oracles": [
+    "Pinned native WebGPU C header",
+    "Independent linear 0.25 -> 64 and sRGB encoding -> 137 pixel bytes, tolerance one byte; exact format and usage identity",
+    "Test-only native swapchain configuration, completion and lifetime observer"
+  ],
+  "tests": {
+    "debug": {
+      "aggregatePassed": 2335,
+      "fullPassed": 2365,
+      "skippedPerSuite": 11
+    },
+    "releaseFast": {
+      "aggregatePassed": 2335,
+      "fullPassed": 2365,
+      "skippedPerSuite": 11
+    },
+    "suiteOverlap": "Do not add suite totals.",
+    "publicWindowCases": 23,
+    "uninstrumentedConfirmationCases": 2,
+    "offscreenQueryCases": 5
+  },
+  "limitations": [
+    "Local diagnostic only; no Dawn comparison or release qualification.",
+    "Process cost includes startup, frames, readback and teardown; previous fixture does not call capabilities.",
+    "RSS is process high-water mark, not GPU memory.",
+    "ReleaseFast verification overlapped part of private-snapshot build observation; no comparative compile-speed claim.",
+    "Physical evidence covers XCB/Xwayland, not compositor pixels, Wayland/Xlib/Metal/D3D12 or physical device loss.",
+    "Pre-device identity matching retains existing vendor/device/driver/name tuple; no same-model multi-adapter qualification."
+  ],
+  "buildCommands": [
+    "zig build test test-full --summary all",
+    "zig build test test-full dropin -Doptimize=ReleaseFast --cache-dir /tmp/doe-surface-admission-20260928/zig-cache --prefix /tmp/doe-surface-admission-20260928/candidate --summary all"
+  ],
+  "binarySizeDeltaBytes": 23256
+}

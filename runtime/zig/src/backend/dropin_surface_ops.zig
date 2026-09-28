@@ -9,3 +9,10 @@ pub const create_wayland_surface = if (builtin.os.tag == .linux) vk_surface_mod.
 pub const create_xcb_surface = if (builtin.os.tag == .linux) vk_surface_mod.create_xcb_surface else {};
 pub const create_xlib_surface = if (builtin.os.tag == .linux) vk_surface_mod.create_xlib_surface else {};
 pub const VulkanSurface = if (builtin.os.tag == .linux) vk_surface_mod.VulkanSurface else struct {};
+
+const vk_adapter_probe = if (builtin.os.tag == .linux) @import("vulkan/vk_adapter_probe.zig") else struct {};
+pub const SurfaceSource = if (builtin.os.tag == .linux) vk_adapter_probe.SurfaceSource else struct {};
+pub const probeSurfaceCapabilities = if (builtin.os.tag == .linux) vk_adapter_probe.probeSurfaceCapabilities else {};
+pub const canvasCapabilities = if (builtin.os.tag == .linux) vk_surface_mod.canvasCapabilities else {};
+pub const CanvasCapabilities = if (builtin.os.tag == .linux) vk_surface_mod.CanvasCapabilities else struct {};
+pub const admitConfiguration = if (builtin.os.tag == .linux) vk_surface_mod.admitConfiguration else {};

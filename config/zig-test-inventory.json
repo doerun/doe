@@ -506,6 +506,20 @@
           "platforms": [
             "linux"
           ]
+        },
+        {
+          "path": "tests/vulkan/vulkan_surface_admission_test.zig",
+          "kind": "backend",
+          "platforms": [
+            "linux"
+          ]
+        },
+        {
+          "path": "src/native/surface/doe_surface_native.zig",
+          "kind": "inline",
+          "platforms": [
+            "linux"
+          ]
         }
       ]
     },

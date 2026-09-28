@@ -132,14 +132,8 @@ pub fn create_device_and_queue(self: anytype) !void {
         c.VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME,
     );
     var surface_features = surface_sync.Features{};
-    const surface_completion_available = self.has_surface_maintenance_instance and detect_device_extension(self.physical_device, surface_sync.extension);
-    if (surface_completion_available) {
-        var query = std.mem.zeroes(c.VkPhysicalDeviceFeatures2);
-        query.sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        query.pNext = @ptrCast(&surface_features);
-        c.vkGetPhysicalDeviceFeatures2(self.physical_device, &query);
-    }
-    const enable_surface_completion = surface_completion_available and surface_features.swapchainMaintenance1 != 0;
+    const enable_surface_completion = supportsSurfaceCompletion(self.physical_device, self.has_surface_maintenance_instance);
+    surface_features.swapchainMaintenance1 = @intFromBool(enable_surface_completion);
     var feature_query = vk_feature_caps.query(self.physical_device);
     if (!feature_query.caps.robust_buffer_access) return error.UnsupportedFeature;
     feature_query.enabled_storage16_features.pNext = @ptrCast(&feature_query.enabled_variable_pointers_features);
@@ -424,6 +418,16 @@ fn detect_instance_extension(target_name: [*:0]const u8) bool {
         }
     }
     return false;
+}
+
+pub fn supportsSurfaceCompletion(physical_device: VkPhysicalDevice, instance_enabled: bool) bool {
+    if (!instance_enabled or !detect_device_extension(physical_device, surface_sync.extension)) return false;
+    var features = surface_sync.Features{};
+    var query = std.mem.zeroes(c.VkPhysicalDeviceFeatures2);
+    query.sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    query.pNext = @ptrCast(&features);
+    c.vkGetPhysicalDeviceFeatures2(physical_device, &query);
+    return features.swapchainMaintenance1 != 0;
 }
 
 /// Check whether a physical device advertises a given extension by name.

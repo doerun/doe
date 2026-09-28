@@ -33,6 +33,7 @@ pub fn check_vk(result: VkResult) common_errors.BackendNativeError!void {
 /// Map a raw VkResult (i32) to a BackendNativeError. Called for non-success codes.
 pub fn map_vk_result(result: VkResult) common_errors.BackendNativeError {
     return switch (result) {
+        VK_ERROR_OUT_OF_HOST_MEMORY, VK_ERROR_OUT_OF_DEVICE_MEMORY => error.OutOfMemory,
         VK_ERROR_DEVICE_LOST => error.DeviceLost,
         VK_ERROR_EXTENSION_NOT_PRESENT,
         VK_ERROR_FEATURE_NOT_PRESENT,
@@ -117,11 +118,11 @@ test "map_vk_result maps OUT_OF_DATE_KHR to SurfaceUnavailable" {
     try std.testing.expectEqual(error.SurfaceUnavailable, map_vk_result(VK_ERROR_OUT_OF_DATE_KHR));
 }
 
-test "map_vk_result maps other errors to InvalidState" {
+test "map_vk_result preserves host and device allocation failures" {
     // VK_ERROR_OUT_OF_HOST_MEMORY = -1
-    try std.testing.expectEqual(error.InvalidState, map_vk_result(-1));
+    try std.testing.expectEqual(error.OutOfMemory, map_vk_result(VK_ERROR_OUT_OF_HOST_MEMORY));
     // VK_ERROR_OUT_OF_DEVICE_MEMORY = -2
-    try std.testing.expectEqual(error.InvalidState, map_vk_result(-2));
+    try std.testing.expectEqual(error.OutOfMemory, map_vk_result(VK_ERROR_OUT_OF_DEVICE_MEMORY));
 }
 
 test "vulkanResultName returns known names" {

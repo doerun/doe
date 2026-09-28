@@ -17,14 +17,25 @@ or compatibility facade.
 
 ## Current work selection
 
+The [surface admission checkpoint](../../reports/maintenance/20260928-surface-admission/README.md)
+replaces fixed public capabilities with adapter/window queries and rejects
+unsupported configuration before retiring a working swapchain. Native format,
+color-space, usage, extent, alpha and presentation identities are preserved;
+public errors and capability-array ownership have focused regressions. The
+existing surface completion repair remains intact. Physical evidence covers XCB
+on Xwayland; HDR, alternate view formats, other window systems, frame pacing and
+broader surface validation remain separate. The bounded admission batch closes;
+the plan next narrows the runtime dependencies along this exercised path.
+
+
 The [surface handoff checkpoint](../../reports/maintenance/20260928-surface-handoff/README.md)
 repairs ordinary Vulkan acquire/render/present synchronization and native texture
 references through a real windowed consumer. Acquisition completion and
 presentation completion have distinct ownership. Rejection, delayed completion,
 recreation and caller-held views are covered by retained local evidence. Native
 windowed presentation requires the declared presentation-fence capability;
-offscreen operation remains available without it. Surface capability/format
-admission, other window systems and broader pacing remain open. This closes the
+offscreen operation remains available without it. Capability/format admission is superseded by the checkpoint above; other window
+systems and broader pacing remain open. This closes the
 bounded handoff, not the whole surface review.
 
 The [attachment admission checkpoint](../../reports/maintenance/20260928-attachment-admission/README.md)

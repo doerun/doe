@@ -1,0 +1,16 @@
+[
+  {
+    "mode": "admission",
+    "exitCode": 0,
+    "stdout": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nrejected=0 existing-texture=preserved\nrejected=1 existing-texture=preserved\nrejected=2 existing-texture=preserved\nrejected=3 existing-texture=preserved\nrejected=4 existing-texture=preserved\nrejected=5 existing-texture=preserved\nrejected=6 existing-texture=preserved\nrejected=7 existing-texture=preserved\nrejected=8 existing-texture=preserved\nrejected=9 existing-texture=preserved\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n",
+    "stderr": "scope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: UnsupportedFeature\nscope type=2 message=surface configuration rejected: InvalidArgument\nscope type=2 message=render attachment requires a live texture view and pipeline\n",
+    "instrumentation": "disabled"
+  },
+  {
+    "mode": "srgb",
+    "exitCode": 0,
+    "stdout": "adapter=Radeon 8060S Graphics (RADV STRIX_HALO) driver=Radeon 8060S Graphics (RADV STRIX_HALO)\ncapabilities formats=2 modes=4 alpha=2 usages=23 before-device=true\nframe=0 pixels=pass\nframe=1 pixels=pass\nframe=2 pixels=pass\nframe=3 pixels=pass\nframe=4 pixels=pass\nframe=5 pixels=pass\nframe=6 pixels=pass\nframe=7 pixels=pass\n",
+    "stderr": "scope type=2 message=render attachment requires a live texture view and pipeline\n",
+    "instrumentation": "disabled"
+  }
+]

@@ -970,9 +970,9 @@
       },
       "src/backend/dropin_surface_ops.zig": {
         "decision": "Keep",
-        "moduleSha256": "ab5bd6437253e16364de3e7da3ac98206ab7fac24f7a507f49d77680cc110959",
-        "reason": "Keep: reachable backend implementation shared by 2 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "06e2aa7413382f76b74f6b42f41723f44afffb3839521aa3feabbca4de25e515",
+        "reason": "Keep: native surface adapter seam exposes backend-owned capability admission and probing without implementing selection policy.",
+        "reviewer": "codex-surface-admission/2026-09-28"
       },
       "src/backend/metal/artifact_emit.zig": {
         "decision": "Keep",
@@ -1234,9 +1234,9 @@
       },
       "src/backend/vulkan/vk_adapter_probe.zig": {
         "decision": "Keep",
-        "moduleSha256": "f3470c80c3cdfc7da3c2f0a03d7653c68782239813a85ae2169c50bffe5b0ff2",
-        "reason": "Keep: owns the single-selection binding between Vulkan adapter identity, feature capabilities, and hardware limits.",
-        "reviewer": "codex-runtime-ownership/2026-08-15"
+        "moduleSha256": "6ff6623f652e3ae7ea957e1c9ec1f1430af3b1cd4a82a17f43a6490e113c11d1",
+        "reason": "Keep: adapter identity-bound probing owns pre-device surface inspection and temporary instance/surface cleanup.",
+        "reviewer": "codex-surface-admission/2026-09-28"
       },
       "src/backend/vulkan/vk_async_dispatch.zig": {
         "decision": "Keep",
@@ -1276,9 +1276,9 @@
       },
       "src/backend/vulkan/vk_device.zig": {
         "decision": "Keep",
-        "moduleSha256": "f47efe142debf5d58f54a1960e454429f0f56d9afd7ae04521d62d526d761ac2",
-        "reviewer": "codex-surface-handoff/2026-09-28",
-        "reason": "Keep: Device capability and synchronization-object creation remain local; supported timeline creation failures propagate."
+        "moduleSha256": "de745ddabb7b39860f5e166e46c3cda8398b31f65b62b778d542837e0493e8b6",
+        "reviewer": "codex-surface-admission/2026-09-28",
+        "reason": "Keep: device bootstrap owns extension and feature admission shared with adapter surface probes."
       },
       "src/backend/vulkan/vk_device_caps.zig": {
         "decision": "Keep",
@@ -1372,9 +1372,9 @@
       },
       "src/backend/vulkan/vk_runtime_surface_ops.zig": {
         "decision": "Keep",
-        "moduleSha256": "bff5ae86ebd001a8d7356905c2cd51d4c62fc77874b24c872f025bb2729125ec",
-        "reviewer": "codex-surface-handoff/2026-09-28",
-        "reason": "Keep: Runtime surface operations delegate native capability and swapchain execution; missing native surfaces fail explicitly."
+        "moduleSha256": "75c9d5a0ad2621b40adeac6f25fd887105a95ed0fe6ccac925f23d48291fe937",
+        "reviewer": "codex-surface-admission/2026-09-28",
+        "reason": "Keep: runtime orchestration validates surface configuration before swapchain retirement and delegates exact admitted native configuration."
       },
       "src/backend/vulkan/vk_samplers.zig": {
         "decision": "Keep",
@@ -1402,9 +1402,9 @@
       },
       "src/backend/vulkan/vk_sync.zig": {
         "decision": "Keep",
-        "moduleSha256": "9b4156b530f505b0a1a92a956bcb09ad77730ba4f69373870438c50488e23c51",
+        "moduleSha256": "b8e314e330e20eb6a2dca24e58cfb34b1a33780c0d3c6e645f3b11f5cf49abc6",
         "reason": "Keep: existing synchronization and retirement owner; expose the existing allocation-rejection predicate for render submission cleanup and retry without changing synchronization policy.",
-        "reviewer": "codex-render-lifetime/2026-09-27"
+        "reviewer": "codex-surface-admission/2026-09-28"
       },
       "src/backend/vulkan/vk_texture_commands.zig": {
         "decision": "Keep",
@@ -1420,15 +1420,15 @@
       },
       "src/backend/vulkan/vulkan_errors.zig": {
         "decision": "Keep",
-        "moduleSha256": "a4a6cf978a6e90545d177ab8fdc419c1c4c51da545b1a99259756869028dbbbf",
+        "moduleSha256": "421eee009e5bfb2a315fa472c18b1458db42e4160522b416aab8aa8689e2c7b5",
         "reason": "Keep: Raw Vulkan result constants and error translation have one backend owner; public taxonomy expansion remains open.",
-        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
+        "reviewer": "codex-surface-admission/2026-09-28"
       },
       "src/backend/vulkan/vulkan_surface.zig": {
         "decision": "Keep",
-        "moduleSha256": "932c149acb348109fe377753518c76934ec66e3b4f108ce80b26b749bb56aadc",
-        "reviewer": "codex-surface-handoff/2026-09-28",
-        "reason": "Keep: platform/FFI-facing Vulkan surface and presentation lifecycle capsule."
+        "moduleSha256": "f095055b695e9c6b9fd3821b98f1f54f949746c701660d4568207046cf3c2ba3",
+        "reviewer": "codex-surface-admission/2026-09-28",
+        "reason": "Keep: native WSI owner maps queried capabilities into exact configuration admission and owns swapchain lifecycle."
       },
       "src/backend/vulkan/vulkan_timing.zig": {
         "decision": "Keep",
@@ -2704,9 +2704,9 @@
       },
       "src/contracts/execution.zig": {
         "decision": "Keep",
-        "moduleSha256": "6a81c0c107a89638f15f0f1864cfcd10e36c14e34d87219520a230d92632a21b",
+        "moduleSha256": "c32ac8a27c4bfd0df1918b3ed9fea717ee48b8f666d2477e18a12e15818f6e50",
         "reason": "Keep: reachable neutral contract owner at src/contracts/execution.zig.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "reviewer": "codex-surface-admission/2026-09-28"
       },
       "src/contracts/execution_report.zig": {
         "decision": "Keep",
@@ -2782,9 +2782,9 @@
       },
       "src/contracts/model/model_surface_control_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "915e430a6d7a86260627905ac5e406ac2e0e453211481d315c042f67ed2fd98f",
+        "moduleSha256": "49b44fb9fcefb41c648335db346a004d87376a2ba0f4282c63b29dfc135f71be",
         "reason": "Keep: reachable neutral contract owner at src/contracts/model/model_surface_control_types.zig.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "reviewer": "codex-surface-admission/2026-09-28"
       },
       "src/contracts/model/model_texture_format_value_types.zig": {
         "decision": "Keep",
@@ -3556,9 +3556,9 @@
       },
       "src/native/lifecycle/doe_instance_device_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "0d1e6620136d2522f4e40b1a41db0fa79655cf497928f14ca28e4002bfe29fa8",
+        "moduleSha256": "1fb9e3ad5a1aabe320157391c4b2b731c6905ebf05bc731d87c5913186d02bcf",
         "reason": "Keep: preserves existing native ownership; build-selected diagnostics observe actual command storage and export device-scoped metadata after cleanup.",
-        "reviewer": "codex-command-storage-observation/2026-09-12"
+        "reviewer": "codex-surface-admission/2026-09-28"
       },
       "src/native/mod.zig": {
         "decision": "Keep",
@@ -3754,9 +3754,9 @@
       },
       "src/native/support/doe_native_object_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "d32b8f48c05d2b1796739d375b5a72a110901e242340182936cc6fab8aefbea9",
+        "moduleSha256": "254fde54078ef7c0f39acb4cbf238265360a33dbb49d5b6be72772d98e9f75d8",
         "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
-        "reviewer": "codex-attachment-admission/2026-09-28"
+        "reviewer": "codex-surface-admission/2026-09-28"
       },
       "src/native/support/doe_native_runtime_helpers.zig": {
         "decision": "Keep",
@@ -3772,9 +3772,9 @@
       },
       "src/native/surface/doe_surface_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "5f2a4bb009be9cc72d33faa5f7456c078d4c8022f3e4643312bc0f7c3f65b6be",
-        "reviewer": "codex-surface-handoff/2026-09-28",
-        "reason": "Keep: acquired surface images receive native resource identity when published through the existing Vulkan surface integration."
+        "moduleSha256": "0f26751437153c7d5dbaefd82bf59a7c2a5e67c5816b21f5747d20b38431959b",
+        "reviewer": "codex-surface-admission/2026-09-28",
+        "reason": "Keep: public surface adapter owns capability arrays, device error delivery, references and configuration translation."
       },
       "src/native/vulkan/vulkan_compute_bindings.zig": {
         "decision": "Keep",

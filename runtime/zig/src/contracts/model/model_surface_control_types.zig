@@ -18,7 +18,7 @@ pub const SurfaceConfigureCommand = struct {
     format: gpu.WGPUTextureFormat = gpu.WGPUTextureFormat_RGBA8Unorm,
     usage: gpu.WGPUFlags = gpu.WGPUTextureUsage_RenderAttachment,
     alpha_mode: u32 = 0x00000001,
-    present_mode: u32 = 0x00000002,
+    present_mode: u32 = 0x00000001,
     tone_mapping_mode: u32 = WGPUCanvasToneMappingMode_Standard,
     desired_maximum_frame_latency: u32 = 2,
 };

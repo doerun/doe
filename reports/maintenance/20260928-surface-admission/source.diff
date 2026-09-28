@@ -1,0 +1,1445 @@
+diff --git a/config/webgpu-capability-inventory.json b/config/webgpu-capability-inventory.json
+index cb4a2094b..4de7662d4 100644
+--- a/config/webgpu-capability-inventory.json
++++ b/config/webgpu-capability-inventory.json
+@@ -83,7 +83,7 @@
+       "owner": "runtime-core",
+       "contract": "runtime/zig/src/full/surface/wgpu_surface_procs.zig + runtime/zig/src/full/surface/wgpu_ffi_surface.zig surface methods",
+       "benchmarkClass": "comparable",
+-      "notes": "Provider wrappers expose creation, capabilities, configure/acquire/present/unconfigure/release. Native Vulkan requires VK_EXT_swapchain_maintenance1 with swapchainMaintenance1 plus its instance dependencies for presentation-fence ownership; unsupported hosts reject surface configuration without affecting offscreen execution. Acquisition completion precedes image exposure; a final submission transitions/signals for presentation; presentation fences authorize reuse and destruction. Local Xwayland evidence is retained in reports/maintenance/20260928-surface-handoff/; broader format/capability admission and window-system qualification remain open."
++      "notes": "Provider wrappers expose creation, capabilities, configure/acquire/present/unconfigure/release. Native Vulkan requires VK_EXT_swapchain_maintenance1 with swapchainMaintenance1 plus its instance dependencies for presentation-fence ownership; unsupported hosts reject surface configuration without affecting offscreen execution. Acquisition completion precedes image exposure; a final submission transitions/signals for presentation; presentation fences authorize reuse and destruction. Local Xwayland evidence is retained in reports/maintenance/20260928-surface-handoff/; Exact adapter/window capability admission, pinned ABI modes, configuration rejection and owned public arrays are exercised in reports/maintenance/20260928-surface-admission/. Unsupported HDR, alternate view formats and descriptor extensions reject explicitly; broader window-system and pacing qualification remain open."
+     },
+     {
+       "capabilityId": "async_pipeline_diagnostics",
+diff --git a/config/zig-test-inventory.json b/config/zig-test-inventory.json
+index d75505d61..483d87da9 100644
+--- a/config/zig-test-inventory.json
++++ b/config/zig-test-inventory.json
+@@ -506,6 +506,20 @@
+           "platforms": [
+             "linux"
+           ]
++        },
++        {
++          "path": "tests/vulkan/vulkan_surface_admission_test.zig",
++          "kind": "backend",
++          "platforms": [
++            "linux"
++          ]
++        },
++        {
++          "path": "src/native/surface/doe_surface_native.zig",
++          "kind": "inline",
++          "platforms": [
++            "linux"
++          ]
+         }
+       ]
+     },
+diff --git a/runtime/zig/source-layout.json b/runtime/zig/source-layout.json
+index c31ba1fd9..253e07d99 100644
+--- a/runtime/zig/source-layout.json
++++ b/runtime/zig/source-layout.json
+@@ -970,9 +970,9 @@
+       },
+       "src/backend/dropin_surface_ops.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "ab5bd6437253e16364de3e7da3ac98206ab7fac24f7a507f49d77680cc110959",
+-        "reason": "Keep: reachable backend implementation shared by 2 production consumers with no conflicting ownership signal.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
++        "moduleSha256": "06e2aa7413382f76b74f6b42f41723f44afffb3839521aa3feabbca4de25e515",
++        "reason": "Keep: native surface adapter seam exposes backend-owned capability admission and probing without implementing selection policy.",
++        "reviewer": "codex-surface-admission/2026-09-28"
+       },
+       "src/backend/metal/artifact_emit.zig": {
+         "decision": "Keep",
+@@ -1234,9 +1234,9 @@
+       },
+       "src/backend/vulkan/vk_adapter_probe.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "f3470c80c3cdfc7da3c2f0a03d7653c68782239813a85ae2169c50bffe5b0ff2",
+-        "reason": "Keep: owns the single-selection binding between Vulkan adapter identity, feature capabilities, and hardware limits.",
+-        "reviewer": "codex-runtime-ownership/2026-08-15"
++        "moduleSha256": "6ff6623f652e3ae7ea957e1c9ec1f1430af3b1cd4a82a17f43a6490e113c11d1",
++        "reason": "Keep: adapter identity-bound probing owns pre-device surface inspection and temporary instance/surface cleanup.",
++        "reviewer": "codex-surface-admission/2026-09-28"
+       },
+       "src/backend/vulkan/vk_async_dispatch.zig": {
+         "decision": "Keep",
+@@ -1276,9 +1276,9 @@
+       },
+       "src/backend/vulkan/vk_device.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "f47efe142debf5d58f54a1960e454429f0f56d9afd7ae04521d62d526d761ac2",
+-        "reviewer": "codex-surface-handoff/2026-09-28",
+-        "reason": "Keep: Device capability and synchronization-object creation remain local; supported timeline creation failures propagate."
++        "moduleSha256": "de745ddabb7b39860f5e166e46c3cda8398b31f65b62b778d542837e0493e8b6",
++        "reviewer": "codex-surface-admission/2026-09-28",
++        "reason": "Keep: device bootstrap owns extension and feature admission shared with adapter surface probes."
+       },
+       "src/backend/vulkan/vk_device_caps.zig": {
+         "decision": "Keep",
+@@ -1372,9 +1372,9 @@
+       },
+       "src/backend/vulkan/vk_runtime_surface_ops.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "bff5ae86ebd001a8d7356905c2cd51d4c62fc77874b24c872f025bb2729125ec",
+-        "reviewer": "codex-surface-handoff/2026-09-28",
+-        "reason": "Keep: Runtime surface operations delegate native capability and swapchain execution; missing native surfaces fail explicitly."
++        "moduleSha256": "75c9d5a0ad2621b40adeac6f25fd887105a95ed0fe6ccac925f23d48291fe937",
++        "reviewer": "codex-surface-admission/2026-09-28",
++        "reason": "Keep: runtime orchestration validates surface configuration before swapchain retirement and delegates exact admitted native configuration."
+       },
+       "src/backend/vulkan/vk_samplers.zig": {
+         "decision": "Keep",
+@@ -1402,9 +1402,9 @@
+       },
+       "src/backend/vulkan/vk_sync.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "9b4156b530f505b0a1a92a956bcb09ad77730ba4f69373870438c50488e23c51",
++        "moduleSha256": "b8e314e330e20eb6a2dca24e58cfb34b1a33780c0d3c6e645f3b11f5cf49abc6",
+         "reason": "Keep: existing synchronization and retirement owner; expose the existing allocation-rejection predicate for render submission cleanup and retry without changing synchronization policy.",
+-        "reviewer": "codex-render-lifetime/2026-09-27"
++        "reviewer": "codex-surface-admission/2026-09-28"
+       },
+       "src/backend/vulkan/vk_texture_commands.zig": {
+         "decision": "Keep",
+@@ -1420,15 +1420,15 @@
+       },
+       "src/backend/vulkan/vulkan_errors.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "a4a6cf978a6e90545d177ab8fdc419c1c4c51da545b1a99259756869028dbbbf",
++        "moduleSha256": "2854c106c035d4c70d703edab6b935864cbbda8ade64783b0d0e97ed3fa36d18",
+         "reason": "Keep: Raw Vulkan result constants and error translation have one backend owner; public taxonomy expansion remains open.",
+-        "reviewer": "codex-vulkan-submission-audit/2026-09-23"
++        "reviewer": "codex-surface-admission/2026-09-28"
+       },
+       "src/backend/vulkan/vulkan_surface.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "932c149acb348109fe377753518c76934ec66e3b4f108ce80b26b749bb56aadc",
+-        "reviewer": "codex-surface-handoff/2026-09-28",
+-        "reason": "Keep: platform/FFI-facing Vulkan surface and presentation lifecycle capsule."
++        "moduleSha256": "f095055b695e9c6b9fd3821b98f1f54f949746c701660d4568207046cf3c2ba3",
++        "reviewer": "codex-surface-admission/2026-09-28",
++        "reason": "Keep: native WSI owner maps queried capabilities into exact configuration admission and owns swapchain lifecycle."
+       },
+       "src/backend/vulkan/vulkan_timing.zig": {
+         "decision": "Keep",
+@@ -2704,9 +2704,9 @@
+       },
+       "src/contracts/execution.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "6a81c0c107a89638f15f0f1864cfcd10e36c14e34d87219520a230d92632a21b",
++        "moduleSha256": "c32ac8a27c4bfd0df1918b3ed9fea717ee48b8f666d2477e18a12e15818f6e50",
+         "reason": "Keep: reachable neutral contract owner at src/contracts/execution.zig.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
++        "reviewer": "codex-surface-admission/2026-09-28"
+       },
+       "src/contracts/execution_report.zig": {
+         "decision": "Keep",
+@@ -2782,9 +2782,9 @@
+       },
+       "src/contracts/model/model_surface_control_types.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "915e430a6d7a86260627905ac5e406ac2e0e453211481d315c042f67ed2fd98f",
++        "moduleSha256": "49b44fb9fcefb41c648335db346a004d87376a2ba0f4282c63b29dfc135f71be",
+         "reason": "Keep: reachable neutral contract owner at src/contracts/model/model_surface_control_types.zig.",
+-        "reviewer": "codex-recomposition-review/2026-08-08"
++        "reviewer": "codex-surface-admission/2026-09-28"
+       },
+       "src/contracts/model/model_texture_format_value_types.zig": {
+         "decision": "Keep",
+@@ -3556,9 +3556,9 @@
+       },
+       "src/native/lifecycle/doe_instance_device_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "0d1e6620136d2522f4e40b1a41db0fa79655cf497928f14ca28e4002bfe29fa8",
++        "moduleSha256": "1fb9e3ad5a1aabe320157391c4b2b731c6905ebf05bc731d87c5913186d02bcf",
+         "reason": "Keep: preserves existing native ownership; build-selected diagnostics observe actual command storage and export device-scoped metadata after cleanup.",
+-        "reviewer": "codex-command-storage-observation/2026-09-12"
++        "reviewer": "codex-surface-admission/2026-09-28"
+       },
+       "src/native/mod.zig": {
+         "decision": "Keep",
+@@ -3754,9 +3754,9 @@
+       },
+       "src/native/support/doe_native_object_types.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "d32b8f48c05d2b1796739d375b5a72a110901e242340182936cc6fab8aefbea9",
++        "moduleSha256": "254fde54078ef7c0f39acb4cbf238265360a33dbb49d5b6be72772d98e9f75d8",
+         "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
+-        "reviewer": "codex-attachment-admission/2026-09-28"
++        "reviewer": "codex-surface-admission/2026-09-28"
+       },
+       "src/native/support/doe_native_runtime_helpers.zig": {
+         "decision": "Keep",
+@@ -3772,9 +3772,9 @@
+       },
+       "src/native/surface/doe_surface_native.zig": {
+         "decision": "Keep",
+-        "moduleSha256": "5f2a4bb009be9cc72d33faa5f7456c078d4c8022f3e4643312bc0f7c3f65b6be",
+-        "reviewer": "codex-surface-handoff/2026-09-28",
+-        "reason": "Keep: acquired surface images receive native resource identity when published through the existing Vulkan surface integration."
++        "moduleSha256": "f30bb063929d7fb664d2b5132911cf31969374311d789d7fe01ca23ac3ccdbde",
++        "reviewer": "codex-surface-admission/2026-09-28",
++        "reason": "Keep: public surface adapter owns capability arrays, device error delivery, references and configuration translation."
+       },
+       "src/native/vulkan/vulkan_compute_bindings.zig": {
+         "decision": "Keep",
+diff --git a/runtime/zig/src/backend/dropin_surface_ops.zig b/runtime/zig/src/backend/dropin_surface_ops.zig
+index 3d7af01d9..5b269fe45 100644
+--- a/runtime/zig/src/backend/dropin_surface_ops.zig
++++ b/runtime/zig/src/backend/dropin_surface_ops.zig
+@@ -9,3 +9,10 @@ pub const create_wayland_surface = if (builtin.os.tag == .linux) vk_surface_mod.
+ pub const create_xcb_surface = if (builtin.os.tag == .linux) vk_surface_mod.create_xcb_surface else {};
+ pub const create_xlib_surface = if (builtin.os.tag == .linux) vk_surface_mod.create_xlib_surface else {};
+ pub const VulkanSurface = if (builtin.os.tag == .linux) vk_surface_mod.VulkanSurface else struct {};
++
++const vk_adapter_probe = if (builtin.os.tag == .linux) @import("vulkan/vk_adapter_probe.zig") else struct {};
++pub const SurfaceSource = if (builtin.os.tag == .linux) vk_adapter_probe.SurfaceSource else struct {};
++pub const probeSurfaceCapabilities = if (builtin.os.tag == .linux) vk_adapter_probe.probeSurfaceCapabilities else {};
++pub const canvasCapabilities = if (builtin.os.tag == .linux) vk_surface_mod.canvasCapabilities else {};
++pub const CanvasCapabilities = if (builtin.os.tag == .linux) vk_surface_mod.CanvasCapabilities else struct {};
++pub const admitConfiguration = if (builtin.os.tag == .linux) vk_surface_mod.admitConfiguration else {};
+diff --git a/runtime/zig/src/backend/vulkan/vk_adapter_probe.zig b/runtime/zig/src/backend/vulkan/vk_adapter_probe.zig
+index 788c76dd7..02594f152 100644
+--- a/runtime/zig/src/backend/vulkan/vk_adapter_probe.zig
++++ b/runtime/zig/src/backend/vulkan/vk_adapter_probe.zig
+@@ -41,6 +41,36 @@ pub fn probe_selected_adapter(
+     };
+ }
+ 
++pub const SurfaceSource = union(enum) {
++    xcb: struct { connection: *anyopaque, window: u32 },
++    xlib: struct { display: *anyopaque, window: u64 },
++    wayland: struct { display: *anyopaque, surface: *anyopaque },
++};
++
++/// Query before device creation without publishing a runtime or retaining window ownership.
++/// Selection must still match the adapter whose public handle authorized the query.
++pub fn probeSurfaceCapabilities(
++    allocator: std.mem.Allocator,
++    queue_family_policy: backend_contract.QueueFamilyPolicy,
++    expected: native_runtime.AdapterIdentity,
++    source: SurfaceSource,
++) !@import("vulkan_surface.zig").CanvasCapabilities {
++    const surfaces = @import("vulkan_surface.zig");
++    var probe = native_runtime.NativeVulkanRuntime{ .allocator = allocator, .kernel_root = null, .queue_family_policy = queue_family_policy };
++    try vk_device.create_instance(&probe);
++    defer vk_device.destroy_instance_only(&probe);
++    try vk_device.select_physical_device(&probe);
++    if (!identity_matches(expected, query_identity(probe.physical_device))) return error.InvalidArgument;
++    if (!vk_device.supportsSurfaceCompletion(probe.physical_device, probe.has_surface_maintenance_instance)) return error.UnsupportedFeature;
++    const surface = try switch (source) {
++        .xcb => |window| surfaces.create_xcb_surface(probe.instance, window.connection, window.window),
++        .xlib => |window| surfaces.create_xlib_surface(probe.instance, window.display, window.window),
++        .wayland => |window| surfaces.create_wayland_surface(probe.instance, window.display, window.surface),
++    };
++    defer surfaces.destroy_surface(probe.instance, surface);
++    return surfaces.canvasCapabilities(try surfaces.query_surface_capabilities(probe.physical_device, probe.queue_family_index, surface));
++}
++
+ pub fn query_identity(physical_device: c.VkPhysicalDevice) native_runtime.AdapterIdentity {
+     var properties2 = std.mem.zeroes(c.VkPhysicalDeviceProperties2);
+     properties2.sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+diff --git a/runtime/zig/src/backend/vulkan/vk_device.zig b/runtime/zig/src/backend/vulkan/vk_device.zig
+index 9c0cdd3a2..305fefa1a 100644
+--- a/runtime/zig/src/backend/vulkan/vk_device.zig
++++ b/runtime/zig/src/backend/vulkan/vk_device.zig
+@@ -132,14 +132,8 @@ pub fn create_device_and_queue(self: anytype) !void {
+         c.VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME,
+     );
+     var surface_features = surface_sync.Features{};
+-    const surface_completion_available = self.has_surface_maintenance_instance and detect_device_extension(self.physical_device, surface_sync.extension);
+-    if (surface_completion_available) {
+-        var query = std.mem.zeroes(c.VkPhysicalDeviceFeatures2);
+-        query.sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+-        query.pNext = @ptrCast(&surface_features);
+-        c.vkGetPhysicalDeviceFeatures2(self.physical_device, &query);
+-    }
+-    const enable_surface_completion = surface_completion_available and surface_features.swapchainMaintenance1 != 0;
++    const enable_surface_completion = supportsSurfaceCompletion(self.physical_device, self.has_surface_maintenance_instance);
++    surface_features.swapchainMaintenance1 = @intFromBool(enable_surface_completion);
+     var feature_query = vk_feature_caps.query(self.physical_device);
+     if (!feature_query.caps.robust_buffer_access) return error.UnsupportedFeature;
+     feature_query.enabled_storage16_features.pNext = @ptrCast(&feature_query.enabled_variable_pointers_features);
+@@ -426,6 +420,16 @@ fn detect_instance_extension(target_name: [*:0]const u8) bool {
+     return false;
+ }
+ 
++pub fn supportsSurfaceCompletion(physical_device: VkPhysicalDevice, instance_enabled: bool) bool {
++    if (!instance_enabled or !detect_device_extension(physical_device, surface_sync.extension)) return false;
++    var features = surface_sync.Features{};
++    var query = std.mem.zeroes(c.VkPhysicalDeviceFeatures2);
++    query.sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
++    query.pNext = @ptrCast(&features);
++    c.vkGetPhysicalDeviceFeatures2(physical_device, &query);
++    return features.swapchainMaintenance1 != 0;
++}
++
+ /// Check whether a physical device advertises a given extension by name.
+ fn detect_device_extension(physical_device: VkPhysicalDevice, target_name: [*:0]const u8) bool {
+     var count: u32 = 0;
+diff --git a/runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig b/runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig
+index 25ba895ea..012585dda 100644
+--- a/runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig
++++ b/runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig
+@@ -47,6 +47,8 @@ pub fn configure_surface(self: anytype, cmd_arg: model_surface_control_types.Sur
+     if (cmd_arg.width == 0 or cmd_arg.height == 0) return error.InvalidArgument;
+     const surface = self.surfaces.getPtr(cmd_arg.handle) orelse return error.SurfaceUnavailable;
+     if (surface.vk_surface == 0) return error.SurfaceUnavailable;
++    try get_surface_capabilities(self, cmd_arg.handle);
++    const admitted = try vulkan_surface.admitConfiguration(surface.cached_capabilities, cmd_arg);
+     _ = try self.flush_queue();
+     if (surface.swapchain != 0) {
+         surface.completion.device_lost = surface.completion.device_lost or self.retirement.observed_device_loss;
+@@ -56,11 +58,11 @@ pub fn configure_surface(self: anytype, cmd_arg: model_surface_control_types.Sur
+     surface.acquired = false;
+     surface.width = cmd_arg.width;
+     surface.height = cmd_arg.height;
+-    surface.requested_format = if (cmd_arg.format == 0) preferred_canvas_format(self) else cmd_arg.format;
++    surface.requested_format = cmd_arg.format;
+     surface.format = surface.requested_format;
+-    surface.usage = if (cmd_arg.usage == 0) model_gpu_types.WGPUTextureUsage_RenderAttachment else cmd_arg.usage;
+-    surface.alpha_mode = if (cmd_arg.alpha_mode == 0) c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR else cmd_arg.alpha_mode;
+-    surface.present_mode = if (cmd_arg.present_mode == 0) c.VK_PRESENT_MODE_FIFO_KHR else cmd_arg.present_mode;
++    surface.usage = cmd_arg.usage;
++    surface.alpha_mode = cmd_arg.alpha_mode;
++    surface.present_mode = cmd_arg.present_mode;
+     surface.tone_mapping_mode = if (cmd_arg.tone_mapping_mode == 0)
+         model_surface_control_types.WGPUCanvasToneMappingMode_Standard
+     else
+@@ -69,12 +71,11 @@ pub fn configure_surface(self: anytype, cmd_arg: model_surface_control_types.Sur
+         c.DEFAULT_SURFACE_MAX_FRAME_LATENCY
+     else
+         cmd_arg.desired_maximum_frame_latency;
+-    try get_surface_capabilities(self, cmd_arg.handle);
+     try vulkan_surface.create_swapchain(
+         self.device,
+-        self.physical_device,
+         surface,
+         self.queue_family_index,
++        admitted,
+     );
+     surface.configured = true;
+ }
+diff --git a/runtime/zig/src/backend/vulkan/vk_sync.zig b/runtime/zig/src/backend/vulkan/vk_sync.zig
+index 0885a9695..8c98a9ae1 100644
+--- a/runtime/zig/src/backend/vulkan/vk_sync.zig
++++ b/runtime/zig/src/backend/vulkan/vk_sync.zig
+@@ -438,7 +438,7 @@ test "rejected fence submissions preserve earlier work and permit retry" {
+         pool.in_flight_count = 2;
+         pool.last_in_flight_index = 1;
+         pool.next_index = 2;
+-        try std.testing.expectError(error.InvalidState, pool.completeSubmit(result));
++        try std.testing.expectError(error.OutOfMemory, pool.completeSubmit(result));
+         try std.testing.expect(pool.in_flight[0]);
+         try std.testing.expect(!pool.in_flight[1]);
+         try std.testing.expectEqual(@as(u32, 1), pool.in_flight_count);
+@@ -455,7 +455,7 @@ test "rejected sole fence submission does not enter a native wait" {
+     pool.fences[0] = 11;
+     pool.in_flight[0] = true;
+     pool.in_flight_count = 1;
+-    try std.testing.expectError(error.InvalidState, pool.completeSubmit(errors.VK_ERROR_OUT_OF_HOST_MEMORY));
++    try std.testing.expectError(error.OutOfMemory, pool.completeSubmit(errors.VK_ERROR_OUT_OF_HOST_MEMORY));
+     try pool.drain(null);
+     try std.testing.expect(!pool.has_in_flight());
+ }
+@@ -465,7 +465,7 @@ test "timeline submission reserves then publishes only potentially submitted val
+     const pending = try TimelineSubmitHelper.prepare(&timeline);
+     try std.testing.expectEqual(@as(u64, 7), timeline.current_value);
+     for ([_]c.VkResult{ errors.VK_ERROR_OUT_OF_HOST_MEMORY, errors.VK_ERROR_OUT_OF_DEVICE_MEMORY }) |result| {
+-        try std.testing.expectError(error.InvalidState, pending.completeSubmit(&timeline, result));
++        try std.testing.expectError(error.OutOfMemory, pending.completeSubmit(&timeline, result));
+         try std.testing.expectEqual(@as(u64, 7), timeline.current_value);
+     }
+     const retry = try TimelineSubmitHelper.prepare(&timeline);
+diff --git a/runtime/zig/src/backend/vulkan/vulkan_errors.zig b/runtime/zig/src/backend/vulkan/vulkan_errors.zig
+index c4776c30a..b2ce9f3c0 100644
+--- a/runtime/zig/src/backend/vulkan/vulkan_errors.zig
++++ b/runtime/zig/src/backend/vulkan/vulkan_errors.zig
+@@ -33,6 +33,7 @@ pub fn check_vk(result: VkResult) common_errors.BackendNativeError!void {
+ /// Map a raw VkResult (i32) to a BackendNativeError. Called for non-success codes.
+ pub fn map_vk_result(result: VkResult) common_errors.BackendNativeError {
+     return switch (result) {
++        VK_ERROR_OUT_OF_HOST_MEMORY, VK_ERROR_OUT_OF_DEVICE_MEMORY => error.OutOfMemory,
+         VK_ERROR_DEVICE_LOST => error.DeviceLost,
+         VK_ERROR_EXTENSION_NOT_PRESENT,
+         VK_ERROR_FEATURE_NOT_PRESENT,
+@@ -119,9 +120,9 @@ test "map_vk_result maps OUT_OF_DATE_KHR to SurfaceUnavailable" {
+ 
+ test "map_vk_result maps other errors to InvalidState" {
+     // VK_ERROR_OUT_OF_HOST_MEMORY = -1
+-    try std.testing.expectEqual(error.InvalidState, map_vk_result(-1));
++    try std.testing.expectEqual(error.OutOfMemory, map_vk_result(VK_ERROR_OUT_OF_HOST_MEMORY));
+     // VK_ERROR_OUT_OF_DEVICE_MEMORY = -2
+-    try std.testing.expectEqual(error.InvalidState, map_vk_result(-2));
++    try std.testing.expectEqual(error.OutOfMemory, map_vk_result(VK_ERROR_OUT_OF_DEVICE_MEMORY));
+ }
+ 
+ test "vulkanResultName returns known names" {
+diff --git a/runtime/zig/src/backend/vulkan/vulkan_surface.zig b/runtime/zig/src/backend/vulkan/vulkan_surface.zig
+index cd8583d00..1243c0532 100644
+--- a/runtime/zig/src/backend/vulkan/vulkan_surface.zig
++++ b/runtime/zig/src/backend/vulkan/vulkan_surface.zig
+@@ -1,6 +1,7 @@
+ // Native window-system surfaces, swapchain configuration, acquisition and presentation.
+ const std = @import("std");
+ const builtin = @import("builtin");
++const surface_contract = @import("../../contracts/model/model_surface_control_types.zig");
+ const model_gpu_types = @import("../../contracts/model/model_texture_value_types.zig");
+ const common_errors = @import("../../contracts/execution.zig");
+ const vk = @import("vulkan_types.zig");
+@@ -33,13 +34,13 @@ const VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR: i32 = 1000006000;
+ const VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR: i32 = 1000005000;
+ const VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR: i32 = 1000004000;
+ // VkFormat for swapchain
++const VK_FORMAT_UNDEFINED: u32 = 0;
+ const VK_FORMAT_B8G8R8A8_SRGB: u32 = 50;
+ const VK_FORMAT_B8G8R8A8_UNORM: u32 = 44;
+ const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
+-const VK_FORMAT_R16G16B16A16_SFLOAT: u32 = 97;
++const VK_FORMAT_R8G8B8A8_SRGB: u32 = 43;
+ // VkColorSpaceKHR
+ const VK_COLOR_SPACE_SRGB_NONLINEAR_KHR: u32 = 0;
+-const VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT: u32 = 1000104002;
+ // VkPresentModeKHR
+ const VK_PRESENT_MODE_FIFO_KHR: u32 = 2;
+ const VK_PRESENT_MODE_MAILBOX_KHR: u32 = 3;
+@@ -63,9 +64,16 @@ const MAX_SURFACE_FORMATS: usize = 32;
+ const MAX_PRESENT_MODES: usize = 8;
+ const ACQUIRE_TIMEOUT_NS: u64 = std.math.maxInt(u64);
+ // Present mode mapping from WebGPU to Vulkan
+-const WGPU_PRESENT_MODE_FIFO: u32 = 0x00000002;
+-const WGPU_PRESENT_MODE_MAILBOX: u32 = 0x00000003;
+-const WGPU_PRESENT_MODE_IMMEDIATE: u32 = 0x00000004;
++const WGPU_PRESENT_MODE_FIFO: u32 = 0x00000001;
++const WGPU_PRESENT_MODE_MAILBOX: u32 = 0x00000004;
++const WGPU_PRESENT_MODE_IMMEDIATE: u32 = 0x00000003;
++const WGPU_PRESENT_MODE_FIFO_RELAXED: u32 = 2;
++const VK_PRESENT_MODE_FIFO_RELAXED_KHR: u32 = 1;
++const WGPU_ALPHA_AUTO: u32 = 0;
++const WGPU_ALPHA_OPAQUE: u32 = 1;
++const WGPU_ALPHA_PREMULTIPLIED: u32 = 2;
++const WGPU_ALPHA_UNPREMULTIPLIED: u32 = 3;
++const WGPU_ALPHA_INHERIT: u32 = 4;
+ const VkSurfaceCapabilitiesKHR = extern struct {
+     minImageCount: u32,
+     maxImageCount: u32,
+@@ -170,6 +178,8 @@ pub const SurfaceCapabilities = struct {
+     max_width: u32 = 0,
+     max_height: u32 = 0,
+     supported_usage: VkFlags = 0,
++    supported_alpha: VkFlags = 0,
++    current_transform: VkFlags = 0,
+     format_count: u32 = 0,
+     formats: [MAX_SURFACE_FORMATS]VkSurfaceFormatKHR = std.mem.zeroes([MAX_SURFACE_FORMATS]VkSurfaceFormatKHR),
+     present_mode_count: u32 = 0,
+@@ -356,6 +366,8 @@ pub fn query_surface_capabilities(
+     result.max_width = caps.maxImageExtent.width;
+     result.max_height = caps.maxImageExtent.height;
+     result.supported_usage = caps.supportedUsageFlags;
++    result.supported_alpha = caps.supportedCompositeAlpha;
++    result.current_transform = caps.currentTransform;
+ 
+     // Surface formats
+     var format_count: u32 = 0;
+@@ -390,219 +402,148 @@ pub fn query_surface_capabilities(
+     return result;
+ }
+ 
+-/// Select the best surface format from available formats.
+-fn select_surface_format(
+-    formats: []const VkSurfaceFormatKHR,
+-    requested_format: model_gpu_types.WGPUTextureFormat,
+-    tone_mapping_mode: u32,
+-) VkSurfaceFormatKHR {
+-    if (tone_mapping_mode == WGPU_CANVAS_TONE_MAPPING_MODE_EXTENDED) {
+-        for (formats) |fmt| {
+-            if (fmt.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT and
+-                fmt.format == VK_FORMAT_R16G16B16A16_SFLOAT)
+-            {
+-                return fmt;
+-            }
+-        }
+-        for (formats) |fmt| {
+-            if (fmt.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT) return fmt;
+-        }
+-    }
+-    if (requested_format == model_gpu_types.WGPUTextureFormat_BGRA8Unorm) {
+-        for (formats) |fmt| {
+-            if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM and
+-                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+-            {
+-                return fmt;
+-            }
+-        }
+-    }
+-    if (requested_format == model_gpu_types.WGPUTextureFormat_RGBA8Unorm) {
+-        for (formats) |fmt| {
+-            if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and
+-                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+-            {
+-                return fmt;
+-            }
+-        }
+-    }
+-    if (requested_format == model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb) {
+-        for (formats) |fmt| {
+-            if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and
+-                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+-            {
+-                return fmt;
+-            }
+-        }
+-    }
+-    if (requested_format == model_gpu_types.WGPUTextureFormat_RGBA8UnormSrgb) {
+-        for (formats) |fmt| {
+-            if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and
+-                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+-            {
+-                return fmt;
+-            }
+-        }
+-    }
+-    for (formats) |fmt| {
+-        if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and
+-            fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+-        {
+-            return fmt;
++// The format table is the intersection of implemented canvas formats and native WSI.
++const CANVAS_FORMATS = [_]struct { webgpu: u32, vulkan: u32 }{
++    .{ .webgpu = model_gpu_types.WGPUTextureFormat_BGRA8Unorm, .vulkan = VK_FORMAT_B8G8R8A8_UNORM },
++    .{ .webgpu = model_gpu_types.WGPUTextureFormat_RGBA8Unorm, .vulkan = VK_FORMAT_R8G8B8A8_UNORM },
++    .{ .webgpu = model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb, .vulkan = VK_FORMAT_B8G8R8A8_SRGB },
++    .{ .webgpu = model_gpu_types.WGPUTextureFormat_RGBA8UnormSrgb, .vulkan = VK_FORMAT_R8G8B8A8_SRGB },
++};
++const PRESENT_MODES = [_]struct { webgpu: u32, vulkan: u32 }{
++    .{ .webgpu = WGPU_PRESENT_MODE_FIFO, .vulkan = VK_PRESENT_MODE_FIFO_KHR },
++    .{ .webgpu = WGPU_PRESENT_MODE_FIFO_RELAXED, .vulkan = VK_PRESENT_MODE_FIFO_RELAXED_KHR },
++    .{ .webgpu = WGPU_PRESENT_MODE_IMMEDIATE, .vulkan = VK_PRESENT_MODE_IMMEDIATE_KHR },
++    .{ .webgpu = WGPU_PRESENT_MODE_MAILBOX, .vulkan = VK_PRESENT_MODE_MAILBOX_KHR },
++};
++const ALPHA_MODES = [_]struct { webgpu: u32, vulkan: u32 }{
++    .{ .webgpu = WGPU_ALPHA_INHERIT, .vulkan = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR },
++    .{ .webgpu = WGPU_ALPHA_OPAQUE, .vulkan = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR },
++    .{ .webgpu = WGPU_ALPHA_PREMULTIPLIED, .vulkan = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR },
++    .{ .webgpu = WGPU_ALPHA_UNPREMULTIPLIED, .vulkan = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR },
++};
++const USAGES = [_]struct { webgpu: u32, vulkan: u32 }{
++    .{ .webgpu = model_gpu_types.WGPUTextureUsage_RenderAttachment, .vulkan = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT },
++    .{ .webgpu = model_gpu_types.WGPUTextureUsage_CopySrc, .vulkan = VK_IMAGE_USAGE_TRANSFER_SRC_BIT },
++    .{ .webgpu = model_gpu_types.WGPUTextureUsage_CopyDst, .vulkan = VK_IMAGE_USAGE_TRANSFER_DST_BIT },
++    .{ .webgpu = model_gpu_types.WGPUTextureUsage_TextureBinding, .vulkan = VK_IMAGE_USAGE_SAMPLED_BIT },
++};
++
++fn selectSurfaceFormat(formats: []const VkSurfaceFormatKHR, requested: u32) !VkSurfaceFormatKHR {
++    for (CANVAS_FORMATS) |candidate| {
++        if (candidate.webgpu != requested) continue;
++        for (formats) |format| {
++            // VK_FORMAT_UNDEFINED permits any format, but still fixes color space.
++            if ((format.format == candidate.vulkan or format.format == VK_FORMAT_UNDEFINED) and
++                format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
++                return .{ .format = candidate.vulkan, .colorSpace = format.colorSpace };
+         }
+     }
+-    // Fall back to B8G8R8A8_UNORM
+-    for (formats) |fmt| {
+-        if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM) return fmt;
+-    }
+-    // Fall back to R8G8B8A8_UNORM
+-    for (formats) |fmt| {
+-        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM) return fmt;
+-    }
+-    // Last resort: use whatever the driver offers first
+-    if (formats.len > 0) return formats[0];
+-    return .{ .format = VK_FORMAT_B8G8R8A8_SRGB, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
++    return error.UnsupportedFeature;
+ }
+ 
+-pub fn preferred_canvas_format_from_surface_formats(formats: []const VkSurfaceFormatKHR) model_gpu_types.WGPUTextureFormat {
+-    for (formats) |fmt| {
+-        if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+-            return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
+-        }
++pub const CanvasCapabilities = struct {
++    formats: [CANVAS_FORMATS.len]u32 = undefined,
++    format_count: usize = 0,
++    present_modes: [PRESENT_MODES.len]u32 = undefined,
++    present_mode_count: usize = 0,
++    alpha_modes: [ALPHA_MODES.len]u32 = undefined,
++    alpha_mode_count: usize = 0,
++    usages: u32 = 0,
++};
++
++pub fn canvasCapabilities(caps: SurfaceCapabilities) !CanvasCapabilities {
++    if (!caps.present_supported) return error.SurfaceUnavailable;
++    var result = CanvasCapabilities{};
++    for (CANVAS_FORMATS) |format| {
++        _ = selectSurfaceFormat(caps.formats[0..caps.format_count], format.webgpu) catch continue;
++        result.formats[result.format_count] = format.webgpu;
++        result.format_count += 1;
+     }
+-    for (formats) |fmt| {
+-        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+-            return model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
+-        }
++    for (PRESENT_MODES) |mode| {
++        if (std.mem.indexOfScalar(u32, caps.present_modes[0..caps.present_mode_count], mode.vulkan) == null) continue;
++        result.present_modes[result.present_mode_count] = mode.webgpu;
++        result.present_mode_count += 1;
+     }
+-    for (formats) |fmt| {
+-        if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+-            return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
+-        }
++    for (ALPHA_MODES) |mode| {
++        if (caps.supported_alpha & mode.vulkan == 0) continue;
++        result.alpha_modes[result.alpha_mode_count] = mode.webgpu;
++        result.alpha_mode_count += 1;
+     }
+-    for (formats) |fmt| {
+-        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM) return model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
+-        if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM) return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
++    for (USAGES) |usage| {
++        if (caps.supported_usage & usage.vulkan != 0) result.usages |= usage.webgpu;
+     }
+-    return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
++    if (result.format_count == 0 or result.alpha_mode_count == 0 or
++        std.mem.indexOfScalar(u32, result.present_modes[0..result.present_mode_count], WGPU_PRESENT_MODE_FIFO) == null or
++        result.usages & model_gpu_types.WGPUTextureUsage_RenderAttachment == 0) return error.UnsupportedFeature;
++    return result;
+ }
+ 
+-fn canvas_format_for_selected_surface_format(
+-    requested_format: model_gpu_types.WGPUTextureFormat,
+-    selected_format: VkSurfaceFormatKHR,
+-) model_gpu_types.WGPUTextureFormat {
+-    switch (selected_format.format) {
+-        VK_FORMAT_B8G8R8A8_UNORM => return model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
+-        VK_FORMAT_B8G8R8A8_SRGB => return if (requested_format == model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb)
+-            model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb
+-        else
+-            model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
+-        VK_FORMAT_R8G8B8A8_UNORM => return model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
+-        VK_FORMAT_R16G16B16A16_SFLOAT => return requested_format,
+-        else => return requested_format,
++pub fn preferred_canvas_format_from_surface_formats(formats: []const VkSurfaceFormatKHR) u32 {
++    for (CANVAS_FORMATS) |candidate| {
++        _ = selectSurfaceFormat(formats, candidate.webgpu) catch continue;
++        return candidate.webgpu;
+     }
++    return model_gpu_types.WGPUTextureFormat_Undefined;
+ }
+ 
+-/// Map WebGPU present mode to Vulkan present mode.
+-fn map_present_mode(wgpu_mode: u32) u32 {
+-    return switch (wgpu_mode) {
+-        WGPU_PRESENT_MODE_FIFO => VK_PRESENT_MODE_FIFO_KHR,
+-        WGPU_PRESENT_MODE_MAILBOX => VK_PRESENT_MODE_MAILBOX_KHR,
+-        WGPU_PRESENT_MODE_IMMEDIATE => VK_PRESENT_MODE_IMMEDIATE_KHR,
+-        else => VK_PRESENT_MODE_FIFO_KHR,
+-    };
+-}
+-
+-/// Map the requested WebGPU alpha mode to a Vulkan composite-alpha mode.
+-fn map_composite_alpha(requested: u32, supported: VkFlags) u32 {
+-    const requested_mode: u32 = switch (requested) {
+-        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR, VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR, VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR => requested,
+-        else => VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+-    };
+-    if ((supported & requested_mode) != 0) return requested_mode;
+-    if ((supported & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+-    if ((supported & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+-    if ((supported & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+-    if ((supported & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+-    return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+-}
+-
+-/// Clamp the requested extent to the surface capabilities.
+-fn clamp_extent(
+-    requested_width: u32,
+-    requested_height: u32,
+-    caps: VkSurfaceCapabilitiesKHR,
+-) VkExtent2D {
+-    // 0xFFFFFFFF means the surface size is determined by the swapchain extent
+-    const SPECIAL_EXTENT: u32 = 0xFFFFFFFF;
+-    if (caps.currentExtent.width != SPECIAL_EXTENT) return caps.currentExtent;
+-    return .{
+-        .width = std.math.clamp(requested_width, caps.minImageExtent.width, caps.maxImageExtent.width),
+-        .height = std.math.clamp(requested_height, caps.minImageExtent.height, caps.maxImageExtent.height),
+-    };
+-}
++pub const AdmittedConfiguration = struct {
++    format: VkSurfaceFormatKHR,
++    extent: VkExtent2D,
++    present_mode: u32,
++    alpha: u32,
++    usage: VkFlags,
++};
+ 
+-fn map_surface_usage_flags(wgpu_usage: model_gpu_types.WGPUFlags) VkFlags {
++/// Validate before retiring an existing swapchain. No field is silently substituted.
++pub fn admitConfiguration(caps: SurfaceCapabilities, request: surface_contract.SurfaceConfigureCommand) !AdmittedConfiguration {
++    const canvas = try canvasCapabilities(caps);
++    if (request.tone_mapping_mode != WGPU_CANVAS_TONE_MAPPING_MODE_STANDARD) return error.UnsupportedFeature;
++    const format = try selectSurfaceFormat(caps.formats[0..caps.format_count], request.format);
++    if (request.width < caps.min_width or request.width > caps.max_width or
++        request.height < caps.min_height or request.height > caps.max_height or
++        request.width == 0 or request.height == 0) return error.InvalidArgument;
++    if (caps.current_width != std.math.maxInt(u32) and
++        (request.width != caps.current_width or request.height != caps.current_height)) return error.UnsupportedFeature;
++    if (request.usage & ~canvas.usages != 0 or request.usage & model_gpu_types.WGPUTextureUsage_RenderAttachment == 0) return error.UnsupportedFeature;
+     var usage: VkFlags = 0;
+-    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_RenderAttachment) != 0) usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+-    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_CopySrc) != 0) usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+-    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_CopyDst) != 0) usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+-    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_TextureBinding) != 0) usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+-    if (usage == 0) usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+-    return usage;
++    for (USAGES) |entry| {
++        if (request.usage & entry.webgpu != 0) usage |= entry.vulkan;
++    }
++    const present = if (request.present_mode == 0) WGPU_PRESENT_MODE_FIFO else request.present_mode;
++    if (std.mem.indexOfScalar(u32, canvas.present_modes[0..canvas.present_mode_count], present) == null) return error.UnsupportedFeature;
++    const alpha = if (request.alpha_mode == WGPU_ALPHA_AUTO) canvas.alpha_modes[0] else request.alpha_mode;
++    if (std.mem.indexOfScalar(u32, canvas.alpha_modes[0..canvas.alpha_mode_count], alpha) == null) return error.UnsupportedFeature;
++    var native_present: u32 = undefined;
++    var native_alpha: u32 = undefined;
++    for (PRESENT_MODES) |entry| {
++        if (entry.webgpu == present) {
++            native_present = entry.vulkan;
++            break;
++        }
++    }
++    for (ALPHA_MODES) |entry| {
++        if (entry.webgpu == alpha) {
++            native_alpha = entry.vulkan;
++            break;
++        }
++    }
++    return .{ .format = format, .extent = .{ .width = request.width, .height = request.height }, .present_mode = native_present, .alpha = native_alpha, .usage = usage };
+ }
+ 
+ /// Create (or recreate) a swapchain for the given surface.
+ pub fn create_swapchain(
+     device: VkDevice,
+-    physical_device: VkPhysicalDevice,
+     surface_state: *VulkanSurface,
+     queue_family_index: u32,
++    admitted: AdmittedConfiguration,
+ ) common_errors.BackendNativeError!void {
+     if (surface_state.vk_surface == VK_NULL_U64) return error.SurfaceUnavailable;
+ 
+-    // Query capabilities for swapchain creation
+-    var caps = std.mem.zeroes(VkSurfaceCapabilitiesKHR);
+-    try check_vk(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+-        physical_device,
+-        surface_state.vk_surface,
+-        &caps,
+-    ));
+-
+-    // Query formats
+-    var format_count: u32 = 0;
+-    try check_vk(vkGetPhysicalDeviceSurfaceFormatsKHR(
+-        physical_device,
+-        surface_state.vk_surface,
+-        &format_count,
+-        null,
+-    ));
+-    if (format_count == 0) return error.SurfaceUnavailable;
+-
+-    var formats: [MAX_SURFACE_FORMATS]VkSurfaceFormatKHR = std.mem.zeroes([MAX_SURFACE_FORMATS]VkSurfaceFormatKHR);
+-    var query_format_count: u32 = @intCast(@min(format_count, MAX_SURFACE_FORMATS));
+-    try check_vk(vkGetPhysicalDeviceSurfaceFormatsKHR(
+-        physical_device,
+-        surface_state.vk_surface,
+-        &query_format_count,
+-        &formats,
+-    ));
+-
+-    const chosen_format = select_surface_format(
+-        formats[0..@as(usize, query_format_count)],
+-        surface_state.requested_format,
+-        surface_state.tone_mapping_mode,
+-    );
+-    const chosen_present_mode = map_present_mode(surface_state.present_mode);
+-    const chosen_alpha_mode = map_composite_alpha(surface_state.alpha_mode, caps.supportedCompositeAlpha);
+-    const chosen_extent = clamp_extent(surface_state.width, surface_state.height, caps);
+-    const requested_usage = map_surface_usage_flags(surface_state.usage);
+-    if ((requested_usage & caps.supportedUsageFlags) != requested_usage) return error.UnsupportedFeature;
+-
++    const caps = surface_state.cached_capabilities;
+     // Image count: prefer one more than minimum for triple buffering
+-    var image_count: u32 = caps.minImageCount + 1;
+-    if (caps.maxImageCount > 0 and image_count > caps.maxImageCount) {
+-        image_count = caps.maxImageCount;
++    var image_count: u32 = caps.min_image_count + 1;
++    if (caps.max_image_count > 0 and image_count > caps.max_image_count) {
++        image_count = caps.max_image_count;
+     }
+ 
+     std.debug.assert(surface_state.swapchain == VK_NULL_U64);
+@@ -613,17 +554,17 @@ pub fn create_swapchain(
+         .flags = 0,
+         .surface = surface_state.vk_surface,
+         .minImageCount = image_count,
+-        .imageFormat = chosen_format.format,
+-        .imageColorSpace = chosen_format.colorSpace,
+-        .imageExtent = chosen_extent,
++        .imageFormat = admitted.format.format,
++        .imageColorSpace = admitted.format.colorSpace,
++        .imageExtent = admitted.extent,
+         .imageArrayLayers = 1,
+-        .imageUsage = requested_usage,
++        .imageUsage = admitted.usage,
+         .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+         .queueFamilyIndexCount = 1,
+         .pQueueFamilyIndices = @ptrCast(&queue_family_index),
+-        .preTransform = caps.currentTransform,
+-        .compositeAlpha = chosen_alpha_mode,
+-        .presentMode = chosen_present_mode,
++        .preTransform = caps.current_transform,
++        .compositeAlpha = admitted.alpha,
++        .presentMode = admitted.present_mode,
+         .clipped = VK_TRUE,
+         .oldSwapchain = VK_NULL_U64,
+     };
+@@ -642,9 +583,9 @@ pub fn create_swapchain(
+         &surface_state.swapchain_images,
+     ));
+     surface_state.swapchain_image_count = actual_image_count;
+-    surface_state.swapchain_format = chosen_format.format;
+-    surface_state.swapchain_extent = chosen_extent;
+-    surface_state.format = canvas_format_for_selected_surface_format(surface_state.requested_format, chosen_format);
++    surface_state.swapchain_format = admitted.format.format;
++    surface_state.swapchain_extent = admitted.extent;
++    surface_state.format = surface_state.requested_format;
+     surface_state.last_acquire_suboptimal = false;
+     surface_state.last_present_suboptimal = false;
+ 
+diff --git a/runtime/zig/src/contracts/execution.zig b/runtime/zig/src/contracts/execution.zig
+index 50e0d1f72..087ea76ac 100644
+--- a/runtime/zig/src/contracts/execution.zig
++++ b/runtime/zig/src/contracts/execution.zig
+@@ -14,6 +14,7 @@ pub const ExecutionStatus = enum {
+ };
+ 
+ pub const BackendNativeError = error{
++    OutOfMemory,
+     InvalidArgument,
+     InvalidState,
+     DeviceLost,
+diff --git a/runtime/zig/src/contracts/model/model_surface_control_types.zig b/runtime/zig/src/contracts/model/model_surface_control_types.zig
+index c195d2fcd..485930de5 100644
+--- a/runtime/zig/src/contracts/model/model_surface_control_types.zig
++++ b/runtime/zig/src/contracts/model/model_surface_control_types.zig
+@@ -18,7 +18,7 @@ pub const SurfaceConfigureCommand = struct {
+     format: gpu.WGPUTextureFormat = gpu.WGPUTextureFormat_RGBA8Unorm,
+     usage: gpu.WGPUFlags = gpu.WGPUTextureUsage_RenderAttachment,
+     alpha_mode: u32 = 0x00000001,
+-    present_mode: u32 = 0x00000002,
++    present_mode: u32 = 0x00000001,
+     tone_mapping_mode: u32 = WGPUCanvasToneMappingMode_Standard,
+     desired_maximum_frame_latency: u32 = 2,
+ };
+diff --git a/runtime/zig/src/native/lifecycle/doe_instance_device_native.zig b/runtime/zig/src/native/lifecycle/doe_instance_device_native.zig
+index d1478624d..92537fb2e 100644
+--- a/runtime/zig/src/native/lifecycle/doe_instance_device_native.zig
++++ b/runtime/zig/src/native/lifecycle/doe_instance_device_native.zig
+@@ -275,6 +275,7 @@ fn create_adapter_for_instance(inst: ?*anyopaque) CreateAdapterError!*DoeAdapter
+                 adapter.* = .{
+                     .backend = .vulkan,
+                     .instance = retained_instance,
++                    .vulkan_queue_family_policy = selected_policy.queue_family_policy,
+                     .vendor_id = identity.vendor_id,
+                     .device_id = identity.device_id,
+                     .driver_version = identity.driver_version,
+@@ -345,7 +346,7 @@ fn create_device_for_adapter(
+             rt.* = NativeVulkanRuntime.init_with_backend_policy(
+                 alloc,
+                 null,
+-                selected_policy.queue_family_policy,
++                adapter.vulkan_queue_family_policy,
+                 selected_policy.deferred_submission_sync_policy,
+                 selected_policy.vulkan_subgroup_size_policy,
+             ) catch {
+diff --git a/runtime/zig/src/native/support/doe_native_object_types.zig b/runtime/zig/src/native/support/doe_native_object_types.zig
+index 66024df00..3dfd31ba4 100644
+--- a/runtime/zig/src/native/support/doe_native_object_types.zig
++++ b/runtime/zig/src/native/support/doe_native_object_types.zig
+@@ -49,6 +49,7 @@ pub const DoeAdapter = struct {
+     instance: ?*DoeInstance = null,
+     mtl_device: ?*anyopaque = null,
+     backend: backend_contract.NativeBackendKind = .metal,
++    vulkan_queue_family_policy: backend_contract.QueueFamilyPolicy = .prefer_graphics_compute,
+     vendor_id: u32 = 0,
+     device_id: u32 = 0,
+     driver_version: u32 = 0,
+diff --git a/runtime/zig/src/native/surface/doe_surface_native.zig b/runtime/zig/src/native/surface/doe_surface_native.zig
+index 6ddd96336..e838e0f49 100644
+--- a/runtime/zig/src/native/surface/doe_surface_native.zig
++++ b/runtime/zig/src/native/surface/doe_surface_native.zig
+@@ -10,6 +10,7 @@
+ // and acquire fail explicitly until a real platform surface is attached.
+ 
+ const std = @import("std");
++const error_scope = @import("../../runtime/diagnostics/error_scope.zig");
+ const log = std.log.scoped(.doe_surface_native);
+ const builtin = @import("builtin");
+ const has_vulkan = (builtin.os.tag == .linux);
+@@ -161,6 +162,8 @@ fn attach_pending_platform_surface(surf: *DoeSurface, rt: *NativeVulkanRuntime)
+ fn bind_surface_runtime(surf: *DoeSurface, dev_raw: ?*anyopaque) bool {
+     const dev = cast(DoeDevice, dev_raw) orelse return false;
+     if (dev.backend != .vulkan) return false;
++    const adapter = dev.adapter orelse return false;
++    if (adapter.instance != surf.instance_ref) return false;
+     const rt = native_rt_helpers.device_vk_runtime(dev) orelse return false;
+     const rt_opaque: *anyopaque = @ptrCast(rt);
+     if (surf.vk_runtime_ref) |existing| {
+@@ -358,13 +361,12 @@ fn doeNativeSurfaceConfigureForDevice(
+     const surf = cast(DoeSurface, surf_raw) orelse return;
+     if (surf.backend != .vulkan) return;
+     if ((dev_raw != null or surf.vk_runtime_ref == null) and !bind_surface_runtime(surf, dev_raw)) {
+-        std.log.err("doe_surface_native: configure_surface failed: missing Vulkan device binding", .{});
++        reportConfigurationError(cast(DoeDevice, dev_raw), error.InvalidArgument);
+         return;
+     }
+     const rt_ptr = surf.vk_runtime_ref orelse return;
+     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+-    release_current_surface_texture(surf);
+-    rt.configure_surface(model_surface_control_types.SurfaceConfigureCommand{
++    const request = model_surface_control_types.SurfaceConfigureCommand{
+         .handle = surf.handle,
+         .width = width,
+         .height = height,
+@@ -372,9 +374,21 @@ fn doeNativeSurfaceConfigureForDevice(
+         .usage = usage,
+         .alpha_mode = alpha_mode,
+         .present_mode = present_mode,
+-        .tone_mapping_mode = tone_mapping_mode,
+-    }) catch |err| {
+-        std.log.err("doe_surface_native: configure_surface failed: {s}", .{@errorName(err)});
++        .tone_mapping_mode = if (tone_mapping_mode == 0) model_surface_control_types.WGPUCanvasToneMappingMode_Standard else tone_mapping_mode,
++    };
++    // Reject unsupported changes before expiring caller-held textures or retiring the swapchain.
++    rt.get_surface_capabilities(surf.handle) catch |err| {
++        reportConfigurationError(surf.device_ref, err);
++        return;
++    };
++    const state = rt.surfaces.getPtr(surf.handle) orelse return;
++    _ = vk_surf.admitConfiguration(state.cached_capabilities, request) catch |err| {
++        reportConfigurationError(surf.device_ref, err);
++        return;
++    };
++    release_current_surface_texture(surf);
++    rt.configure_surface(request) catch |err| {
++        reportConfigurationError(surf.device_ref, err);
+     };
+ }
+ 
+@@ -490,43 +504,73 @@ pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
+ // Capabilities query
+ // ============================================================
+ 
+-// Default surface format for Doe Vulkan surfaces.
+-const DOE_SURFACE_DEFAULT_FORMAT: u32 = model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
+-
+-// Present mode constants matching WGPUPresentMode values.
+-const DOE_PRESENT_MODE_FIFO: u32 = 0x00000003;
++fn reportConfigurationError(device: ?*DoeDevice, cause: anyerror) void {
++    const dev = device orelse return;
++    const kind = switch (cause) {
++        error.UnsupportedFeature, error.SurfaceUnavailable => error_scope.ERROR_TYPE_VALIDATION,
++        else => error_scope.zig_error_to_type(cause),
++    };
++    var message: [160]u8 = undefined;
++    const text = std.fmt.bufPrint(&message, "surface configuration rejected: {s}", .{@errorName(cause)}) catch unreachable;
++    dev.error_scopes.deliver(kind, text);
++}
+ 
+-// Composite alpha mode constants matching WGPUCompositeAlphaMode values.
+-const DOE_COMPOSITE_ALPHA_MODE_OPAQUE: u32 = 0x00000002;
++fn queryCanvasCapabilities(surf: *DoeSurface, adapter: *native_types.DoeAdapter) !vk_surf.CanvasCapabilities {
++    if (surf.backend != .vulkan or adapter.backend != .vulkan or adapter.instance != surf.instance_ref) return error.InvalidArgument;
++    if (surf.device_ref) |dev| {
++        if (dev.adapter != adapter) return error.InvalidArgument;
++        const rt = native_rt_helpers.device_vk_runtime(dev) orelse return error.InvalidState;
++        if (!rt.has_surface_completion) return error.UnsupportedFeature;
++        try rt.get_surface_capabilities(surf.handle);
++        return vk_surf.canvasCapabilities(rt.surfaces.get(surf.handle).?.cached_capabilities);
++    }
++    const source: vk_surf.SurfaceSource = if (surf.pending_xcb_connection) |connection|
++        .{ .xcb = .{ .connection = connection, .window = surf.pending_xcb_window } }
++    else if (surf.pending_wayland_display) |display|
++        .{ .wayland = .{ .display = display, .surface = surf.pending_wayland_surface orelse return error.InvalidArgument } }
++    else if (surf.pending_xlib_display) |display|
++        .{ .xlib = .{ .display = display, .window = surf.pending_xlib_window } }
++    else
++        return error.SurfaceUnavailable;
++    return vk_surf.probeSurfaceCapabilities(alloc, adapter.vulkan_queue_family_policy, .{
++        .vendor_id = adapter.vendor_id,
++        .device_id = adapter.device_id,
++        .driver_version = adapter.driver_version,
++        .device_name = adapter.device_name,
++        .device_name_len = adapter.device_name_len,
++    }, source);
++}
+ 
+-// Static capability arrays — returned by pointer, never freed.
+-const DEFAULT_FORMATS = [_]u32{DOE_SURFACE_DEFAULT_FORMAT};
+-const DEFAULT_PRESENT_MODES = [_]u32{DOE_PRESENT_MODE_FIFO};
+-const DEFAULT_ALPHA_MODES = [_]u32{DOE_COMPOSITE_ALPHA_MODE_OPAQUE};
++fn copyCapabilities(allocator: std.mem.Allocator, caps: vk_surf.CanvasCapabilities) !surface_procs.SurfaceCapabilities {
++    const formats = try allocator.dupe(u32, caps.formats[0..caps.format_count]);
++    errdefer allocator.free(formats);
++    const modes = try allocator.dupe(u32, caps.present_modes[0..caps.present_mode_count]);
++    errdefer allocator.free(modes);
++    const alpha = try allocator.dupe(u32, caps.alpha_modes[0..caps.alpha_mode_count]);
++    return .{ .nextInChain = null, .usages = caps.usages, .formatCount = formats.len, .formats = formats.ptr, .presentModeCount = modes.len, .presentModes = modes.ptr, .alphaModeCount = alpha.len, .alphaModes = alpha.ptr };
++}
+ 
+-/// Minimal capabilities query: reports BGRA8Unorm, Fifo, Opaque.
+ pub export fn doeNativeSurfaceGetCapabilities(
+     surf_raw: ?*anyopaque,
+-    _: ?*anyopaque,
++    adapter_raw: ?*anyopaque,
+     out: ?*surface_procs.SurfaceCapabilities,
+ ) callconv(.c) u32 {
+-    const surf = cast(DoeSurface, surf_raw) orelse return 0;
+-    _ = surf;
+-    const caps = out orelse return 0;
+-    caps.nextInChain = null;
+-    caps.usages = 0x00000010; // WGPUTextureUsage_RenderAttachment
+-    caps.formatCount = DEFAULT_FORMATS.len;
+-    caps.formats = &DEFAULT_FORMATS;
+-    caps.presentModeCount = DEFAULT_PRESENT_MODES.len;
+-    caps.presentModes = &DEFAULT_PRESENT_MODES;
+-    caps.alphaModeCount = DEFAULT_ALPHA_MODES.len;
+-    caps.alphaModes = &DEFAULT_ALPHA_MODES;
+-    return 1; // WGPUStatus_Success
++    const output = out orelse return WGPU_STATUS_ERROR;
++    const unsupported_chain = output.nextInChain != null;
++    output.* = std.mem.zeroes(surface_procs.SurfaceCapabilities);
++    if (comptime !has_vulkan) return WGPU_STATUS_ERROR;
++    if (unsupported_chain) return WGPU_STATUS_ERROR;
++    const surf = cast(DoeSurface, surf_raw) orelse return WGPU_STATUS_ERROR;
++    const adapter = cast(native_types.DoeAdapter, adapter_raw) orelse return WGPU_STATUS_ERROR;
++    const caps = queryCanvasCapabilities(surf, adapter) catch return WGPU_STATUS_ERROR;
++    output.* = copyCapabilities(alloc, caps) catch return WGPU_STATUS_ERROR;
++    return WGPU_STATUS_SUCCESS;
+ }
+ 
+-/// Free members from a capabilities query. Static arrays need no deallocation.
+-pub export fn doeNativeSurfaceCapabilitiesFreeMembers(_: surface_procs.SurfaceCapabilities) callconv(.c) void {
+-    // Static arrays — nothing to free.
++pub export fn doeNativeSurfaceCapabilitiesFreeMembers(caps: surface_procs.SurfaceCapabilities) callconv(.c) void {
++    if (caps.formats) |values| alloc.free(values[0..caps.formatCount]);
++    if (caps.presentModes) |values| alloc.free(values[0..caps.presentModeCount]);
++    if (caps.alphaModes) |values| alloc.free(values[0..caps.alphaModeCount]);
+ }
+ 
+ // ============================================================
+@@ -550,13 +594,17 @@ pub fn doeAbiBridgeSurfaceConfigure(
+     surf_raw: ?*anyopaque,
+     config: *const surface_procs.SurfaceConfiguration,
+ ) callconv(.c) void {
++    if (config.nextInChain != null or config.viewFormatCount != 0 or config.usage > std.math.maxInt(u32)) {
++        reportConfigurationError(cast(DoeDevice, config.device), error.UnsupportedFeature);
++        return;
++    }
+     doeNativeSurfaceConfigureForDevice(
+         surf_raw,
+         config.device,
+         config.width,
+         config.height,
+         config.format,
+-        @truncate(config.usage), // WGPUTextureUsage is u64; native uses u32
++        @intCast(config.usage),
+         config.alphaMode,
+         config.presentMode,
+         0, // tone_mapping_mode — not in C ABI struct; default to standard
+@@ -600,3 +648,23 @@ pub fn doeAbiBridgeSurfacePresent(surf_raw: ?*anyopaque) callconv(.c) u32 {
+     release_current_surface_texture(surf);
+     return WGPU_STATUS_SUCCESS;
+ }
++
++fn capabilityAllocationCase(allocator: std.mem.Allocator) !void {
++    var caps = vk_surf.CanvasCapabilities{};
++    caps.formats[0] = model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
++    caps.format_count = 1;
++    caps.present_modes[0] = 1;
++    caps.present_mode_count = 1;
++    caps.alpha_modes[0] = 1;
++    caps.alpha_mode_count = 1;
++    const copied = try copyCapabilities(allocator, caps);
++    defer allocator.free(copied.formats.?[0..copied.formatCount]);
++    defer allocator.free(copied.presentModes.?[0..copied.presentModeCount]);
++    defer allocator.free(copied.alphaModes.?[0..copied.alphaModeCount]);
++    caps.formats[0] = 0;
++    try std.testing.expectEqual(model_gpu_types.WGPUTextureFormat_BGRA8Unorm, copied.formats.?[0]);
++}
++
++test "surface capabilities roll back every allocation and own independent copies" {
++    if (comptime has_vulkan) try std.testing.checkAllAllocationFailures(std.testing.allocator, capabilityAllocationCase, .{});
++}
+diff --git a/runtime/zig/test_suite.zig b/runtime/zig/test_suite.zig
+index c06d23e62..11ca9a661 100644
+--- a/runtime/zig/test_suite.zig
++++ b/runtime/zig/test_suite.zig
+@@ -120,6 +120,8 @@ const test_src_backend_vulkan_vk_command_buffers_zig_cc09a2e8 = @import("src/bac
+ const test_src_backend_vulkan_vk_compute_sync_zig_1111ce1b = @import("src/backend/vulkan/vk_compute_sync.zig");
+ const test_src_backend_vulkan_vk_descriptors_zig_424d8d65 = @import("src/backend/vulkan/vk_descriptors.zig");
+ const test_src_backend_vulkan_vk_surface_sync_zig_ba693c96 = if (builtin.os.tag == .linux) @import("src/backend/vulkan/vk_surface_sync.zig") else struct {};
++const test_tests_vulkan_vulkan_surface_admission_test_zig_04325ee6 = if (builtin.os.tag == .linux) @import("tests/vulkan/vulkan_surface_admission_test.zig") else struct {};
++const test_src_native_surface_doe_surface_native_zig_3bda77f3 = if (builtin.os.tag == .linux) @import("src/native/surface/doe_surface_native.zig") else struct {};
+ 
+ comptime {
+     _ = test_tests_metal_metal_mod_integration_test_zig_6f53b3ec;
+@@ -241,4 +243,6 @@ comptime {
+     _ = test_src_backend_vulkan_vk_compute_sync_zig_1111ce1b;
+     _ = test_src_backend_vulkan_vk_descriptors_zig_424d8d65;
+     _ = test_src_backend_vulkan_vk_surface_sync_zig_ba693c96;
++    _ = test_tests_vulkan_vulkan_surface_admission_test_zig_04325ee6;
++    _ = test_src_native_surface_doe_surface_native_zig_3bda77f3;
+ }
+diff --git a/runtime/zig/tests/core/model_test.zig b/runtime/zig/tests/core/model_test.zig
+index bff9035a9..5299822c7 100644
+--- a/runtime/zig/tests/core/model_test.zig
++++ b/runtime/zig/tests/core/model_test.zig
+@@ -761,7 +761,7 @@ test "SurfaceConfigureCommand defaults" {
+     try std.testing.expectEqual(gpu.WGPUTextureFormat_RGBA8Unorm, cmd.format);
+     try std.testing.expectEqual(gpu.WGPUTextureUsage_RenderAttachment, cmd.usage);
+     try std.testing.expectEqual(@as(u32, 0x00000001), cmd.alpha_mode);
+-    try std.testing.expectEqual(@as(u32, 0x00000002), cmd.present_mode);
++    try std.testing.expectEqual(@as(u32, 0x00000001), cmd.present_mode);
+     try std.testing.expectEqual(surface.WGPUCanvasToneMappingMode_Standard, cmd.tone_mapping_mode);
+     try std.testing.expectEqual(@as(u32, 2), cmd.desired_maximum_frame_latency);
+ }
+diff --git a/runtime/zig/tests/native_surface_handoff.c b/runtime/zig/tests/native_surface_handoff.c
+index 48b4541b1..9738247b8 100644
+--- a/runtime/zig/tests/native_surface_handoff.c
++++ b/runtime/zig/tests/native_surface_handoff.c
+@@ -18,6 +18,7 @@ static void map_ready(WGPUMapAsyncStatus s, WGPUStringView m, void *p, void *u)
+     (void)m; (void)u; *(bool *)p = s == WGPUMapAsyncStatus_Success;
+ }
+ static unsigned errors;
++static WGPUErrorType expected_error = WGPUErrorType_Validation;
+ static void error_seen(WGPUDevice const *d, WGPUErrorType t, WGPUStringView m, void *p, void *u) {
+     (void)d; (void)p; (void)u; ++errors;
+     fprintf(stderr, "device error %u: %.*s\n", t, (int)m.length, m.data);
+@@ -27,7 +28,7 @@ static WGPUStringView text(const char *s) { return (WGPUStringView){s, strlen(s)
+ 
+ static void scope_ready(WGPUPopErrorScopeStatus status, WGPUErrorType type, WGPUStringView message, void *p, void *u) {
+     (void)u;
+-    *(bool *)p = status == WGPUPopErrorScopeStatus_Success && type == WGPUErrorType_Validation;
++    *(bool *)p = status == WGPUPopErrorScopeStatus_Success && type == expected_error;
+     fprintf(stderr, "scope type=%u message=%.*s\n", type, (int)message.length, message.data);
+ }
+ static bool validation(WGPUDevice device, WGPUInstance instance) {
+@@ -70,7 +71,12 @@ static bool pixels(WGPUDevice dev, WGPUInstance instance, WGPUQueue queue, WGPUT
+     bool ok = bytes != NULL;
+     for (unsigned y=0; bytes && y<WIDTH; ++y) for (unsigned x=0; x<WIDTH; ++x) {
+         const unsigned char *p = bytes + y*ROW_BYTES + x*4;
+-        ok &= p[0] == (red ? 0 : 255) && p[1] == 0 && p[2] == (red ? 255 : 0) && p[3] == 255;
++        WGPUTextureFormat format=wgpuTextureGetFormat(tex);
++        bool bgra=format==WGPUTextureFormat_BGRA8Unorm || format==WGPUTextureFormat_BGRA8UnormSrgb;
++        bool srgb=format==WGPUTextureFormat_BGRA8UnormSrgb || format==WGPUTextureFormat_RGBA8UnormSrgb;
++        int expected=srgb ? 137 : 64;
++        int actual=p[bgra ? 2 : 0];
++        ok &= red && abs(actual-expected)<=1 && p[1]==0 && p[bgra ? 0 : 2]==0 && p[3]==255;
+     }
+     if (mapped) wgpuBufferUnmap(buffer);
+     wgpuBufferRelease(buffer); return ok;
+@@ -96,6 +102,35 @@ int main(int argc, char **argv) {
+     if (wgpuAdapterGetInfo(adapter, &info) != WGPUStatus_Success || info.adapterType == WGPUAdapterType_CPU) return 1;
+     printf("adapter=%.*s driver=%.*s\n", (int)info.device.length, info.device.data, (int)info.description.length, info.description.data);
+     wgpuAdapterInfoFreeMembers(info);
++    int screen_index;
++    xcb_connection_t *connection = xcb_connect(NULL, &screen_index);
++    if (xcb_connection_has_error(connection)) return 2;
++    xcb_screen_iterator_t it = xcb_setup_roots_iterator(xcb_get_setup(connection));
++    for (int i=0; i<screen_index; ++i) xcb_screen_next(&it);
++    xcb_screen_t *screen = it.data;
++    xcb_window_t window = xcb_generate_id(connection);
++    xcb_create_window(connection, XCB_COPY_FROM_PARENT, window, screen->root, 0,0, WIDTH,WIDTH,
++        0, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, 0, NULL);
++    xcb_map_window(connection, window); xcb_flush(connection);
++    WGPUSurfaceSourceXCBWindow source_window = WGPU_SURFACE_SOURCE_XCB_WINDOW_INIT;
++    source_window.connection = connection; source_window.window = window;
++    WGPUSurfaceDescriptor surface_desc = WGPU_SURFACE_DESCRIPTOR_INIT;
++    surface_desc.nextInChain = &source_window.chain;
++    WGPUSurface surface = wgpuInstanceCreateSurface(instance, &surface_desc);
++    if (strcmp(mode,"unsupported")) {
++        WGPUSurfaceCapabilities caps=WGPU_SURFACE_CAPABILITIES_INIT;
++        if(wgpuSurfaceGetCapabilities(surface,adapter,&caps)!=WGPUStatus_Success) return 1;
++        bool fifo=false, format=false;
++        for(size_t i=0;i<caps.presentModeCount;++i) fifo |= caps.presentModes[i]==WGPUPresentMode_Fifo;
++        for(size_t i=0;i<caps.formatCount;++i) format |= caps.formats[i]==WGPUTextureFormat_BGRA8Unorm;
++        printf("capabilities formats=%zu modes=%zu alpha=%zu usages=%llu before-device=true\n",caps.formatCount,caps.presentModeCount,caps.alphaModeCount,(unsigned long long)caps.usages);
++        bool valid=fifo && format && (caps.usages & WGPUTextureUsage_CopySrc);
++        wgpuSurfaceCapabilitiesFreeMembers(caps);
++        if(!valid) return 1;
++        caps=(WGPUSurfaceCapabilities)WGPU_SURFACE_CAPABILITIES_INIT;
++        if(wgpuSurfaceGetCapabilities(surface,NULL,&caps)!=WGPUStatus_Error || caps.formats) return 1;
++        wgpuSurfaceCapabilitiesFreeMembers(caps);
++    }
+     WGPUDeviceDescriptor dd = WGPU_DEVICE_DESCRIPTOR_INIT;
+     dd.uncapturedErrorCallbackInfo.callback = error_seen;
+     WGPURequestDeviceCallbackInfo dc = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
+@@ -106,38 +141,46 @@ int main(int argc, char **argv) {
+     const char *wgsl =
+         "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {"
+         "var p = array<vec2f,3>(vec2f(-1,-1),vec2f(3,-1),vec2f(-1,3)); return vec4f(p[i],0,1); }"
+-        "@fragment fn fs() -> @location(0) vec4f { return vec4f(1,0,0,1); }";
++        "@fragment fn fs() -> @location(0) vec4f { return vec4f(0.25,0,0,1); }";
+     WGPUShaderSourceWGSL source = WGPU_SHADER_SOURCE_WGSL_INIT; source.code = text(wgsl);
+     WGPUShaderModuleDescriptor sd = WGPU_SHADER_MODULE_DESCRIPTOR_INIT; sd.nextInChain = &source.chain;
+     WGPUShaderModule shader = wgpuDeviceCreateShaderModule(device, &sd);
+-    WGPUColorTargetState color = WGPU_COLOR_TARGET_STATE_INIT; color.format = WGPUTextureFormat_BGRA8Unorm;
++    WGPUColorTargetState color = WGPU_COLOR_TARGET_STATE_INIT; color.format = !strcmp(mode,"srgb") ? WGPUTextureFormat_BGRA8UnormSrgb : WGPUTextureFormat_BGRA8Unorm;
+     WGPUFragmentState fragment = WGPU_FRAGMENT_STATE_INIT;
+     fragment.module = shader; fragment.entryPoint = text("fs"); fragment.targetCount = 1; fragment.targets = &color;
+     WGPURenderPipelineDescriptor pd = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
+     pd.vertex.module = shader; pd.vertex.entryPoint = text("vs"); pd.fragment = &fragment;
+     WGPURenderPipeline pipeline = wgpuDeviceCreateRenderPipeline(device, &pd);
+ 
+-    int screen_index;
+-    xcb_connection_t *connection = xcb_connect(NULL, &screen_index);
+-    if (xcb_connection_has_error(connection)) return 2;
+-    xcb_screen_iterator_t it = xcb_setup_roots_iterator(xcb_get_setup(connection));
+-    for (int i=0; i<screen_index; ++i) xcb_screen_next(&it);
+-    xcb_screen_t *screen = it.data;
+-    xcb_window_t window = xcb_generate_id(connection);
+-    xcb_create_window(connection, XCB_COPY_FROM_PARENT, window, screen->root, 0,0, WIDTH,WIDTH,
+-        0, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, 0, NULL);
+-    xcb_map_window(connection, window); xcb_flush(connection);
+-    WGPUSurfaceSourceXCBWindow source_window = WGPU_SURFACE_SOURCE_XCB_WINDOW_INIT;
+-    source_window.connection = connection; source_window.window = window;
+-    WGPUSurfaceDescriptor surface_desc = WGPU_SURFACE_DESCRIPTOR_INIT;
+-    surface_desc.nextInChain = &source_window.chain;
+-    WGPUSurface surface = wgpuInstanceCreateSurface(instance, &surface_desc);
+     WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
+     config.device = device; config.format = color.format;
+     config.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
+     config.width = WIDTH; config.height = WIDTH;
++    if(!strcmp(mode,"fifo")) config.presentMode=WGPUPresentMode_Fifo;
++    if(!strcmp(mode,"relaxed")) config.presentMode=WGPUPresentMode_FifoRelaxed;
++    if(!strcmp(mode,"immediate")) config.presentMode=WGPUPresentMode_Immediate;
++    if(!strcmp(mode,"mailbox")) config.presentMode=WGPUPresentMode_Mailbox;
++    if(!strcmp(mode,"opaque")) config.alphaMode=WGPUCompositeAlphaMode_Opaque;
++    if(!strcmp(mode,"inherit")) config.alphaMode=WGPUCompositeAlphaMode_Inherit;
++    if(!strcmp(mode,"usage")) config.usage |= WGPUTextureUsage_CopyDst | WGPUTextureUsage_TextureBinding;
++    if(!strcmp(mode,"invalid-first")) {
++        WGPUSurfaceConfiguration bad=config; bad.format=WGPUTextureFormat_RGBA16Float;
++        wgpuDevicePushErrorScope(device,WGPUErrorFilter_Validation);
++        wgpuSurfaceConfigure(surface,&bad);
++        if(!validation(device,instance)) return 1;
++        WGPUSurfaceTexture missing=WGPU_SURFACE_TEXTURE_INIT;
++        wgpuSurfaceGetCurrentTexture(surface,&missing);
++        if(missing.texture || missing.status!=WGPUSurfaceGetCurrentTextureStatus_Error) return 1;
++    }
+     if (strcmp(mode,"create-fence") == 0 || strcmp(mode,"create-semaphore") == 0 || strcmp(mode,"images") == 0) arm(mode);
++    bool configure_failure=!strcmp(mode,"create-fence") || !strcmp(mode,"create-semaphore") || !strcmp(mode,"images") || !strcmp(mode,"unsupported");
++    if(configure_failure) {
++        expected_error=!strcmp(mode,"unsupported") ? WGPUErrorType_Validation : WGPUErrorType_OutOfMemory;
++        wgpuDevicePushErrorScope(device,expected_error==WGPUErrorType_Validation ? WGPUErrorFilter_Validation : WGPUErrorFilter_OutOfMemory);
++    }
+     wgpuSurfaceConfigure(surface, &config);
++    if(configure_failure) { if(!validation(device,instance)) return 1; expected_error=WGPUErrorType_Validation; }
++
+     if (strcmp(mode,"create-fence") == 0 || strcmp(mode,"create-semaphore") == 0 || strcmp(mode,"images") == 0) {
+         WGPUSurfaceTexture failed = WGPU_SURFACE_TEXTURE_INIT;
+         wgpuSurfaceGetCurrentTexture(surface,&failed);
+@@ -181,6 +224,34 @@ int main(int argc, char **argv) {
+             if (same.texture != current.texture) return 1;
+             wgpuTextureRelease(same.texture);
+         }
++        if(wgpuTextureGetFormat(current.texture)!=config.format || wgpuTextureGetWidth(current.texture)!=WIDTH || wgpuTextureGetUsage(current.texture)!=config.usage) return 1;
++        if(frame==0 && !strcmp(mode,"admission")) {
++            for(unsigned reject=0;reject<10;++reject) {
++                WGPUSurfaceConfiguration bad=config;
++                WGPUChainedStruct chain={NULL,WGPUSType_ShaderSourceWGSL};
++                WGPUTextureFormat view_format=WGPUTextureFormat_BGRA8UnormSrgb;
++                switch(reject) {
++                    case 0: bad.format=WGPUTextureFormat_RGBA16Float; break;
++                    case 1: bad.format=WGPUTextureFormat_Undefined; break;
++                    case 2: bad.usage |= UINT64_C(1)<<40; break;
++                    case 3: bad.usage |= WGPUTextureUsage_StorageBinding; break;
++                    case 4: bad.usage=0; break;
++                    case 5: bad.presentMode=WGPUPresentMode_Force32; break;
++                    case 6: bad.alphaMode=WGPUCompositeAlphaMode_Force32; break;
++                    case 7: bad.nextInChain=&chain; break;
++                    case 8: bad.viewFormatCount=1; bad.viewFormats=&view_format; break;
++                    case 9: bad.width=0; break;
++                }
++                wgpuDevicePushErrorScope(device,WGPUErrorFilter_Validation);
++                wgpuSurfaceConfigure(surface,&bad);
++                if(!validation(device,instance)) return 1;
++                WGPUSurfaceTexture retained=WGPU_SURFACE_TEXTURE_INIT;
++                wgpuSurfaceGetCurrentTexture(surface,&retained);
++                if(retained.texture!=current.texture) return 1;
++                wgpuTextureRelease(retained.texture);
++                printf("rejected=%u existing-texture=preserved\n",reject);
++            }
++        }
+         WGPUTextureView view = wgpuTextureCreateView(current.texture, NULL);
+         WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device, NULL);
+         draw(enc, view, pipeline, true); draw(enc, view, pipeline, true); draw(enc, view, pipeline, false);
+@@ -213,6 +284,9 @@ int main(int argc, char **argv) {
+         if (!empty.texture || wgpuSurfacePresent(surface)!=WGPUStatus_Success) return 1;
+         wgpuTextureRelease(empty.texture);
+     }
++    WGPUSurfaceCapabilities retained_caps=WGPU_SURFACE_CAPABILITIES_INIT;
++    if(wgpuSurfaceGetCapabilities(surface,adapter,&retained_caps)!=WGPUStatus_Success || !retained_caps.formatCount) return 1;
++    WGPUTextureFormat retained_format=retained_caps.formats[0];
+     // Outstanding public references outlive the surface and caller's device ref.
+     WGPUSurfaceTexture last = WGPU_SURFACE_TEXTURE_INIT;
+     wgpuSurfaceGetCurrentTexture(surface,&last);
+@@ -222,6 +296,8 @@ int main(int argc, char **argv) {
+     wgpuRenderPipelineRelease(pipeline); wgpuShaderModuleRelease(shader);
+     wgpuQueueRelease(queue); wgpuDeviceRelease(device); wgpuAdapterRelease(adapter); wgpuInstanceRelease(instance);
+     wgpuTextureViewRelease(last_view); wgpuTextureRelease(last.texture);
++    if(retained_caps.formats[0]!=retained_format) return 1;
++    wgpuSurfaceCapabilitiesFreeMembers(retained_caps);
+     xcb_destroy_window(connection, window); xcb_disconnect(connection);
+     return errors ? 1 : 0;
+ }
+diff --git a/runtime/zig/tests/native_surface_observer.c b/runtime/zig/tests/native_surface_observer.c
+index a4b3950ca..29065b886 100644
+--- a/runtime/zig/tests/native_surface_observer.c
++++ b/runtime/zig/tests/native_surface_observer.c
+@@ -1,4 +1,5 @@
+ #define _GNU_SOURCE
++#define VK_USE_PLATFORM_XCB_KHR
+ #include <vulkan/vulkan.h>
+ #include <dlfcn.h>
+ #include <stdio.h>
+@@ -8,6 +9,7 @@
+ // Test-only interposition. All accepted operations execute on the real driver.
+ static const char *fault = "";
+ static unsigned delayed, violations, acquisitions, presentations, signals, failures;
++static unsigned live_surfaces;
+ static unsigned live_swapchains, live_fences, live_semaphores, live_views;
+ static VkFence acquisition, presentation;
+ static VkSemaphore finished;
+@@ -16,6 +18,12 @@ static int acquisition_pending, presentation_pending, signal_pending;
+ #define CHECK(condition) do { if (!(condition)) { ++violations; fprintf(stderr,"order violation line=%d\n",__LINE__); } } while (0)
+ void doe_surface_test_arm(const char *mode) { fault = mode; delayed = 3; }
+ static int take(const char *name) { if (strcmp(fault,name)) return 0; fault=""; ++failures; return 1; }
++VKAPI_ATTR VkResult VKAPI_CALL vkCreateXcbSurfaceKHR(VkInstance instance,const VkXcbSurfaceCreateInfoKHR *i,const VkAllocationCallbacks *a,VkSurfaceKHR *surface) {
++    REAL(vkCreateXcbSurfaceKHR); VkResult r=real(instance,i,a,surface); if(r==VK_SUCCESS) ++live_surfaces; return r;
++}
++VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(VkInstance instance,VkSurfaceKHR surface,const VkAllocationCallbacks *a) {
++    CHECK(live_surfaces); --live_surfaces; REAL(vkDestroySurfaceKHR); real(instance,surface,a);
++}
+ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImageView(VkDevice d,const VkImageViewCreateInfo *i,const VkAllocationCallbacks *a,VkImageView *v) {
+     if(take("create-view")) return VK_ERROR_OUT_OF_HOST_MEMORY;
+     REAL(vkCreateImageView); VkResult r=real(d,i,a,v); if(r==VK_SUCCESS) ++live_views; return r;
+@@ -31,6 +39,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(VkPhysicalDevice d,VkPhy
+         }
+ }
+ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(VkDevice d,const VkSwapchainCreateInfoKHR *i,const VkAllocationCallbacks *a,VkSwapchainKHR *s) {
++    fprintf(stderr,"{\"swapchainCreate\":true,\"format\":%u,\"colorSpace\":%u,\"presentMode\":%u,\"alpha\":%u,\"usage\":%u,\"width\":%u,\"height\":%u}\n",i->imageFormat,i->imageColorSpace,i->presentMode,i->compositeAlpha,i->imageUsage,i->imageExtent.width,i->imageExtent.height);
+     REAL(vkCreateSwapchainKHR); VkResult r=real(d,i,a,s); if(r==VK_SUCCESS) ++live_swapchains; return r;
+ }
+ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(VkDevice d,VkSwapchainKHR s,const VkAllocationCallbacks *a) {
+@@ -101,7 +110,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(VkQueue q,const VkPresentInfoKH
+     return r;
+ }
+ __attribute__((destructor)) static void report(void) {
+-    CHECK(!live_swapchains && !live_fences && !live_semaphores && !live_views);
++    CHECK(!live_surfaces && !live_swapchains && !live_fences && !live_semaphores && !live_views);
+     fprintf(stderr,"{\"observer\":true,\"acquires\":%u,\"presents\":%u,\"signals\":%u,\"injectedFailures\":%u,\"violations\":%u,\"liveSwapchains\":%u,\"liveFences\":%u,\"liveSemaphores\":%u,\"liveImageViews\":%u}\n",acquisitions,presentations,signals,failures,violations,live_swapchains,live_fences,live_semaphores,live_views);
+     if(violations) abort();
+ }
+diff --git a/runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig b/runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig
+new file mode 100644
+index 000000000..bf8cac44b
+--- /dev/null
++++ b/runtime/zig/tests/vulkan/vulkan_surface_admission_test.zig
+@@ -0,0 +1,84 @@
++const std = @import("std");
++const surface = @import("../../src/backend/vulkan/vulkan_surface.zig");
++const gpu = @import("../../src/contracts/model/model_gpu_types.zig");
++
++fn capabilities() surface.SurfaceCapabilities {
++    var caps = surface.SurfaceCapabilities{
++        .present_supported = true,
++        .min_width = 1,
++        .min_height = 1,
++        .max_width = 1024,
++        .max_height = 1024,
++        .current_width = std.math.maxInt(u32),
++        .current_height = std.math.maxInt(u32),
++        .supported_usage = 0x17,
++        .supported_alpha = 0xf,
++        .format_count = 1,
++        .present_mode_count = 4,
++    };
++    caps.formats[0] = .{ .format = 50, .colorSpace = 0 };
++    @memcpy(caps.present_modes[0..4], &[_]u32{ 2, 1, 0, 3 });
++    return caps;
++}
++
++test "surface admission never aliases an unavailable format or color space" {
++    var caps = capabilities();
++    const request = @import("../../src/contracts/model/model_surface_control_types.zig").SurfaceConfigureCommand{ .handle = 1, .width = 8, .height = 8, .format = gpu.WGPUTextureFormat_BGRA8UnormSrgb, .present_mode = 1 };
++    const admitted = try surface.admitConfiguration(caps, request);
++    try std.testing.expectEqual(@as(u32, 50), admitted.format.format);
++    var bad = request;
++    bad.format = gpu.WGPUTextureFormat_BGRA8Unorm;
++    try std.testing.expectError(error.UnsupportedFeature, surface.admitConfiguration(caps, bad));
++    caps.formats[0].colorSpace = 1000104002;
++    try std.testing.expectError(error.UnsupportedFeature, surface.admitConfiguration(caps, request));
++    caps.formats[0] = .{ .format = 0, .colorSpace = 0 };
++    const any_format = try surface.admitConfiguration(caps, bad);
++    try std.testing.expectEqual(@as(u32, 44), any_format.format.format);
++    bad.format = gpu.WGPUTextureFormat_RGBA8UnormSrgb;
++    try std.testing.expectEqual(@as(u32, 43), (try surface.admitConfiguration(caps, bad)).format.format);
++}
++
++test "surface admission maps pinned WebGPU modes exactly and rejects unsupported modes" {
++    var caps = capabilities();
++    var request = @import("../../src/contracts/model/model_surface_control_types.zig").SurfaceConfigureCommand{ .handle = 1, .width = 8, .height = 8, .format = gpu.WGPUTextureFormat_BGRA8UnormSrgb };
++    for ([_]u32{ 2, 1, 0, 3 }, 1..) |expected, public| {
++        request.present_mode = @intCast(public);
++        try std.testing.expectEqual(expected, (try surface.admitConfiguration(caps, request)).present_mode);
++    }
++    for ([_]u32{ 1, 2, 4, 8 }, 1..) |expected, public| {
++        request.alpha_mode = @intCast(public);
++        try std.testing.expectEqual(expected, (try surface.admitConfiguration(caps, request)).alpha);
++    }
++    request.present_mode = 0;
++    request.alpha_mode = 0;
++    const defaults = try surface.admitConfiguration(caps, request);
++    try std.testing.expectEqual(@as(u32, 2), defaults.present_mode);
++    try std.testing.expectEqual(@as(u32, 8), defaults.alpha);
++    caps.supported_alpha = 1;
++    request.alpha_mode = 2;
++    try std.testing.expectError(error.UnsupportedFeature, surface.admitConfiguration(caps, request));
++    request.alpha_mode = 0;
++    request.present_mode = 4;
++    caps.present_mode_count = 1;
++    try std.testing.expectError(error.UnsupportedFeature, surface.admitConfiguration(caps, request));
++}
++
++test "surface admission preserves dimensions usage and present support" {
++    var caps = capabilities();
++    var request = @import("../../src/contracts/model/model_surface_control_types.zig").SurfaceConfigureCommand{ .handle = 1, .width = 8, .height = 8, .format = gpu.WGPUTextureFormat_BGRA8UnormSrgb, .present_mode = 1 };
++    request.usage |= gpu.WGPUTextureUsage_StorageBinding;
++    try std.testing.expectError(error.UnsupportedFeature, surface.admitConfiguration(caps, request));
++    request.usage = gpu.WGPUTextureUsage_RenderAttachment | gpu.WGPUTextureUsage_CopySrc;
++    caps.supported_usage = 0x10;
++    try std.testing.expectError(error.UnsupportedFeature, surface.admitConfiguration(caps, request));
++    request.usage = gpu.WGPUTextureUsage_RenderAttachment;
++    caps.current_width = 16;
++    caps.current_height = 8;
++    try std.testing.expectError(error.UnsupportedFeature, surface.admitConfiguration(caps, request));
++    request.width = 16;
++    try std.testing.expectEqual(@as(u32, 16), (try surface.admitConfiguration(caps, request)).extent.width);
++    request.height = 0;
++    try std.testing.expectError(error.InvalidArgument, surface.admitConfiguration(caps, request));
++    caps.present_supported = false;
++    try std.testing.expectError(error.SurfaceUnavailable, surface.canvasCapabilities(caps));
++}

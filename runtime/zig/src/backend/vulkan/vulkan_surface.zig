@@ -1,6 +1,7 @@
 // Native window-system surfaces, swapchain configuration, acquisition and presentation.
 const std = @import("std");
 const builtin = @import("builtin");
+const surface_contract = @import("../../contracts/model/model_surface_control_types.zig");
 const model_gpu_types = @import("../../contracts/model/model_texture_value_types.zig");
 const common_errors = @import("../../contracts/execution.zig");
 const vk = @import("vulkan_types.zig");
@@ -33,13 +34,13 @@ const VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR: i32 = 1000006000;
 const VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR: i32 = 1000005000;
 const VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR: i32 = 1000004000;
 // VkFormat for swapchain
+const VK_FORMAT_UNDEFINED: u32 = 0;
 const VK_FORMAT_B8G8R8A8_SRGB: u32 = 50;
 const VK_FORMAT_B8G8R8A8_UNORM: u32 = 44;
 const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
-const VK_FORMAT_R16G16B16A16_SFLOAT: u32 = 97;
+const VK_FORMAT_R8G8B8A8_SRGB: u32 = 43;
 // VkColorSpaceKHR
 const VK_COLOR_SPACE_SRGB_NONLINEAR_KHR: u32 = 0;
-const VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT: u32 = 1000104002;
 // VkPresentModeKHR
 const VK_PRESENT_MODE_FIFO_KHR: u32 = 2;
 const VK_PRESENT_MODE_MAILBOX_KHR: u32 = 3;
@@ -63,9 +64,16 @@ const MAX_SURFACE_FORMATS: usize = 32;
 const MAX_PRESENT_MODES: usize = 8;
 const ACQUIRE_TIMEOUT_NS: u64 = std.math.maxInt(u64);
 // Present mode mapping from WebGPU to Vulkan
-const WGPU_PRESENT_MODE_FIFO: u32 = 0x00000002;
-const WGPU_PRESENT_MODE_MAILBOX: u32 = 0x00000003;
-const WGPU_PRESENT_MODE_IMMEDIATE: u32 = 0x00000004;
+const WGPU_PRESENT_MODE_FIFO: u32 = 0x00000001;
+const WGPU_PRESENT_MODE_MAILBOX: u32 = 0x00000004;
+const WGPU_PRESENT_MODE_IMMEDIATE: u32 = 0x00000003;
+const WGPU_PRESENT_MODE_FIFO_RELAXED: u32 = 2;
+const VK_PRESENT_MODE_FIFO_RELAXED_KHR: u32 = 1;
+const WGPU_ALPHA_AUTO: u32 = 0;
+const WGPU_ALPHA_OPAQUE: u32 = 1;
+const WGPU_ALPHA_PREMULTIPLIED: u32 = 2;
+const WGPU_ALPHA_UNPREMULTIPLIED: u32 = 3;
+const WGPU_ALPHA_INHERIT: u32 = 4;
 const VkSurfaceCapabilitiesKHR = extern struct {
     minImageCount: u32,
     maxImageCount: u32,
@@ -170,6 +178,8 @@ pub const SurfaceCapabilities = struct {
     max_width: u32 = 0,
     max_height: u32 = 0,
     supported_usage: VkFlags = 0,
+    supported_alpha: VkFlags = 0,
+    current_transform: VkFlags = 0,
     format_count: u32 = 0,
     formats: [MAX_SURFACE_FORMATS]VkSurfaceFormatKHR = std.mem.zeroes([MAX_SURFACE_FORMATS]VkSurfaceFormatKHR),
     present_mode_count: u32 = 0,
@@ -356,6 +366,8 @@ pub fn query_surface_capabilities(
     result.max_width = caps.maxImageExtent.width;
     result.max_height = caps.maxImageExtent.height;
     result.supported_usage = caps.supportedUsageFlags;
+    result.supported_alpha = caps.supportedCompositeAlpha;
+    result.current_transform = caps.currentTransform;
 
     // Surface formats
     var format_count: u32 = 0;
@@ -390,219 +402,148 @@ pub fn query_surface_capabilities(
     return result;
 }
 
-/// Select the best surface format from available formats.
-fn select_surface_format(
-    formats: []const VkSurfaceFormatKHR,
-    requested_format: model_gpu_types.WGPUTextureFormat,
-    tone_mapping_mode: u32,
-) VkSurfaceFormatKHR {
-    if (tone_mapping_mode == WGPU_CANVAS_TONE_MAPPING_MODE_EXTENDED) {
-        for (formats) |fmt| {
-            if (fmt.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT and
-                fmt.format == VK_FORMAT_R16G16B16A16_SFLOAT)
-            {
-                return fmt;
-            }
-        }
-        for (formats) |fmt| {
-            if (fmt.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT) return fmt;
-        }
-    }
-    if (requested_format == model_gpu_types.WGPUTextureFormat_BGRA8Unorm) {
-        for (formats) |fmt| {
-            if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM and
-                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-            {
-                return fmt;
-            }
-        }
-    }
-    if (requested_format == model_gpu_types.WGPUTextureFormat_RGBA8Unorm) {
-        for (formats) |fmt| {
-            if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and
-                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-            {
-                return fmt;
-            }
-        }
-    }
-    if (requested_format == model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb) {
-        for (formats) |fmt| {
-            if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and
-                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-            {
-                return fmt;
-            }
+// The format table is the intersection of implemented canvas formats and native WSI.
+const CANVAS_FORMATS = [_]struct { webgpu: u32, vulkan: u32 }{
+    .{ .webgpu = model_gpu_types.WGPUTextureFormat_BGRA8Unorm, .vulkan = VK_FORMAT_B8G8R8A8_UNORM },
+    .{ .webgpu = model_gpu_types.WGPUTextureFormat_RGBA8Unorm, .vulkan = VK_FORMAT_R8G8B8A8_UNORM },
+    .{ .webgpu = model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb, .vulkan = VK_FORMAT_B8G8R8A8_SRGB },
+    .{ .webgpu = model_gpu_types.WGPUTextureFormat_RGBA8UnormSrgb, .vulkan = VK_FORMAT_R8G8B8A8_SRGB },
+};
+const PRESENT_MODES = [_]struct { webgpu: u32, vulkan: u32 }{
+    .{ .webgpu = WGPU_PRESENT_MODE_FIFO, .vulkan = VK_PRESENT_MODE_FIFO_KHR },
+    .{ .webgpu = WGPU_PRESENT_MODE_FIFO_RELAXED, .vulkan = VK_PRESENT_MODE_FIFO_RELAXED_KHR },
+    .{ .webgpu = WGPU_PRESENT_MODE_IMMEDIATE, .vulkan = VK_PRESENT_MODE_IMMEDIATE_KHR },
+    .{ .webgpu = WGPU_PRESENT_MODE_MAILBOX, .vulkan = VK_PRESENT_MODE_MAILBOX_KHR },
+};
+const ALPHA_MODES = [_]struct { webgpu: u32, vulkan: u32 }{
+    .{ .webgpu = WGPU_ALPHA_INHERIT, .vulkan = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR },
+    .{ .webgpu = WGPU_ALPHA_OPAQUE, .vulkan = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR },
+    .{ .webgpu = WGPU_ALPHA_PREMULTIPLIED, .vulkan = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR },
+    .{ .webgpu = WGPU_ALPHA_UNPREMULTIPLIED, .vulkan = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR },
+};
+const USAGES = [_]struct { webgpu: u32, vulkan: u32 }{
+    .{ .webgpu = model_gpu_types.WGPUTextureUsage_RenderAttachment, .vulkan = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT },
+    .{ .webgpu = model_gpu_types.WGPUTextureUsage_CopySrc, .vulkan = VK_IMAGE_USAGE_TRANSFER_SRC_BIT },
+    .{ .webgpu = model_gpu_types.WGPUTextureUsage_CopyDst, .vulkan = VK_IMAGE_USAGE_TRANSFER_DST_BIT },
+    .{ .webgpu = model_gpu_types.WGPUTextureUsage_TextureBinding, .vulkan = VK_IMAGE_USAGE_SAMPLED_BIT },
+};
+
+fn selectSurfaceFormat(formats: []const VkSurfaceFormatKHR, requested: u32) !VkSurfaceFormatKHR {
+    for (CANVAS_FORMATS) |candidate| {
+        if (candidate.webgpu != requested) continue;
+        for (formats) |format| {
+            // VK_FORMAT_UNDEFINED permits any format, but still fixes color space.
+            if ((format.format == candidate.vulkan or format.format == VK_FORMAT_UNDEFINED) and
+                format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                return .{ .format = candidate.vulkan, .colorSpace = format.colorSpace };
         }
     }
-    if (requested_format == model_gpu_types.WGPUTextureFormat_RGBA8UnormSrgb) {
-        for (formats) |fmt| {
-            if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and
-                fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-            {
-                return fmt;
-            }
-        }
-    }
-    for (formats) |fmt| {
-        if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and
-            fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-        {
-            return fmt;
-        }
-    }
-    // Fall back to B8G8R8A8_UNORM
-    for (formats) |fmt| {
-        if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM) return fmt;
-    }
-    // Fall back to R8G8B8A8_UNORM
-    for (formats) |fmt| {
-        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM) return fmt;
-    }
-    // Last resort: use whatever the driver offers first
-    if (formats.len > 0) return formats[0];
-    return .{ .format = VK_FORMAT_B8G8R8A8_SRGB, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+    return error.UnsupportedFeature;
 }
 
-pub fn preferred_canvas_format_from_surface_formats(formats: []const VkSurfaceFormatKHR) model_gpu_types.WGPUTextureFormat {
-    for (formats) |fmt| {
-        if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
-        }
+pub const CanvasCapabilities = struct {
+    formats: [CANVAS_FORMATS.len]u32 = undefined,
+    format_count: usize = 0,
+    present_modes: [PRESENT_MODES.len]u32 = undefined,
+    present_mode_count: usize = 0,
+    alpha_modes: [ALPHA_MODES.len]u32 = undefined,
+    alpha_mode_count: usize = 0,
+    usages: u32 = 0,
+};
+
+pub fn canvasCapabilities(caps: SurfaceCapabilities) !CanvasCapabilities {
+    if (!caps.present_supported) return error.SurfaceUnavailable;
+    var result = CanvasCapabilities{};
+    for (CANVAS_FORMATS) |format| {
+        _ = selectSurfaceFormat(caps.formats[0..caps.format_count], format.webgpu) catch continue;
+        result.formats[result.format_count] = format.webgpu;
+        result.format_count += 1;
     }
-    for (formats) |fmt| {
-        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
-        }
+    for (PRESENT_MODES) |mode| {
+        if (std.mem.indexOfScalar(u32, caps.present_modes[0..caps.present_mode_count], mode.vulkan) == null) continue;
+        result.present_modes[result.present_mode_count] = mode.webgpu;
+        result.present_mode_count += 1;
     }
-    for (formats) |fmt| {
-        if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
-        }
+    for (ALPHA_MODES) |mode| {
+        if (caps.supported_alpha & mode.vulkan == 0) continue;
+        result.alpha_modes[result.alpha_mode_count] = mode.webgpu;
+        result.alpha_mode_count += 1;
     }
-    for (formats) |fmt| {
-        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM) return model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
-        if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM) return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
+    for (USAGES) |usage| {
+        if (caps.supported_usage & usage.vulkan != 0) result.usages |= usage.webgpu;
     }
-    return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
+    if (result.format_count == 0 or result.alpha_mode_count == 0 or
+        std.mem.indexOfScalar(u32, result.present_modes[0..result.present_mode_count], WGPU_PRESENT_MODE_FIFO) == null or
+        result.usages & model_gpu_types.WGPUTextureUsage_RenderAttachment == 0) return error.UnsupportedFeature;
+    return result;
 }
 
-fn canvas_format_for_selected_surface_format(
-    requested_format: model_gpu_types.WGPUTextureFormat,
-    selected_format: VkSurfaceFormatKHR,
-) model_gpu_types.WGPUTextureFormat {
-    switch (selected_format.format) {
-        VK_FORMAT_B8G8R8A8_UNORM => return model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
-        VK_FORMAT_B8G8R8A8_SRGB => return if (requested_format == model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb)
-            model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb
-        else
-            model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
-        VK_FORMAT_R8G8B8A8_UNORM => return model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
-        VK_FORMAT_R16G16B16A16_SFLOAT => return requested_format,
-        else => return requested_format,
+pub fn preferred_canvas_format_from_surface_formats(formats: []const VkSurfaceFormatKHR) u32 {
+    for (CANVAS_FORMATS) |candidate| {
+        _ = selectSurfaceFormat(formats, candidate.webgpu) catch continue;
+        return candidate.webgpu;
     }
+    return model_gpu_types.WGPUTextureFormat_Undefined;
 }
 
-/// Map WebGPU present mode to Vulkan present mode.
-fn map_present_mode(wgpu_mode: u32) u32 {
-    return switch (wgpu_mode) {
-        WGPU_PRESENT_MODE_FIFO => VK_PRESENT_MODE_FIFO_KHR,
-        WGPU_PRESENT_MODE_MAILBOX => VK_PRESENT_MODE_MAILBOX_KHR,
-        WGPU_PRESENT_MODE_IMMEDIATE => VK_PRESENT_MODE_IMMEDIATE_KHR,
-        else => VK_PRESENT_MODE_FIFO_KHR,
-    };
-}
+pub const AdmittedConfiguration = struct {
+    format: VkSurfaceFormatKHR,
+    extent: VkExtent2D,
+    present_mode: u32,
+    alpha: u32,
+    usage: VkFlags,
+};
 
-/// Map the requested WebGPU alpha mode to a Vulkan composite-alpha mode.
-fn map_composite_alpha(requested: u32, supported: VkFlags) u32 {
-    const requested_mode: u32 = switch (requested) {
-        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR, VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR, VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR => requested,
-        else => VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-    };
-    if ((supported & requested_mode) != 0) return requested_mode;
-    if ((supported & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    if ((supported & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
-    if ((supported & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
-    if ((supported & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR) != 0) return VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
-    return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-}
-
-/// Clamp the requested extent to the surface capabilities.
-fn clamp_extent(
-    requested_width: u32,
-    requested_height: u32,
-    caps: VkSurfaceCapabilitiesKHR,
-) VkExtent2D {
-    // 0xFFFFFFFF means the surface size is determined by the swapchain extent
-    const SPECIAL_EXTENT: u32 = 0xFFFFFFFF;
-    if (caps.currentExtent.width != SPECIAL_EXTENT) return caps.currentExtent;
-    return .{
-        .width = std.math.clamp(requested_width, caps.minImageExtent.width, caps.maxImageExtent.width),
-        .height = std.math.clamp(requested_height, caps.minImageExtent.height, caps.maxImageExtent.height),
-    };
-}
-
-fn map_surface_usage_flags(wgpu_usage: model_gpu_types.WGPUFlags) VkFlags {
+/// Validate before retiring an existing swapchain. No field is silently substituted.
+pub fn admitConfiguration(caps: SurfaceCapabilities, request: surface_contract.SurfaceConfigureCommand) !AdmittedConfiguration {
+    const canvas = try canvasCapabilities(caps);
+    if (request.tone_mapping_mode != WGPU_CANVAS_TONE_MAPPING_MODE_STANDARD) return error.UnsupportedFeature;
+    const format = try selectSurfaceFormat(caps.formats[0..caps.format_count], request.format);
+    if (request.width < caps.min_width or request.width > caps.max_width or
+        request.height < caps.min_height or request.height > caps.max_height or
+        request.width == 0 or request.height == 0) return error.InvalidArgument;
+    if (caps.current_width != std.math.maxInt(u32) and
+        (request.width != caps.current_width or request.height != caps.current_height)) return error.UnsupportedFeature;
+    if (request.usage & ~canvas.usages != 0 or request.usage & model_gpu_types.WGPUTextureUsage_RenderAttachment == 0) return error.UnsupportedFeature;
     var usage: VkFlags = 0;
-    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_RenderAttachment) != 0) usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_CopySrc) != 0) usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_CopyDst) != 0) usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_TextureBinding) != 0) usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (usage == 0) usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    return usage;
+    for (USAGES) |entry| {
+        if (request.usage & entry.webgpu != 0) usage |= entry.vulkan;
+    }
+    const present = if (request.present_mode == 0) WGPU_PRESENT_MODE_FIFO else request.present_mode;
+    if (std.mem.indexOfScalar(u32, canvas.present_modes[0..canvas.present_mode_count], present) == null) return error.UnsupportedFeature;
+    const alpha = if (request.alpha_mode == WGPU_ALPHA_AUTO) canvas.alpha_modes[0] else request.alpha_mode;
+    if (std.mem.indexOfScalar(u32, canvas.alpha_modes[0..canvas.alpha_mode_count], alpha) == null) return error.UnsupportedFeature;
+    var native_present: u32 = undefined;
+    var native_alpha: u32 = undefined;
+    for (PRESENT_MODES) |entry| {
+        if (entry.webgpu == present) {
+            native_present = entry.vulkan;
+            break;
+        }
+    }
+    for (ALPHA_MODES) |entry| {
+        if (entry.webgpu == alpha) {
+            native_alpha = entry.vulkan;
+            break;
+        }
+    }
+    return .{ .format = format, .extent = .{ .width = request.width, .height = request.height }, .present_mode = native_present, .alpha = native_alpha, .usage = usage };
 }
 
 /// Create (or recreate) a swapchain for the given surface.
 pub fn create_swapchain(
     device: VkDevice,
-    physical_device: VkPhysicalDevice,
     surface_state: *VulkanSurface,
     queue_family_index: u32,
+    admitted: AdmittedConfiguration,
 ) common_errors.BackendNativeError!void {
     if (surface_state.vk_surface == VK_NULL_U64) return error.SurfaceUnavailable;
 
-    // Query capabilities for swapchain creation
-    var caps = std.mem.zeroes(VkSurfaceCapabilitiesKHR);
-    try check_vk(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-        physical_device,
-        surface_state.vk_surface,
-        &caps,
-    ));
-
-    // Query formats
-    var format_count: u32 = 0;
-    try check_vk(vkGetPhysicalDeviceSurfaceFormatsKHR(
-        physical_device,
-        surface_state.vk_surface,
-        &format_count,
-        null,
-    ));
-    if (format_count == 0) return error.SurfaceUnavailable;
-
-    var formats: [MAX_SURFACE_FORMATS]VkSurfaceFormatKHR = std.mem.zeroes([MAX_SURFACE_FORMATS]VkSurfaceFormatKHR);
-    var query_format_count: u32 = @intCast(@min(format_count, MAX_SURFACE_FORMATS));
-    try check_vk(vkGetPhysicalDeviceSurfaceFormatsKHR(
-        physical_device,
-        surface_state.vk_surface,
-        &query_format_count,
-        &formats,
-    ));
-
-    const chosen_format = select_surface_format(
-        formats[0..@as(usize, query_format_count)],
-        surface_state.requested_format,
-        surface_state.tone_mapping_mode,
-    );
-    const chosen_present_mode = map_present_mode(surface_state.present_mode);
-    const chosen_alpha_mode = map_composite_alpha(surface_state.alpha_mode, caps.supportedCompositeAlpha);
-    const chosen_extent = clamp_extent(surface_state.width, surface_state.height, caps);
-    const requested_usage = map_surface_usage_flags(surface_state.usage);
-    if ((requested_usage & caps.supportedUsageFlags) != requested_usage) return error.UnsupportedFeature;
-
+    const caps = surface_state.cached_capabilities;
     // Image count: prefer one more than minimum for triple buffering
-    var image_count: u32 = caps.minImageCount + 1;
-    if (caps.maxImageCount > 0 and image_count > caps.maxImageCount) {
-        image_count = caps.maxImageCount;
+    var image_count: u32 = caps.min_image_count + 1;
+    if (caps.max_image_count > 0 and image_count > caps.max_image_count) {
+        image_count = caps.max_image_count;
     }
 
     std.debug.assert(surface_state.swapchain == VK_NULL_U64);
@@ -613,17 +554,17 @@ pub fn create_swapchain(
         .flags = 0,
         .surface = surface_state.vk_surface,
         .minImageCount = image_count,
-        .imageFormat = chosen_format.format,
-        .imageColorSpace = chosen_format.colorSpace,
-        .imageExtent = chosen_extent,
+        .imageFormat = admitted.format.format,
+        .imageColorSpace = admitted.format.colorSpace,
+        .imageExtent = admitted.extent,
         .imageArrayLayers = 1,
-        .imageUsage = requested_usage,
+        .imageUsage = admitted.usage,
         .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 1,
         .pQueueFamilyIndices = @ptrCast(&queue_family_index),
-        .preTransform = caps.currentTransform,
-        .compositeAlpha = chosen_alpha_mode,
-        .presentMode = chosen_present_mode,
+        .preTransform = caps.current_transform,
+        .compositeAlpha = admitted.alpha,
+        .presentMode = admitted.present_mode,
         .clipped = VK_TRUE,
         .oldSwapchain = VK_NULL_U64,
     };
@@ -642,9 +583,9 @@ pub fn create_swapchain(
         &surface_state.swapchain_images,
     ));
     surface_state.swapchain_image_count = actual_image_count;
-    surface_state.swapchain_format = chosen_format.format;
-    surface_state.swapchain_extent = chosen_extent;
-    surface_state.format = canvas_format_for_selected_surface_format(surface_state.requested_format, chosen_format);
+    surface_state.swapchain_format = admitted.format.format;
+    surface_state.swapchain_extent = admitted.extent;
+    surface_state.format = surface_state.requested_format;
     surface_state.last_acquire_suboptimal = false;
     surface_state.last_present_suboptimal = false;
 
