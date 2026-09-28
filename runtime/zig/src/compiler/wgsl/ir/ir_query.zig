@@ -9,6 +9,49 @@ pub fn isComputeOnlyModule(module: *const ir.Module) bool {
     return true;
 }
 
+pub fn referenceRootLocal(function: *const ir.Function, expr_id: ir.ExprId) ?u32 {
+    var current = expr_id;
+    while (true) {
+        const expr = function.exprs.items[current];
+        switch (expr.data) {
+            .local_ref => |index| return index,
+            .member => |m| current = m.base,
+            .index => |idx| current = idx.base,
+            .load => |inner| current = inner,
+            else => return null,
+        }
+    }
+}
+
+// Returns true if any `.assign` statement in the function has an lhs chain
+// that roots at `param_ref(param_index)`. Used to decide whether a param is
+// safe to SSA-promote (WGSL params are locally mutable by default).
+pub fn parameterIsAssigned(function: *const ir.Function, param_index: u32) bool {
+    for (function.stmts.items) |stmt| {
+        switch (stmt) {
+            .assign => |assign| {
+                if (referenceRootsAtParameter(function, assign.lhs, param_index)) return true;
+            },
+            else => {},
+        }
+    }
+    return false;
+}
+
+fn referenceRootsAtParameter(function: *const ir.Function, expr_id: ir.ExprId, param_index: u32) bool {
+    var current = expr_id;
+    while (true) {
+        const expr = function.exprs.items[current];
+        switch (expr.data) {
+            .param_ref => |index| return index == param_index,
+            .member => |m| current = m.base,
+            .index => |idx| current = idx.base,
+            .load => |inner| current = inner,
+            else => return false,
+        }
+    }
+}
+
 pub fn resolveValueAlias(function: *const ir.Function, expr_id: ir.ExprId) ir.ExprId {
     var current = expr_id;
     while (true) {
@@ -381,4 +424,27 @@ test "canonical IR queries resolve builtin, literal, global base, and runtime st
     try std.testing.expect(exprIsTexture1D(&module, &function, texture_id));
     try std.testing.expectEqual(@as(?u32, 3), findGlobalBase(&function, load_id));
     try std.testing.expectEqual(@as(?u64, 4), resolveRuntimeArrayElementStride(&module, &function, global_id));
+}
+
+test "reference roots preserve storage identity rather than constructor or constant value aliases" {
+    const allocator = std.testing.allocator;
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "roots"), .return_type = ir.INVALID_TYPE };
+    defer function.deinit(allocator);
+    const local = try function.append_expr(allocator, .{ .ty = ir.INVALID_TYPE, .category = .ref, .data = .{ .local_ref = 0 } });
+    const param = try function.append_expr(allocator, .{ .ty = ir.INVALID_TYPE, .category = .ref, .data = .{ .param_ref = 1 } });
+    const literal = try function.append_expr(allocator, .{ .ty = ir.INVALID_TYPE, .category = .value, .data = .{ .int_lit = 0 } });
+    _ = try function.append_stmt(allocator, .{ .local_decl = .{ .local = 0, .initializer = param, .is_const = true } });
+    const member = try function.append_expr(allocator, .{ .ty = ir.INVALID_TYPE, .category = .ref, .data = .{ .member = .{ .base = local, .field_name = try ir.dup_string(allocator, "a"), .field_index = 0 } } });
+    const index = try function.append_expr(allocator, .{ .ty = ir.INVALID_TYPE, .category = .ref, .data = .{ .index = .{ .base = member, .index = literal } } });
+    const load = try function.append_expr(allocator, .{ .ty = ir.INVALID_TYPE, .category = .value, .data = .{ .load = index } });
+    const construct = try function.append_expr(allocator, .{ .ty = ir.INVALID_TYPE, .category = .value, .data = .{ .construct = .{ .ty = ir.INVALID_TYPE, .args = try function.append_expr_args(allocator, &.{local}) } } });
+    try std.testing.expectEqual(@as(?u32, 0), referenceRootLocal(&function, load));
+    try std.testing.expectEqual(@as(?u32, null), referenceRootLocal(&function, construct));
+    try std.testing.expectEqual(param, resolveValueAlias(&function, construct));
+    try std.testing.expect(!referenceRootsAtParameter(&function, local, 1));
+    try std.testing.expect(!parameterIsAssigned(&function, 1));
+    const param_index = try function.append_expr(allocator, .{ .ty = ir.INVALID_TYPE, .category = .ref, .data = .{ .index = .{ .base = param, .index = literal } } });
+    _ = try function.append_stmt(allocator, .{ .assign = .{ .op = .assign, .lhs = param_index, .rhs = literal } });
+    try std.testing.expect(parameterIsAssigned(&function, 1));
+    try std.testing.expect(!parameterIsAssigned(&function, 0));
 }

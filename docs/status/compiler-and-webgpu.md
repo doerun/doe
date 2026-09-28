@@ -3,6 +3,19 @@
 This is the live status front door for the non-TSIR WGSL compiler and WebGPU
 runtime path. Artifacts and executable tests own pass/fail state.
 
+## Function emission and ordinary Vulkan queries
+
+The [SPIR-V ownership checkpoint](../../reports/maintenance/20260928-spirv-ownership/README.md)
+places instruction storage and cleanup in a typed owner while preserving distinct
+invalidation rules and IR reference semantics. Selected artifacts retain byte
+parity; allocation failures and physical mutation/branch/loop output are checked.
+A named pointer-alias lowering failure remains explicitly recorded.
+
+The [public query checkpoint](../../reports/maintenance/20260928-production-query/README.md)
+exercises ordinary WebGPU recording, native submission, logical visibility across
+draws, resolve and pixel readback. These local checks do not qualify the full
+query validation surface or establish application performance.
+
 ## Ordinary Node shader semantics
 
 The Node provider no longer substitutes host-generated clear, fill, or texture

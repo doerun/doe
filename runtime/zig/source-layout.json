@@ -2302,15 +2302,15 @@
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
         "decision": "Keep",
-        "moduleSha256": "713482a41f3b925ea6ede0984e008a06dfa905718d1b2c9ed87ad42b8c4314d5",
-        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
-        "reviewer": "codex-compiler-interface/2026-09-27"
+        "moduleSha256": "378d1058e84cb3f9fa658b2aaff1042d1abc2118d54063dbc68ca8fc55d067cf",
+        "reviewer": "codex-spirv-ownership/2026-09-28",
+        "reason": "Keep: instruction_cache owns keyed storage and distinct invalidations; function emission chooses boundaries and instruction policy; target-independent reference traversal belongs to ir_query. No new pass framework."
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": {
         "decision": "Keep",
-        "moduleSha256": "6d738f0ad35dfd5295cae1d59ae1ee184ead4cc05b20b7e6ad595349ee763fdb",
-        "reason": "Keep: SPIR-V instruction cache, scalar construction and reference helpers; target-independent loop eligibility moved to its IR owner. Further cache/query separation remains review work.",
-        "reviewer": "codex-compiler-interface/2026-09-27"
+        "moduleSha256": "b69ac269a6d7ba9b6034655d4a05390df2d00149e55bb140dcbd45a87fdb3343",
+        "reviewer": "codex-spirv-ownership/2026-09-28",
+        "reason": "Keep: instruction_cache owns keyed storage and distinct invalidations; function emission chooses boundaries and instruction policy; target-independent reference traversal belongs to ir_query. No new pass framework."
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_matrix.zig": {
         "decision": "Keep",
@@ -2482,9 +2482,9 @@
       },
       "src/compiler/wgsl/ir/ir_query.zig": {
         "decision": "Keep",
-        "moduleSha256": "5e333c0126f5fcb0310a5337bae64a6e17fd6051e228013a909d3ce8a604ce89",
-        "reason": "Keep: reachable compiler implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-multi-dot-loops/2026-09-07"
+        "moduleSha256": "a95d821eca23d0a7ade04ed549ea356eb112af5e4bc560659ea26652d7905390",
+        "reviewer": "codex-spirv-ownership/2026-09-28",
+        "reason": "Keep: instruction_cache owns keyed storage and distinct invalidations; function emission chooses boundaries and instruction policy; target-independent reference traversal belongs to ir_query. No new pass framework."
       },
       "src/compiler/wgsl/ir/ir_transform_robustness.zig": {
         "decision": "Keep",
@@ -4369,6 +4369,12 @@
         "moduleSha256": "42980dbe3468cca24f617db4e1a63041e0db0198093dd2b346dccc79a87ac508",
         "reason": "Keep: target-independent eligibility analysis for bounded independent local-array elements; SPIR-V policy and instruction inspection remain in emission.",
         "reviewer": "codex-compiler-interface/2026-09-27"
+      },
+      "src/compiler/wgsl/emit/spirv/instruction_cache.zig": {
+        "decision": "Keep",
+        "moduleSha256": "d481bfb70658fecdb50d043da0d39ecd1cfdb04bc42b7a07b61a1416414451e2",
+        "reviewer": "codex-spirv-ownership/2026-09-28",
+        "reason": "Keep: instruction_cache owns keyed storage and distinct invalidations; function emission chooses boundaries and instruction policy; target-independent reference traversal belongs to ir_query. No new pass framework."
       }
     },
     "linePolicy": {

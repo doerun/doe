@@ -1,0 +1,15 @@
+$ git diff --check
+exitCode=0
+$ python3 runtime/zig/tools/review_log.py --check --base-ref 628f8dd39
+Review log and queue valid; unfinished coverage remains explicit.
+exitCode=0
+$ python3 -m unittest bench.tests.test_doc_link_coverage
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.016s
+
+OK
+exitCode=0
+$ python3 bench/gates/schema_gate.py
+PASS
+exitCode=0

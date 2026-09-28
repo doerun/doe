@@ -16,63 +16,6 @@ pub fn multiDotLoopControl(body: []const u32) u32 {
     return if (dot_count >= multi_dot_minimum) spirv.LoopControl.DontUnroll else spirv.LoopControl.None;
 }
 
-pub const AccessChainEntry = struct {
-    root_id: u32,
-    ptr_type: u32,
-    result_id: u32,
-    indices: []u32,
-};
-
-pub const LoadCacheRoot = enum {
-    local,
-};
-
-pub const LoadCacheEntry = struct {
-    root: LoadCacheRoot,
-    index: u32,
-    value_id: u32,
-};
-
-pub const ResultInstEntry = struct {
-    opcode: u16,
-    result_type: u32,
-    result_id: u32,
-    operands: []u32,
-};
-
-pub fn clearResultInstEntries(allocator: std.mem.Allocator, entries: *std.ArrayListUnmanaged(ResultInstEntry)) void {
-    for (entries.items) |entry| allocator.free(entry.operands);
-    entries.clearRetainingCapacity();
-}
-
-pub fn findResultInstEntry(entries: []const ResultInstEntry, opcode: u16, result_type: u32, operands: []const u32) ?u32 {
-    for (entries) |entry| {
-        if (entry.opcode != opcode) continue;
-        if (entry.result_type != result_type) continue;
-        if (entry.operands.len != operands.len) continue;
-        if (std.mem.eql(u32, entry.operands, operands)) return entry.result_id;
-    }
-    return null;
-}
-
-pub fn appendResultInstEntry(
-    allocator: std.mem.Allocator,
-    entries: *std.ArrayListUnmanaged(ResultInstEntry),
-    opcode: u16,
-    result_type: u32,
-    result_id: u32,
-    operands: []const u32,
-) !void {
-    const owned_operands = try allocator.dupe(u32, operands);
-    errdefer allocator.free(owned_operands);
-    try entries.append(allocator, .{
-        .opcode = opcode,
-        .result_type = result_type,
-        .result_id = result_id,
-        .operands = owned_operands,
-    });
-}
-
 pub fn cacheableResultOpcode(opcode: u16) bool {
     return switch (opcode) {
         spirv.Opcode.SNegate,
@@ -135,18 +78,6 @@ pub fn cacheableResultOpcode(opcode: u16) bool {
     };
 }
 
-pub fn removeLoadCacheEntry(entries: *std.ArrayListUnmanaged(LoadCacheEntry), root: LoadCacheRoot, index: u32) void {
-    var i: usize = 0;
-    while (i < entries.items.len) {
-        const entry = entries.items[i];
-        if (entry.root == root and entry.index == index) {
-            _ = entries.swapRemove(i);
-            continue;
-        }
-        i += 1;
-    }
-}
-
 pub fn emitZeroValue(self: anytype, ty: ir.TypeId) !u32 {
     return switch (self.emitter.module.types.get(ty)) {
         .scalar => |scalar| switch (scalar) {
@@ -167,20 +98,6 @@ pub fn emitZeroValue(self: anytype, ty: ir.TypeId) !u32 {
         },
         else => error.UnsupportedConstruct,
     };
-}
-
-pub fn ref_chain_roots_at_local(function: *const ir.Function, expr_id: ir.ExprId) ?u32 {
-    var current = expr_id;
-    while (true) {
-        const expr = function.exprs.items[current];
-        switch (expr.data) {
-            .local_ref => |index| return index,
-            .member => |m| current = m.base,
-            .index => |idx| current = idx.base,
-            .load => |inner| current = inner,
-            else => return null,
-        }
-    }
 }
 
 pub const ScalarKind = enum { bool, signed, unsigned, float };
@@ -245,33 +162,4 @@ pub fn assign_op_to_binary(op: ir.AssignOp) ir.BinaryOp {
         .shift_left => .shift_left,
         .shift_right => .shift_right,
     };
-}
-
-// Returns true if any `.assign` statement in the function has an lhs chain
-// that roots at `param_ref(param_index)`. Used to decide whether a param is
-// safe to SSA-promote (WGSL params are locally mutable by default).
-pub fn param_is_assigned(function: *const ir.Function, param_index: u32) bool {
-    for (function.stmts.items) |stmt| {
-        switch (stmt) {
-            .assign => |assign| {
-                if (ref_chain_roots_at_param(function, assign.lhs, param_index)) return true;
-            },
-            else => {},
-        }
-    }
-    return false;
-}
-
-fn ref_chain_roots_at_param(function: *const ir.Function, expr_id: ir.ExprId, param_index: u32) bool {
-    var current = expr_id;
-    while (true) {
-        const expr = function.exprs.items[current];
-        switch (expr.data) {
-            .param_ref => |index| return index == param_index,
-            .member => |m| current = m.base,
-            .index => |idx| current = idx.base,
-            .load => |inner| current = inner,
-            else => return false,
-        }
-    }
 }

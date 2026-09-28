@@ -80,6 +80,15 @@ No public descriptor fields change. Broader render-pass semantics and physical
 platform coverage require their own acceptance evidence.
 
 
+SPIR-V function state delegates instruction-cache storage and cleanup to
+`emit/spirv/instruction_cache.zig`. Local stores, calls and block transitions
+retain their distinct invalidations. Emission owns opcode eligibility and ID
+allocation; IR owns reference-root and parameter-write queries. Reference roots
+preserve storage identity rather than following constructor/constant value
+aliases. The [ownership checkpoint](../reports/maintenance/20260928-spirv-ownership/README.md)
+retains byte parity, allocation failures, physical mutation checks and cost
+observations. This internal ownership change alters no public field or schema.
+
 ## Compute arithmetic policy
 
 `config/spirv-compute-arithmetic-policy.json` selects arithmetic and loop controls

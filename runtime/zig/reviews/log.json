@@ -25196,6 +25196,172 @@
       "targets": [
         "src/backend/vulkan/vk_render.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig",
+          "sha256": "94d8b374f9204167b89e8dcaa644336c1f15599b6bbe0721695e02eb338ebf2f"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "d0f2b11381e361f7baa1727553c04e3d51f5c3806084aaed03f98b553d87650b"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-spirv-ownership/identity.json",
+          "sha256": "e694ca2d8e23dd78134a72af25f0854d3d4f51c56e045c9031655aa7503b95d9"
+        },
+        {
+          "path": "reports/maintenance/20260928-spirv-ownership/parity.json",
+          "sha256": "cd462b7cdfc00a0a18aedf3b4e66f30ffa793733a0dfe25f48cf49c55357e261"
+        }
+      ],
+      "findings": [
+        "Other emitter responsibilities remain outside this bounded review; no whole-file completion. Named pointer aliases retain the predecessor InvalidIr failure."
+      ],
+      "inputHash": "4681bb82d7f04c6c46c121fb72a80283ece5d4dfe9093fffa48b0359605e7974",
+      "level": "file",
+      "nextAction": "Trace named pointer-alias lowering from validated IR to emit_ref_expr before selecting a separate compatibility repair.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Function state delegates cache storage, insertion, lookup and cleanup to a typed owner while preserving distinct invalidations and selected emitted bytes."
+      ],
+      "reviewId": "spirv_ownership_function_20260928",
+      "reviewedAt": "2026-09-28T16:59:38.133987+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "7e356584004a55fc237bd8dfeffd6069ce0d4ea2",
+      "status": "in_progress",
+      "summary": "Examined function-cache construction, accesses, stores, calls, block boundaries and teardown through its real function-emitter consumer.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig",
+          "sha256": "94d8b374f9204167b89e8dcaa644336c1f15599b6bbe0721695e02eb338ebf2f"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "d0f2b11381e361f7baa1727553c04e3d51f5c3806084aaed03f98b553d87650b"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-spirv-ownership/identity.json",
+          "sha256": "e694ca2d8e23dd78134a72af25f0854d3d4f51c56e045c9031655aa7503b95d9"
+        },
+        {
+          "path": "reports/maintenance/20260928-spirv-ownership/parity.json",
+          "sha256": "cd462b7cdfc00a0a18aedf3b4e66f30ffa793733a0dfe25f48cf49c55357e261"
+        }
+      ],
+      "findings": [
+        "Remaining scalar construction and opcode policy were not exhaustively reviewed; no whole-file completion."
+      ],
+      "inputHash": "0e6c085344d2ae9ef0ac83a779f7d26daeb6f05f91030a7744aa69f3258a0463",
+      "level": "file",
+      "nextAction": "Review scalar conversion consumers independently of the completed cache ownership correction.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Cache cleanup is cohesive with its allocation owner; exact reference traversal moved to IR without substituting value-alias resolution."
+      ],
+      "reviewId": "spirv_ownership_helpers_20260928",
+      "reviewedAt": "2026-09-28T16:59:39.585993+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "7e356584004a55fc237bd8dfeffd6069ce0d4ea2",
+      "status": "in_progress",
+      "summary": "Removed cache storage/lifetimes and target-independent reference queries from SPIR-V helpers; scalar lowering and instruction policy remain target-owned.",
+      "supersedes": "spirv_helper_cohesion_20260927",
+      "targets": [
+        "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig",
+          "sha256": "94d8b374f9204167b89e8dcaa644336c1f15599b6bbe0721695e02eb338ebf2f"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "d0f2b11381e361f7baa1727553c04e3d51f5c3806084aaed03f98b553d87650b"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-spirv-ownership/identity.json",
+          "sha256": "e694ca2d8e23dd78134a72af25f0854d3d4f51c56e045c9031655aa7503b95d9"
+        },
+        {
+          "path": "reports/maintenance/20260928-spirv-ownership/parity.json",
+          "sha256": "cd462b7cdfc00a0a18aedf3b4e66f30ffa793733a0dfe25f48cf49c55357e261"
+        }
+      ],
+      "findings": [
+        "Other IR query families were not exhaustively examined."
+      ],
+      "inputHash": "de0154464189d7763788f2c037f4b878c2f9ee8196fa1310f29b84ccd1e72051",
+      "level": "file",
+      "nextAction": "Continue query-family review only along a named compiler consumer; preserve storage versus value alias semantics.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Direct IR regression preserves local/parameter chains, member/index/load traversal and the constructor/constant-initializer distinction."
+      ],
+      "reviewId": "spirv_ownership_queries_20260928",
+      "reviewedAt": "2026-09-28T16:59:41.010043+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "7e356584004a55fc237bd8dfeffd6069ce0d4ea2",
+      "status": "in_progress",
+      "summary": "Examined moved storage-reference and parameter-write queries against distinct existing value-alias resolution.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/ir/ir_query.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig",
+          "sha256": "94d8b374f9204167b89e8dcaa644336c1f15599b6bbe0721695e02eb338ebf2f"
+        },
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "d0f2b11381e361f7baa1727553c04e3d51f5c3806084aaed03f98b553d87650b"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-spirv-ownership/identity.json",
+          "sha256": "e694ca2d8e23dd78134a72af25f0854d3d4f51c56e045c9031655aa7503b95d9"
+        },
+        {
+          "path": "reports/maintenance/20260928-spirv-ownership/parity.json",
+          "sha256": "cd462b7cdfc00a0a18aedf3b4e66f30ffa793733a0dfe25f48cf49c55357e261"
+        }
+      ],
+      "findings": [],
+      "inputHash": "c1cc716ea6243fb34840effbc70342a73c4f61229f29b0097248525a898bc770",
+      "level": "file",
+      "nextAction": "Preserve these distinct invalidation contracts when extending instruction reuse; parent emitter review remains partial.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Owned keys survive caller mutation; all injected allocation failures unwind; actual emitter preserves artifact bytes and physical mutation/control-flow output."
+      ],
+      "reviewId": "spirv_ownership_cache_20260928",
+      "reviewedAt": "2026-09-28T16:59:42.458257+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "7e356584004a55fc237bd8dfeffd6069ce0d4ea2",
+      "status": "verified",
+      "summary": "Reviewed all cache storage, key identity, owned duplication, failure unwinding, selective invalidation, block reset and teardown operations.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/emit/spirv/instruction_cache.zig"
+      ]
     }
   ],
   "schemaVersion": 1

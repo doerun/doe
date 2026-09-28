@@ -1,0 +1,2882 @@
+[
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+    "sourceSha256": "66abbe70b2a2dfef3de111388510c5c2b0a937257f1b4240d85a32d5523337af",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_attention_decode.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 7496,
+        "sha256": "ee13a96a26a368729b8b7509f462659c949db2395cc4bf18cd7541b916897db6",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_attention_decode.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 7496,
+        "sha256": "ee13a96a26a368729b8b7509f462659c949db2395cc4bf18cd7541b916897db6",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+    "sourceSha256": "66abbe70b2a2dfef3de111388510c5c2b0a937257f1b4240d85a32d5523337af",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_attention_decode.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "bd43838c2e5b8c6b0e028eba3cbd17f4a56684fb9b5503b0f5a407287ffdbe4d",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_attention_decode.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "bd43838c2e5b8c6b0e028eba3cbd17f4a56684fb9b5503b0f5a407287ffdbe4d",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+    "sourceSha256": "66abbe70b2a2dfef3de111388510c5c2b0a937257f1b4240d85a32d5523337af",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_attention_decode.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 4526,
+        "sha256": "4154e955621bdb877a3d02cd883ba79f143e79cc21a213aaf750512813f4e342",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_attention_decode.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 4526,
+        "sha256": "4154e955621bdb877a3d02cd883ba79f143e79cc21a213aaf750512813f4e342",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+    "sourceSha256": "66abbe70b2a2dfef3de111388510c5c2b0a937257f1b4240d85a32d5523337af",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_attention_decode.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 6901,
+        "sha256": "334363455c1848bd381e909555fa0b1adcfdd2873e4a13cd43d3741cea744076",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_attention_decode.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 6901,
+        "sha256": "334363455c1848bd381e909555fa0b1adcfdd2873e4a13cd43d3741cea744076",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+    "sourceSha256": "c2c71685c1663f3995f301551ed983f514e2fb3d5f7d0487daf792b637b71a56",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_fused_gemv_dequant.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 4000,
+        "sha256": "1070f9d413226ba9a9a82af6b738830088ef2f36f00d49935c4bf58bc2534a90",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_fused_gemv_dequant.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 4000,
+        "sha256": "1070f9d413226ba9a9a82af6b738830088ef2f36f00d49935c4bf58bc2534a90",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+    "sourceSha256": "c2c71685c1663f3995f301551ed983f514e2fb3d5f7d0487daf792b637b71a56",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_fused_gemv_dequant.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "a03616ebfed2f062ed4b9fe26709bc38cf870a982ec8784a387d5c282fdf8018",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_fused_gemv_dequant.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "a03616ebfed2f062ed4b9fe26709bc38cf870a982ec8784a387d5c282fdf8018",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+    "sourceSha256": "c2c71685c1663f3995f301551ed983f514e2fb3d5f7d0487daf792b637b71a56",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_fused_gemv_dequant.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 2559,
+        "sha256": "7515da20b6fe299005c629cfa389440b19a813090c32db82f5503bc115fb1f6f",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_fused_gemv_dequant.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 2559,
+        "sha256": "7515da20b6fe299005c629cfa389440b19a813090c32db82f5503bc115fb1f6f",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+    "sourceSha256": "c2c71685c1663f3995f301551ed983f514e2fb3d5f7d0487daf792b637b71a56",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_fused_gemv_dequant.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 5187,
+        "sha256": "8d3ad336387d764968dbc277a7eed52bcd5131b89ff72e5a2133f8211c1e2ff1",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_fused_gemv_dequant.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 5187,
+        "sha256": "8d3ad336387d764968dbc277a7eed52bcd5131b89ff72e5a2133f8211c1e2ff1",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+    "sourceSha256": "33d1e963ed359997b7a334ca77da0e94951c38bd620b9fd6264d783bea6c97b9",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_matmul_tiled.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 6816,
+        "sha256": "d3c6ce7caa64cbcc2e72e453e075d0e0de1abeb68d281a964dd126f07a2d67f6",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_matmul_tiled.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 6816,
+        "sha256": "d3c6ce7caa64cbcc2e72e453e075d0e0de1abeb68d281a964dd126f07a2d67f6",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+    "sourceSha256": "33d1e963ed359997b7a334ca77da0e94951c38bd620b9fd6264d783bea6c97b9",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_matmul_tiled.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "5bf234b99d2eafec4b1b5fe24fa99ad76a1c8334b64c02a747aa7e305ea4e97e",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_matmul_tiled.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "5bf234b99d2eafec4b1b5fe24fa99ad76a1c8334b64c02a747aa7e305ea4e97e",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+    "sourceSha256": "33d1e963ed359997b7a334ca77da0e94951c38bd620b9fd6264d783bea6c97b9",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_matmul_tiled.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 5072,
+        "sha256": "bc634df534e30306afbf6aa40faadaf3d2b9a1842add72fe96265d6d32b0a21f",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_matmul_tiled.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 5072,
+        "sha256": "bc634df534e30306afbf6aa40faadaf3d2b9a1842add72fe96265d6d32b0a21f",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+    "sourceSha256": "33d1e963ed359997b7a334ca77da0e94951c38bd620b9fd6264d783bea6c97b9",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_matmul_tiled.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 6713,
+        "sha256": "90e41dd475366788a721c5ae875853b65c65ff5778da1fc22dc733551b187463",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_matmul_tiled.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 6713,
+        "sha256": "90e41dd475366788a721c5ae875853b65c65ff5778da1fc22dc733551b187463",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+    "sourceSha256": "19f491a1a1e81a13fa640a361a87401b98d22f351fe4eafdff8b2a144032339a",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_multi_entry.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 4948,
+        "sha256": "82997192a835e1b5f410ff7d6f877fabaf6e726ce227f5ee58b60af9a0927901",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_multi_entry.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 4948,
+        "sha256": "82997192a835e1b5f410ff7d6f877fabaf6e726ce227f5ee58b60af9a0927901",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+    "sourceSha256": "19f491a1a1e81a13fa640a361a87401b98d22f351fe4eafdff8b2a144032339a",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_multi_entry.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "2d6ec45d982ba22b17a9750d3ef109ce69033a81b26a2a5e194b66ab55907f43",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_multi_entry.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "2d6ec45d982ba22b17a9750d3ef109ce69033a81b26a2a5e194b66ab55907f43",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+    "sourceSha256": "19f491a1a1e81a13fa640a361a87401b98d22f351fe4eafdff8b2a144032339a",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_multi_entry.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 4066,
+        "sha256": "4f2ef74d1a6cbab0cba0dd159d469aa53ba502be74a115966f1f275554d255f6",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_multi_entry.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 4066,
+        "sha256": "4f2ef74d1a6cbab0cba0dd159d469aa53ba502be74a115966f1f275554d255f6",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+    "sourceSha256": "19f491a1a1e81a13fa640a361a87401b98d22f351fe4eafdff8b2a144032339a",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/complex_multi_entry.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 5622,
+        "sha256": "48133bd93307161d83176657067d2cc16d7dc9e23b076f0c8a32b04129871591",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/complex_multi_entry.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 5622,
+        "sha256": "48133bd93307161d83176657067d2cc16d7dc9e23b076f0c8a32b04129871591",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+    "sourceSha256": "846366f6ede966339046655492a3e6824446f5e13f0115502efa0b113313ae95",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_gelu.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 1772,
+        "sha256": "8990d491dbd59842a809e2b1abae51de8088d23b67838825466a2de8c4dc8005",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_gelu.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 1772,
+        "sha256": "8990d491dbd59842a809e2b1abae51de8088d23b67838825466a2de8c4dc8005",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+    "sourceSha256": "846366f6ede966339046655492a3e6824446f5e13f0115502efa0b113313ae95",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_gelu.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "ae460b8dd88ff676aa6eb909774a2ac919f836ee6faa00261b45068e0a3aaa4a",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_gelu.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "ae460b8dd88ff676aa6eb909774a2ac919f836ee6faa00261b45068e0a3aaa4a",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+    "sourceSha256": "846366f6ede966339046655492a3e6824446f5e13f0115502efa0b113313ae95",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_gelu.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1143,
+        "sha256": "dcabdd260b5eb6f3edc338b523d9767c8d752b3ad1eb0e079d21e717fa121130",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_gelu.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1143,
+        "sha256": "dcabdd260b5eb6f3edc338b523d9767c8d752b3ad1eb0e079d21e717fa121130",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+    "sourceSha256": "846366f6ede966339046655492a3e6824446f5e13f0115502efa0b113313ae95",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_gelu.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3705,
+        "sha256": "3dcd16f288f50ec17d1ee662197ce0974c8f4cc23610cacf03353c86b66b4918",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_gelu.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3705,
+        "sha256": "3dcd16f288f50ec17d1ee662197ce0974c8f4cc23610cacf03353c86b66b4918",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+    "sourceSha256": "dcaf21f3dfb8ebd91165bc41ffe2eb0076337543e78e0d60cc2aebca77a87467",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_layernorm.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 5116,
+        "sha256": "55bc9a2ca32a9dc069de227d8b88232ca812d0c36e5396e69ba25e53b3834833",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_layernorm.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 5116,
+        "sha256": "55bc9a2ca32a9dc069de227d8b88232ca812d0c36e5396e69ba25e53b3834833",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+    "sourceSha256": "dcaf21f3dfb8ebd91165bc41ffe2eb0076337543e78e0d60cc2aebca77a87467",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_layernorm.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "a26bef760e2667ddaed614c22e8a931a6f2190bac6275fae9b6a3aed34c434f5",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_layernorm.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "a26bef760e2667ddaed614c22e8a931a6f2190bac6275fae9b6a3aed34c434f5",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+    "sourceSha256": "dcaf21f3dfb8ebd91165bc41ffe2eb0076337543e78e0d60cc2aebca77a87467",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_layernorm.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 2878,
+        "sha256": "29d494e3263e7d4985c7ef8db119c268d161700429ab10ca3c77ea313605a88f",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_layernorm.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 2878,
+        "sha256": "29d494e3263e7d4985c7ef8db119c268d161700429ab10ca3c77ea313605a88f",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+    "sourceSha256": "dcaf21f3dfb8ebd91165bc41ffe2eb0076337543e78e0d60cc2aebca77a87467",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_layernorm.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 5727,
+        "sha256": "36de2895e4a007449c50300852686e157f8c257bb2e0033a26b558dcb9aa262a",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_layernorm.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 5727,
+        "sha256": "36de2895e4a007449c50300852686e157f8c257bb2e0033a26b558dcb9aa262a",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+    "sourceSha256": "691551e04ff875ec882b45993477ec40f432185921e3b0f7f77aec0e5e2b817b",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_matmul_naive.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 2380,
+        "sha256": "b91ac55cdc7dee308861f645cbe054f57db76853562679feed74e64104ec2f42",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_matmul_naive.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 2380,
+        "sha256": "b91ac55cdc7dee308861f645cbe054f57db76853562679feed74e64104ec2f42",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+    "sourceSha256": "691551e04ff875ec882b45993477ec40f432185921e3b0f7f77aec0e5e2b817b",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_matmul_naive.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "2d1dd68c2b09f9d23c6088a4ba8e8f5ec86af589cce1056562f5352abffe652a",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_matmul_naive.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "2d1dd68c2b09f9d23c6088a4ba8e8f5ec86af589cce1056562f5352abffe652a",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+    "sourceSha256": "691551e04ff875ec882b45993477ec40f432185921e3b0f7f77aec0e5e2b817b",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_matmul_naive.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1107,
+        "sha256": "9ed7aba0ad47a269340f2c1e2c0de84d3aa0ff17b840a7598648ee9d58b3a22f",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_matmul_naive.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1107,
+        "sha256": "9ed7aba0ad47a269340f2c1e2c0de84d3aa0ff17b840a7598648ee9d58b3a22f",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+    "sourceSha256": "691551e04ff875ec882b45993477ec40f432185921e3b0f7f77aec0e5e2b817b",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_matmul_naive.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3891,
+        "sha256": "a8f2b871f051d9b8456eee74127e199522e3f7e5e206a5443ceb1b81f503ab0c",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_matmul_naive.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3891,
+        "sha256": "a8f2b871f051d9b8456eee74127e199522e3f7e5e206a5443ceb1b81f503ab0c",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+    "sourceSha256": "7a9ba6860ccf30a363f9da36c6fcb46e8b3fcdf8b30b4000f7f0704e72a8f511",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_rmsnorm.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 3592,
+        "sha256": "96342294e2434836af9db9eec4652a3c3a7c6d0ea2d5406384314a1796d1f98b",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_rmsnorm.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 3592,
+        "sha256": "96342294e2434836af9db9eec4652a3c3a7c6d0ea2d5406384314a1796d1f98b",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+    "sourceSha256": "7a9ba6860ccf30a363f9da36c6fcb46e8b3fcdf8b30b4000f7f0704e72a8f511",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_rmsnorm.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "c12399eadc66925461b6eade88e72aea6503442cb841ef8604d297dd1d1ffcdd",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_rmsnorm.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "c12399eadc66925461b6eade88e72aea6503442cb841ef8604d297dd1d1ffcdd",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+    "sourceSha256": "7a9ba6860ccf30a363f9da36c6fcb46e8b3fcdf8b30b4000f7f0704e72a8f511",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_rmsnorm.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1871,
+        "sha256": "731096288d77b58d91e1650027f2266837f0645b37a8e10d89b74c04d1e90cd5",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_rmsnorm.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1871,
+        "sha256": "731096288d77b58d91e1650027f2266837f0645b37a8e10d89b74c04d1e90cd5",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+    "sourceSha256": "7a9ba6860ccf30a363f9da36c6fcb46e8b3fcdf8b30b4000f7f0704e72a8f511",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_rmsnorm.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 4684,
+        "sha256": "57e13a5c26dcab312874a1a18b2fb97da93240971a3f4c80b8620f959ea66b73",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_rmsnorm.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 4684,
+        "sha256": "57e13a5c26dcab312874a1a18b2fb97da93240971a3f4c80b8620f959ea66b73",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+    "sourceSha256": "3ea8c10372222e8836327bd0403b8a9f6f2648e369bce09b51697d122b3123e6",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_rope.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 2520,
+        "sha256": "28303ade524d0f35ac69ad4e2ceb3676a65056717cb5935b78cd21badffb451b",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_rope.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 2520,
+        "sha256": "28303ade524d0f35ac69ad4e2ceb3676a65056717cb5935b78cd21badffb451b",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+    "sourceSha256": "3ea8c10372222e8836327bd0403b8a9f6f2648e369bce09b51697d122b3123e6",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_rope.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "0b20d6dd3592136dfbcd631aacae87e6b0c07cf6dbfe1c6f25f61f2c70999a71",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_rope.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "0b20d6dd3592136dfbcd631aacae87e6b0c07cf6dbfe1c6f25f61f2c70999a71",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+    "sourceSha256": "3ea8c10372222e8836327bd0403b8a9f6f2648e369bce09b51697d122b3123e6",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_rope.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1675,
+        "sha256": "cf349adecb55c05d298fe30ef7367ba83b37c9bcbf06fd949fc201877103b16c",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_rope.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1675,
+        "sha256": "cf349adecb55c05d298fe30ef7367ba83b37c9bcbf06fd949fc201877103b16c",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+    "sourceSha256": "3ea8c10372222e8836327bd0403b8a9f6f2648e369bce09b51697d122b3123e6",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_rope.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 4477,
+        "sha256": "b4646393b08678297058fb7cf906b20976a1b3cadf6d4fbfa670a549681cbb12",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_rope.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_rope.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 4477,
+        "sha256": "b4646393b08678297058fb7cf906b20976a1b3cadf6d4fbfa670a549681cbb12",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+    "sourceSha256": "eafa9347d477e95b1a639a5c46bac76de2270740c6b249baff1e3c403fbd0481",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_softmax.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 4536,
+        "sha256": "6dab438cb487b6c75f5492f470149d2f953fdd7f5a1e600a1b36497949e67c6f",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_softmax.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 4536,
+        "sha256": "6dab438cb487b6c75f5492f470149d2f953fdd7f5a1e600a1b36497949e67c6f",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+    "sourceSha256": "eafa9347d477e95b1a639a5c46bac76de2270740c6b249baff1e3c403fbd0481",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_softmax.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "db5f64c06c7a07e9f30304d6589228a233878e0b339ca69a818313af33f96b7a",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_softmax.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "db5f64c06c7a07e9f30304d6589228a233878e0b339ca69a818313af33f96b7a",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+    "sourceSha256": "eafa9347d477e95b1a639a5c46bac76de2270740c6b249baff1e3c403fbd0481",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_softmax.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 2737,
+        "sha256": "57d0e5882adb18aa300586dad5fd40c5e02cfcd498ec72d8bbe1a4e5b2e36052",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_softmax.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 2737,
+        "sha256": "57d0e5882adb18aa300586dad5fd40c5e02cfcd498ec72d8bbe1a4e5b2e36052",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+    "sourceSha256": "eafa9347d477e95b1a639a5c46bac76de2270740c6b249baff1e3c403fbd0481",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/moderate_softmax.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 5407,
+        "sha256": "f45849b271cfd340b3579cf52d4a873a09092010efb4dae3a33617dca8104cf4",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/moderate_softmax.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 5407,
+        "sha256": "f45849b271cfd340b3579cf52d4a873a09092010efb4dae3a33617dca8104cf4",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+    "sourceSha256": "a79c6bb744a3c13f734f1e17a2f9f617c05aac7ae3d64f67c9cc98945f459acc",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_relu.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 1032,
+        "sha256": "a0d80cacf5d46f4383ac275536ef143fdb66665efa2c43a5144ac24698412ff8",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_relu.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 1032,
+        "sha256": "a0d80cacf5d46f4383ac275536ef143fdb66665efa2c43a5144ac24698412ff8",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+    "sourceSha256": "a79c6bb744a3c13f734f1e17a2f9f617c05aac7ae3d64f67c9cc98945f459acc",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_relu.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "d65be5a72d5224307515f6afa543109f0dfb2b5aefeae8ee92141f6993738146",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_relu.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "d65be5a72d5224307515f6afa543109f0dfb2b5aefeae8ee92141f6993738146",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+    "sourceSha256": "a79c6bb744a3c13f734f1e17a2f9f617c05aac7ae3d64f67c9cc98945f459acc",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_relu.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 593,
+        "sha256": "7a98932d454b756a6da4412931127ae8b8f99b6d24ac8e7a8ecf24197089e039",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_relu.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 593,
+        "sha256": "7a98932d454b756a6da4412931127ae8b8f99b6d24ac8e7a8ecf24197089e039",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+    "sourceSha256": "a79c6bb744a3c13f734f1e17a2f9f617c05aac7ae3d64f67c9cc98945f459acc",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_relu.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3316,
+        "sha256": "93e220682b2f9b91de692bdd0457b6bf3aad441d4564729fec0803e2f43fa42c",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_relu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_relu.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3316,
+        "sha256": "93e220682b2f9b91de692bdd0457b6bf3aad441d4564729fec0803e2f43fa42c",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+    "sourceSha256": "75ba7169ecc1af5f1ee94a94e775c3229fb833e61c0cb16af36a3fc045a31c62",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_residual_add.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 1240,
+        "sha256": "4335287a1541b5a701ba7665924ed464819ddf92283622b37bd9c3046c1a9429",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_residual_add.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 1240,
+        "sha256": "4335287a1541b5a701ba7665924ed464819ddf92283622b37bd9c3046c1a9429",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+    "sourceSha256": "75ba7169ecc1af5f1ee94a94e775c3229fb833e61c0cb16af36a3fc045a31c62",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_residual_add.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "cbdb27d0f38d5c39bef5ed647b1ff6eeecc3aeb275702b4241f306f899b2db34",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_residual_add.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "cbdb27d0f38d5c39bef5ed647b1ff6eeecc3aeb275702b4241f306f899b2db34",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+    "sourceSha256": "75ba7169ecc1af5f1ee94a94e775c3229fb833e61c0cb16af36a3fc045a31c62",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_residual_add.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 675,
+        "sha256": "c4ebbfa69f64f7790987ff90313e9e210fe40cefdab81e62b5791476d56281a6",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_residual_add.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 675,
+        "sha256": "c4ebbfa69f64f7790987ff90313e9e210fe40cefdab81e62b5791476d56281a6",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+    "sourceSha256": "75ba7169ecc1af5f1ee94a94e775c3229fb833e61c0cb16af36a3fc045a31c62",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_residual_add.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3466,
+        "sha256": "60e8f4f311d2161db1b34d332147d6939e9bdb939822fcc3b70e8eab6bc3710f",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_residual_add.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3466,
+        "sha256": "60e8f4f311d2161db1b34d332147d6939e9bdb939822fcc3b70e8eab6bc3710f",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+    "sourceSha256": "21f18f6bad8c79bd9246f27b0eb25b714f666b7c8ffbd4f56ae0841589d4cab3",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_scale_f32.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 888,
+        "sha256": "97b0b0165b67a9ae7f3f2f9ec4b00c9a1d4bde0875a3a32c811250c17eb4ba12",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_scale_f32.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 888,
+        "sha256": "97b0b0165b67a9ae7f3f2f9ec4b00c9a1d4bde0875a3a32c811250c17eb4ba12",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+    "sourceSha256": "21f18f6bad8c79bd9246f27b0eb25b714f666b7c8ffbd4f56ae0841589d4cab3",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_scale_f32.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "6cfcf5da089d88f184682b315f74f88217056528ec88925fdfd504de833f8348",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_scale_f32.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "6cfcf5da089d88f184682b315f74f88217056528ec88925fdfd504de833f8348",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+    "sourceSha256": "21f18f6bad8c79bd9246f27b0eb25b714f666b7c8ffbd4f56ae0841589d4cab3",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_scale_f32.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 423,
+        "sha256": "8e9b20774007dff1db8b1fd64a8d4e79acaf2be41d4940f47a23d90f041cb791",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_scale_f32.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 423,
+        "sha256": "8e9b20774007dff1db8b1fd64a8d4e79acaf2be41d4940f47a23d90f041cb791",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+    "sourceSha256": "21f18f6bad8c79bd9246f27b0eb25b714f666b7c8ffbd4f56ae0841589d4cab3",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_scale_f32.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3060,
+        "sha256": "3d3fa7e9f119cafe53f91c40f4f0e13e64092ba836fb30a8650d51aa6175d45f",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_scale_f32.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3060,
+        "sha256": "3d3fa7e9f119cafe53f91c40f4f0e13e64092ba836fb30a8650d51aa6175d45f",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+    "sourceSha256": "ee4333fda2c7598f43655cd67598f7c34493e01001bec8f4f5167de3ec4094ec",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_silu.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 1148,
+        "sha256": "f4a96d20405f14fb11b94c9e53aa3211933706dd9cdded47cc9a2db51a176e4f",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_silu.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 1148,
+        "sha256": "f4a96d20405f14fb11b94c9e53aa3211933706dd9cdded47cc9a2db51a176e4f",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+    "sourceSha256": "ee4333fda2c7598f43655cd67598f7c34493e01001bec8f4f5167de3ec4094ec",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_silu.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "974d62435dbf98f83bf0a3fa202ef4f077b355ee90a479459e11ac353cb58158",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_silu.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "974d62435dbf98f83bf0a3fa202ef4f077b355ee90a479459e11ac353cb58158",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+    "sourceSha256": "ee4333fda2c7598f43655cd67598f7c34493e01001bec8f4f5167de3ec4094ec",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_silu.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 634,
+        "sha256": "ac60080c32ad1cbf83efcebc340277f948c36488e97032ac6c4dc6782b36f30e",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_silu.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 634,
+        "sha256": "ac60080c32ad1cbf83efcebc340277f948c36488e97032ac6c4dc6782b36f30e",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+    "sourceSha256": "ee4333fda2c7598f43655cd67598f7c34493e01001bec8f4f5167de3ec4094ec",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/simple_silu.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3350,
+        "sha256": "af9457b2ea5d51ca075b2d864e04385e4f52b7b5eb2610932f23822bfdd63075",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/simple_silu.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/simple_silu.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3350,
+        "sha256": "af9457b2ea5d51ca075b2d864e04385e4f52b7b5eb2610932f23822bfdd63075",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+    "sourceSha256": "e093a962268bbac3a4e20e20118d5f6ac71324765df1f4a58c191f6743294db6",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/stress_many_bindings.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 3680,
+        "sha256": "8aaebbf71a6959d3657e90f3a9bbe0c29cb447ee9fe5aff0cbe56b43164502e0",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/stress_many_bindings.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 3680,
+        "sha256": "8aaebbf71a6959d3657e90f3a9bbe0c29cb447ee9fe5aff0cbe56b43164502e0",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+    "sourceSha256": "e093a962268bbac3a4e20e20118d5f6ac71324765df1f4a58c191f6743294db6",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/stress_many_bindings.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "7a1f8320fdc90667b683f62cb388167e789239d78074d59d19fcd38af80a046a",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/stress_many_bindings.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "7a1f8320fdc90667b683f62cb388167e789239d78074d59d19fcd38af80a046a",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+    "sourceSha256": "e093a962268bbac3a4e20e20118d5f6ac71324765df1f4a58c191f6743294db6",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/stress_many_bindings.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 2211,
+        "sha256": "bd1d0bc2bafb4fdf13972b67580a94ccc2aa35eb52bd797ebe4bb35abbe6afaf",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/stress_many_bindings.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 2211,
+        "sha256": "bd1d0bc2bafb4fdf13972b67580a94ccc2aa35eb52bd797ebe4bb35abbe6afaf",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+    "sourceSha256": "e093a962268bbac3a4e20e20118d5f6ac71324765df1f4a58c191f6743294db6",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/stress_many_bindings.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 5818,
+        "sha256": "60b53ad9592e5e964dab4eba46afa988de75314b9fd3fd9d8bc06cc14ac8ae02",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/stress_many_bindings.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 5818,
+        "sha256": "60b53ad9592e5e964dab4eba46afa988de75314b9fd3fd9d8bc06cc14ac8ae02",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+    "sourceSha256": "0e88698096320b7a1e81a4ebe37897aebb71c3e6c9cfd085624e287e3c673073",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/trivial_noop_compute.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 228,
+        "sha256": "3adc0634a82daa592cebb02cac24230a0d69fb67d366ce2ba87cc7cc33468c66",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/trivial_noop_compute.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 228,
+        "sha256": "3adc0634a82daa592cebb02cac24230a0d69fb67d366ce2ba87cc7cc33468c66",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+    "sourceSha256": "0e88698096320b7a1e81a4ebe37897aebb71c3e6c9cfd085624e287e3c673073",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/trivial_noop_compute.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "2bc799b449c60dfe8283d0c43abbf8f1bd3d316b7a00f401fc36edc02aace6c5",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/trivial_noop_compute.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "2bc799b449c60dfe8283d0c43abbf8f1bd3d316b7a00f401fc36edc02aace6c5",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+    "sourceSha256": "0e88698096320b7a1e81a4ebe37897aebb71c3e6c9cfd085624e287e3c673073",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/trivial_noop_compute.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 123,
+        "sha256": "89ac84a9b1594f36f1a3650f18326adb07aae85e80eb5b32f1f7ee235b3e3669",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/trivial_noop_compute.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 123,
+        "sha256": "89ac84a9b1594f36f1a3650f18326adb07aae85e80eb5b32f1f7ee235b3e3669",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+    "sourceSha256": "0e88698096320b7a1e81a4ebe37897aebb71c3e6c9cfd085624e287e3c673073",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/trivial_noop_compute.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 2682,
+        "sha256": "e4bc563f02591d8cf363f8de7fcc38df41a4b3b4e38e7435fe484e8f2c92218c",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/trivial_noop_compute.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 2682,
+        "sha256": "e4bc563f02591d8cf363f8de7fcc38df41a4b3b4e38e7435fe484e8f2c92218c",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+    "sourceSha256": "ed605c9b978c4cbd86db61ebbd8c2241e4d5d65ffa5c0b2e82259a9d8aa479c9",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/trivial_passthrough_vertex.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 448,
+        "sha256": "99077692fdc1be21470e6930b0da3aeda5a0479db82ea1a58ca747c7d6cf04ef",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/trivial_passthrough_vertex.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 448,
+        "sha256": "99077692fdc1be21470e6930b0da3aeda5a0479db82ea1a58ca747c7d6cf04ef",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+    "sourceSha256": "ed605c9b978c4cbd86db61ebbd8c2241e4d5d65ffa5c0b2e82259a9d8aa479c9",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/trivial_passthrough_vertex.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "04270836105525e60efccb52789b763e14f569efbd038ea7857b11bf051a721f",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/trivial_passthrough_vertex.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "04270836105525e60efccb52789b763e14f569efbd038ea7857b11bf051a721f",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+    "sourceSha256": "ed605c9b978c4cbd86db61ebbd8c2241e4d5d65ffa5c0b2e82259a9d8aa479c9",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/trivial_passthrough_vertex.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 457,
+        "sha256": "2a3e6feaf318cfa68726dc52779674f992856a939f29604c253c05fae7825726",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/trivial_passthrough_vertex.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 457,
+        "sha256": "2a3e6feaf318cfa68726dc52779674f992856a939f29604c253c05fae7825726",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+    "sourceSha256": "ed605c9b978c4cbd86db61ebbd8c2241e4d5d65ffa5c0b2e82259a9d8aa479c9",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/trivial_passthrough_vertex.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 2875,
+        "sha256": "c956d62916536bb346069d65bdebe097dfa1505ef1b58d641841adff192ebe12",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/home/x/deco/doe/bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/trivial_passthrough_vertex.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 2875,
+        "sha256": "c956d62916536bb346069d65bdebe097dfa1505ef1b58d641841adff192ebe12",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+    "sourceSha256": "caf37226c03199a569f420728eb199f8dcab875bcb1970af75b08c67a1f2ed13",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/mutation.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 2324,
+        "sha256": "afa19c12a54e9794e6840d6764dc2038f8ee01f166ba2d9d3019e62f97123462",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/mutation.spirv"
+        ],
+        "exitCode": 0,
+        "bytes": 2324,
+        "sha256": "afa19c12a54e9794e6840d6764dc2038f8ee01f166ba2d9d3019e62f97123462",
+        "error": null,
+        "spirvValidation": {
+          "exitCode": 0,
+          "stderr": ""
+        }
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+    "sourceSha256": "caf37226c03199a569f420728eb199f8dcab875bcb1970af75b08c67a1f2ed13",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/mutation.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "6f3e2adef0b690f151bcf5eecef75aa104c57d8239e06d6c50c10319bb450135",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/mutation.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "6f3e2adef0b690f151bcf5eecef75aa104c57d8239e06d6c50c10319bb450135",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+    "sourceSha256": "caf37226c03199a569f420728eb199f8dcab875bcb1970af75b08c67a1f2ed13",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/mutation.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1194,
+        "sha256": "b42aa0e9d044ed1af9fabea576c3c4f7e537d033aa3ea617ad5ad4191c56893b",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/mutation.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1194,
+        "sha256": "b42aa0e9d044ed1af9fabea576c3c4f7e537d033aa3ea617ad5ad4191c56893b",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+    "sourceSha256": "caf37226c03199a569f420728eb199f8dcab875bcb1970af75b08c67a1f2ed13",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/mutation.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3779,
+        "sha256": "ef271bbcffc9beba6827cc121cfefcc226bb0c4d2bbf36838ac16e964404312d",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/mutation.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/mutation.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3779,
+        "sha256": "ef271bbcffc9beba6827cc121cfefcc226bb0c4d2bbf36838ac16e964404312d",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+    "sourceSha256": "6f806435d4112b19f1f9ad9ffc97c76715e815341cc66d392f1d92ae377f2c25",
+    "target": "spirv",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-spirv",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/unsupported-pointer-alias.spirv"
+        ],
+        "exitCode": 1,
+        "bytes": 50,
+        "sha256": "b3e77f67e36dc92a223c8a557fd6aa78b683c06a52b7ce7edda6effcd9649da7",
+        "error": "InvalidIr: spirv_emit: InvalidIr\nerror: InvalidIr\n"
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-spirv",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/unsupported-pointer-alias.spirv"
+        ],
+        "exitCode": 1,
+        "bytes": 50,
+        "sha256": "b3e77f67e36dc92a223c8a557fd6aa78b683c06a52b7ce7edda6effcd9649da7",
+        "error": "InvalidIr: spirv_emit: InvalidIr\nerror: InvalidIr\n"
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+    "sourceSha256": "6f806435d4112b19f1f9ad9ffc97c76715e815341cc66d392f1d92ae377f2c25",
+    "target": "ir-digest",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/unsupported-pointer-alias.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "e81a5cd7741b94266bb08e9a51d6208aef38d896a4d13c2a83cf649a29f7ab9f",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-ir-digest",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/unsupported-pointer-alias.ir-digest"
+        ],
+        "exitCode": 0,
+        "bytes": 65,
+        "sha256": "e81a5cd7741b94266bb08e9a51d6208aef38d896a4d13c2a83cf649a29f7ab9f",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+    "sourceSha256": "6f806435d4112b19f1f9ad9ffc97c76715e815341cc66d392f1d92ae377f2c25",
+    "target": "msl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-msl",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/unsupported-pointer-alias.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1232,
+        "sha256": "26722e5a65c555e562ee78e47650a3012c0b9c2acde01f7e2b5df7bfcb644958",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-msl",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/unsupported-pointer-alias.msl"
+        ],
+        "exitCode": 0,
+        "bytes": 1232,
+        "sha256": "26722e5a65c555e562ee78e47650a3012c0b9c2acde01f7e2b5df7bfcb644958",
+        "error": null
+      }
+    ],
+    "equal": true
+  },
+  {
+    "source": "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+    "sourceSha256": "6f806435d4112b19f1f9ad9ffc97c76715e815341cc66d392f1d92ae377f2c25",
+    "target": "hlsl",
+    "observations": [
+      {
+        "arm": "baseline",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/baseline/unsupported-pointer-alias.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3809,
+        "sha256": "d0934e803013dcf24a555f697db9eadaaf1732e7c74a72dc5cb3c305477fbc24",
+        "error": null
+      },
+      {
+        "arm": "candidate",
+        "command": [
+          "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-emit-hlsl",
+          "--shader-path",
+          "/tmp/doe-spirv-ownership-20260928/unsupported-pointer-alias.wgsl",
+          "--out",
+          "/tmp/doe-spirv-ownership-20260928/emitted/candidate/unsupported-pointer-alias.hlsl"
+        ],
+        "exitCode": 0,
+        "bytes": 3809,
+        "sha256": "d0934e803013dcf24a555f697db9eadaaf1732e7c74a72dc5cb3c305477fbc24",
+        "error": null
+      }
+    ],
+    "equal": true
+  }
+]

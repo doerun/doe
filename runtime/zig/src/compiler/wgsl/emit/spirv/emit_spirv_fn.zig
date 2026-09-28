@@ -1,6 +1,8 @@
 const std = @import("std");
+const InstructionCache = @import("instruction_cache.zig").InstructionCache;
 const loop_independence = @import("../../ir/ir_loop_independence.zig");
 const ir = @import("../../ir/ir.zig");
+const ir_query = @import("../../ir/ir_query.zig");
 const ir_const_eval = @import("../../ir/ir_const_eval.zig");
 const sema_helpers = @import("../../frontend/sema_helpers.zig");
 const spirv = @import("spirv_builder.zig");
@@ -10,19 +12,10 @@ const emit_spirv_fn_helpers = @import("emit_spirv_fn_helpers.zig");
 const emit_spirv_matrix = @import("emit_spirv_matrix.zig");
 
 const EmitError = emit_spirv_shared.EmitError;
-const AccessChainEntry = emit_spirv_fn_helpers.AccessChainEntry;
-const LoadCacheEntry = emit_spirv_fn_helpers.LoadCacheEntry;
-const ResultInstEntry = emit_spirv_fn_helpers.ResultInstEntry;
 const ScalarKind = emit_spirv_fn_helpers.ScalarKind;
-const appendResultInstEntry = emit_spirv_fn_helpers.appendResultInstEntry;
 const cacheableResultOpcode = emit_spirv_fn_helpers.cacheableResultOpcode;
-const clearResultInstEntries = emit_spirv_fn_helpers.clearResultInstEntries;
-const findResultInstEntry = emit_spirv_fn_helpers.findResultInstEntry;
 const scalar_construct_kind = emit_spirv_fn_helpers.scalar_construct_kind;
 const assign_op_to_binary = emit_spirv_fn_helpers.assign_op_to_binary;
-const param_is_assigned = emit_spirv_fn_helpers.param_is_assigned;
-const ref_chain_roots_at_local = emit_spirv_fn_helpers.ref_chain_roots_at_local;
-const removeLoadCacheEntry = emit_spirv_fn_helpers.removeLoadCacheEntry;
 
 pub fn FunctionState(comptime EmitterT: type) type {
     return struct {
@@ -33,9 +26,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
         local_ptr_ids: []u32,
         local_value_ids: []u32,
         indexed_values: std.ArrayListUnmanaged(struct { base: ir.ExprId, pointer: u32 }) = .{},
-        access_chain_cache: std.ArrayListUnmanaged(AccessChainEntry) = .{},
-        load_cache: std.ArrayListUnmanaged(LoadCacheEntry) = .{},
-        result_inst_cache: std.ArrayListUnmanaged(ResultInstEntry) = .{},
+        instruction_cache: InstructionCache,
         break_targets: std.ArrayListUnmanaged(u32) = .{},
         continue_targets: std.ArrayListUnmanaged(u32) = .{},
 
@@ -55,6 +46,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
             @memset(local_value_ids, 0);
             return .{
                 .emitter = emitter,
+                .instruction_cache = .{ .allocator = emitter.alloc },
                 .function = function,
                 .param_ptr_ids = param_ptr_ids,
                 .param_value_ids = param_value_ids,
@@ -65,11 +57,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
 
         pub fn deinit(self: *@This()) void {
             self.indexed_values.deinit(self.emitter.alloc);
-            for (self.access_chain_cache.items) |entry| self.emitter.alloc.free(entry.indices);
-            self.access_chain_cache.deinit(self.emitter.alloc);
-            self.load_cache.deinit(self.emitter.alloc);
-            clearResultInstEntries(self.emitter.alloc, &self.result_inst_cache);
-            self.result_inst_cache.deinit(self.emitter.alloc);
+            self.instruction_cache.deinit();
             self.break_targets.deinit(self.emitter.alloc);
             self.continue_targets.deinit(self.emitter.alloc);
             self.emitter.alloc.free(self.local_value_ids);
@@ -118,7 +106,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 else => false,
             };
             if (!type_ok) return false;
-            return !param_is_assigned(self.function, param_index);
+            return !ir_query.parameterIsAssigned(self.function, param_index);
         }
 
         pub fn emit_stmt(self: *@This(), stmt_id: ir.StmtId) EmitError!bool {
@@ -136,7 +124,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
                         const value_id = try self.emit_value_expr(expr_id);
                         if (self.local_ptr_ids[decl.local] != 0) {
                             try self.emitter.emit_store(self.local_ptr_ids[decl.local], value_id);
-                            removeLoadCacheEntry(&self.load_cache, .local, decl.local);
+                            self.instruction_cache.invalidateLocal(decl.local);
                         } else {
                             self.local_value_ids[decl.local] = value_id;
                         }
@@ -165,8 +153,8 @@ pub fn FunctionState(comptime EmitterT: type) type {
                         );
                     }
                     try self.emitter.emit_store(ptr_id, value_id);
-                    if (ref_chain_roots_at_local(self.function, assign.lhs)) |local_index| {
-                        removeLoadCacheEntry(&self.load_cache, .local, local_index);
+                    if (ir_query.referenceRootLocal(self.function, assign.lhs)) |local_index| {
+                        self.instruction_cache.invalidateLocal(local_index);
                     }
                     return false;
                 },
@@ -331,14 +319,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
         fn emit_label(self: *@This(), label_id: u32) EmitError!void {
             try self.emitter.builder.append_function_inst(spirv.Opcode.Label, &.{label_id});
             // Cached ids may not dominate a new block; keep CSE straight-line.
-            self.clearStraightLineCaches();
-        }
-
-        fn clearStraightLineCaches(self: *@This()) void {
-            for (self.access_chain_cache.items) |entry| self.emitter.alloc.free(entry.indices);
-            self.access_chain_cache.clearRetainingCapacity();
-            self.load_cache.clearRetainingCapacity();
-            clearResultInstEntries(self.emitter.alloc, &self.result_inst_cache);
+            self.instruction_cache.beginBlock();
         }
 
         pub fn emit_value_expr(self: *@This(), expr_id: ir.ExprId) EmitError!u32 {
@@ -449,12 +430,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 try self.ref_storage_class(expr_id),
                 try self.emitter.lower_type(leaf_expr.ty),
             );
-            for (self.access_chain_cache.items) |entry| {
-                if (entry.root_id != root_id) continue;
-                if (entry.ptr_type != ptr_type) continue;
-                if (entry.indices.len != indices.items.len) continue;
-                if (std.mem.eql(u32, entry.indices, indices.items)) return entry.result_id;
-            }
+            if (self.instruction_cache.findAccessChain(root_id, ptr_type, indices.items)) |cached| return cached;
             const result_id = self.emitter.builder.reserve_id();
             var operands = std.ArrayListUnmanaged(u32){};
             defer operands.deinit(self.emitter.alloc);
@@ -463,14 +439,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
             try operands.append(self.emitter.alloc, root_id);
             try operands.appendSlice(self.emitter.alloc, indices.items);
             try self.emitter.builder.append_function_inst(spirv.Opcode.AccessChain, operands.items);
-            const cached_indices = try self.emitter.alloc.dupe(u32, indices.items);
-            errdefer self.emitter.alloc.free(cached_indices);
-            try self.access_chain_cache.append(self.emitter.alloc, .{
-                .root_id = root_id,
-                .ptr_type = ptr_type,
-                .result_id = result_id,
-                .indices = cached_indices,
-            });
+            try self.instruction_cache.putAccessChain(root_id, ptr_type, result_id, indices.items);
             return result_id;
         }
 
@@ -516,15 +485,9 @@ pub fn FunctionState(comptime EmitterT: type) type {
             if (ref_expr.data == .local_ref) {
                 const index = ref_expr.data.local_ref;
                 if (self.local_ptr_ids[index] != 0) {
-                    for (self.load_cache.items) |entry| {
-                        if (entry.root == .local and entry.index == index) return entry.value_id;
-                    }
+                    if (self.instruction_cache.findLocalLoad(index)) |cached| return cached;
                     const value_id = try self.emitter.emit_function_load(try self.emitter.lower_type(ref_expr.ty), self.local_ptr_ids[index]);
-                    try self.load_cache.append(self.emitter.alloc, .{
-                        .root = .local,
-                        .index = index,
-                        .value_id = value_id,
-                    });
+                    try self.instruction_cache.putLocalLoad(index, value_id);
                     return value_id;
                 }
             }
@@ -783,7 +746,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 }
             }
             const result_id = try self.emitter.emit_function_call(try self.emitter.lower_type(result_ty), fn_id, args.items);
-            self.load_cache.clearRetainingCapacity();
+            self.instruction_cache.invalidateLoads();
             return result_id;
         }
 
@@ -961,7 +924,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
         pub fn emit_result_inst(self: *@This(), opcode: u16, result_type: u32, operands: []const u32) EmitError!u32 {
             const cacheable = cacheableResultOpcode(opcode);
             if (cacheable) {
-                if (findResultInstEntry(self.result_inst_cache.items, opcode, result_type, operands)) |cached| return cached;
+                if (self.instruction_cache.findResult(opcode, result_type, operands)) |cached| return cached;
             }
             var full = std.ArrayListUnmanaged(u32){};
             defer full.deinit(self.emitter.alloc);
@@ -970,7 +933,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
             try full.append(self.emitter.alloc, result_id);
             try full.appendSlice(self.emitter.alloc, operands);
             try self.emitter.builder.append_function_inst(opcode, full.items);
-            if (cacheable) try appendResultInstEntry(self.emitter.alloc, &self.result_inst_cache, opcode, result_type, result_id, operands);
+            if (cacheable) try self.instruction_cache.putResult(opcode, result_type, result_id, operands);
             return result_id;
         }
 

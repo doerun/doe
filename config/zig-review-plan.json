@@ -4,43 +4,36 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "spirv_function_ownership",
-      "state": "active",
-      "objective": "Give SPIR-V function emission explicit instruction-cache ownership and keep target-independent reference queries with IR.",
-      "rationale": "The preceding compiler batch removed loop eligibility from the helper file but retained unrelated cache, query, and scalar responsibilities. Continue that concrete finding before opening another compiler reorganization.",
+      "batchId": "vulkan_render_recording_dependencies",
+      "state": "ready",
+      "objective": "Expose the resource and submission dependencies of the live ordinary Vulkan draw-recording path through narrow typed interfaces.",
+      "rationale": "The public query regression establishes a real native render-pass to queue submitter to run_render_draw consumer path. Its command recording still receives the whole runtime. Completed query and SPIR-V ownership batches remain closed.",
       "scopes": [
         {
           "level": "file",
           "targets": [
-            "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig"
+            "src/backend/vulkan/vk_render.zig"
           ]
         },
         {
           "level": "file",
           "targets": [
-            "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig"
-          ]
-        },
-        {
-          "level": "file",
-          "targets": [
-            "src/compiler/wgsl/ir/ir_query.zig"
+            "src/native/queue/doe_queue_submit_vulkan.zig"
           ]
         }
       ],
       "findingReviewIds": [
-        "spirv_helper_cohesion_20260927"
+        "vulkan_public_query_20260928"
       ],
-      "nextAction": "Trace cache creation, lookup, invalidation and teardown through function emission; compare root-reference queries with ir_query before choosing the smallest owner change.",
+      "nextAction": "Trace native render-pass snapshots through the queue caller, render resource acquisition, recording and completion; enumerate read-only inputs and permitted mutations before choosing one typed owner boundary.",
       "acceptance": [
-        "Name each changed responsibility and its caller dependencies; retain ownership on allocation failure and preserve cache invalidation boundaries.",
-        "Run focused alias, mutation, control-flow and allocation-failure tests plus zig build test-wgsl.",
-        "Compare selected emitted bytes against the pinned predecessor; retain compiler timing, build-cost and binary-size observations without requiring a speedup.",
-        "Append examined file reviews and unresolved findings; do not certify containing directories from this batch."
+        "Identify the actual production consumer, complete execution path and observable consequence before editing.",
+        "Preserve public query/pixel output, recorded resource retention, failed-completion ownership and subsequent valid execution.",
+        "Retain focused checks and cost observations; give no parent review credit for interface extraction."
       ],
-      "stopCondition": "Stop after one cohesive ownership correction and its evidence, or a documented decision to retain the current owner based on complete inspection. Do not expand into a pass framework or blanket emitter rewrite.",
+      "stopCondition": "Stop after one cohesive typed render-recording boundary and its evidence. Surface synchronization, attachment admission and other backends remain separately bounded obligations.",
       "requiredEnvironment": [
-        "Host Zig toolchain; no physical GPU required for compiler inspection and emission checks."
+        "Linux Vulkan for ordinary query/rendering output; platform-specific qualification remains separate."
       ]
     }
   ]

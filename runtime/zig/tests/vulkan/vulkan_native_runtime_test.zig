@@ -95,6 +95,51 @@ fn expectIndexedRenderPixels(rt: *native_runtime.NativeVulkanRuntime) !void {
     }
 }
 
+test "Vulkan SPIR-V cache invalidation preserves stores pointer writes branches and loops" {
+    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
+        error.UnsupportedFeature => return error.SkipZigTest,
+        else => return err,
+    };
+    defer rt.deinit();
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> out: array<u32>;
+        \\fn change(p: ptr<function, u32>) { *p += 5u; }
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    var x = id.x + 1u;
+        \\    out[id.x * 5u] = x + x;
+        \\    x += 3u;
+        \\    out[id.x * 5u + 1u] = x;
+        \\    change(&x);
+        \\    out[id.x * 5u + 2u] = x;
+        \\    if ((id.x % 2u) == 0u) { x += 10u; } else { x += 20u; }
+        \\    out[id.x * 5u + 3u] = x;
+        \\    for (var j = 0u; j < 3u; j++) { x += j; }
+        \\    out[id.x * 5u + 4u] = x;
+        \\}
+    ;
+    const lanes = 4;
+    const values_per_lane = 5;
+    const result_bytes = lanes * values_per_lane * @sizeOf(u32);
+    const result_handle = 982;
+    var output: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
+    const length = try compiler.translateToSpirv(std.testing.allocator, source, &output);
+    const binding = compute.KernelBinding{ .binding = 0, .resource_kind = .buffer, .resource_handle = result_handle, .buffer_size = result_bytes, .buffer_type = binding_types.WGPUBufferBindingType_Storage };
+    _ = try resources.ensure_compute_buffer_for_binding(&rt, binding, true);
+    try rt.set_compute_shader_spirv(std.mem.bytesAsSlice(u32, output[0..length]), "main", &.{binding}, true);
+    _ = try rt.run_dispatch(lanes, 1, 1, .deferred, .wait_any, .off);
+    _ = try rt.flush_queue();
+    const bytes = try resources.capture_compute_buffer(&rt, std.testing.allocator, rt.compute_buffers.get(result_handle).?, 0, result_bytes);
+    defer std.testing.allocator.free(bytes);
+    var expected: [lanes * values_per_lane]u32 = undefined;
+    for (0..lanes) |lane| {
+        const i: u32 = @intCast(lane);
+        const branch_result = i + 9 + @as(u32, if (i % 2 == 0) 10 else 20);
+        @memcpy(expected[lane * values_per_lane ..][0..values_per_lane], &[_]u32{ (i + 1) * 2, i + 4, i + 9, branch_result, branch_result + 3 });
+    }
+    try std.testing.expectEqualSlices(u8, std.mem.sliceAsBytes(&expected), bytes);
+}
+
 test "Vulkan deferred fence and timeline submissions preserve dependent results" {
     for ([_]@import("../../src/contracts/backend.zig").DeferredSubmissionSyncPolicy{ .require_fence_pool, .prefer_timeline_semaphore }) |policy| {
         var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {

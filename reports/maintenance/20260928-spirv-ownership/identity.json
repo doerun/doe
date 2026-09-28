@@ -1,0 +1,53 @@
+{
+  "classification": "local-implementation-quality-diagnostic",
+  "baselineCommit": "7e356584004a55fc237bd8dfeffd6069ce0d4ea2",
+  "candidateSourceTreeSha256": "6a2e62d900c15624a092344b659332f6e5091558a52ffe8b41a394f2526ed262",
+  "diffSha256": "0e4391d0125e9833a77b3c95f07ea3ea17319ee743d258ddd1047f30680e5539",
+  "newOwnerSha256": "d481bfb70658fecdb50d043da0d39ecd1cfdb04bc42b7a07b61a1416414451e2",
+  "toolchain": {
+    "path": "/home/x/.local/zig/zig-x86_64-linux-0.15.2/zig",
+    "sha256": "2858dc89dbbfdd08cceda1b841e7fd0a793a1a67b49f150bc3d0d1de44ed7f51",
+    "version": "0.15.2"
+  },
+  "binaries": [
+    {
+      "path": "/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-compilation-bench",
+      "sha256": "b11d81a988f04ab676300b11f35af66a5eea4032b58bafab80a6d8f6b884a3b5",
+      "fileBytes": 5811520
+    },
+    {
+      "path": "/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-compilation-bench",
+      "sha256": "c5c779901d4b4bc4c55ba02a310f66298c6a6d1c88ff38111d0d1f021dad0bd0",
+      "fileBytes": 5815072
+    },
+    {
+      "path": "/tmp/doe-query-20260928/candidate/lib/libwebgpu_doe.so",
+      "sha256": "5880fada9c07041518b826bb008a6107ec31000230be4aea07f17509585f83c1",
+      "fileBytes": 11702296
+    },
+    {
+      "path": "/tmp/doe-spirv-ownership-20260928/candidate/lib/libwebgpu_doe.so",
+      "sha256": "4b5d96250da98fb77ecce6f4a51af8033775b7f75dd10ce8a2abdea72069b9ca",
+      "fileBytes": 11705128
+    }
+  ],
+  "elfSections": "   text\t   data\t    bss\t    dec\t    hex\tfilename\n 870652\t  13436\t   4589\t 888677\t  d8f65\t/tmp/doe-spirv-ownership-20260928/baseline/bin/doe-compilation-bench\n 870908\t  13436\t   4333\t 888677\t  d8f65\t/tmp/doe-spirv-ownership-20260928/candidate/bin/doe-compilation-bench\n2331314\t  17576\t  11080\t2359970\t 2402a2\t/tmp/doe-query-20260928/candidate/lib/libwebgpu_doe.so\n2331490\t  17576\t  10904\t2359970\t 2402a2\t/tmp/doe-spirv-ownership-20260928/candidate/lib/libwebgpu_doe.so\n",
+  "acceptance": {
+    "compilerTests": 1131,
+    "runtimeTests": 2327,
+    "runtimeSkipped": 11,
+    "artifactComparisons": 76,
+    "equalComparisons": 76,
+    "successfulComparisons": 75,
+    "physicalMutation": "passed",
+    "publicQueryAfterRefactor": "passed",
+    "buildProfileStatus": "captured",
+    "sourceChangedDuringBuildCapture": false
+  },
+  "limits": [
+    "named pointer alias retains predecessor InvalidIr for SPIR-V",
+    "Khronos validation layer unavailable",
+    "no application performance or release qualification",
+    "physical Linux AMD/Vulkan only"
+  ]
+}

@@ -21,8 +21,9 @@ The [production query checkpoint](../../reports/maintenance/20260928-production-
 repairs pool type, reset placement, and logical visibility across native draws.
 Public recording, resolve/readback, pixel oracles, query reuse and caller release
 pass on physical Vulkan. Validation layers are unavailable; this is scoped
-correctness evidence, not release qualification. The ready compiler ownership
-batch follows; completed bundle and build-recipe repairs remain closed.
+correctness evidence, not release qualification. The compiler ownership
+batch is now closed with its separately retained evidence; completed bundle and
+build-recipe repairs remain closed.
 
 
 [`config/zig-review-plan.json`](../../config/zig-review-plan.json) is the sole
@@ -42,9 +43,12 @@ rendering in the standalone replay helper. That helper has no current production
 caller; its correction does not qualify ordinary native WebGPU bundle execution. The plan selects the next repair and its stopping condition.
 The [compiler and allocation ownership evidence](../../reports/maintenance/20260927-implementation-quality/README.md)
 supports explicit compiler requests/diagnostics, IR loop eligibility, and a typed
-completed-allocation cache. SPIR-V instruction-cache and reference-query ownership
-remain unfinished. Neither checkpoint grants whole-file, directory, application
-performance, or release qualification.
+completed-allocation cache. The [SPIR-V ownership checkpoint](../../reports/maintenance/20260928-spirv-ownership/README.md)
+now owns cache storage and invalidation explicitly and keeps reference queries in
+IR, with preserved selected artifacts and scoped cost observations. These
+checkpoints grant no whole-file, directory, application performance, or release
+qualification. Subsequent interface work must identify its actual consumer,
+complete execution path and observable consequence before selecting a change.
 
 ## Open obligations and evidence owners
 
