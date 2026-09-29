@@ -26957,6 +26957,44 @@
       "targets": [
         "src/backend/vulkan/native_runtime.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/compiler/wgsl/ir/ir_builder.zig",
+          "sha256": "287f16284894c4e21bc2aaffa49049dbd66d5856ef6256355f101150feb2eff8"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/ir/ir_validate.zig",
+          "sha256": "73e74cc0bb57a380bfe2c785732f88df48b2ec0669a571e8b65950c50dea3cf9"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20260928-pointer-public/shader-semantics.log",
+          "sha256": "6fb07eab81f30c91811ec5d8b015d1e60683e9b5c9773a7c99c18652e9fe0b66"
+        }
+      ],
+      "findings": [
+        "Other function-emitter responsibilities remain outside this bounded pointer review; no whole-file verification credit."
+      ],
+      "inputHash": "0b81cc2607e78beb82981af5bf9e0a5ab3b94ffed60011c1e72118a5f3af2dad",
+      "level": "file",
+      "nextAction": "Review remaining function-emitter responsibilities separately; retain pointer regressions through all target emitters.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Named pointer aliases no longer lose pointer identity in IR: address-of and dereference have explicit nodes, and direct/named calls and writes match the independent physical output oracle."
+      ],
+      "reviewId": "spirv_pointer_alias_20260928",
+      "reviewedAt": "2026-09-29T00:42:53.436884+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "c623b7dfa9a02a00a3b14ca1295063fb6e8fda50",
+      "status": "in_progress",
+      "summary": "Traced the retained named pointer failure through frontend and IR to SPIR-V reference emission; recorded the bounded repair and physical package result.",
+      "supersedes": "spirv_ownership_function_20260928",
+      "targets": [
+        "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig"
+      ]
     }
   ],
   "schemaVersion": 1

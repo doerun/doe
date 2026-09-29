@@ -14,7 +14,13 @@ The [SPIR-V ownership checkpoint](../../reports/maintenance/20260928-spirv-owner
 places instruction storage and cleanup in a typed owner while preserving distinct
 invalidation rules and IR reference semantics. Selected artifacts retain byte
 parity; allocation failures and physical mutation/branch/loop output are checked.
-A named pointer-alias lowering failure remains explicitly recorded.
+The named pointer-alias failure in that checkpoint is corrected in the
+[pointer and public-path follow-up](../../reports/maintenance/20260928-pointer-public/README.md).
+WGSL address-of and dereference now retain distinct IR meaning through SPIR-V,
+HLSL and MSL emission. Direct and named pointer mutation, member/index access,
+branches and prohibited scalar arguments have focused checks; the ordinary
+package path also verifies physical output. This does not qualify every WGSL
+pointer program or target device.
 
 The [public query checkpoint](../../reports/maintenance/20260928-production-query/README.md)
 exercises ordinary WebGPU recording, native submission, logical visibility across
@@ -33,6 +39,11 @@ caught the invalid nesting despite correct results on the observed driver.
 
 Current diagnosis, acceptance commands, original failures, and native identities:
 [`shader semantics evidence`](../../bench/out/maintenance/20260919-shader-semantics/README.md).
+The current [follow-up](../../reports/maintenance/20260928-pointer-public/README.md)
+reran that public suite and resolved its render-output failure. The package
+adapter now normalizes sequence-form clear colors and applies the default color
+write mask; Vulkan records integer clear values with the target format's
+component kind. Clear-only and fragment output passed physical readback.
 This repair does not replace accepted package binaries, establish performance,
 qualify non-Vulkan hardware, or complete the architecture review queue. Current
 batch selection belongs to the

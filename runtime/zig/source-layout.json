@@ -1312,9 +1312,9 @@
       },
       "src/backend/vulkan/vk_formats.zig": {
         "decision": "Keep",
-        "moduleSha256": "176c11d02d77eabef4690a93c19a12b990348d399ccd94afb735ec1ed1129a2b",
-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
-        "reviewer": "codex-texture-copy-regions/2026-09-07"
+        "moduleSha256": "ec953998cab8cab6679c26fd0431d91ab0bc9f006e73f6cbf94db6f089f2880d",
+        "reason": "Keep: Vulkan format metadata classifies integer render targets for typed attachment clear values.",
+        "reviewer": "codex-doe-public-render-20260928"
       },
       "src/backend/vulkan/vk_functions.zig": {
         "decision": "Keep",
@@ -1348,9 +1348,9 @@
       },
       "src/backend/vulkan/vk_render.zig": {
         "decision": "Keep",
-        "moduleSha256": "d61de7e663220c3d96204bfd5f7f313b65066834c5a5c27eed832baa3b525b8b",
-        "reviewer": "codex-surface-handoff/2026-09-28",
-        "reason": "Keep: scope owner for render allocation, image transitions, submission and completion; prepares retained index storage before borrowing it for typed draw recording."
+        "moduleSha256": "5787a8cf4febec8827d990b012c8f6396b876d06379741d64fb583a4cfb98e35",
+        "reviewer": "codex-doe-public-render-20260928",
+        "reason": "Keep: Vulkan render target and submission ownership uses target-typed clear values for draw, clear, and bundle paths."
       },
       "src/backend/vulkan/vk_render_pipeline.zig": {
         "decision": "Keep",
@@ -2188,9 +2188,9 @@
       },
       "src/compiler/wgsl/emit/hlsl/emit_hlsl.zig": {
         "decision": "Keep",
-        "moduleSha256": "554705f74a90c6415d10a9c438179f0fccb2943c5c5f258fbe22110af8405a61",
-        "reason": "Keep: reachable compiler implementation shared by 4 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-doe-completion/2026-08-24"
+        "moduleSha256": "e70f4934408309f38fbd7fd01bbbe6768e53946c638a73f434f3ffdf06b4f56f",
+        "reason": "Keep: HLSL expression and statement lowering owns lvalue reconstruction and captured indices for WGSL pointer aliases.",
+        "reviewer": "codex-doe-pointer-reference-20260928"
       },
       "src/compiler/wgsl/emit/hlsl/emit_hlsl_builtins.zig": {
         "decision": "Keep",
@@ -2230,9 +2230,9 @@
       },
       "src/compiler/wgsl/emit/msl/emit_msl_ir.zig": {
         "decision": "Keep",
-        "moduleSha256": "e3a2b1ca8fef336cb29ac0804f456fb3747aaae247e84b5dee9823d530d9de19",
-        "reason": "Keep: MSL target lowering context and IR traversal; builtins, textures, and stage-specific behavior already have named owners.",
-        "reviewer": "codex-constant-initializers/2026-09-07"
+        "moduleSha256": "dd4c03d99ec97087e2a7620a9b06fb76ff6aa492e5af1dbcdabc0d7953060bf8",
+        "reason": "Keep: MSL target lowering binds pointer lets as writable references and emits address and dereference expressions.",
+        "reviewer": "codex-doe-pointer-reference-20260928"
       },
       "src/compiler/wgsl/emit/msl/emit_msl_ir_builtins.zig": {
         "decision": "Keep",
@@ -2278,9 +2278,9 @@
       },
       "src/compiler/wgsl/emit/msl/emit_msl_workgroup_zero.zig": {
         "decision": "Keep",
-        "moduleSha256": "c6aea9ba89944a6bb4d1b1b3b8568d1970e5e556526b15dd1f087d413e8f1b6d",
-        "reason": "Keep: reachable compiler implementation shared by 2 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "1ec185e367f6479bf7de71da9dc611953e6dd26a9c4b1d1a2c058571d5a18576",
+        "reason": "Keep: MSL workgroup zero analysis traverses pointer address and dereference expressions within its existing responsibility.",
+        "reviewer": "codex-doe-pointer-reference-20260928"
       },
       "src/compiler/wgsl/emit/operator_text.zig": {
         "decision": "Keep",
@@ -2290,9 +2290,9 @@
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv.zig": {
         "decision": "Keep",
-        "moduleSha256": "94d8b374f9204167b89e8dcaa644336c1f15599b6bbe0721695e02eb338ebf2f",
-        "reason": "Keep: SPIR-V module emission owns storage block shape and decorations; runtime-array structs are direct blocks, while other bound payloads retain wrappers.",
-        "reviewer": "codex-shader-semantics/2026-09-19"
+        "moduleSha256": "bec95c38fa31e73d8532284d5d02fb6676aac058efbda1d76672ef37a91ca2a9",
+        "reason": "Keep: SPIR-V module and function setup owns immutable pointer locals as SSA pointer values.",
+        "reviewer": "codex-doe-pointer-reference-20260928"
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig": {
         "decision": "Keep",
@@ -2302,9 +2302,9 @@
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
         "decision": "Keep",
-        "moduleSha256": "378d1058e84cb3f9fa658b2aaff1042d1abc2118d54063dbc68ca8fc55d067cf",
-        "reviewer": "codex-spirv-ownership/2026-09-28",
-        "reason": "Keep: instruction_cache owns keyed storage and distinct invalidations; function emission chooses boundaries and instruction policy; target-independent reference traversal belongs to ir_query. No new pass framework."
+        "moduleSha256": "c7842392b55bfb5f90a0cce522823bfe567d9abb7f9f9b218420460c5e62a979",
+        "reviewer": "codex-doe-pointer-reference-20260928",
+        "reason": "Keep: SPIR-V function and control-flow lowering owns address and dereference expression emission while cache ownership remains separate."
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": {
         "decision": "Keep",
@@ -2398,9 +2398,9 @@
       },
       "src/compiler/wgsl/frontend/sema.zig": {
         "decision": "Keep",
-        "moduleSha256": "5d5a3aa79f187975e9e36ebd94e450916f315a9c829b400552c1a9fa77e5e700",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-constant-initializers/2026-09-07"
+        "moduleSha256": "7bff624a53baf4e83cd78da24a47c64b62c110a613da068ab94854af80cd844a",
+        "reason": "Keep: WGSL semantic type compatibility requires pointer values for pointer parameters.",
+        "reviewer": "codex-doe-pointer-reference-20260928"
       },
       "src/compiler/wgsl/frontend/sema_attrs.zig": {
         "decision": "Keep",
@@ -2452,15 +2452,15 @@
       },
       "src/compiler/wgsl/ir/ir.zig": {
         "decision": "Keep",
-        "moduleSha256": "d49f76348e2320c0c0b3c9cfbceec967b9affb2230ab753dab3576a547972dae",
-        "reason": "Keep: reachable compiler implementation shared by 97 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-doe-wgsl-correctness/2026-09-01"
+        "moduleSha256": "6e2f878b9274c9742ce75d8a93f4598bea894548efb42190fb72e27d9ebf8e47",
+        "reason": "Keep: WGSL IR defines explicit address-of and dereference expressions as the shared pointer contract.",
+        "reviewer": "codex-doe-pointer-reference-20260928"
       },
       "src/compiler/wgsl/ir/ir_builder.zig": {
         "decision": "Keep",
-        "moduleSha256": "a439fec0abdb2d2e3507566f4ab7a94abece07127599ca392160f7f589c32e8f",
-        "reason": "Keep: typed WGSL lowering owns unsigned byte unpacking as shared vector arithmetic, preserving a single argument evaluation without target-specific semantic copies.",
-        "reviewer": "codex-doppler-unpack/2026-09-20"
+        "moduleSha256": "287f16284894c4e21bc2aaffa49049dbd66d5856ef6256355f101150feb2eff8",
+        "reason": "Keep: WGSL IR lowering preserves address-of, dereference, and pointer-valued let and call expressions.",
+        "reviewer": "codex-doe-pointer-reference-20260928"
       },
       "src/compiler/wgsl/ir/ir_const_eval.zig": {
         "decision": "Keep",
@@ -2494,9 +2494,9 @@
       },
       "src/compiler/wgsl/ir/ir_validate.zig": {
         "decision": "Keep",
-        "moduleSha256": "f4b9598ebd95f410c007f377e0e2aafa1aed10883957c4a14ef7a11b80a7c329",
-        "reason": "Keep: reachable compiler implementation shared by 3 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-doe-development/2026-08-10"
+        "moduleSha256": "73e74cc0bb57a380bfe2c785732f88df48b2ec0669a571e8b65950c50dea3cf9",
+        "reason": "Keep: WGSL IR validation checks pointer expression shape and mutable dereference access.",
+        "reviewer": "codex-doe-pointer-reference-20260928"
       },
       "src/compiler/wgsl/ir/layout_utils.zig": {
         "decision": "Keep",
@@ -4366,9 +4366,9 @@
       },
       "src/compiler/wgsl/ir/ir_loop_independence.zig": {
         "decision": "Keep",
-        "moduleSha256": "42980dbe3468cca24f617db4e1a63041e0db0198093dd2b346dccc79a87ac508",
-        "reason": "Keep: target-independent eligibility analysis for bounded independent local-array elements; SPIR-V policy and instruction inspection remain in emission.",
-        "reviewer": "codex-compiler-interface/2026-09-27"
+        "moduleSha256": "a8c5642de6f56468bdacf596d82dcf0a18da15be17c2b5bebcc20d37585bedb9",
+        "reason": "Keep: Loop independence rejects pointer address and dereference expressions for conservative dependence analysis.",
+        "reviewer": "codex-doe-pointer-reference-20260928"
       },
       "src/compiler/wgsl/emit/spirv/instruction_cache.zig": {
         "decision": "Keep",
@@ -4378,9 +4378,9 @@
       },
       "src/backend/vulkan/vk_draw_recording.zig": {
         "decision": "Keep",
-        "moduleSha256": "5b9378fbe30c2cfb8d69b28b9332c86d208427d5e04c74b8f987f9449b7b75e0",
-        "reason": "Keep: typed native draw recording borrows only command buffer, immutable buffer lookup, pass/pipeline handles and prepared index binding; no allocation, submission, layout mutation or retirement authority.",
-        "reviewer": "codex-render-recording/2026-09-28"
+        "moduleSha256": "22200099e264fa015c28ecb67088f8e2cc7d0100c65a63059a00ccdda86c9024",
+        "reason": "Keep: Vulkan render recording converts WebGPU clear colors to the target format and records explicit draw state.",
+        "reviewer": "codex-doe-public-render-20260928"
       },
       "src/native/vulkan/vulkan_render_attachments.zig": {
         "decision": "Keep",

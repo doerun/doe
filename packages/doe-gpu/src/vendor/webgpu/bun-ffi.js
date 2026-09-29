@@ -40,6 +40,7 @@ import {
   assertTextureSize,
   assertBindGroupResource as normalizeBindGroupResource,
   normalizeTextureDimension,
+  normalizeGpuColor,
   normalizeBindGroupLayoutEntry,
   autoLayoutEntriesFromNativeBindings,
 } from "./shared/validation.js";
@@ -2253,9 +2254,9 @@ function buildRenderPassDescriptor(descriptor) {
         writePtr(attView, off + 8, a.view._native);
         attView.setUint32(off + 16, 0xFFFFFFFF, true); // depthSlice = WGPU_DEPTH_SLICE_UNDEFINED
         writePtr(attView, off + 24, null); // resolveTarget
-        attView.setUint32(off + 32, 1, true); // loadOp = clear (1)
-        attView.setUint32(off + 36, 1, true); // storeOp = store (1)
-        const cv = a.clearValue || { r: 0, g: 0, b: 0, a: 1 };
+        attView.setUint32(off + 32, a.loadOp === 'load' ? 1 : 2, true);
+        attView.setUint32(off + 36, a.storeOp === 'discard' ? 2 : 1, true);
+        const cv = normalizeGpuColor(a.clearValue, `colorAttachments[${i}].clearValue`);
         attView.setFloat64(off + 40, cv.r ?? 0, true);
         attView.setFloat64(off + 48, cv.g ?? 0, true);
         attView.setFloat64(off + 56, cv.b ?? 0, true);

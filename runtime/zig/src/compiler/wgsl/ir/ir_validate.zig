@@ -19,6 +19,23 @@ pub fn validate(module: *const ir.Module) ValidateError!void {
                     if (inner >= function.exprs.items.len) return error.InvalidIr;
                     if (function.exprs.items[inner].category != .ref) return error.InvalidIr;
                 },
+                .address_of => |inner| {
+                    if (inner >= function.exprs.items.len) return error.InvalidIr;
+                    if (function.exprs.items[inner].category != .ref) return error.InvalidIr;
+                    const pointer = switch (module.types.get(expr.ty)) {
+                        .ref => |ref_ty| ref_ty,
+                        else => return error.InvalidIr,
+                    };
+                    if (pointer.elem != function.exprs.items[inner].ty or expr.category != .value) return error.InvalidIr;
+                },
+                .deref => |inner| {
+                    if (inner >= function.exprs.items.len) return error.InvalidIr;
+                    const pointer = switch (module.types.get(function.exprs.items[inner].ty)) {
+                        .ref => |ref_ty| ref_ty,
+                        else => return error.InvalidIr,
+                    };
+                    if (pointer.elem != expr.ty or expr.category != .ref) return error.InvalidIr;
+                },
                 .unary => |unary| if (unary.operand >= function.exprs.items.len) return error.InvalidIr,
                 .binary => |binary| {
                     if (binary.lhs >= function.exprs.items.len or binary.rhs >= function.exprs.items.len) return error.InvalidIr;
@@ -171,6 +188,10 @@ fn reference_is_mutable(module: *const ir.Module, function: ir.Function, expr_id
         },
         .member => |member| reference_is_mutable(module, function, member.base),
         .index => |index| reference_is_mutable(module, function, index.base),
+        .deref => |pointer| switch (module.types.get(function.exprs.items[pointer].ty)) {
+            .ref => |ref_ty| ref_ty.access != .read,
+            else => false,
+        },
         else => false,
     };
 }
@@ -188,8 +209,7 @@ fn type_compatible(module: *const ir.Module, expected: ir.TypeId, actual: ir.Typ
             },
             else => false,
         },
-        // Pointer param accepts matching element type.
-        .ref => |ref_ty| ref_ty.elem == actual or type_compatible(module, ref_ty.elem, actual),
+        .ref => false,
         else => false,
     };
 }

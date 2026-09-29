@@ -1,0 +1,396 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "umap-gpu-sgd-governed-benchmark-receipt",
+  "generatedAt": "2026-09-29T00:37:58.381Z",
+  "upstream": {
+    "repositoryUrl": "https://github.com/Achuttarsing/umap-gpu",
+    "commit": "7884b287f49bc057df7e0856c5539f130a20e0ad",
+    "licenseIdentifier": "MIT"
+  },
+  "host": {
+    "platform": "linux",
+    "architecture": "x64",
+    "node": "v22.22.1",
+    "renderNodes": [
+      "/dev/dri/renderD128"
+    ],
+    "accessibleRenderNodes": [
+      "/dev/dri/renderD128"
+    ],
+    "physicalGpuEligible": true
+  },
+  "immutableInputs": {
+    "inputs": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.inputs.json",
+      "sha256": "2d453439b8f597fd38d4dddd4e88b4b5de83fa0d18ab4dd68767d674e9184b39"
+    },
+    "oracle": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.oracle.md",
+      "sha256": "7f4937e8fd86fae2a167e80e7d9a6abb52e98cba96f064c7a177ce92d290b552"
+    },
+    "workload": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.workload.test.ts",
+      "sha256": "1f390ee77b6d6a5332d42c4e29ad250f0f9216edaf0634c6bf18b9ac23034e69"
+    },
+    "config": {
+      "path": "bench/external-projects/umap-gpu/vitest-sgd-benchmark.config.mjs",
+      "sha256": "26a3ea47d403f261eba4eebe63355417b32e22c8c033f8a1fe3b3eb4403d2bff"
+    },
+    "runner": {
+      "path": "bench/external-projects/umap-gpu/run-sgd-benchmark.mjs",
+      "sha256": "62d21914ad1495ee50d33bcc0a829be02184a4acdaca2d948089d8cdc0f28798"
+    },
+    "sgdImplementation": {
+      "path": "src/gpu/sgd.ts",
+      "sha256": "1cfa4b71c6f734450f9b8d810a6afb19e3ffb53f1ed2bce7bb018660dfdc2a63"
+    },
+    "sgdShader": {
+      "path": "src/gpu/shaders/sgd.wgsl",
+      "sha256": "3af8e076009f75b17dec45898e026db8f413f76d9992f00619583077a338485d"
+    },
+    "applyForcesShader": {
+      "path": "src/gpu/shaders/apply-forces.wgsl",
+      "sha256": "47e8ca3495ea67f3266b0365860f8eccae9b165c175231cf8c0559ffdc13b272"
+    },
+    "packageLock": {
+      "path": "package-lock.json",
+      "sha256": "b59a0b82e8430962d8a5229d2e04d7c440efa4fbd59bc7ba92e5cc357e65fb91"
+    }
+  },
+  "laneSummaries": {
+    "I0": {
+      "provider": "dawn-node-webgpu",
+      "evidenceMode": "ambient",
+      "identity": {
+        "provider": {
+          "id": "dawn-node-webgpu",
+          "modulePath": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+          "providerInfo": null
+        },
+        "adapter": {
+          "vendor": "amd",
+          "architecture": "rdna-3",
+          "device": "radeon-8060s-graphics-radv-strix-halo-",
+          "description": "radv: Mesa 26.0.3-1ubuntu1"
+        },
+        "isFallbackAdapter": null,
+        "features": [
+          "bgra8unorm-storage",
+          "clip-distances",
+          "core-features-and-limits",
+          "depth-clip-control",
+          "depth32float-stencil8",
+          "dual-source-blending",
+          "float32-blendable",
+          "float32-filterable",
+          "indirect-first-instance",
+          "primitive-index",
+          "rg11b10ufloat-renderable",
+          "shader-f16",
+          "subgroups",
+          "texture-compression-bc",
+          "texture-compression-bc-sliced-3d",
+          "timestamp-query"
+        ]
+      },
+      "hardwareEligible": true,
+      "summary": {
+        "cleanProcessRuns": 3,
+        "successes": 3,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 303480832,
+        "selectedOperationSamples": 9,
+        "selectedOperationLatencyMs": {
+          "p50": 17.307450000000017,
+          "p95": 25.68380400000001,
+          "p99": 25.68380400000001
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 627.315204,
+          "p95": 629.319857,
+          "p99": 629.319857
+        }
+      }
+    },
+    "I1": {
+      "provider": "dawn-node-webgpu",
+      "evidenceMode": "pinned",
+      "identity": {
+        "provider": {
+          "id": "dawn-node-webgpu",
+          "modulePath": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+          "providerInfo": null
+        },
+        "adapter": {
+          "vendor": "amd",
+          "architecture": "rdna-3",
+          "device": "radeon-8060s-graphics-radv-strix-halo-",
+          "description": "radv: Mesa 26.0.3-1ubuntu1"
+        },
+        "isFallbackAdapter": null,
+        "features": [
+          "bgra8unorm-storage",
+          "clip-distances",
+          "core-features-and-limits",
+          "depth-clip-control",
+          "depth32float-stencil8",
+          "dual-source-blending",
+          "float32-blendable",
+          "float32-filterable",
+          "indirect-first-instance",
+          "primitive-index",
+          "rg11b10ufloat-renderable",
+          "shader-f16",
+          "subgroups",
+          "texture-compression-bc",
+          "texture-compression-bc-sliced-3d",
+          "timestamp-query"
+        ]
+      },
+      "hardwareEligible": true,
+      "summary": {
+        "cleanProcessRuns": 3,
+        "successes": 3,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 303374336,
+        "selectedOperationSamples": 9,
+        "selectedOperationLatencyMs": {
+          "p50": 16.96775200000002,
+          "p95": 27.895947999999976,
+          "p99": 27.895947999999976
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 607.93289,
+          "p95": 616.738251,
+          "p99": 616.738251
+        }
+      }
+    },
+    "W0": {
+      "provider": "dawn-node-webgpu",
+      "evidenceMode": "governed",
+      "identity": {
+        "provider": {
+          "id": "dawn-node-webgpu",
+          "modulePath": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+          "providerInfo": null
+        },
+        "adapter": {
+          "vendor": "amd",
+          "architecture": "rdna-3",
+          "device": "radeon-8060s-graphics-radv-strix-halo-",
+          "description": "radv: Mesa 26.0.3-1ubuntu1"
+        },
+        "isFallbackAdapter": null,
+        "features": [
+          "bgra8unorm-storage",
+          "clip-distances",
+          "core-features-and-limits",
+          "depth-clip-control",
+          "depth32float-stencil8",
+          "dual-source-blending",
+          "float32-blendable",
+          "float32-filterable",
+          "indirect-first-instance",
+          "primitive-index",
+          "rg11b10ufloat-renderable",
+          "shader-f16",
+          "subgroups",
+          "texture-compression-bc",
+          "texture-compression-bc-sliced-3d",
+          "timestamp-query"
+        ]
+      },
+      "hardwareEligible": true,
+      "summary": {
+        "cleanProcessRuns": 3,
+        "successes": 3,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 303661056,
+        "selectedOperationSamples": 9,
+        "selectedOperationLatencyMs": {
+          "p50": 15.345458000000008,
+          "p95": 22.51667500000002,
+          "p99": 22.51667500000002
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 616.276884,
+          "p95": 623.335327,
+          "p99": 623.335327
+        }
+      }
+    },
+    "D0": {
+      "provider": "doe-gpu",
+      "evidenceMode": "governed",
+      "identity": {
+        "provider": {
+          "id": "doe-gpu",
+          "modulePath": "/home/x/deco/doe/packages/doe-gpu/src/index.js",
+          "providerInfo": {
+            "module": "doe-gpu",
+            "loaded": true,
+            "loadError": "",
+            "defaultCreateArgs": [],
+            "doeNative": true,
+            "libraryFlavor": "doe-dropin",
+            "doeLibraryPath": "/tmp/doe-public-final-build/lib/libwebgpu_doe.so",
+            "buildMetadataSource": "workspace",
+            "buildMetadataPath": "/tmp/doe-public-final-build/share/doe-build-metadata.json",
+            "leanVerifiedBuild": false,
+            "proofArtifactSha256": null,
+            "nativeFastPaths": {
+              "appleFastPathCompiled": false,
+              "queueFlush": true,
+              "queueFlushBreakdown": true,
+              "queueWriteBufferBatch": true,
+              "queueWriteBufferBatchDataPtrs": true,
+              "computeDispatchFlush": true,
+              "computeDispatchFlushBreakdown": true,
+              "computeDispatchBatchFlush": true,
+              "computeDispatchBatchCopyFlush": true,
+              "computeDispatchBatchCopyFlushBreakdown": true,
+              "computePrewarmDispatchBindings": true,
+              "bufferMapReadCopyUnmap": true
+            }
+          }
+        },
+        "adapter": {
+          "vendor": "AMD",
+          "architecture": "vulkan",
+          "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+          "description": "Radeon 8060S Graphics (RADV STRIX_HALO)"
+        },
+        "isFallbackAdapter": null,
+        "features": [
+          "bgra8unorm-storage",
+          "clip-distances",
+          "depth-clip-control",
+          "depth32float-stencil8",
+          "dual-source-blending",
+          "float32-blendable",
+          "float32-filterable",
+          "indirect-first-instance",
+          "primitive-index",
+          "rg11b10ufloat-renderable",
+          "shader-f16",
+          "subgroups",
+          "texture-component-swizzle",
+          "texture-compression-astc-sliced-3d",
+          "texture-compression-bc",
+          "texture-compression-bc-sliced-3d",
+          "texture-formats-tier1",
+          "texture-formats-tier2",
+          "timestamp-query"
+        ]
+      },
+      "hardwareEligible": true,
+      "summary": {
+        "cleanProcessRuns": 3,
+        "successes": 3,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 342355968,
+        "selectedOperationSamples": 9,
+        "selectedOperationLatencyMs": {
+          "p50": 16.475625000000036,
+          "p95": 18.61774700000001,
+          "p99": 18.61774700000001
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 767.985286,
+          "p95": 771.821554,
+          "p99": 771.821554
+        }
+      }
+    }
+  },
+  "replays": {
+    "W0": {
+      "status": "pass",
+      "expectedSha256": "046046201426bc719268091317070d3072219cf99e34cf7150de8e7e7d4efce0",
+      "actualSha256": "046046201426bc719268091317070d3072219cf99e34cf7150de8e7e7d4efce0"
+    },
+    "D0": {
+      "status": "pass",
+      "expectedSha256": "9589b038bc9db0f4bc40db16d3e3fb2b5eb26ebf3dd389fe4ad62eb309d4cbb1",
+      "actualSha256": "9589b038bc9db0f4bc40db16d3e3fb2b5eb26ebf3dd389fe4ad62eb309d4cbb1"
+    }
+  },
+  "dispatch": {
+    "edgeCount": 120,
+    "embeddingElementCount": 48,
+    "epochs": 500,
+    "sgdWorkgroupsPerEpoch": 1,
+    "applyWorkgroupsPerEpoch": 1,
+    "totalDispatches": 1000
+  },
+  "shaderHashes": [
+    {
+      "path": "src/gpu/shaders/sgd.wgsl",
+      "sha256": "3af8e076009f75b17dec45898e026db8f413f76d9992f00619583077a338485d"
+    },
+    {
+      "path": "src/gpu/shaders/apply-forces.wgsl",
+      "sha256": "47e8ca3495ea67f3266b0365860f8eccae9b165c175231cf8c0559ffdc13b272"
+    }
+  ],
+  "outputIdentities": {
+    "I0": [
+      "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+    ],
+    "I1": [
+      "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+    ],
+    "W0": [
+      "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+    ],
+    "D0": [
+      "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+    ]
+  },
+  "comparison": {
+    "W0OverD0Speedup": {
+      "p50": 0.9314036948522423,
+      "p95": 1.209419969022031,
+      "p99": 1.209419969022031
+    },
+    "outputIdentities": {
+      "I0": [
+        "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+      ],
+      "I1": [
+        "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+      ],
+      "W0": [
+        "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+      ],
+      "D0": [
+        "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+      ]
+    },
+    "crossProviderExactOutputIdentity": false,
+    "materialPerformanceWin": false
+  },
+  "decision": {
+    "status": "terminal",
+    "correctnessEvidence": true,
+    "replayEvidence": true,
+    "runtimeOwnershipCredit": false,
+    "performanceCredit": false,
+    "applicationPromotionCredit": false,
+    "releaseCredit": false,
+    "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis"
+  }
+}

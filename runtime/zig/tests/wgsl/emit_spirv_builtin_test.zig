@@ -6,6 +6,7 @@ const mod = @import("../../src/compiler/wgsl/mod.zig");
 const parser = @import("../../src/compiler/wgsl/frontend/parser.zig");
 const sema = @import("../../src/compiler/wgsl/frontend/sema.zig");
 const ir_builder = @import("../../src/compiler/wgsl/ir/ir_builder.zig");
+const ir_validate = @import("../../src/compiler/wgsl/ir/ir_validate.zig");
 const loop_independence = @import("../../src/compiler/wgsl/ir/ir_loop_independence.zig");
 
 const testing = std.testing;
@@ -13,6 +14,58 @@ const allocator = testing.allocator;
 
 const MAX_SPIRV_OUTPUT = mod.MAX_SPIRV_OUTPUT;
 const translateToSpirv = mod.translateToSpirv;
+
+test "named and direct pointers preserve mutation through calls and branches" {
+    const prefix =
+        \\@group(0) @binding(0) var<storage, read_write> output: array<u32>;
+        \\fn change(p: ptr<function, u32>) { *p += 5u; }
+    ;
+    const suffix =
+        \\  output[0] = x;
+        \\  if (x > 0u) { change(&x); } else { x = 99u; }
+        \\  output[1] = x;
+        \\}
+    ;
+    const cases = .{
+        prefix ++ "@compute @workgroup_size(1) fn main() { var x = 1u; change(&x);" ++ suffix,
+        prefix ++ "@compute @workgroup_size(1) fn main() { var x = 1u; let alias = &x; change(alias);" ++ suffix,
+    };
+    inline for (cases) |source| {
+        var module = try mod.analyzeToIr(allocator, source);
+        defer module.deinit();
+        try ir_validate.validate(&module);
+        var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
+        try testing.expect((try translateToSpirv(allocator, source, &binary)) > 20);
+    }
+}
+
+test "pointer aliases preserve member and index references" {
+    const source =
+        \\struct Pair { a: u32, b: u32 }
+        \\@group(0) @binding(0) var<storage, read_write> output: array<u32>;
+        \\@compute @workgroup_size(1) fn main() {
+        \\  var pair = Pair(3u, 4u);
+        \\  let pair_ptr = &pair;
+        \\  (*pair_ptr).b += 2u;
+        \\  var values = array<u32, 2>(5u, 6u);
+        \\  let values_ptr = &values;
+        \\  (*values_ptr)[1u] += 3u;
+        \\  output[0] = pair.b;
+        \\  output[1] = values[1u];
+        \\}
+    ;
+    var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    try testing.expect((try translateToSpirv(allocator, source, &binary)) > 20);
+}
+
+test "pointer parameters reject scalar arguments" {
+    const source =
+        \\fn change(p: ptr<function, u32>) { *p += 5u; }
+        \\@compute @workgroup_size(1) fn main() { var x = 1u; change(x); }
+    ;
+    var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    try testing.expectError(error.TypeMismatch, translateToSpirv(allocator, source, &binary));
+}
 
 const DOT_LOOPS =
     \\@group(0) @binding(0) var<storage, read> data: array<vec4<f32>>;

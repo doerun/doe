@@ -790,7 +790,7 @@ const Analyzer = struct {
                 },
                 else => false,
             },
-            .ref => |ref_ty| ref_ty.elem == actual or self.type_compatible(ref_ty.elem, actual),
+            .ref => false,
             else => false,
         };
     }

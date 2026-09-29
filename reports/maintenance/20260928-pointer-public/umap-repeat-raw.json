@@ -1,0 +1,2180 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "umap-gpu-sgd-governed-benchmark",
+  "generatedAt": "2026-09-29T00:37:58.381Z",
+  "actorId": "umap-gpu",
+  "harnessId": "sgd-benchmark",
+  "upstream": {
+    "repositoryUrl": "https://github.com/Achuttarsing/umap-gpu",
+    "commit": "7884b287f49bc057df7e0856c5539f130a20e0ad",
+    "licenseIdentifier": "MIT"
+  },
+  "host": {
+    "platform": "linux",
+    "architecture": "x64",
+    "node": "v22.22.1",
+    "renderNodes": [
+      "/dev/dri/renderD128"
+    ],
+    "accessibleRenderNodes": [
+      "/dev/dri/renderD128"
+    ],
+    "physicalGpuEligible": true
+  },
+  "immutableInputs": {
+    "inputs": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.inputs.json",
+      "sha256": "2d453439b8f597fd38d4dddd4e88b4b5de83fa0d18ab4dd68767d674e9184b39"
+    },
+    "oracle": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.oracle.md",
+      "sha256": "7f4937e8fd86fae2a167e80e7d9a6abb52e98cba96f064c7a177ce92d290b552"
+    },
+    "workload": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.workload.test.ts",
+      "sha256": "1f390ee77b6d6a5332d42c4e29ad250f0f9216edaf0634c6bf18b9ac23034e69"
+    },
+    "config": {
+      "path": "bench/external-projects/umap-gpu/vitest-sgd-benchmark.config.mjs",
+      "sha256": "26a3ea47d403f261eba4eebe63355417b32e22c8c033f8a1fe3b3eb4403d2bff"
+    },
+    "runner": {
+      "path": "bench/external-projects/umap-gpu/run-sgd-benchmark.mjs",
+      "sha256": "62d21914ad1495ee50d33bcc0a829be02184a4acdaca2d948089d8cdc0f28798"
+    },
+    "sgdImplementation": {
+      "path": "src/gpu/sgd.ts",
+      "sha256": "1cfa4b71c6f734450f9b8d810a6afb19e3ffb53f1ed2bce7bb018660dfdc2a63"
+    },
+    "sgdShader": {
+      "path": "src/gpu/shaders/sgd.wgsl",
+      "sha256": "3af8e076009f75b17dec45898e026db8f413f76d9992f00619583077a338485d"
+    },
+    "applyForcesShader": {
+      "path": "src/gpu/shaders/apply-forces.wgsl",
+      "sha256": "47e8ca3495ea67f3266b0365860f8eccae9b165c175231cf8c0559ffdc13b272"
+    },
+    "packageLock": {
+      "path": "package-lock.json",
+      "sha256": "b59a0b82e8430962d8a5229d2e04d7c440efa4fbd59bc7ba92e5cc357e65fb91"
+    }
+  },
+  "contract": {
+    "selectedOperation": "GPUSgd.init plus deterministic 500-epoch optimize through mapped readback and Float32Array materialization",
+    "minimumMaterialSpeedupRatio": 1.1,
+    "requireP50AndP95": true,
+    "exactWithinProviderReplay": true,
+    "crossProviderByteIdentityRequired": false,
+    "cleanProcessRunsPerLane": 3
+  },
+  "lanes": {
+    "I0": {
+      "contract": {
+        "id": "I0",
+        "provider": "dawn-node-webgpu",
+        "modulePath": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+        "evidenceMode": "ambient"
+      },
+      "probe": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "outputLimitExceeded": false,
+        "crashed": false,
+        "durationMs": 116.847395,
+        "peakProcessTreeRssBytes": 125853696,
+        "stdout": "DOE_UMAP_PROVIDER_PROBE={\"provider\":{\"id\":\"dawn-node-webgpu\",\"modulePath\":\"/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js\",\"providerInfo\":null},\"adapter\":{\"vendor\":\"amd\",\"architecture\":\"rdna-3\",\"device\":\"radeon-8060s-graphics-radv-strix-halo-\",\"description\":\"radv: Mesa 26.0.3-1ubuntu1\"},\"isFallbackAdapter\":null,\"features\":[\"bgra8unorm-storage\",\"clip-distances\",\"core-features-and-limits\",\"depth-clip-control\",\"depth32float-stencil8\",\"dual-source-blending\",\"float32-blendable\",\"float32-filterable\",\"indirect-first-instance\",\"primitive-index\",\"rg11b10ufloat-renderable\",\"shader-f16\",\"subgroups\",\"texture-compression-bc\",\"texture-compression-bc-sliced-3d\",\"timestamp-query\"]}\n",
+        "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+        "identity": {
+          "provider": {
+            "id": "dawn-node-webgpu",
+            "modulePath": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+            "providerInfo": null
+          },
+          "adapter": {
+            "vendor": "amd",
+            "architecture": "rdna-3",
+            "device": "radeon-8060s-graphics-radv-strix-halo-",
+            "description": "radv: Mesa 26.0.3-1ubuntu1"
+          },
+          "isFallbackAdapter": null,
+          "features": [
+            "bgra8unorm-storage",
+            "clip-distances",
+            "core-features-and-limits",
+            "depth-clip-control",
+            "depth32float-stencil8",
+            "dual-source-blending",
+            "float32-blendable",
+            "float32-filterable",
+            "indirect-first-instance",
+            "primitive-index",
+            "rg11b10ufloat-renderable",
+            "shader-f16",
+            "subgroups",
+            "texture-compression-bc",
+            "texture-compression-bc-sliced-3d",
+            "timestamp-query"
+          ]
+        },
+        "identityMatches": true,
+        "softwareRenderer": false,
+        "hardwareEligible": true
+      },
+      "runs": [
+        {
+          "laneId": "I0",
+          "provider": "dawn-node-webgpu",
+          "cleanProcessIndex": 1,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 627.315204,
+          "peakProcessTreeRssBytes": 301604864,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":38.69560199999998,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":17.23565599999995,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":17.307450000000017,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":25.68380400000001,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 106ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:49\n   Duration  370ms (transform 79ms, setup 54ms, import 87ms, tests 106ms, environment 0ms)\n\n",
+          "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 38.69560199999998,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 17.23565599999995,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 17.307450000000017,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 25.68380400000001,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        },
+        {
+          "laneId": "I0",
+          "provider": "dawn-node-webgpu",
+          "cleanProcessIndex": 2,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 629.319857,
+          "peakProcessTreeRssBytes": 303423488,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":39.56766200000001,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":14.621044999999981,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":14.722276000000022,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":23.147170000000017,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 98ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:49\n   Duration  368ms (transform 81ms, setup 58ms, import 89ms, tests 99ms, environment 0ms)\n\n",
+          "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 39.56766200000001,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 14.621044999999981,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 14.722276000000022,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 23.147170000000017,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        },
+        {
+          "laneId": "I0",
+          "provider": "dawn-node-webgpu",
+          "cleanProcessIndex": 3,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 613.824727,
+          "peakProcessTreeRssBytes": 303480832,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":39.133916,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":17.903752999999995,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":17.17312800000002,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":21.502976000000046,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 102ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:50\n   Duration  362ms (transform 82ms, setup 55ms, import 85ms, tests 103ms, environment 0ms)\n\n",
+          "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 39.133916,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 17.903752999999995,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 17.17312800000002,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 21.502976000000046,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "summary": {
+        "cleanProcessRuns": 3,
+        "successes": 3,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 303480832,
+        "selectedOperationSamples": 9,
+        "selectedOperationLatencyMs": {
+          "p50": 17.307450000000017,
+          "p95": 25.68380400000001,
+          "p99": 25.68380400000001
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 627.315204,
+          "p95": 629.319857,
+          "p99": 629.319857
+        }
+      }
+    },
+    "I1": {
+      "contract": {
+        "id": "I1",
+        "provider": "dawn-node-webgpu",
+        "modulePath": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+        "evidenceMode": "pinned"
+      },
+      "probe": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "outputLimitExceeded": false,
+        "crashed": false,
+        "durationMs": 102.706934,
+        "peakProcessTreeRssBytes": 126087168,
+        "stdout": "DOE_UMAP_PROVIDER_PROBE={\"provider\":{\"id\":\"dawn-node-webgpu\",\"modulePath\":\"/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js\",\"providerInfo\":null},\"adapter\":{\"vendor\":\"amd\",\"architecture\":\"rdna-3\",\"device\":\"radeon-8060s-graphics-radv-strix-halo-\",\"description\":\"radv: Mesa 26.0.3-1ubuntu1\"},\"isFallbackAdapter\":null,\"features\":[\"bgra8unorm-storage\",\"clip-distances\",\"core-features-and-limits\",\"depth-clip-control\",\"depth32float-stencil8\",\"dual-source-blending\",\"float32-blendable\",\"float32-filterable\",\"indirect-first-instance\",\"primitive-index\",\"rg11b10ufloat-renderable\",\"shader-f16\",\"subgroups\",\"texture-compression-bc\",\"texture-compression-bc-sliced-3d\",\"timestamp-query\"]}\n",
+        "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+        "identity": {
+          "provider": {
+            "id": "dawn-node-webgpu",
+            "modulePath": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+            "providerInfo": null
+          },
+          "adapter": {
+            "vendor": "amd",
+            "architecture": "rdna-3",
+            "device": "radeon-8060s-graphics-radv-strix-halo-",
+            "description": "radv: Mesa 26.0.3-1ubuntu1"
+          },
+          "isFallbackAdapter": null,
+          "features": [
+            "bgra8unorm-storage",
+            "clip-distances",
+            "core-features-and-limits",
+            "depth-clip-control",
+            "depth32float-stencil8",
+            "dual-source-blending",
+            "float32-blendable",
+            "float32-filterable",
+            "indirect-first-instance",
+            "primitive-index",
+            "rg11b10ufloat-renderable",
+            "shader-f16",
+            "subgroups",
+            "texture-compression-bc",
+            "texture-compression-bc-sliced-3d",
+            "timestamp-query"
+          ]
+        },
+        "identityMatches": true,
+        "softwareRenderer": false,
+        "hardwareEligible": true
+      },
+      "runs": [
+        {
+          "laneId": "I1",
+          "provider": "dawn-node-webgpu",
+          "cleanProcessIndex": 1,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 607.100874,
+          "peakProcessTreeRssBytes": 303374336,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":40.001187999999985,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":14.387405000000001,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":14.628729999999962,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":27.895947999999976,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 105ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:51\n   Duration  361ms (transform 79ms, setup 58ms, import 81ms, tests 106ms, environment 0ms)\n\n",
+          "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 40.001187999999985,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 14.387405000000001,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 14.628729999999962,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 27.895947999999976,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        },
+        {
+          "laneId": "I1",
+          "provider": "dawn-node-webgpu",
+          "cleanProcessIndex": 2,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 607.93289,
+          "peakProcessTreeRssBytes": 300060672,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":38.117975,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":15.017230999999981,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":14.69886200000002,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":19.219910000000027,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 94ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:51\n   Duration  357ms (transform 77ms, setup 54ms, import 84ms, tests 94ms, environment 0ms)\n\n",
+          "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 38.117975,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 15.017230999999981,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 14.69886200000002,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 19.219910000000027,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        },
+        {
+          "laneId": "I1",
+          "provider": "dawn-node-webgpu",
+          "cleanProcessIndex": 3,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 616.738251,
+          "peakProcessTreeRssBytes": 300711936,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":41.39876899999999,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":16.96775200000002,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":17.300238000000036,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":22.126378999999986,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 104ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:52\n   Duration  359ms (transform 78ms, setup 60ms, import 76ms, tests 105ms, environment 0ms)\n\n",
+          "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 41.39876899999999,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 16.96775200000002,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 17.300238000000036,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 22.126378999999986,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "summary": {
+        "cleanProcessRuns": 3,
+        "successes": 3,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 303374336,
+        "selectedOperationSamples": 9,
+        "selectedOperationLatencyMs": {
+          "p50": 16.96775200000002,
+          "p95": 27.895947999999976,
+          "p99": 27.895947999999976
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 607.93289,
+          "p95": 616.738251,
+          "p99": 616.738251
+        }
+      }
+    },
+    "W0": {
+      "contract": {
+        "id": "W0",
+        "provider": "dawn-node-webgpu",
+        "modulePath": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+        "evidenceMode": "governed"
+      },
+      "probe": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "outputLimitExceeded": false,
+        "crashed": false,
+        "durationMs": 113.086838,
+        "peakProcessTreeRssBytes": 126152704,
+        "stdout": "DOE_UMAP_PROVIDER_PROBE={\"provider\":{\"id\":\"dawn-node-webgpu\",\"modulePath\":\"/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js\",\"providerInfo\":null},\"adapter\":{\"vendor\":\"amd\",\"architecture\":\"rdna-3\",\"device\":\"radeon-8060s-graphics-radv-strix-halo-\",\"description\":\"radv: Mesa 26.0.3-1ubuntu1\"},\"isFallbackAdapter\":null,\"features\":[\"bgra8unorm-storage\",\"clip-distances\",\"core-features-and-limits\",\"depth-clip-control\",\"depth32float-stencil8\",\"dual-source-blending\",\"float32-blendable\",\"float32-filterable\",\"indirect-first-instance\",\"primitive-index\",\"rg11b10ufloat-renderable\",\"shader-f16\",\"subgroups\",\"texture-compression-bc\",\"texture-compression-bc-sliced-3d\",\"timestamp-query\"]}\n",
+        "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+        "identity": {
+          "provider": {
+            "id": "dawn-node-webgpu",
+            "modulePath": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+            "providerInfo": null
+          },
+          "adapter": {
+            "vendor": "amd",
+            "architecture": "rdna-3",
+            "device": "radeon-8060s-graphics-radv-strix-halo-",
+            "description": "radv: Mesa 26.0.3-1ubuntu1"
+          },
+          "isFallbackAdapter": null,
+          "features": [
+            "bgra8unorm-storage",
+            "clip-distances",
+            "core-features-and-limits",
+            "depth-clip-control",
+            "depth32float-stencil8",
+            "dual-source-blending",
+            "float32-blendable",
+            "float32-filterable",
+            "indirect-first-instance",
+            "primitive-index",
+            "rg11b10ufloat-renderable",
+            "shader-f16",
+            "subgroups",
+            "texture-compression-bc",
+            "texture-compression-bc-sliced-3d",
+            "timestamp-query"
+          ]
+        },
+        "identityMatches": true,
+        "softwareRenderer": false,
+        "hardwareEligible": true
+      },
+      "runs": [
+        {
+          "laneId": "W0",
+          "provider": "dawn-node-webgpu",
+          "cleanProcessIndex": 1,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 610.941783,
+          "peakProcessTreeRssBytes": 302936064,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":40.757210999999984,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":16.725977,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":15.345458000000008,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":22.51667500000002,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 102ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:52\n   Duration  363ms (transform 80ms, setup 56ms, import 84ms, tests 103ms, environment 0ms)\n\n",
+          "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 40.757210999999984,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 16.725977,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 15.345458000000008,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 22.51667500000002,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        },
+        {
+          "laneId": "W0",
+          "provider": "dawn-node-webgpu",
+          "cleanProcessIndex": 2,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 616.276884,
+          "peakProcessTreeRssBytes": 300199936,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":38.396567999999974,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":14.871556999999996,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":14.425017000000025,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":21.796678999999983,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 96ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:53\n   Duration  359ms (transform 78ms, setup 52ms, import 86ms, tests 96ms, environment 0ms)\n\n",
+          "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 38.396567999999974,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 14.871556999999996,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 14.425017000000025,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 21.796678999999983,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        },
+        {
+          "laneId": "W0",
+          "provider": "dawn-node-webgpu",
+          "cleanProcessIndex": 3,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 623.335327,
+          "peakProcessTreeRssBytes": 303661056,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":38.73686900000001,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":14.895411000000024,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":15.238276999999982,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":20.33863500000001,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 96ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:54\n   Duration  359ms (transform 77ms, setup 51ms, import 87ms, tests 96ms, environment 0ms)\n\n",
+          "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 38.73686900000001,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 14.895411000000024,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 15.238276999999982,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 20.33863500000001,
+                "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+                "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 12.345828209607117,
+                  "meanIntra": 1.061449325700822,
+                  "meanInter": 24.797045238835253,
+                  "interToIntraRatio": 23.361497000775806,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "summary": {
+        "cleanProcessRuns": 3,
+        "successes": 3,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 303661056,
+        "selectedOperationSamples": 9,
+        "selectedOperationLatencyMs": {
+          "p50": 15.345458000000008,
+          "p95": 22.51667500000002,
+          "p99": 22.51667500000002
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 616.276884,
+          "p95": 623.335327,
+          "p99": 623.335327
+        }
+      }
+    },
+    "D0": {
+      "contract": {
+        "id": "D0",
+        "provider": "doe-gpu",
+        "modulePath": "/home/x/deco/doe/packages/doe-gpu/src/index.js",
+        "evidenceMode": "governed"
+      },
+      "probe": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "outputLimitExceeded": false,
+        "crashed": false,
+        "durationMs": 115.290827,
+        "peakProcessTreeRssBytes": 130670592,
+        "stdout": "DOE_UMAP_PROVIDER_PROBE={\"provider\":{\"id\":\"doe-gpu\",\"modulePath\":\"/home/x/deco/doe/packages/doe-gpu/src/index.js\",\"providerInfo\":{\"module\":\"doe-gpu\",\"loaded\":true,\"loadError\":\"\",\"defaultCreateArgs\":[],\"doeNative\":true,\"libraryFlavor\":\"doe-dropin\",\"doeLibraryPath\":\"/tmp/doe-public-final-build/lib/libwebgpu_doe.so\",\"buildMetadataSource\":\"workspace\",\"buildMetadataPath\":\"/tmp/doe-public-final-build/share/doe-build-metadata.json\",\"leanVerifiedBuild\":false,\"proofArtifactSha256\":null,\"nativeFastPaths\":{\"appleFastPathCompiled\":false,\"queueFlush\":true,\"queueFlushBreakdown\":true,\"queueWriteBufferBatch\":true,\"queueWriteBufferBatchDataPtrs\":true,\"computeDispatchFlush\":true,\"computeDispatchFlushBreakdown\":true,\"computeDispatchBatchFlush\":true,\"computeDispatchBatchCopyFlush\":true,\"computeDispatchBatchCopyFlushBreakdown\":true,\"computePrewarmDispatchBindings\":true,\"bufferMapReadCopyUnmap\":true}}},\"adapter\":{\"vendor\":\"AMD\",\"architecture\":\"vulkan\",\"device\":\"Radeon 8060S Graphics (RADV STRIX_HALO)\",\"description\":\"Radeon 8060S Graphics (RADV STRIX_HALO)\"},\"isFallbackAdapter\":null,\"features\":[\"bgra8unorm-storage\",\"clip-distances\",\"depth-clip-control\",\"depth32float-stencil8\",\"dual-source-blending\",\"float32-blendable\",\"float32-filterable\",\"indirect-first-instance\",\"primitive-index\",\"rg11b10ufloat-renderable\",\"shader-f16\",\"subgroups\",\"texture-component-swizzle\",\"texture-compression-astc-sliced-3d\",\"texture-compression-bc\",\"texture-compression-bc-sliced-3d\",\"texture-formats-tier1\",\"texture-formats-tier2\",\"timestamp-query\"]}\n",
+        "stderr": "",
+        "identity": {
+          "provider": {
+            "id": "doe-gpu",
+            "modulePath": "/home/x/deco/doe/packages/doe-gpu/src/index.js",
+            "providerInfo": {
+              "module": "doe-gpu",
+              "loaded": true,
+              "loadError": "",
+              "defaultCreateArgs": [],
+              "doeNative": true,
+              "libraryFlavor": "doe-dropin",
+              "doeLibraryPath": "/tmp/doe-public-final-build/lib/libwebgpu_doe.so",
+              "buildMetadataSource": "workspace",
+              "buildMetadataPath": "/tmp/doe-public-final-build/share/doe-build-metadata.json",
+              "leanVerifiedBuild": false,
+              "proofArtifactSha256": null,
+              "nativeFastPaths": {
+                "appleFastPathCompiled": false,
+                "queueFlush": true,
+                "queueFlushBreakdown": true,
+                "queueWriteBufferBatch": true,
+                "queueWriteBufferBatchDataPtrs": true,
+                "computeDispatchFlush": true,
+                "computeDispatchFlushBreakdown": true,
+                "computeDispatchBatchFlush": true,
+                "computeDispatchBatchCopyFlush": true,
+                "computeDispatchBatchCopyFlushBreakdown": true,
+                "computePrewarmDispatchBindings": true,
+                "bufferMapReadCopyUnmap": true
+              }
+            }
+          },
+          "adapter": {
+            "vendor": "AMD",
+            "architecture": "vulkan",
+            "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+            "description": "Radeon 8060S Graphics (RADV STRIX_HALO)"
+          },
+          "isFallbackAdapter": null,
+          "features": [
+            "bgra8unorm-storage",
+            "clip-distances",
+            "depth-clip-control",
+            "depth32float-stencil8",
+            "dual-source-blending",
+            "float32-blendable",
+            "float32-filterable",
+            "indirect-first-instance",
+            "primitive-index",
+            "rg11b10ufloat-renderable",
+            "shader-f16",
+            "subgroups",
+            "texture-component-swizzle",
+            "texture-compression-astc-sliced-3d",
+            "texture-compression-bc",
+            "texture-compression-bc-sliced-3d",
+            "texture-formats-tier1",
+            "texture-formats-tier2",
+            "timestamp-query"
+          ]
+        },
+        "identityMatches": true,
+        "softwareRenderer": false,
+        "hardwareEligible": true
+      },
+      "runs": [
+        {
+          "laneId": "D0",
+          "provider": "doe-gpu",
+          "cleanProcessIndex": 1,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 771.821554,
+          "peakProcessTreeRssBytes": 337334272,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":53.79900500000002,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":16.475625000000036,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":17.855632000000014,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":15.196597999999994,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 110ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:54\n   Duration  502ms (transform 169ms, setup 193ms, import 67ms, tests 111ms, environment 0ms)\n\n",
+          "stderr": "",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 53.79900500000002,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 16.475625000000036,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 17.855632000000014,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 15.196597999999994,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        },
+        {
+          "laneId": "D0",
+          "provider": "doe-gpu",
+          "cleanProcessIndex": 2,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 758.546483,
+          "peakProcessTreeRssBytes": 337850368,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":56.54035399999998,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":15.76097100000004,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":16.944146999999987,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":15.793551999999977,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 111ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:55\n   Duration  493ms (transform 172ms, setup 200ms, import 60ms, tests 112ms, environment 0ms)\n\n",
+          "stderr": "",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 56.54035399999998,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 15.76097100000004,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 16.944146999999987,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 15.793551999999977,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        },
+        {
+          "laneId": "D0",
+          "provider": "doe-gpu",
+          "cleanProcessIndex": 3,
+          "replay": false,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "crashed": false,
+          "durationMs": 767.985286,
+          "peakProcessTreeRssBytes": 342355968,
+          "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":55.234736999999996,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":15.898950000000013,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":17.50938100000002,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":18.61774700000001,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 114ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:56\n   Duration  500ms (transform 171ms, setup 201ms, import 62ms, tests 115ms, environment 0ms)\n\n",
+          "stderr": "",
+          "benchmark": {
+            "samples": [
+              {
+                "sampleKind": "warmup",
+                "sampleIndex": 1,
+                "durationMs": 55.234736999999996,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 1,
+                "durationMs": 15.898950000000013,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 2,
+                "durationMs": 17.50938100000002,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              },
+              {
+                "sampleKind": "measured",
+                "sampleIndex": 3,
+                "durationMs": 18.61774700000001,
+                "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+                "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+                "outputByteLength": 192,
+                "oracle": {
+                  "finite": true,
+                  "spread": 8.038557590605949,
+                  "meanIntra": 1.0446515490912454,
+                  "meanInter": 16.563648483238918,
+                  "interToIntraRatio": 15.85566833040915,
+                  "sameClusterNearestNeighbors": 24,
+                  "pointCount": 24,
+                  "pass": true
+                },
+                "dispatch": {
+                  "edgeCount": 120,
+                  "embeddingElementCount": 48,
+                  "epochs": 500,
+                  "sgdWorkgroupsPerEpoch": 1,
+                  "applyWorkgroupsPerEpoch": 1,
+                  "totalDispatches": 1000
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "summary": {
+        "cleanProcessRuns": 3,
+        "successes": 3,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 342355968,
+        "selectedOperationSamples": 9,
+        "selectedOperationLatencyMs": {
+          "p50": 16.475625000000036,
+          "p95": 18.61774700000001,
+          "p99": 18.61774700000001
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 767.985286,
+          "p95": 771.821554,
+          "p99": 771.821554
+        }
+      }
+    }
+  },
+  "replays": {
+    "W0": {
+      "status": "pass",
+      "expectedSha256": "046046201426bc719268091317070d3072219cf99e34cf7150de8e7e7d4efce0",
+      "actualSha256": "046046201426bc719268091317070d3072219cf99e34cf7150de8e7e7d4efce0",
+      "run": {
+        "laneId": "W0",
+        "provider": "dawn-node-webgpu",
+        "cleanProcessIndex": null,
+        "replay": true,
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "outputLimitExceeded": false,
+        "crashed": false,
+        "durationMs": 627.855075,
+        "peakProcessTreeRssBytes": 300314624,
+        "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":40.20036300000001,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":15.491252999999972,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":14.819639000000052,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":23.484756000000004,\"outputSha256\":\"ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5\",\"outputBase64\":\"5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":12.345828209607117,\"meanIntra\":1.061449325700822,\"meanInter\":24.797045238835253,\"interToIntraRatio\":23.361497000775806,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 100ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:57\n   Duration  372ms (transform 83ms, setup 62ms, import 86ms, tests 101ms, environment 0ms)\n\n",
+        "stderr": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n",
+        "benchmark": {
+          "samples": [
+            {
+              "sampleKind": "warmup",
+              "sampleIndex": 1,
+              "durationMs": 40.20036300000001,
+              "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+              "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+              "outputByteLength": 192,
+              "oracle": {
+                "finite": true,
+                "spread": 12.345828209607117,
+                "meanIntra": 1.061449325700822,
+                "meanInter": 24.797045238835253,
+                "interToIntraRatio": 23.361497000775806,
+                "sameClusterNearestNeighbors": 24,
+                "pointCount": 24,
+                "pass": true
+              },
+              "dispatch": {
+                "edgeCount": 120,
+                "embeddingElementCount": 48,
+                "epochs": 500,
+                "sgdWorkgroupsPerEpoch": 1,
+                "applyWorkgroupsPerEpoch": 1,
+                "totalDispatches": 1000
+              }
+            },
+            {
+              "sampleKind": "measured",
+              "sampleIndex": 1,
+              "durationMs": 15.491252999999972,
+              "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+              "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+              "outputByteLength": 192,
+              "oracle": {
+                "finite": true,
+                "spread": 12.345828209607117,
+                "meanIntra": 1.061449325700822,
+                "meanInter": 24.797045238835253,
+                "interToIntraRatio": 23.361497000775806,
+                "sameClusterNearestNeighbors": 24,
+                "pointCount": 24,
+                "pass": true
+              },
+              "dispatch": {
+                "edgeCount": 120,
+                "embeddingElementCount": 48,
+                "epochs": 500,
+                "sgdWorkgroupsPerEpoch": 1,
+                "applyWorkgroupsPerEpoch": 1,
+                "totalDispatches": 1000
+              }
+            },
+            {
+              "sampleKind": "measured",
+              "sampleIndex": 2,
+              "durationMs": 14.819639000000052,
+              "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+              "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+              "outputByteLength": 192,
+              "oracle": {
+                "finite": true,
+                "spread": 12.345828209607117,
+                "meanIntra": 1.061449325700822,
+                "meanInter": 24.797045238835253,
+                "interToIntraRatio": 23.361497000775806,
+                "sameClusterNearestNeighbors": 24,
+                "pointCount": 24,
+                "pass": true
+              },
+              "dispatch": {
+                "edgeCount": 120,
+                "embeddingElementCount": 48,
+                "epochs": 500,
+                "sgdWorkgroupsPerEpoch": 1,
+                "applyWorkgroupsPerEpoch": 1,
+                "totalDispatches": 1000
+              }
+            },
+            {
+              "sampleKind": "measured",
+              "sampleIndex": 3,
+              "durationMs": 23.484756000000004,
+              "outputSha256": "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5",
+              "outputBase64": "5hwJwQSOAMC6CxXBtlARwE1WGsHSXCDArLAKwdO+YcCu/gLBCDdRwMBMA8HgzCnARFMMwRRcE8AhShbBCSADwGzdFcHk/jzAydoHwWcgesAeQAHBLeBnwKNZAcHWlR3At4qEQSPh2r4aB4FB18/GPiAOekEZ74g++hZ1QRK4HL+0/XpBwW2nvyo/gkGmHH+/tXqEQfR2WzzUGH1BpTA6PrPQdUFj02e9a7J2QSwwi79Uu31BTLB5v7crhUFp4D+/",
+              "outputByteLength": 192,
+              "oracle": {
+                "finite": true,
+                "spread": 12.345828209607117,
+                "meanIntra": 1.061449325700822,
+                "meanInter": 24.797045238835253,
+                "interToIntraRatio": 23.361497000775806,
+                "sameClusterNearestNeighbors": 24,
+                "pointCount": 24,
+                "pass": true
+              },
+              "dispatch": {
+                "edgeCount": 120,
+                "embeddingElementCount": 48,
+                "epochs": 500,
+                "sgdWorkgroupsPerEpoch": 1,
+                "applyWorkgroupsPerEpoch": 1,
+                "totalDispatches": 1000
+              }
+            }
+          ]
+        }
+      }
+    },
+    "D0": {
+      "status": "pass",
+      "expectedSha256": "9589b038bc9db0f4bc40db16d3e3fb2b5eb26ebf3dd389fe4ad62eb309d4cbb1",
+      "actualSha256": "9589b038bc9db0f4bc40db16d3e3fb2b5eb26ebf3dd389fe4ad62eb309d4cbb1",
+      "run": {
+        "laneId": "D0",
+        "provider": "doe-gpu",
+        "cleanProcessIndex": null,
+        "replay": true,
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "outputLimitExceeded": false,
+        "crashed": false,
+        "durationMs": 744.488669,
+        "peakProcessTreeRssBytes": 336080896,
+        "stdout": "\n RUN  v4.0.18 /home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream\n\nstdout | ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing\nDOE_UMAP_SGD_BENCHMARK={\"samples\":[{\"sampleKind\":\"warmup\",\"sampleIndex\":1,\"durationMs\":55.536343999999985,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":1,\"durationMs\":17.552842999999996,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":2,\"durationMs\":18.507900000000006,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}},{\"sampleKind\":\"measured\",\"sampleIndex\":3,\"durationMs\":17.24985300000003,\"outputSha256\":\"1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c\",\"outputBase64\":\"NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/\",\"outputByteLength\":192,\"oracle\":{\"finite\":true,\"spread\":8.038557590605949,\"meanIntra\":1.0446515490912454,\"meanInter\":16.563648483238918,\"interToIntraRatio\":15.85566833040915,\"sameClusterNearestNeighbors\":24,\"pointCount\":24,\"pass\":true},\"dispatch\":{\"edgeCount\":120,\"embeddingElementCount\":48,\"epochs\":500,\"sgdWorkgroupsPerEpoch\":1,\"applyWorkgroupsPerEpoch\":1,\"totalDispatches\":1000}}]}\n\n ✓ ../../../../external-projects/umap-gpu/sgd-benchmark.workload.test.ts > governed UMAP SGD selected operation > records exact deterministic output and complete operation timing 117ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  20:37:57\n   Duration  484ms (transform 157ms, setup 182ms, import 62ms, tests 118ms, environment 0ms)\n\n",
+        "stderr": "",
+        "benchmark": {
+          "samples": [
+            {
+              "sampleKind": "warmup",
+              "sampleIndex": 1,
+              "durationMs": 55.536343999999985,
+              "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+              "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+              "outputByteLength": 192,
+              "oracle": {
+                "finite": true,
+                "spread": 8.038557590605949,
+                "meanIntra": 1.0446515490912454,
+                "meanInter": 16.563648483238918,
+                "interToIntraRatio": 15.85566833040915,
+                "sameClusterNearestNeighbors": 24,
+                "pointCount": 24,
+                "pass": true
+              },
+              "dispatch": {
+                "edgeCount": 120,
+                "embeddingElementCount": 48,
+                "epochs": 500,
+                "sgdWorkgroupsPerEpoch": 1,
+                "applyWorkgroupsPerEpoch": 1,
+                "totalDispatches": 1000
+              }
+            },
+            {
+              "sampleKind": "measured",
+              "sampleIndex": 1,
+              "durationMs": 17.552842999999996,
+              "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+              "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+              "outputByteLength": 192,
+              "oracle": {
+                "finite": true,
+                "spread": 8.038557590605949,
+                "meanIntra": 1.0446515490912454,
+                "meanInter": 16.563648483238918,
+                "interToIntraRatio": 15.85566833040915,
+                "sameClusterNearestNeighbors": 24,
+                "pointCount": 24,
+                "pass": true
+              },
+              "dispatch": {
+                "edgeCount": 120,
+                "embeddingElementCount": 48,
+                "epochs": 500,
+                "sgdWorkgroupsPerEpoch": 1,
+                "applyWorkgroupsPerEpoch": 1,
+                "totalDispatches": 1000
+              }
+            },
+            {
+              "sampleKind": "measured",
+              "sampleIndex": 2,
+              "durationMs": 18.507900000000006,
+              "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+              "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+              "outputByteLength": 192,
+              "oracle": {
+                "finite": true,
+                "spread": 8.038557590605949,
+                "meanIntra": 1.0446515490912454,
+                "meanInter": 16.563648483238918,
+                "interToIntraRatio": 15.85566833040915,
+                "sameClusterNearestNeighbors": 24,
+                "pointCount": 24,
+                "pass": true
+              },
+              "dispatch": {
+                "edgeCount": 120,
+                "embeddingElementCount": 48,
+                "epochs": 500,
+                "sgdWorkgroupsPerEpoch": 1,
+                "applyWorkgroupsPerEpoch": 1,
+                "totalDispatches": 1000
+              }
+            },
+            {
+              "sampleKind": "measured",
+              "sampleIndex": 3,
+              "durationMs": 17.24985300000003,
+              "outputSha256": "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c",
+              "outputBase64": "NplJwAVuBkDPVibAsT/EP1E6B8CWr60/so/Yv2vdGEDafQnAfrg0QO1GLsCHqTdAnl4zwOSsBEAgQifAZZOsPxxB878x9eU/0bDSv0goOECiCwvAGyFJQHYAPcArViRAKqZgQdNWmr8kgE9BSdWcv7CATUHC0tm/VIFXQSX2GcA1U2VBI9UNwA2JZEGP1uS/GbFZQc+fiL9rwVFBHF7Fv/CTUEFGEwPAVT5hQSmWGsDKV15BDT4owDuuZUF8Y6q/",
+              "outputByteLength": 192,
+              "oracle": {
+                "finite": true,
+                "spread": 8.038557590605949,
+                "meanIntra": 1.0446515490912454,
+                "meanInter": 16.563648483238918,
+                "interToIntraRatio": 15.85566833040915,
+                "sameClusterNearestNeighbors": 24,
+                "pointCount": 24,
+                "pass": true
+              },
+              "dispatch": {
+                "edgeCount": 120,
+                "embeddingElementCount": 48,
+                "epochs": 500,
+                "sgdWorkgroupsPerEpoch": 1,
+                "applyWorkgroupsPerEpoch": 1,
+                "totalDispatches": 1000
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "comparison": {
+    "W0OverD0Speedup": {
+      "p50": 0.9314036948522423,
+      "p95": 1.209419969022031,
+      "p99": 1.209419969022031
+    },
+    "outputIdentities": {
+      "I0": [
+        "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+      ],
+      "I1": [
+        "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+      ],
+      "W0": [
+        "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+      ],
+      "D0": [
+        "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+      ]
+    },
+    "crossProviderExactOutputIdentity": false,
+    "materialPerformanceWin": false
+  },
+  "decision": {
+    "status": "terminal",
+    "correctnessEvidence": true,
+    "replayEvidence": true,
+    "runtimeOwnershipCredit": false,
+    "performanceCredit": false,
+    "applicationPromotionCredit": false,
+    "releaseCredit": false,
+    "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis"
+  },
+  "limitations": [
+    "This is one physical AMD Vulkan tuple.",
+    "The harness-owned deterministic fixture exercises the unchanged upstream GPUSgd implementation and shaders; it is not the upstream random-input benchmark.",
+    "Three clean processes per lane and three measured samples per process are diagnostic, not promotion-scale evidence.",
+    "The governed incumbent is evidence-bound by this harness and is not an operating-system sandbox.",
+    "No clean-install package, concurrency, teardown-cycle, device-loss, bounded-growth, or receipt-overhead gate ran."
+  ],
+  "sha256": "3e015dd1ce7aaa2479ef5cda4987a7dc5eb2f6b602ce8f7a5ea2ebdbe1bfa0f7"
+}

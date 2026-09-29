@@ -19,6 +19,23 @@ const SAMPLER_BINDING_TYPES = Object.freeze({
   comparison: 'comparison',
 });
 
+function normalizeGpuColor(value, path) {
+  if (value === undefined) return { r: 0, g: 0, b: 0, a: 1 };
+  let components;
+  if (value !== null && typeof value !== 'string' && typeof value[Symbol.iterator] === 'function') {
+    components = Array.from(value);
+  } else if (value !== null && typeof value === 'object') {
+    components = [value.r, value.g, value.b, value.a];
+  } else {
+    failValidation(path, 'expected four color components');
+  }
+  if (components.length !== 4 || components.some(component =>
+    typeof component !== 'number' || !Number.isFinite(component))) {
+    failValidation(path, 'expected four finite color components');
+  }
+  return { r: components[0], g: components[1], b: components[2], a: components[3] };
+}
+
 const FILTER_MODES = Object.freeze({
   nearest: 'nearest',
   linear: 'linear',
@@ -1136,6 +1153,7 @@ function autoLayoutEntriesFromNativeBindings(bindings, visibility) {
 }
 
 export {
+  normalizeGpuColor,
   ALL_BUFFER_USAGE_BITS,
   SAMPLER_BINDING_TYPES,
   FILTER_MODES,

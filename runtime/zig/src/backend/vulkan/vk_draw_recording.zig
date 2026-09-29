@@ -3,6 +3,7 @@ const c = @import("vk_constants.zig");
 const resources = @import("vk_resources.zig");
 const model_render_types = @import("../../contracts/model/model_render_types.zig");
 const model_gpu_types = @import("../../contracts/model/model_texture_value_types.zig");
+const vk_formats = @import("vk_formats.zig");
 const VK_NULL_U64 = c.VK_NULL_U64;
 const VK_QUERY_CONTROL_NONE: u32 = 0;
 
@@ -12,6 +13,27 @@ pub const IndexBinding = struct {
     format: u32,
     count: u32,
 };
+
+pub fn color_clear_value(format: model_gpu_types.WGPUTextureFormat, color: [4]f32) error{InvalidArgument}!c.VkClearValue {
+    for (color) |component| if (!std.math.isFinite(component)) return error.InvalidArgument;
+    return switch (vk_formats.color_component_kind(format)) {
+        .float => .{ .color = .{ .float32 = color } },
+        .uint => blk: {
+            var values: [4]u32 = undefined;
+            for (color, &values) |component, *value| {
+                value.* = @intFromFloat(std.math.clamp(@as(f64, component), 0, std.math.maxInt(u32)));
+            }
+            break :blk .{ .color = .{ .uint32 = values } };
+        },
+        .sint => blk: {
+            var values: [4]i32 = undefined;
+            for (color, &values) |component, *value| {
+                value.* = @intFromFloat(std.math.clamp(@as(f64, component), std.math.minInt(i32), std.math.maxInt(i32)));
+            }
+            break :blk .{ .color = .{ .int32 = values } };
+        },
+    };
+}
 
 /// Borrows native handles and a read-only buffer registry only for recording.
 /// Its caller owns allocation, image transitions, submission and retirement.
@@ -33,9 +55,7 @@ pub const DrawRecording = struct {
 
     pub fn record(self: *const DrawRecording, cmd: model_render_types.RenderDrawCommand, index: ?IndexBinding, draw_count: u32, target_width: u32, target_height: u32) error{InvalidArgument}!void {
         var clear_values = [_]c.VkClearValue{
-            .{
-                .color = .{ .float32 = cmd.clear_color },
-            },
+            try color_clear_value(cmd.target_format, cmd.clear_color),
             .{
                 .depthStencil = .{ .depth = cmd.depth_clear_value, .stencil = cmd.stencil_clear_value },
             },

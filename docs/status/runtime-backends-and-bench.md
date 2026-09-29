@@ -31,9 +31,15 @@ successful execution. Injection is distinct from physical hardware loss.
   declared programs, installed packages, and browser integration. Electron main
   execution grants no renderer or browser credit. Node reranker qualification
   does not qualify the browser-only embedding Capsule or complete document search.
-- The broader shader-semantics suite retains an unresolved render-output failure
-  reproduced with an unchanged-source control. Passing compute cases do not clear
-  it; see [compiler status](compiler-and-webgpu.md).
+- The broader shader-semantics suite now passes render readback through the
+  current package, native and Vulkan path. The earlier failure and its correction
+  are retained in the [pointer/public-path follow-up](../../reports/maintenance/20260928-pointer-public/README.md).
+  The same report records two unchanged UMAP comparisons with pinned Dawn.
+  Selected-operation latency changed rank between runs; Doe's clean-process
+  latency and peak process-tree RSS were higher in both. No material application
+  advantage is established. Next optimization selection is clean-process startup
+  and memory cost, with ONNX Runtime substitution kept as its independent
+  integration investigation.
 - Native coverage requires retained executable hashes, successful physical work,
   backend/driver identity, and replay. Sample-based rows remain diagnostic until
   they satisfy [coverage policy](../../config/native-backend-coverage-matrix.json).

@@ -533,7 +533,7 @@ const Emitter = struct {
             .local_decl => |decl| {
                 const local = function.locals.items[decl.local];
                 try self.write_indent();
-                if (decl.is_const) {
+                if (decl.is_const and self.module.types.get(local.ty) != .ref) {
                     try self.write("const ");
                 }
                 try self.emit_named_decl(local.ty, local.name);
@@ -731,6 +731,8 @@ const Emitter = struct {
                 if (try self.try_emit_unwritten_workgroup_zero(function, inner, expr.ty)) return;
                 try self.emit_expr(function, inner);
             },
+            // MSL references bind the pointer's memory view at declaration.
+            .address_of, .deref => |inner| try self.emit_expr(function, inner),
             .unary => |unary| {
                 try self.write("(");
                 try self.write(maps.unary_op_text(unary.op));

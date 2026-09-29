@@ -18,7 +18,49 @@ const CLEAR = `
   for (var i: u32 = 0u; i < arrayLength(&data); i = i + 1u) { data[i] = 0u; }
   data[0] = 7u;
 }`;
+const POINTER_ALIAS = `
+@group(0) @binding(0) var<storage, read_write> data: array<u32>;
+fn change(p: ptr<function, u32>) { *p += 5u; }
+@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) id: vec3u) {
+  var x = id.x + 1u;
+  data[id.x * 5u] = x + x;
+  x += 3u;
+  data[id.x * 5u + 1u] = x;
+  let alias = &x;
+  change(alias);
+  data[id.x * 5u + 2u] = x;
+  if ((id.x % 2u) == 0u) { x += 10u; } else { x += 20u; }
+  data[id.x * 5u + 3u] = x;
+  for (var j = 0u; j < 3u; j++) { x += j; }
+  data[id.x * 5u + 4u] = x;
+}`;
+const POINTER_EXPECTED = [2, 4, 9, 19, 22, 4, 5, 10, 30, 33,
+  6, 6, 11, 21, 24, 8, 7, 12, 32, 35];
 const CASES = [
+  { label: 'named pointer alias mutation', code: POINTER_ALIAS, dispatch: 4,
+    expected: POINTER_EXPECTED },
+  { label: 'direct pointer mutation',
+    code: POINTER_ALIAS.replace('let alias = &x;\n  change(alias);', 'change(&x);'),
+    dispatch: 4, expected: POINTER_EXPECTED },
+  {
+    label: 'pointer member and captured index',
+    code: `struct Pair { a: u32, b: u32 }
+      @group(0) @binding(0) var<storage, read_write> data: array<u32>;
+      @compute @workgroup_size(1) fn main() {
+        var pair = Pair(3u, 4u);
+        let pairPtr = &pair;
+        (*pairPtr).b += 2u;
+        var values = array<u32, 3>(5u, 6u, 7u);
+        var index = 1u;
+        let elementPtr = &values[index];
+        index = 2u;
+        *elementPtr += 4u;
+        data[0] = values[1u];
+        data[1] = values[2u];
+        data[2] = pair.b;
+      }`,
+    expected: [10, 7, 6],
+  },
   {
     label: 'unsigned byte unpack preserves order, zero extension, and single evaluation',
     code: `@group(0) @binding(0) var<storage, read_write> data: array<u32>;
@@ -245,6 +287,37 @@ async function runTextureRenderCase() {
   }
 }
 
+async function runUintRenderClearCase() {
+  const target = device.createTexture({
+    size: [1, 1], format: 'rgba32uint',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+  });
+  const staging = device.createBuffer({
+    size: 256, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+  });
+  const view = target.createView();
+  try {
+    const encoder = device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({ colorAttachments: [{
+      view, loadOp: 'clear', storeOp: 'store', clearValue: [2, 3, 4, 5],
+    }] });
+    pass.end();
+    encoder.copyTextureToBuffer({ texture: target }, {
+      buffer: staging, bytesPerRow: 256, rowsPerImage: 1,
+    }, [1, 1, 1]);
+    device.queue.submit([encoder.finish()]);
+    await staging.mapAsync(GPUMapMode.READ);
+    const actual = Array.from(new Uint32Array(staging.getMappedRange(), 0, 4));
+    staging.unmap();
+    console.log(JSON.stringify({ label: 'integer render clear', actual, expected: [2, 3, 4, 5] }));
+    assert.deepEqual(actual, [2, 3, 4, 5]);
+  } finally {
+    releaseOwnedResource(view);
+    target.destroy();
+    staging.destroy();
+  }
+}
+
 let failures = 0;
 try {
   const checks = [
@@ -252,6 +325,7 @@ try {
       label: `${testCase.label} / ${path}`, run: () => runCase(testCase, path),
     }))),
     { label: 'mapped writes use native contents', run: runMappedWriteCase },
+    { label: 'integer render clear', run: runUintRenderClearCase },
     { label: 'texture dimensions in rendering', run: runTextureRenderCase },
   ];
   for (const testCase of checks) {

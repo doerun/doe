@@ -393,6 +393,8 @@ pub const Expr = union(enum) {
     local_ref: u32,
     global_ref: u32,
     load: ExprId,
+    address_of: ExprId,
+    deref: ExprId,
     unary: struct {
         op: UnaryOp,
         operand: ExprId,

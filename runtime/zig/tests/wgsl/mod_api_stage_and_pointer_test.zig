@@ -283,8 +283,42 @@ test "compile shader with let-bound ref writes to MSL" {
     const len = try translateToMsl(std.testing.allocator, source, &out);
     try std.testing.expect(len > 0);
     const msl = out[0..len];
-    try std.testing.expect(std.mem.indexOf(u8, msl, "const thread float4& p = x;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "thread float4& p = x;") != null);
     try std.testing.expect(std.mem.indexOf(u8, msl, "p = float4(2.0);") != null);
+}
+
+test "HLSL pointer aliases pass the original lvalue" {
+    const source =
+        \\fn change(p: ptr<function, u32>) { *p += 5u; }
+        \\@compute @workgroup_size(1) fn main() {
+        \\    var x = 1u;
+        \\    let alias = &x;
+        \\    change(alias);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(std.testing.allocator, source, &out);
+    const hlsl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "change(x);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "const uint alias") == null);
+}
+
+test "HLSL pointer aliases capture a changing index" {
+    const source =
+        \\@compute @workgroup_size(1) fn main() {
+        \\    var values: array<u32, 3>;
+        \\    values[0u] = 5u; values[1u] = 6u; values[2u] = 7u;
+        \\    var index = 1u;
+        \\    let element = &values[index];
+        \\    index = 2u;
+        \\    *element += 4u;
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(std.testing.allocator, source, &out);
+    const hlsl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "const uint doe_pointer_index_") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "values[doe_pointer_index_") != null);
 }
 
 test "compile shader using atomicAdd result as scalar value to MSL" {

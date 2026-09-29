@@ -40,6 +40,7 @@ import {
   assertBufferDescriptor,
   assertTextureSize,
   assertBindGroupResource,
+  normalizeGpuColor,
   normalizeSamplerLayout,
   normalizeTextureLayout,
   normalizeStorageTextureLayout,
@@ -1696,7 +1697,7 @@ const nodeEncoderBackend = {
       const entry = assertObject(attachment, 'GPUCommandEncoder.beginRenderPass', `descriptor.colorAttachments[${index}]`);
       const normalized = {
         view: assertLiveResource(entry.view, 'GPUCommandEncoder.beginRenderPass', 'GPUTextureView'),
-        clearValue: entry.clearValue || { r: 0, g: 0, b: 0, a: 1 },
+        clearValue: normalizeGpuColor(entry.clearValue, `descriptor.colorAttachments[${index}].clearValue`),
         loadOp: entry.loadOp ?? 'clear',
         storeOp: entry.storeOp ?? 'store',
       };
@@ -2675,7 +2676,7 @@ const fullSurfaceBackend = {
             constants: descriptor.fragmentConstants ?? null,
             targets: [{
               format: fragmentTarget.format,
-              writeMask: fragmentTarget.writeMask,
+              writeMask: fragmentTarget.writeMask ?? globals.GPUColorWrite.ALL,
               blend: fragmentTarget.blend ?? undefined,
             }],
           },

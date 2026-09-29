@@ -590,7 +590,7 @@ fn record_and_submit_clear(
     try begin_primary_recording(self);
 
     var clear_values = [_]c.VkClearValue{
-        .{ .color = .{ .float32 = cmd.clear_color } },
+        try draw_recording.color_clear_value(cmd.target_format, cmd.clear_color),
         .{ .depthStencil = .{ .depth = cmd.depth_clear_value, .stencil = cmd.stencil_clear_value } },
     };
     var render_pass_begin = c.VkRenderPassBeginInfo{
@@ -742,9 +742,7 @@ pub fn execute_render_bundles(
     const draw_start = common_timing.now_ns();
     try begin_primary_recording(self);
 
-    var clear_value = c.VkClearValue{
-        .color = .{ .float32 = .{ 0.0, 0.0, 0.0, 1.0 } },
-    };
+    var clear_value = try draw_recording.color_clear_value(bundle_cmd.target_format, .{ 0, 0, 0, 1 });
     var render_pass_begin = c.VkRenderPassBeginInfo{
         .sType = c.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext = null,

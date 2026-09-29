@@ -114,6 +114,7 @@ const IndependentLoop = struct {
                 self.module.types.get(self.function.locals.items[local].ty) != .ref,
             .param_ref => |param| self.module.types.get(self.function.params.items[param].ty) != .ref,
             .load => |inner| self.readOnlyExpr(inner, depth - 1),
+            .address_of, .deref => false,
             .unary => |value| self.readOnlyExpr(value.operand, depth - 1),
             .binary => |value| self.readOnlyExpr(value.lhs, depth - 1) and self.readOnlyExpr(value.rhs, depth - 1),
             .member => |value| self.readOnlyExpr(value.base, depth - 1),

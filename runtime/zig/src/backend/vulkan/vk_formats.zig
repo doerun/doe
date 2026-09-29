@@ -7,6 +7,35 @@ const vertex_formats = @import("../../contracts/vertex_format.zig");
 
 const model_gpu_types = @import("../../contracts/model/model_texture_value_types.zig");
 
+pub const ColorComponentKind = enum { float, uint, sint };
+
+pub fn color_component_kind(format: model_gpu_types.WGPUTextureFormat) ColorComponentKind {
+    return switch (format) {
+        model_gpu_types.WGPUTextureFormat_R8Uint,
+        model_gpu_types.WGPUTextureFormat_R16Uint,
+        model_gpu_types.WGPUTextureFormat_RG8Uint,
+        model_gpu_types.WGPUTextureFormat_R32Uint,
+        model_gpu_types.WGPUTextureFormat_RG16Uint,
+        model_gpu_types.WGPUTextureFormat_RGBA8Uint,
+        model_gpu_types.WGPUTextureFormat_RGB10A2Uint,
+        model_gpu_types.WGPUTextureFormat_RG32Uint,
+        model_gpu_types.WGPUTextureFormat_RGBA16Uint,
+        model_gpu_types.WGPUTextureFormat_RGBA32Uint,
+        => .uint,
+        model_gpu_types.WGPUTextureFormat_R8Sint,
+        model_gpu_types.WGPUTextureFormat_R16Sint,
+        model_gpu_types.WGPUTextureFormat_RG8Sint,
+        model_gpu_types.WGPUTextureFormat_R32Sint,
+        model_gpu_types.WGPUTextureFormat_RG16Sint,
+        model_gpu_types.WGPUTextureFormat_RGBA8Sint,
+        model_gpu_types.WGPUTextureFormat_RG32Sint,
+        model_gpu_types.WGPUTextureFormat_RGBA16Sint,
+        model_gpu_types.WGPUTextureFormat_RGBA32Sint,
+        => .sint,
+        else => .float,
+    };
+}
+
 // --- VkFormat constants (Vulkan 1.0 spec values) ---
 
 // 1-channel 8-bit

@@ -84,11 +84,11 @@ test "backend lane parser handles metal_doe_app and local metal lanes" {
 }
 
 test "backend runtime policy rejects fallback-enabled lane config" {
-    const path = ".tmp_backend_runtime_policy_invalid.json";
-    defer std.fs.cwd().deleteFile(path) catch {};
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
 
-    try std.fs.cwd().writeFile(.{
-        .sub_path = path,
+    try tmp.dir.writeFile(.{
+        .sub_path = "policy.json",
         .data =
         \\{
         \\  "schemaVersion": 6,
@@ -107,6 +107,8 @@ test "backend runtime policy rejects fallback-enabled lane config" {
         ,
     });
 
+    const path = try tmp.dir.realpathAlloc(std.testing.allocator, "policy.json");
+    defer std.testing.allocator.free(path);
     try std.testing.expectError(
         backend_policy.PolicyLoadError.InvalidRuntimePolicy,
         backend_policy.load_policy_for_lane(
@@ -118,11 +120,11 @@ test "backend runtime policy rejects fallback-enabled lane config" {
 }
 
 test "backend runtime policy rejects mapped shortcuts for strict staged-upload lanes" {
-    const path = ".tmp_backend_runtime_policy_invalid_upload.json";
-    defer std.fs.cwd().deleteFile(path) catch {};
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
 
-    try std.fs.cwd().writeFile(.{
-        .sub_path = path,
+    try tmp.dir.writeFile(.{
+        .sub_path = "policy.json",
         .data =
         \\{
         \\  "schemaVersion": 6,
@@ -142,6 +144,8 @@ test "backend runtime policy rejects mapped shortcuts for strict staged-upload l
         ,
     });
 
+    const path = try tmp.dir.realpathAlloc(std.testing.allocator, "policy.json");
+    defer std.testing.allocator.free(path);
     try std.testing.expectError(
         backend_policy.PolicyLoadError.InvalidRuntimePolicy,
         backend_policy.load_policy_for_lane(
@@ -153,11 +157,11 @@ test "backend runtime policy rejects mapped shortcuts for strict staged-upload l
 }
 
 test "backend runtime policy rejects missing deferred sync policy" {
-    const path = ".tmp_backend_runtime_policy_missing_sync.json";
-    defer std.fs.cwd().deleteFile(path) catch {};
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
 
-    try std.fs.cwd().writeFile(.{
-        .sub_path = path,
+    try tmp.dir.writeFile(.{
+        .sub_path = "policy.json",
         .data =
         \\{
         \\  "schemaVersion": 6,
@@ -176,6 +180,8 @@ test "backend runtime policy rejects missing deferred sync policy" {
         ,
     });
 
+    const path = try tmp.dir.realpathAlloc(std.testing.allocator, "policy.json");
+    defer std.testing.allocator.free(path);
     try std.testing.expectError(
         backend_policy.PolicyLoadError.InvalidRuntimePolicy,
         backend_policy.load_policy_for_lane(

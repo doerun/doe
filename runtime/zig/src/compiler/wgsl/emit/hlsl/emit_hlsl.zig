@@ -1,6 +1,7 @@
 const std = @import("std");
 const ir = @import("../../ir/ir.zig");
 const ir_query = @import("../../ir/ir_query.zig");
+const ir_const_eval = @import("../../ir/ir_const_eval.zig");
 const maps = @import("emit_hlsl_maps.zig");
 const dispatch_contract = @import("../../../../contracts/shader_abi/dispatch_info.zig");
 const builtins = @import("emit_hlsl_builtins.zig");
@@ -386,6 +387,13 @@ const Emitter = struct {
             },
             .local_decl => |decl| {
                 const local = function.locals.items[decl.local];
+                if (self.module.types.get(local.ty) == .ref) {
+                    const initializer = decl.initializer orelse return error.InvalidIr;
+                    // HLSL has inout lvalues rather than pointer values.
+                    // Capture dynamic indices when the WGSL pointer is bound.
+                    try self.emit_pointer_index_captures(function, initializer);
+                    return;
+                }
                 try self.write_indent();
                 if (decl.is_const) try self.write("const ");
                 try self.emit_typed_name(local.ty, local.name);
@@ -517,6 +525,52 @@ const Emitter = struct {
         }
     }
 
+    fn emit_pointer_index_captures(self: *Emitter, function: ir.Function, expr_id: ir.ExprId) EmitError!void {
+        const expr = function.exprs.items[expr_id];
+        switch (expr.data) {
+            .address_of, .deref, .load => |inner| try self.emit_pointer_index_captures(function, inner),
+            .member => |member| try self.emit_pointer_index_captures(function, member.base),
+            .index => |index| {
+                try self.emit_pointer_index_captures(function, index.base);
+                if (ir_const_eval.resolve_constant_int(self.module, &function, index.index) == null) {
+                    try self.write_indent();
+                    try self.write("const ");
+                    try self.emit_type_only(function.exprs.items[index.index].ty);
+                    try self.write(" doe_pointer_index_");
+                    try self.write_u32(expr_id);
+                    try self.write(" = ");
+                    try self.emit_expr(function, index.index);
+                    try self.write(";\n");
+                }
+            },
+            .local_ref, .param_ref, .global_ref => {},
+            else => return error.InvalidIr,
+        }
+    }
+
+    fn pointer_alias_contains_index(function: ir.Function, expr_id: ir.ExprId, target: ir.ExprId) bool {
+        if (expr_id == target) return true;
+        return switch (function.exprs.items[expr_id].data) {
+            .address_of, .deref, .load => |inner| pointer_alias_contains_index(function, inner, target),
+            .member => |member| pointer_alias_contains_index(function, member.base, target),
+            .index => |index| pointer_alias_contains_index(function, index.base, target),
+            else => false,
+        };
+    }
+
+    fn is_captured_pointer_index(self: *Emitter, function: ir.Function, expr_id: ir.ExprId) bool {
+        if (function.exprs.items[expr_id].data != .index) return false;
+        const index = function.exprs.items[expr_id].data.index;
+        if (ir_const_eval.resolve_constant_int(self.module, &function, index.index) != null) return false;
+        for (function.stmts.items) |stmt| {
+            if (stmt != .local_decl) continue;
+            const decl = stmt.local_decl;
+            if (self.module.types.get(function.locals.items[decl.local].ty) != .ref) continue;
+            if (pointer_alias_contains_index(function, decl.initializer orelse continue, expr_id)) return true;
+        }
+        return false;
+    }
+
     pub fn emit_expr(self: *Emitter, function: ir.Function, expr_id: ir.ExprId) EmitError!void {
         const expr = function.exprs.items[expr_id];
         switch (expr.data) {
@@ -533,9 +587,17 @@ const Emitter = struct {
                 }
                 try self.write(param.name);
             },
-            .local_ref => |index| try self.write(function.locals.items[index].name),
+            .local_ref => |index| {
+                if (self.module.types.get(function.locals.items[index].ty) == .ref) {
+                    const initializer = ir_query.resolveConstLocalInitializer(&function, index) orelse return error.InvalidIr;
+                    try self.emit_expr(function, initializer);
+                } else {
+                    try self.write(function.locals.items[index].name);
+                }
+            },
             .global_ref => |index| try self.write(self.module.globals.items[index].name),
             .load => |inner| try self.emit_expr(function, inner),
+            .address_of, .deref => |inner| try self.emit_expr(function, inner),
             .unary => |unary| {
                 try self.write("(");
                 try self.write(maps.unary_op_text(unary.op));
@@ -566,7 +628,12 @@ const Emitter = struct {
             .index => |index| {
                 try self.emit_expr(function, index.base);
                 try self.write("[");
-                try self.emit_expr(function, index.index);
+                if (self.is_captured_pointer_index(function, expr_id)) {
+                    try self.write("doe_pointer_index_");
+                    try self.write_u32(expr_id);
+                } else {
+                    try self.emit_expr(function, index.index);
+                }
                 try self.write("]");
             },
         }

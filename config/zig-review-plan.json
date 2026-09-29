@@ -2,5 +2,37 @@
   "schemaVersion": 1,
   "maxActiveBatches": 1,
   "maxReadyBatches": 2,
-  "batches": []
+  "batches": [
+    {
+      "batchId": "wgsl_pointer_and_test_isolation",
+      "state": "active",
+      "objective": "Preserve WGSL pointer identity through frontend, IR, and target emission, and make the combined ReleaseFast test suites independent.",
+      "rationale": "The retained named pointer fixture failed with InvalidIr and backend policy tests used shared temporary filenames.",
+      "scopes": [
+        {"level": "cross_directory", "targets": ["src/compiler/wgsl/frontend", "src/compiler/wgsl/ir"]},
+        {"level": "cross_directory", "targets": ["src/compiler/wgsl/emit/spirv", "src/compiler/wgsl/ir"]},
+        {"level": "file", "targets": ["tests/backend/backend_runtime_config_policy_test.zig"]}
+      ],
+      "findingReviewIds": ["spirv_ownership_function_20260928"],
+      "nextAction": "Verify named and direct pointers, mutation, members, captured indices, branches, prohibited arguments, SPIR-V validity, physical output, and overlapping ReleaseFast suite runs.",
+      "acceptance": ["The retained alias and direct form produce the independent expected output through the ordinary package path.", "Pointer regressions and combined ReleaseFast test and test-full suites pass with overlapping invocations."],
+      "stopCondition": "Stop this batch when pointer cases and test isolation pass; leave unrelated emitter cache ownership unchanged.",
+      "requiredEnvironment": ["Pinned Zig toolchain", "spirv-val", "Physical Vulkan provider for output comparison"]
+    },
+    {
+      "batchId": "public_shader_and_application",
+      "state": "ready",
+      "objective": "Close the public shader-semantics render failure and compare an unchanged application with Dawn.",
+      "rationale": "Prior compute passes did not establish render correctness or an ordinary material advantage.",
+      "scopes": [
+        {"level": "cross_directory", "targets": ["src/backend/vulkan", "src/native/vulkan"]},
+        {"level": "file", "targets": ["src/backend/vulkan/vk_draw_recording.zig"]}
+      ],
+      "findingReviewIds": ["shader_semantics_runtime_20260919", "shader_semantics_spirv_20260919"],
+      "nextAction": "Retain a current package render result, then run one unchanged application against Doe and Dawn and choose optimization from measured costs.",
+      "acceptance": ["The public shader-semantics suite passes through package, native, and backend layers.", "The application comparison records correctness, provider identity, full user-visible latency, and resource cost for both runtimes."],
+      "stopCondition": "Stop at the application comparison and its bounded optimization choice; keep ONNX Runtime substitution a separate integration investigation.",
+      "requiredEnvironment": ["Current Doe package and native library", "Physical AMD Vulkan provider", "Pinned Dawn control and unchanged application"]
+    }
+  ]
 }

@@ -342,6 +342,8 @@ pub fn FunctionState(comptime EmitterT: type) type {
                     else => try self.emitter.builder.const_f32_bits(@bitCast(@as(f32, @floatCast(value)))),
                 },
                 .param_ref, .local_ref => return error.InvalidIr,
+                .address_of => |inner| try self.emit_ref_expr(inner),
+                .deref => return error.InvalidIr,
                 .global_ref => |index| blk: {
                     const constant_id = self.emitter.global_constant_ids[index];
                     if (constant_id != 0) break :blk constant_id;
@@ -406,7 +408,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
                         try indices.append(self.emitter.alloc, try self.emit_value_expr(idx.index));
                         current = idx.base;
                     },
-                    .param_ref, .local_ref, .global_ref => break,
+                    .param_ref, .local_ref, .global_ref, .deref => break,
                     else => return error.InvalidIr,
                 }
             }
@@ -414,6 +416,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
             const root_id: u32 = switch (root_node.data) {
                 .param_ref => |index| self.param_ptr_ids[index],
                 .local_ref => |index| self.local_ptr_ids[index],
+                .deref => |pointer| try self.emit_value_expr(pointer),
                 .global_ref => |index| blk: {
                     if (self.emitter.global_buffer_wrapped[index]) {
                         try indices.append(self.emitter.alloc, try self.emitter.builder.const_u32(0));
@@ -458,6 +461,9 @@ pub fn FunctionState(comptime EmitterT: type) type {
             }
             if (ref_expr.data == .param_ref) {
                 const index = ref_expr.data.param_ref;
+                if (self.emitter.module.types.get(self.function.params.items[index].ty) == .ref) {
+                    return self.param_ptr_ids[index];
+                }
                 const value_id = self.param_value_ids[index];
                 if (value_id != 0) return value_id;
             }
@@ -945,6 +951,10 @@ pub fn FunctionState(comptime EmitterT: type) type {
                     else => spirv.StorageClass.Function,
                 },
                 .local_ref => spirv.StorageClass.Function,
+                .deref => |pointer| switch (self.emitter.module.types.get(self.function.exprs.items[pointer].ty)) {
+                    .ref => |ref_ty| emit_spirv_shared.addr_space_to_storage_class(ref_ty.addr_space),
+                    else => error.InvalidIr,
+                },
                 .global_ref => |index| try self.emitter.global_storage_class(self.emitter.module.globals.items[index]),
                 .member => |member| try self.ref_storage_class(member.base),
                 .index => |index| try self.ref_storage_class(index.base),

@@ -362,8 +362,8 @@ const FunctionBuilder = struct {
             .ident_expr => try self.lower_ident(node_idx),
             .unary_expr => blk: {
                 const op_tag = self.tree.tokens.items[node.main_token].tag;
-                if (op_tag == .@"&") break :blk try self.lower_address_of(node.data.lhs);
-                if (op_tag == .@"*") return try self.lower_value_expr(node.data.lhs);
+                if (op_tag == .@"&") break :blk ir.Expr{ .address_of = try self.lower_ref_expr(node.data.lhs) };
+                if (op_tag == .@"*") break :blk ir.Expr{ .deref = try self.lower_value_expr(node.data.lhs) };
                 break :blk ir.Expr{ .unary = .{
                     .op = map_unary_op(op_tag),
                     .operand = try self.lower_value_expr(node.data.lhs),
@@ -398,23 +398,6 @@ const FunctionBuilder = struct {
             .category = category,
             .data = expr,
         });
-    }
-
-    fn lower_address_of(self: *FunctionBuilder, node_idx: u32) !ir.Expr {
-        const ref_id = try self.lower_ref_expr(node_idx);
-        const ref_expr = self.function.exprs.items[ref_id];
-        return switch (ref_expr.data) {
-            .param_ref => |index| .{ .param_ref = index },
-            .local_ref => |index| .{ .local_ref = index },
-            .global_ref => |index| .{ .global_ref = index },
-            .member => |member| .{ .member = .{
-                .base = member.base,
-                .field_name = try ir.dup_string(self.allocator, member.field_name),
-                .field_index = member.field_index,
-            } },
-            .index => |index| .{ .index = index },
-            else => error.InvalidIr,
-        };
     }
 
     fn lower_ident(self: *FunctionBuilder, node_idx: u32) !ir.Expr {
@@ -455,13 +438,7 @@ const FunctionBuilder = struct {
                 };
                 try args.append(self.allocator, try self.lower_ref_expr(ref_node));
             } else if (param_is_ref) {
-                // Pointer params: unwrap & and pass the ref directly.
-                const ref_node = blk: {
-                    const an = self.tree.nodes.items[arg_node];
-                    if (an.tag == .unary_expr and self.tree.tokens.items[an.main_token].tag == .@"&") break :blk an.data.lhs;
-                    break :blk arg_node;
-                };
-                try args.append(self.allocator, try self.lower_ref_expr(ref_node));
+                try args.append(self.allocator, try self.lower_value_expr(arg_node));
             } else {
                 try args.append(self.allocator, try self.lower_value_expr(arg_node));
             }
@@ -583,22 +560,14 @@ const FunctionBuilder = struct {
     fn lower_value_expr(self: *FunctionBuilder, node_idx: u32) !ir.ExprId {
         const expr_id = try self.lower_expr(node_idx);
         if (self.function.exprs.items[expr_id].category == .value) return expr_id;
-        const value_ty = switch (self.semantic.types.get(self.function.exprs.items[expr_id].ty)) {
-            .ref => |ref_ty| ref_ty.elem,
-            else => self.function.exprs.items[expr_id].ty,
-        };
         return try self.function.append_expr(self.allocator, .{
-            .ty = value_ty,
+            .ty = self.function.exprs.items[expr_id].ty,
             .category = .value,
             .data = .{ .load = expr_id },
         });
     }
 
     fn lower_ref_expr(self: *FunctionBuilder, node_idx: u32) !ir.ExprId {
-        const node = self.tree.nodes.items[node_idx];
-        if (node.tag == .unary_expr and self.tree.tokens.items[node.main_token].tag == .@"*") {
-            return try self.lower_ref_expr(node.data.lhs);
-        }
         const expr_id = try self.lower_expr(node_idx);
         if (self.function.exprs.items[expr_id].category != .ref) return error.InvalidIr;
         return expr_id;

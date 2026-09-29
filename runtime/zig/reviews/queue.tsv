@@ -289,7 +289,7 @@ file	src/compiler/wgsl/emit/msl/emit_msl_workgroup_zero.zig	pending			Read and r
 file	src/compiler/wgsl/emit/operator_text.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv.zig	stale	shader_semantics_spirv_20260919_evidence		Review all type lowering and decoration identities, allocation-failure cleanup and entrypoint emission; this focused storage-block repair does not complete the emitter review.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig	pending			Read and review the complete scope.
-file	src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig	stale	spirv_ownership_function_20260928		Trace named pointer-alias lowering from validated IR to emit_ref_expr before selecting a separate compatibility repair.
+file	src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig	in_progress	spirv_pointer_alias_20260928		Review remaining function-emitter responsibilities separately; retain pointer regressions through all target emitters.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig	stale	spirv_ownership_helpers_20260928		Review scalar conversion consumers independently of the completed cache ownership correction.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_matrix.zig	pending			Read and review the complete scope.
 file	src/compiler/wgsl/emit/spirv/emit_spirv_shared.zig	pending			Read and review the complete scope.

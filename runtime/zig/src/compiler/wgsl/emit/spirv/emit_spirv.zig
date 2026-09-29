@@ -299,6 +299,10 @@ pub const Emitter = struct {
         }
 
         for (function.locals.items, 0..) |local, local_index| {
+            // WGSL pointer aliases are immutable values. Their initializer
+            // already produces a pointer; a Function variable here would be
+            // a pointer to a pointer, which logical SPIR-V cannot represent.
+            if (self.module.types.get(local.ty) == .ref) continue;
             if (state.is_ssa_promotable_local(@intCast(local_index))) continue;
             const ptr_type = try self.builder.type_pointer(spirv.StorageClass.Function, try self.lower_type(local.ty));
             const ptr_id = try self.builder.variable_function(ptr_type);
