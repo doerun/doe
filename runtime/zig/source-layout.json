@@ -1228,15 +1228,15 @@
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
-        "moduleSha256": "70629b153d72307e7056c25b924d11675b5f853467072bf129c389a18be53b8f",
-        "reviewer": "codex-surface-dependencies/2026-09-28",
-        "reason": "Keep: composition owns completion before destruction and supplies bounded surface registry and submission operations to the Vulkan surface owner."
+        "moduleSha256": "babea4dcb61bdb008b04db45b455740f331a30c75c9df9fc8d2c2c51fd518735",
+        "reviewer": "codex-vulkan-selection/2026-10-02",
+        "reason": "Keep: per-device runtime borrows the adapter-selected Vulkan instance while retaining its own VkDevice and queue; runtime teardown never destroys the borrowed instance."
       },
       "src/backend/vulkan/vk_adapter_probe.zig": {
         "decision": "Keep",
-        "moduleSha256": "6ff6623f652e3ae7ea957e1c9ec1f1430af3b1cd4a82a17f43a6490e113c11d1",
-        "reason": "Keep: adapter identity-bound probing owns pre-device surface inspection and temporary instance/surface cleanup.",
-        "reviewer": "codex-surface-admission/2026-09-28"
+        "moduleSha256": "3a3fdddb1f229cca02cdb44a9c91afdb3c9545aab403c7e4ea4929ea4983c2a8",
+        "reason": "Keep: adapter probing owns selected instance, physical device and compact queue metadata through adapter lifetime, with identity-bound capabilities and surface inspection.",
+        "reviewer": "codex-vulkan-selection/2026-10-02"
       },
       "src/backend/vulkan/vk_async_dispatch.zig": {
         "decision": "Keep",
@@ -1276,9 +1276,9 @@
       },
       "src/backend/vulkan/vk_device.zig": {
         "decision": "Keep",
-        "moduleSha256": "de745ddabb7b39860f5e166e46c3cda8398b31f65b62b778d542837e0493e8b6",
-        "reviewer": "codex-surface-admission/2026-09-28",
-        "reason": "Keep: device bootstrap owns extension and feature admission shared with adapter surface probes."
+        "moduleSha256": "f1f6003fa65bd85b5d7a2ba08f4d9d508ba45ea9b4131ab0fa1d1ab9c31f6e33",
+        "reviewer": "codex-vulkan-selection/2026-10-02",
+        "reason": "Keep: device bootstrap reuses the adapter-owned selected instance and queue family while retaining extension and feature admission."
       },
       "src/backend/vulkan/vk_device_caps.zig": {
         "decision": "Keep",
@@ -3556,9 +3556,9 @@
       },
       "src/native/lifecycle/doe_instance_device_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "1fb9e3ad5a1aabe320157391c4b2b731c6905ebf05bc731d87c5913186d02bcf",
-        "reason": "Keep: preserves existing native ownership; build-selected diagnostics observe actual command storage and export device-scoped metadata after cleanup.",
-        "reviewer": "codex-surface-admission/2026-09-28"
+        "moduleSha256": "2db055700e10854c994011b02d30c8a7b07b3493c7e0b5c89215027eba2f33b6",
+        "reason": "Keep: native adapter owns selected Vulkan state; each device retains its adapter so the shared instance survives device teardown and external adapter release.",
+        "reviewer": "codex-vulkan-selection/2026-10-02"
       },
       "src/native/mod.zig": {
         "decision": "Keep",
@@ -3754,8 +3754,8 @@
       },
       "src/native/support/doe_native_object_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "bcfa0cb72b63b77ccbf9b70d94620f3e1d8102386fe6c6cc95761edefe7c642a",
-        "reason": "Keep: native object types declare shader-owned Vulkan entry-point metadata alongside its translation payload.",
+        "moduleSha256": "2268f760877848562f49df13f1ae52615adfeb4e1cd8454f4e406d3401e6cb2e",
+        "reason": "Keep: native adapter type carries the opaque, adapter-owned Vulkan selection as well as shader-owned entry-point metadata.",
         "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
       "src/native/support/doe_native_runtime_helpers.zig": {

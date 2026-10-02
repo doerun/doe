@@ -1,0 +1,51 @@
+{
+  "artifactKind": "umap-public-api-preparation-diagnostic",
+  "providerModule": "/home/x/deco/doe/packages/doe-gpu/src/index.js",
+  "importNs": 9151523,
+  "methods": {
+    "provider.create": {
+      "calls": 2,
+      "elapsedNs": 2215813
+    },
+    "gpu.requestAdapter": {
+      "calls": 2,
+      "elapsedNs": 47040332
+    },
+    "adapter.requestDevice": {
+      "calls": 1,
+      "elapsedNs": 1237621
+    },
+    "device.createShaderModule": {
+      "calls": 8,
+      "elapsedNs": 390124
+    },
+    "device.createComputePipeline": {
+      "calls": 8,
+      "elapsedNs": 3431612
+    },
+    "device.createBuffer": {
+      "calls": 40,
+      "elapsedNs": 1513840
+    },
+    "device.createBindGroup": {
+      "calls": 8,
+      "elapsedNs": 473282
+    },
+    "queue.writeBuffer": {
+      "calls": 4000,
+      "elapsedNs": 3042106
+    },
+    "device.createCommandEncoder": {
+      "calls": 2004,
+      "elapsedNs": 596499
+    },
+    "queue.submit": {
+      "calls": 2004,
+      "elapsedNs": 44917599
+    },
+    "queue.onSubmittedWorkDone": {
+      "calls": 200,
+      "elapsedNs": 5254667
+    }
+  }
+}

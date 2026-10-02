@@ -3,6 +3,16 @@
 This is the live status front door for the non-TSIR WGSL compiler and WebGPU
 runtime path. Artifacts and executable tests own pass/fail state.
 
+## Vulkan preparation
+
+The [entry-point reflection investigation](../../reports/benchmarks/amd-vulkan/20261002-preparation/README.md)
+retains compact binding metadata with owned translation results, and derives
+specialized bindings from specialized IR. The [adapter selection follow-up](../../reports/benchmarks/amd-vulkan/20261002-device-selection/README.md)
+removes duplicate Vulkan instance and physical-device selection from device
+request. The unchanged application comparison supports a local process-median
+preparation gain; complete WebGPU conformance, tail improvement, compiler
+allocation counts, and generated-SPIR-V execution improvement remain open.
+
 ## Function emission and ordinary Vulkan queries
 
 [Typed render recording](../../reports/maintenance/20260928-render-recording/README.md)

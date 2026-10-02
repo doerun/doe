@@ -265,10 +265,11 @@ fn create_adapter_for_instance(inst: ?*anyopaque) CreateAdapterError!*DoeAdapter
                 const selected_policy = selected_vulkan_policy() catch {
                     return error.VkAdapterProbeFailed;
                 };
-                const adapter_probe = vk_adapter_probe.probe_selected_adapter(
+                var adapter_probe = vk_adapter_probe.probe_selected_adapter(
                     alloc,
                     selected_policy.queue_family_policy,
                 ) catch return error.VkAdapterProbeFailed;
+                errdefer adapter_probe.deinit(alloc);
                 const identity = adapter_probe.identity;
                 const adapter = make(DoeAdapter) orelse return error.AdapterAllocationFailed;
                 if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
@@ -276,6 +277,7 @@ fn create_adapter_for_instance(inst: ?*anyopaque) CreateAdapterError!*DoeAdapter
                     .backend = .vulkan,
                     .instance = retained_instance,
                     .vulkan_queue_family_policy = selected_policy.queue_family_policy,
+                    .vulkan_selection = @ptrCast(adapter_probe.selection.?),
                     .vendor_id = identity.vendor_id,
                     .device_id = identity.device_id,
                     .driver_version = identity.driver_version,
@@ -284,6 +286,7 @@ fn create_adapter_for_instance(inst: ?*anyopaque) CreateAdapterError!*DoeAdapter
                 };
                 vulkan_feature_cache.set_adapter(toOpaque(adapter), adapter_probe.feature_caps);
                 vulkan_feature_cache.set_adapter_device_caps(toOpaque(adapter), adapter_probe.device_caps);
+                adapter_probe.selection = null;
                 return adapter;
             }
         },
@@ -343,12 +346,17 @@ fn create_device_for_adapter(
                 alloc.destroy(dev);
                 return error.DeviceAllocationFailed;
             };
-            rt.* = NativeVulkanRuntime.init_with_backend_policy(
+            const selection: *const vk_adapter_probe.SelectedAdapter = @ptrCast(@alignCast(adapter.vulkan_selection orelse {
+                alloc.destroy(rt);
+                alloc.destroy(dev);
+                return error.VkRuntimeInitFailed;
+            }));
+            rt.* = NativeVulkanRuntime.init_from_adapter_selection(
                 alloc,
-                null,
                 adapter.vulkan_queue_family_policy,
                 selected_policy.deferred_submission_sync_policy,
                 selected_policy.vulkan_subgroup_size_policy,
+                selection,
             ) catch {
                 alloc.destroy(rt);
                 alloc.destroy(dev);
@@ -562,7 +570,10 @@ pub export fn doeNativeAdapterRelease(raw: ?*anyopaque) callconv(.c) void {
         if (!native_helpers.object_should_destroy(a)) return;
         label_store.remove(raw);
         if (comptime has_vulkan) {
-            if (a.backend == .vulkan) vulkan_feature_cache.remove_adapter(raw);
+            if (a.backend == .vulkan) {
+                vulkan_feature_cache.remove_adapter(raw);
+                if (a.vulkan_selection) |selection| vk_adapter_probe.release_selection(alloc, selection);
+            }
         }
         if (a.backend == .d3d12) d3d12_device_caps.remove_adapter_caps(raw);
         if (a.backend == .metal) if (a.mtl_device) |device| metal_bridge_release(device);

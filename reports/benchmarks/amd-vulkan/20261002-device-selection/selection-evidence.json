@@ -1,0 +1,353 @@
+{
+  "artifactKind": "vulkan-adapter-selection-preparation-diagnostic",
+  "baselineCommit": "31e1d5163",
+  "cohorts": {
+    "final": {
+      "compressedRawSha256": "116a095cf0da06080fc38fb89e9710808d18c1b17d0b7ea849b5987901a37315",
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 623.109269,
+            "p95": 645.690223,
+            "p99": 645.690223
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 296628224,
+          "selectedOperationLatencyMs": {
+            "p50": 15.591604999999959,
+            "p95": 19.772365999999977,
+            "p99": 20.705963999999994
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 605.41796,
+            "p95": 639.797517,
+            "p99": 639.797517
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 303894528,
+          "selectedOperationLatencyMs": {
+            "p50": 15.031319999999994,
+            "p95": 24.39552999999995,
+            "p99": 24.61421200000001
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      },
+      "rawSha256": "a51f1ddadd741410af853845a02c4288d73ac99a48733601c108b0d1b2c28d1f",
+      "summarySha256": "c476c0410506206905dbd6d0ef3d901e5ebaea8e454393d3ea1b8b58ad9a87e0"
+    },
+    "interleave-1-old": {
+      "compressedRawSha256": "df9e18143840536b14edf6451abffb5171330f9b5571bf3f5f3dccb3b43ea728",
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 636.152666,
+            "p95": 650.431321,
+            "p99": 650.431321
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 297508864,
+          "selectedOperationLatencyMs": {
+            "p50": 15.041409999999985,
+            "p95": 16.817363999999998,
+            "p99": 17.78706900000003
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 618.001791,
+            "p95": 646.534533,
+            "p99": 646.534533
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 303378432,
+          "selectedOperationLatencyMs": {
+            "p50": 15.731368999999972,
+            "p95": 24.56499100000002,
+            "p99": 25.286339999999996
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      },
+      "rawSha256": "e5151a799cdc4dacb18af5e6f8722c642576b1f9fadec62b802133c07d54b0a4",
+      "summarySha256": "c446a7b477bceb8ac24461cdda0d997b9202ce2fd32c2e4000eef2e21832deb6"
+    },
+    "interleave-2-new": {
+      "compressedRawSha256": "18d6b8ded6af297e4b168dbdd51257b35f96ecbefd6db149232b0a7d2d77ecfa",
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 620.775227,
+            "p95": 674.62703,
+            "p99": 674.62703
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 297832448,
+          "selectedOperationLatencyMs": {
+            "p50": 15.785490999999979,
+            "p95": 19.150135999999975,
+            "p99": 20.802626999999973
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 623.175045,
+            "p95": 643.677156,
+            "p99": 643.677156
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 303554560,
+          "selectedOperationLatencyMs": {
+            "p50": 16.205933000000016,
+            "p95": 24.55011399999995,
+            "p99": 25.787042000000042
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      },
+      "rawSha256": "09e0f621c3c874b8c4e8a1455dcd65ca74f1827ef2470dc172c8a5cc459fe449",
+      "summarySha256": "2ae8d83332efa80cda8a84832894dcb469a6b8453f663467f5358c3685bce9ef"
+    },
+    "interleave-3-new": {
+      "compressedRawSha256": "498bf08f730977f2089d71871b113122ec50f2464dd1f217a199329fb5694387",
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 623.080671,
+            "p95": 644.41472,
+            "p99": 644.41472
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 297619456,
+          "selectedOperationLatencyMs": {
+            "p50": 15.209255999999982,
+            "p95": 17.190086000000008,
+            "p99": 18.113124000000028
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 632.583181,
+            "p95": 661.313116,
+            "p99": 661.313116
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 303980544,
+          "selectedOperationLatencyMs": {
+            "p50": 17.23720400000002,
+            "p95": 24.835591000000022,
+            "p99": 26.441235000000006
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      },
+      "rawSha256": "17a8f16ecfa085657e40128db7fcaa4fd6d8a303a7643bf27d824f86aa3493b5",
+      "summarySha256": "087a37d587d20597817a7e699e95024e95b173e363696d833975112f28f9a0a7"
+    },
+    "interleave-4-old": {
+      "compressedRawSha256": "816d648b7a02ffb8f70087dc55b4c5aa5582c5081cc5d61400301bc986cb707c",
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 647.790589,
+            "p95": 697.276252,
+            "p99": 697.276252
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 297099264,
+          "selectedOperationLatencyMs": {
+            "p50": 15.234874999999988,
+            "p95": 18.303120999999976,
+            "p99": 18.868315999999993
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 627.995498,
+            "p95": 655.4342,
+            "p99": 655.4342
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 303833088,
+          "selectedOperationLatencyMs": {
+            "p50": 15.355793000000006,
+            "p95": 23.96476100000001,
+            "p99": 24.877409999999998
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      },
+      "rawSha256": "c28ab74c0d5cba48e6a91eb10135b8ce915fb373929f03afe8a06fc7d966e865",
+      "summarySha256": "90e8143dd863c2e694bcfc2c33c99447de4da6bf31ca639711b324539e6def71"
+    },
+    "paired-old": {
+      "compressedRawSha256": "3bb5da1610ef7c591e993688db68a25d4508ac54ddfca64dec5f5635baa32cfc",
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 637.41008,
+            "p95": 656.886927,
+            "p99": 656.886927
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 297603072,
+          "selectedOperationLatencyMs": {
+            "p50": 15.13113599999997,
+            "p95": 17.440102999999965,
+            "p99": 17.664034000000015
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 620.18394,
+            "p95": 649.400641,
+            "p99": 649.400641
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 303661056,
+          "selectedOperationLatencyMs": {
+            "p50": 17.037694999999985,
+            "p95": 24.544926999999973,
+            "p99": 29.262317999999993
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      },
+      "rawSha256": "ae0bf9e4289f74a9d4b9439a1a9c70b0bd8eb9351676f1f5f8ff620ee865015b",
+      "summarySha256": "47df8ba7ed2c379ccfd3a4100d7c0966ab1def3c52f1a545b246cbe4c260fd7f"
+    }
+  },
+  "finalCohort": "final",
+  "hardware": "AMD Radeon 8060S Graphics, RADV",
+  "interleavedComparison": {
+    "claimScope": "diagnostic median improvement on this host and workload; p95 and material advantage unestablished",
+    "cohorts": [
+      {
+        "cleanProcessRuns": 10,
+        "cohort": "interleave-1-old",
+        "doeMinusDawnProcessP50Ms": 18.150874999999928,
+        "variant": "old"
+      },
+      {
+        "cleanProcessRuns": 10,
+        "cohort": "interleave-2-new",
+        "doeMinusDawnProcessP50Ms": -2.399817999999982,
+        "variant": "new"
+      },
+      {
+        "cleanProcessRuns": 10,
+        "cohort": "interleave-3-new",
+        "doeMinusDawnProcessP50Ms": -9.502509999999916,
+        "variant": "new"
+      },
+      {
+        "cleanProcessRuns": 10,
+        "cohort": "interleave-4-old",
+        "doeMinusDawnProcessP50Ms": 19.795090999999957,
+        "variant": "old"
+      }
+    ],
+    "meanNewGapMs": -5.951163999999949,
+    "meanOldGapMs": 18.972982999999942,
+    "method": "unchanged UMAP governed runner, ten fresh processes per lane per cohort, pinned Dawn W0 control in each cohort; process p50 gap calculated as Doe D0 minus Dawn W0",
+    "oldMinusNewGapMs": 24.92414699999989,
+    "order": [
+      "old",
+      "new",
+      "new",
+      "old"
+    ]
+  },
+  "intermediatePublicPhaseSha256": "7dd47d8b889d88bd21391ad1961cec61053eab0bf72a7f05f18ce23f10093596",
+  "librarySha256": {
+    "compact": "c513a335dcfe78901578bba6e559c407744417c5379a28e094643eae4b629393",
+    "old": "641c33ebb4cf510d8cc77c2687b819955f4426ec891ea82f3475db843eb29d9b"
+  },
+  "nativeProfileSha256": "54befc331c587a9dc95e52ceedad211ae3efe7d6ef2df69c55d9cb820e605c3f",
+  "physicalCheckSha256": {
+    "native-lifetime.json": "ccf894ea1da37423e83fbf73c64cdecd3e035eab54b6f8e4a4875e7a853f08c7",
+    "physical-shader.json": "fb2579f84241b9b34b5c05f256b2ced792492c4c70500a917c9a83218479a99b",
+    "shader-semantics.log": "4d8a1cf7fb4e4df26f747bcb62494f1ed0c5e8c6faa4f63de15d8b3b764eab73"
+  },
+  "schemaVersion": 1,
+  "scope": "physical local Vulkan; diagnostic cohorts with populated shared shader cache",
+  "sourceSha256": {
+    "bench/external-projects/umap-gpu/run-sgd-benchmark.mjs": "62d21914ad1495ee50d33bcc0a829be02184a4acdaca2d948089d8cdc0f28798",
+    "bench/external-projects/umap-gpu/sgd-benchmark.workload.test.ts": "1f390ee77b6d6a5332d42c4e29ad250f0f9216edaf0634c6bf18b9ac23034e69",
+    "bench/vulkan/preparation-physical.mjs": "3e81c49634c80f4e5a358f1821d833d394905a49e38de90e0cc3eed47193a4a1",
+    "bench/vulkan/selection-lifetime.py": "1b04ecbf20e5140a703d6cea2f899ae071d83af3d7e874cb9e01eef1677dd1cb",
+    "runtime/zig/src/backend/vulkan/native_runtime.zig": "babea4dcb61bdb008b04db45b455740f331a30c75c9df9fc8d2c2c51fd518735",
+    "runtime/zig/src/backend/vulkan/vk_adapter_probe.zig": "3a3fdddb1f229cca02cdb44a9c91afdb3c9545aab403c7e4ea4929ea4983c2a8",
+    "runtime/zig/src/backend/vulkan/vk_device.zig": "f1f6003fa65bd85b5d7a2ba08f4d9d508ba45ea9b4131ab0fa1d1ab9c31f6e33",
+    "runtime/zig/src/native/lifecycle/doe_instance_device_native.zig": "2db055700e10854c994011b02d30c8a7b07b3493c7e0b5c89215027eba2f33b6",
+    "runtime/zig/src/native/support/doe_native_object_types.zig": "2268f760877848562f49df13f1ae52615adfeb4e1cd8454f4e406d3401e6cb2e"
+  }
+}

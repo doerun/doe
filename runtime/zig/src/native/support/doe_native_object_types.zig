@@ -50,6 +50,7 @@ pub const DoeAdapter = struct {
     mtl_device: ?*anyopaque = null,
     backend: backend_contract.NativeBackendKind = .metal,
     vulkan_queue_family_policy: backend_contract.QueueFamilyPolicy = .prefer_graphics_compute,
+    vulkan_selection: ?*anyopaque = null,
     vendor_id: u32 = 0,
     device_id: u32 = 0,
     driver_version: u32 = 0,

@@ -37,8 +37,13 @@ successful execution. Injection is distinct from physical hardware loss.
   The same report records two unchanged UMAP comparisons with pinned Dawn.
   Selected-operation latency changed rank between runs; Doe's clean-process
   latency and peak process-tree RSS were higher in both. No material application
-  advantage is established. Next optimization selection is clean-process startup
-  and memory cost, with ONNX Runtime substitution kept as its independent
+  advantage is established. The [Vulkan preparation investigation](../../reports/benchmarks/amd-vulkan/20261002-preparation/README.md)
+  corrected asymmetric provider loading and retained entry-point reflection.
+  The [adapter selection follow-up](../../reports/benchmarks/amd-vulkan/20261002-device-selection/README.md)
+  removes repeated instance creation and physical-device selection on device
+  request; alternating unchanged UMAP cohorts support a scoped process-median
+  gain while tail and material advantage remain unestablished. Queue submission remains a measured host
+  cost to attribute. ONNX Runtime substitution remains an independent
   integration investigation.
 - Native coverage requires retained executable hashes, successful physical work,
   backend/driver identity, and replay. Sample-based rows remain diagnostic until

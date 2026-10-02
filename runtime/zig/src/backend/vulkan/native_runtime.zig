@@ -147,6 +147,7 @@ pub const NativeVulkanRuntime = struct {
     samplers: std.AutoHashMapUnmanaged(u64, descriptor_identity.Sampler) = .{},
 
     has_instance: bool = false,
+    owns_instance: bool = true,
     has_device: bool = false,
     has_command_pool: bool = false,
     has_primary_command_buffer: bool = false,
@@ -202,6 +203,26 @@ pub const NativeVulkanRuntime = struct {
             deferred_submission_sync_policy,
             vulkan_subgroup_size_policy,
         );
+    }
+
+    pub fn init_from_adapter_selection(
+        allocator: std.mem.Allocator,
+        queue_family_policy: webgpu.QueueFamilyPolicy,
+        deferred_submission_sync_policy: webgpu.DeferredSubmissionSyncPolicy,
+        vulkan_subgroup_size_policy: backend_policy.VulkanSubgroupSizePolicy,
+        selection: anytype,
+    ) !NativeVulkanRuntime {
+        var self = NativeVulkanRuntime{
+            .allocator = allocator,
+            .kernel_root = null,
+            .pipeline_cache = vk_pipeline_cache_persistent.VulkanPipelineCache.init(allocator, .{}),
+            .queue_family_policy = queue_family_policy,
+            .deferred_submission_sync_policy = deferred_submission_sync_policy,
+            .vulkan_subgroup_size_policy = vulkan_subgroup_size_policy,
+        };
+        errdefer self.deinit();
+        try vk_device.bootstrap_from_selection(&self, selection);
+        return self;
     }
 
     pub fn init_with_backend_policy_and_cache(
@@ -299,7 +320,7 @@ pub const NativeVulkanRuntime = struct {
             self.queue = null;
         }
         if (self.has_instance) {
-            c.vkDestroyInstance(self.instance, null);
+            if (self.owns_instance) c.vkDestroyInstance(self.instance, null);
             self.has_instance = false;
             self.instance = null;
             self.physical_device = null;

@@ -6,15 +6,51 @@ const std = @import("std");
 const backend_contract = @import("../../contracts/backend.zig");
 const c = @import("vk_constants.zig");
 const native_runtime = @import("native_runtime.zig");
+const webgpu = @import("../../contracts/runtime_types.zig");
 const vk_device = @import("vk_device.zig");
 const vk_device_caps = @import("vk_device_caps.zig");
 const vk_feature_caps = @import("vk_feature_caps.zig");
+
+pub const SelectedAdapter = struct {
+    instance: c.VkInstance,
+    physical_device: c.VkPhysicalDevice,
+    queue_family_policy: webgpu.QueueFamilyPolicy,
+    has_surface_maintenance_instance: bool,
+    adapter_ordinal_value: ?u32,
+    queue_family_index: u32,
+    queue_family_index_value_cache: ?u32,
+    queue_family_kind_value_cache: ?webgpu.QueueFamilyKind,
+    queue_family_queue_count_value_cache: ?u32,
+    queue_family_timestamp_valid_bits_value_cache: ?u32,
+    queue_family_supports_graphics_value_cache: ?bool,
+    present_capable_value: ?bool,
+    timestamp_query_supported_value: bool,
+    timestamp_period: f32,
+
+    pub fn deinit(self: *SelectedAdapter, allocator: std.mem.Allocator) void {
+        c.vkDestroyInstance(self.instance, null);
+        allocator.destroy(self);
+    }
+};
 
 pub const AdapterProbe = struct {
     identity: native_runtime.AdapterIdentity,
     feature_caps: vk_feature_caps.VulkanFeatureCaps,
     device_caps: vk_device_caps.VulkanDeviceCaps,
+    selection: ?*SelectedAdapter,
+
+    pub fn deinit(self: *AdapterProbe, allocator: std.mem.Allocator) void {
+        if (self.selection) |selection| {
+            selection.deinit(allocator);
+            self.selection = null;
+        }
+    }
 };
+
+pub fn release_selection(allocator: std.mem.Allocator, raw: *anyopaque) void {
+    const selection: *SelectedAdapter = @ptrCast(@alignCast(raw));
+    selection.deinit(allocator);
+}
 
 pub fn probe_selected_adapter(
     allocator: std.mem.Allocator,
@@ -26,18 +62,36 @@ pub fn probe_selected_adapter(
         .queue_family_policy = queue_family_policy,
     };
     try vk_device.create_instance(&probe);
-    defer vk_device.destroy_instance_only(&probe);
+    errdefer vk_device.destroy_instance_only(&probe);
     try vk_device.select_physical_device(&probe);
 
     const identity = query_identity(probe.physical_device);
     const timestamp_valid_bits = probe.queue_family_timestamp_valid_bits_value_cache orelse 0;
+    const feature_caps = vk_feature_caps.query(probe.physical_device).caps;
+    const device_caps = vk_device_caps.query_device_caps(probe.physical_device, timestamp_valid_bits);
+    const selection = try allocator.create(SelectedAdapter);
+    selection.* = .{
+        .instance = probe.instance,
+        .physical_device = probe.physical_device,
+        .queue_family_policy = queue_family_policy,
+        .has_surface_maintenance_instance = probe.has_surface_maintenance_instance,
+        .adapter_ordinal_value = probe.adapter_ordinal_value,
+        .queue_family_index = probe.queue_family_index,
+        .queue_family_index_value_cache = probe.queue_family_index_value_cache,
+        .queue_family_kind_value_cache = probe.queue_family_kind_value_cache,
+        .queue_family_queue_count_value_cache = probe.queue_family_queue_count_value_cache,
+        .queue_family_timestamp_valid_bits_value_cache = probe.queue_family_timestamp_valid_bits_value_cache,
+        .queue_family_supports_graphics_value_cache = probe.queue_family_supports_graphics_value_cache,
+        .present_capable_value = probe.present_capable_value,
+        .timestamp_query_supported_value = probe.timestamp_query_supported_value,
+        .timestamp_period = probe.timestamp_period,
+    };
+    probe.has_instance = false;
     return .{
         .identity = identity,
-        .feature_caps = vk_feature_caps.query(probe.physical_device).caps,
-        .device_caps = vk_device_caps.query_device_caps(
-            probe.physical_device,
-            timestamp_valid_bits,
-        ),
+        .feature_caps = feature_caps,
+        .device_caps = device_caps,
+        .selection = selection,
     };
 }
 

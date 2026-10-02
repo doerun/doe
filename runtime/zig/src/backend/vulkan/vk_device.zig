@@ -39,6 +39,27 @@ pub fn bootstrap(self: anytype) !void {
     // or submits GPU work.
 }
 
+pub fn bootstrap_from_selection(self: anytype, selection: anytype) !void {
+    if (selection.instance == null or selection.physical_device == null) return error.InvalidArgument;
+    if (self.queue_family_policy != selection.queue_family_policy) return error.InvalidArgument;
+    self.instance = selection.instance;
+    self.has_instance = true;
+    self.owns_instance = false;
+    self.physical_device = selection.physical_device;
+    self.has_surface_maintenance_instance = selection.has_surface_maintenance_instance;
+    self.adapter_ordinal_value = selection.adapter_ordinal_value;
+    self.queue_family_index = selection.queue_family_index;
+    self.queue_family_index_value_cache = selection.queue_family_index_value_cache;
+    self.queue_family_kind_value_cache = selection.queue_family_kind_value_cache;
+    self.queue_family_queue_count_value_cache = selection.queue_family_queue_count_value_cache;
+    self.queue_family_timestamp_valid_bits_value_cache = selection.queue_family_timestamp_valid_bits_value_cache;
+    self.queue_family_supports_graphics_value_cache = selection.queue_family_supports_graphics_value_cache;
+    self.present_capable_value = selection.present_capable_value;
+    self.timestamp_query_supported_value = selection.timestamp_query_supported_value;
+    self.timestamp_period = selection.timestamp_period;
+    try create_device_and_queue(self);
+}
+
 pub fn create_instance(self: anytype) !void {
     const surface_exts = vulkan_surface.required_instance_extensions();
     var enabled_exts: [6][*:0]const u8 = undefined;

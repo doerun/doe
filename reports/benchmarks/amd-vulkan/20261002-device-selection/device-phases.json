@@ -1,0 +1,227 @@
+{
+  "artifactKind": "temporary-vulkan-device-phase-diagnostic",
+  "profileLibrarySha256": "417e93528a08413247858ca254f6dc650e35fca21cd85bedf72c6ceae88e8cfb",
+  "rows": [
+    {
+      "process": 1,
+      "phases": {
+        "adapter": {
+          "instance_ns": 15626416,
+          "select_ns": 11504234
+        },
+        "device": {
+          "instance_ns": 9069128,
+          "select_ns": 7811260,
+          "device_ns": 449456
+        }
+      },
+      "output": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ]
+    },
+    {
+      "process": 2,
+      "phases": {
+        "adapter": {
+          "instance_ns": 15198330,
+          "select_ns": 11271426
+        },
+        "device": {
+          "instance_ns": 9311494,
+          "select_ns": 6982239,
+          "device_ns": 530799
+        }
+      },
+      "output": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ]
+    },
+    {
+      "process": 3,
+      "phases": {
+        "adapter": {
+          "instance_ns": 14792897,
+          "select_ns": 11588211
+        },
+        "device": {
+          "instance_ns": 8553687,
+          "select_ns": 5666541,
+          "device_ns": 574061
+        }
+      },
+      "output": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ]
+    },
+    {
+      "process": 4,
+      "phases": {
+        "adapter": {
+          "instance_ns": 15114031,
+          "select_ns": 10543304
+        },
+        "device": {
+          "instance_ns": 9193773,
+          "select_ns": 5917052,
+          "device_ns": 509750
+        }
+      },
+      "output": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ]
+    },
+    {
+      "process": 5,
+      "phases": {
+        "adapter": {
+          "instance_ns": 15211314,
+          "select_ns": 11111694
+        },
+        "device": {
+          "instance_ns": 9444355,
+          "select_ns": 10689499,
+          "device_ns": 577858
+        }
+      },
+      "output": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ]
+    },
+    {
+      "process": 6,
+      "phases": {
+        "adapter": {
+          "instance_ns": 15535214,
+          "select_ns": 10312520
+        },
+        "device": {
+          "instance_ns": 9337133,
+          "select_ns": 5523712,
+          "device_ns": 596803
+        }
+      },
+      "output": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ]
+    },
+    {
+      "process": 7,
+      "phases": {
+        "adapter": {
+          "instance_ns": 15701277,
+          "select_ns": 10597235
+        },
+        "device": {
+          "instance_ns": 8999256,
+          "select_ns": 5373990,
+          "device_ns": 574201
+        }
+      },
+      "output": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ]
+    },
+    {
+      "process": 8,
+      "phases": {
+        "adapter": {
+          "instance_ns": 14979558,
+          "select_ns": 6658488
+        },
+        "device": {
+          "instance_ns": 9167122,
+          "select_ns": 4480608,
+          "device_ns": 531360
+        }
+      },
+      "output": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ]
+    },
+    {
+      "process": 9,
+      "phases": {
+        "adapter": {
+          "instance_ns": 15723049,
+          "select_ns": 11326779
+        },
+        "device": {
+          "instance_ns": 10146737,
+          "select_ns": 6898661,
+          "device_ns": 520400
+        }
+      },
+      "output": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ]
+    },
+    {
+      "process": 10,
+      "phases": {
+        "adapter": {
+          "instance_ns": 15362288,
+          "select_ns": 10039506
+        },
+        "device": {
+          "instance_ns": 9104234,
+          "select_ns": 5761019,
+          "device_ns": 528325
+        }
+      },
+      "output": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ]
+    }
+  ],
+  "medianMs": {
+    "adapter": {
+      "instance_ns": 15.286801,
+      "select_ns": 10.8544645
+    },
+    "device": {
+      "instance_ns": 9.1804475,
+      "select_ns": 5.8390355,
+      "device_ns": 0.5310795
+    }
+  }
+}

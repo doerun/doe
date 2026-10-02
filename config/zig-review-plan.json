@@ -6,15 +6,15 @@
     {
       "batchId": "vulkan_shader_pipeline_preparation",
       "state": "active",
-      "objective": "Resolve the remaining whole-process Vulkan preparation deficit after retaining source-bound entry-point reflection reuse.",
-      "rationale": "The pointer, test-isolation, and public-render batches passed in reports/maintenance/20260928-pointer-public. The 20261002 Vulkan preparation report shows a physical repeated-pipeline improvement from 59.83 to 40.10 ms. Correcting Vitest's asymmetric provider loading reduced the measured whole-process Doe/Dawn gap, but the unchanged UMAP candidate did not establish a complete-application gain. Vulkan device request and queue submission remain the larger public-call differences.",
+      "objective": "Resolve measured Vulkan device-request and queue-submission preparation costs after retaining source-bound entry-point reflection reuse.",
+      "rationale": "The pointer, test-isolation, and public-render batches passed in reports/maintenance/20260928-pointer-public. The 20261002 Vulkan preparation report retained entry-point reflection and corrected asymmetric UMAP provider loading. Native profiling located redundant instance creation and physical-device selection during device request. Adapter-owned reuse passes native lifetime and physical shader checks; alternating unchanged UMAP cohorts support a scoped process-median gain, while tails and material advantage remain unestablished.",
       "scopes": [
-        {"level": "cross_directory", "targets": ["runtime/zig/src/compiler/wgsl/pipeline", "runtime/zig/src/compiler/wgsl/runtime"]},
-        {"level": "cross_directory", "targets": ["runtime/zig/src/native/shader", "runtime/zig/src/native/vulkan"]},
-        {"level": "cross_directory", "targets": ["bench/external-projects/umap-gpu", "reports/benchmarks/amd-vulkan"]}
+        {"level": "within_directory", "targets": ["src/backend/vulkan"]},
+        {"level": "within_directory", "targets": ["src/native/lifecycle"]},
+        {"level": "within_directory", "targets": ["src/native/support"]}
       ],
       "findingReviewIds": ["spirv_ownership_function_20260928"],
-      "nextAction": "Attribute Vulkan device-request subphases, especially duplicate instance creation and physical-device selection after adapter probing. Preserve adapter/device identity and multiple-device lifetime while testing any reuse. Then inspect queue-submission costs, measure compiler allocations if compilation is selected, and repeat the uninstrumented application comparison.",
+      "nextAction": "Attribute the measured queue-submission host cost before changing it. Select a generated-SPIR-V execution candidate only from a current shader/ISA profile, and measure compiler allocations if another compiler change is selected. Preserve the negative standalone UMAP cohort alongside the favorable alternating cohorts.",
       "acceptance": [
         "Multiple pipelines and entry points, changed overrides, failures, cache hits and misses, and caller release preserve reflection, specialization, and diagnostic behavior; the 20261002 focused physical result is retained.",
         "Native phase and allocation measurements establish any next mechanism; an unchanged physical Vulkan application comparison records full latency, memory, correctness, and pinned Dawn control."
