@@ -4,35 +4,23 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "wgsl_pointer_and_test_isolation",
+      "batchId": "vulkan_shader_pipeline_preparation",
       "state": "active",
-      "objective": "Preserve WGSL pointer identity through frontend, IR, and target emission, and make the combined ReleaseFast test suites independent.",
-      "rationale": "The retained named pointer fixture failed with InvalidIr and backend policy tests used shared temporary filenames.",
+      "objective": "Resolve the remaining whole-process Vulkan preparation deficit after retaining source-bound entry-point reflection reuse.",
+      "rationale": "The pointer, test-isolation, and public-render batches passed in reports/maintenance/20260928-pointer-public. The 20261002 Vulkan preparation report shows a physical repeated-pipeline improvement from 59.83 to 40.10 ms, but unchanged UMAP complete-process latency did not improve. Package import in Vitest, device request, and queue submission account for larger observed differences than eight shader and pipeline calls.",
       "scopes": [
-        {"level": "cross_directory", "targets": ["src/compiler/wgsl/frontend", "src/compiler/wgsl/ir"]},
-        {"level": "cross_directory", "targets": ["src/compiler/wgsl/emit/spirv", "src/compiler/wgsl/ir"]},
-        {"level": "file", "targets": ["tests/backend/backend_runtime_config_policy_test.zig"]}
+        {"level": "cross_directory", "targets": ["runtime/zig/src/compiler/wgsl/pipeline", "runtime/zig/src/compiler/wgsl/runtime"]},
+        {"level": "cross_directory", "targets": ["runtime/zig/src/native/shader", "runtime/zig/src/native/vulkan"]},
+        {"level": "cross_directory", "targets": ["bench/external-projects/umap-gpu", "reports/benchmarks/amd-vulkan"]}
       ],
       "findingReviewIds": ["spirv_ownership_function_20260928"],
-      "nextAction": "Verify named and direct pointers, mutation, members, captured indices, branches, prohibited arguments, SPIR-V validity, physical output, and overlapping ReleaseFast suite runs.",
-      "acceptance": ["The retained alias and direct form produce the independent expected output through the ordinary package path.", "Pointer regressions and combined ReleaseFast test and test-full suites pass with overlapping invocations."],
-      "stopCondition": "Stop this batch when pointer cases and test isolation pass; leave unrelated emitter cache ownership unchanged.",
-      "requiredEnvironment": ["Pinned Zig toolchain", "spirv-val", "Physical Vulkan provider for output comparison"]
-    },
-    {
-      "batchId": "public_shader_and_application",
-      "state": "ready",
-      "objective": "Close the public shader-semantics render failure and compare an unchanged application with Dawn.",
-      "rationale": "Prior compute passes did not establish render correctness or an ordinary material advantage.",
-      "scopes": [
-        {"level": "cross_directory", "targets": ["src/backend/vulkan", "src/native/vulkan"]},
-        {"level": "file", "targets": ["src/backend/vulkan/vk_draw_recording.zig"]}
+      "nextAction": "Profile package loading inside the unchanged UMAP host, including Vite transformation versus direct Node import; inspect Vulkan device-request and queue-submission costs with native attribution. Choose one owned correction, measure compiler allocations if compilation is selected, and repeat the uninstrumented application comparison.",
+      "acceptance": [
+        "Multiple pipelines and entry points, changed overrides, failures, cache hits and misses, and caller release preserve reflection, specialization, and diagnostic behavior; the 20261002 focused physical result is retained.",
+        "Native phase and allocation measurements establish any next mechanism; an unchanged physical Vulkan application comparison records full latency, memory, correctness, and pinned Dawn control."
       ],
-      "findingReviewIds": ["shader_semantics_runtime_20260919", "shader_semantics_spirv_20260919"],
-      "nextAction": "Retain a current package render result, then run one unchanged application against Doe and Dawn and choose optimization from measured costs.",
-      "acceptance": ["The public shader-semantics suite passes through package, native, and backend layers.", "The application comparison records correctness, provider identity, full user-visible latency, and resource cost for both runtimes."],
-      "stopCondition": "Stop at the application comparison and its bounded optimization choice; keep ONNX Runtime substitution a separate integration investigation.",
-      "requiredEnvironment": ["Current Doe package and native library", "Physical AMD Vulkan provider", "Pinned Dawn control and unchanged application"]
+      "stopCondition": "Retain or reject the candidate from complete application and regression evidence, with generated-SPIR-V execution left as the subsequent bounded investigation.",
+      "requiredEnvironment": ["Pinned Zig toolchain", "Physical AMD Vulkan provider", "Pinned Dawn control and unchanged UMAP application"]
     }
   ]
 }

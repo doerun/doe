@@ -3,6 +3,8 @@ const std = @import("std");
 const build_options = @import("build_options");
 const pipeline_cache = @import("../../runtime/cache/pipeline_cache.zig");
 const wgsl_runtime_compile = @import("../../compiler/wgsl/runtime/runtime_compute_translation.zig");
+const reflection = @import("../../compiler/wgsl/pipeline/binding_reflection.zig");
+const translation_info = @import("../../compiler/wgsl/runtime/runtime_translation_info.zig");
 const ir = @import("../../compiler/wgsl/ir/ir.zig");
 
 const PipelineCache = pipeline_cache.PipelineCache;
@@ -11,7 +13,7 @@ const TranslationInfo = wgsl_runtime_compile.TranslationInfo;
 const Sha256 = std.crypto.hash.sha2.Sha256;
 
 const CACHE_MAGIC: u32 = 0xD0E5_CACE;
-const CACHE_VERSION: u32 = 6;
+const CACHE_VERSION: u32 = 7;
 const FLAG_NEEDS_SIZES_BUF: u32 = 1 << 0;
 const FLAG_BOUNDS_ELISION: u32 = 1 << 1;
 const FLAG_TEXTURE_BOUNDS_ELISION: u32 = 1 << 2;
@@ -39,9 +41,46 @@ const Header = extern struct {
     texture_dispatch_count: u32,
     dispatch_stride: u32,
     texture_dispatch_stride: u32,
+    entry_point_count: u32,
     payload_len: u32,
     contract_digest: [32]u8,
 };
+
+const EntryHeader = extern struct {
+    name_len: u32,
+    binding_count: u32,
+};
+
+const CachedBinding = extern struct {
+    group: u32,
+    binding: u32,
+    kind: u32,
+    addr_space: u32,
+    access: u32,
+    min_binding_size: u32,
+};
+
+fn cachedBinding(meta: reflection.BindingMeta) CachedBinding {
+    return .{
+        .group = meta.group,
+        .binding = meta.binding,
+        .kind = @intFromEnum(meta.kind),
+        .addr_space = @intFromEnum(meta.addr_space),
+        .access = @intFromEnum(meta.access),
+        .min_binding_size = meta.min_binding_size,
+    };
+}
+
+fn bindingFromCache(raw: CachedBinding) ?reflection.BindingMeta {
+    return .{
+        .group = raw.group,
+        .binding = raw.binding,
+        .kind = std.meta.intToEnum(reflection.BindingKind, raw.kind) catch return null,
+        .addr_space = std.meta.intToEnum(ir.AddressSpace, raw.addr_space) catch return null,
+        .access = std.meta.intToEnum(ir.AccessMode, raw.access) catch return null,
+        .min_binding_size = raw.min_binding_size,
+    };
+}
 
 pub const CachedTranslation = struct {
     msl: []u8,
@@ -259,11 +298,16 @@ fn encodePayload(
 ) ![]u8 {
     const dispatch_bytes_len = info.dispatch_preconditions.len * @sizeOf(ir.DispatchPrecondition);
     const texture_bytes_len = info.texture_dispatch_preconditions.len * @sizeOf(ir.TextureDispatchPrecondition);
+    var entry_bytes_len: usize = 0;
+    for (info.entry_point_bindings) |entry| {
+        entry_bytes_len = try std.math.add(usize, entry_bytes_len, @sizeOf(EntryHeader) + entry.name.len + entry.bindings.len * @sizeOf(CachedBinding));
+    }
     const total_len =
         @sizeOf(Header) +
         payload_source.len +
         dispatch_bytes_len +
-        texture_bytes_len;
+        texture_bytes_len +
+        entry_bytes_len;
     const payload = try allocator.alloc(u8, total_len);
     var offset: usize = 0;
     const header = Header{
@@ -278,6 +322,7 @@ fn encodePayload(
         .texture_dispatch_count = @intCast(info.texture_dispatch_preconditions.len),
         .dispatch_stride = @sizeOf(ir.DispatchPrecondition),
         .texture_dispatch_stride = @sizeOf(ir.TextureDispatchPrecondition),
+        .entry_point_count = @intCast(info.entry_point_bindings.len),
         .payload_len = @intCast(payload_source.len),
         .contract_digest = translationContractDigest(payload_kind),
     };
@@ -285,6 +330,15 @@ fn encodePayload(
     writeBytes(payload, &offset, payload_source);
     writeStructSlice(ir.DispatchPrecondition, payload, &offset, info.dispatch_preconditions);
     writeStructSlice(ir.TextureDispatchPrecondition, payload, &offset, info.texture_dispatch_preconditions);
+    for (info.entry_point_bindings) |entry| {
+        const entry_header = EntryHeader{ .name_len = @intCast(entry.name.len), .binding_count = @intCast(entry.bindings.len) };
+        writeBytes(payload, &offset, std.mem.asBytes(&entry_header));
+        writeBytes(payload, &offset, entry.name);
+        for (entry.bindings) |meta| {
+            const binding = cachedBinding(meta);
+            writeBytes(payload, &offset, std.mem.asBytes(&binding));
+        }
+    }
     return payload;
 }
 
@@ -309,7 +363,11 @@ fn decodePayload(
     if (header.texture_dispatch_stride != @sizeOf(ir.TextureDispatchPrecondition)) return null;
     const dispatch_bytes_len = dispatch_count * @sizeOf(ir.DispatchPrecondition);
     const texture_bytes_len = texture_dispatch_count * @sizeOf(ir.TextureDispatchPrecondition);
-    if (offset + payload_len + dispatch_bytes_len + texture_bytes_len != payload.len) return null;
+    const fixed_end = std.math.add(usize, offset, payload_len) catch return null;
+    const dispatch_end = std.math.add(usize, fixed_end, dispatch_bytes_len) catch return null;
+    const texture_end = std.math.add(usize, dispatch_end, texture_bytes_len) catch return null;
+    if (texture_end > payload.len) return null;
+    if (header.entry_point_count > 256) return null;
 
     const payload_copy = allocator.dupe(u8, payload[offset .. offset + payload_len]) catch return null;
     offset += payload_len;
@@ -331,6 +389,48 @@ fn decodePayload(
         payload[offset .. offset + texture_bytes_len],
         texture_dispatch_count,
     ) orelse return null;
+    offset += texture_bytes_len;
+    defer if (!published and texture_dispatch_preconditions.len > 0) allocator.free(texture_dispatch_preconditions);
+
+    const entry_count: usize = @intCast(header.entry_point_count);
+    const entries: []translation_info.EntryPointBindings = if (entry_count == 0) @constCast(&.{}) else allocator.alloc(translation_info.EntryPointBindings, entry_count) catch return null;
+    var initialized: usize = 0;
+    defer if (!published) {
+        for (entries[0..initialized]) |entry| {
+            var owned = entry;
+            owned.deinit(allocator);
+        }
+        if (entries.len > 0) allocator.free(entries);
+    };
+    for (entries) |*entry| {
+        if (payload.len - offset < @sizeOf(EntryHeader)) return null;
+        const entry_header = std.mem.bytesToValue(EntryHeader, payload[offset .. offset + @sizeOf(EntryHeader)]);
+        offset += @sizeOf(EntryHeader);
+        const name_len: usize = @intCast(entry_header.name_len);
+        const binding_count: usize = @intCast(entry_header.binding_count);
+        if (name_len == 0 or name_len > 1024 or binding_count > reflection.MAX_BINDINGS) return null;
+        const binding_bytes_len = binding_count * @sizeOf(CachedBinding);
+        if (name_len > payload.len - offset) return null;
+        if (binding_bytes_len > payload.len - offset - name_len) return null;
+        const name = allocator.dupe(u8, payload[offset .. offset + name_len]) catch return null;
+        offset += name_len;
+        const bindings: []reflection.BindingMeta = if (binding_count == 0) @constCast(&.{}) else allocator.alloc(reflection.BindingMeta, binding_count) catch {
+            allocator.free(name);
+            return null;
+        };
+        for (bindings) |*binding| {
+            const raw = std.mem.bytesToValue(CachedBinding, payload[offset .. offset + @sizeOf(CachedBinding)]);
+            offset += @sizeOf(CachedBinding);
+            binding.* = bindingFromCache(raw) orelse {
+                allocator.free(name);
+                allocator.free(bindings);
+                return null;
+            };
+        }
+        entry.* = .{ .name = name, .bindings = bindings };
+        initialized += 1;
+    }
+    if (offset != payload.len) return null;
 
     published = true;
     return .{
@@ -340,6 +440,7 @@ fn decodePayload(
             .needs_sizes_buf = (header.flags & FLAG_NEEDS_SIZES_BUF) != 0,
             .dispatch_preconditions = dispatch_preconditions,
             .texture_dispatch_preconditions = texture_dispatch_preconditions,
+            .entry_point_bindings = entries,
         },
     };
 }
@@ -414,9 +515,16 @@ test "shader translation cache spirv payload roundtrips" {
         0x03, 0x02, 0x23, 0x07,
         0x00, 0x00, 0x01, 0x00,
     };
+    const first_bindings = [_]reflection.BindingMeta{.{ .group = 0, .binding = 1, .kind = .buffer, .addr_space = .uniform, .access = .read, .min_binding_size = 16 }};
+    const second_bindings = [_]reflection.BindingMeta{.{ .group = 2, .binding = 3, .kind = .buffer, .addr_space = .storage, .access = .read_write, .min_binding_size = 32 }};
+    const entries = [_]translation_info.EntryPointBindings{
+        .{ .name = "first", .bindings = &first_bindings },
+        .{ .name = "second", .bindings = &second_bindings },
+    };
     const info = TranslationInfo{
         .workgroup_size = .{ 16, 1, 1 },
         .needs_sizes_buf = false,
+        .entry_point_bindings = &entries,
     };
     const payload = try encodePayload(std.testing.allocator, &spirv_bytes, &info, .spirv);
     defer std.testing.allocator.free(payload);
@@ -428,6 +536,20 @@ test "shader translation cache spirv payload roundtrips" {
     try std.testing.expectEqual(@as(u32, 16), decoded.info.workgroup_size[0]);
     try std.testing.expectEqual(@as(usize, 0), decoded.info.dispatch_preconditions.len);
     try std.testing.expectEqual(@as(usize, 0), decoded.info.texture_dispatch_preconditions.len);
+    try std.testing.expectEqual(@as(usize, 2), decoded.info.entry_point_bindings.len);
+    try std.testing.expectEqualStrings("first", decoded.info.entry_point_bindings[0].name);
+    try std.testing.expectEqual(@as(u32, 16), decoded.info.entry_point_bindings[0].bindings[0].min_binding_size);
+    try std.testing.expectEqualStrings("second", decoded.info.entry_point_bindings[1].name);
+    try std.testing.expectEqual(ir.AccessMode.read_write, decoded.info.entry_point_bindings[1].bindings[0].access);
+}
+
+test "shader translation cache rejects truncated entry point metadata" {
+    const bindings = [_]reflection.BindingMeta{.{ .group = 0, .binding = 0, .kind = .buffer, .addr_space = .storage, .access = .read }};
+    const entries = [_]translation_info.EntryPointBindings{.{ .name = "main", .bindings = &bindings }};
+    const info = TranslationInfo{ .entry_point_bindings = &entries };
+    const payload = try encodePayload(std.testing.allocator, "spirv", &info, .spirv);
+    defer std.testing.allocator.free(payload);
+    try std.testing.expect(decodePayload(std.testing.allocator, payload[0 .. payload.len - 1], .spirv) == null);
 }
 
 test "shader translation cache key separates backend payload kinds" {
@@ -456,6 +578,7 @@ fn decodeWithAllocationFailures(allocator: std.mem.Allocator, payload: []const u
     try std.testing.expectEqualStrings("kernel msl", decoded.payload);
     try std.testing.expectEqual(@as(usize, 1), decoded.info.dispatch_preconditions.len);
     try std.testing.expectEqual(@as(usize, 1), decoded.info.texture_dispatch_preconditions.len);
+    try std.testing.expectEqual(@as(usize, 1), decoded.info.entry_point_bindings.len);
 }
 
 test "shader translation cache cleans partial optional results on allocation failure" {
@@ -469,11 +592,14 @@ test "shader translation cache cleans partial optional results on allocation fai
         .texture_binding = .{ .group = 0, .binding = 2 },
         .mip_level = 0,
     }};
+    const bindings = [_]reflection.BindingMeta{.{ .group = 0, .binding = 1, .kind = .buffer, .addr_space = .storage, .access = .read }};
+    const entries = [_]translation_info.EntryPointBindings{.{ .name = "main", .bindings = &bindings }};
     const info = TranslationInfo{
         .workgroup_size = .{ 1, 1, 1 },
         .needs_sizes_buf = false,
         .dispatch_preconditions = &dispatch,
         .texture_dispatch_preconditions = &texture,
+        .entry_point_bindings = &entries,
     };
     const payload = try encodePayload(std.testing.allocator, "kernel msl", &info, .msl);
     defer std.testing.allocator.free(payload);

@@ -142,6 +142,7 @@ pub const DoeShaderModule = struct {
     needs_sizes_buf: bool = false,
     dispatch_preconditions: []const wgsl_ir.DispatchPrecondition = &.{},
     texture_dispatch_preconditions: []const wgsl_ir.TextureDispatchPrecondition = &.{},
+    vk_entry_point_bindings: []const @import("../../compiler/wgsl/runtime/runtime_translation_info.zig").EntryPointBindings = &.{},
     spirv_data: ?[]const u32 = null,
     vertex_spirv_data: ?[]const u32 = null,
     fragment_spirv_data: ?[]const u32 = null,

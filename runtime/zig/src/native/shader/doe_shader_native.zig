@@ -542,6 +542,7 @@ pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
         }
         if (sm.dispatch_preconditions.len > 0) alloc.free(sm.dispatch_preconditions);
         if (sm.texture_dispatch_preconditions.len > 0) alloc.free(sm.texture_dispatch_preconditions);
+        @import("../../compiler/wgsl/runtime/runtime_translation_info.zig").deinitEntryPointBindings(alloc, sm.vk_entry_point_bindings);
         if (sm.spirv_data) |s| alloc.free(s);
         if (sm.vertex_spirv_data) |s| alloc.free(s);
         if (sm.fragment_spirv_data) |s| alloc.free(s);

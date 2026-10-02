@@ -59,7 +59,7 @@ test "applyOverrides substitutes values by numeric id" {
         .{ .key = "0", .value = 256.0 },
         .{ .key = "1", .value = 4.0 },
     };
-    applyOverrides(&module_ir, &overrides);
+    try applyOverrides(&module_ir, &overrides);
 
     // After override, values are substituted and class demoted to const_.
     try std.testing.expectEqual(@as(u64, 256), module_ir.globals.items[0].initializer.?.int);
@@ -83,7 +83,7 @@ test "applyOverrides substitutes values by name" {
     const overrides = [_]ir.OverrideEntry{
         .{ .key = "scale", .value = 42.0 },
     };
-    applyOverrides(&module_ir, &overrides);
+    try applyOverrides(&module_ir, &overrides);
 
     try std.testing.expectEqual(@as(f64, 42.0), module_ir.globals.items[0].initializer.?.float);
     try std.testing.expectEqual(ir.GlobalClass.const_, module_ir.globals.items[0].class);

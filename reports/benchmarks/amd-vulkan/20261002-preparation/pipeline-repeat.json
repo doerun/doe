@@ -1,0 +1,341 @@
+{
+  "artifactKind": "physical-vulkan-repeated-pipeline-diagnostic",
+  "script": "bench/vulkan/preparation-physical.mjs",
+  "scriptSha256": "3e81c49634c80f4e5a358f1821d833d394905a49e38de90e0cc3eed47193a4a1",
+  "rows": [
+    {
+      "round": 0,
+      "lane": "baseline",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 60.39008700000001,
+      "unknownOverrideRejected": false,
+      "namedIdOverrideRejected": false,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 0,
+      "lane": "candidate",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 41.44174300000002,
+      "unknownOverrideRejected": true,
+      "namedIdOverrideRejected": true,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 1,
+      "lane": "candidate",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 40.16304499999998,
+      "unknownOverrideRejected": true,
+      "namedIdOverrideRejected": true,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 1,
+      "lane": "baseline",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 59.82794700000001,
+      "unknownOverrideRejected": false,
+      "namedIdOverrideRejected": false,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 2,
+      "lane": "baseline",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 54.73240200000001,
+      "unknownOverrideRejected": false,
+      "namedIdOverrideRejected": false,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 2,
+      "lane": "candidate",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 34.16932799999999,
+      "unknownOverrideRejected": true,
+      "namedIdOverrideRejected": true,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 3,
+      "lane": "candidate",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 40.10141900000001,
+      "unknownOverrideRejected": true,
+      "namedIdOverrideRejected": true,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 3,
+      "lane": "baseline",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 70.399747,
+      "unknownOverrideRejected": false,
+      "namedIdOverrideRejected": false,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 4,
+      "lane": "baseline",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 63.093558,
+      "unknownOverrideRejected": false,
+      "namedIdOverrideRejected": false,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 4,
+      "lane": "candidate",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 36.13968800000001,
+      "unknownOverrideRejected": true,
+      "namedIdOverrideRejected": true,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 5,
+      "lane": "candidate",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 41.70306500000001,
+      "unknownOverrideRejected": true,
+      "namedIdOverrideRejected": true,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    },
+    {
+      "round": 5,
+      "lane": "baseline",
+      "outputs": [
+        8,
+        8,
+        14,
+        21,
+        28
+      ],
+      "repeatedPipelineMs": 57.42846900000001,
+      "unknownOverrideRejected": false,
+      "namedIdOverrideRejected": false,
+      "adapter": {
+        "vendor": "AMD",
+        "architecture": "vulkan",
+        "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "isFallbackAdapter": false,
+        "subgroupMinSize": 32,
+        "subgroupMaxSize": 32,
+        "vendorID": 4098,
+        "deviceID": 5510,
+        "driverVersion": 109051907
+      },
+      "provider": "doe-gpu"
+    }
+  ],
+  "summary": {
+    "baseline": {
+      "medianWarmMs": 59.82794700000001,
+      "librarySha256": "5410b506d3e91b13843ba73bfbdd665997e3bfcfc5bea7120efa92c7c393d8ef"
+    },
+    "candidate": {
+      "medianWarmMs": 40.10141900000001,
+      "librarySha256": "641c33ebb4cf510d8cc77c2687b819955f4426ec891ea82f3475db843eb29d9b"
+    }
+  }
+}

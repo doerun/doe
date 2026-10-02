@@ -1,0 +1,37 @@
+{
+  "artifactKind": "direct-node-import-diagnostic",
+  "rows": {
+    "doe": {
+      "module": "./packages/doe-gpu/src/index.js",
+      "samplesMs": [
+        21.279688,
+        21.048964,
+        20.349937,
+        21.950531,
+        20.015848,
+        20.025787,
+        19.837341,
+        20.291747,
+        19.642714,
+        19.777609
+      ],
+      "medianMs": 20.158767
+    },
+    "dawn": {
+      "module": "./bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+      "samplesMs": [
+        8.579779,
+        8.173834,
+        10.685996,
+        10.119328,
+        12.135636,
+        8.990413,
+        8.359074,
+        8.23534,
+        8.210543,
+        7.992003
+      ],
+      "medianMs": 8.4694265
+    }
+  }
+}

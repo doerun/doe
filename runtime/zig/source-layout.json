@@ -2524,9 +2524,9 @@
       },
       "src/compiler/wgsl/pipeline/overrides.zig": {
         "decision": "Keep",
-        "moduleSha256": "83d04375464f3baf89e82fa68a9ae0fc783e520184f52592d46abbbe05dd447f",
-        "reason": "Keep: reachable compiler implementation shared by 4 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-09"
+        "moduleSha256": "24e738bd1e860ceb45ae533e1d4199bbd9c72a40bb13899abb23006ab75747db",
+        "reason": "Keep: shared override substitution rejects undeclared pipeline keys before target emission.",
+        "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
       "src/compiler/wgsl/pipeline/translate_csl.zig": {
         "decision": "Keep",
@@ -2542,15 +2542,15 @@
       },
       "src/compiler/wgsl/pipeline/translate_hlsl.zig": {
         "decision": "Keep",
-        "moduleSha256": "cf31c1678a4ee3618bc191484d8d5ca2e9602884ff21fb618229985eeeb7d74d",
-        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
-        "reviewer": "codex-compiler-interface/2026-09-27"
+        "moduleSha256": "4d0630491a709d83c49f0fdc0c53acd1c65ba001fd53ebae80d6365a0260af31",
+        "reason": "Keep: HLSL translation retains pipeline-stage override diagnostics from the shared substitution owner.",
+        "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
       "src/compiler/wgsl/pipeline/translate_msl.zig": {
         "decision": "Keep",
-        "moduleSha256": "a0bac182f9ea32f8ac881c9d03b90477199495895baf614593e6b23c1bed4f9d",
-        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
-        "reviewer": "codex-compiler-interface/2026-09-27"
+        "moduleSha256": "0b334623e61274d04e0cadfc65f2a4effd6936dc3cbf040c33971adc2bfa733f",
+        "reason": "Keep: MSL translation retains pipeline-stage override diagnostics from the shared substitution owner.",
+        "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
       "src/compiler/wgsl/pipeline/translate_spirv.zig": {
         "decision": "Keep",
@@ -2596,9 +2596,9 @@
       },
       "src/compiler/wgsl/runtime/runtime_compute_translation.zig": {
         "decision": "Keep",
-        "moduleSha256": "c23aa7417214c99c58d19d9afa21c5bed633b17f2915ae20cbca979cc56fc331",
-        "reason": "Keep: existing semantic owner; analysis clients use a typed request with explicit diagnostic ownership and unchanged allocation and emission boundaries.",
-        "reviewer": "codex-compiler-interface/2026-09-27"
+        "moduleSha256": "6bb7dc2d81d533f475fa981c62ba13ed47eb5af03282c3929874865dba9ba0de",
+        "reason": "Keep: runtime compute lowering owns Vulkan translation, entry-point metadata, and pipeline-stage override diagnostics.",
+        "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
       "src/compiler/wgsl/runtime/runtime_graphics_translation.zig": {
         "decision": "Keep",
@@ -2608,9 +2608,9 @@
       },
       "src/compiler/wgsl/runtime/runtime_translation_info.zig": {
         "decision": "Keep",
-        "moduleSha256": "7a66d29cdaa5c91857cce584037f6c5a90a0cb6ac9190c9189835b0422ec1621",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "4c88dea4c3623217c15f3fd78c4dd0b1a84560457786e2ac12e6b3647b901b8f",
+        "reason": "Keep: shared translation metadata owns compact entry-point bindings, cloning, and release without retaining the analyzed IR.",
+        "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
       "src/compiler/wgsl/runtime/shader_info.zig": {
         "decision": "Keep",
@@ -3694,15 +3694,15 @@
       },
       "src/native/shader/doe_shader_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "88de6afe4d9a4b3214e2f7d1f0ec567272e130d5b247a3ca3e037cea8d1ac060",
-        "reason": "Keep: native shader adapters own device leases and consume instance diagnostics; library and archive ownership remain device-scoped cache owners.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "2aad0920dc1dcc5a9ba61a4517a72cde79b557f9fec259543fe83d0cd47105dd",
+        "reason": "Keep: native shader-module creation and release transfers and retires owned Vulkan translation metadata.",
+        "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
       "src/native/shader/doe_shader_translation_cache.zig": {
         "decision": "Keep",
-        "moduleSha256": "80c92ed793440096df74cd04851f8c4a18aca6363535acb45e36126a4f2c0edb",
-        "reason": "Keep: device-independent translation cache owns synchronized publication and cloning, with complete cleanup of optional allocation failures; compilation stays outside cache locking.",
-        "reviewer": "codex-native-ownership/2026-09-06"
+        "moduleSha256": "098a68f68fea41c9cb3f15495ba0a3c23c35ca0bed7c793f155011b9a3c05bd4",
+        "reason": "Keep: one versioned translation payload owns SPIR-V and compact entry-point reflection with validated decode and source-bound invalidation.",
+        "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
       "src/native/shader/shader_binding_reflection.zig": {
         "decision": "Keep",
@@ -3754,9 +3754,9 @@
       },
       "src/native/support/doe_native_object_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "254fde54078ef7c0f39acb4cbf238265360a33dbb49d5b6be72772d98e9f75d8",
-        "reason": "Keep: native attachment admission owns view and pipeline compatibility; command recording preserves typed validation failures before submission. Backend execution and resource retirement retain their existing owners.",
-        "reviewer": "codex-surface-admission/2026-09-28"
+        "moduleSha256": "bcfa0cb72b63b77ccbf9b70d94620f3e1d8102386fe6c6cc95761edefe7c642a",
+        "reason": "Keep: native object types declare shader-owned Vulkan entry-point metadata alongside its translation payload.",
+        "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
       "src/native/support/doe_native_runtime_helpers.zig": {
         "decision": "Keep",
@@ -3784,9 +3784,9 @@
       },
       "src/native/vulkan/vulkan_compute_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "c93114f2797ce41a495ec2bf0a74b071cf18f96903b5f90ba3fb9ce7d65e81fc",
-        "reason": "Keep: Vulkan pipeline preparation consumes the canonical descriptor collector; obsolete duplicate collection implementations removed.",
-        "reviewer": "codex-shader-semantics/2026-09-19"
+        "moduleSha256": "5f670e07d43028502d4e35003259a935658ec8b17801450cd5eb16b03b5b861e",
+        "reason": "Keep: Vulkan pipeline preparation consumes translation-owned binding metadata and preserves specialized-override metadata from the same analyzed IR.",
+        "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
       "src/native/vulkan/vulkan_feature_cache.zig": {
         "decision": "Keep",

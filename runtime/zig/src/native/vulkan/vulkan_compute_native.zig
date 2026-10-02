@@ -289,7 +289,7 @@ test "binding collection publishes only the active prefix on cache misses and hi
 
 const shader_buffer_binding_type = shader_binding_reflection.shaderBufferBindingType;
 
-fn populate_pipeline_buffer_binding_typesWithDiagnostic(pip: *DoeComputePipeline, shader_module: ?*DoeShaderModule, diagnostic: *wgsl_analysis.Diagnostic) wgsl_analysis.TranslateError!void {
+fn populate_pipeline_buffer_binding_typesWithDiagnostic(pip: *DoeComputePipeline, shader_module: ?*DoeShaderModule, specialized_info: ?*const runtime_compile.TranslationInfo, diagnostic: *wgsl_analysis.Diagnostic) wgsl_analysis.TranslateError!void {
     @memset(&pip.vk_flat_buffer_binding_types, model_binding_types.WGPUBufferBindingType_Storage);
     const sm = shader_module orelse {
         pip.vk_flat_buffer_binding_types_ready = true;
@@ -303,6 +303,17 @@ fn populate_pipeline_buffer_binding_typesWithDiagnostic(pip: *DoeComputePipeline
         pip.vk_flat_buffer_binding_types_ready = true;
         return;
     };
+    const entries = if (specialized_info) |info| info.entry_point_bindings else sm.vk_entry_point_bindings;
+    for (entries) |entry| {
+        if (!std.mem.eql(u8, entry.name, entry_point)) continue;
+        for (entry.bindings) |meta| {
+            if (meta.group >= MAX_COMPUTE_BIND_GROUPS or meta.binding >= MAX_BIND) continue;
+            const slot = (meta.group * MAX_BIND) + meta.binding;
+            pip.vk_flat_buffer_binding_types[slot] = shader_binding_reflection.bufferBindingType(shader_binding_reflection.bindingInfo(meta));
+        }
+        pip.vk_flat_buffer_binding_types_ready = true;
+        return;
+    }
     var metadata: [native_shared.MAX_SHADER_BINDINGS]wgsl_bindings.BindingMeta = undefined;
     const count = try wgsl_bindings.extractBindingsForEntryPointWithDiagnostic(alloc, wgsl, entry_point, &metadata, diagnostic);
     for (metadata[0..count]) |meta| {
@@ -425,7 +436,7 @@ pub fn vulkan_create_shader_moduleWithDiagnostic(shader: *DoeShaderModule, wgsl:
 /// Called from doe_shader_native.zig for the Vulkan compute pipeline creation path.
 /// Returns error on OOM.
 pub fn vulkan_copy_pipeline_spirvWithDiagnostic(pip: *DoeComputePipeline, shader: *DoeShaderModule, diagnostic: *wgsl_analysis.Diagnostic) (wgsl_analysis.TranslateError || error{InvalidShaderModule})!void {
-    try populate_pipeline_buffer_binding_typesWithDiagnostic(pip, shader, diagnostic);
+    try populate_pipeline_buffer_binding_typesWithDiagnostic(pip, shader, null, diagnostic);
     const src = shader.spirv_data orelse return error.InvalidShaderModule;
     pip.spirv_data = alloc.dupe(u32, src) catch return error.OutOfMemory;
     pip.vk_spirv_hash = std.hash.Wyhash.hash(0, std.mem.sliceAsBytes(src));
@@ -434,13 +445,13 @@ pub fn vulkan_copy_pipeline_spirvWithDiagnostic(pip: *DoeComputePipeline, shader
 }
 
 pub fn vulkan_compile_pipeline_spirv_with_overridesWithDiagnostic(pip: *DoeComputePipeline, shader: *DoeShaderModule, overrides: []const wgsl_ir.OverrideEntry, diagnostic: *wgsl_analysis.Diagnostic) (wgsl_analysis.TranslateError || error{InvalidShaderModule})!void {
-    try populate_pipeline_buffer_binding_typesWithDiagnostic(pip, shader, diagnostic);
     const wgsl = shader.wgsl_source orelse return error.InvalidShaderModule;
     var spirv_buf = alloc.alloc(u8, spirv_translation.MAX_OUTPUT) catch return error.OutOfMemory;
     defer alloc.free(spirv_buf);
 
     var translation = try runtime_compile.translateToSpirvForVulkanComputeRuntimeWithOverridesWithDiagnostic(alloc, wgsl, spirv_buf, overrides.ptr, overrides.len, diagnostic);
     defer translation.info.deinit(alloc);
+    try populate_pipeline_buffer_binding_typesWithDiagnostic(pip, shader, &translation.info, diagnostic);
     if (translation.len == 0 or (translation.len % @sizeOf(u32)) != 0) {
         diagnostic.setLastErrorDetailPublic(.spirv_emit, error.InvalidIr, "invalid SPIR-V word extent");
         return error.InvalidIr;
@@ -799,11 +810,13 @@ fn moveTranslationInfoToShader(
     shader.needs_sizes_buf = info.needs_sizes_buf;
     shader.dispatch_preconditions = info.dispatch_preconditions;
     shader.texture_dispatch_preconditions = info.texture_dispatch_preconditions;
+    shader.vk_entry_point_bindings = info.entry_point_bindings;
     shader.wg_x = info.workgroup_size[0];
     shader.wg_y = info.workgroup_size[1];
     shader.wg_z = info.workgroup_size[2];
     info.dispatch_preconditions = &.{};
     info.texture_dispatch_preconditions = &.{};
+    info.entry_point_bindings = &.{};
 }
 
 fn assignSpirvWordsWithDiagnostic(shader: *DoeShaderModule, spirv_bytes: []const u8, diagnostic: *wgsl_analysis.Diagnostic) wgsl_analysis.TranslateError!void {

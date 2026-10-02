@@ -103,6 +103,12 @@ fn emitSpirv(module_ir: *ir.Module, out: []u8, diagnostic: *analysis.Diagnostic)
     };
 }
 
+fn buildVulkanTranslationInfo(allocator: std.mem.Allocator, module_ir: *const ir.Module, entries: []const translation_info.EntryPointBindings) analysis.TranslateError!TranslationInfo {
+    var info = try translation_info.buildTranslationInfo(allocator, module_ir);
+    info.entry_point_bindings = entries;
+    return info;
+}
+
 pub fn translateToMslForComputeRuntimeWithDiagnostic(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, overrides: ?[*]const ir.OverrideEntry, override_count: usize, diagnostic: *analysis.Diagnostic) analysis.TranslateError!TranslationResult {
     const timed = try translateToMslForComputeRuntimeTimedWithDiagnostic(allocator, wgsl, out, overrides, override_count, diagnostic);
     return .{
@@ -126,7 +132,10 @@ pub fn translateToMslForComputeRuntimeTimedWithDiagnostic(allocator: std.mem.All
     });
     defer analyzed.module.deinit();
 
-    if (override_slice.len > 0) override_values.applyOverrides(&analyzed.module, override_slice);
+    if (override_slice.len > 0) override_values.applyOverrides(&analyzed.module, override_slice) catch |err| {
+        diagnostic.setLastErrorDetailPublic(.sema, err, override_values.diagnosticDetail(err));
+        return err;
+    };
 
     const emit_start_ns = nowNs();
     const len = emit_msl.emit(&analyzed.module, out) catch |err| {
@@ -203,13 +212,54 @@ pub fn translateToSpirvForVulkanComputeRuntimeWithOverridesWithDiagnostic(alloca
     })).module;
     defer module_ir.deinit();
 
-    if (override_slice.len > 0) override_values.applyOverrides(&module_ir, override_slice);
+    if (override_slice.len > 0) override_values.applyOverrides(&module_ir, override_slice) catch |err| {
+        diagnostic.setLastErrorDetailPublic(.sema, err, override_values.diagnosticDetail(err));
+        return err;
+    };
 
+    // Capture resource use before SPIR-V preparation can rewrite the IR.
+    // Non-allocation reflection failures remain pipeline-time diagnostics.
+    const entries = translation_info.buildEntryPointBindings(allocator, &module_ir) catch |err| switch (err) {
+        error.OutOfMemory => return err,
+        else => &.{},
+    };
+    errdefer translation_info.deinitEntryPointBindings(allocator, entries);
     const len = try emitSpirv(&module_ir, out, diagnostic);
     return .{
         .len = len,
-        .info = try translation_info.buildTranslationInfo(allocator, &module_ir),
+        .info = try buildVulkanTranslationInfo(allocator, &module_ir, entries),
     };
+}
+
+test "Vulkan specialization validates pipeline override keys and values" {
+    const source =
+        \\@id(0) override SCALE: u32 = 2u;
+        \\@compute @workgroup_size(1) fn main() { let value = SCALE; }
+    ;
+    var output: [8192]u8 = undefined;
+    var diagnostic = analysis.Diagnostic{};
+    for ([_][]const u8{ "UNKNOWN", "SCALE", "00" }) |key| {
+        const overrides = [_]ir.OverrideEntry{.{ .key = key, .value = 3 }};
+        try std.testing.expectError(error.UnknownIdentifier, translateToSpirvForVulkanComputeRuntimeWithOverridesWithDiagnostic(
+            std.testing.allocator,
+            source,
+            &output,
+            &overrides,
+            overrides.len,
+            &diagnostic,
+        ));
+        try std.testing.expectEqual(analysis.CompilationStage.sema, diagnostic.last_error_stage);
+    }
+    const overflow = [_]ir.OverrideEntry{.{ .key = "0", .value = 4294967296.0 }};
+    try std.testing.expectError(error.InvalidType, translateToSpirvForVulkanComputeRuntimeWithOverridesWithDiagnostic(
+        std.testing.allocator,
+        source,
+        &output,
+        &overflow,
+        overflow.len,
+        &diagnostic,
+    ));
+    try std.testing.expectEqual(analysis.CompilationStage.sema, diagnostic.last_error_stage);
 }
 
 pub fn translateToMslForComputeRuntime(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, overrides: ?[*]const ir.OverrideEntry, override_count: usize) analysis.TranslateError!TranslationResult {

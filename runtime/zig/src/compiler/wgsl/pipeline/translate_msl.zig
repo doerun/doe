@@ -25,7 +25,10 @@ pub fn translateToMslWithOverridesWithDiagnostic(allocator: std.mem.Allocator, w
         .overrides = override_slice,
     })).module;
 
-    if (override_slice.len > 0) override_values.applyOverrides(&module_ir, override_slice);
+    if (override_slice.len > 0) override_values.applyOverrides(&module_ir, override_slice) catch |err| {
+        diagnostic.setLastErrorDetailPublic(.sema, err, override_values.diagnosticDetail(err));
+        return err;
+    };
 
     return emitter.emit(&module_ir, out) catch |err| {
         const kind = switch (err) {
