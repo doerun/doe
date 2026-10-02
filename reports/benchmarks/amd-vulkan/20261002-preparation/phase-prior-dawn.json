@@ -1,51 +1,51 @@
 {
   "artifactKind": "umap-public-api-preparation-diagnostic",
   "providerModule": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
-  "importNs": 6299443,
+  "importNs": 7441483,
   "methods": {
     "provider.create": {
       "calls": 2,
-      "elapsedNs": 647388
+      "elapsedNs": 620229
     },
     "gpu.requestAdapter": {
       "calls": 2,
-      "elapsedNs": 40594033
+      "elapsedNs": 41111510
     },
     "adapter.requestDevice": {
       "calls": 1,
-      "elapsedNs": 1977504
+      "elapsedNs": 1840856
     },
     "device.createShaderModule": {
       "calls": 8,
-      "elapsedNs": 2122186
+      "elapsedNs": 2154765
     },
     "device.createComputePipeline": {
       "calls": 8,
-      "elapsedNs": 12782952
+      "elapsedNs": 14040423
     },
     "device.createBuffer": {
       "calls": 40,
-      "elapsedNs": 942812
+      "elapsedNs": 1377679
     },
     "device.createBindGroup": {
       "calls": 8,
-      "elapsedNs": 281219
+      "elapsedNs": 319922
     },
     "queue.writeBuffer": {
       "calls": 4000,
-      "elapsedNs": 5126437
+      "elapsedNs": 5621550
     },
     "device.createCommandEncoder": {
       "calls": 2004,
-      "elapsedNs": 2656559
+      "elapsedNs": 3191549
     },
     "queue.submit": {
       "calls": 2004,
-      "elapsedNs": 20889263
+      "elapsedNs": 22950969
     },
     "queue.onSubmittedWorkDone": {
       "calls": 200,
-      "elapsedNs": 203142
+      "elapsedNs": 254984
     }
   }
 }

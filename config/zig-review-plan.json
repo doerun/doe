@@ -7,14 +7,14 @@
       "batchId": "vulkan_shader_pipeline_preparation",
       "state": "active",
       "objective": "Resolve the remaining whole-process Vulkan preparation deficit after retaining source-bound entry-point reflection reuse.",
-      "rationale": "The pointer, test-isolation, and public-render batches passed in reports/maintenance/20260928-pointer-public. The 20261002 Vulkan preparation report shows a physical repeated-pipeline improvement from 59.83 to 40.10 ms, but unchanged UMAP complete-process latency did not improve. Package import in Vitest, device request, and queue submission account for larger observed differences than eight shader and pipeline calls.",
+      "rationale": "The pointer, test-isolation, and public-render batches passed in reports/maintenance/20260928-pointer-public. The 20261002 Vulkan preparation report shows a physical repeated-pipeline improvement from 59.83 to 40.10 ms. Correcting Vitest's asymmetric provider loading reduced the measured whole-process Doe/Dawn gap, but the unchanged UMAP candidate did not establish a complete-application gain. Vulkan device request and queue submission remain the larger public-call differences.",
       "scopes": [
         {"level": "cross_directory", "targets": ["runtime/zig/src/compiler/wgsl/pipeline", "runtime/zig/src/compiler/wgsl/runtime"]},
         {"level": "cross_directory", "targets": ["runtime/zig/src/native/shader", "runtime/zig/src/native/vulkan"]},
         {"level": "cross_directory", "targets": ["bench/external-projects/umap-gpu", "reports/benchmarks/amd-vulkan"]}
       ],
       "findingReviewIds": ["spirv_ownership_function_20260928"],
-      "nextAction": "Profile package loading inside the unchanged UMAP host, including Vite transformation versus direct Node import; inspect Vulkan device-request and queue-submission costs with native attribution. Choose one owned correction, measure compiler allocations if compilation is selected, and repeat the uninstrumented application comparison.",
+      "nextAction": "Attribute Vulkan device-request subphases, especially duplicate instance creation and physical-device selection after adapter probing. Preserve adapter/device identity and multiple-device lifetime while testing any reuse. Then inspect queue-submission costs, measure compiler allocations if compilation is selected, and repeat the uninstrumented application comparison.",
       "acceptance": [
         "Multiple pipelines and entry points, changed overrides, failures, cache hits and misses, and caller release preserve reflection, specialization, and diagnostic behavior; the 20261002 focused physical result is retained.",
         "Native phase and allocation measurements establish any next mechanism; an unchanged physical Vulkan application comparison records full latency, memory, correctness, and pinned Dawn control."

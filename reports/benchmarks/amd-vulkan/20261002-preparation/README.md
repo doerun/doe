@@ -10,36 +10,38 @@ Vulkan translation now extracts compact binding sets for each compute entry poin
 
 ## Unchanged UMAP application
 
-The pinned UMAP SGD workload was not edited. Each provider completed ten fresh processes with exact within-provider replay and its declared output oracle. The [baseline raw receipt](umap-baseline-10.json.gz) and [candidate raw receipt](umap-candidate-10.json.gz) retain process results, hardware and provider identity, inputs, oracle decisions, and peak process-tree memory. Both cohorts used populated, separate shader-cache homes. The Dawn lane is the pinned comparator in each receipt. Output hashes differ between Doe and Dawn, so these receipts do not assert bitwise cross-provider identity.
+The pinned UMAP SGD workload was not edited. The harness now externalizes both provider modules so Vitest does not transform Doe's source while loading Dawn directly. Each provider completed ten fresh processes with exact within-provider replay and its declared output oracle. The [baseline raw receipt](umap-baseline-10.json.gz) and [candidate raw receipt](umap-candidate-10.json.gz) retain process results, hardware and provider identity, inputs, oracle decisions, and peak process-tree memory. Both cohorts used populated, separate shader-cache homes. The Dawn lane is the pinned comparator in each receipt. Output hashes differ between Doe and Dawn, so these receipts do not assert bitwise cross-provider identity.
 
 | Complete process, median of ten | Baseline | Candidate |
 | --- | ---: | ---: |
-| Doe | 739.95 ms | 754.05 ms |
-| Dawn control | 633.86 ms | 622.33 ms |
-| Doe peak process-tree RSS | 325.62 MiB | 324.92 MiB |
+| Doe | 638.04 ms | 636.87 ms |
+| Dawn control | 621.57 ms | 619.00 ms |
+| Doe peak process-tree RSS | 283.78 MiB | 283.36 MiB |
 
-The candidate did **not** improve complete UMAP latency. The small peak-memory difference does not establish a memory benefit. This result rules out promoting the isolated reflection gain as an application advantage in this cohort.
+The roughly 1 ms candidate difference does not establish a complete-application gain. Doe remains slower than the pinned Dawn control in both cohorts, although its process-tree peak is lower. One-process [empty-cache baseline](umap-baseline-cold.json.gz) and [candidate](umap-candidate-cold.json.gz) runs also passed; those individual timings are diagnostic, not a cold-cache performance conclusion.
+
+The earlier harness transformed Doe source but loaded Dawn externally. Its [baseline](prior-transformed-baseline-10.json.gz) and [candidate](prior-transformed-candidate-10.json.gz) receipts remain intact. They showed Doe medians of 739.95 and 754.05 ms and peaks near 325 MiB. Those rows must not be used as provider-speed evidence after the loading asymmetry was identified.
 
 ## Phase attribution
 
-The [diagnostic provider wrapper](../../../../bench/external-projects/umap-gpu/preparation-diagnostic-provider.mjs) ran the unchanged UMAP workload with public API interception. These timings are diagnostic because interception changes execution cost. `import` is a dynamic import inside Vitest and includes its source loading or transformation; it is not pure native-library initialization. Request calls include promise resolution. `queue.submit` and `queue.onSubmittedWorkDone` record synchronous call cost, not GPU completion. Allocation/upload and shader/pipeline columns are public-call costs; they do not expose internal compiler allocation counts. Execution, readback, and process teardown are not fully separated by this wrapper.
+The [diagnostic provider wrapper](../../../../bench/external-projects/umap-gpu/preparation-diagnostic-provider.mjs) ran the unchanged UMAP workload with public API interception. These timings are diagnostic because interception changes execution cost. `import` is a dynamic import inside Vitest; it is not pure native-library initialization. Request calls include promise resolution. `queue.submit` and `queue.onSubmittedWorkDone` record synchronous call cost, not GPU completion. Allocation/upload and shader/pipeline columns are public-call costs; they do not expose internal compiler allocation counts. Execution, readback, and process teardown are not fully separated by this wrapper.
 
 | Cumulative public boundary for one workload process | Doe empty cache | Doe populated cache | Dawn |
 | --- | ---: | ---: | ---: |
-| Provider import | 137.51 ms | 142.56 ms | 7.44 ms |
-| Provider create | 2.90 ms | 3.70 ms | 0.62 ms |
-| Adapter request | 42.11 ms | 41.04 ms | 41.11 ms |
-| Device request | 14.51 ms | 18.26 ms | 1.84 ms |
-| Eight shader-module calls | 1.40 ms | 0.50 ms | 2.15 ms |
-| Eight compute-pipeline calls | 4.08 ms | 3.87 ms | 14.04 ms |
-| 2,004 queue submits | 49.36 ms | 47.08 ms | 22.95 ms |
+| Provider import | 9.26 ms | 8.16 ms | 6.30 ms |
+| Provider create | 2.07 ms | 1.99 ms | 0.65 ms |
+| Adapter request | 43.40 ms | 40.81 ms | 40.59 ms |
+| Device request | 16.66 ms | 15.66 ms | 1.98 ms |
+| Eight shader-module calls | 1.21 ms | 0.53 ms | 2.12 ms |
+| Eight compute-pipeline calls | 4.31 ms | 4.32 ms | 12.78 ms |
+| 2,004 queue submits | 52.42 ms | 45.42 ms | 20.89 ms |
 
-The raw phase observations are [Doe empty cache](phase-doe-empty-cache.json), [Doe populated cache](phase-doe-populated-cache.json), and [Dawn](phase-dawn.json). A separate ten-process [direct Node import diagnostic](package-import.json) measured 20.16 ms median for Doe and 8.47 ms for Dawn, confirming that the Vitest import difference must be investigated as an application-loading boundary rather than assigned wholly to native startup.
+The raw phase observations are [Doe empty cache](phase-doe-empty-cache.json), [Doe populated cache](phase-doe-populated-cache.json), and [Dawn](phase-dawn.json). The earlier transformed-source phase observations remain [here](phase-prior-doe-populated-cache.json), with its [empty-cache](phase-prior-doe-empty-cache.json) and [Dawn](phase-prior-dawn.json) peers. A separate ten-process [direct Node import diagnostic](package-import.json) measured 20.16 ms median for Doe and 8.47 ms for Dawn. The corrected Vitest import observations are closer. Device request and queue submission are now the larger public-call differences; their native subphases remain unattributed.
 
 ## Validation and remaining work
 
 `zig build test test-full -Doptimize=ReleaseFast --summary all` passed: 4,706 tests, 22 skips across the combined suites. `npm run test:contracts` and `npm run test:smoke` passed for `doe-gpu`. Physical Vulkan output, cold/populated translation-cache use, changed overrides, unknown-key rejection, and the unchanged UMAP oracle passed. The broader `zig build test-wgsl` target still fails to compile in existing CSL, DXIL, and MSL exhaustive expression switches for the `address_of` and `deref` IR tags; this campaign did not modify those emitters. Full WGSL or WebGPU conformance is not established.
 
-The next candidate needs a measured reduction in the package-load, Vulkan device-request, or queue-submission boundaries, followed by another unchanged-application comparison. Compiler allocation counts, native execution/readback breakdown, and teardown attribution remain open. Generated SPIR-V execution optimization follows a closed preparation campaign.
+The next candidate needs native attribution for Vulkan device request, whose path creates a new instance and selects a physical device after adapter probing already did so. Any lifetime correction must support multiple devices from one adapter and preserve adapter/device identity. Queue submission remains a separate measured difference. Another unchanged-application comparison is required before a speed claim. Compiler allocation counts, native execution/readback breakdown, and teardown attribution remain open. Generated SPIR-V execution optimization follows a closed preparation campaign.
 
 Component: `doe.runtime-zig.compiler.wgsl`, `doe.runtime-zig.native.vulkan`, `doe.bench`, `doe.reports`. Intent: preserved. Acceptance evidence: linked raw receipts, focused physical script, and executed test commands above. Boundary effects: versioned shader translation cache payload and shared pipeline override validation.

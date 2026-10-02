@@ -30,5 +30,8 @@ export default {
     hookTimeout: 120_000,
     fileParallelism: false,
     maxWorkers: 1,
+    // Node loads both providers directly. Without this, Vitest transforms the
+    // Doe source tree while the pinned Dawn package remains external.
+    server: { deps: { external: [providerModule, /packages[\\/]doe-gpu[\\/]src[\\/]/] } },
   },
 };
