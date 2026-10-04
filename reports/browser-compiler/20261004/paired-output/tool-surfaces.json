@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "tool-surface-gate-report",
+  "ok": true,
+  "failures": [],
+  "summary": {
+    "surfaceCount": 11,
+    "packageSurfaceCount": 1
+  }
+}

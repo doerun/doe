@@ -9,15 +9,18 @@
     "browser",
     "args",
     "viewport",
-    "output"
+    "output",
+    "warmupCycles",
+    "trialOrders",
+    "stoppingRule",
+    "statistics"
   ],
   "properties": {
     "schemaVersion": {
-      "const": 1
+      "const": 2
     },
     "sessions": {
-      "type": "integer",
-      "minimum": 3
+      "const": 6
     },
     "browser": {
       "type": "string",
@@ -50,6 +53,63 @@
     "output": {
       "type": "string",
       "minLength": 1
+    },
+    "warmupCycles": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "trialOrders": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 3,
+        "uniqueItems": true,
+        "items": {
+          "enum": [
+            "original",
+            "disabled",
+            "transformed"
+          ]
+        }
+      }
+    },
+    "stoppingRule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "statistics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "confidence",
+        "bootstrapResamples",
+        "bootstrapSeed",
+        "unit",
+        "method"
+      ],
+      "properties": {
+        "confidence": {
+          "const": 0.95
+        },
+        "bootstrapResamples": {
+          "type": "integer",
+          "minimum": 10000
+        },
+        "bootstrapSeed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unit": {
+          "const": "independent-browser-process"
+        },
+        "method": {
+          "const": "percentile-bootstrap-of-process-means"
+        }
+      }
     }
   }
 }

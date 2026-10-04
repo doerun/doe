@@ -7,7 +7,7 @@
       "batchId": "browser_wgsl_output_attribution",
       "state": "active",
       "objective": "Identify a profitable general WGSL transformation using direct browser execution, independent of compiler delivery.",
-      "rationale": "Final archive delivery checks pass but assisted execution loses. Repeated direct-shader execution without any Worker finds identical-control variation and application timing sign reversals. Close the power-of-two performance hypothesis; no attributable shader gain is established.",
+      "rationale": "Balanced independent-process A/A trials with identical warmup and paired uncertainty leave control stability inconclusive. The unsigned rewrite eliminates no demonstrated native instruction or memory cost and has no attributable application advantage. Close it without promotion; preserve delivery.",
       "scopes": [
         {
           "level": "cross_directory",
@@ -18,9 +18,9 @@
         }
       ],
       "findingReviewIds": [
-        "browser_wgsl_prototype_20261004"
+        "browser_wgsl_aa_20261004"
       ],
-      "nextAction": "Keep unsigned power-of-two rewriting unpromoted. Profile one existing independent inference or rendering application, identify its largest recoverable shader cost, and propose one general WGSL transformation. Qualify emitted text offline before runtime delivery; do not expand packaging or reselect favorable particle cohorts.",
+      "nextAction": "Keep the power-of-two candidate closed. Profile one independent application with recoverable shader cost and inspect original/emitted work before proposing one general transformation. Carry A/A controls and fixed stopping into qualification; resolve execution-condition variation before attributing performance. Do not expand packaging or select favorable particle cohorts.",
       "acceptance": [
         "Run all WGSL directly through the same browser with compiler requests outside measurement, identical inputs/geometry/numerical oracle, rotated cohorts and instrumented/uninstrumented scopes.",
         "Reject gains explainable by identical-shader control variation, pipeline preparation or overlapping host work; preserve unfavorable cohorts.",

@@ -1,0 +1,5044 @@
+{
+  "schemaVersion": 1,
+  "classification": "diagnostic",
+  "performancePromoted": false,
+  "settings": {
+    "confidence": 0.95,
+    "bootstrapResamples": 10000,
+    "bootstrapSeed": 3735928559,
+    "unit": "independent-browser-process",
+    "method": "percentile-bootstrap-of-process-means"
+  },
+  "pairDirection": "right cost minus left cost; ratios below one favor right",
+  "unit": "process mean of matched cohort differences; independent processes are bootstrap blocks",
+  "caveat": "Small fixed process sample; descriptive percentile intervals, no tail or universal equivalence claim. Persistent driver cache, system load and thermal state remain uncontrolled.",
+  "raw": [
+    {
+      "file": "session-0-timestamped.json",
+      "sha256": "c1e68268438cac8f5844217f546f2567e8022c80d8c240cf290986c3aa6302b6"
+    },
+    {
+      "file": "session-1-timestamped.json",
+      "sha256": "d38b7f4b431fb89bfdd0aafed52cd928c75fa056bf2ef6847857aba45ba56e86"
+    },
+    {
+      "file": "session-2-timestamped.json",
+      "sha256": "89ad18e6ec843fb01549c4781664b567658187947b2c03f6f0776669c529d6f9"
+    },
+    {
+      "file": "session-3-timestamped.json",
+      "sha256": "fc27d01fc55a16fcdc2ffc2bb01c1d65b4d1fa66cf2d7cc6a5dc41f420a0bbb3"
+    },
+    {
+      "file": "session-4-timestamped.json",
+      "sha256": "1714b02cc9df45b03daa2266cabaeffe243763a33349f024a67d7429656f7a69"
+    },
+    {
+      "file": "session-5-timestamped.json",
+      "sha256": "a467de94110f057a1b4126ac36a88414f2e95bf28169ec2a5c2b3436b7ba1b6d"
+    },
+    {
+      "file": "session-0-plain.json",
+      "sha256": "32136402c33947ec52475cfe4a125021d4aa4afc641ce89415c357ad5c99bdef"
+    },
+    {
+      "file": "session-1-plain.json",
+      "sha256": "259128cd53c1b6264d44e74fcf20995618b5fa989494ee417c2cc61edaf233f6"
+    },
+    {
+      "file": "session-2-plain.json",
+      "sha256": "6951a94d7784f487d991f4411cca6560631e74da162820cf4cd94e2335d4a9ce"
+    },
+    {
+      "file": "session-3-plain.json",
+      "sha256": "8c65346f0308500c145db702c11d94fe66234148faf600baa2a962b19f347a22"
+    },
+    {
+      "file": "session-4-plain.json",
+      "sha256": "47e35950a6731bb4f7e1911cdea181640fa08e5d3888e6afc34d91be8fa2f680"
+    },
+    {
+      "file": "session-5-plain.json",
+      "sha256": "c470a27722c528f84f34a82ac84135eb0dec54eeb1545410825f0a3ceea74506"
+    }
+  ],
+  "phases": {
+    "timestamped": {
+      "processPairs": [
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.16705388459168058
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.35294300000000006,
+                "logCostRatio": 0.6003617560473415
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.899999618530273,
+                "logCostRatio": -1.065822342790376
+              },
+              "applicationMs": {
+                "differenceMs": -5.5,
+                "logCostRatio": -0.7525705907379504
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -4.76837158203125e-07,
+                "logCostRatio": -4.33488269311405e-07
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.21612599999999998,
+                "logCostRatio": -0.7008393191660258
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.800000190734863,
+                "logCostRatio": -1.034073827135185
+              },
+              "applicationMs": {
+                "differenceMs": -5.600000381469727,
+                "logCostRatio": -0.7731899570080736
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.16705431807994994
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.569069,
+                "logCostRatio": -1.3012010752133674
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.09999942779541016,
+                "logCostRatio": 0.03174851565519087
+              },
+              "applicationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.020619366270123212
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.10000038146972656,
+                "logCostRatio": 0.08701170210584938
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.57019,
+                "logCostRatio": -1.3102242753045257
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.300000190734863,
+                "logCostRatio": -1.0881410484054608
+              },
+              "applicationMs": {
+                "differenceMs": -6.099999904632568,
+                "logCostRatio": -0.7975071872925275
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.09531009310665592
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.330139,
+                "logCostRatio": -0.549580186605996
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.099999904632568,
+                "logCostRatio": -1.0275163389351352
+              },
+              "applicationMs": {
+                "differenceMs": -6.099999904632568,
+                "logCostRatio": -0.7975071872925275
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.18232179521250527
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.240051,
+                "logCostRatio": 0.7606440886985295
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.060624709470325604
+              },
+              "applicationMs": {
+                "differenceMs": 0,
+                "logCostRatio": 0.0
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.22314331289565909
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.369093,
+                "logCostRatio": 0.6430300125272592
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.199999809265137,
+                "logCostRatio": 0.9650808179898894
+              },
+              "applicationMs": {
+                "differenceMs": 4.799999713897705,
+                "logCostRatio": 0.7037292290176553
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.2999997138977051,
+                "logCostRatio": 0.2623640443887784
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.18510699999999997,
+                "logCostRatio": -0.6023710852042828
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.39999961853027344,
+                "logCostRatio": 0.11778291975846661
+              },
+              "applicationMs": {
+                "differenceMs": 0.7999997138977051,
+                "logCostRatio": 0.1571855226495854
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.4999995231628418,
+                "logCostRatio": 0.4855073572844375
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.5542,
+                "logCostRatio": -1.245401097731542
+              },
+              "completeOperationMs": {
+                "differenceMs": -4.800000190734863,
+                "logCostRatio": -0.8472978982314228
+              },
+              "applicationMs": {
+                "differenceMs": -4.0,
+                "logCostRatio": -0.5465437063680699
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.3000001907348633,
+                "logCostRatio": -0.2623644111866059
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.494207,
+                "logCostRatio": -1.1928486328052827
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.2999997138977051,
+                "logCostRatio": 0.08223802294689156
+              },
+              "applicationMs": {
+                "differenceMs": 9.5,
+                "logCostRatio": 1.014962248121048
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 8.699999809265137,
+                "logCostRatio": 2.04022068180744
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.49829500000000004,
+                "logCostRatio": -1.2120273028358548
+              },
+              "completeOperationMs": {
+                "differenceMs": 1.0,
+                "logCostRatio": 0.25131442828090617
+              },
+              "applicationMs": {
+                "differenceMs": 10.299999713897705,
+                "logCostRatio": 1.0672617289746809
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 9,
+                "logCostRatio": 2.302585092994046
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.004088000000000008,
+                "logCostRatio": -0.019178670030571943
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.7000002861022949,
+                "logCostRatio": 0.16907640533401447
+              },
+              "applicationMs": {
+                "differenceMs": 0.7999997138977051,
+                "logCostRatio": 0.052299480853632674
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.300000190734863,
+                "logCostRatio": 1.6665964384710337
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.323647,
+                "logCostRatio": -0.931142254248095
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.3000001907348633,
+                "logCostRatio": -0.08961221829433369
+              },
+              "applicationMs": {
+                "differenceMs": 6.900000095367432,
+                "logCostRatio": 0.7744928187510874
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.10000038146972656,
+                "logCostRatio": 0.05715863200074064
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.034304,
+                "logCostRatio": 0.062242341154655614
+              },
+              "completeOperationMs": {
+                "differenceMs": 1.0,
+                "logCostRatio": 0.25131442828090617
+              },
+              "applicationMs": {
+                "differenceMs": 1.0,
+                "logCostRatio": 0.15656905834893547
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.199999809265137,
+                "logCostRatio": -1.609437806470293
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.357951,
+                "logCostRatio": 0.9933845954027507
+              },
+              "completeOperationMs": {
+                "differenceMs": 1.3000001907348633,
+                "logCostRatio": 0.34092664657523986
+              },
+              "applicationMs": {
+                "differenceMs": -5.900000095367432,
+                "logCostRatio": -0.617923760402152
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.09531009310665592
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.15481,
+                "logCostRatio": -0.2594336770629404
+              },
+              "completeOperationMs": {
+                "differenceMs": -1.0000004768371582,
+                "logCostRatio": -0.08934514261472554
+              },
+              "applicationMs": {
+                "differenceMs": -0.9000000953674316,
+                "logCostRatio": -0.06453852776030947
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 5.90000057220459,
+                "logCostRatio": 1.3034068351068187
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.08856600000000003,
+                "logCostRatio": -0.14010186708935293
+              },
+              "completeOperationMs": {
+                "differenceMs": -8.500000476837158,
+                "logCostRatio": -1.2964381160558633
+              },
+              "applicationMs": {
+                "differenceMs": -2.5,
+                "logCostRatio": -0.1906898050731396
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.100000381469727,
+                "logCostRatio": 1.3987169282134746
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.06624399999999997,
+                "logCostRatio": 0.11933180997358753
+              },
+              "completeOperationMs": {
+                "differenceMs": -7.5,
+                "logCostRatio": -1.207092973441138
+              },
+              "applicationMs": {
+                "differenceMs": -1.5999999046325684,
+                "logCostRatio": -0.12615127731283016
+              }
+            }
+          }
+        ],
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.105360409694019
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.21420099999999997,
+                "logCostRatio": 0.3216477848095659
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.900000095367432,
+                "logCostRatio": 1.1711830122666331
+              },
+              "applicationMs": {
+                "differenceMs": 6.900000095367432,
+                "logCostRatio": 0.9295359669897398
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.35254199999999997,
+                "logCostRatio": -0.9793165879909167
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.06252044554346378
+              },
+              "applicationMs": {
+                "differenceMs": 7.800000190734863,
+                "logCostRatio": 1.0055218811089972
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.10536040969401898
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.566743,
+                "logCostRatio": -1.3009643728004825
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.699999809265137,
+                "logCostRatio": -1.1086625667231695
+              },
+              "applicationMs": {
+                "differenceMs": 0.9000000953674316,
+                "logCostRatio": 0.07598591411925718
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.16705431807994994
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.15717500000000006,
+                "logCostRatio": -0.2618769894790536
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.2999997138977051,
+                "logCostRatio": -0.09237323869771857
+              },
+              "applicationMs": {
+                "differenceMs": -0.8000001907348633,
+                "logCostRatio": -0.16362945976951151
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.16705431807994994
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.08600200000000002,
+                "logCostRatio": 0.11872984941254486
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.40000057220459,
+                "logCostRatio": 0.9509764237334458
+              },
+              "applicationMs": {
+                "differenceMs": 5.099999904632568,
+                "logCostRatio": 0.6740989587714867
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.2431770000000001,
+                "logCostRatio": 0.3806068388915984
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.700000286102295,
+                "logCostRatio": 1.0433496624311642
+              },
+              "applicationMs": {
+                "differenceMs": 5.900000095367432,
+                "logCostRatio": 0.8377284185409981
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.5,
+                "logCostRatio": 0.538996330433757
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.00036000000000002697,
+                "logCostRatio": 0.0004612758972884187
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.699999809265137,
+                "logCostRatio": -1.1509801705934237
+              },
+              "applicationMs": {
+                "differenceMs": -6.099999904632568,
+                "logCostRatio": -0.8201468403341294
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.4999995231628418,
+                "logCostRatio": 0.5389959330694744
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.569469,
+                "logCostRatio": -1.3087462267360954
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.599999904632568,
+                "logCostRatio": -1.1192315059266231
+              },
+              "applicationMs": {
+                "differenceMs": -6.0,
+                "logCostRatio": -0.7995275734050817
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -4.76837158203125e-07,
+                "logCostRatio": -3.9736428271274887e-07
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.5698289999999999,
+                "logCostRatio": -1.3092075026333836
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.031748664666800507
+              },
+              "applicationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.02061926692904748
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.36772482088062486
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.571032,
+                "logCostRatio": 1.3140868182791117
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.200000286102295,
+                "logCostRatio": 1.0775589492203954
+              },
+              "applicationMs": {
+                "differenceMs": 5.600000381469727,
+                "logCostRatio": 0.7410032471756088
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.3000001907348633,
+                "logCostRatio": -0.2623644111866059
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.562816,
+                "logCostRatio": 1.3035094227437567
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.03174866947362185
+              },
+              "applicationMs": {
+                "differenceMs": -0.39999961853027344,
+                "logCostRatio": -0.08167795144194374
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.105360409694019
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.008216000000000001,
+                "logCostRatio": -0.010577395535355144
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.300000190734863,
+                "logCostRatio": -1.1093076186940172
+              },
+              "applicationMs": {
+                "differenceMs": -6.0,
+                "logCostRatio": -0.8226811986175525
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.40000009536743164,
+                "logCostRatio": 0.45198530952380156
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.5698690000000001,
+                "logCostRatio": -1.3012632600088074
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.099999904632568,
+                "logCostRatio": -1.0668636191944878
+              },
+              "applicationMs": {
+                "differenceMs": -5.699999809265137,
+                "logCostRatio": -0.7942433013334187
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.40000009536743164,
+                "logCostRatio": 0.45198530952380156
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.07297600000000004,
+                "logCostRatio": -0.09783536763393909
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.099999904632568,
+                "logCostRatio": -1.0668636191944878
+              },
+              "applicationMs": {
+                "differenceMs": -5.6999993324279785,
+                "logCostRatio": -0.7942431998787051
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.49689300000000003,
+                "logCostRatio": 1.2034278923748682
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": 4.76837158203125e-07,
+                "logCostRatio": 1.0145471347968529e-07
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.5000004768371582,
+                "logCostRatio": 0.3746937745576303
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.021481000000000083,
+                "logCostRatio": -0.027750260432456653
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": 0.6000003814697266,
+                "logCostRatio": 0.1177831129216654
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.4519853095238016
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.1921210000000001,
+                "logCostRatio": -0.2807458222109895
+              },
+              "completeOperationMs": {
+                "differenceMs": 4.700000286102295,
+                "logCostRatio": 0.9037120213437683
+              },
+              "applicationMs": {
+                "differenceMs": 4.40000057220459,
+                "logCostRatio": 0.650587656843871
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.9000005722045898,
+                "logCostRatio": -0.8266790840814319
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.17064000000000001,
+                "logCostRatio": -0.2529955617785329
+              },
+              "completeOperationMs": {
+                "differenceMs": 4.700000286102295,
+                "logCostRatio": 0.9037120213437683
+              },
+              "applicationMs": {
+                "differenceMs": 3.8000001907348633,
+                "logCostRatio": 0.5328045439222057
+              }
+            }
+          }
+        ],
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.06062484971653483
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.03418500000000002,
+                "logCostRatio": 0.06296274129887461
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.40000057220458984,
+                "logCostRatio": 0.11778320122483732
+              },
+              "applicationMs": {
+                "differenceMs": 0.3000001907348633,
+                "logCostRatio": 0.05218578636444028
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.199999809265137,
+                "logCostRatio": 1.655422868095912
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.03290099999999996,
+                "logCostRatio": 0.0606681212095468
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.060624709470325604
+              },
+              "applicationMs": {
+                "differenceMs": 7.300000190734863,
+                "logCostRatio": 0.8344607380492457
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.300000190734863,
+                "logCostRatio": 1.716047717812447
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.0012840000000000629,
+                "logCostRatio": -0.002294620089327785
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.05715849175451177
+              },
+              "applicationMs": {
+                "differenceMs": 7.0,
+                "logCostRatio": 0.7822749516848054
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.300000190734863,
+                "logCostRatio": 1.8893981477814474
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.133251,
+                "logCostRatio": -0.4887144066367094
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.900000095367432,
+                "logCostRatio": -1.0252809888821932
+              },
+              "applicationMs": {
+                "differenceMs": 1.299999713897705,
+                "logCostRatio": 0.10981484046235916
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.40000057220458984,
+                "logCostRatio": 0.2682643749688453
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.4354569999999999,
+                "logCostRatio": 0.8168417591714621
+              },
+              "completeOperationMs": {
+                "differenceMs": 1.299999713897705,
+                "logCostRatio": 0.132171742010408
+              },
+              "applicationMs": {
+                "differenceMs": 1.6999998092651367,
+                "logCostRatio": 0.1413135149145543
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.899999618530273,
+                "logCostRatio": -1.621133772812602
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.568708,
+                "logCostRatio": 1.3055561658081716
+              },
+              "completeOperationMs": {
+                "differenceMs": 7.199999809265137,
+                "logCostRatio": 1.1574527308926013
+              },
+              "applicationMs": {
+                "differenceMs": 0.40000009536743164,
+                "logCostRatio": 0.03149867445219507
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.200000286102295,
+                "logCostRatio": -1.8191586152493922
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.41081100000000004,
+                "logCostRatio": 1.0738138038443208
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.599999904632568,
+                "logCostRatio": 0.9734491176648594
+              },
+              "applicationMs": {
+                "differenceMs": -0.7000002861022949,
+                "logCostRatio": -0.06394875047639227
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.099999904632568,
+                "logCostRatio": -1.7391156019110088
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.55965,
+                "logCostRatio": 1.2877184437901812
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.029853077896594273
+              },
+              "applicationMs": {
+                "differenceMs": -6.200000286102295,
+                "logCostRatio": -0.7955622215667028
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.10000038146972656,
+                "logCostRatio": 0.08004301333838325
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.14883899999999994,
+                "logCostRatio": 0.21390463994586043
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.700000286102295,
+                "logCostRatio": -1.0033021955614538
+              },
+              "applicationMs": {
+                "differenceMs": -5.5,
+                "logCostRatio": -0.7316134710903104
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.300000190734863,
+                "logCostRatio": 2.3150079588467785
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.558568,
+                "logCostRatio": -1.2513810489401986
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.5,
+                "logCostRatio": -0.9808293071977702
+              },
+              "applicationMs": {
+                "differenceMs": 2.0999999046325684,
+                "logCostRatio": 0.19062035172704372
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.5000004768371582,
+                "logCostRatio": 0.4855083201287482
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.5363260000000001,
+                "logCostRatio": -1.1566558212595994
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.299999713897705,
+                "logCostRatio": -0.921988720477168
+              },
+              "applicationMs": {
+                "differenceMs": -4.299999713897705,
+                "logCostRatio": -0.5621188679601574
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.799999713897705,
+                "logCostRatio": -1.82949963871803
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.022241999999999984,
+                "logCostRatio": 0.09472522768059924
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.05884058672060229
+              },
+              "applicationMs": {
+                "differenceMs": -6.399999618530273,
+                "logCostRatio": -0.7527392196872013
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.13353126490028436
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.10239199999999998,
+                "logCostRatio": 0.19395359432703643
+              },
+              "completeOperationMs": {
+                "differenceMs": -8.000000476837158,
+                "logCostRatio": -1.252763053644862
+              },
+              "applicationMs": {
+                "differenceMs": -8.300000190734863,
+                "logCostRatio": -0.9660141930430547
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.400000095367432,
+                "logCostRatio": 1.7272210076951304
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.266942,
+                "logCostRatio": -0.8164788627361731
+              },
+              "completeOperationMs": {
+                "differenceMs": -7.8000006675720215,
+                "logCostRatio": -1.1921384844207654
+              },
+              "applicationMs": {
+                "differenceMs": -0.6000003814697266,
+                "logCostRatio": -0.04580956550000872
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.599999904632568,
+                "logCostRatio": 1.8607522725954146
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.369334,
+                "logCostRatio": -1.0104324570632095
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.0606245692240967
+              },
+              "applicationMs": {
+                "differenceMs": 7.699999809265137,
+                "logCostRatio": 0.9202046275430459
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.5,
+                "logCostRatio": -0.40546510810816444
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.5698690000000001,
+                "logCostRatio": 1.3023605376476117
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": -9.099999904632568,
+                "logCostRatio": -1.0913395361488276
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.5,
+                "logCostRatio": -0.40546510810816444
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.4834670000000001,
+                "logCostRatio": 1.185383713020471
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.599999904632568,
+                "logCostRatio": 1.0116009387715015
+              },
+              "applicationMs": {
+                "differenceMs": -3.299999713897705,
+                "logCostRatio": -0.27559000359455404
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0,
+                "logCostRatio": 0.0
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.08640199999999998,
+                "logCostRatio": -0.1169768246271407
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.599999904632568,
+                "logCostRatio": 1.0116009387715015
+              },
+              "applicationMs": {
+                "differenceMs": 5.800000190734863,
+                "logCostRatio": 0.8157495325542735
+              }
+            }
+          }
+        ],
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.06899314396536473
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.259327,
+                "logCostRatio": -0.8043132770468517
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.0,
+                "logCostRatio": -0.8873031950009028
+              },
+              "applicationMs": {
+                "differenceMs": -4.900000095367432,
+                "logCostRatio": -0.6286086764522728
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.12516303075702132
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.05855100000000002,
+                "logCostRatio": -0.13326567183706478
+              },
+              "completeOperationMs": {
+                "differenceMs": 2.6999998092651367,
+                "logCostRatio": 0.27584759777487944
+              },
+              "applicationMs": {
+                "differenceMs": 3.1999998092651367,
+                "logCostRatio": 0.26602056174834865
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.3000001907348633,
+                "logCostRatio": 0.19415617472238597
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.20077599999999998,
+                "logCostRatio": 0.671047605209787
+              },
+              "completeOperationMs": {
+                "differenceMs": 7.699999809265137,
+                "logCostRatio": 1.1631507927757823
+              },
+              "applicationMs": {
+                "differenceMs": 8.099999904632568,
+                "logCostRatio": 0.8946292382006215
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -1.5,
+                "logCostRatio": -0.1758906723797581
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.009977999999999987,
+                "logCostRatio": -0.04577254418574991
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.11441037070424402
+              },
+              "applicationMs": {
+                "differenceMs": -1.9000000953674316,
+                "logCostRatio": -0.1516845955533951
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.799999713897705,
+                "logCostRatio": -1.8245492612873577
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.5539590000000001,
+                "logCostRatio": 1.2481582632085007
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.11441037070424402
+              },
+              "applicationMs": {
+                "differenceMs": -8.199999809265137,
+                "logCostRatio": -0.9349828288985983
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.299999713897705,
+                "logCostRatio": -1.6486585889075995
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.563937,
+                "logCostRatio": 1.2939308073942506
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": -6.299999713897705,
+                "logCostRatio": -0.7832982333452031
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.08701130474156658
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.323206,
+                "logCostRatio": 0.9227737064368101
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.2999997138977051,
+                "logCostRatio": 0.09237322512551634
+              },
+              "applicationMs": {
+                "differenceMs": 0.2999997138977051,
+                "logCostRatio": 0.06062456338050912
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.18232139784822265
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.566062,
+                "logCostRatio": 1.2962529285874118
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.399999618530273,
+                "logCostRatio": 1.1198895640606517
+              },
+              "applicationMs": {
+                "differenceMs": 6.099999904632568,
+                "logCostRatio": 0.8201468403341294
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.09531009310665592
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.24285599999999996,
+                "logCostRatio": 0.3734792221506018
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.099999904632568,
+                "logCostRatio": 1.0275163389351354
+              },
+              "applicationMs": {
+                "differenceMs": 5.800000190734863,
+                "logCostRatio": 0.7595222769536202
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.3000001907348633,
+                "logCostRatio": -0.18232166275776193
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.268343,
+                "logCostRatio": 0.42411774820497017
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.799999713897705,
+                "logCostRatio": -0.9772514009001542
+              },
+              "applicationMs": {
+                "differenceMs": -6.199999809265137,
+                "logCostRatio": -0.7646061186601246
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.5,
+                "logCostRatio": -0.3254223596793204
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.295314,
+                "logCostRatio": -0.870683681230468
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.599999904632568,
+                "logCostRatio": -0.9216816012953077
+              },
+              "applicationMs": {
+                "differenceMs": -6.099999904632568,
+                "logCostRatio": -0.7462569976525634
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.1431006969215585
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.5636570000000001,
+                "logCostRatio": -1.294801429435438
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.05556979960484633
+              },
+              "applicationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.01834912100756125
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.1823213978482226
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.07081300000000001,
+                "logCostRatio": 0.13806663766363997
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": -6.5,
+                "logCostRatio": -0.8109302365939856
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0,
+                "logCostRatio": 0.0
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.155933,
+                "logCostRatio": -0.39454952525616876
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.199999809265137,
+                "logCostRatio": 0.9105600352416223
+              },
+              "applicationMs": {
+                "differenceMs": -1.4000000953674316,
+                "logCostRatio": -0.1274449580429174
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.18232139784822265
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.226746,
+                "logCostRatio": -0.5326161629198086
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.199999809265137,
+                "logCostRatio": 0.9105600352416223
+              },
+              "applicationMs": {
+                "differenceMs": 5.099999904632568,
+                "logCostRatio": 0.6834852785510683
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 8.200000286102295,
+                "logCostRatio": 2.3136353425560348
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.47990000000000005,
+                "logCostRatio": 0.9804799221286911
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.40000057220459,
+                "logCostRatio": -1.0986123880091854
+              },
+              "applicationMs": {
+                "differenceMs": 1.6999998092651367,
+                "logCostRatio": 0.14370670564768184
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.3000001907348633,
+                "logCostRatio": 0.2876823373613905
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.48398800000000003,
+                "logCostRatio": 0.9857887152526008
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.200000286102295,
+                "logCostRatio": -1.0379876785388598
+              },
+              "applicationMs": {
+                "differenceMs": -5.900000095367432,
+                "logCostRatio": -0.768654751767587
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.900000095367432,
+                "logCostRatio": -2.025953005194644
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.0040879999999999805,
+                "logCostRatio": 0.0053087931239096196
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.060624709470325604
+              },
+              "applicationMs": {
+                "differenceMs": -7.599999904632568,
+                "logCostRatio": -0.9123614574152688
+              }
+            }
+          }
+        ],
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.7000002861022949,
+                "logCostRatio": -0.07825222849810941
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.034025,
+                "logCostRatio": 0.14929443609456022
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.2999997138977051,
+                "logCostRatio": -0.08961206928272399
+              },
+              "applicationMs": {
+                "differenceMs": -1.0,
+                "logCostRatio": -0.07696104113612832
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.5999994277954102,
+                "logCostRatio": 0.0625202979399128
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.12136088776795549
+              },
+              "applicationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.014706133467442624
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 1.299999713897705,
+                "logCostRatio": 0.1407725264380221
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.034025,
+                "logCostRatio": -0.14929443609456025
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.03174881848523154
+              },
+              "applicationMs": {
+                "differenceMs": 1.1999998092651367,
+                "logCostRatio": 0.09166717460357092
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 8.800000190734863,
+                "logCostRatio": 1.820747118298292
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.0007610000000000117,
+                "logCostRatio": 0.003600214886602702
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": 8.800000190734863,
+                "logCostRatio": 0.9555114583655385
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.5,
+                "logCostRatio": 1.6885753244577584
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.00016000000000002124,
+                "logCostRatio": 0.0007580208439675603
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.06252044554346388
+              },
+              "applicationMs": {
+                "differenceMs": 7.5,
+                "logCostRatio": 0.8602012652231116
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -1.3000001907348633,
+                "logCostRatio": -0.13217179384053368
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.0006009999999999904,
+                "logCostRatio": -0.00284219404263509
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.06252044554346388
+              },
+              "applicationMs": {
+                "differenceMs": -1.3000001907348633,
+                "logCostRatio": -0.09531019314242706
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.40000009536743164,
+                "logCostRatio": 0.04211149433608353
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.001362000000000002,
+                "logCostRatio": 0.006456345072788484
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": 0.9000000953674316,
+                "logCostRatio": 0.0669394895360756
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -8.099999904632568,
+                "logCostRatio": -2.04769262545583
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.0010010000000000019,
+                "logCostRatio": 0.004749137738515992
+              },
+              "completeOperationMs": {
+                "differenceMs": -4.76837158203125e-07,
+                "logCostRatio": -1.4449611063574114e-07
+              },
+              "applicationMs": {
+                "differenceMs": -7.800000190734863,
+                "logCostRatio": -0.9162907685539371
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -8.5,
+                "logCostRatio": -2.0898041197919133
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.0003610000000000002,
+                "logCostRatio": -0.001707207334272424
+              },
+              "completeOperationMs": {
+                "differenceMs": -4.76837158203125e-07,
+                "logCostRatio": -1.4449611063574114e-07
+              },
+              "applicationMs": {
+                "differenceMs": -8.700000286102295,
+                "logCostRatio": -0.9832302580900127
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.8999996185302734,
+                "logCostRatio": 0.693146915650406
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.055903999999999954,
+                "logCostRatio": -0.07398492792152005
+              },
+              "completeOperationMs": {
+                "differenceMs": -4.400000095367432,
+                "logCostRatio": -0.7166777122939669
+              },
+              "applicationMs": {
+                "differenceMs": 3.5999999046325684,
+                "logCostRatio": 0.31287230893457096
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.6999998092651367,
+                "logCostRatio": 0.575363979335108
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.008294999999999941,
+                "logCostRatio": -0.010637954795090507
+              },
+              "completeOperationMs": {
+                "differenceMs": 2.1000003814697266,
+                "logCostRatio": 0.21848157603616666
+              },
+              "applicationMs": {
+                "differenceMs": 3.299999713897705,
+                "logCostRatio": 0.290229817787882
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.11778293631529796
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.04760900000000001,
+                "logCostRatio": 0.06334697312642965
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.500000476837158,
+                "logCostRatio": 0.9351592883301335
+              },
+              "applicationMs": {
+                "differenceMs": -0.3000001907348633,
+                "logCostRatio": -0.022642491146689002
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.32104200000000005,
+                "logCostRatio": -0.5334595514724111
+              },
+              "completeOperationMs": {
+                "differenceMs": -1.299999713897705,
+                "logCostRatio": -0.13217174201040796
+              },
+              "applicationMs": {
+                "differenceMs": -1.3999996185302734,
+                "logCostRatio": -0.12188978431439616
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 4.76837158203125e-07,
+                "logCostRatio": 3.973642826880898e-07
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.383159,
+                "logCostRatio": -0.6800733094975058
+              },
+              "completeOperationMs": {
+                "differenceMs": 1.6999998092651367,
+                "logCostRatio": 0.15006067894172792
+              },
+              "applicationMs": {
+                "differenceMs": 1.8000001907348633,
+                "logCostRatio": 0.1376213935100531
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 4.76837158203125e-07,
+                "logCostRatio": 3.973642826880898e-07
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.06211699999999998,
+                "logCostRatio": -0.14661375802509452
+              },
+              "completeOperationMs": {
+                "differenceMs": 2.999999523162842,
+                "logCostRatio": 0.28223242095213585
+              },
+              "applicationMs": {
+                "differenceMs": 3.1999998092651367,
+                "logCostRatio": 0.2595111778244492
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.5000004768371582,
+                "logCostRatio": 0.34830702150940124
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.33246400000000004,
+                "logCostRatio": -0.5410640701456108
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.03540193564257645
+              },
+              "applicationMs": {
+                "differenceMs": 0.3000001907348633,
+                "logCostRatio": 0.022642491146688894
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.3000001907348633,
+                "logCostRatio": 0.22314371025994187
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.01675199999999999,
+                "logCostRatio": -0.02128029065567821
+              },
+              "completeOperationMs": {
+                "differenceMs": -1.799999713897705,
+                "logCostRatio": -0.17022112036478573
+              },
+              "applicationMs": {
+                "differenceMs": -1.3999996185302734,
+                "logCostRatio": -0.11302335667025146
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.1251633112494595
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.31571200000000005,
+                "logCostRatio": 0.5197837794899327
+              },
+              "completeOperationMs": {
+                "differenceMs": -1.3999996185302734,
+                "logCostRatio": -0.1348191847222093
+              },
+              "applicationMs": {
+                "differenceMs": -1.6999998092651367,
+                "logCostRatio": -0.13566584781694044
+              }
+            }
+          }
+        ],
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.399999618530273,
+                "logCostRatio": 1.7805861257681619
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.025007,
+                "logCostRatio": -0.10546770582774524
+              },
+              "completeOperationMs": {
+                "differenceMs": -8.099999904632568,
+                "logCostRatio": -1.15976665066047
+              },
+              "applicationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.01459882025483063
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.5999999046325684,
+                "logCostRatio": -0.5108255178021834
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.31711500000000004,
+                "logCostRatio": 0.8194838495905062
+              },
+              "completeOperationMs": {
+                "differenceMs": -8.700000286102295,
+                "logCostRatio": -1.336697466908178
+              },
+              "applicationMs": {
+                "differenceMs": -9.400000095367432,
+                "logCostRatio": -1.1430640433858943
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.999999523162842,
+                "logCostRatio": -2.291411643570345
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.34212200000000004,
+                "logCostRatio": 0.9249515554182516
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.6000003814697266,
+                "logCostRatio": -0.1769308162477079
+              },
+              "applicationMs": {
+                "differenceMs": -9.199999809265137,
+                "logCostRatio": -1.1284652231310637
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.16705431807994994
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.493085,
+                "logCostRatio": 1.197133631609034
+              },
+              "completeOperationMs": {
+                "differenceMs": 4.900000095367432,
+                "logCostRatio": 0.7862376268863066
+              },
+              "applicationMs": {
+                "differenceMs": -2.9000000953674316,
+                "logCostRatio": -0.23982606208752297
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.45248999999999995,
+                "logCostRatio": 1.137956152866303
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.8000001907348633,
+                "logCostRatio": -0.21706456867514703
+              },
+              "applicationMs": {
+                "differenceMs": -8.599999904632568,
+                "logCostRatio": -1.0006318732955948
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.16705431807995
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.04059500000000005,
+                "logCostRatio": -0.05917747874273099
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.700000286102295,
+                "logCostRatio": -1.0033021955614538
+              },
+              "applicationMs": {
+                "differenceMs": -5.699999809265137,
+                "logCostRatio": -0.7608058112080718
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -8.299999713897705,
+                "logCostRatio": -2.431417715938526
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.568987,
+                "logCostRatio": 1.3012295674594323
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.90000057220459,
+                "logCostRatio": 1.128465366564704
+              },
+              "applicationMs": {
+                "differenceMs": -1.8999996185302734,
+                "logCostRatio": -0.15541407254522804
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -1.1999998092651367,
+                "logCostRatio": -0.14141163149806418
+              },
+              "gpuComputeMs": {
+                "differenceMs": 8.00000000000245e-05,
+                "logCostRatio": 0.0003758692019445037
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.030771631573731337
+              },
+              "applicationMs": {
+                "differenceMs": -1.5,
+                "logCostRatio": -0.12062798964112892
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.099999904632568,
+                "logCostRatio": 2.2900060844404617
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.568907,
+                "logCostRatio": -1.3008536982574879
+              },
+              "completeOperationMs": {
+                "differenceMs": -7.000000476837158,
+                "logCostRatio": -1.1592369981384354
+              },
+              "applicationMs": {
+                "differenceMs": 0.39999961853027344,
+                "logCostRatio": 0.03478608290409899
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.899999618530273,
+                "logCostRatio": -2.0259526078303614
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.548148,
+                "logCostRatio": 1.2716420868385607
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.030771776069842008
+              },
+              "applicationMs": {
+                "differenceMs": -8.199999809265137,
+                "logCostRatio": -0.9833769983478273
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -1.3999996185302734,
+                "logCostRatio": -0.16705403702708713
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.0009619999999999906,
+                "logCostRatio": -0.004514743917916311
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.030771776069842008
+              },
+              "applicationMs": {
+                "differenceMs": -1.6999998092651367,
+                "logCostRatio": -0.13899885916113533
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.5,
+                "logCostRatio": 1.8588985708032744
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.54911,
+                "logCostRatio": -1.276156830756477
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": 6.5,
+                "logCostRatio": 0.8443781391866921
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7,
+                "logCostRatio": -2.0794415416798357
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.5328789999999999,
+                "logCostRatio": 1.1510161988872543
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.099999904632568,
+                "logCostRatio": 0.991191963578547
+              },
+              "applicationMs": {
+                "differenceMs": -1.200000286102295,
+                "logCostRatio": -0.1026541781586432
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7,
+                "logCostRatio": -2.0794415416798357
+              },
+              "gpuComputeMs": {
+                "differenceMs": 0.35318199999999994,
+                "logCostRatio": 0.8889347963558412
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.40000057220458984,
+                "logCostRatio": -0.1177832012248373
+              },
+              "applicationMs": {
+                "differenceMs": -7.599999904632568,
+                "logCostRatio": -0.9620367082964313
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0,
+                "logCostRatio": 0.0
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.179697,
+                "logCostRatio": -0.26208140253141315
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.500000476837158,
+                "logCostRatio": -1.1089751648033843
+              },
+              "applicationMs": {
+                "differenceMs": -6.399999618530273,
+                "logCostRatio": -0.8593825301377882
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.06453875955612186
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.18502700000000005,
+                "logCostRatio": -0.27005143955983674
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.100000381469727,
+                "logCostRatio": -1.0668636704673007
+              },
+              "applicationMs": {
+                "differenceMs": -6.299999713897705,
+                "logCostRatio": -0.804372749237751
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.5000004768371582,
+                "logCostRatio": -0.37469377455763025
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.569148,
+                "logCostRatio": -1.3018495017238714
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.800000190734863,
+                "logCostRatio": -0.9772514521729672
+              },
+              "applicationMs": {
+                "differenceMs": 2.0,
+                "logCostRatio": 0.16164135030782428
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.31015501500150844
+              },
+              "gpuComputeMs": {
+                "differenceMs": -0.384121,
+                "logCostRatio": -1.0317980621640348
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.3000001907348633,
+                "logCostRatio": 0.08961221829433379
+              },
+              "applicationMs": {
+                "differenceMs": 8.299999713897705,
+                "logCostRatio": 0.9660140995455753
+              }
+            }
+          }
+        ]
+      ],
+      "summary": {
+        "aa": {
+          "pipelinePreparationMs": {
+            "processMeanDifferencesMs": [
+              1.1500000953674316,
+              0.15000001589457193,
+              1.2666666507720947,
+              1.066666603088379,
+              1.650000015894572,
+              -2.683333396911621
+            ],
+            "processMeanLogCostRatios": [
+              0.2233073679966071,
+              0.1560427808747722,
+              0.29760437810897505,
+              0.3302899927599677,
+              0.47101005354934555,
+              -0.8313031362194389
+            ],
+            "meanPairedDifferenceMs": 0.433333330684238,
+            "differenceIntervalMs": [
+              -0.9138889047834607,
+              1.3361111614439223
+            ],
+            "geometricPairedCostRatio": 1.1138530708697019,
+            "costRatioInterval": [
+              0.7519122638684085,
+              1.4343526268267364
+            ],
+            "decision": "inconclusive"
+          },
+          "gpuComputeMs": {
+            "processMeanDifferencesMs": [
+              -0.13680299999999998,
+              0.006177999999999961,
+              0.07090633333333336,
+              0.14549283333333335,
+              -0.11221033333333334,
+              0.32217749999999995
+            ],
+            "processMeanLogCostRatios": [
+              -0.40837617847437385,
+              0.007550894844274722,
+              0.14883253692348927,
+              0.26922536553358495,
+              -0.1648595922475984,
+              0.7575837232344499
+            ],
+            "meanPairedDifferenceMs": 0.049290222222222214,
+            "differenceIntervalMs": [
+              -0.07015705555555556,
+              0.17845355555555553
+            ],
+            "geometricPairedCostRatio": 1.1070064256840648,
+            "costRatioInterval": [
+              0.8380222657295123,
+              1.4932069291989756
+            ],
+            "decision": "inconclusive"
+          },
+          "completeOperationMs": {
+            "processMeanDifferencesMs": [
+              -1.3333334922790527,
+              1.5894571940104166e-07,
+              -2.2333333492279053,
+              -2.883333444595337,
+              -1.066666603088379,
+              0.5999999841054281
+            ],
+            "processMeanLogCostRatios": [
+              -0.21426698519468582,
+              -0.010245844499766926,
+              -0.36127350513918816,
+              -0.497534021581495,
+              -0.1623105765382792,
+              0.10808214330532413
+            ],
+            "meanPairedDifferenceMs": -1.1527777910232544,
+            "differenceIntervalMs": [
+              -2.0861111746893988,
+              -0.1999999682108561
+            ],
+            "geometricPairedCostRatio": 0.8272970447611584,
+            "costRatioInterval": [
+              0.70537048572997,
+              0.9702991748545543
+            ],
+            "decision": "inconclusive"
+          },
+          "applicationMs": {
+            "processMeanDifferencesMs": [
+              1.4499999682108562,
+              0.08333349227905273,
+              -2.4000000953674316,
+              -2.9166667461395264,
+              1.8666667938232422,
+              -3.449999968210856
+            ],
+            "processMeanLogCostRatios": [
+              0.14642799834983392,
+              0.0017171209416590727,
+              -0.29478025018573856,
+              -0.35858305970526455,
+              0.19318582042205826,
+              -0.3833738134386339
+            ],
+            "meanPairedDifferenceMs": -0.8944444259007772,
+            "differenceIntervalMs": [
+              -2.5083333386315236,
+              0.7916666534211901
+            ],
+            "geometricPairedCostRatio": 0.8905633574548701,
+            "costRatioInterval": [
+              0.7436663399212221,
+              1.0764984920975027
+            ],
+            "decision": "inconclusive"
+          }
+        },
+        "ab": {
+          "pipelinePreparationMs": {
+            "processMeanDifferencesMs": [
+              2.4833333492279053,
+              -1.5894571940104166e-07,
+              1.4833335081736247,
+              -1.3333332538604736,
+              0.16666666666666666,
+              -1.7833333015441895
+            ],
+            "processMeanLogCostRatios": [
+              0.5946399444514754,
+              0.018262867300486405,
+              0.3319726434782438,
+              -0.3199079417827482,
+              0.08365184731686232,
+              -0.5455710837608001
+            ],
+            "meanPairedDifferenceMs": 0.16944446828630236,
+            "differenceIntervalMs": [
+              -1.0111111005147297,
+              1.3500000370873346
+            ],
+            "geometricPairedCostRatio": 1.027547312784684,
+            "costRatioInterval": [
+              0.7622297780568708,
+              1.3852167816149619
+            ],
+            "decision": "inconclusive"
+          },
+          "gpuComputeMs": {
+            "processMeanDifferencesMs": [
+              -0.21398816666666667,
+              -0.08971500000000003,
+              0.11803449999999997,
+              0.18236850000000002,
+              -0.06784083333333332,
+              0.09212616666666666
+            ],
+            "processMeanLogCostRatios": [
+              -0.5237795699578095,
+              -0.20740078873593984,
+              0.22957955886598144,
+              0.35528350478746856,
+              -0.1177473993942985,
+              0.2567310703954679
+            ],
+            "meanPairedDifferenceMs": 0.003497527777777771,
+            "differenceIntervalMs": [
+              -0.10678150000000002,
+              0.11125852777777778
+            ],
+            "geometricPairedCostRatio": 0.9987784759953696,
+            "costRatioInterval": [
+              0.7723245572360412,
+              1.2550417055696248
+            ],
+            "decision": "inconclusive"
+          },
+          "completeOperationMs": {
+            "processMeanDifferencesMs": [
+              -3.0000001589457193,
+              -0.4166664282480876,
+              -1.0166668097178142,
+              0.3499998251597087,
+              0.23333326975504556,
+              -2.650000254313151
+            ],
+            "processMeanLogCostRatios": [
+              -0.45626941763431744,
+              -0.05010581732900915,
+              -0.15659714875704875,
+              0.03870292442312365,
+              0.0024066094675964742,
+              -0.45172334943745046
+            ],
+            "meanPairedDifferenceMs": -1.0833334260516696,
+            "differenceIntervalMs": [
+              -2.122222344080607,
+              -0.0638889339235094
+            ],
+            "geometricPairedCostRatio": 0.836163564924507,
+            "costRatioInterval": [
+              0.713826923536066,
+              0.9794664284218958
+            ],
+            "decision": "inconclusive"
+          },
+          "applicationMs": {
+            "processMeanDifferencesMs": [
+              -0.35000014305114746,
+              0.8666669527689616,
+              -0.9000000158945719,
+              -2.050000031789144,
+              0.5999999841054281,
+              -4.466666618982951
+            ],
+            "processMeanLogCostRatios": [
+              -0.06339510656675648,
+              0.1091266286664374,
+              -0.11721773427627048,
+              -0.24852868904653133,
+              0.04557408079405012,
+              -0.5339530205787267
+            ],
+            "meanPairedDifferenceMs": -1.0499999788072374,
+            "differenceIntervalMs": [
+              -2.5805554919772677,
+              0.23611112435658774
+            ],
+            "geometricPairedCostRatio": 0.8739498307739392,
+            "costRatioInterval": [
+              0.7313855458183071,
+              1.0186132175893923
+            ],
+            "decision": "inconclusive"
+          }
+        },
+        "bc": {
+          "pipelinePreparationMs": {
+            "processMeanDifferencesMs": [
+              1.3333332538604736,
+              -0.15000017484029135,
+              0.21666685740152994,
+              -2.3999998569488525,
+              -1.4833333492279053,
+              0.9000000953674316
+            ],
+            "processMeanLogCostRatios": [
+              0.3713325764548683,
+              -0.13777991357428576,
+              0.03436826536926879,
+              -0.6501979345427158,
+              -0.38735820623248324,
+              0.28573205245863875
+            ],
+            "meanPairedDifferenceMs": -0.2638888623979357,
+            "differenceIntervalMs": [
+              -1.3444444603390162,
+              0.6944443914625379
+            ],
+            "geometricPairedCostRatio": 0.9225160298587407,
+            "costRatioInterval": [
+              0.6850917008308066,
+              1.2066128016735702
+            ],
+            "decision": "inconclusive"
+          },
+          "gpuComputeMs": {
+            "processMeanDifferencesMs": [
+              -0.07718516666666668,
+              -0.09589299999999996,
+              0.047128166666666645,
+              0.03687566666666665,
+              0.04436950000000001,
+              -0.23005133333333336
+            ],
+            "processMeanLogCostRatios": [
+              -0.11540339148343559,
+              -0.21495168358021458,
+              0.08074702194249221,
+              0.08605813925388374,
+              0.04711219285330001,
+              -0.5008526528389821
+            ],
+            "meanPairedDifferenceMs": -0.04579269444444445,
+            "differenceIntervalMs": [
+              -0.13601733333333335,
+              0.023780972222222214
+            ],
+            "geometricPairedCostRatio": 0.9022336752726465,
+            "costRatioInterval": [
+              0.7474091777867637,
+              1.0442873256568836
+            ],
+            "decision": "inconclusive"
+          },
+          "completeOperationMs": {
+            "processMeanDifferencesMs": [
+              -1.6666666666666667,
+              -0.41666658719380695,
+              1.216666539510091,
+              3.2333332697550454,
+              1.2999998728434246,
+              -3.250000238418579
+            ],
+            "processMeanLogCostRatios": [
+              -0.24200243243963168,
+              -0.039859972829242286,
+              0.20467635638213935,
+              0.5362369460046187,
+              0.16471718600587568,
+              -0.5598054927427746
+            ],
+            "meanPairedDifferenceMs": 0.06944436497158471,
+            "differenceIntervalMs": [
+              -1.6972223785188463,
+              1.6944444179534912
+            ],
+            "geometricPairedCostRatio": 1.0107174565888948,
+            "costRatioInterval": [
+              0.7607196992726581,
+              1.3261561960380341
+            ],
+            "decision": "inconclusive"
+          },
+          "applicationMs": {
+            "processMeanDifferencesMs": [
+              -1.8000001112620037,
+              0.7833334604899088,
+              1.5000000794728596,
+              0.8666667143503824,
+              -1.2666668097178142,
+              -1.0166666507720947
+            ],
+            "processMeanLogCostRatios": [
+              -0.20982310491659042,
+              0.10740950772477824,
+              0.17756251590946803,
+              0.11005437065873323,
+              -0.1476117396280082,
+              -0.15057920714009287
+            ],
+            "meanPairedDifferenceMs": -0.15555555290646028,
+            "differenceIntervalMs": [
+              -1.1361111799875896,
+              0.8138889339235093
+            ],
+            "geometricPairedCostRatio": 0.9813449244886848,
+            "costRatioInterval": [
+              0.8726090487484497,
+              1.1050921256925639
+            ],
+            "decision": "inconclusive"
+          }
+        }
+      }
+    },
+    "plain": {
+      "processPairs": [
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7,
+                "logCostRatio": -1.5040773967762742
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.3000001907348633,
+                "logCostRatio": -0.0923733789439475
+              },
+              "applicationMs": {
+                "differenceMs": 0.7000002861022949,
+                "logCostRatio": 0.052842502030800036
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.599999904632568,
+                "logCostRatio": -1.8607522725954146
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.599999904632568,
+                "logCostRatio": 0.9734491176648594
+              },
+              "applicationMs": {
+                "differenceMs": -2.0999999046325684,
+                "logCostRatio": -0.17768116696964129
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.5999999046325684,
+                "logCostRatio": -0.35667487581914065
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.900000095367432,
+                "logCostRatio": 1.065822496608807
+              },
+              "applicationMs": {
+                "differenceMs": -2.8000001907348633,
+                "logCostRatio": -0.23052366900044116
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.599999904632568,
+                "logCostRatio": 1.6094378622407166
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.4999995231628418,
+                "logCostRatio": -0.1451818688875703
+              },
+              "applicationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.00766286546561245
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.1112257975005929
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.5999999046325684,
+                "logCostRatio": -0.17693068737280185
+              },
+              "applicationMs": {
+                "differenceMs": -7.700000286102295,
+                "logCostRatio": -0.8972425908850272
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.800000190734863,
+                "logCostRatio": -1.7206636597413094
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.03174881848523154
+              },
+              "applicationMs": {
+                "differenceMs": -7.800000190734863,
+                "logCostRatio": -0.9049054563506397
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.9000000953674316,
+                "logCostRatio": -0.826678402885538
+              },
+              "completeOperationMs": {
+                "differenceMs": 4.800000190734863,
+                "logCostRatio": 0.93546069081739
+              },
+              "applicationMs": {
+                "differenceMs": 4,
+                "logCostRatio": 0.5877866649021191
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.6999993324279785,
+                "logCostRatio": 1.760010501731236
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.03174866947362192
+              },
+              "applicationMs": {
+                "differenceMs": 8.099999904632568,
+                "logCostRatio": 0.9631743104930489
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 8.59999942779541,
+                "logCostRatio": 2.586688904616774
+              },
+              "completeOperationMs": {
+                "differenceMs": -4.700000286102295,
+                "logCostRatio": -0.9037120213437682
+              },
+              "applicationMs": {
+                "differenceMs": 4.099999904632568,
+                "logCostRatio": 0.37538764559092974
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.7999997138977051,
+                "logCostRatio": -0.693146882536748
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.5,
+                "logCostRatio": 1.0203601114428134
+              },
+              "applicationMs": {
+                "differenceMs": 4.500000476837158,
+                "logCostRatio": 0.6234673260968191
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.13353126490028436
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.06669131084966345
+              },
+              "applicationMs": {
+                "differenceMs": -0.5999999046325684,
+                "logCostRatio": -0.1226023061446009
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.5999999046325684,
+                "logCostRatio": 0.5596156176364637
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.699999809265137,
+                "logCostRatio": -1.0870514222924765
+              },
+              "applicationMs": {
+                "differenceMs": -5.100000381469727,
+                "logCostRatio": -0.74606963224142
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.13353160549828927
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.06252044554346378
+              },
+              "applicationMs": {
+                "differenceMs": 0.40000009536743164,
+                "logCostRatio": 0.07696105879676374
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.6999998092651367,
+                "logCostRatio": -0.6931471805599453
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.099999904632568,
+                "logCostRatio": 0.9727320502824455
+              },
+              "applicationMs": {
+                "differenceMs": 4.299999713897705,
+                "logCostRatio": 0.6205764569614218
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.9000000953674316,
+                "logCostRatio": -0.8266787860582346
+              },
+              "completeOperationMs": {
+                "differenceMs": 4.899999618530273,
+                "logCostRatio": 0.9102116047389817
+              },
+              "applicationMs": {
+                "differenceMs": 3.8999996185302734,
+                "logCostRatio": 0.5436153981646581
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.5999994277954102,
+                "logCostRatio": -0.43531761227026045
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.06453846153292463
+              },
+              "applicationMs": {
+                "differenceMs": -0.7999997138977051,
+                "logCostRatio": -0.167054026308968
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.5999994277954102,
+                "logCostRatio": -0.43531761227026045
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.000000476837158,
+                "logCostRatio": 1.0560527649520353
+              },
+              "applicationMs": {
+                "differenceMs": 5.600000381469727,
+                "logCostRatio": 0.7308875628832098
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.200000286102295,
+                "logCostRatio": 1.12059122648496
+              },
+              "applicationMs": {
+                "differenceMs": 6.400000095367432,
+                "logCostRatio": 0.8979415891921778
+              }
+            }
+          }
+        ],
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.1823213978482226
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.699999809265137,
+                "logCostRatio": -1.1735135771778393
+              },
+              "applicationMs": {
+                "differenceMs": -6.599999904632568,
+                "logCostRatio": -0.9028677029503538
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0,
+                "logCostRatio": 0.0
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.699999809265137,
+                "logCostRatio": -1.1735135771778393
+              },
+              "applicationMs": {
+                "differenceMs": -6.599999904632568,
+                "logCostRatio": -0.9028677029503538
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.18232139784822265
+              },
+              "completeOperationMs": {
+                "differenceMs": 0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.2999997138977051,
+                "logCostRatio": -0.31845340600231503
+              },
+              "completeOperationMs": {
+                "differenceMs": 7.600000381469727,
+                "logCostRatio": 1.2388416874789798
+              },
+              "applicationMs": {
+                "differenceMs": 7.100000381469727,
+                "logCostRatio": 0.920537079501464
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.06252044554346378
+              },
+              "applicationMs": {
+                "differenceMs": 4.76837158203125e-07,
+                "logCostRatio": 1.0145471347968529e-07
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.2999997138977051,
+                "logCostRatio": 0.31845340600231503
+              },
+              "completeOperationMs": {
+                "differenceMs": -7.400000095367432,
+                "logCostRatio": -1.1763212419355162
+              },
+              "applicationMs": {
+                "differenceMs": -7.099999904632568,
+                "logCostRatio": -0.9205369780467507
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -8.200000286102295,
+                "logCostRatio": -2.1347043275616793
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.5,
+                "logCostRatio": 1.1526795099383853
+              },
+              "applicationMs": {
+                "differenceMs": -1.700000286102295,
+                "logCostRatio": -0.14250008610010462
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -8.099999904632568,
+                "logCostRatio": -2.04769262545583
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.10000038146972656,
+                "logCostRatio": 0.03278994587773387
+              },
+              "applicationMs": {
+                "differenceMs": -8.099999904632568,
+                "logCostRatio": -1.0018826162378929
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.10000038146972656,
+                "logCostRatio": 0.08701170210584938
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.399999618530273,
+                "logCostRatio": -1.1198895640606517
+              },
+              "applicationMs": {
+                "differenceMs": -6.399999618530273,
+                "logCostRatio": -0.8593825301377882
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.199999809265137,
+                "logCostRatio": -2.197224459598655
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.900000095367432,
+                "logCostRatio": 1.1939224781055084
+              },
+              "applicationMs": {
+                "differenceMs": -0.9000000953674316,
+                "logCostRatio": -0.07864313533318307
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.399999618530273,
+                "logCostRatio": -2.448538585125888
+              },
+              "completeOperationMs": {
+                "differenceMs": 10.399999618530273,
+                "logCostRatio": 1.4966423898208654
+              },
+              "applicationMs": {
+                "differenceMs": 2.6999998092651367,
+                "logCostRatio": 0.2044831140507213
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.2513141255272328
+              },
+              "completeOperationMs": {
+                "differenceMs": 3.499999523162842,
+                "logCostRatio": 0.30271991171535717
+              },
+              "applicationMs": {
+                "differenceMs": 3.5999999046325684,
+                "logCostRatio": 0.2831262493839043
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 8.199999809265137,
+                "logCostRatio": 2.3136348127368858
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.599999904632568,
+                "logCostRatio": -1.1407237851185366
+              },
+              "applicationMs": {
+                "differenceMs": 1.9000000953674316,
+                "logCostRatio": 0.15933204596208006
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.200670502800675
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.699999809265137,
+                "logCostRatio": -1.1735135771778393
+              },
+              "applicationMs": {
+                "differenceMs": -6.300000190734863,
+                "logCostRatio": -0.8503328046642442
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -8.0,
+                "logCostRatio": -2.1129643099362108
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.032789792059302734
+              },
+              "applicationMs": {
+                "differenceMs": -8.200000286102295,
+                "logCostRatio": -1.0096648506263242
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.3000001907348633,
+                "logCostRatio": -0.0923733789439475
+              },
+              "applicationMs": {
+                "differenceMs": -0.5,
+                "logCostRatio": -0.10318423826778472
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.400000095367432,
+                "logCostRatio": 1.9195929274356087
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.3000001907348633,
+                "logCostRatio": -0.0923733789439475
+              },
+              "applicationMs": {
+                "differenceMs": 6.0,
+                "logCostRatio": 0.7777045786958444
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.400000095367432,
+                "logCostRatio": 1.9195929274356087
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": 6.5,
+                "logCostRatio": 0.8808888169636292
+              }
+            }
+          }
+        ],
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.699999809265137,
+                "logCostRatio": 1.6986690229016936
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.6000003814697266,
+                "logCostRatio": 0.20067082390313737
+              },
+              "applicationMs": {
+                "differenceMs": -0.5,
+                "logCostRatio": -0.040821994520255166
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.5,
+                "logCostRatio": 0.16989904783329546
+              },
+              "applicationMs": {
+                "differenceMs": -7.400000095367432,
+                "logCostRatio": -0.896488123277472
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.699999809265137,
+                "logCostRatio": -1.6986690229016936
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.030771776069842008
+              },
+              "applicationMs": {
+                "differenceMs": -6.900000095367432,
+                "logCostRatio": -0.8556661287572167
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.400000095367432,
+                "logCostRatio": 1.4744016014168773
+              },
+              "completeOperationMs": {
+                "differenceMs": -7.399999618530273,
+                "logCostRatio": -1.2199730226176342
+              },
+              "applicationMs": {
+                "differenceMs": -0.9000000953674316,
+                "logCostRatio": -0.0723206689724503
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.0,
+                "logCostRatio": 1.425008835179024
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.5,
+                "logCostRatio": -0.9650808960435872
+              },
+              "applicationMs": {
+                "differenceMs": -0.5,
+                "logCostRatio": -0.039530838458537464
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.04939276623785342
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.8999996185302734,
+                "logCostRatio": 0.2548921265740472
+              },
+              "applicationMs": {
+                "differenceMs": 0.40000009536743164,
+                "logCostRatio": 0.03278983051391282
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.500000476837158,
+                "logCostRatio": 1.791759713759955
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.10000038146972656,
+                "logCostRatio": 0.03174881848523165
+              },
+              "applicationMs": {
+                "differenceMs": 6.700000286102295,
+                "logCostRatio": 0.8737311770600058
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.06252044554346378
+              },
+              "applicationMs": {
+                "differenceMs": 7.600000381469727,
+                "logCostRatio": 0.9490806219927143
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.500000476837158,
+                "logCostRatio": -1.7917597137599548
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.030771627058232245
+              },
+              "applicationMs": {
+                "differenceMs": 0.9000000953674316,
+                "logCostRatio": 0.07534944493270873
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.900000095367432,
+                "logCostRatio": -1.8417697779741247
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.030771631573731247
+              },
+              "applicationMs": {
+                "differenceMs": -7.100000381469727,
+                "logCostRatio": -0.8837675716950182
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.300000190734863,
+                "logCostRatio": -2.2094945988547496
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.200000286102295,
+                "logCostRatio": 1.0775589492203954
+              },
+              "applicationMs": {
+                "differenceMs": -1.4000000953674316,
+                "logCostRatio": -0.1229617159227262
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.36772482088062486
+              },
+              "completeOperationMs": {
+                "differenceMs": 6.100000381469727,
+                "logCostRatio": 1.046787317646664
+              },
+              "applicationMs": {
+                "differenceMs": 5.700000286102295,
+                "logCostRatio": 0.7608058557722921
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "completeOperationMs": {
+                "differenceMs": -4.699999809265137,
+                "logCostRatio": -0.9037118723321586
+              },
+              "applicationMs": {
+                "differenceMs": -5.0,
+                "logCostRatio": -0.7357068057766843
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.800000190734863,
+                "logCostRatio": 1.9715526784381465
+              },
+              "completeOperationMs": {
+                "differenceMs": -4.700000286102295,
+                "logCostRatio": -0.9037120213437682
+              },
+              "applicationMs": {
+                "differenceMs": 1.9000000953674316,
+                "logCostRatio": 0.1805839468295214
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.800000190734863,
+                "logCostRatio": 1.9715526784381465
+              },
+              "completeOperationMs": {
+                "differenceMs": -4.76837158203125e-07,
+                "logCostRatio": -1.4901160971802964e-07
+              },
+              "applicationMs": {
+                "differenceMs": 6.900000095367432,
+                "logCostRatio": 0.9162907526062056
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.900000095367432,
+                "logCostRatio": 2.186051287453536
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.200000286102295,
+                "logCostRatio": -0.9105600900504908
+              },
+              "applicationMs": {
+                "differenceMs": 3.1000003814697266,
+                "logCostRatio": 0.26768143686184753
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.5,
+                "logCostRatio": 0.4054651081081644
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.300000190734863,
+                "logCostRatio": -0.9395475988744989
+              },
+              "applicationMs": {
+                "differenceMs": -4.699999809265137,
+                "logCostRatio": -0.6261364431740296
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.400000095367432,
+                "logCostRatio": -1.7805861793453714
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.02898750882400805
+              },
+              "applicationMs": {
+                "differenceMs": -7.800000190734863,
+                "logCostRatio": -0.8938178800358771
+              }
+            }
+          }
+        ],
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.5000004768371582,
+                "logCostRatio": -0.3254227264771478
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.016667036589535986
+              },
+              "applicationMs": {
+                "differenceMs": -0.5000004768371582,
+                "logCostRatio": -0.03533940051191278
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.2513144661251217
+              },
+              "completeOperationMs": {
+                "differenceMs": -2.0,
+                "logCostRatio": -0.18400364135793543
+              },
+              "applicationMs": {
+                "differenceMs": -2.3000001907348633,
+                "logCostRatio": -0.1740227684836038
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.10000038146972656,
+                "logCostRatio": 0.07410826035202628
+              },
+              "completeOperationMs": {
+                "differenceMs": -2.1999998092651367,
+                "logCostRatio": -0.2006706779474713
+              },
+              "applicationMs": {
+                "differenceMs": -1.799999713897705,
+                "logCostRatio": -0.13868336797169104
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.2006709362889442
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.5000004768371582,
+                "logCostRatio": -0.1590648542202252
+              },
+              "applicationMs": {
+                "differenceMs": -0.2999997138977051,
+                "logCostRatio": -0.023347341469251652
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.105360409694019
+              },
+              "completeOperationMs": {
+                "differenceMs": 7.199999809265137,
+                "logCostRatio": 1.1370785324497341
+              },
+              "applicationMs": {
+                "differenceMs": -0.8999996185302734,
+                "logCostRatio": -0.07174387333241809
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.09531052659492524
+              },
+              "completeOperationMs": {
+                "differenceMs": 7.700000286102295,
+                "logCostRatio": 1.2961433866699592
+              },
+              "applicationMs": {
+                "differenceMs": -0.5999999046325684,
+                "logCostRatio": -0.048396531863166496
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.9000005722045898,
+                "logCostRatio": 0.526093446021981
+              },
+              "completeOperationMs": {
+                "differenceMs": 1.700000286102295,
+                "logCostRatio": 0.16623544326350026
+              },
+              "applicationMs": {
+                "differenceMs": 2.700000286102295,
+                "logCostRatio": 0.21597508572646218
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.08004264654055582
+              },
+              "completeOperationMs": {
+                "differenceMs": -6.599999904632568,
+                "logCostRatio": -1.2110902141206796
+              },
+              "applicationMs": {
+                "differenceMs": 1.3000001907348633,
+                "logCostRatio": 0.10981488303710521
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -1.0000004768371582,
+                "logCostRatio": -0.6061360925625368
+              },
+              "completeOperationMs": {
+                "differenceMs": -8.300000190734863,
+                "logCostRatio": -1.37732565738418
+              },
+              "applicationMs": {
+                "differenceMs": -1.4000000953674316,
+                "logCostRatio": -0.10616020268935694
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.7999997138977051,
+                "logCostRatio": 0.47957288812970766
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.39999961853027344,
+                "logCostRatio": 0.11441024182933814
+              },
+              "applicationMs": {
+                "differenceMs": 1.299999713897705,
+                "logCostRatio": 0.10622218776281085
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.08004301333838325
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.030771776069842008
+              },
+              "applicationMs": {
+                "differenceMs": -6.8000006675720215,
+                "logCostRatio": -0.8823892726884409
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.9000000953674316,
+                "logCostRatio": -0.5596159014680909
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.5,
+                "logCostRatio": -0.14518201789918003
+              },
+              "applicationMs": {
+                "differenceMs": -8.100000381469727,
+                "logCostRatio": -0.9886114604512519
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.012270080387310669
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.030771631573731337
+              },
+              "applicationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.0083682416564468
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.012270139256094565
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.09999942779541016,
+                "logCostRatio": -0.030771482562121626
+              },
+              "applicationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.008438860495963192
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -4.76837158203125e-07,
+                "logCostRatio": -5.8868783915075444e-08
+              },
+              "completeOperationMs": {
+                "differenceMs": 4.76837158203125e-07,
+                "logCostRatio": 1.490116097180303e-07
+              },
+              "applicationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.0168071021524099
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.6999998092651367,
+                "logCostRatio": -0.08096903955356338
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.030771776069842008
+              },
+              "applicationMs": {
+                "differenceMs": -0.7000002861022949,
+                "logCostRatio": -0.0562397411056431
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -1,
+                "logCostRatio": -0.11778303565638351
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.030771627058232286
+              },
+              "applicationMs": {
+                "differenceMs": -1.1000003814697266,
+                "logCostRatio": -0.08985636032514731
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.3000001907348633,
+                "logCostRatio": -0.03681399610282008
+              },
+              "completeOperationMs": {
+                "differenceMs": 4.76837158203125e-07,
+                "logCostRatio": 1.490116097180303e-07
+              },
+              "applicationMs": {
+                "differenceMs": -0.40000009536743164,
+                "logCostRatio": -0.03361661921950423
+              }
+            }
+          }
+        ],
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.099999904632568,
+                "logCostRatio": 1.803593858755466
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": 7.200000286102295,
+                "logCostRatio": 0.891998062756118
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.07410789355419879
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.599999904632568,
+                "logCostRatio": 1.0319209230095778
+              },
+              "applicationMs": {
+                "differenceMs": 5.400000095367432,
+                "logCostRatio": 0.732367902883172
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.199999809265137,
+                "logCostRatio": -1.8777017523096649
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.599999904632568,
+                "logCostRatio": 1.0319209230095778
+              },
+              "applicationMs": {
+                "differenceMs": -1.8000001907348633,
+                "logCostRatio": -0.15963015987294613
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.2999997138977051,
+                "logCostRatio": -0.35667453522125175
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.400000095367432,
+                "logCostRatio": 0.9886114419691915
+              },
+              "applicationMs": {
+                "differenceMs": 5.100000381469727,
+                "logCostRatio": 0.7348199370051408
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.799999713897705,
+                "logCostRatio": 2.174751688972536
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": 7.699999809265137,
+                "logCostRatio": 0.9701339737131769
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 8.09999942779541,
+                "logCostRatio": 2.5314262241937877
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.400000095367432,
+                "logCostRatio": -0.9886114419691915
+              },
+              "applicationMs": {
+                "differenceMs": 2.59999942779541,
+                "logCostRatio": 0.23531403670803586
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.900000095367432,
+                "logCostRatio": -2.1594841678427525
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.05884058672060236
+              },
+              "applicationMs": {
+                "differenceMs": -0.5999999046325684,
+                "logCostRatio": -0.050858409351885125
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.900000095367432,
+                "logCostRatio": -2.1594841678427525
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.2999997138977051,
+                "logCostRatio": -0.08961206928272399
+              },
+              "applicationMs": {
+                "differenceMs": -1.3000001907348633,
+                "logCostRatio": -0.11365933708186908
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.09999942779541016,
+                "logCostRatio": -0.030771482562121626
+              },
+              "applicationMs": {
+                "differenceMs": -0.7000002861022949,
+                "logCostRatio": -0.06280092772998391
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.8000001907348633,
+                "logCostRatio": 0.5108257827117226
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.800000190734863,
+                "logCostRatio": 1.0340738271351853
+              },
+              "applicationMs": {
+                "differenceMs": 6.700000286102295,
+                "logCostRatio": 0.8860508956318878
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.5,
+                "logCostRatio": 1.8588989062406538
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.09999942779541016,
+                "logCostRatio": -0.031748515655190816
+              },
+              "applicationMs": {
+                "differenceMs": 6.600000381469727,
+                "logCostRatio": 0.8772402744633598
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 5.699999809265137,
+                "logCostRatio": 1.3480731235289312
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.899999618530273,
+                "logCostRatio": -1.065822342790376
+              },
+              "applicationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.008810621168527696
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -8.5,
+                "logCostRatio": -2.0898041197919133
+              },
+              "completeOperationMs": {
+                "differenceMs": 4.76837158203125e-07,
+                "logCostRatio": 1.490116097180303e-07
+              },
+              "applicationMs": {
+                "differenceMs": -8.599999904632568,
+                "logCostRatio": -1.0266387564235637
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -1.9000000953674316,
+                "logCostRatio": -0.21800215685568525
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.10000038146972656,
+                "logCostRatio": 0.030771776069842095
+              },
+              "applicationMs": {
+                "differenceMs": -1.799999713897705,
+                "logCostRatio": -0.1442495830761985
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 6.599999904632568,
+                "logCostRatio": 1.8718019629362281
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.030771627058232245
+              },
+              "applicationMs": {
+                "differenceMs": 6.800000190734863,
+                "logCostRatio": 0.8823891733473654
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.5,
+                "logCostRatio": -2.0149030205422647
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.600000381469727,
+                "logCostRatio": 1.0116009929575425
+              },
+              "applicationMs": {
+                "differenceMs": -0.7999997138977051,
+                "logCostRatio": -0.0755075244589009
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -6.400000095367432,
+                "logCostRatio": -1.9195929274356087
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.09999990463256836,
+                "logCostRatio": -0.03174866947362185
+              },
+              "applicationMs": {
+                "differenceMs": -6.5,
+                "logCostRatio": -0.8938178760220964
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.09531009310665597
+              },
+              "completeOperationMs": {
+                "differenceMs": -5.700000286102295,
+                "logCostRatio": -1.0433496624311644
+              },
+              "applicationMs": {
+                "differenceMs": -5.700000286102295,
+                "logCostRatio": -0.8183103515631956
+              }
+            }
+          }
+        ],
+        [
+          {
+            "cohort": 0,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -4.76837158203125e-07,
+                "logCostRatio": -6.035913506870241e-08
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.03174866947362192
+              },
+              "applicationMs": {
+                "differenceMs": -4.76837158203125e-07,
+                "logCostRatio": -4.182782141530201e-08
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 1.0,
+                "logCostRatio": 0.11918851590873322
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.10000038146972656,
+                "logCostRatio": 0.03174881848523165
+              },
+              "applicationMs": {
+                "differenceMs": 1.0999999046325684,
+                "logCostRatio": 0.09211528054224159
+              }
+            }
+          },
+          {
+            "cohort": 0,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 1.0000004768371582,
+                "logCostRatio": 0.11918857626786841
+              },
+              "completeOperationMs": {
+                "differenceMs": 4.76837158203125e-07,
+                "logCostRatio": 1.490116097180303e-07
+              },
+              "applicationMs": {
+                "differenceMs": 1.1000003814697266,
+                "logCostRatio": 0.09211532237006301
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.5999999046325684,
+                "logCostRatio": 0.470003569641089
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.40000009536743164,
+                "logCostRatio": 0.12921175639312726
+              },
+              "applicationMs": {
+                "differenceMs": -5.299999713897705,
+                "logCostRatio": -0.6931471355753083
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.700000286102295,
+                "logCostRatio": 2.163323058545859
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.20000028610229492,
+                "logCostRatio": 0.06669146466809452
+              },
+              "applicationMs": {
+                "differenceMs": 1.700000286102295,
+                "logCostRatio": 0.14874528576417734
+              }
+            }
+          },
+          {
+            "cohort": 1,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.100000381469727,
+                "logCostRatio": 1.6933194889047698
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.06252029172503284
+              },
+              "applicationMs": {
+                "differenceMs": 7.0,
+                "logCostRatio": 0.8418924213394856
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.09999942779541016,
+                "logCostRatio": 0.08701087125329737
+              },
+              "completeOperationMs": {
+                "differenceMs": 4.76837158203125e-07,
+                "logCostRatio": 1.490116097180303e-07
+              },
+              "applicationMs": {
+                "differenceMs": -6.300000190734863,
+                "logCostRatio": -0.8153648301633858
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.20067093628894417
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.10000038146972656,
+                "logCostRatio": 0.030771776069842095
+              },
+              "applicationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              }
+            }
+          },
+          {
+            "cohort": 2,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.2999997138977051,
+                "logCostRatio": -0.2876818075422416
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.09999990463256836,
+                "logCostRatio": 0.030771627058232245
+              },
+              "applicationMs": {
+                "differenceMs": 6.300000190734863,
+                "logCostRatio": 0.8153648301633857
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.499999523162842,
+                "logCostRatio": 2.339398793228055
+              },
+              "completeOperationMs": {
+                "differenceMs": 1.0999999046325684,
+                "logCostRatio": 0.43825490016746715
+              },
+              "applicationMs": {
+                "differenceMs": 1.0999999046325684,
+                "logCostRatio": 0.09962983272751087
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.22314331289565909
+              },
+              "completeOperationMs": {
+                "differenceMs": 1.0999999046325684,
+                "logCostRatio": 0.43825490016746715
+              },
+              "applicationMs": {
+                "differenceMs": -6.0,
+                "logCostRatio": -0.8472978603872037
+              }
+            }
+          },
+          {
+            "cohort": 3,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.299999713897705,
+                "logCostRatio": -2.116255480332396
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.0,
+                "logCostRatio": 0.0
+              },
+              "applicationMs": {
+                "differenceMs": -7.099999904632568,
+                "logCostRatio": -0.9469276931147146
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 7.0,
+                "logCostRatio": 2.1722231812388215
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.3000001907348633,
+                "logCostRatio": 0.09531023760276668
+              },
+              "applicationMs": {
+                "differenceMs": 7.5,
+                "logCostRatio": 0.994933845532922
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.10000038146972656,
+                "logCostRatio": -0.11778349924812342
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.5,
+                "logCostRatio": 1.0414538748281612
+              },
+              "applicationMs": {
+                "differenceMs": 5.099999904632568,
+                "logCostRatio": 0.7696872360078636
+              }
+            }
+          },
+          {
+            "cohort": 4,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -7.100000381469727,
+                "logCostRatio": -2.290006680486945
+              },
+              "completeOperationMs": {
+                "differenceMs": 5.199999809265137,
+                "logCostRatio": 0.9461436372253945
+              },
+              "applicationMs": {
+                "differenceMs": -2.4000000953674316,
+                "logCostRatio": -0.22524660952505837
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "aa",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": -0.19999980926513672,
+                "logCostRatio": -0.20067050280067497
+              },
+              "completeOperationMs": {
+                "differenceMs": -0.20000028610229492,
+                "logCostRatio": -0.0645386105445344
+              },
+              "applicationMs": {
+                "differenceMs": -0.7000002861022949,
+                "logCostRatio": -0.061154447908962455
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "ab",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 8.500000476837158,
+                "logCostRatio": 2.1664530451035637
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.19999980926513672,
+                "logCostRatio": 0.06062456045871583
+              },
+              "applicationMs": {
+                "differenceMs": 1.9000000953674316,
+                "logCostRatio": 0.14929630608186786
+              }
+            }
+          },
+          {
+            "cohort": 5,
+            "comparison": "bc",
+            "metrics": {
+              "pipelinePreparationMs": {
+                "differenceMs": 8.700000286102295,
+                "logCostRatio": 2.3671235479042387
+              },
+              "completeOperationMs": {
+                "differenceMs": 0.40000009536743164,
+                "logCostRatio": 0.12516317100325028
+              },
+              "applicationMs": {
+                "differenceMs": 2.6000003814697266,
+                "logCostRatio": 0.21045075399083027
+              }
+            }
+          }
+        ]
+      ],
+      "summary": {
+        "aa": {
+          "pipelinePreparationMs": {
+            "processMeanDifferencesMs": [
+              -0.2499998410542806,
+              -1.2166666984558105,
+              3.433333396911621,
+              0.10000006357828777,
+              -2.3833332856496177,
+              2.499999761581421
+            ],
+            "processMeanLogCostRatios": [
+              -0.28604180445496913,
+              -0.35907099709625684,
+              0.8848519745929896,
+              0.13127923733710184,
+              -0.7177410336551656,
+              0.8113276420335754
+            ],
+            "meanPairedDifferenceMs": 0.3638888994852702,
+            "differenceIntervalMs": [
+              -1.2138888703452217,
+              1.997222132152981
+            ],
+            "geometricPairedCostRatio": 1.080511099847749,
+            "costRatioInterval": [
+              0.6806336307369085,
+              1.7364685810611982
+            ],
+            "decision": "inconclusive"
+          },
+          "completeOperationMs": {
+            "processMeanDifferencesMs": [
+              1.5833334922790527,
+              1.233333428700765,
+              -2.7499998410542807,
+              0.2666664918263753,
+              2.766666809717814,
+              0.28333338101704914
+            ],
+            "processMeanLogCostRatios": [
+              0.2860412564065375,
+              0.19647215571375834,
+              -0.46184228517303055,
+              0.012784076636429305,
+              0.49590763739215443,
+              0.10499785035067638
+            ],
+            "meanPairedDifferenceMs": 0.5638889604144626,
+            "differenceIntervalMs": [
+              -0.8611110183927749,
+              1.8027778996361625
+            ],
+            "geometricPairedCostRatio": 1.1115181481262149,
+            "costRatioInterval": [
+              0.862110728590208,
+              1.3851699168019043
+            ],
+            "decision": "inconclusive"
+          },
+          "applicationMs": {
+            "processMeanDifferencesMs": [
+              1.4833335081736247,
+              -0.11666663487752278,
+              -0.6166666348775228,
+              0.4333332379659017,
+              1.500000238418579,
+              -0.6166667938232422
+            ],
+            "processMeanLogCostRatios": [
+              0.19694439849719106,
+              -0.024554339531313685,
+              -0.09853407117375912,
+              0.03593983867648538,
+              0.2266440341931328,
+              -0.07918379620250751
+            ],
+            "meanPairedDifferenceMs": 0.34444448682996964,
+            "differenceIntervalMs": [
+              -0.35833337571885854,
+              1.1333334181043837
+            ],
+            "geometricPairedCostRatio": 1.043808465790962,
+            "costRatioInterval": [
+              0.9463960749300805,
+              1.1597751512180363
+            ],
+            "decision": "inconclusive"
+          }
+        },
+        "ab": {
+          "pipelinePreparationMs": {
+            "processMeanDifferencesMs": [
+              -0.2666666507720947,
+              -1.4833332697550456,
+              1.0,
+              -0.26666680971781415,
+              -0.16666674613952637,
+              2.849999984105428
+            ],
+            "processMeanLogCostRatios": [
+              -0.2456606043492103,
+              -0.3959946300575723,
+              0.26542200381176423,
+              -0.07268214853708664,
+              -0.05625609174584258,
+              0.7256089161527912
+            ],
+            "meanPairedDifferenceMs": 0.2777777512868245,
+            "differenceIntervalMs": [
+              -0.6638888782925076,
+              1.5027777221467762
+            ],
+            "geometricPairedCostRatio": 1.0374228140019361,
+            "costRatioInterval": [
+              0.7930467459691761,
+              1.424732865343838
+            ],
+            "decision": "inconclusive"
+          },
+          "completeOperationMs": {
+            "processMeanDifferencesMs": [
+              2.6666667461395264,
+              -0.4999999205271403,
+              -1.599999984105428,
+              -0.28333330154418945,
+              0.8666668732961019,
+              1.2000001271565754
+            ],
+            "processMeanLogCostRatios": [
+              0.46506010069174947,
+              -0.14124129200959384,
+              -0.24972701227744995,
+              -0.05838836811984615,
+              0.15159724077798056,
+              0.27825756577958544
+            ],
+            "meanPairedDifferenceMs": 0.3916667567359076,
+            "differenceIntervalMs": [
+              -0.6388888094160291,
+              1.5222223732206557
+            ],
+            "geometricPairedCostRatio": 1.077086494793596,
+            "costRatioInterval": [
+              0.8915551728024507,
+              1.3188609627950028
+            ],
+            "decision": "inconclusive"
+          },
+          "applicationMs": {
+            "processMeanDifferencesMs": [
+              1.2666666507720947,
+              -2.049999952316284,
+              -0.7499999205271403,
+              -1.6500000953674316,
+              1.683333396911621,
+              0.6333333651224772
+            ],
+            "processMeanLogCostRatios": [
+              0.18618537772306853,
+              -0.29548255494186865,
+              -0.09257542533508827,
+              -0.186106042048078,
+              0.23800255914659077,
+              0.05209104133482445
+            ],
+            "meanPairedDifferenceMs": -0.1444444259007772,
+            "differenceIntervalMs": [
+              -1.2666666507720947,
+              0.9888888994852701
+            ],
+            "geometricPairedCostRatio": 0.9838181813830736,
+            "costRatioInterval": [
+              0.845965306008231,
+              1.149957797505005
+            ],
+            "decision": "inconclusive"
+          }
+        },
+        "bc": {
+          "pipelinePreparationMs": {
+            "processMeanDifferencesMs": [
+              -0.01666680971781413,
+              -0.26666657129923504,
+              -2.433333396911621,
+              -0.36666687329610187,
+              2.2166665395100913,
+              0.35000022252400714
+            ],
+            "processMeanLogCostRatios": [
+              0.040381200105758845,
+              -0.03692363296131552,
+              -0.6194299707812253,
+              -0.20396138587418844,
+              0.661484941909323,
+              -0.08571872588078426
+            ],
+            "meanPairedDifferenceMs": -0.08611114819844562,
+            "differenceIntervalMs": [
+              -1.2222222752041287,
+              1.0444443490770128
+            ],
+            "geometricPairedCostRatio": 0.9601223107732219,
+            "costRatioInterval": [
+              0.7178047419953477,
+              1.3353489618602545
+            ],
+            "decision": "inconclusive"
+          },
+          "completeOperationMs": {
+            "processMeanDifferencesMs": [
+              1.0833332538604736,
+              -1.7333333492279053,
+              1.1499998569488525,
+              -0.5499997933705648,
+              -1.8999999364217122,
+              0.9166667461395264
+            ],
+            "processMeanLogCostRatios": [
+              0.1790188442852121,
+              -0.33771344772335227,
+              0.2121152728955806,
+              -0.07117244475627543,
+              -0.3443103966141739,
+              0.17325971542890897
+            ],
+            "meanPairedDifferenceMs": -0.17222220367855492,
+            "differenceIntervalMs": [
+              -1.1972221003638375,
+              0.7944444285498725
+            ],
+            "geometricPairedCostRatio": 0.9690228599589998,
+            "costRatioInterval": [
+              0.8094289921951074,
+              1.1588088037375324
+            ],
+            "decision": "inconclusive"
+          },
+          "applicationMs": {
+            "processMeanDifferencesMs": [
+              -0.21666685740152994,
+              -1.9333333174387615,
+              -0.13333328564961752,
+              -2.0833333333333335,
+              0.183333158493042,
+              1.2500001589457195
+            ],
+            "processMeanLogCostRatios": [
+              -0.01075902077412253,
+              -0.27092821541055495,
+              0.005958645838670905,
+              -0.22204588072456344,
+              0.011358524953457986,
+              0.13127483753733193
+            ],
+            "meanPairedDifferenceMs": -0.4888889127307468,
+            "differenceIntervalMs": [
+              -1.4111111693912084,
+              0.4194444153043959
+            ],
+            "geometricPairedCostRatio": 0.9425274977412357,
+            "costRatioInterval": [
+              0.8416661522496718,
+              1.0478541346047743
+            ],
+            "decision": "inconclusive"
+          }
+        }
+      }
+    }
+  }
+}

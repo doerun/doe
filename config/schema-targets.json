@@ -1492,6 +1492,10 @@
     {
       "schema": "config/browser-compiler-output.schema.json",
       "data": "config/browser-compiler-output.json"
+    },
+    {
+      "schema": "config/browser-compiler-statistics.schema.json",
+      "data": "reports/browser-compiler/20261004/paired-output/paired-statistics.json"
     }
   ],
   "globTargets": [
@@ -1669,6 +1673,11 @@
     {
       "schema": "config/browser-compiler-offline.schema.json",
       "glob": "reports/browser-compiler/20261004/direct-output/session-*.json",
+      "allowEmpty": false
+    },
+    {
+      "schema": "config/browser-compiler-offline.schema.json",
+      "glob": "reports/browser-compiler/20261004/paired-output/session-*.json",
       "allowEmpty": false
     }
   ]

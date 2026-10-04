@@ -1,0 +1,297 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Paired direct-WGSL process statistics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "classification",
+    "performancePromoted",
+    "settings",
+    "pairDirection",
+    "unit",
+    "caveat",
+    "raw",
+    "phases"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "classification": {
+      "const": "diagnostic"
+    },
+    "performancePromoted": {
+      "const": false
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "confidence",
+        "bootstrapResamples",
+        "bootstrapSeed",
+        "unit",
+        "method"
+      ],
+      "properties": {
+        "confidence": {
+          "const": 0.95
+        },
+        "bootstrapResamples": {
+          "type": "integer",
+          "minimum": 10000
+        },
+        "bootstrapSeed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unit": {
+          "const": "independent-browser-process"
+        },
+        "method": {
+          "const": "percentile-bootstrap-of-process-means"
+        }
+      }
+    },
+    "pairDirection": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "caveat": {
+      "type": "string"
+    },
+    "raw": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "sha256"
+        ],
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "phases": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timestamped",
+        "plain"
+      ],
+      "properties": {
+        "timestamped": {
+          "$ref": "#/$defs/phase"
+        },
+        "plain": {
+          "$ref": "#/$defs/phase"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "metricSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processMeanDifferencesMs",
+        "processMeanLogCostRatios",
+        "meanPairedDifferenceMs",
+        "differenceIntervalMs",
+        "geometricPairedCostRatio",
+        "costRatioInterval",
+        "decision"
+      ],
+      "properties": {
+        "processMeanDifferencesMs": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "processMeanLogCostRatios": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "meanPairedDifferenceMs": {
+          "type": "number"
+        },
+        "differenceIntervalMs": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "geometricPairedCostRatio": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "costRatioInterval": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "decision": {
+          "enum": [
+            "within-practical-margin",
+            "meaningful-cost-increase",
+            "meaningful-cost-decrease",
+            "inconclusive"
+          ]
+        }
+      }
+    },
+    "pairedMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "differenceMs",
+        "logCostRatio"
+      ],
+      "properties": {
+        "differenceMs": {
+          "type": "number"
+        },
+        "logCostRatio": {
+          "type": "number"
+        }
+      }
+    },
+    "pairedTrial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cohort",
+        "comparison",
+        "metrics"
+      ],
+      "properties": {
+        "cohort": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "comparison": {
+          "enum": [
+            "aa",
+            "ab",
+            "bc"
+          ]
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pipelinePreparationMs",
+            "completeOperationMs",
+            "applicationMs"
+          ],
+          "properties": {
+            "pipelinePreparationMs": {
+              "$ref": "#/$defs/pairedMetric"
+            },
+            "gpuComputeMs": {
+              "$ref": "#/$defs/pairedMetric"
+            },
+            "completeOperationMs": {
+              "$ref": "#/$defs/pairedMetric"
+            },
+            "applicationMs": {
+              "$ref": "#/$defs/pairedMetric"
+            }
+          }
+        }
+      }
+    },
+    "arm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pipelinePreparationMs",
+        "completeOperationMs",
+        "applicationMs"
+      ],
+      "properties": {
+        "pipelinePreparationMs": {
+          "$ref": "#/$defs/metricSummary"
+        },
+        "gpuComputeMs": {
+          "$ref": "#/$defs/metricSummary"
+        },
+        "completeOperationMs": {
+          "$ref": "#/$defs/metricSummary"
+        },
+        "applicationMs": {
+          "$ref": "#/$defs/metricSummary"
+        }
+      }
+    },
+    "phase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processPairs",
+        "summary"
+      ],
+      "properties": {
+        "processPairs": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "array",
+            "minItems": 18,
+            "maxItems": 18,
+            "items": {
+              "$ref": "#/$defs/pairedTrial"
+            }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "aa",
+            "ab",
+            "bc"
+          ],
+          "properties": {
+            "aa": {
+              "$ref": "#/$defs/arm"
+            },
+            "ab": {
+              "$ref": "#/$defs/arm"
+            },
+            "bc": {
+              "$ref": "#/$defs/arm"
+            }
+          }
+        }
+      }
+    }
+  }
+}

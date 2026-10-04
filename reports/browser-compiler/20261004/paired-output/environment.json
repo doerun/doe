@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "plan": {
+    "schemaVersion": 2,
+    "sessions": 6,
+    "browser": "/usr/bin/google-chrome",
+    "args": [
+      "--no-sandbox",
+      "--enable-unsafe-webgpu",
+      "--ignore-gpu-blocklist",
+      "--enable-webgpu-developer-features",
+      "--use-angle=vulkan",
+      "--enable-features=Vulkan",
+      "--disable-vulkan-surface"
+    ],
+    "viewport": {
+      "width": 1440,
+      "height": 1100
+    },
+    "output": "bench/out/browser-compiler/20261004/paired-output",
+    "warmupCycles": 1,
+    "trialOrders": [
+      [
+        "original",
+        "disabled",
+        "transformed"
+      ],
+      [
+        "original",
+        "transformed",
+        "disabled"
+      ],
+      [
+        "disabled",
+        "original",
+        "transformed"
+      ],
+      [
+        "disabled",
+        "transformed",
+        "original"
+      ],
+      [
+        "transformed",
+        "original",
+        "disabled"
+      ],
+      [
+        "transformed",
+        "disabled",
+        "original"
+      ]
+    ],
+    "statistics": {
+      "confidence": 0.95,
+      "bootstrapResamples": 10000,
+      "bootstrapSeed": 3735928559,
+      "unit": "independent-browser-process",
+      "method": "percentile-bootstrap-of-process-means"
+    },
+    "stoppingRule": "Complete all configured independent browser processes and trial orders; abort on any failure; no outcome-dependent continuation or retries."
+  },
+  "implementationSha256": "fed94302f7df3ae84329d3be235a44378a070ce6d01bccda3820dcc8a0d1a5ae",
+  "sessions": [
+    {
+      "session": 0,
+      "browserVersion": "146.0.7680.177",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "adapter": {
+        "vendor": "amd",
+        "architecture": "rdna-3",
+        "device": "0x1586",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)"
+      },
+      "warmupSamplesPerArmPerPhase": 6
+    },
+    {
+      "session": 1,
+      "browserVersion": "146.0.7680.177",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "adapter": {
+        "vendor": "amd",
+        "architecture": "rdna-3",
+        "device": "0x1586",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)"
+      },
+      "warmupSamplesPerArmPerPhase": 6
+    },
+    {
+      "session": 2,
+      "browserVersion": "146.0.7680.177",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "adapter": {
+        "vendor": "amd",
+        "architecture": "rdna-3",
+        "device": "0x1586",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)"
+      },
+      "warmupSamplesPerArmPerPhase": 6
+    },
+    {
+      "session": 3,
+      "browserVersion": "146.0.7680.177",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "adapter": {
+        "vendor": "amd",
+        "architecture": "rdna-3",
+        "device": "0x1586",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)"
+      },
+      "warmupSamplesPerArmPerPhase": 6
+    },
+    {
+      "session": 4,
+      "browserVersion": "146.0.7680.177",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "adapter": {
+        "vendor": "amd",
+        "architecture": "rdna-3",
+        "device": "0x1586",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)"
+      },
+      "warmupSamplesPerArmPerPhase": 6
+    },
+    {
+      "session": 5,
+      "browserVersion": "146.0.7680.177",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "adapter": {
+        "vendor": "amd",
+        "architecture": "rdna-3",
+        "device": "0x1586",
+        "description": "Radeon 8060S Graphics (RADV STRIX_HALO)"
+      },
+      "warmupSamplesPerArmPerPhase": 6
+    }
+  ]
+}

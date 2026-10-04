@@ -1,0 +1,63 @@
+{
+  "plan": {
+    "schemaVersion": 2,
+    "sessions": 6,
+    "browser": "/usr/bin/google-chrome",
+    "args": [
+      "--no-sandbox",
+      "--enable-unsafe-webgpu",
+      "--ignore-gpu-blocklist",
+      "--enable-webgpu-developer-features",
+      "--use-angle=vulkan",
+      "--enable-features=Vulkan",
+      "--disable-vulkan-surface"
+    ],
+    "viewport": {
+      "width": 1440,
+      "height": 1100
+    },
+    "output": "bench/out/browser-compiler/20261004/paired-output",
+    "warmupCycles": 1,
+    "trialOrders": [
+      [
+        "original",
+        "disabled",
+        "transformed"
+      ],
+      [
+        "original",
+        "transformed",
+        "disabled"
+      ],
+      [
+        "disabled",
+        "original",
+        "transformed"
+      ],
+      [
+        "disabled",
+        "transformed",
+        "original"
+      ],
+      [
+        "transformed",
+        "original",
+        "disabled"
+      ],
+      [
+        "transformed",
+        "disabled",
+        "original"
+      ]
+    ],
+    "statistics": {
+      "confidence": 0.95,
+      "bootstrapResamples": 10000,
+      "bootstrapSeed": 3735928559,
+      "unit": "independent-browser-process",
+      "method": "percentile-bootstrap-of-process-means"
+    },
+    "stoppingRule": "Complete all configured independent browser processes and trial orders; abort on any failure; no outcome-dependent continuation or retries."
+  },
+  "implementationSha256": "fed94302f7df3ae84329d3be235a44378a070ce6d01bccda3820dcc8a0d1a5ae"
+}

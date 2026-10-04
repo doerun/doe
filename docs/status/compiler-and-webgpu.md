@@ -3,6 +3,14 @@
 This is the live status front door for the non-TSIR WGSL compiler and WebGPU
 runtime path. Artifacts and executable tests own pass/fail state.
 
+## Browser shader attribution
+
+The [paired direct-WGSL control](../../reports/browser-compiler/20261004/paired-output/README.md)
+uses independent browser processes, balanced label/phase order, declared warmup
+and process-clustered paired uncertainty. Numerical checks pass; A/A stability
+and shader acceleration remain unestablished. The unsigned strength-reduction
+candidate stays closed without promotion. Package delivery is unchanged.
+
 ## Browser compiler prototype
 
 The [Doe-assisted WebGPU experiment](../../reports/browser-compiler/20261004/README.md)

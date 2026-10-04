@@ -27751,6 +27751,47 @@
         "src/compiler/wgsl/emit",
         "src/compiler/wgsl/runtime"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/browser/wgsl_output_statistics.py",
+          "sha256": "272f498b768c63ad16e9535197c44c899cd444fa38fe8d36471a1fab346e5618"
+        },
+        {
+          "path": "bench/executors/run-browser-wgsl-output.mjs",
+          "sha256": "fed94302f7df3ae84329d3be235a44378a070ce6d01bccda3820dcc8a0d1a5ae"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/browser-compiler/20261004/paired-output/README.md",
+          "sha256": "aea5e8b2c74b94620f0386bc4c6eff0f8806ac2b86b3b04389ce711bd8c8aaa7"
+        },
+        {
+          "path": "reports/browser-compiler/20261004/paired-output/manifest.json",
+          "sha256": "37493a44d94647a227b923159d18a2cdb822ec017f44abc0ecb89d359eb5c842"
+        }
+      ],
+      "findings": [
+        "The unsigned rewrite replaces literal division/remainders with shifts/masks but changes no memory or dispatch work. Balanced A/A and transformed-control intervals do not establish attributable acceleration. Close the candidate without performance promotion."
+      ],
+      "inputHash": "d608cce28cb8ee32ecc09b1699c09e9bc92d6048cac69e12cafb0a4c2e948fed",
+      "level": "cross_directory",
+      "nextAction": "Carry stable A/A qualification into an independent application profile. Propose one general transformation from measured recoverable cost after downstream compilation; do not resume packaging or rescue this candidate.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "browser_wgsl_aa_20261004",
+      "reviewedAt": "2026-10-04T21:17:24.003056+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "8281f27deea0d2f52377019ee448d0ef14a1432f",
+      "status": "in_progress",
+      "summary": "Corrected direct-WGSL A/A harness: independent browser processes, identical declared warmup, balanced trial/phase order, fixed stopping and process-clustered paired uncertainty. All numerical checks pass; control stability and shader benefit remain inconclusive. No shader/native instructions are established as eliminated. Full compiler relationship review remains unfinished.",
+      "supersedes": "browser_wgsl_output_attribution_20261004",
+      "targets": [
+        "src/compiler/wgsl/emit",
+        "src/compiler/wgsl/runtime"
+      ]
     }
   ],
   "schemaVersion": 1

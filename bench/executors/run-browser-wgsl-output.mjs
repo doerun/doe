@@ -2,7 +2,8 @@
 import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve, dirname, extname, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 
@@ -12,15 +13,21 @@ const packageRoot = resolve(root, process.env.DOE_BROWSER_PACKAGE_ROOT ?? 'packa
 const output = resolve(root, process.env.DOE_BROWSER_REPORT ?? plan.output);
 const { chromium } = await import(process.env.DOE_PLAYWRIGHT_MODULE ?? 'playwright');
 await mkdir(output, { recursive: true });
+assert.equal(plan.trialOrders.length, 6);
+assert.equal(new Set(plan.trialOrders.map((order) => order.join(','))).size, 6);
+const implementationSha256 = createHash('sha256').update(await readFile(fileURLToPath(import.meta.url))).digest('hex');
+await writeFile(resolve(output, 'frozen-plan.json'), JSON.stringify({ plan, implementationSha256 }, null, 2));
 const original = await readFile(resolve(packageRoot, 'examples/browser-compiler/particles.wgsl'), 'utf8');
 const emitter = spawnSync(resolve(root, 'runtime/zig/zig-out/bin/doe-emit-wgsl'),
   [resolve(packageRoot, 'examples/browser-compiler/particles.wgsl'), resolve(output, 'transformed.wgsl')],
   { encoding: 'utf8' });
 assert.equal(emitter.status, 0, emitter.stderr);
 const transformed = await readFile(resolve(output, 'transformed.wgsl'), 'utf8');
-const { compilerArtifact } = await import(new URL(`file://${packageRoot}/src/browser-compiler-artifact.js`));
-const { exports: wasm } = await WebAssembly.instantiate(await WebAssembly.compile(
-  await readFile(resolve(packageRoot, 'assets', compilerArtifact.asset))));
+const { compilerArtifact } = await import(pathToFileURL(resolve(packageRoot, 'src/browser-compiler-artifact.js')));
+const wasmBytes = await readFile(resolve(packageRoot, 'assets', compilerArtifact.asset));
+assert.equal(createHash('sha256').update(wasmBytes).digest('hex'), compilerArtifact.sha256);
+assert.equal(wasmBytes.length, compilerArtifact.byteLength);
+const { exports: wasm } = await WebAssembly.instantiate(await WebAssembly.compile(wasmBytes));
 const bytes = new TextEncoder().encode(original);
 const input = wasm.reserve_source(bytes.length);
 assert(input);
@@ -52,15 +59,15 @@ const server = createServer(async (request, response) => {
 await new Promise((done) => server.listen(0, '127.0.0.1', done));
 let browser;
 try {
-  browser = await chromium.launch({ executablePath: process.env.DOE_BROWSER ?? plan.browser,
-    headless: false, args: plan.args });
   const versions = [];
   for (let session = 0; session < plan.sessions; session++) {
+    browser = await chromium.launch({ executablePath: process.env.DOE_BROWSER ?? plan.browser,
+      headless: false, args: plan.args });
     const context = await browser.newContext({ viewport: plan.viewport });
     try {
       const page = await context.newPage();
       await page.goto(`http://127.0.0.1:${server.address().port}/fixture`);
-      const result = await page.evaluate(async ({ variants, contract }) => {
+      const result = await page.evaluate(async ({ variants, contract, plan, session }) => {
         const { measureMode } = await import('/examples/browser-compiler/benchmark.js');
         const { initialParticles, referenceParticles } = await import('/examples/browser-compiler/particles.js');
         const adapter = await navigator.gpu.requestAdapter();
@@ -75,11 +82,17 @@ try {
         const names = Object.keys(variants);
         const evidence = [];
         try {
-          for (const timestamps of [true, false]) {
+          for (const timestamps of session % 2 === 0 ? [true, false] : [false, true]) {
+            for (let cycle = 0; cycle < plan.warmupCycles; cycle++) {
+              for (const order of plan.trialOrders) for (const variant of order) {
+                await measureMode({ device, context: gpuContext, format, initial, contract,
+                  code: variants[variant], mode: 'offline', timestamps }, expected);
+              }
+            }
             const rows = [];
             let reference;
-            for (let cohort = 0; cohort < contract.repeats; cohort++) {
-              for (const variant of names.map((_, index) => names[(index + cohort) % names.length])) {
+            for (let cohort = 0; cohort < plan.trialOrders.length; cohort++) {
+              for (const variant of plan.trialOrders[(cohort + session) % plan.trialOrders.length]) {
                 const result = await measureMode({ device, context: gpuContext, format, initial,
                   contract, code: variants[variant], mode: 'offline', timestamps }, expected, reference);
                 reference ??= result.positions;
@@ -92,8 +105,9 @@ try {
                 [metric, rows[0][metric] === null ? null
                   : median(rows.filter((row) => row.variant === name).map((row) => row[metric]))]))]));
             evidence.push({ schemaVersion: 1, classification: 'diagnostic', contract, timestamps,
-              scope: 'Direct shader text, no Worker/adapter. Fresh buffers and pipelines; rotated cohorts. '
-                + 'Browser device/driver caches shared within session; context/device recreated between sessions.',
+              scope: 'Direct text, no Worker/adapter; identical configured warmup per arm. Fresh pipelines/buffers '
+                + 'and balanced permutations; phase order alternates. Browser process/device recreated per session. '
+                + 'Persistent driver caches are not reset. Same input/dispatch/draw/completion/readback boundaries.',
               rows, summaries, baseline: rows.find((row) => row.variant === 'original'),
               candidate: rows.find((row) => row.variant === 'transformed') });
           }
@@ -101,16 +115,20 @@ try {
             architecture: adapter.info.architecture, device: adapter.info.device, description: adapter.info.description } };
         } finally { gpuContext.unconfigure(); device.destroy(); }
       }, { variants: { original, disabled: disabled.wgsl, transformed },
-        contract: JSON.parse(await readFile(resolve(packageRoot, 'examples/browser-compiler/contract.json'))) });
-      versions.push({ session, userAgent: result.userAgent, adapter: result.adapter });
+        contract: JSON.parse(await readFile(resolve(packageRoot, 'examples/browser-compiler/contract.json'))), plan, session });
+      versions.push({ session, browserVersion: browser.version(), userAgent: result.userAgent,
+        adapter: result.adapter, warmupSamplesPerArmPerPhase: plan.warmupCycles * plan.trialOrders.length });
       for (const evidence of result.evidence) {
         assert(evidence.rows.every((row) => row.oracle.passed && row.workerRoundTripMs === 0));
         await writeFile(resolve(output, `session-${session}-${evidence.timestamps ? 'timestamped' : 'plain'}.json`),
           JSON.stringify(evidence, null, 2));
       }
       console.log(`Verified direct WGSL session ${session}`);
-    } finally { await context.close(); }
+    } finally { await context.close(); await browser.close(); browser = null; }
   }
   await writeFile(resolve(output, 'environment.json'), JSON.stringify({ schemaVersion: 1,
-    browserVersion: browser.version(), plan, sessions: versions }, null, 2));
+    plan, implementationSha256, sessions: versions }, null, 2));
+} catch (error) {
+  await writeFile(resolve(output, 'failure.json'), JSON.stringify({ message: error.message, stack: error.stack }));
+  throw error;
 } finally { await browser?.close(); await new Promise((done) => server.close(done)); }
