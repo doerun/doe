@@ -67,6 +67,10 @@
     "./hybrid": {
       "types": "./src/hybrid.d.ts",
       "default": "./src/hybrid.js"
+    },
+    "./browser-compiler": {
+      "types": "./src/browser-compiler.d.ts",
+      "default": "./src/browser-compiler.js"
     }
   },
   "engines": {
@@ -101,7 +105,9 @@
     "test:integration:bun": "bun test/integration/run-integration.js --runtime bun",
     "test:integration:deno": "deno run --allow-all test/integration/run-integration.js --runtime deno",
     "prepublishOnly": "node scripts/verify-publish-readiness.js && npm test",
-    "sync-vendor": "node scripts/sync-vendor.js"
+    "sync-vendor": "node scripts/sync-vendor.js",
+    "build:browser-compiler": "node scripts/build-browser-compiler.js",
+    "demo:browser-compiler": "node scripts/serve-browser-compiler.js"
   },
   "optionalDependencies": {
     "doe-gpu-darwin-arm64": "0.5.0",

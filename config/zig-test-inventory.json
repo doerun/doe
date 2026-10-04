@@ -1254,6 +1254,19 @@
         {
           "path": "tests/wgsl/ir_transform_float_fusion_test.zig",
           "kind": "characterization"
+        },
+        {
+          "path": "tests/wgsl/browser_wgsl_test.zig",
+          "kind": "characterization"
+        }
+      ]
+    },
+    "browser_wgsl": {
+      "output": "test_suite_browser_wgsl.zig",
+      "entries": [
+        {
+          "path": "tests/wgsl/browser_wgsl_test.zig",
+          "kind": "characterization"
         }
       ]
     }

@@ -27609,6 +27609,111 @@
         "src/backend/vulkan",
         "src/native/queue"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/wgsl/browser_wgsl_test.zig",
+          "sha256": "90ed8609f9894fb92882ea36e8e09a3a4cd0c9da4763434338a1619c98ba9767"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/browser-compiler/20261004/README.md",
+          "sha256": "25e4e9df6545982bd4e9a9ee251d47f70081fc6fc7e45cc4e0e37d8012fb8dcc"
+        },
+        {
+          "path": "reports/browser-compiler/20261004/package.json",
+          "sha256": "a8ced8a5ef0c43e3edd5bfe4a7a84a6ec6982e07933e1cf3313aba1f45163e79"
+        }
+      ],
+      "findings": [],
+      "inputHash": "3facf0df27cf017d58c277e3b281eff1fd165df6cc753bbb2f626260fc0cb716",
+      "level": "file",
+      "nextAction": "Retain the bounded pass as a mechanism fixture; require attributable direct-shader benefit before performance promotion.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "browser_wgsl_emitter_20261004",
+      "reviewedAt": "2026-10-04T20:46:56.470789+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "2d86bd52f3440692dddcbcfdd1e305ecc1bd4df6",
+      "status": "verified",
+      "summary": "Reviewed complete emitter: existing parser/sema own admission, exact identifier/member token spans preserve precedence and single evaluation, u32 power-of-two arithmetic is general, and result ownership and allocation failures are explicit.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/emit/wgsl_rewrite.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/wgsl/browser_wgsl_test.zig",
+          "sha256": "90ed8609f9894fb92882ea36e8e09a3a4cd0c9da4763434338a1619c98ba9767"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/browser-compiler/20261004/README.md",
+          "sha256": "25e4e9df6545982bd4e9a9ee251d47f70081fc6fc7e45cc4e0e37d8012fb8dcc"
+        },
+        {
+          "path": "reports/browser-compiler/20261004/package.json",
+          "sha256": "a8ced8a5ef0c43e3edd5bfe4a7a84a6ec6982e07933e1cf3313aba1f45163e79"
+        }
+      ],
+      "findings": [],
+      "inputHash": "01d5cb6879cd40db88ef82a66eda3aa1539548b51d7a8c62ea20a43c91f83a69",
+      "level": "file",
+      "nextAction": "Retain the bounded pass as a mechanism fixture; require attributable direct-shader benefit before performance promotion.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "browser_wgsl_abi_20261004",
+      "reviewedAt": "2026-10-04T20:46:58.014058+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "2d86bd52f3440692dddcbcfdd1e305ecc1bd4df6",
+      "status": "verified",
+      "summary": "Reviewed complete ABI: each Worker instance owns bounded input/output, compile arenas release semantic state, errors retain original byte offsets, and repeated job release is idempotent.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/runtime/browser_wasm.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/wgsl/browser_wgsl_test.zig",
+          "sha256": "90ed8609f9894fb92882ea36e8e09a3a4cd0c9da4763434338a1619c98ba9767"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/browser-compiler/20261004/README.md",
+          "sha256": "25e4e9df6545982bd4e9a9ee251d47f70081fc6fc7e45cc4e0e37d8012fb8dcc"
+        },
+        {
+          "path": "reports/browser-compiler/20261004/package.json",
+          "sha256": "a8ced8a5ef0c43e3edd5bfe4a7a84a6ec6982e07933e1cf3313aba1f45163e79"
+        }
+      ],
+      "findings": [
+        "Final archive delivery and lifecycle checks pass, but timestamped and uninstrumented application cohorts lose. Original and disabled direct-shader controls have identical text but differing timings; no repeatable transformation gain is attributable."
+      ],
+      "inputHash": "d608cce28cb8ee32ecc09b1699c09e9bc92d6048cac69e12cafb0a4c2e948fed",
+      "level": "cross_directory",
+      "nextAction": "Isolate emitted WGSL quality from delivery using repeated direct browser comparisons; select a profitable general transformation only from recoverable application cost. Full emit/runtime directory reviews remain unfinished.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "browser_wgsl_prototype_20261004",
+      "reviewedAt": "2026-10-04T20:46:59.644009+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "2d86bd52f3440692dddcbcfdd1e305ecc1bd4df6",
+      "status": "in_progress",
+      "summary": "Bounded browser prototype and final archive acceptance complete. Shared emitter ownership is preserved; browser retains execution authority. Performance promotion rejected. Complete directory relationship review remains unfinished.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/emit",
+        "src/compiler/wgsl/runtime"
+      ]
     }
   ],
   "schemaVersion": 1

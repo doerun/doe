@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "seed": 3735928559,
+  "particleCount": 65536,
+  "steps": 64,
+  "dt": 0.015625,
+  "workgroupSize": 128,
+  "repeats": 3,
+  "tolerance": { "absolute": 0.000002, "relative": 0.000002 },
+  "materialGainRatio": 1.1,
+  "capacity": { "start": 65536, "limit": 1048576, "operationBudgetMs": 50, "samples": 3 }
+}

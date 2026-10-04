@@ -1,0 +1,480 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Direct browser WGSL comparison evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "classification",
+    "contract",
+    "timestamps",
+    "scope",
+    "rows",
+    "summaries",
+    "baseline",
+    "candidate"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "classification": {
+      "const": "diagnostic"
+    },
+    "contract": {
+      "$ref": "#/$defs/contract"
+    },
+    "timestamps": {
+      "type": "boolean"
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 9,
+      "items": {
+        "$ref": "#/$defs/row"
+      }
+    },
+    "summaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "original",
+        "disabled",
+        "transformed"
+      ],
+      "properties": {
+        "original": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pipelinePreparationMs",
+            "gpuComputeMs",
+            "completeOperationMs",
+            "applicationMs"
+          ],
+          "properties": {
+            "pipelinePreparationMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "gpuComputeMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "completeOperationMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "applicationMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "disabled": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pipelinePreparationMs",
+            "gpuComputeMs",
+            "completeOperationMs",
+            "applicationMs"
+          ],
+          "properties": {
+            "pipelinePreparationMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "gpuComputeMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "completeOperationMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "applicationMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "transformed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pipelinePreparationMs",
+            "gpuComputeMs",
+            "completeOperationMs",
+            "applicationMs"
+          ],
+          "properties": {
+            "pipelinePreparationMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "gpuComputeMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "completeOperationMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "applicationMs": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "baseline": {
+      "$ref": "#/$defs/row"
+    },
+    "candidate": {
+      "$ref": "#/$defs/row"
+    }
+  },
+  "$defs": {
+    "contract": {
+      "title": "Doe-assisted browser particle workload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "seed",
+        "particleCount",
+        "steps",
+        "dt",
+        "workgroupSize",
+        "repeats",
+        "tolerance",
+        "materialGainRatio",
+        "capacity"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "particleCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "dt": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "workgroupSize": {
+          "const": 128
+        },
+        "repeats": {
+          "type": "integer",
+          "minimum": 3
+        },
+        "tolerance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "absolute",
+            "relative"
+          ],
+          "properties": {
+            "absolute": {
+              "type": "number",
+              "minimum": 0
+            },
+            "relative": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "materialGainRatio": {
+          "type": "number",
+          "exclusiveMinimum": 1
+        },
+        "capacity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "start",
+            "limit",
+            "operationBudgetMs",
+            "samples"
+          ],
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "operationBudgetMs": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "samples": {
+              "type": "integer",
+              "minimum": 3
+            }
+          }
+        }
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "pipelinePreparationMs",
+        "browserPipelineMs",
+        "compileMs",
+        "workerRoundTripMs",
+        "allocationUploadMs",
+        "recordMs",
+        "submitMs",
+        "completionMs",
+        "readbackMs",
+        "completeOperationMs",
+        "applicationMs",
+        "rewrites",
+        "wgslHash",
+        "ownedBufferBytes",
+        "gpuComputeMs",
+        "dispatches",
+        "draws",
+        "workgroupsPerDispatch",
+        "copiedParticleBytes",
+        "oracle",
+        "parity",
+        "finalStateHash",
+        "timestamps",
+        "cohort",
+        "variant"
+      ],
+      "properties": {
+        "cohort": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mode": {
+          "const": "offline"
+        },
+        "pipelinePreparationMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "browserPipelineMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "compileMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "workerRoundTripMs": {
+          "const": 0
+        },
+        "allocationUploadMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "recordMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "submitMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "completionMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "readbackMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "completeOperationMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "applicationMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "rewrites": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wgslHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "ownedBufferBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "gpuComputeMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "dispatches": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "draws": {
+          "const": 1
+        },
+        "workgroupsPerDispatch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "copiedParticleBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "oracle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "passed",
+            "failures",
+            "maxAbsoluteError",
+            "maxRelativeError",
+            "componentsCompared"
+          ],
+          "properties": {
+            "passed": {
+              "type": "boolean"
+            },
+            "failures": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "maxAbsoluteError": {
+              "type": "number",
+              "minimum": 0
+            },
+            "maxRelativeError": {
+              "type": "number",
+              "minimum": 0
+            },
+            "componentsCompared": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "parity": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "passed",
+                "failures",
+                "maxAbsoluteError",
+                "maxRelativeError",
+                "componentsCompared"
+              ],
+              "properties": {
+                "passed": {
+                  "type": "boolean"
+                },
+                "failures": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "maxAbsoluteError": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "maxRelativeError": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "componentsCompared": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finalStateHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "timestamps": {
+          "type": "boolean"
+        },
+        "variant": {
+          "enum": [
+            "original",
+            "disabled",
+            "transformed"
+          ]
+        }
+      }
+    }
+  }
+}

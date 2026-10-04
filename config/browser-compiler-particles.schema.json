@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe-assisted browser particle workload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "seed",
+    "particleCount",
+    "steps",
+    "dt",
+    "workgroupSize",
+    "repeats",
+    "tolerance",
+    "materialGainRatio",
+    "capacity"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "particleCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "steps": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "dt": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "workgroupSize": {
+      "const": 128
+    },
+    "repeats": {
+      "type": "integer",
+      "minimum": 3
+    },
+    "tolerance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "absolute",
+        "relative"
+      ],
+      "properties": {
+        "absolute": {
+          "type": "number",
+          "minimum": 0
+        },
+        "relative": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "materialGainRatio": {
+      "type": "number",
+      "exclusiveMinimum": 1
+    },
+    "capacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "limit",
+        "operationBudgetMs",
+        "samples"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "operationBudgetMs": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "samples": {
+          "type": "integer",
+          "minimum": 3
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,892 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe-assisted browser fixed-work evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "label",
+    "classification",
+    "executionOwner",
+    "nativeDoeRuntime",
+    "contract",
+    "userAgent",
+    "adapter",
+    "canvas",
+    "originalWGSLHash",
+    "initialStateHash",
+    "compilerArtifact",
+    "compilerInitialization",
+    "scope",
+    "rows",
+    "switches",
+    "summaries",
+    "experimentWallMs"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "label": {
+      "const": "Doe-assisted WebGPU"
+    },
+    "classification": {
+      "const": "diagnostic"
+    },
+    "executionOwner": {
+      "const": "browser"
+    },
+    "nativeDoeRuntime": {
+      "const": false
+    },
+    "contract": {
+      "$ref": "#/$defs/contract"
+    },
+    "userAgent": {
+      "type": "string"
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vendor",
+        "architecture",
+        "device",
+        "description",
+        "isFallbackAdapter",
+        "timestampQuery"
+      ],
+      "properties": {
+        "vendor": {
+          "type": "string"
+        },
+        "architecture": {
+          "type": "string"
+        },
+        "device": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "isFallbackAdapter": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "timestampQuery": {
+          "type": "boolean"
+        }
+      }
+    },
+    "canvas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "width",
+        "height"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "originalWGSLHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "initialStateHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "compilerArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "abiVersion",
+        "asset",
+        "sha256",
+        "byteLength",
+        "sourceHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "abiVersion": {
+          "const": 1
+        },
+        "asset": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sourceHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "compilerInitialization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cacheReadMs",
+        "downloadMs",
+        "verifyMs",
+        "cacheWriteMs",
+        "instantiateMs",
+        "totalMs",
+        "bytesDownloaded",
+        "cacheStatus",
+        "sourceLimit"
+      ],
+      "properties": {
+        "cacheReadMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "downloadMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "verifyMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cacheWriteMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "instantiateMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "totalMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "bytesDownloaded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cacheStatus": {
+          "type": "string"
+        },
+        "sourceLimit": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "scope": {
+      "type": "string"
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "pipelinePreparationMs",
+          "browserPipelineMs",
+          "compileMs",
+          "workerRoundTripMs",
+          "allocationUploadMs",
+          "recordMs",
+          "submitMs",
+          "completionMs",
+          "readbackMs",
+          "completeOperationMs",
+          "applicationMs",
+          "rewrites",
+          "wgslHash",
+          "ownedBufferBytes",
+          "gpuComputeMs",
+          "dispatches",
+          "draws",
+          "workgroupsPerDispatch",
+          "copiedParticleBytes",
+          "oracle",
+          "parity",
+          "finalStateHash",
+          "timestamps"
+        ],
+        "properties": {
+          "cohort": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mode": {
+            "enum": [
+              "browser",
+              "disabled",
+              "enabled"
+            ]
+          },
+          "pipelinePreparationMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "browserPipelineMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "compileMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "workerRoundTripMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "allocationUploadMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "recordMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "submitMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "completionMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "readbackMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "completeOperationMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "applicationMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "rewrites": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wgslHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "ownedBufferBytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "gpuComputeMs": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "dispatches": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "draws": {
+            "const": 1
+          },
+          "workgroupsPerDispatch": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "copiedParticleBytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "oracle": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "passed",
+              "failures",
+              "maxAbsoluteError",
+              "maxRelativeError",
+              "componentsCompared"
+            ],
+            "properties": {
+              "passed": {
+                "type": "boolean"
+              },
+              "failures": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "maxAbsoluteError": {
+                "type": "number",
+                "minimum": 0
+              },
+              "maxRelativeError": {
+                "type": "number",
+                "minimum": 0
+              },
+              "componentsCompared": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "parity": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "passed",
+                  "failures",
+                  "maxAbsoluteError",
+                  "maxRelativeError",
+                  "componentsCompared"
+                ],
+                "properties": {
+                  "passed": {
+                    "type": "boolean"
+                  },
+                  "failures": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "maxAbsoluteError": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "maxRelativeError": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "componentsCompared": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finalStateHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "timestamps": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "switches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "stateHash",
+          "verification"
+        ],
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "stateHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "verification": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "passed",
+              "failures",
+              "maxAbsoluteError",
+              "maxRelativeError",
+              "componentsCompared"
+            ],
+            "properties": {
+              "passed": {
+                "type": "boolean"
+              },
+              "failures": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "maxAbsoluteError": {
+                "type": "number",
+                "minimum": 0
+              },
+              "maxRelativeError": {
+                "type": "number",
+                "minimum": 0
+              },
+              "componentsCompared": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "summaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applicationMedianMs",
+        "netRatio",
+        "passRatio"
+      ],
+      "properties": {
+        "applicationMedianMs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "browser",
+            "disabled",
+            "enabled"
+          ],
+          "properties": {
+            "browser": {
+              "type": "number",
+              "minimum": 0
+            },
+            "disabled": {
+              "type": "number",
+              "minimum": 0
+            },
+            "enabled": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "netRatio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "passRatio": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "experimentWallMs": {
+      "type": "number",
+      "minimum": 0
+    },
+    "capacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "limit",
+        "scope",
+        "rows"
+      ],
+      "properties": {
+        "contract": {
+          "$ref": "#/$defs/capacity"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "scope": {
+          "type": "string"
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "mode",
+              "count",
+              "operationMedianMs",
+              "passedBudget",
+              "samples"
+            ],
+            "properties": {
+              "mode": {
+                "enum": [
+                  "browser",
+                  "disabled",
+                  "enabled"
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "operationMedianMs": {
+                "type": "number",
+                "minimum": 0
+              },
+              "passedBudget": {
+                "type": "boolean"
+              },
+              "samples": {
+                "type": "array",
+                "minItems": 3,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "mode",
+                    "pipelinePreparationMs",
+                    "browserPipelineMs",
+                    "compileMs",
+                    "workerRoundTripMs",
+                    "allocationUploadMs",
+                    "recordMs",
+                    "submitMs",
+                    "completionMs",
+                    "readbackMs",
+                    "completeOperationMs",
+                    "applicationMs",
+                    "rewrites",
+                    "wgslHash",
+                    "ownedBufferBytes",
+                    "gpuComputeMs",
+                    "dispatches",
+                    "draws",
+                    "workgroupsPerDispatch",
+                    "copiedParticleBytes",
+                    "oracle",
+                    "parity",
+                    "finalStateHash",
+                    "timestamps"
+                  ],
+                  "properties": {
+                    "cohort": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "mode": {
+                      "enum": [
+                        "browser",
+                        "disabled",
+                        "enabled"
+                      ]
+                    },
+                    "pipelinePreparationMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "browserPipelineMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "compileMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "workerRoundTripMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "allocationUploadMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "recordMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "submitMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "completionMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "readbackMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "completeOperationMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "applicationMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "rewrites": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "wgslHash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "ownedBufferBytes": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "gpuComputeMs": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "minimum": 0
+                    },
+                    "dispatches": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "draws": {
+                      "const": 1
+                    },
+                    "workgroupsPerDispatch": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "copiedParticleBytes": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "oracle": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "passed",
+                        "failures",
+                        "maxAbsoluteError",
+                        "maxRelativeError",
+                        "componentsCompared"
+                      ],
+                      "properties": {
+                        "passed": {
+                          "type": "boolean"
+                        },
+                        "failures": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "maxAbsoluteError": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "maxRelativeError": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "componentsCompared": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      }
+                    },
+                    "parity": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "passed",
+                            "failures",
+                            "maxAbsoluteError",
+                            "maxRelativeError",
+                            "componentsCompared"
+                          ],
+                          "properties": {
+                            "passed": {
+                              "type": "boolean"
+                            },
+                            "failures": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "maxAbsoluteError": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "maxRelativeError": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "componentsCompared": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "finalStateHash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "timestamps": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "contract": {
+      "title": "Doe-assisted browser particle workload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "seed",
+        "particleCount",
+        "steps",
+        "dt",
+        "workgroupSize",
+        "repeats",
+        "tolerance",
+        "materialGainRatio",
+        "capacity"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "particleCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "dt": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "workgroupSize": {
+          "const": 128
+        },
+        "repeats": {
+          "type": "integer",
+          "minimum": 3
+        },
+        "tolerance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "absolute",
+            "relative"
+          ],
+          "properties": {
+            "absolute": {
+              "type": "number",
+              "minimum": 0
+            },
+            "relative": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "materialGainRatio": {
+          "type": "number",
+          "exclusiveMinimum": 1
+        },
+        "capacity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "start",
+            "limit",
+            "operationBudgetMs",
+            "samples"
+          ],
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "operationBudgetMs": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "samples": {
+              "type": "integer",
+              "minimum": 3
+            }
+          }
+        }
+      }
+    },
+    "capacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "limit",
+        "operationBudgetMs",
+        "samples"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "operationBudgetMs": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "samples": {
+          "type": "integer",
+          "minimum": 3
+        }
+      }
+    }
+  }
+}

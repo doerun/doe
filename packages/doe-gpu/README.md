@@ -327,6 +327,7 @@ passing workload outcome.
 | `doe-gpu/capture` | Record-only WebGPU capture |
 | `doe-gpu/compute` | Compute-oriented helper surface |
 | `doe-gpu/browser` | Browser compatibility wrapper |
+| `doe-gpu/browser-compiler` | Experimental Worker compiler and explicitly injected shader adapter |
 | `doe-gpu/hybrid` | Legacy local/cloud integration helper |
 
 The public `doe-proof-node` executable is the CLI/CI front door for the
@@ -433,6 +434,45 @@ workload, hardware, timing, oracle, and claim state in the referenced artifacts.
 not install Doe beneath `navigator.gpu` and is not evidence of Chromium runtime
 replacement. Browser integration is a separate governed lane under
 `browser/chromium/`.
+
+### Doe-assisted WebGPU
+
+The experimental `doe-gpu/browser-compiler` entrypoint downloads a compiler into
+a Worker and returns WGSL. GPU execution remains browser-owned. The adapter
+only prepares shader modules; inject it explicitly without replacing
+`navigator.gpu`. It does not implement a complete WebGPU provider.
+
+```js
+import { createDoeCompiler, createDoeShaderAdapter } from 'doe-gpu/browser-compiler';
+
+// Pin these values in trusted application code or build metadata.
+const compiler = await createDoeCompiler({ artifact: {
+  url: pinnedCompilerURL, sha256: pinnedSHA256, byteLength: pinnedByteLength,
+} });
+const shaders = createDoeShaderAdapter({ device, compiler, optimize: true });
+const { module, diagnostics } = await shaders.createShaderModule({ code: wgsl });
+// Use module with the original browser device. Close after pending work settles.
+compiler.close();
+```
+
+Bundle the trusted metadata with the application. A digest fetched beside
+untrusted bytes does not establish authority. Verified OPFS bytes are optional:
+cache loss, corruption or quota exhaustion retains explicit download/verification
+and cache status. The Worker owns one bounded instance and one pending job;
+closing or deadline expiry rejects pending work and terminates it.
+
+The first pass admits scalar unsigned division/remainder by literal powers of
+two for identifiers and member chains. Signed/vector operands, calls, indexed
+operands and overrides remain untouched. Floating-point arithmetic is preserved.
+Doe diagnostics use original UTF-8 byte offsets; browser diagnostics explicitly
+refer to emitted WGSL. This is bounded admission, not full WGSL conformance.
+
+Run the [particle example](examples/browser-compiler/README.md) with
+`npm run demo:browser-compiler`. It compares baseline, the same adapter with
+passes disabled, and enabled passes from identical state. It exports preparation,
+delivery, execution, readback and numerical evidence. The first
+[retained experiment](../../reports/browser-compiler/20261004/README.md)
+does not establish a material performance advantage.
 
 ## Release boundary
 

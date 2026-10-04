@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "browser": "146.0.7680.177",
+  "args": [
+    "--no-sandbox",
+    "--enable-unsafe-webgpu",
+    "--ignore-gpu-blocklist",
+    "--enable-webgpu-developer-features",
+    "--use-angle=vulkan",
+    "--enable-features=Vulkan",
+    "--disable-vulkan-surface"
+  ],
+  "offline": "struct Particle { position: vec2<f32>, velocity: vec2<f32> }\nstruct Settings { dt: f32 }\n@group(0) @binding(0) var<storage, read> source: array<Particle>;\n@group(0) @binding(1) var<storage, read_write> destination: array<Particle>;\n@group(0) @binding(2) var<uniform> settings: Settings;\n\n@compute @workgroup_size(128)\nfn main(@builtin(global_invocation_id) gid: vec3<u32>) {\n  let index = gid.x;\n  if (index >= arrayLength(&source)) { return; }\n  // Each band follows a different point in a tiled attraction field.\n  let band = (index >> 8u);\n  let lane = (index & 255u);\n  let row = (band & 255u);\n  let center = vec2<f32>(f32(lane) / 128.0 - 1.0, f32(row) / 128.0 - 1.0);\n  let particle = source[index];\n  let spin = vec2<f32>(-particle.position.y, particle.position.x) * 0.125;\n  let spring = particle.position * 0.015625;\n  let attraction = center * 0.0009765625;\n  let acceleration = spin - spring + attraction;\n  let velocity = particle.velocity * 0.9990234375 + acceleration * settings.dt;\n  destination[index] = Particle(particle.position + velocity * settings.dt, velocity);\n}\n",
+  "offlineHash": "57f3f18bf84f3302acdfadd6ea40ab3375bf4ae1f3b0edafd161cdeb86f112de",
+  "lifecycle": {
+    "disabled": {
+      "from": "browser",
+      "to": "disabled",
+      "stateHash": "3997877f16bd5b5eea21acb5ae4759cacc986a7f12ec476a541e02f6e5f9403d",
+      "verification": {
+        "passed": true,
+        "failures": 0,
+        "maxAbsoluteError": 0,
+        "maxRelativeError": 0,
+        "componentsCompared": 262144
+      }
+    },
+    "enabled": {
+      "from": "disabled",
+      "to": "enabled",
+      "stateHash": "3997877f16bd5b5eea21acb5ae4759cacc986a7f12ec476a541e02f6e5f9403d",
+      "verification": {
+        "passed": true,
+        "failures": 0,
+        "maxAbsoluteError": 0,
+        "maxRelativeError": 0,
+        "componentsCompared": 262144
+      }
+    },
+    "browser": {
+      "from": "enabled",
+      "to": "browser",
+      "stateHash": "3997877f16bd5b5eea21acb5ae4759cacc986a7f12ec476a541e02f6e5f9403d",
+      "verification": {
+        "passed": true,
+        "failures": 0,
+        "maxAbsoluteError": 0,
+        "maxRelativeError": 0,
+        "componentsCompared": 262144
+      }
+    },
+    "gpuUnchanged": true
+  },
+  "workerLifecycle": {
+    "diagnostic": {
+      "stage": "parser",
+      "message": "UnexpectedToken",
+      "byteOffset": 3
+    },
+    "cancelled": true
+  },
+  "integerOracle": {
+    "inputs": [
+      0,
+      1,
+      7,
+      8,
+      2147483647,
+      2147483648,
+      4294967294,
+      4294967295
+    ],
+    "expected": [
+      0,
+      0,
+      0,
+      1,
+      0,
+      3,
+      1,
+      0,
+      268435455,
+      3,
+      268435456,
+      0,
+      536870911,
+      2,
+      536870911,
+      3
+    ],
+    "rows": [
+      {
+        "mode": "browser",
+        "actual": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          3,
+          1,
+          0,
+          268435455,
+          3,
+          268435456,
+          0,
+          536870911,
+          2,
+          536870911,
+          3
+        ],
+        "rewrites": 0
+      },
+      {
+        "mode": "disabled",
+        "actual": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          3,
+          1,
+          0,
+          268435455,
+          3,
+          268435456,
+          0,
+          536870911,
+          2,
+          536870911,
+          3
+        ],
+        "rewrites": 0
+      },
+      {
+        "mode": "enabled",
+        "actual": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          3,
+          1,
+          0,
+          268435455,
+          3,
+          268435456,
+          0,
+          536870911,
+          2,
+          536870911,
+          3
+        ],
+        "rewrites": 2
+      }
+    ]
+  },
+  "cache": {
+    "hit": {
+      "cacheReadMs": 1.3000001907348633,
+      "downloadMs": 0,
+      "verifyMs": 0.19999980926513672,
+      "cacheWriteMs": 0,
+      "instantiateMs": 0.5,
+      "cacheStatus": "verified-hit",
+      "bytesDownloaded": 0,
+      "sourceLimit": 65536,
+      "totalMs": 9.900000095367432
+    },
+    "corrupt": {
+      "cacheReadMs": 1.1999998092651367,
+      "downloadMs": 1.4000000953674316,
+      "verifyMs": 0.2999997138977051,
+      "cacheWriteMs": 1.299999713897705,
+      "instantiateMs": 0.3000001907348633,
+      "cacheStatus": "rejected-stored",
+      "bytesDownloaded": 140163,
+      "sourceLimit": 65536,
+      "totalMs": 10.400000095367432
+    },
+    "lost": {
+      "cacheReadMs": 0.6999998092651367,
+      "downloadMs": 1.4000000953674316,
+      "verifyMs": 0.19999980926513672,
+      "cacheWriteMs": 1,
+      "instantiateMs": 0.5,
+      "cacheStatus": "miss-stored",
+      "bytesDownloaded": 140163,
+      "sourceLimit": 65536,
+      "totalMs": 8.899999618530273
+    },
+    "disabled": {
+      "cacheReadMs": 0,
+      "downloadMs": 1.6999998092651367,
+      "verifyMs": 0.3000001907348633,
+      "cacheWriteMs": 0,
+      "instantiateMs": 0.3000001907348633,
+      "cacheStatus": "disabled",
+      "bytesDownloaded": 140163,
+      "sourceLimit": 65536,
+      "totalMs": 8.5
+    },
+    "digestRejected": true
+  },
+  "errors": [],
+  "measuredSummaries": {
+    "applicationMedianMs": {
+      "browser": 11.900000095367432,
+      "disabled": 11.900000095367432,
+      "enabled": 10.799999713897705
+    },
+    "netRatio": 1.1018518898712766,
+    "passRatio": 1.1018518898712766
+  },
+  "uninstrumentedSummaries": {
+    "applicationMedianMs": {
+      "browser": 10.600000381469727,
+      "disabled": 5.5,
+      "enabled": 12.799999713897705
+    },
+    "netRatio": 0.8281250483123597,
+    "passRatio": 0.4296875096042643
+  }
+}

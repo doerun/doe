@@ -28,7 +28,8 @@
         "packages/doe-gpu/src/observe.js",
         "packages/doe-gpu/src/compute.js",
         "packages/doe-gpu/src/browser.js",
-        "packages/doe-gpu/src/hybrid.js"
+        "packages/doe-gpu/src/hybrid.js",
+        "packages/doe-gpu/src/browser-compiler.js"
       ],
       "docs": [
         "packages/doe-gpu/README.md",

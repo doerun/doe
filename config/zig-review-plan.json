@@ -4,6 +4,36 @@
   "maxReadyBatches": 2,
   "batches": [
     {
+      "batchId": "browser_wgsl_output_attribution",
+      "state": "active",
+      "objective": "Identify a profitable general WGSL transformation using direct browser execution, independent of compiler delivery.",
+      "rationale": "The final archive passes lifecycle and numerical checks but the assisted path loses. Direct original and disabled shaders have identical hashes with varying timings; apparent transformed gains are not attributable. Preserve the prototype without promoting its performance.",
+      "scopes": [
+        {
+          "level": "cross_directory",
+          "targets": [
+            "src/compiler/wgsl/emit",
+            "src/compiler/wgsl/runtime"
+          ]
+        }
+      ],
+      "findingReviewIds": [
+        "browser_wgsl_prototype_20261004"
+      ],
+      "nextAction": "Retain direct original/disabled/transformed WGSL and identical particle work. Resolve control timing variation before choosing one transformation from recoverable shader cost; use an independent application for transfer. Do not expand Worker packaging, backends or demo features.",
+      "acceptance": [
+        "Run all WGSL directly through the same browser with compiler requests outside measurement, identical inputs/geometry/numerical oracle, rotated cohorts and instrumented/uninstrumented scopes.",
+        "Reject gains explainable by identical-shader control variation, pipeline preparation or overlapping host work; preserve unfavorable cohorts.",
+        "Require a repeatable material complete-application gain from one general transformation and an independent workload check before promotion."
+      ],
+      "stopCondition": "Retain an attributable shader improvement or close the unprofitable transformation with evidence. No delivery or native runtime gain may substitute for shader quality.",
+      "requiredEnvironment": [
+        "Ordinary WebGPU browser with observable adapter identity",
+        "Pinned WASM digest in trusted application metadata",
+        "Fixed seeded particle state and independent CPU oracle"
+      ]
+    },
+    {
       "batchId": "vulkan_doppler_generation_contract",
       "state": "ready",
       "objective": "Freeze a new full Doppler text-generation application contract and attribute a recoverable Vulkan execution cost.",

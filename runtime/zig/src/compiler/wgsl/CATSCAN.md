@@ -22,7 +22,8 @@ Inputs:
 - Compiler architecture: [`../../../../../docs/shader-compiler-architecture.md`](../../../../../docs/shader-compiler-architecture.md).
 
 Outputs:
-- Validated IR, MSL, SPIR-V, DXIL/HLSL, CSL-path inputs, and typed diagnostics.
+- Validated IR, MSL, SPIR-V, DXIL/HLSL, CSL-path inputs, semantically admitted
+  WGSL source rewrites for an explicitly injected browser adapter, and typed diagnostics.
 
 ## Invariants
 

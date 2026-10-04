@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "browser": "146.0.7680.177",
+  "args": [
+    "--no-sandbox",
+    "--enable-unsafe-webgpu",
+    "--ignore-gpu-blocklist",
+    "--enable-webgpu-developer-features",
+    "--use-angle=vulkan",
+    "--enable-features=Vulkan",
+    "--disable-vulkan-surface"
+  ],
+  "offline": "struct Particle { position: vec2<f32>, velocity: vec2<f32> }\nstruct Settings { dt: f32 }\n@group(0) @binding(0) var<storage, read> source: array<Particle>;\n@group(0) @binding(1) var<storage, read_write> destination: array<Particle>;\n@group(0) @binding(2) var<uniform> settings: Settings;\n\n@compute @workgroup_size(128)\nfn main(@builtin(global_invocation_id) gid: vec3<u32>) {\n  let index = gid.x;\n  if (index >= arrayLength(&source)) { return; }\n  // Each band follows a different point in a tiled attraction field.\n  let band = (index >> 8u);\n  let lane = (index & 255u);\n  let row = (band & 255u);\n  let center = vec2<f32>(f32(lane) / 128.0 - 1.0, f32(row) / 128.0 - 1.0);\n  let particle = source[index];\n  let spin = vec2<f32>(-particle.position.y, particle.position.x) * 0.125;\n  let spring = particle.position * 0.015625;\n  let attraction = center * 0.0009765625;\n  let acceleration = spin - spring + attraction;\n  let velocity = particle.velocity * 0.9990234375 + acceleration * settings.dt;\n  destination[index] = Particle(particle.position + velocity * settings.dt, velocity);\n}\n",
+  "offlineHash": "57f3f18bf84f3302acdfadd6ea40ab3375bf4ae1f3b0edafd161cdeb86f112de",
+  "lifecycle": {
+    "disabled": {
+      "from": "browser",
+      "to": "disabled",
+      "stateHash": "3997877f16bd5b5eea21acb5ae4759cacc986a7f12ec476a541e02f6e5f9403d",
+      "verification": {
+        "passed": true,
+        "failures": 0,
+        "maxAbsoluteError": 0,
+        "maxRelativeError": 0,
+        "componentsCompared": 262144
+      }
+    },
+    "enabled": {
+      "from": "disabled",
+      "to": "enabled",
+      "stateHash": "3997877f16bd5b5eea21acb5ae4759cacc986a7f12ec476a541e02f6e5f9403d",
+      "verification": {
+        "passed": true,
+        "failures": 0,
+        "maxAbsoluteError": 0,
+        "maxRelativeError": 0,
+        "componentsCompared": 262144
+      }
+    },
+    "browser": {
+      "from": "enabled",
+      "to": "browser",
+      "stateHash": "3997877f16bd5b5eea21acb5ae4759cacc986a7f12ec476a541e02f6e5f9403d",
+      "verification": {
+        "passed": true,
+        "failures": 0,
+        "maxAbsoluteError": 0,
+        "maxRelativeError": 0,
+        "componentsCompared": 262144
+      }
+    },
+    "gpuUnchanged": true
+  },
+  "workerLifecycle": {
+    "diagnostic": {
+      "stage": "parser",
+      "message": "UnexpectedToken",
+      "byteOffset": 3
+    },
+    "cancelled": true
+  },
+  "cache": {
+    "hit": {
+      "cacheReadMs": 0.9000000953674316,
+      "downloadMs": 0,
+      "verifyMs": 0.09999990463256836,
+      "cacheWriteMs": 0,
+      "instantiateMs": 0.40000009536743164,
+      "cacheStatus": "verified-hit",
+      "bytesDownloaded": 0,
+      "sourceLimit": 65536,
+      "totalMs": 6.900000095367432
+    },
+    "corrupt": {
+      "cacheReadMs": 1.0999999046325684,
+      "downloadMs": 1.1999998092651367,
+      "verifyMs": 0.40000057220458984,
+      "cacheWriteMs": 0.7999997138977051,
+      "instantiateMs": 0.3000001907348633,
+      "cacheStatus": "rejected-stored",
+      "bytesDownloaded": 140198,
+      "sourceLimit": 65536,
+      "totalMs": 8
+    },
+    "lost": {
+      "cacheReadMs": 0.5999999046325684,
+      "downloadMs": 1.1000003814697266,
+      "verifyMs": 0.2999997138977051,
+      "cacheWriteMs": 0.8000001907348633,
+      "instantiateMs": 0.2999997138977051,
+      "cacheStatus": "miss-stored",
+      "bytesDownloaded": 140198,
+      "sourceLimit": 65536,
+      "totalMs": 8.100000381469727
+    },
+    "disabled": {
+      "cacheReadMs": 0,
+      "downloadMs": 1.299999713897705,
+      "verifyMs": 0.20000028610229492,
+      "cacheWriteMs": 0,
+      "instantiateMs": 0.2999997138977051,
+      "cacheStatus": "disabled",
+      "bytesDownloaded": 140198,
+      "sourceLimit": 65536,
+      "totalMs": 6.899999618530273
+    },
+    "digestRejected": true
+  },
+  "errors": [],
+  "measuredSummaries": {
+    "applicationMedianMs": {
+      "browser": 16.59999990463257,
+      "disabled": 11.5,
+      "enabled": 6.100000381469727
+    },
+    "netRatio": 2.721311289595852,
+    "passRatio": 1.8852457837435748
+  },
+  "uninstrumentedSummaries": {
+    "applicationMedianMs": {
+      "browser": 13.200000286102295,
+      "disabled": 14.100000381469727,
+      "enabled": 13.5
+    },
+    "netRatio": 0.9777777989705404,
+    "passRatio": 1.0444444727014612
+  }
+}

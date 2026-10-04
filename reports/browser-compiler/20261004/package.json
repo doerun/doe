@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "0.5.0",
+  "filename": "doe-gpu-0.5.0.tgz",
+  "sha256": "7435bf0ede51b6caab738035ec098c149b229b6258c51ee1fc6799add5d76754",
+  "integrity": "sha512-m5gVjdZPBIjKjUzKoM8h5CyZ6iCvMJuiL3oYuYzoaeq46zXd/ijWQRI41wmxo7r6Rhm9dT+jZ2RyBPeOJCb4oA==",
+  "bytes": 324443,
+  "files": 121,
+  "published": false,
+  "baseCommit": "2d86bd52f3440692dddcbcfdd1e305ecc1bd4df6",
+  "testedSource": "The extracted archive served the browser example, Worker, metadata and WASM. The repository native emitter generated offline WGSL. Source hashes in manifest.json bind the modified implementation."
+}

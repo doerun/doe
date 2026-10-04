@@ -1468,6 +1468,26 @@
     {
       "schema": "config/metal-command-wait-policy.schema.json",
       "data": "config/metal-command-wait-policy.json"
+    },
+    {
+      "schema": "config/browser-compiler-particles.schema.json",
+      "data": "packages/doe-gpu/examples/browser-compiler/contract.json"
+    },
+    {
+      "schema": "config/browser-compiler-evidence.schema.json",
+      "data": "reports/browser-compiler/20261004/timestamped.json"
+    },
+    {
+      "schema": "config/browser-compiler-evidence.schema.json",
+      "data": "reports/browser-compiler/20261004/uninstrumented.json"
+    },
+    {
+      "schema": "config/browser-compiler-offline.schema.json",
+      "data": "reports/browser-compiler/20261004/offline.json"
+    },
+    {
+      "schema": "config/browser-compiler-offline.schema.json",
+      "data": "reports/browser-compiler/20261004/offline-uninstrumented.json"
     }
   ],
   "globTargets": [

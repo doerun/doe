@@ -61,6 +61,10 @@ pub const wgsl_ir = struct {
 };
 
 pub const wgsl_emit = struct {
+    pub fn wgsl() type {
+        return @import("wgsl/emit/wgsl_rewrite.zig");
+    }
+
     pub fn hlsl() type {
         return @import("wgsl/emit/hlsl/emit_hlsl.zig");
     }
@@ -75,6 +79,10 @@ pub const wgsl_emit = struct {
 };
 
 pub const wgsl_runtime = struct {
+    pub fn browserWasm() type {
+        return @import("wgsl/runtime/browser_wasm.zig");
+    }
+
     pub fn compile() type {
         return @import("wgsl/runtime/runtime_compile.zig");
     }

@@ -478,6 +478,58 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const browser_wasm = b.addExecutable(.{
+        .name = "doe-wgsl",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/cli/entrypoints/main_browser_wasm.zig"),
+            .target = b.resolveTargetQuery(.{ .cpu_arch = .wasm32, .os_tag = .freestanding }),
+            .optimize = .ReleaseSmall,
+            .single_threaded = true,
+            .imports = &.{.{ .name = "doe", .module = b.createModule(.{
+                .root_source_file = b.path("src/mod.zig"),
+                .target = b.resolveTargetQuery(.{ .cpu_arch = .wasm32, .os_tag = .freestanding }),
+                .optimize = .ReleaseSmall,
+                .single_threaded = true,
+            }) }},
+        }),
+    });
+    browser_wasm.entry = .disabled;
+    browser_wasm.rdynamic = true;
+    browser_wasm.max_memory = 64 * 1024 * 1024;
+    const wasm_install = b.addInstallArtifact(browser_wasm, .{});
+    b.step("browser-wasm", "Build the bounded browser WGSL compiler (no native GPU access)")
+        .dependOn(&wasm_install.step);
+    const browser_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test_suite_browser_wgsl.zig"),
+            .imports = &.{.{ .name = "doe", .module = b.createModule(.{
+                .root_source_file = b.path("src/mod.zig"),
+                .target = target,
+                .optimize = optimize,
+            }) }},
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    b.step("test-browser-wgsl", "Test browser WGSL emission and allocation ownership")
+        .dependOn(&b.addRunArtifact(browser_tests).step);
+
+    const emit_wgsl = b.addExecutable(.{
+        .name = "doe-emit-wgsl",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/cli/entrypoints/main_emit_wgsl.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{.{ .name = "doe", .module = b.createModule(.{
+                .root_source_file = b.path("src/mod.zig"),
+                .target = target,
+                .optimize = optimize,
+            }) }},
+        }),
+    });
+    b.step("emit-wgsl", "Build the compiler-owned WGSL source optimizer")
+        .dependOn(&b.addInstallArtifact(emit_wgsl, .{}).step);
+
     const BuildTier = enum { compute, headless, full };
     const build_tier = b.option(BuildTier, "tier", "Build tier: compute (dispatch+buffer only), headless (full WebGPU sans presentation), full (Dawn drop-in)") orelse .headless;
     const test_filter = b.option([]const u8, "test-filter", "Run only Zig tests whose names contain this value");

@@ -1,0 +1,62 @@
+:root { color-scheme: dark; font-family: system-ui, sans-serif; background: #080c13;
+  color: #e4ecf7; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1440px; padding: 24px 40px; margin: auto; }
+header, footer, .controls, .section-title, .actions { display: flex; align-items: center;
+  justify-content: space-between; gap: 20px; }
+header { padding: 4px 0 24px; }
+.mark { font-size: 29px; font-weight: 750; text-decoration: none; color: inherit;
+  letter-spacing: -1.3px; }
+.mark span { font-size: 13px; letter-spacing: 0; font-weight: 450; color: #71839d; }
+.badge, .eyebrow { font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase; color: #93a8bf; }
+.badge { border: 1px solid #283548; padding: 8px 12px; border-radius: 100px; }
+.scene { position: relative; border: 1px solid #263044; border-radius: 24px;
+  overflow: hidden; background: radial-gradient(ellipse at 65% 50%, #102539, #080e19); }
+canvas { display: block; width: 100%; aspect-ratio: 16/9; }
+.scene-title { position: absolute; top: 36px; left: 36px; pointer-events: none;
+  text-shadow: 0 2px 24px #080c13; }
+h1 { font-size: clamp(30px, 4.4vw, 62px); font-weight: 540; line-height: 1.04;
+  letter-spacing: -2.8px; margin: 15px 0; }
+.scene-title p { font-size: 14px; color: #a7b9cf; }
+.scene-footer { position: absolute; bottom: 22px; left: 28px; right: 28px;
+  display: flex; justify-content: space-between; font: 12px ui-monospace, monospace; color: #b9c9dd; }
+.controls { padding: 22px 0; }
+.modes { display: flex; gap: 4px; background: #101827; padding: 4px; border-radius: 12px; }
+button { color: #a6b8ce; border: 1px solid #2b3a50; background: transparent; cursor: pointer;
+  padding: 12px 16px; border-radius: 8px; font: 500 12px system-ui; }
+.modes button { border-color: transparent; }
+button[aria-pressed="true"] { color: #e2f4ff; background: #26364c; }
+button:hover { border-color: #7298c8; color: white; }
+button:focus-visible, summary:focus-visible { outline: 2px solid #83ceff; outline-offset: 3px; }
+button:disabled { opacity: .4; cursor: default; }
+.primary { color: #0b1420; background: #b2e0ff; border-color: #b2e0ff; font-weight: 650; }
+.primary:hover { color: #0b1420; background: #d9efff; }
+.primary span { margin-left: 22px; }
+.results { border-top: 1px solid #263044; padding: 22px 0 14px; }
+h2 { font-size: 20px; font-weight: 540; margin: 0; letter-spacing: -.5px; }
+#progress, .caption, footer { font-size: 11px; color: #7f91ab; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin: 20px 0 12px; white-space: nowrap; }
+th { text-align: left; font-size: 11px; color: #8da1bb; font-weight: 500; padding: 12px 18px 12px 0; }
+td { font: 14px ui-monospace, monospace; padding-right: 18px; }
+tbody tr { border-top: 1px solid #1d2a3c; }
+tbody th { color: #d0dfee; font-size: 13px; }
+.pass { color: #96dcca; }
+.actions { justify-content: flex-start; flex-wrap: wrap; margin: 20px 0 0; }
+#capacity-result { font-size: 12px; color: #a2bad4; }
+details { border-top: 1px solid #263044; margin-top: 12px; padding: 20px 0; }
+summary { cursor: pointer; font-size: 12px; color: #9cb0c9; }
+.details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 15px; }
+h3 { font-size: 14px; font-weight: 550; }
+details p { color: #869bb7; font-size: 12px; line-height: 1.7; max-width: 48em; }
+pre { white-space: pre-wrap; word-break: break-all; font-size: 11px; line-height: 1.7; color: #91a6c0; }
+#error { margin: 14px 0; padding: 18px; border: 1px solid #ad5360; color: #ffb6bc; border-radius: 12px; }
+footer { border-top: 1px solid #263044; padding: 18px 0; }
+@media (max-width: 720px) { main { padding: 18px; } .badge { display: none; }
+  .controls, .section-title { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .controls > .primary { width: 100%; } .modes { width: 100%; } .modes button { flex: 1; padding: 10px 7px; }
+  .scene-title { top: 18px; left: 18px; } h1 { letter-spacing: -1.5px; }
+  .scene-title p { display: none; } .scene-footer { left: 18px; right: 18px; bottom: 12px; font-size: 9px; }
+  .details-grid { grid-template-columns: 1fr; gap: 10px; } footer { flex-direction: column; align-items: flex-start; } }
+@media (prefers-reduced-motion: reduce) { canvas { opacity: .85; } }

@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "browser": "146.0.7680.177",
+  "args": [
+    "--no-sandbox",
+    "--enable-unsafe-webgpu",
+    "--enable-webgpu-developer-features",
+    "--ignore-gpu-blocklist",
+    "--use-angle=vulkan",
+    "--enable-features=Vulkan",
+    "--disable-vulkan-surface"
+  ],
+  "offline": "struct Particle { position: vec2<f32>, velocity: vec2<f32> }\nstruct Settings { dt: f32 }\n@group(0) @binding(0) var<storage, read> source: array<Particle>;\n@group(0) @binding(1) var<storage, read_write> destination: array<Particle>;\n@group(0) @binding(2) var<uniform> settings: Settings;\n\n@compute @workgroup_size(128)\nfn main(@builtin(global_invocation_id) gid: vec3<u32>) {\n  let index = gid.x;\n  if (index >= arrayLength(&source)) { return; }\n  // Each band follows a different point in a tiled attraction field.\n  let band = (index >> 8u);\n  let lane = (index & 255u);\n  let row = (band & 255u);\n  let center = vec2<f32>(f32(lane) / 128.0 - 1.0, f32(row) / 128.0 - 1.0);\n  let particle = source[index];\n  let spin = vec2<f32>(-particle.position.y, particle.position.x) * 0.125;\n  let spring = particle.position * 0.015625;\n  let attraction = center * 0.0009765625;\n  let acceleration = spin - spring + attraction;\n  let velocity = particle.velocity * 0.9990234375 + acceleration * settings.dt;\n  destination[index] = Particle(particle.position + velocity * settings.dt, velocity);\n}\n",
+  "offlineHash": "57f3f18bf84f3302acdfadd6ea40ab3375bf4ae1f3b0edafd161cdeb86f112de",
+  "lifecycle": {
+    "disabled": {
+      "from": "browser",
+      "to": "disabled",
+      "stateHash": "027ade3264a4a15262dd6e832c751f0ae1e4f8ba135c80c564edc31ea8473ffe",
+      "verification": {
+        "passed": true,
+        "failures": 0,
+        "maxAbsoluteError": 0,
+        "maxRelativeError": 0,
+        "componentsCompared": 262144
+      }
+    },
+    "enabled": {
+      "from": "disabled",
+      "to": "enabled",
+      "stateHash": "027ade3264a4a15262dd6e832c751f0ae1e4f8ba135c80c564edc31ea8473ffe",
+      "verification": {
+        "passed": true,
+        "failures": 0,
+        "maxAbsoluteError": 0,
+        "maxRelativeError": 0,
+        "componentsCompared": 262144
+      }
+    },
+    "browser": {
+      "from": "enabled",
+      "to": "browser",
+      "stateHash": "027ade3264a4a15262dd6e832c751f0ae1e4f8ba135c80c564edc31ea8473ffe",
+      "verification": {
+        "passed": true,
+        "failures": 0,
+        "maxAbsoluteError": 0,
+        "maxRelativeError": 0,
+        "componentsCompared": 262144
+      }
+    },
+    "gpuUnchanged": true
+  },
+  "cache": {
+    "hit": {
+      "cacheReadMs": 1.3000001907348633,
+      "downloadMs": 0,
+      "verifyMs": 0.39999961853027344,
+      "cacheWriteMs": 0,
+      "instantiateMs": 0.6000003814697266,
+      "cacheStatus": "verified-hit",
+      "bytesDownloaded": 0,
+      "sourceLimit": 65536,
+      "totalMs": 11.700000286102295
+    },
+    "corrupt": {
+      "cacheReadMs": 1.200000286102295,
+      "downloadMs": 1.5,
+      "verifyMs": 0.3000001907348633,
+      "cacheWriteMs": 0.9000000953674316,
+      "instantiateMs": 0.40000009536743164,
+      "cacheStatus": "rejected-stored",
+      "bytesDownloaded": 140198,
+      "sourceLimit": 65536,
+      "totalMs": 10.099999904632568
+    },
+    "lost": {
+      "cacheReadMs": 0.6000003814697266,
+      "downloadMs": 1.5999999046325684,
+      "verifyMs": 0.2999997138977051,
+      "cacheWriteMs": 0.9000000953674316,
+      "instantiateMs": 0.40000009536743164,
+      "cacheStatus": "miss-stored",
+      "bytesDownloaded": 140198,
+      "sourceLimit": 65536,
+      "totalMs": 9.099999904632568
+    },
+    "disabled": {
+      "cacheReadMs": 0,
+      "downloadMs": 1.5999999046325684,
+      "verifyMs": 0.20000028610229492,
+      "cacheWriteMs": 0,
+      "instantiateMs": 0.2999997138977051,
+      "cacheStatus": "disabled",
+      "bytesDownloaded": 140198,
+      "sourceLimit": 65536,
+      "totalMs": 7.700000286102295
+    },
+    "digestRejected": true
+  },
+  "errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "measuredSummaries": {
+    "applicationMedianMs": {
+      "browser": 5.5,
+      "disabled": 5.200000286102295,
+      "enabled": 5.400000095367432
+    },
+    "netRatio": 1.0185185005308346,
+    "passRatio": 0.9629629989383309
+  },
+  "uninstrumentedSummaries": {
+    "applicationMedianMs": {
+      "browser": 5.400000095367432,
+      "disabled": 4.900000095367432,
+      "enabled": 5
+    },
+    "netRatio": 1.0800000190734864,
+    "passRatio": 0.9800000190734863
+  }
+}

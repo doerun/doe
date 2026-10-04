@@ -1,0 +1,72 @@
+{
+  "baseline": {
+    "mode": "browser",
+    "pipelinePreparationMs": 13.200000286102295,
+    "browserPipelineMs": 12,
+    "compileMs": 0,
+    "workerRoundTripMs": 0,
+    "allocationUploadMs": 0.2999997138977051,
+    "rewrites": 0,
+    "wgslHash": "50a7ffa353796edafc9880069190d7ca929f8227b84f512b26c0c8fbc4f0c4eb",
+    "ownedBufferBytes": 3145744,
+    "recordMs": 0.19999980926513672,
+    "submitMs": 0,
+    "completionMs": 9.800000190734863,
+    "readbackMs": 1.299999713897705,
+    "completeOperationMs": 11.299999713897705,
+    "gpuComputeMs": null,
+    "dispatches": 64,
+    "draws": 1,
+    "workgroupsPerDispatch": 512,
+    "copiedParticleBytes": 1048576,
+    "applicationMs": 25.40000009536743,
+    "oracle": {
+      "passed": true,
+      "failures": 0,
+      "maxAbsoluteError": 2.384185791015625e-7,
+      "maxRelativeError": 0.0010906724672808121,
+      "componentsCompared": 262144
+    },
+    "parity": null,
+    "finalStateHash": "835d4fafd69a339e99ed897b345f25251ae8f51173c30c9bc23b73f4372fc188",
+    "timestamps": false
+  },
+  "candidate": {
+    "mode": "offline",
+    "pipelinePreparationMs": 2.9000000953674316,
+    "browserPipelineMs": 2.3000001907348633,
+    "compileMs": 0,
+    "workerRoundTripMs": 0,
+    "allocationUploadMs": 0.19999980926513672,
+    "rewrites": 0,
+    "wgslHash": "57f3f18bf84f3302acdfadd6ea40ab3375bf4ae1f3b0edafd161cdeb86f112de",
+    "ownedBufferBytes": 3145744,
+    "recordMs": 0.09999990463256836,
+    "submitMs": 0,
+    "completionMs": 9.5,
+    "readbackMs": 1,
+    "completeOperationMs": 10.599999904632568,
+    "gpuComputeMs": null,
+    "dispatches": 64,
+    "draws": 1,
+    "workgroupsPerDispatch": 512,
+    "copiedParticleBytes": 1048576,
+    "applicationMs": 14.099999904632568,
+    "oracle": {
+      "passed": true,
+      "failures": 0,
+      "maxAbsoluteError": 2.384185791015625e-7,
+      "maxRelativeError": 0.0010906724672808121,
+      "componentsCompared": 262144
+    },
+    "parity": {
+      "passed": true,
+      "failures": 0,
+      "maxAbsoluteError": 0,
+      "maxRelativeError": 0,
+      "componentsCompared": 262144
+    },
+    "finalStateHash": "835d4fafd69a339e99ed897b345f25251ae8f51173c30c9bc23b73f4372fc188",
+    "timestamps": false
+  }
+}

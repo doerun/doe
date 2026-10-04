@@ -58,6 +58,7 @@ const test_tests_wgsl_tsir_emit_kernel_body_test_zig_30c7a753 = @import("tests/w
 const test_tests_wgsl_exec_v1_paired_gate_canary_test_zig_bac67a40 = @import("tests/wgsl/exec_v1_paired_gate_canary_test.zig");
 const test_tests_wgsl_emit_csl_exec_v1_test_zig_20914422 = @import("tests/wgsl/emit_csl_exec_v1_test.zig");
 const test_tests_wgsl_ir_transform_float_fusion_test_zig_a55ff159 = @import("tests/wgsl/ir_transform_float_fusion_test.zig");
+const test_tests_wgsl_browser_wgsl_test_zig_1f1e4c0b = @import("tests/wgsl/browser_wgsl_test.zig");
 
 comptime {
     _ = test_tests_wgsl_emit_hlsl_map_test_zig_15ae3957;
@@ -118,4 +119,5 @@ comptime {
     _ = test_tests_wgsl_exec_v1_paired_gate_canary_test_zig_bac67a40;
     _ = test_tests_wgsl_emit_csl_exec_v1_test_zig_20914422;
     _ = test_tests_wgsl_ir_transform_float_fusion_test_zig_a55ff159;
+    _ = test_tests_wgsl_browser_wgsl_test_zig_1f1e4c0b;
 }

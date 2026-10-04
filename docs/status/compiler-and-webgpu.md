@@ -3,6 +3,15 @@
 This is the live status front door for the non-TSIR WGSL compiler and WebGPU
 runtime path. Artifacts and executable tests own pass/fail state.
 
+## Browser compiler prototype
+
+The [Doe-assisted WebGPU experiment](../../reports/browser-compiler/20261004/README.md)
+shares a compiler-owned WGSL rewrite between a native emitter and bounded Worker
+WASM. An explicitly injected package adapter prepares shaders; the browser owns
+execution. Numerical, cache, switching and failure evidence is retained alongside
+slower cohorts. A material application advantage remains unestablished. This
+prototype neither replaces `navigator.gpu` nor qualifies native Vulkan or Metal.
+
 ## Identifier eligibility
 
 The [operation follow-up](../../reports/benchmarks/amd-vulkan/20261004-operation-timeline/README.md)

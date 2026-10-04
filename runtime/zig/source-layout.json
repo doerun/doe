@@ -491,6 +491,12 @@
           "src/core/surface.zig",
           "src/full/surface_api.zig"
         ]
+      },
+      "browser-wgsl-compiler": {
+        "description": "Downloadable compiler-only WASM; the browser owns GPU execution",
+        "roots": [
+          "src/cli/entrypoints/main_browser_wasm.zig"
+        ]
       }
     },
     "specialRoles": {
@@ -1648,9 +1654,9 @@
       },
       "src/compiler/mod.zig": {
         "decision": "Keep",
-        "moduleSha256": "bf253950f89d35ce9796d46fb83ce0dd568d25aae0d27c9bea545e14ea9926ba",
-        "reason": "Keep: reachable compiler implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "4f0356300a67292564fa22a2ae908afaf0e77acdb68d4973c0fe886e783ed99b",
+        "reason": "Keep: the compiler facade exposes named WGSL emitter and browser ABI owners; it contains no transformation, allocation or host policy. Both native emission and Worker compilation consume the same emitter.",
+        "reviewer": "codex-browser-wgsl/2026-10-04"
       },
       "src/compiler/targets/mod.zig": {
         "decision": "Keep",

@@ -42,6 +42,7 @@ establishes a supported hardware capability.
 | `module-incubation-evidence-tools` | Module incubation, plan comparison, and repo-only integration executables used for evidence rather than shipped runtime claims |
 | `compiler-tsir-spatial-toolchains` | WGSL compiler, TSIR, CSL, proof-consumer, and spatial toolchain roots selected by repository build targets |
 | `test-only-compatibility` | Legacy aggregate type facades and surface contracts exercised by Zig tests but absent from shipped and repository-tool build roots |
+| `browser-wgsl-compiler` | Downloadable compiler-only WASM; the browser owns GPU execution |
 
 ## Compiler and compatibility boundaries
 

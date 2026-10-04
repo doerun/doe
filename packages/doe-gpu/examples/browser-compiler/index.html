@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doe-assisted WebGPU</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230c1525'/%3E%3Ctext x='14' y='48' fill='%23b2e0ff' font-family='sans-serif' font-size='52'%3Ed%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header><a href="https://github.com/doe-gpu/doe" class="mark">doe<span> / shader lab</span></a>
+      <span class="badge">Your browser. Your GPU.</span></header>
+    <section class="scene" aria-label="GPU particle simulation">
+      <canvas id="view" width="1280" height="720" aria-label="Live orbiting particles"></canvas>
+      <div class="scene-title"><span class="eyebrow">DOE-ASSISTED WEBGPU</span>
+        <h1>Same work.<br>Show the difference.</h1>
+        <p>Download a compiler. Keep your browser.</p></div>
+      <div class="scene-footer"><span id="particle-label">65,536 particles</span>
+        <span id="preview-status" role="status">Connecting…</span></div>
+    </section>
+    <section class="controls" aria-label="Simulation controls">
+      <div class="modes" role="group" aria-label="Live preview mode">
+        <button data-mode="browser" aria-pressed="true">Browser</button>
+        <button data-mode="disabled" aria-pressed="false">Adapter · passes off</button>
+        <button data-mode="enabled" aria-pressed="false">Doe · passes on</button>
+      </div>
+      <button id="compare" class="primary">Compare fixed work <span>↗</span></button>
+    </section>
+    <section class="results" aria-label="Measured results">
+      <div class="section-title"><h2 id="verdict">The GPU decides.</h2>
+        <span id="progress" role="status">Identical seed · 64 steps · f32</span></div>
+      <div class="table-scroll"><table><thead><tr><th>Mode</th><th>Prepare</th><th>CPU record + submit</th>
+        <th>GPU compute</th><th>Complete*</th><th>Positions</th></tr></thead><tbody id="rows">
+        <tr><th>Browser</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>Adapter · passes off</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><th>Doe · passes on</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      </tbody></table></div>
+      <p class="caption">*Compute + draw + completion + readback. GPU timing overlaps CPU work.
+        Preview pauses during comparison. Slower results stay.</p>
+      <div class="actions"><button id="capacity" disabled>Explore particle ceiling</button>
+        <button id="export" disabled>Export evidence</button><span id="capacity-result"></span></div>
+    </section>
+    <details><summary>Compiler, device &amp; method</summary>
+      <div class="details-grid"><div><h3>Execution stays with the browser.</h3>
+        <p>Doe validates and rewrites WGSL in a WASM Worker. A small shader adapter is injected
+          explicitly. This is not Doe’s native runtime.</p>
+        <p>First pass: unsigned power-of-two division and remainder. The browser may already
+          optimize it. No gain is a valid result.</p></div>
+        <div><h3>Verified bytes. Restored state.</h3><p>Trusted application metadata pins SHA-256.
+          OPFS is optional; lost or rejected bytes are downloaded and verified again.</p>
+          <p>Switching pauses, drains, snapshots, recreates GPU resources, verifies, then resumes.</p></div></div>
+      <pre id="device-info">Waiting for device…</pre><pre id="compiler-info">Compiler not loaded.</pre>
+    </details>
+    <div id="error" role="alert" hidden></div>
+    <footer><span>Ordinary WebGPU · experimental compiler</span><span>Vulkan &amp; Metal access remains browser-owned</span></footer>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

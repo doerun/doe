@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const contracts = [
+  './unit/browser-compiler.test.js',
   './unit/compute-program.test.js',
   './unit/live-simulation.test.js',
   './unit/test-live-simulation-terminal.js',
