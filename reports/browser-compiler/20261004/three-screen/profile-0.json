@@ -1,0 +1,983 @@
+{
+  "browserVersion": "146.0.7680.177",
+  "rows": [
+    {
+      "label": "A",
+      "scattering": 2,
+      "recordMs": 0.3000001907348633,
+      "completedMs": 14.099999904632568,
+      "timestamps": [
+        {
+          "uid": "r:5:0:f12",
+          "durationMs": 0.289703,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 2,
+      "recordMs": 1.299999713897705,
+      "completedMs": 10.399999618530273,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f13",
+          "durationMs": 0.20791,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f13",
+          "durationMs": 0.856407,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f13",
+          "durationMs": 0.155612,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f13",
+          "durationMs": 0.035907,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 2,
+      "recordMs": 1.8999996185302734,
+      "completedMs": 4.5,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f16",
+          "durationMs": 0.206949,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f16",
+          "durationMs": 0.844384,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f16",
+          "durationMs": 0.165671,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f16",
+          "durationMs": 0.035827,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 2,
+      "recordMs": 0.3000001907348633,
+      "completedMs": 14.400000095367432,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f16",
+          "durationMs": 0.206949,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f16",
+          "durationMs": 0.844384,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f16",
+          "durationMs": 0.165671,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f16",
+          "durationMs": 0.035827,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 2,
+      "recordMs": 1.5,
+      "completedMs": 3.3000001907348633,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f17",
+          "durationMs": 0.246543,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f17",
+          "durationMs": 0.888667,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f17",
+          "durationMs": 0.167354,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f17",
+          "durationMs": 0.03707,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 2,
+      "recordMs": 1.4000000953674316,
+      "completedMs": 13.400000095367432,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f17",
+          "durationMs": 0.246543,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f17",
+          "durationMs": 0.888667,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f17",
+          "durationMs": 0.167354,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f17",
+          "durationMs": 0.03707,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 2,
+      "recordMs": 1.6000003814697266,
+      "completedMs": 4.200000286102295,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f19",
+          "durationMs": 0.207509,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f19",
+          "durationMs": 1.141302,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f19",
+          "durationMs": 0.167595,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f19",
+          "durationMs": 0.040676,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 2,
+      "recordMs": 0.9000000953674316,
+      "completedMs": 4,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f20",
+          "durationMs": 0.205827,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f20",
+          "durationMs": 0.853401,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f20",
+          "durationMs": 0.158137,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f20",
+          "durationMs": 0.036429,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 0,
+      "recordMs": 1.299999713897705,
+      "completedMs": 4,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f21",
+          "durationMs": 0.214242,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f21",
+          "durationMs": 1.429963,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f21",
+          "durationMs": 0.07975,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f21",
+          "durationMs": 0.040275,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 0,
+      "recordMs": 1,
+      "completedMs": 4.099999904632568,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f22",
+          "durationMs": 0.212759,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f22",
+          "durationMs": 0.873279,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f22",
+          "durationMs": 0.075662,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f22",
+          "durationMs": 0.035788,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 0,
+      "recordMs": 1,
+      "completedMs": 3.6999998092651367,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f23",
+          "durationMs": 0.203261,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f23",
+          "durationMs": 0.881013,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f23",
+          "durationMs": 0.075061,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f23",
+          "durationMs": 0.036028,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 0,
+      "recordMs": 1,
+      "completedMs": 12.900000095367432,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f24",
+          "durationMs": 0.334147,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f24",
+          "durationMs": 1.39073,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f24",
+          "durationMs": 0.332023,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f24",
+          "durationMs": 0.14912,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 0,
+      "recordMs": 0.39999961853027344,
+      "completedMs": 11.199999809265137,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f24",
+          "durationMs": 0.334147,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f24",
+          "durationMs": 1.39073,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f24",
+          "durationMs": 0.332023,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f24",
+          "durationMs": 0.14912,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 0,
+      "recordMs": 1.200000286102295,
+      "completedMs": 4.599999904632568,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f25",
+          "durationMs": 0.222057,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f25",
+          "durationMs": 0.847911,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f25",
+          "durationMs": 0.073217,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f25",
+          "durationMs": 0.036068,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 0,
+      "recordMs": 1.3999996185302734,
+      "completedMs": 4.199999809265137,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f26",
+          "durationMs": 0.205586,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f26",
+          "durationMs": 0.852159,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f26",
+          "durationMs": 0.07494,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f26",
+          "durationMs": 0.036508,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 0,
+      "recordMs": 0.3000001907348633,
+      "completedMs": 11,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f26",
+          "durationMs": 0.205586,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f26",
+          "durationMs": 0.852159,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f26",
+          "durationMs": 0.07494,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f26",
+          "durationMs": 0.036508,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 5,
+      "recordMs": 1,
+      "completedMs": 3.5999999046325684,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f27",
+          "durationMs": 0.200576,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f27",
+          "durationMs": 0.874641,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f27",
+          "durationMs": 0.201819,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f27",
+          "durationMs": 0.036348,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 5,
+      "recordMs": 0.19999980926513672,
+      "completedMs": 11.099999904632568,
+      "timestamps": [
+        {
+          "uid": "r:5:0:f27",
+          "durationMs": 0.292549,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 5,
+      "recordMs": 0.9000000953674316,
+      "completedMs": 3.5,
+      "timestamps": [
+        {
+          "uid": "r:5:0:f27",
+          "durationMs": 0.292549,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 5,
+      "recordMs": 0.5,
+      "completedMs": 13.800000190734863,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f29",
+          "durationMs": 0.206468,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f29",
+          "durationMs": 0.839616,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f29",
+          "durationMs": 0.206668,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f29",
+          "durationMs": 0.036349,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 5,
+      "recordMs": 1.1000003814697266,
+      "completedMs": 13.700000286102295,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f30",
+          "durationMs": 0.212118,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f30",
+          "durationMs": 1.074456,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f30",
+          "durationMs": 0.210034,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f30",
+          "durationMs": 0.040396,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 5,
+      "recordMs": 0.9000000953674316,
+      "completedMs": 14.099999904632568,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f31",
+          "durationMs": 0.212479,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f31",
+          "durationMs": 1.597758,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f31",
+          "durationMs": 0.67166,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f31",
+          "durationMs": 0.039274,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "scattering": 5,
+      "recordMs": 0.2999997138977051,
+      "completedMs": 10.799999713897705,
+      "timestamps": [
+        {
+          "uid": "r:5:0:f31",
+          "durationMs": 0.289784,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        }
+      ]
+    },
+    {
+      "label": "A",
+      "scattering": 5,
+      "recordMs": 0.8000001907348633,
+      "completedMs": 3.200000286102295,
+      "timestamps": [
+        {
+          "uid": "r:1:0:f32",
+          "durationMs": 0.205506,
+          "context": {
+            "type": "render",
+            "label": "scene/composite"
+          }
+        },
+        {
+          "uid": "r:2:1:f32",
+          "durationMs": 0.861938,
+          "context": {
+            "type": "render",
+            "label": "output"
+          }
+        },
+        {
+          "uid": "r:3:2:f32",
+          "durationMs": 0.203703,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.horizontal"
+          }
+        },
+        {
+          "uid": "r:4:2:f32",
+          "durationMs": 0.036068,
+          "context": {
+            "type": "render",
+            "label": "GaussianBlurNode.vertical"
+          }
+        }
+      ]
+    }
+  ],
+  "shaders": [
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform10 : vec3<f32>,\n\tnodeUniform7 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform15 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform0 : f32,\n\tnodeUniform2 : mat3x3<f32>,\n\tnodeUniform3 : vec3<f32>,\n\tnodeUniform4 : f32,\n\tnodeUniform6 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) v_positionView : vec3<f32>,\n\t@location( 1 ) positionLocal : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\n\n@vertex\nfn main( @location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tnormalLocal = normal;\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform2 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform6 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "fragment",
+      "code": "// Three.js r187dev - Node System\n\n// global\ndiagnostic( off, derivative_uniformity );\n\n\n// directives\n\n\n// structs\n\nstruct OutputStruct {\n\t@location( 0 ) color: vec4<f32>\n};\nvar<private> output : OutputStruct;\n\n// uniforms\n@binding( 1 ) @group( 1 ) var nodeUniform5_sampler : sampler;\n@binding( 2 ) @group( 1 ) var nodeUniform5 : texture_2d<f32>;\n\nstruct objectStruct {\n\tnodeUniform0 : f32,\n\tnodeUniform2 : mat3x3<f32>,\n\tnodeUniform3 : vec3<f32>,\n\tnodeUniform4 : f32,\n\tnodeUniform6 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform10 : vec3<f32>,\n\tnodeUniform7 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform15 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\n// vars\nvar<private> DiffuseColor : vec4<f32>;\nvar<private> Metalness : f32;\nvar<private> Roughness : f32;\nvar<private> normalViewGeometry : vec3<f32>;\nvar<private> SpecularColor : vec3<f32>;\nvar<private> SpecularColorBlended : vec3<f32>;\nvar<private> SpecularF90 : f32;\nvar<private> DiffuseContribution : vec3<f32>;\nvar<private> EmissiveColor : vec3<f32>;\nvar<private> Output : vec4<f32>;\nvar<private> NORMAL_normalView : vec3<f32>;\nvar<private> normalView : vec3<f32>;\nvar<private> positionViewDirection : vec3<f32>;\nvar<private> nodeVar0 : vec2<f32>;\nvar<private> singleScatteringDielectric : vec3<f32>;\nvar<private> multiScatteringDielectric : vec3<f32>;\nvar<private> irradiance : vec3<f32>;\nvar<private> normalWorld : vec3<f32>;\nvar<private> nodeVar1 : vec3<f32>;\nvar<private> directDiffuse : vec3<f32>;\nvar<private> directSpecular : vec3<f32>;\nvar<private> nodeVar2 : vec3<f32>;\nvar<private> indirectDiffuse : vec3<f32>;\nvar<private> singleScatteringMetallic : vec3<f32>;\nvar<private> multiScatteringMetallic : vec3<f32>;\nvar<private> radiance : vec3<f32>;\nvar<private> iblIrradiance : vec3<f32>;\nvar<private> nodeVar3 : vec3<f32>;\nvar<private> nodeVar4 : vec3<f32>;\nvar<private> indirectSpecular : vec3<f32>;\nvar<private> ambientOcclusion : f32;\nvar<private> totalDiffuse : vec3<f32>;\nvar<private> totalSpecular : vec3<f32>;\nvar<private> outgoingLight : vec3<f32>;\nvar<private> nodeVar5 : vec4<f32>;\n\n// codes\nfn mx_rotl32 ( x : u32, k : i32 ) -> u32 {\n\n\tvar nodeVar0 : i32;\n\tvar nodeVar1 : u32;\n\n\tnodeVar0 = k;\n\tnodeVar1 = x;\n\n\treturn ( ( nodeVar1 << u32( nodeVar0 ) ) | ( nodeVar1 >> u32( ( 32 - nodeVar0 ) ) ) );\n\n}\n\n\nfn mx_bjfinal ( a : u32, b : u32, c : u32 ) -> u32 {\n\n\tvar nodeVar0 : u32;\n\tvar nodeVar1 : u32;\n\tvar nodeVar2 : u32;\n\n\tnodeVar0 = c;\n\tnodeVar1 = b;\n\tnodeVar2 = a;\n\tnodeVar0 = ( nodeVar0 ^ nodeVar1 );\n\tnodeVar0 = ( nodeVar0 - mx_rotl32( nodeVar1, 14 ) );\n\tnodeVar2 = ( nodeVar2 ^ nodeVar0 );\n\tnodeVar2 = ( nodeVar2 - mx_rotl32( nodeVar0, 11 ) );\n\tnodeVar1 = ( nodeVar1 ^ nodeVar2 );\n\tnodeVar1 = ( nodeVar1 - mx_rotl32( nodeVar2, 25 ) );\n\tnodeVar0 = ( nodeVar0 ^ nodeVar1 );\n\tnodeVar0 = ( nodeVar0 - mx_rotl32( nodeVar1, 16 ) );\n\tnodeVar2 = ( nodeVar2 ^ nodeVar0 );\n\tnodeVar2 = ( nodeVar2 - mx_rotl32( nodeVar0, 4 ) );\n\tnodeVar1 = ( nodeVar1 ^ nodeVar2 );\n\tnodeVar1 = ( nodeVar1 - mx_rotl32( nodeVar2, 14 ) );\n\tnodeVar0 = ( nodeVar0 ^ nodeVar1 );\n\tnodeVar0 = ( nodeVar0 - mx_rotl32( nodeVar1, 24 ) );\n\n\treturn nodeVar0;\n\n}\n\n\nfn mx_select ( b : bool, t : f32, f : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\tvar nodeVar1 : f32;\n\tvar nodeVar2 : bool;\n\tvar nodeVar3 : f32;\n\n\tnodeVar0 = f;\n\tnodeVar1 = t;\n\tnodeVar2 = b;\n\n\treturn select( nodeVar0, nodeVar1, nodeVar2 );\n\n}\n\n\nfn mx_negate_if ( val : f32, b : bool ) -> f32 {\n\n\tvar nodeVar0 : bool;\n\tvar nodeVar1 : f32;\n\tvar nodeVar2 : f32;\n\n\tnodeVar0 = b;\n\tnodeVar1 = val;\n\n\treturn select( nodeVar1, ( - nodeVar1 ), nodeVar0 );\n\n}\n\n\nfn mx_floor ( x : f32 ) -> i32 {\n\n\tvar nodeVar0 : f32;\n\n\tnodeVar0 = x;\n\n\treturn i32( floor( nodeVar0 ) );\n\n}\n\n\nfn mx_fade ( t : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\n\tnodeVar0 = t;\n\n\treturn ( ( ( nodeVar0 * nodeVar0 ) * nodeVar0 ) * ( ( nodeVar0 * ( ( nodeVar0 * 6.0 ) - 15.0 ) ) + 10.0 ) );\n\n}\n\n\nfn mx_hash_int_2 ( x : i32, y : i32, z : i32 ) -> u32 {\n\n\tvar nodeVar0 : i32;\n\tvar nodeVar1 : i32;\n\tvar nodeVar2 : i32;\n\tvar nodeVar3 : u32;\n\tvar nodeVar4 : u32;\n\tvar nodeVar5 : u32;\n\tvar nodeVar6 : u32;\n\n\tnodeVar0 = z;\n\tnodeVar1 = y;\n\tnodeVar2 = x;\n\tnodeVar3 = 3u;\n\tnodeVar4 = 0u;\n\tnodeVar5 = 0u;\n\tnodeVar6 = 0u;\n\tnodeVar6 = ( ( 3735928559u + ( nodeVar3 << 2u ) ) + 13u );\n\tnodeVar5 = nodeVar6;\n\tnodeVar4 = nodeVar5;\n\tnodeVar4 = ( nodeVar4 + u32( nodeVar2 ) );\n\tnodeVar5 = ( nodeVar5 + u32( nodeVar1 ) );\n\tnodeVar6 = ( nodeVar6 + u32( nodeVar0 ) );\n\n\treturn mx_bjfinal( nodeVar4, nodeVar5, nodeVar6 );\n\n}\n\n\nfn mx_gradient_float_1 ( hash : u32, x : f32, y : f32, z : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\tvar nodeVar1 : f32;\n\tvar nodeVar2 : f32;\n\tvar nodeVar3 : u32;\n\tvar nodeVar4 : u32;\n\tvar nodeVar5 : f32;\n\tvar nodeVar6 : f32;\n\n\tnodeVar0 = z;\n\tnodeVar1 = y;\n\tnodeVar2 = x;\n\tnodeVar3 = hash;\n\tnodeVar4 = ( nodeVar3 & 15u );\n\tnodeVar5 = mx_select( ( nodeVar4 < 8u ), nodeVar2, nodeVar1 );\n\tnodeVar6 = mx_select( ( nodeVar4 < 4u ), nodeVar1, mx_select( ( ( nodeVar4 == 12u ) || ( nodeVar4 == 14u ) ), nodeVar2, nodeVar0 ) );\n\n\treturn ( mx_negate_if( nodeVar5, bool( ( nodeVar4 & 1u ) ) ) + mx_negate_if( nodeVar6, bool( ( nodeVar4 & 2u ) ) ) );\n\n}\n\n\nfn mx_trilerp_0 ( v0 : f32, v1 : f32, v2 : f32, v3 : f32, v4 : f32, v5 : f32, v6 : f32, v7 : f32, s : f32, t : f32, r : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\tvar nodeVar1 : f32;\n\tvar nodeVar2 : f32;\n\tvar nodeVar3 : f32;\n\tvar nodeVar4 : f32;\n\tvar nodeVar5 : f32;\n\tvar nodeVar6 : f32;\n\tvar nodeVar7 : f32;\n\tvar nodeVar8 : f32;\n\tvar nodeVar9 : f32;\n\tvar nodeVar10 : f32;\n\tvar nodeVar11 : f32;\n\tvar nodeVar12 : f32;\n\tvar nodeVar13 : f32;\n\n\tnodeVar0 = r;\n\tnodeVar1 = t;\n\tnodeVar2 = s;\n\tnodeVar3 = v7;\n\tnodeVar4 = v6;\n\tnodeVar5 = v5;\n\tnodeVar6 = v4;\n\tnodeVar7 = v3;\n\tnodeVar8 = v2;\n\tnodeVar9 = v1;\n\tnodeVar10 = v0;\n\tnodeVar11 = ( 1.0 - nodeVar2 );\n\tnodeVar12 = ( 1.0 - nodeVar1 );\n\tnodeVar13 = ( 1.0 - nodeVar0 );\n\n\treturn ( ( nodeVar13 * ( ( nodeVar12 * ( ( nodeVar10 * nodeVar11 ) + ( nodeVar9 * nodeVar2 ) ) ) + ( nodeVar1 * ( ( nodeVar8 * nodeVar11 ) + ( nodeVar7 * nodeVar2 ) ) ) ) ) + ( nodeVar0 * ( ( nodeVar12 * ( ( nodeVar6 * nodeVar11 ) + ( nodeVar5 * nodeVar2 ) ) ) + ( nodeVar1 * ( ( nodeVar4 * nodeVar11 ) + ( nodeVar3 * nodeVar2 ) ) ) ) ) );\n\n}\n\n\nfn mx_gradient_scale3d_0 ( v : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\n\tnodeVar0 = v;\n\n\treturn ( 0.982 * nodeVar0 );\n\n}\n\n\nfn mx_perlin_noise_float_1 ( p : vec3<f32> ) -> f32 {\n\n\tvar nodeVar0 : vec3<f32>;\n\tvar nodeVar1 : i32;\n\tvar nodeVar2 : i32;\n\tvar nodeVar3 : i32;\n\tvar nodeVar4 : f32;\n\tvar nodeVar5 : f32;\n\tvar nodeVar6 : f32;\n\tvar nodeVar7 : f32;\n\tvar nodeVar8 : f32;\n\tvar nodeVar9 : f32;\n\tvar nodeVar10 : f32;\n\tvar nodeVar11 : f32;\n\tvar nodeVar12 : f32;\n\tvar nodeVar13 : f32;\n\n\tnodeVar0 = p;\n\tnodeVar1 = 0;\n\tnodeVar2 = 0;\n\tnodeVar3 = 0;\n\tnodeVar4 = nodeVar0.x;\n\tnodeVar1 = mx_floor( nodeVar4 );\n\tnodeVar5 = ( nodeVar4 - f32( nodeVar1 ) );\n\tnodeVar6 = nodeVar0.y;\n\tnodeVar2 = mx_floor( nodeVar6 );\n\tnodeVar7 = ( nodeVar6 - f32( nodeVar2 ) );\n\tnodeVar8 = nodeVar0.z;\n\tnodeVar3 = mx_floor( nodeVar8 );\n\tnodeVar9 = ( nodeVar8 - f32( nodeVar3 ) );\n\tnodeVar10 = mx_fade( nodeVar5 );\n\tnodeVar11 = mx_fade( nodeVar7 );\n\tnodeVar12 = mx_fade( nodeVar9 );\n\tnodeVar13 = mx_trilerp_0( mx_gradient_float_1( mx_hash_int_2( nodeVar1, nodeVar2, nodeVar3 ), nodeVar5, nodeVar7, nodeVar9 ), mx_gradient_float_1( mx_hash_int_2( ( nodeVar1 + 1 ), nodeVar2, nodeVar3 ), ( nodeVar5 - 1.0 ), nodeVar7, nodeVar9 ), mx_gradient_float_1( mx_hash_int_2( nodeVar1, ( nodeVar2 + 1 ), nodeVar3 ), nodeVar5, ( nodeVar7 - 1.0 ), nodeVar9 ), mx_gradient_float_1( mx_hash_int_2( ( nodeVar1 + 1 ), ( nodeVar2 + 1 ), nodeVar3 ), ( nodeVar5 - 1.0 ), ( nodeVar7 - 1.0 ), nodeVar9 ), mx_gradient_float_1( mx_hash_int_2( nodeVar1, nodeVar2, ( nodeVar3 + 1 ) ), nodeVar5, nodeVar7, ( nodeVar9 - 1.0 ) ), mx_gradient_float_1( mx_hash_int_2( ( nodeVar1 + 1 ), nodeVar2, ( nodeVar3 + 1 ) ), ( nodeVar5 - 1.0 ), nodeVar7, ( nodeVar9 - 1.0 ) ), mx_gradient_float_1( mx_hash_int_2( nodeVar1, ( nodeVar2 + 1 ), ( nodeVar3 + 1 ) ), nodeVar5, ( nodeVar7 - 1.0 ), ( nodeVar9 - 1.0 ) ), mx_gradient_float_1( mx_hash_int_2( ( nodeVar1 + 1 ), ( nodeVar2 + 1 ), ( nodeVar3 + 1 ) ), ( nodeVar5 - 1.0 ), ( nodeVar7 - 1.0 ), ( nodeVar9 - 1.0 ) ), nodeVar10, nodeVar11, nodeVar12 );\n\n\treturn mx_gradient_scale3d_0( nodeVar13 );\n\n}\n\n\nfn mx_fractal_noise_float ( p : vec3<f32>, octaves : i32, lacunarity : f32, diminish : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\tvar nodeVar1 : f32;\n\tvar nodeVar2 : vec3<f32>;\n\tvar nodeVar3 : f32;\n\tvar nodeVar4 : f32;\n\tvar nodeVar5 : i32;\n\n\tnodeVar0 = diminish;\n\tnodeVar1 = lacunarity;\n\tnodeVar2 = p;\n\tnodeVar3 = 0.0;\n\tnodeVar4 = 1.0;\n\tnodeVar5 = octaves;\n\n\tfor ( var i : i32 = 0; i < nodeVar5; i ++ ) {\n\n\t\tnodeVar3 = ( nodeVar3 + ( nodeVar4 * mx_perlin_noise_float_1( nodeVar2 ) ) );\n\t\tnodeVar4 = ( nodeVar4 * nodeVar0 );\n\t\tnodeVar2 = ( nodeVar2 * vec3<f32>( nodeVar1 ) );\n\n\t}\n\n\n\treturn nodeVar3;\n\n}\n\n\nfn V_GGX_SmithCorrelated ( alpha : f32, dotNL : f32, dotNV : f32 ) -> f32 {\n\n\t\n\n\tlet nodeConst0 = ( alpha * alpha );\n\n\treturn ( 0.5 / max( ( ( dotNL * sqrt( ( nodeConst0 + ( ( 1.0 - nodeConst0 ) * ( dotNV * dotNV ) ) ) ) ) + ( dotNV * sqrt( ( nodeConst0 + ( ( 1.0 - nodeConst0 ) * ( dotNL * dotNL ) ) ) ) ) ), 0.000001 ) );\n\n}\n\n\nfn D_GGX ( alpha : f32, dotNH : f32 ) -> f32 {\n\n\t\n\n\tlet nodeConst0 = ( alpha * alpha );\n\tlet nodeConst1 = ( 1.0 - ( ( dotNH * dotNH ) * ( 1.0 - nodeConst0 ) ) );\n\n\treturn ( ( nodeConst0 / ( nodeConst1 * nodeConst1 ) ) * 0.3183098861837907 );\n\n}\n\n\n\n\n@fragment\nfn main( @location( 0 ) v_positionView : vec3<f32>,\n\t@location( 1 ) positionLocal : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32> ) -> OutputStruct {\n\n\t// flow\n\t// code\n\n\tDiffuseColor = vec4<f32>( ( ( vec3<f32>( 0.02955683443236377, 0.025186859622305935, 0.02121901037134225 ) * vec3<f32>( ( ( ( mx_fractal_noise_float( ( positionLocal * vec3<f32>( 35.0, 2.0, 35.0 ) ), 3, 2.0, 0.5 ) * 1.0 ) * 0.18 ) + 0.9 ) ) ) * vec3<f32>( smoothstep( 0.0, 0.5, positionLocal.y ) ) ), 1.0 );\n\tDiffuseColor.w = ( DiffuseColor.w * object.nodeUniform0 );\n\tDiffuseColor.w = 1.0;\n\tlet nodeConst0 = 0.0;\n\tMetalness = nodeConst0;\n\tnormalViewGeometry = normalize( v_normalViewGeometry );\n\tlet nodeConst1 = max( abs( dpdx( normalViewGeometry ) ), abs( - dpdy( normalViewGeometry ) ) );\n\tRoughness = min( ( max( 0.95, 0.045 ) + max( max( nodeConst1.x, nodeConst1.y ), nodeConst1.z ) ), 1.0 );\n\tSpecularColor = vec3<f32>( 0.04, 0.04, 0.04 );\n\tSpecularColorBlended = mix( vec3<f32>( 0.04, 0.04, 0.04 ), DiffuseColor.xyz, Metalness );\n\tSpecularF90 = 1.0;\n\tDiffuseContribution = ( DiffuseColor.xyz * vec3<f32>( ( 1.0 - nodeConst0 ) ) );\n\tEmissiveColor = ( object.nodeUniform3 * vec3<f32>( object.nodeUniform4 ) );\n\tNORMAL_normalView = normalViewGeometry;\n\tnormalView = NORMAL_normalView;\n\tpositionViewDirection = normalize( v_positionViewDirection );\n\tnodeVar0 = textureSample( nodeUniform5, nodeUniform5_sampler, vec2<f32>( Roughness, clamp( dot( normalView, positionViewDirection ), 0.0, 1.0 ) ) ).xy;\n\tlet dfg = nodeVar0;\n\tlet multiScatteringCompensation = ( ( SpecularColorBlended * vec3<f32>( ( ( 1.0 / ( dfg.x + dfg.y ) ) - 1.0 ) ) ) + vec3<f32>( 1.0 ) );\n\tsingleScatteringDielectric = vec3<f32>( 0.0, 0.0, 0.0 );\n\tmultiScatteringDielectric = vec3<f32>( 0.0, 0.0, 0.0 );\n\tlet nodeConst2 = ( ( SpecularColor * vec3<f32>( dfg.x ) ) + vec3<f32>( ( SpecularF90 * dfg.y ) ) );\n\tsingleScatteringDielectric = ( singleScatteringDielectric + nodeConst2 );\n\tlet nodeConst3 = ( SpecularColor + ( ( vec3<f32>( 1.0 ) - SpecularColor ) * vec3<f32>( 0.047619 ) ) );\n\tlet nodeConst4 = ( 1.0 - ( dfg.x + dfg.y ) );\n\tmultiScatteringDielectric = ( multiScatteringDielectric + ( ( ( nodeConst2 * nodeConst3 ) / ( vec3<f32>( 1.0 ) - ( vec3<f32>( nodeConst4 ) * nodeConst3 ) ) ) * vec3<f32>( nodeConst4 ) ) );\n\tirradiance = vec3<f32>( 0.0, 0.0, 0.0 );\n\tnormalWorld = normalize( ( vec4<f32>( normalView, 0.0 ) * render.cameraViewMatrix ).xyz );\n\tirradiance = ( irradiance + mix( render.nodeUniform7, render.nodeUniform8, ( ( dot( normalWorld, normalize( render.nodeUniform10 ) ) * 0.5 ) + 0.5 ) ) );\n\tlet nodeConst5 = normalize( ( render.cameraViewMatrix * vec4<f32>( ( render.nodeUniform11 - render.nodeUniform12 ), 0.0 ) ).xyz );\n\tnodeVar1 = ( vec3<f32>( clamp( dot( normalView, nodeConst5 ), 0.0, 1.0 ) ) * render.nodeUniform13 );\n\tdirectDiffuse = vec3<f32>( 0.0, 0.0, 0.0 );\n\tlet nodeConst6 = clamp( dot( positionViewDirection, normalize( ( nodeConst5 + positionViewDirection ) ) ), 0.0, 1.0 );\n\tlet nodeConst7 = exp2( ( ( ( nodeConst6 * -5.55473 ) - 6.98316 ) * nodeConst6 ) );\n\tdirectDiffuse = ( directDiffuse + ( ( nodeVar1 * ( DiffuseContribution * vec3<f32>( 0.3183098861837907 ) ) ) * ( vec3<f32>( 1.0 ) - ( ( SpecularColor * vec3<f32>( ( 1.0 - nodeConst7 ) ) ) + vec3<f32>( ( SpecularF90 * nodeConst7 ) ) ) ) ) );\n\tdirectSpecular = vec3<f32>( 0.0, 0.0, 0.0 );\n\tlet nodeConst8 = normalize( ( nodeConst5 + positionViewDirection ) );\n\tlet nodeConst9 = clamp( dot( positionViewDirection, nodeConst8 ), 0.0, 1.0 );\n\tlet nodeConst10 = exp2( ( ( ( nodeConst9 * -5.55473 ) - 6.98316 ) * nodeConst9 ) );\n\tlet nodeConst11 = max( Roughness, 0.045 );\n\tlet nodeConst12 = ( nodeConst11 * nodeConst11 );\n\tdirectSpecular = ( directSpecular + ( ( nodeVar1 * ( ( ( ( SpecularColorBlended * vec3<f32>( ( 1.0 - nodeConst10 ) ) ) + vec3<f32>( ( 1.0 * nodeConst10 ) ) ) * vec3<f32>( V_GGX_SmithCorrelated( nodeConst12, clamp( dot( normalView, nodeConst5 ), 0.0, 1.0 ), clamp( dot( normalView, positionViewDirection ), 0.0, 1.0 ) ) ) ) * vec3<f32>( D_GGX( nodeConst12, clamp( dot( normalView, nodeConst8 ), 0.0, 1.0 ) ) ) ) ) * multiScatteringCompensation ) );\n\tnodeVar2 = ( ( irradiance * ( DiffuseContribution * vec3<f32>( 0.3183098861837907 ) ) ) * ( vec3<f32>( 1.0 ) - ( singleScatteringDielectric + multiScatteringDielectric ) ) );\n\tindirectDiffuse = vec3<f32>( 0.0, 0.0, 0.0 );\n\tindirectDiffuse = ( indirectDiffuse + nodeVar2 );\n\tsingleScatteringMetallic = vec3<f32>( 0.0, 0.0, 0.0 );\n\tmultiScatteringMetallic = vec3<f32>( 0.0, 0.0, 0.0 );\n\tlet nodeConst13 = ( ( DiffuseColor.xyz * vec3<f32>( dfg.x ) ) + vec3<f32>( ( SpecularF90 * dfg.y ) ) );\n\tsingleScatteringMetallic = ( singleScatteringMetallic + nodeConst13 );\n\tlet nodeConst14 = ( DiffuseColor.xyz + ( ( vec3<f32>( 1.0 ) - DiffuseColor.xyz ) * vec3<f32>( 0.047619 ) ) );\n\tlet nodeConst15 = ( 1.0 - ( dfg.x + dfg.y ) );\n\tmultiScatteringMetallic = ( multiScatteringMetallic + ( ( ( nodeConst13 * nodeConst14 ) / ( vec3<f32>( 1.0 ) - ( vec3<f32>( nodeConst15 ) * nodeConst14 ) ) ) * vec3<f32>( nodeConst15 ) ) );\n\tradiance = vec3<f32>( 0.0, 0.0, 0.0 );\n\tiblIrradiance = vec3<f32>( 0.0, 0.0, 0.0 );\n\tlet nodeConst16 = ( iblIrradiance * vec3<f32>( 0.3183098861837907 ) );\n\tnodeVar3 = ( ( radiance * mix( singleScatteringDielectric, singleScatteringMetallic, Metalness ) ) + ( mix( multiScatteringDielectric, multiScatteringMetallic, Metalness ) * nodeConst16 ) );\n\tnodeVar4 = ( ( DiffuseContribution * ( vec3<f32>( 1.0 ) - ( singleScatteringDielectric + multiScatteringDielectric ) ) ) * nodeConst16 );\n\tindirectSpecular = vec3<f32>( 0.0, 0.0, 0.0 );\n\tindirectSpecular = ( indirectSpecular + nodeVar3 );\n\tindirectDiffuse = ( indirectDiffuse + nodeVar4 );\n\tambientOcclusion = 1.0;\n\tindirectDiffuse = ( indirectDiffuse * vec3<f32>( ambientOcclusion ) );\n\tindirectSpecular = ( indirectSpecular * vec3<f32>( clamp( ( ambientOcclusion - ( 1.0 - pow( ( clamp( dot( normalView, positionViewDirection ), 0.0, 1.0 ) + ambientOcclusion ), exp2( ( - ( 1.0 - ( Roughness * -16.0 ) ) ) ) ) ) ), 0.0, 1.0 ) ) );\n\ttotalDiffuse = ( directDiffuse + indirectDiffuse );\n\ttotalSpecular = ( directSpecular + indirectSpecular );\n\toutgoingLight = ( totalDiffuse + totalSpecular );\n\tOutput = max( vec4<f32>( ( outgoingLight + EmissiveColor ), DiffuseColor.w ), vec4<f32>( 0.0 ) );\n\tlet nodeConst17 = ( - v_positionView.z );\n\tnodeVar5 = vec4<f32>( mix( Output.xyz, render.nodeUniform14, ( 1.0 - exp( ( - ( ( ( render.nodeUniform15 * render.nodeUniform15 ) * nodeConst17 ) * nodeConst17 ) ) ) ) ), Output.w );\n\tlet nodeConst18 = nodeVar5;\n\tOutput = nodeConst18;\n\n\t// result\n\n\toutput.color = nodeConst18;\n\n\treturn output;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct NodeBuffer_2596Struct {\n\tvalue : array< mat4x4<f32>, 18 >\n};\n@binding( 3 ) @group( 1 )\nvar<uniform> NodeBuffer_2596 : NodeBuffer_2596Struct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\nfn tsl_inverse_mat3( m : mat3x3<f32> ) -> mat3x3<f32> {\n\n\tlet a00 = m[ 0 ][ 0 ]; let a01 = m[ 0 ][ 1 ]; let a02 = m[ 0 ][ 2 ];\n\tlet a10 = m[ 1 ][ 0 ]; let a11 = m[ 1 ][ 1 ]; let a12 = m[ 1 ][ 2 ];\n\tlet a20 = m[ 2 ][ 0 ]; let a21 = m[ 2 ][ 1 ]; let a22 = m[ 2 ][ 2 ];\n\n\tlet b01 = a22 * a11 - a12 * a21;\n\tlet b11 = - a22 * a10 + a12 * a20;\n\tlet b21 = a21 * a10 - a11 * a20;\n\n\tlet det = a00 * b01 + a01 * b11 + a02 * b21;\n\n\treturn mat3x3<f32>(\n\t\tb01, ( - a22 * a01 + a02 * a21 ), ( a12 * a01 - a02 * a11 ),\n\t\tb11, ( a22 * a00 - a02 * a20 ), ( - a12 * a00 + a02 * a10 ),\n\t\tb21, ( - a21 * a00 + a01 * a20 ), ( a11 * a00 - a01 * a10 )\n\t) * ( 1.0 / det );\n\n}\n\n\n\n@vertex\nfn main( @builtin( instance_index ) instanceIndex : u32,\n\t@location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tvaryings.positionLocal = ( NodeBuffer_2596.value[ instanceIndex ] * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tnormalLocal = normal;\n\tnormalLocal = normalize( ( transpose( tsl_inverse_mat3( mat3x3<f32>( NodeBuffer_2596.value[ instanceIndex ][ 0 ].xyz, NodeBuffer_2596.value[ instanceIndex ][ 1 ].xyz, NodeBuffer_2596.value[ instanceIndex ][ 2 ].xyz ) ) ) * normalLocal ) );\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform3 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform7 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "fragment",
+      "code": "// Three.js r187dev - Node System\n\n// global\ndiagnostic( off, derivative_uniformity );\n\n\n// directives\n\n\n// structs\n\nstruct OutputStruct {\n\t@location( 0 ) color: vec4<f32>\n};\nvar<private> output : OutputStruct;\n\n// uniforms\n@binding( 1 ) @group( 1 ) var nodeUniform6_sampler : sampler;\n@binding( 2 ) @group( 1 ) var nodeUniform6 : texture_2d<f32>;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\n// vars\nvar<private> DiffuseColor : vec4<f32>;\nvar<private> Metalness : f32;\nvar<private> Roughness : f32;\nvar<private> normalViewGeometry : vec3<f32>;\nvar<private> SpecularColor : vec3<f32>;\nvar<private> SpecularColorBlended : vec3<f32>;\nvar<private> SpecularF90 : f32;\nvar<private> DiffuseContribution : vec3<f32>;\nvar<private> EmissiveColor : vec3<f32>;\nvar<private> Output : vec4<f32>;\nvar<private> NORMAL_normalView : vec3<f32>;\nvar<private> normalView : vec3<f32>;\nvar<private> positionViewDirection : vec3<f32>;\nvar<private> nodeVar0 : vec2<f32>;\nvar<private> singleScatteringDielectric : vec3<f32>;\nvar<private> multiScatteringDielectric : vec3<f32>;\nvar<private> irradiance : vec3<f32>;\nvar<private> normalWorld : vec3<f32>;\nvar<private> nodeVar1 : vec3<f32>;\nvar<private> directDiffuse : vec3<f32>;\nvar<private> directSpecular : vec3<f32>;\nvar<private> nodeVar2 : vec3<f32>;\nvar<private> indirectDiffuse : vec3<f32>;\nvar<private> singleScatteringMetallic : vec3<f32>;\nvar<private> multiScatteringMetallic : vec3<f32>;\nvar<private> radiance : vec3<f32>;\nvar<private> iblIrradiance : vec3<f32>;\nvar<private> nodeVar3 : vec3<f32>;\nvar<private> nodeVar4 : vec3<f32>;\nvar<private> indirectSpecular : vec3<f32>;\nvar<private> ambientOcclusion : f32;\nvar<private> totalDiffuse : vec3<f32>;\nvar<private> totalSpecular : vec3<f32>;\nvar<private> outgoingLight : vec3<f32>;\nvar<private> nodeVar5 : vec4<f32>;\n\n// codes\nfn mx_floor ( x : f32 ) -> i32 {\n\n\tvar nodeVar0 : f32;\n\n\tnodeVar0 = x;\n\n\treturn i32( floor( nodeVar0 ) );\n\n}\n\n\nfn mx_fade ( t : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\n\tnodeVar0 = t;\n\n\treturn ( ( ( nodeVar0 * nodeVar0 ) * nodeVar0 ) * ( ( nodeVar0 * ( ( nodeVar0 * 6.0 ) - 15.0 ) ) + 10.0 ) );\n\n}\n\n\nfn mx_rotl32 ( x : u32, k : i32 ) -> u32 {\n\n\tvar nodeVar0 : i32;\n\tvar nodeVar1 : u32;\n\n\tnodeVar0 = k;\n\tnodeVar1 = x;\n\n\treturn ( ( nodeVar1 << u32( nodeVar0 ) ) | ( nodeVar1 >> u32( ( 32 - nodeVar0 ) ) ) );\n\n}\n\n\nfn mx_bjfinal ( a : u32, b : u32, c : u32 ) -> u32 {\n\n\tvar nodeVar0 : u32;\n\tvar nodeVar1 : u32;\n\tvar nodeVar2 : u32;\n\n\tnodeVar0 = c;\n\tnodeVar1 = b;\n\tnodeVar2 = a;\n\tnodeVar0 = ( nodeVar0 ^ nodeVar1 );\n\tnodeVar0 = ( nodeVar0 - mx_rotl32( nodeVar1, 14 ) );\n\tnodeVar2 = ( nodeVar2 ^ nodeVar0 );\n\tnodeVar2 = ( nodeVar2 - mx_rotl32( nodeVar0, 11 ) );\n\tnodeVar1 = ( nodeVar1 ^ nodeVar2 );\n\tnodeVar1 = ( nodeVar1 - mx_rotl32( nodeVar2, 25 ) );\n\tnodeVar0 = ( nodeVar0 ^ nodeVar1 );\n\tnodeVar0 = ( nodeVar0 - mx_rotl32( nodeVar1, 16 ) );\n\tnodeVar2 = ( nodeVar2 ^ nodeVar0 );\n\tnodeVar2 = ( nodeVar2 - mx_rotl32( nodeVar0, 4 ) );\n\tnodeVar1 = ( nodeVar1 ^ nodeVar2 );\n\tnodeVar1 = ( nodeVar1 - mx_rotl32( nodeVar2, 14 ) );\n\tnodeVar0 = ( nodeVar0 ^ nodeVar1 );\n\tnodeVar0 = ( nodeVar0 - mx_rotl32( nodeVar1, 24 ) );\n\n\treturn nodeVar0;\n\n}\n\n\nfn mx_hash_int_2 ( x : i32, y : i32, z : i32 ) -> u32 {\n\n\tvar nodeVar0 : i32;\n\tvar nodeVar1 : i32;\n\tvar nodeVar2 : i32;\n\tvar nodeVar3 : u32;\n\tvar nodeVar4 : u32;\n\tvar nodeVar5 : u32;\n\tvar nodeVar6 : u32;\n\n\tnodeVar0 = z;\n\tnodeVar1 = y;\n\tnodeVar2 = x;\n\tnodeVar3 = 3u;\n\tnodeVar4 = 0u;\n\tnodeVar5 = 0u;\n\tnodeVar6 = 0u;\n\tnodeVar6 = ( ( 3735928559u + ( nodeVar3 << 2u ) ) + 13u );\n\tnodeVar5 = nodeVar6;\n\tnodeVar4 = nodeVar5;\n\tnodeVar4 = ( nodeVar4 + u32( nodeVar2 ) );\n\tnodeVar5 = ( nodeVar5 + u32( nodeVar1 ) );\n\tnodeVar6 = ( nodeVar6 + u32( nodeVar0 ) );\n\n\treturn mx_bjfinal( nodeVar4, nodeVar5, nodeVar6 );\n\n}\n\n\nfn mx_select ( b : bool, t : f32, f : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\tvar nodeVar1 : f32;\n\tvar nodeVar2 : bool;\n\tvar nodeVar3 : f32;\n\n\tnodeVar0 = f;\n\tnodeVar1 = t;\n\tnodeVar2 = b;\n\n\treturn select( nodeVar0, nodeVar1, nodeVar2 );\n\n}\n\n\nfn mx_negate_if ( val : f32, b : bool ) -> f32 {\n\n\tvar nodeVar0 : bool;\n\tvar nodeVar1 : f32;\n\tvar nodeVar2 : f32;\n\n\tnodeVar0 = b;\n\tnodeVar1 = val;\n\n\treturn select( nodeVar1, ( - nodeVar1 ), nodeVar0 );\n\n}\n\n\nfn mx_gradient_float_1 ( hash : u32, x : f32, y : f32, z : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\tvar nodeVar1 : f32;\n\tvar nodeVar2 : f32;\n\tvar nodeVar3 : u32;\n\tvar nodeVar4 : u32;\n\tvar nodeVar5 : f32;\n\tvar nodeVar6 : f32;\n\n\tnodeVar0 = z;\n\tnodeVar1 = y;\n\tnodeVar2 = x;\n\tnodeVar3 = hash;\n\tnodeVar4 = ( nodeVar3 & 15u );\n\tnodeVar5 = mx_select( ( nodeVar4 < 8u ), nodeVar2, nodeVar1 );\n\tnodeVar6 = mx_select( ( nodeVar4 < 4u ), nodeVar1, mx_select( ( ( nodeVar4 == 12u ) || ( nodeVar4 == 14u ) ), nodeVar2, nodeVar0 ) );\n\n\treturn ( mx_negate_if( nodeVar5, bool( ( nodeVar4 & 1u ) ) ) + mx_negate_if( nodeVar6, bool( ( nodeVar4 & 2u ) ) ) );\n\n}\n\n\nfn mx_trilerp_0 ( v0 : f32, v1 : f32, v2 : f32, v3 : f32, v4 : f32, v5 : f32, v6 : f32, v7 : f32, s : f32, t : f32, r : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\tvar nodeVar1 : f32;\n\tvar nodeVar2 : f32;\n\tvar nodeVar3 : f32;\n\tvar nodeVar4 : f32;\n\tvar nodeVar5 : f32;\n\tvar nodeVar6 : f32;\n\tvar nodeVar7 : f32;\n\tvar nodeVar8 : f32;\n\tvar nodeVar9 : f32;\n\tvar nodeVar10 : f32;\n\tvar nodeVar11 : f32;\n\tvar nodeVar12 : f32;\n\tvar nodeVar13 : f32;\n\n\tnodeVar0 = r;\n\tnodeVar1 = t;\n\tnodeVar2 = s;\n\tnodeVar3 = v7;\n\tnodeVar4 = v6;\n\tnodeVar5 = v5;\n\tnodeVar6 = v4;\n\tnodeVar7 = v3;\n\tnodeVar8 = v2;\n\tnodeVar9 = v1;\n\tnodeVar10 = v0;\n\tnodeVar11 = ( 1.0 - nodeVar2 );\n\tnodeVar12 = ( 1.0 - nodeVar1 );\n\tnodeVar13 = ( 1.0 - nodeVar0 );\n\n\treturn ( ( nodeVar13 * ( ( nodeVar12 * ( ( nodeVar10 * nodeVar11 ) + ( nodeVar9 * nodeVar2 ) ) ) + ( nodeVar1 * ( ( nodeVar8 * nodeVar11 ) + ( nodeVar7 * nodeVar2 ) ) ) ) ) + ( nodeVar0 * ( ( nodeVar12 * ( ( nodeVar6 * nodeVar11 ) + ( nodeVar5 * nodeVar2 ) ) ) + ( nodeVar1 * ( ( nodeVar4 * nodeVar11 ) + ( nodeVar3 * nodeVar2 ) ) ) ) ) );\n\n}\n\n\nfn mx_gradient_scale3d_0 ( v : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\n\tnodeVar0 = v;\n\n\treturn ( 0.982 * nodeVar0 );\n\n}\n\n\nfn mx_perlin_noise_float_1 ( p : vec3<f32> ) -> f32 {\n\n\tvar nodeVar0 : vec3<f32>;\n\tvar nodeVar1 : i32;\n\tvar nodeVar2 : i32;\n\tvar nodeVar3 : i32;\n\tvar nodeVar4 : f32;\n\tvar nodeVar5 : f32;\n\tvar nodeVar6 : f32;\n\tvar nodeVar7 : f32;\n\tvar nodeVar8 : f32;\n\tvar nodeVar9 : f32;\n\tvar nodeVar10 : f32;\n\tvar nodeVar11 : f32;\n\tvar nodeVar12 : f32;\n\tvar nodeVar13 : f32;\n\n\tnodeVar0 = p;\n\tnodeVar1 = 0;\n\tnodeVar2 = 0;\n\tnodeVar3 = 0;\n\tnodeVar4 = nodeVar0.x;\n\tnodeVar1 = mx_floor( nodeVar4 );\n\tnodeVar5 = ( nodeVar4 - f32( nodeVar1 ) );\n\tnodeVar6 = nodeVar0.y;\n\tnodeVar2 = mx_floor( nodeVar6 );\n\tnodeVar7 = ( nodeVar6 - f32( nodeVar2 ) );\n\tnodeVar8 = nodeVar0.z;\n\tnodeVar3 = mx_floor( nodeVar8 );\n\tnodeVar9 = ( nodeVar8 - f32( nodeVar3 ) );\n\tnodeVar10 = mx_fade( nodeVar5 );\n\tnodeVar11 = mx_fade( nodeVar7 );\n\tnodeVar12 = mx_fade( nodeVar9 );\n\tnodeVar13 = mx_trilerp_0( mx_gradient_float_1( mx_hash_int_2( nodeVar1, nodeVar2, nodeVar3 ), nodeVar5, nodeVar7, nodeVar9 ), mx_gradient_float_1( mx_hash_int_2( ( nodeVar1 + 1 ), nodeVar2, nodeVar3 ), ( nodeVar5 - 1.0 ), nodeVar7, nodeVar9 ), mx_gradient_float_1( mx_hash_int_2( nodeVar1, ( nodeVar2 + 1 ), nodeVar3 ), nodeVar5, ( nodeVar7 - 1.0 ), nodeVar9 ), mx_gradient_float_1( mx_hash_int_2( ( nodeVar1 + 1 ), ( nodeVar2 + 1 ), nodeVar3 ), ( nodeVar5 - 1.0 ), ( nodeVar7 - 1.0 ), nodeVar9 ), mx_gradient_float_1( mx_hash_int_2( nodeVar1, nodeVar2, ( nodeVar3 + 1 ) ), nodeVar5, nodeVar7, ( nodeVar9 - 1.0 ) ), mx_gradient_float_1( mx_hash_int_2( ( nodeVar1 + 1 ), nodeVar2, ( nodeVar3 + 1 ) ), ( nodeVar5 - 1.0 ), nodeVar7, ( nodeVar9 - 1.0 ) ), mx_gradient_float_1( mx_hash_int_2( nodeVar1, ( nodeVar2 + 1 ), ( nodeVar3 + 1 ) ), nodeVar5, ( nodeVar7 - 1.0 ), ( nodeVar9 - 1.0 ) ), mx_gradient_float_1( mx_hash_int_2( ( nodeVar1 + 1 ), ( nodeVar2 + 1 ), ( nodeVar3 + 1 ) ), ( nodeVar5 - 1.0 ), ( nodeVar7 - 1.0 ), ( nodeVar9 - 1.0 ) ), nodeVar10, nodeVar11, nodeVar12 );\n\n\treturn mx_gradient_scale3d_0( nodeVar13 );\n\n}\n\n\nfn mx_fractal_noise_float ( p : vec3<f32>, octaves : i32, lacunarity : f32, diminish : f32 ) -> f32 {\n\n\tvar nodeVar0 : f32;\n\tvar nodeVar1 : f32;\n\tvar nodeVar2 : vec3<f32>;\n\tvar nodeVar3 : f32;\n\tvar nodeVar4 : f32;\n\tvar nodeVar5 : i32;\n\n\tnodeVar0 = diminish;\n\tnodeVar1 = lacunarity;\n\tnodeVar2 = p;\n\tnodeVar3 = 0.0;\n\tnodeVar4 = 1.0;\n\tnodeVar5 = octaves;\n\n\tfor ( var i : i32 = 0; i < nodeVar5; i ++ ) {\n\n\t\tnodeVar3 = ( nodeVar3 + ( nodeVar4 * mx_perlin_noise_float_1( nodeVar2 ) ) );\n\t\tnodeVar4 = ( nodeVar4 * nodeVar0 );\n\t\tnodeVar2 = ( nodeVar2 * vec3<f32>( nodeVar1 ) );\n\n\t}\n\n\n\treturn nodeVar3;\n\n}\n\n\nfn V_GGX_SmithCorrelated ( alpha : f32, dotNL : f32, dotNV : f32 ) -> f32 {\n\n\t\n\n\tlet nodeConst0 = ( alpha * alpha );\n\n\treturn ( 0.5 / max( ( ( dotNL * sqrt( ( nodeConst0 + ( ( 1.0 - nodeConst0 ) * ( dotNV * dotNV ) ) ) ) ) + ( dotNV * sqrt( ( nodeConst0 + ( ( 1.0 - nodeConst0 ) * ( dotNL * dotNL ) ) ) ) ) ), 0.000001 ) );\n\n}\n\n\nfn D_GGX ( alpha : f32, dotNH : f32 ) -> f32 {\n\n\t\n\n\tlet nodeConst0 = ( alpha * alpha );\n\tlet nodeConst1 = ( 1.0 - ( ( dotNH * dotNH ) * ( 1.0 - nodeConst0 ) ) );\n\n\treturn ( ( nodeConst0 / ( nodeConst1 * nodeConst1 ) ) * 0.3183098861837907 );\n\n}\n\n\n\n\n@fragment\nfn main( @location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32> ) -> OutputStruct {\n\n\t// flow\n\t// code\n\n\tDiffuseColor = vec4<f32>( ( ( vec3<f32>( 0.02955683443236377, 0.025186859622305935, 0.02121901037134225 ) * vec3<f32>( ( ( ( mx_fractal_noise_float( ( positionLocal * vec3<f32>( 35.0, 2.0, 35.0 ) ), 3, 2.0, 0.5 ) * 1.0 ) * 0.18 ) + 0.9 ) ) ) * vec3<f32>( smoothstep( 0.0, 0.5, positionLocal.y ) ) ), 1.0 );\n\tDiffuseColor.w = ( DiffuseColor.w * object.nodeUniform1 );\n\tDiffuseColor.w = 1.0;\n\tlet nodeConst0 = 0.0;\n\tMetalness = nodeConst0;\n\tnormalViewGeometry = normalize( v_normalViewGeometry );\n\tlet nodeConst1 = max( abs( dpdx( normalViewGeometry ) ), abs( - dpdy( normalViewGeometry ) ) );\n\tRoughness = min( ( max( 0.95, 0.045 ) + max( max( nodeConst1.x, nodeConst1.y ), nodeConst1.z ) ), 1.0 );\n\tSpecularColor = vec3<f32>( 0.04, 0.04, 0.04 );\n\tSpecularColorBlended = mix( vec3<f32>( 0.04, 0.04, 0.04 ), DiffuseColor.xyz, Metalness );\n\tSpecularF90 = 1.0;\n\tDiffuseContribution = ( DiffuseColor.xyz * vec3<f32>( ( 1.0 - nodeConst0 ) ) );\n\tEmissiveColor = ( object.nodeUniform4 * vec3<f32>( object.nodeUniform5 ) );\n\tNORMAL_normalView = normalViewGeometry;\n\tnormalView = NORMAL_normalView;\n\tpositionViewDirection = normalize( v_positionViewDirection );\n\tnodeVar0 = textureSample( nodeUniform6, nodeUniform6_sampler, vec2<f32>( Roughness, clamp( dot( normalView, positionViewDirection ), 0.0, 1.0 ) ) ).xy;\n\tlet dfg = nodeVar0;\n\tlet multiScatteringCompensation = ( ( SpecularColorBlended * vec3<f32>( ( ( 1.0 / ( dfg.x + dfg.y ) ) - 1.0 ) ) ) + vec3<f32>( 1.0 ) );\n\tsingleScatteringDielectric = vec3<f32>( 0.0, 0.0, 0.0 );\n\tmultiScatteringDielectric = vec3<f32>( 0.0, 0.0, 0.0 );\n\tlet nodeConst2 = ( ( SpecularColor * vec3<f32>( dfg.x ) ) + vec3<f32>( ( SpecularF90 * dfg.y ) ) );\n\tsingleScatteringDielectric = ( singleScatteringDielectric + nodeConst2 );\n\tlet nodeConst3 = ( SpecularColor + ( ( vec3<f32>( 1.0 ) - SpecularColor ) * vec3<f32>( 0.047619 ) ) );\n\tlet nodeConst4 = ( 1.0 - ( dfg.x + dfg.y ) );\n\tmultiScatteringDielectric = ( multiScatteringDielectric + ( ( ( nodeConst2 * nodeConst3 ) / ( vec3<f32>( 1.0 ) - ( vec3<f32>( nodeConst4 ) * nodeConst3 ) ) ) * vec3<f32>( nodeConst4 ) ) );\n\tirradiance = vec3<f32>( 0.0, 0.0, 0.0 );\n\tnormalWorld = normalize( ( vec4<f32>( normalView, 0.0 ) * render.cameraViewMatrix ).xyz );\n\tirradiance = ( irradiance + mix( render.nodeUniform8, render.nodeUniform9, ( ( dot( normalWorld, normalize( render.nodeUniform11 ) ) * 0.5 ) + 0.5 ) ) );\n\tlet nodeConst5 = normalize( ( render.cameraViewMatrix * vec4<f32>( ( render.nodeUniform12 - render.nodeUniform13 ), 0.0 ) ).xyz );\n\tnodeVar1 = ( vec3<f32>( clamp( dot( normalView, nodeConst5 ), 0.0, 1.0 ) ) * render.nodeUniform14 );\n\tdirectDiffuse = vec3<f32>( 0.0, 0.0, 0.0 );\n\tlet nodeConst6 = clamp( dot( positionViewDirection, normalize( ( nodeConst5 + positionViewDirection ) ) ), 0.0, 1.0 );\n\tlet nodeConst7 = exp2( ( ( ( nodeConst6 * -5.55473 ) - 6.98316 ) * nodeConst6 ) );\n\tdirectDiffuse = ( directDiffuse + ( ( nodeVar1 * ( DiffuseContribution * vec3<f32>( 0.3183098861837907 ) ) ) * ( vec3<f32>( 1.0 ) - ( ( SpecularColor * vec3<f32>( ( 1.0 - nodeConst7 ) ) ) + vec3<f32>( ( SpecularF90 * nodeConst7 ) ) ) ) ) );\n\tdirectSpecular = vec3<f32>( 0.0, 0.0, 0.0 );\n\tlet nodeConst8 = normalize( ( nodeConst5 + positionViewDirection ) );\n\tlet nodeConst9 = clamp( dot( positionViewDirection, nodeConst8 ), 0.0, 1.0 );\n\tlet nodeConst10 = exp2( ( ( ( nodeConst9 * -5.55473 ) - 6.98316 ) * nodeConst9 ) );\n\tlet nodeConst11 = max( Roughness, 0.045 );\n\tlet nodeConst12 = ( nodeConst11 * nodeConst11 );\n\tdirectSpecular = ( directSpecular + ( ( nodeVar1 * ( ( ( ( SpecularColorBlended * vec3<f32>( ( 1.0 - nodeConst10 ) ) ) + vec3<f32>( ( 1.0 * nodeConst10 ) ) ) * vec3<f32>( V_GGX_SmithCorrelated( nodeConst12, clamp( dot( normalView, nodeConst5 ), 0.0, 1.0 ), clamp( dot( normalView, positionViewDirection ), 0.0, 1.0 ) ) ) ) * vec3<f32>( D_GGX( nodeConst12, clamp( dot( normalView, nodeConst8 ), 0.0, 1.0 ) ) ) ) ) * multiScatteringCompensation ) );\n\tnodeVar2 = ( ( irradiance * ( DiffuseContribution * vec3<f32>( 0.3183098861837907 ) ) ) * ( vec3<f32>( 1.0 ) - ( singleScatteringDielectric + multiScatteringDielectric ) ) );\n\tindirectDiffuse = vec3<f32>( 0.0, 0.0, 0.0 );\n\tindirectDiffuse = ( indirectDiffuse + nodeVar2 );\n\tsingleScatteringMetallic = vec3<f32>( 0.0, 0.0, 0.0 );\n\tmultiScatteringMetallic = vec3<f32>( 0.0, 0.0, 0.0 );\n\tlet nodeConst13 = ( ( DiffuseColor.xyz * vec3<f32>( dfg.x ) ) + vec3<f32>( ( SpecularF90 * dfg.y ) ) );\n\tsingleScatteringMetallic = ( singleScatteringMetallic + nodeConst13 );\n\tlet nodeConst14 = ( DiffuseColor.xyz + ( ( vec3<f32>( 1.0 ) - DiffuseColor.xyz ) * vec3<f32>( 0.047619 ) ) );\n\tlet nodeConst15 = ( 1.0 - ( dfg.x + dfg.y ) );\n\tmultiScatteringMetallic = ( multiScatteringMetallic + ( ( ( nodeConst13 * nodeConst14 ) / ( vec3<f32>( 1.0 ) - ( vec3<f32>( nodeConst15 ) * nodeConst14 ) ) ) * vec3<f32>( nodeConst15 ) ) );\n\tradiance = vec3<f32>( 0.0, 0.0, 0.0 );\n\tiblIrradiance = vec3<f32>( 0.0, 0.0, 0.0 );\n\tlet nodeConst16 = ( iblIrradiance * vec3<f32>( 0.3183098861837907 ) );\n\tnodeVar3 = ( ( radiance * mix( singleScatteringDielectric, singleScatteringMetallic, Metalness ) ) + ( mix( multiScatteringDielectric, multiScatteringMetallic, Metalness ) * nodeConst16 ) );\n\tnodeVar4 = ( ( DiffuseContribution * ( vec3<f32>( 1.0 ) - ( singleScatteringDielectric + multiScatteringDielectric ) ) ) * nodeConst16 );\n\tindirectSpecular = vec3<f32>( 0.0, 0.0, 0.0 );\n\tindirectSpecular = ( indirectSpecular + nodeVar3 );\n\tindirectDiffuse = ( indirectDiffuse + nodeVar4 );\n\tambientOcclusion = 1.0;\n\tindirectDiffuse = ( indirectDiffuse * vec3<f32>( ambientOcclusion ) );\n\tindirectSpecular = ( indirectSpecular * vec3<f32>( clamp( ( ambientOcclusion - ( 1.0 - pow( ( clamp( dot( normalView, positionViewDirection ), 0.0, 1.0 ) + ambientOcclusion ), exp2( ( - ( 1.0 - ( Roughness * -16.0 ) ) ) ) ) ) ), 0.0, 1.0 ) ) );\n\ttotalDiffuse = ( directDiffuse + indirectDiffuse );\n\ttotalSpecular = ( directSpecular + indirectSpecular );\n\toutgoingLight = ( totalDiffuse + totalSpecular );\n\tOutput = max( vec4<f32>( ( outgoingLight + EmissiveColor ), DiffuseColor.w ), vec4<f32>( 0.0 ) );\n\tlet nodeConst17 = ( - v_positionView.z );\n\tnodeVar5 = vec4<f32>( mix( Output.xyz, render.nodeUniform15, ( 1.0 - exp( ( - ( ( ( render.nodeUniform16 * render.nodeUniform16 ) * nodeConst17 ) * nodeConst17 ) ) ) ) ), Output.w );\n\tlet nodeConst18 = nodeVar5;\n\tOutput = nodeConst18;\n\n\t// result\n\n\toutput.color = nodeConst18;\n\n\treturn output;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct NodeBuffer_3197Struct {\n\tvalue : array< mat4x4<f32>, 17 >\n};\n@binding( 3 ) @group( 1 )\nvar<uniform> NodeBuffer_3197 : NodeBuffer_3197Struct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\nfn tsl_inverse_mat3( m : mat3x3<f32> ) -> mat3x3<f32> {\n\n\tlet a00 = m[ 0 ][ 0 ]; let a01 = m[ 0 ][ 1 ]; let a02 = m[ 0 ][ 2 ];\n\tlet a10 = m[ 1 ][ 0 ]; let a11 = m[ 1 ][ 1 ]; let a12 = m[ 1 ][ 2 ];\n\tlet a20 = m[ 2 ][ 0 ]; let a21 = m[ 2 ][ 1 ]; let a22 = m[ 2 ][ 2 ];\n\n\tlet b01 = a22 * a11 - a12 * a21;\n\tlet b11 = - a22 * a10 + a12 * a20;\n\tlet b21 = a21 * a10 - a11 * a20;\n\n\tlet det = a00 * b01 + a01 * b11 + a02 * b21;\n\n\treturn mat3x3<f32>(\n\t\tb01, ( - a22 * a01 + a02 * a21 ), ( a12 * a01 - a02 * a11 ),\n\t\tb11, ( a22 * a00 - a02 * a20 ), ( - a12 * a00 + a02 * a10 ),\n\t\tb21, ( - a21 * a00 + a01 * a20 ), ( a11 * a00 - a01 * a10 )\n\t) * ( 1.0 / det );\n\n}\n\n\n\n@vertex\nfn main( @builtin( instance_index ) instanceIndex : u32,\n\t@location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tvaryings.positionLocal = ( NodeBuffer_3197.value[ instanceIndex ] * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tnormalLocal = normal;\n\tnormalLocal = normalize( ( transpose( tsl_inverse_mat3( mat3x3<f32>( NodeBuffer_3197.value[ instanceIndex ][ 0 ].xyz, NodeBuffer_3197.value[ instanceIndex ][ 1 ].xyz, NodeBuffer_3197.value[ instanceIndex ][ 2 ].xyz ) ) ) * normalLocal ) );\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform3 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform7 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct NodeBuffer_3798Struct {\n\tvalue : array< mat4x4<f32>, 17 >\n};\n@binding( 3 ) @group( 1 )\nvar<uniform> NodeBuffer_3798 : NodeBuffer_3798Struct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\nfn tsl_inverse_mat3( m : mat3x3<f32> ) -> mat3x3<f32> {\n\n\tlet a00 = m[ 0 ][ 0 ]; let a01 = m[ 0 ][ 1 ]; let a02 = m[ 0 ][ 2 ];\n\tlet a10 = m[ 1 ][ 0 ]; let a11 = m[ 1 ][ 1 ]; let a12 = m[ 1 ][ 2 ];\n\tlet a20 = m[ 2 ][ 0 ]; let a21 = m[ 2 ][ 1 ]; let a22 = m[ 2 ][ 2 ];\n\n\tlet b01 = a22 * a11 - a12 * a21;\n\tlet b11 = - a22 * a10 + a12 * a20;\n\tlet b21 = a21 * a10 - a11 * a20;\n\n\tlet det = a00 * b01 + a01 * b11 + a02 * b21;\n\n\treturn mat3x3<f32>(\n\t\tb01, ( - a22 * a01 + a02 * a21 ), ( a12 * a01 - a02 * a11 ),\n\t\tb11, ( a22 * a00 - a02 * a20 ), ( - a12 * a00 + a02 * a10 ),\n\t\tb21, ( - a21 * a00 + a01 * a20 ), ( a11 * a00 - a01 * a10 )\n\t) * ( 1.0 / det );\n\n}\n\n\n\n@vertex\nfn main( @builtin( instance_index ) instanceIndex : u32,\n\t@location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tvaryings.positionLocal = ( NodeBuffer_3798.value[ instanceIndex ] * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tnormalLocal = normal;\n\tnormalLocal = normalize( ( transpose( tsl_inverse_mat3( mat3x3<f32>( NodeBuffer_3798.value[ instanceIndex ][ 0 ].xyz, NodeBuffer_3798.value[ instanceIndex ][ 1 ].xyz, NodeBuffer_3798.value[ instanceIndex ][ 2 ].xyz ) ) ) * normalLocal ) );\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform3 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform7 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct NodeBuffer_4399Struct {\n\tvalue : array< mat4x4<f32>, 16 >\n};\n@binding( 3 ) @group( 1 )\nvar<uniform> NodeBuffer_4399 : NodeBuffer_4399Struct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\nfn tsl_inverse_mat3( m : mat3x3<f32> ) -> mat3x3<f32> {\n\n\tlet a00 = m[ 0 ][ 0 ]; let a01 = m[ 0 ][ 1 ]; let a02 = m[ 0 ][ 2 ];\n\tlet a10 = m[ 1 ][ 0 ]; let a11 = m[ 1 ][ 1 ]; let a12 = m[ 1 ][ 2 ];\n\tlet a20 = m[ 2 ][ 0 ]; let a21 = m[ 2 ][ 1 ]; let a22 = m[ 2 ][ 2 ];\n\n\tlet b01 = a22 * a11 - a12 * a21;\n\tlet b11 = - a22 * a10 + a12 * a20;\n\tlet b21 = a21 * a10 - a11 * a20;\n\n\tlet det = a00 * b01 + a01 * b11 + a02 * b21;\n\n\treturn mat3x3<f32>(\n\t\tb01, ( - a22 * a01 + a02 * a21 ), ( a12 * a01 - a02 * a11 ),\n\t\tb11, ( a22 * a00 - a02 * a20 ), ( - a12 * a00 + a02 * a10 ),\n\t\tb21, ( - a21 * a00 + a01 * a20 ), ( a11 * a00 - a01 * a10 )\n\t) * ( 1.0 / det );\n\n}\n\n\n\n@vertex\nfn main( @builtin( instance_index ) instanceIndex : u32,\n\t@location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tvaryings.positionLocal = ( NodeBuffer_4399.value[ instanceIndex ] * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tnormalLocal = normal;\n\tnormalLocal = normalize( ( transpose( tsl_inverse_mat3( mat3x3<f32>( NodeBuffer_4399.value[ instanceIndex ][ 0 ].xyz, NodeBuffer_4399.value[ instanceIndex ][ 1 ].xyz, NodeBuffer_4399.value[ instanceIndex ][ 2 ].xyz ) ) ) * normalLocal ) );\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform3 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform7 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform3 : vec3<f32>,\n\tnodeUniform7 : vec3<f32>,\n\tnodeUniform2 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform9 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform0 : vec3<f32>,\n\tnodeUniform1 : f32,\n\tnodeUniform5 : mat3x3<f32>,\n\tnodeUniform10 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) v_positionView : vec3<f32>,\n\t@location( 1 ) v_normalViewGeometry : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> positionLocal : vec3<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\n\n@vertex\nfn main( @location( 0 ) normal : vec3<f32>,\n\t@location( 1 ) position : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tnormalLocal = normal;\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform5 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform10 );\n\tpositionLocal = position;\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( positionLocal, 1.0 ) ).xyz;\n\tlet VERTEX_nodeConst2 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst2;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "fragment",
+      "code": "// Three.js r187dev - Node System\n\n// global\ndiagnostic( off, derivative_uniformity );\n\n\n// directives\n\n\n// structs\n\nstruct OutputStruct {\n\t@location( 0 ) color: vec4<f32>\n};\nvar<private> output : OutputStruct;\n\n// uniforms\n\nstruct objectStruct {\n\tnodeUniform0 : vec3<f32>,\n\tnodeUniform1 : f32,\n\tnodeUniform5 : mat3x3<f32>,\n\tnodeUniform10 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform3 : vec3<f32>,\n\tnodeUniform7 : vec3<f32>,\n\tnodeUniform2 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform9 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\n// vars\nvar<private> DiffuseColor : vec4<f32>;\nvar<private> Output : vec4<f32>;\nvar<private> irradiance : vec3<f32>;\nvar<private> normalViewGeometry : vec3<f32>;\nvar<private> normalView : vec3<f32>;\nvar<private> normalWorld : vec3<f32>;\nvar<private> indirectDiffuse : vec3<f32>;\nvar<private> ambientOcclusion : f32;\nvar<private> totalDiffuse : vec3<f32>;\nvar<private> directDiffuse : vec3<f32>;\nvar<private> totalSpecular : vec3<f32>;\nvar<private> directSpecular : vec3<f32>;\nvar<private> indirectSpecular : vec3<f32>;\nvar<private> outgoingLight : vec3<f32>;\nvar<private> nodeVar0 : vec4<f32>;\n\n// codes\n\n\n@fragment\nfn main( @location( 0 ) v_positionView : vec3<f32>,\n\t@location( 1 ) v_normalViewGeometry : vec3<f32> ) -> OutputStruct {\n\n\t// flow\n\t// code\n\n\tDiffuseColor = vec4<f32>( object.nodeUniform0, 1.0 );\n\tDiffuseColor.w = ( DiffuseColor.w * object.nodeUniform1 );\n\tDiffuseColor.w = 1.0;\n\tirradiance = vec3<f32>( 0.0, 0.0, 0.0 );\n\tnormalViewGeometry = normalize( v_normalViewGeometry );\n\tnormalView = normalViewGeometry;\n\tnormalWorld = normalize( ( vec4<f32>( normalView, 0.0 ) * render.cameraViewMatrix ).xyz );\n\tirradiance = ( irradiance + mix( render.nodeUniform2, render.nodeUniform3, ( ( dot( normalWorld, normalize( render.nodeUniform7 ) ) * 0.5 ) + 0.5 ) ) );\n\tindirectDiffuse = vec3<f32>( 0.0, 0.0, 0.0 );\n\tindirectDiffuse = vec4<f32>( 0.0, 0.0, 0.0, 0.0 ).xyz;\n\tindirectDiffuse = ( vec4<f32>( indirectDiffuse, 1.0 ) + vec4<f32>( 1.0, 1.0, 1.0, 0.0 ) ).xyz;\n\tambientOcclusion = 1.0;\n\tindirectDiffuse = ( indirectDiffuse * vec3<f32>( ambientOcclusion ) );\n\tindirectDiffuse = ( indirectDiffuse * DiffuseColor.xyz );\n\tdirectDiffuse = vec3<f32>( 0.0, 0.0, 0.0 );\n\ttotalDiffuse = ( directDiffuse + indirectDiffuse );\n\tdirectSpecular = vec3<f32>( 0.0, 0.0, 0.0 );\n\tindirectSpecular = vec3<f32>( 0.0, 0.0, 0.0 );\n\ttotalSpecular = ( directSpecular + indirectSpecular );\n\toutgoingLight = ( totalDiffuse + totalSpecular );\n\tOutput = max( vec4<f32>( outgoingLight, DiffuseColor.w ), vec4<f32>( 0.0 ) );\n\tlet nodeConst0 = ( - v_positionView.z );\n\tnodeVar0 = vec4<f32>( mix( Output.xyz, render.nodeUniform8, ( 1.0 - exp( ( - ( ( ( render.nodeUniform9 * render.nodeUniform9 ) * nodeConst0 ) * nodeConst0 ) ) ) ) ), Output.w );\n\tlet nodeConst1 = nodeVar0;\n\tOutput = nodeConst1;\n\n\t// result\n\n\toutput.color = nodeConst1;\n\n\treturn output;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct NodeBuffer_5171Struct {\n\tvalue : array< mat4x4<f32>, 17 >\n};\n@binding( 3 ) @group( 1 )\nvar<uniform> NodeBuffer_5171 : NodeBuffer_5171Struct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\nfn tsl_inverse_mat3( m : mat3x3<f32> ) -> mat3x3<f32> {\n\n\tlet a00 = m[ 0 ][ 0 ]; let a01 = m[ 0 ][ 1 ]; let a02 = m[ 0 ][ 2 ];\n\tlet a10 = m[ 1 ][ 0 ]; let a11 = m[ 1 ][ 1 ]; let a12 = m[ 1 ][ 2 ];\n\tlet a20 = m[ 2 ][ 0 ]; let a21 = m[ 2 ][ 1 ]; let a22 = m[ 2 ][ 2 ];\n\n\tlet b01 = a22 * a11 - a12 * a21;\n\tlet b11 = - a22 * a10 + a12 * a20;\n\tlet b21 = a21 * a10 - a11 * a20;\n\n\tlet det = a00 * b01 + a01 * b11 + a02 * b21;\n\n\treturn mat3x3<f32>(\n\t\tb01, ( - a22 * a01 + a02 * a21 ), ( a12 * a01 - a02 * a11 ),\n\t\tb11, ( a22 * a00 - a02 * a20 ), ( - a12 * a00 + a02 * a10 ),\n\t\tb21, ( - a21 * a00 + a01 * a20 ), ( a11 * a00 - a01 * a10 )\n\t) * ( 1.0 / det );\n\n}\n\n\n\n@vertex\nfn main( @builtin( instance_index ) instanceIndex : u32,\n\t@location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tvaryings.positionLocal = ( NodeBuffer_5171.value[ instanceIndex ] * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tnormalLocal = normal;\n\tnormalLocal = normalize( ( transpose( tsl_inverse_mat3( mat3x3<f32>( NodeBuffer_5171.value[ instanceIndex ][ 0 ].xyz, NodeBuffer_5171.value[ instanceIndex ][ 1 ].xyz, NodeBuffer_5171.value[ instanceIndex ][ 2 ].xyz ) ) ) * normalLocal ) );\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform3 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform7 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct NodeBuffer_5772Struct {\n\tvalue : array< mat4x4<f32>, 14 >\n};\n@binding( 3 ) @group( 1 )\nvar<uniform> NodeBuffer_5772 : NodeBuffer_5772Struct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\nfn tsl_inverse_mat3( m : mat3x3<f32> ) -> mat3x3<f32> {\n\n\tlet a00 = m[ 0 ][ 0 ]; let a01 = m[ 0 ][ 1 ]; let a02 = m[ 0 ][ 2 ];\n\tlet a10 = m[ 1 ][ 0 ]; let a11 = m[ 1 ][ 1 ]; let a12 = m[ 1 ][ 2 ];\n\tlet a20 = m[ 2 ][ 0 ]; let a21 = m[ 2 ][ 1 ]; let a22 = m[ 2 ][ 2 ];\n\n\tlet b01 = a22 * a11 - a12 * a21;\n\tlet b11 = - a22 * a10 + a12 * a20;\n\tlet b21 = a21 * a10 - a11 * a20;\n\n\tlet det = a00 * b01 + a01 * b11 + a02 * b21;\n\n\treturn mat3x3<f32>(\n\t\tb01, ( - a22 * a01 + a02 * a21 ), ( a12 * a01 - a02 * a11 ),\n\t\tb11, ( a22 * a00 - a02 * a20 ), ( - a12 * a00 + a02 * a10 ),\n\t\tb21, ( - a21 * a00 + a01 * a20 ), ( a11 * a00 - a01 * a10 )\n\t) * ( 1.0 / det );\n\n}\n\n\n\n@vertex\nfn main( @builtin( instance_index ) instanceIndex : u32,\n\t@location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tvaryings.positionLocal = ( NodeBuffer_5772.value[ instanceIndex ] * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tnormalLocal = normal;\n\tnormalLocal = normalize( ( transpose( tsl_inverse_mat3( mat3x3<f32>( NodeBuffer_5772.value[ instanceIndex ][ 0 ].xyz, NodeBuffer_5772.value[ instanceIndex ][ 1 ].xyz, NodeBuffer_5772.value[ instanceIndex ][ 2 ].xyz ) ) ) * normalLocal ) );\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform3 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform7 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct NodeBuffer_6373Struct {\n\tvalue : array< mat4x4<f32>, 13 >\n};\n@binding( 3 ) @group( 1 )\nvar<uniform> NodeBuffer_6373 : NodeBuffer_6373Struct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\nfn tsl_inverse_mat3( m : mat3x3<f32> ) -> mat3x3<f32> {\n\n\tlet a00 = m[ 0 ][ 0 ]; let a01 = m[ 0 ][ 1 ]; let a02 = m[ 0 ][ 2 ];\n\tlet a10 = m[ 1 ][ 0 ]; let a11 = m[ 1 ][ 1 ]; let a12 = m[ 1 ][ 2 ];\n\tlet a20 = m[ 2 ][ 0 ]; let a21 = m[ 2 ][ 1 ]; let a22 = m[ 2 ][ 2 ];\n\n\tlet b01 = a22 * a11 - a12 * a21;\n\tlet b11 = - a22 * a10 + a12 * a20;\n\tlet b21 = a21 * a10 - a11 * a20;\n\n\tlet det = a00 * b01 + a01 * b11 + a02 * b21;\n\n\treturn mat3x3<f32>(\n\t\tb01, ( - a22 * a01 + a02 * a21 ), ( a12 * a01 - a02 * a11 ),\n\t\tb11, ( a22 * a00 - a02 * a20 ), ( - a12 * a00 + a02 * a10 ),\n\t\tb21, ( - a21 * a00 + a01 * a20 ), ( a11 * a00 - a01 * a10 )\n\t) * ( 1.0 / det );\n\n}\n\n\n\n@vertex\nfn main( @builtin( instance_index ) instanceIndex : u32,\n\t@location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tvaryings.positionLocal = ( NodeBuffer_6373.value[ instanceIndex ] * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tnormalLocal = normal;\n\tnormalLocal = normalize( ( transpose( tsl_inverse_mat3( mat3x3<f32>( NodeBuffer_6373.value[ instanceIndex ][ 0 ].xyz, NodeBuffer_6373.value[ instanceIndex ][ 1 ].xyz, NodeBuffer_6373.value[ instanceIndex ][ 2 ].xyz ) ) ) * normalLocal ) );\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform3 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform7 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct NodeBuffer_6974Struct {\n\tvalue : array< mat4x4<f32>, 22 >\n};\n@binding( 3 ) @group( 1 )\nvar<uniform> NodeBuffer_6974 : NodeBuffer_6974Struct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\nfn tsl_inverse_mat3( m : mat3x3<f32> ) -> mat3x3<f32> {\n\n\tlet a00 = m[ 0 ][ 0 ]; let a01 = m[ 0 ][ 1 ]; let a02 = m[ 0 ][ 2 ];\n\tlet a10 = m[ 1 ][ 0 ]; let a11 = m[ 1 ][ 1 ]; let a12 = m[ 1 ][ 2 ];\n\tlet a20 = m[ 2 ][ 0 ]; let a21 = m[ 2 ][ 1 ]; let a22 = m[ 2 ][ 2 ];\n\n\tlet b01 = a22 * a11 - a12 * a21;\n\tlet b11 = - a22 * a10 + a12 * a20;\n\tlet b21 = a21 * a10 - a11 * a20;\n\n\tlet det = a00 * b01 + a01 * b11 + a02 * b21;\n\n\treturn mat3x3<f32>(\n\t\tb01, ( - a22 * a01 + a02 * a21 ), ( a12 * a01 - a02 * a11 ),\n\t\tb11, ( a22 * a00 - a02 * a20 ), ( - a12 * a00 + a02 * a10 ),\n\t\tb21, ( - a21 * a00 + a01 * a20 ), ( a11 * a00 - a01 * a10 )\n\t) * ( 1.0 / det );\n\n}\n\n\n\n@vertex\nfn main( @builtin( instance_index ) instanceIndex : u32,\n\t@location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tvaryings.positionLocal = ( NodeBuffer_6974.value[ instanceIndex ] * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tnormalLocal = normal;\n\tnormalLocal = normalize( ( transpose( tsl_inverse_mat3( mat3x3<f32>( NodeBuffer_6974.value[ instanceIndex ][ 0 ].xyz, NodeBuffer_6974.value[ instanceIndex ][ 1 ].xyz, NodeBuffer_6974.value[ instanceIndex ][ 2 ].xyz ) ) ) * normalLocal ) );\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform3 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform7 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct NodeBuffer_7575Struct {\n\tvalue : array< mat4x4<f32>, 9 >\n};\n@binding( 3 ) @group( 1 )\nvar<uniform> NodeBuffer_7575 : NodeBuffer_7575Struct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\nfn tsl_inverse_mat3( m : mat3x3<f32> ) -> mat3x3<f32> {\n\n\tlet a00 = m[ 0 ][ 0 ]; let a01 = m[ 0 ][ 1 ]; let a02 = m[ 0 ][ 2 ];\n\tlet a10 = m[ 1 ][ 0 ]; let a11 = m[ 1 ][ 1 ]; let a12 = m[ 1 ][ 2 ];\n\tlet a20 = m[ 2 ][ 0 ]; let a21 = m[ 2 ][ 1 ]; let a22 = m[ 2 ][ 2 ];\n\n\tlet b01 = a22 * a11 - a12 * a21;\n\tlet b11 = - a22 * a10 + a12 * a20;\n\tlet b21 = a21 * a10 - a11 * a20;\n\n\tlet det = a00 * b01 + a01 * b11 + a02 * b21;\n\n\treturn mat3x3<f32>(\n\t\tb01, ( - a22 * a01 + a02 * a21 ), ( a12 * a01 - a02 * a11 ),\n\t\tb11, ( a22 * a00 - a02 * a20 ), ( - a12 * a00 + a02 * a10 ),\n\t\tb21, ( - a21 * a00 + a01 * a20 ), ( a11 * a00 - a01 * a10 )\n\t) * ( 1.0 / det );\n\n}\n\n\n\n@vertex\nfn main( @builtin( instance_index ) instanceIndex : u32,\n\t@location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tvaryings.positionLocal = ( NodeBuffer_7575.value[ instanceIndex ] * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tnormalLocal = normal;\n\tnormalLocal = normalize( ( transpose( tsl_inverse_mat3( mat3x3<f32>( NodeBuffer_7575.value[ instanceIndex ][ 0 ].xyz, NodeBuffer_7575.value[ instanceIndex ][ 1 ].xyz, NodeBuffer_7575.value[ instanceIndex ][ 2 ].xyz ) ) ) * normalLocal ) );\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform3 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform7 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "vertex",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\nstruct NodeBuffer_8176Struct {\n\tvalue : array< mat4x4<f32>, 13 >\n};\n@binding( 3 ) @group( 1 )\nvar<uniform> NodeBuffer_8176 : NodeBuffer_8176Struct;\n\nstruct renderStruct {\n\tcameraProjectionMatrix : mat4x4<f32>,\n\tcameraViewMatrix : mat4x4<f32>,\n\tnodeUniform9 : vec3<f32>,\n\tnodeUniform11 : vec3<f32>,\n\tnodeUniform8 : vec3<f32>,\n\tnodeUniform14 : vec3<f32>,\n\tnodeUniform12 : vec3<f32>,\n\tnodeUniform13 : vec3<f32>,\n\tnodeUniform15 : vec3<f32>,\n\tnodeUniform16 : f32\n};\n@binding( 0 ) @group( 0 )\nvar<uniform> render : renderStruct;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform3 : mat3x3<f32>,\n\tnodeUniform4 : vec3<f32>,\n\tnodeUniform5 : f32,\n\tnodeUniform7 : mat4x4<f32>\n};\n@binding( 0 ) @group( 1 )\nvar<uniform> object : objectStruct;\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) positionLocal : vec3<f32>,\n\t@location( 1 ) v_positionView : vec3<f32>,\n\t@location( 2 ) v_normalViewGeometry : vec3<f32>,\n\t@location( 3 ) v_positionViewDirection : vec3<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\nvar<private> normalLocal : vec3<f32>;\nvar<private> modelViewMatrix : mat4x4<f32>;\nvar<private> v_modelViewProjection : vec4<f32>;\nvar<private> VERTEX_v_modelViewProjection : vec4<f32>;\n\n// codes\n\nfn tsl_inverse_mat3( m : mat3x3<f32> ) -> mat3x3<f32> {\n\n\tlet a00 = m[ 0 ][ 0 ]; let a01 = m[ 0 ][ 1 ]; let a02 = m[ 0 ][ 2 ];\n\tlet a10 = m[ 1 ][ 0 ]; let a11 = m[ 1 ][ 1 ]; let a12 = m[ 1 ][ 2 ];\n\tlet a20 = m[ 2 ][ 0 ]; let a21 = m[ 2 ][ 1 ]; let a22 = m[ 2 ][ 2 ];\n\n\tlet b01 = a22 * a11 - a12 * a21;\n\tlet b11 = - a22 * a10 + a12 * a20;\n\tlet b21 = a21 * a10 - a11 * a20;\n\n\tlet det = a00 * b01 + a01 * b11 + a02 * b21;\n\n\treturn mat3x3<f32>(\n\t\tb01, ( - a22 * a01 + a02 * a21 ), ( a12 * a01 - a02 * a11 ),\n\t\tb11, ( a22 * a00 - a02 * a20 ), ( - a12 * a00 + a02 * a10 ),\n\t\tb21, ( - a21 * a00 + a01 * a20 ), ( a11 * a00 - a01 * a10 )\n\t) * ( 1.0 / det );\n\n}\n\n\n\n@vertex\nfn main( @builtin( instance_index ) instanceIndex : u32,\n\t@location( 0 ) position : vec3<f32>,\n\t@location( 1 ) normal : vec3<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.positionLocal = position;\n\tvaryings.positionLocal = ( NodeBuffer_8176.value[ instanceIndex ] * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tnormalLocal = normal;\n\tnormalLocal = normalize( ( transpose( tsl_inverse_mat3( mat3x3<f32>( NodeBuffer_8176.value[ instanceIndex ][ 0 ].xyz, NodeBuffer_8176.value[ instanceIndex ][ 1 ].xyz, NodeBuffer_8176.value[ instanceIndex ][ 2 ].xyz ) ) ) * normalLocal ) );\n\tvaryings.v_normalViewGeometry = normalize( ( render.cameraViewMatrix * vec4<f32>( ( object.nodeUniform3 * normalLocal ), 0.0 ) ).xyz );\n\tmodelViewMatrix = ( render.cameraViewMatrix * object.nodeUniform7 );\n\tvaryings.v_positionView = ( modelViewMatrix * vec4<f32>( varyings.positionLocal, 1.0 ) ).xyz;\n\tvaryings.v_positionViewDirection = ( - varyings.v_positionView );\n\tlet VERTEX_nodeConst19 = ( render.cameraProjectionMatrix * vec4<f32>( varyings.v_positionView, 1.0 ) );\n\tVERTEX_v_modelViewProjection = VERTEX_nodeConst19;\n\n\t// result\n\n\tvaryings.builtinClipSpace = VERTEX_v_modelViewProjection;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "vertex_Gaussian_blur_horizontal",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) nodeVarying0 : vec2<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\n\n\n// codes\n\n\n@vertex\nfn main( @builtin( vertex_index ) vertexIndex : u32,\n\t@location( 0 ) uv : vec2<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.nodeVarying0 = uv;\n\tlet nodeConst1 = vec4<f32>( array< f32, 3 >( -1.0, -1.0, 3.0 )[ vertexIndex ], array< f32, 3 >( 3.0, -1.0, -1.0 )[ vertexIndex ], 0.0, 1.0 );\n\n\t// result\n\n\tvaryings.builtinClipSpace = nodeConst1;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "fragment_Gaussian_blur_horizontal",
+      "code": "// Three.js r187dev - Node System\n\n// global\ndiagnostic( off, derivative_uniformity );\n\n\n// directives\n\n\n// structs\n\nstruct OutputStruct {\n\t@location( 0 ) color: vec4<f32>\n};\nvar<private> output : OutputStruct;\n\n// uniforms\n@binding( 0 ) @group( 0 ) var nodeUniform0_sampler : sampler;\n@binding( 1 ) @group( 0 ) var nodeUniform0 : texture_2d<f32>;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform2 : vec2<f32>\n};\n@binding( 2 ) @group( 0 )\nvar<uniform> object : objectStruct;\n\n// vars\nvar<private> nodeVar0 : vec4<f32>;\nvar<private> nodeVar1 : vec4<f32>;\nvar<private> nodeVar2 : vec2<f32>;\nvar<private> nodeVar3 : vec4<f32>;\nvar<private> nodeVar4 : vec4<f32>;\nvar<private> nodeVar5 : vec2<f32>;\nvar<private> nodeVar6 : vec4<f32>;\nvar<private> nodeVar7 : vec4<f32>;\nvar<private> nodeVar8 : vec2<f32>;\nvar<private> nodeVar9 : vec4<f32>;\nvar<private> nodeVar10 : vec4<f32>;\nvar<private> nodeVar11 : vec2<f32>;\nvar<private> nodeVar12 : vec4<f32>;\nvar<private> nodeVar13 : vec4<f32>;\nvar<private> nodeVar14 : vec2<f32>;\nvar<private> nodeVar15 : vec4<f32>;\nvar<private> nodeVar16 : vec4<f32>;\nvar<private> nodeVar17 : vec2<f32>;\nvar<private> nodeVar18 : vec4<f32>;\nvar<private> nodeVar19 : vec4<f32>;\nvar<private> nodeVar20 : vec2<f32>;\nvar<private> nodeVar21 : vec4<f32>;\nvar<private> nodeVar22 : vec4<f32>;\nvar<private> nodeVar23 : vec2<f32>;\nvar<private> nodeVar24 : vec4<f32>;\nvar<private> nodeVar25 : vec4<f32>;\nvar<private> nodeVar26 : vec2<f32>;\nvar<private> nodeVar27 : vec4<f32>;\nvar<private> nodeVar28 : vec4<f32>;\nvar<private> nodeVar29 : vec2<f32>;\nvar<private> nodeVar30 : vec4<f32>;\nvar<private> nodeVar31 : vec4<f32>;\n\n// codes\n\n\n@fragment\nfn main( @location( 0 ) nodeVarying0 : vec2<f32> ) -> OutputStruct {\n\n\t// flow\n\t// code\n\n\tnodeVar0 = textureSample( nodeUniform0, nodeUniform0_sampler, nodeVarying0 );\n\tnodeVar1 = ( nodeVar0 * vec4<f32>( 0.10924730377444448 ) );\n\tlet nodeConst0 = ( vec2<f32>( object.nodeUniform1 ) * vec2<f32>( 1.0, 0.0 ) );\n\tnodeVar2 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 1.0 ) ) );\n\tnodeVar3 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar2 ) );\n\tnodeVar4 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar2 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar3 + nodeVar4 ) * vec4<f32>( 0.10525900968602987 ) ) );\n\tnodeVar5 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 2.0 ) ) );\n\tnodeVar6 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar5 ) );\n\tnodeVar7 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar5 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar6 + nodeVar7 ) * vec4<f32>( 0.09414666419084378 ) ) );\n\tnodeVar8 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 3.0 ) ) );\n\tnodeVar9 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar8 ) );\n\tnodeVar10 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar8 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar9 + nodeVar10 ) * vec4<f32>( 0.0781713655032425 ) ) );\n\tnodeVar11 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 4.0 ) ) );\n\tnodeVar12 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar11 ) );\n\tnodeVar13 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar11 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar12 + nodeVar13 ) * vec4<f32>( 0.06025423328818032 ) ) );\n\tnodeVar14 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 5.0 ) ) );\n\tnodeVar15 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar14 ) );\n\tnodeVar16 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar14 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar15 + nodeVar16 ) * vec4<f32>( 0.04311461730179377 ) ) );\n\tnodeVar17 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 6.0 ) ) );\n\tnodeVar18 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar17 ) );\n\tnodeVar19 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar17 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar18 + nodeVar19 ) * vec4<f32>( 0.028639050226339946 ) ) );\n\tnodeVar20 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 7.0 ) ) );\n\tnodeVar21 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar20 ) );\n\tnodeVar22 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar20 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar21 + nodeVar22 ) * vec4<f32>( 0.017659963081781176 ) ) );\n\tnodeVar23 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 8.0 ) ) );\n\tnodeVar24 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar23 ) );\n\tnodeVar25 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar23 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar24 + nodeVar25 ) * vec4<f32>( 0.010109229970567757 ) ) );\n\tnodeVar26 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 9.0 ) ) );\n\tnodeVar27 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar26 ) );\n\tnodeVar28 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar26 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar27 + nodeVar28 ) * vec4<f32>( 0.005372092299194051 ) ) );\n\tnodeVar29 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 10.0 ) ) );\n\tnodeVar30 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar29 ) );\n\tnodeVar31 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar29 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar30 + nodeVar31 ) * vec4<f32>( 0.0026501225648045356 ) ) );\n\n\t// result\n\n\toutput.color = nodeVar1;\n\n\treturn output;\n\n}\n"
+    },
+    {
+      "label": "fragment_Gaussian_blur_vertical",
+      "code": "// Three.js r187dev - Node System\n\n// global\ndiagnostic( off, derivative_uniformity );\n\n\n// directives\n\n\n// structs\n\nstruct OutputStruct {\n\t@location( 0 ) color: vec4<f32>\n};\nvar<private> output : OutputStruct;\n\n// uniforms\n@binding( 0 ) @group( 0 ) var nodeUniform0_sampler : sampler;\n@binding( 1 ) @group( 0 ) var nodeUniform0 : texture_2d<f32>;\n\nstruct objectStruct {\n\tnodeUniform1 : f32,\n\tnodeUniform2 : vec2<f32>\n};\n@binding( 2 ) @group( 0 )\nvar<uniform> object : objectStruct;\n\n// vars\nvar<private> nodeVar0 : vec4<f32>;\nvar<private> nodeVar1 : vec4<f32>;\nvar<private> nodeVar2 : vec2<f32>;\nvar<private> nodeVar3 : vec4<f32>;\nvar<private> nodeVar4 : vec4<f32>;\nvar<private> nodeVar5 : vec2<f32>;\nvar<private> nodeVar6 : vec4<f32>;\nvar<private> nodeVar7 : vec4<f32>;\nvar<private> nodeVar8 : vec2<f32>;\nvar<private> nodeVar9 : vec4<f32>;\nvar<private> nodeVar10 : vec4<f32>;\nvar<private> nodeVar11 : vec2<f32>;\nvar<private> nodeVar12 : vec4<f32>;\nvar<private> nodeVar13 : vec4<f32>;\nvar<private> nodeVar14 : vec2<f32>;\nvar<private> nodeVar15 : vec4<f32>;\nvar<private> nodeVar16 : vec4<f32>;\nvar<private> nodeVar17 : vec2<f32>;\nvar<private> nodeVar18 : vec4<f32>;\nvar<private> nodeVar19 : vec4<f32>;\nvar<private> nodeVar20 : vec2<f32>;\nvar<private> nodeVar21 : vec4<f32>;\nvar<private> nodeVar22 : vec4<f32>;\nvar<private> nodeVar23 : vec2<f32>;\nvar<private> nodeVar24 : vec4<f32>;\nvar<private> nodeVar25 : vec4<f32>;\nvar<private> nodeVar26 : vec2<f32>;\nvar<private> nodeVar27 : vec4<f32>;\nvar<private> nodeVar28 : vec4<f32>;\nvar<private> nodeVar29 : vec2<f32>;\nvar<private> nodeVar30 : vec4<f32>;\nvar<private> nodeVar31 : vec4<f32>;\n\n// codes\n\n\n@fragment\nfn main( @location( 0 ) nodeVarying0 : vec2<f32> ) -> OutputStruct {\n\n\t// flow\n\t// code\n\n\tnodeVar0 = textureSample( nodeUniform0, nodeUniform0_sampler, nodeVarying0 );\n\tnodeVar1 = ( nodeVar0 * vec4<f32>( 0.10924730377444448 ) );\n\tlet nodeConst0 = ( vec2<f32>( object.nodeUniform1 ) * vec2<f32>( 0.0, 1.0 ) );\n\tnodeVar2 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 1.0 ) ) );\n\tnodeVar3 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar2 ) );\n\tnodeVar4 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar2 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar3 + nodeVar4 ) * vec4<f32>( 0.10525900968602987 ) ) );\n\tnodeVar5 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 2.0 ) ) );\n\tnodeVar6 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar5 ) );\n\tnodeVar7 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar5 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar6 + nodeVar7 ) * vec4<f32>( 0.09414666419084378 ) ) );\n\tnodeVar8 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 3.0 ) ) );\n\tnodeVar9 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar8 ) );\n\tnodeVar10 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar8 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar9 + nodeVar10 ) * vec4<f32>( 0.0781713655032425 ) ) );\n\tnodeVar11 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 4.0 ) ) );\n\tnodeVar12 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar11 ) );\n\tnodeVar13 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar11 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar12 + nodeVar13 ) * vec4<f32>( 0.06025423328818032 ) ) );\n\tnodeVar14 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 5.0 ) ) );\n\tnodeVar15 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar14 ) );\n\tnodeVar16 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar14 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar15 + nodeVar16 ) * vec4<f32>( 0.04311461730179377 ) ) );\n\tnodeVar17 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 6.0 ) ) );\n\tnodeVar18 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar17 ) );\n\tnodeVar19 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar17 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar18 + nodeVar19 ) * vec4<f32>( 0.028639050226339946 ) ) );\n\tnodeVar20 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 7.0 ) ) );\n\tnodeVar21 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar20 ) );\n\tnodeVar22 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar20 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar21 + nodeVar22 ) * vec4<f32>( 0.017659963081781176 ) ) );\n\tnodeVar23 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 8.0 ) ) );\n\tnodeVar24 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar23 ) );\n\tnodeVar25 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar23 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar24 + nodeVar25 ) * vec4<f32>( 0.010109229970567757 ) ) );\n\tnodeVar26 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 9.0 ) ) );\n\tnodeVar27 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar26 ) );\n\tnodeVar28 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar26 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar27 + nodeVar28 ) * vec4<f32>( 0.005372092299194051 ) ) );\n\tnodeVar29 = ( nodeConst0 * ( object.nodeUniform2 * vec2<f32>( 10.0 ) ) );\n\tnodeVar30 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 + nodeVar29 ) );\n\tnodeVar31 = textureSample( nodeUniform0, nodeUniform0_sampler, ( nodeVarying0 - nodeVar29 ) );\n\tnodeVar1 = ( nodeVar1 + ( ( nodeVar30 + nodeVar31 ) * vec4<f32>( 0.0026501225648045356 ) ) );\n\n\t// result\n\n\toutput.color = nodeVar1;\n\n\treturn output;\n\n}\n"
+    },
+    {
+      "label": "vertex_RenderPipeline",
+      "code": "// Three.js r187dev - Node System\n\n// directives\n\n\n// structs\n\n\n// uniforms\n\n\n// varyings\n\nstruct VaryingsStruct {\n\t@location( 0 ) nodeVarying0 : vec2<f32>,\n\t@builtin( position ) builtinClipSpace : vec4<f32>\n};\nvar<private> varyings : VaryingsStruct;\n\n// vars\n\n\n// codes\n\n\n@vertex\nfn main( @builtin( vertex_index ) vertexIndex : u32,\n\t@location( 0 ) uv : vec2<f32> ) -> VaryingsStruct {\n\n\t// flow\n\t// code\n\n\tvaryings.nodeVarying0 = uv;\n\tlet nodeConst5 = vec4<f32>( array< f32, 3 >( -1.0, -1.0, 3.0 )[ vertexIndex ], array< f32, 3 >( 3.0, -1.0, -1.0 )[ vertexIndex ], 0.0, 1.0 );\n\n\t// result\n\n\tvaryings.builtinClipSpace = nodeConst5;\n\n\treturn varyings;\n\n}\n"
+    },
+    {
+      "label": "fragment_RenderPipeline",
+      "code": "// Three.js r187dev - Node System\n\n// global\ndiagnostic( off, derivative_uniformity );\n\n\n// directives\n\n\n// structs\n\nstruct OutputStruct {\n\t@location( 0 ) color: vec4<f32>\n};\nvar<private> output : OutputStruct;\n\n// uniforms\n@binding( 0 ) @group( 0 ) var nodeUniform0_sampler : sampler;\n@binding( 1 ) @group( 0 ) var nodeUniform0 : texture_2d<f32>;\n@binding( 2 ) @group( 0 ) var nodeUniform1_sampler : sampler;\n@binding( 3 ) @group( 0 ) var nodeUniform1 : texture_2d<f32>;\n@binding( 5 ) @group( 0 ) var nodeUniform5 : texture_depth_multisampled_2d;\n\nstruct objectStruct {\n\tnodeUniform2 : f32,\n\tnodeUniform3 : f32,\n\tnodeUniform4 : f32\n};\n@binding( 4 ) @group( 0 )\nvar<uniform> object : objectStruct;\n\n// vars\nvar<private> nodeVar0 : vec4<f32>;\nvar<private> nodeVar1 : vec4<f32>;\nvar<private> nodeVar2 : f32;\nvar<private> nodeVar3 : vec2<u32>;\n\n// codes\nfn tsl_clampWrapping_float( coord: f32 ) -> f32 { return clamp( coord, 0.0, 1.0 ); }\nfn tsl_coord_clampS_clampT_2d( coord : vec2f ) -> vec2f {\n\n\treturn vec2f(\n\t\ttsl_clampWrapping_float( coord.x ),\n\t\ttsl_clampWrapping_float( coord.y )\n\t);\n\n}\n\nfn fn1 ( color : vec4<f32> ) -> vec4<f32> {\n\n\tvar nodeVar0 : vec4<f32>;\n\n\n\tif ( ( color.w == 0.0 ) ) {\n\n\t\tnodeVar0 = vec4<f32>( 0.0, 0.0, 0.0, 0.0 );\n\n\t} else {\n\n\t\tnodeVar0 = vec4<f32>( ( color.xyz / vec3<f32>( color.w ) ), color.w );\n\n\t}\n\n\n\treturn nodeVar0;\n\n}\n\n\nfn sRGBTransferOETF ( color : vec3<f32> ) -> vec3<f32> {\n\n\t\n\n\n\treturn mix( ( ( pow( color, vec3<f32>( 0.41666 ) ) * vec3<f32>( 1.055 ) ) - vec3<f32>( 0.055 ) ), ( color * vec3<f32>( 12.92 ) ), vec3<f32>( ( color <= vec3<f32>( 0.0031308 ) ) ) );\n\n}\n\n\nfn fn0 ( color : vec4<f32> ) -> vec4<f32> {\n\n\t\n\n\n\treturn vec4<f32>( ( color.xyz * vec3<f32>( color.w ) ), color.w );\n\n}\n\n\n\n\n@fragment\nfn main( @location( 0 ) nodeVarying0 : vec2<f32> ) -> OutputStruct {\n\n\t// flow\n\t// code\n\n\tnodeVar0 = textureSample( nodeUniform0, nodeUniform0_sampler, nodeVarying0 );\n\tlet nodeConst0 = nodeVar0;\n\tnodeVar1 = textureSample( nodeUniform1, nodeUniform1_sampler, nodeVarying0 );\n\tlet nodeConst1 = nodeVar1;\n\tnodeVar3 = textureDimensions( nodeUniform5 );\n\tnodeVar2 = textureLoad( nodeUniform5, vec2<u32>( clamp( floor( tsl_coord_clampS_clampT_2d( nodeVarying0 ) * vec2<f32>( nodeVar3 ) ), vec2<f32>( 0 ), vec2<f32>( nodeVar3 - vec2<u32>( 1, 1 ) ) ) ), u32( 0 ) );\n\tlet nodeConst2 = ( - ( ( object.nodeUniform3 * object.nodeUniform4 ) / ( ( ( object.nodeUniform4 - object.nodeUniform3 ) * nodeVar2 ) - object.nodeUniform4 ) ) );\n\tlet nodeConst3 = mix( nodeConst0, nodeConst1, ( 1.0 - exp( ( - ( ( ( object.nodeUniform2 * object.nodeUniform2 ) * nodeConst2 ) * nodeConst2 ) ) ) ) );\n\tlet nodeConst4 = fn1( vec4<f32>( nodeConst3.xyz, clamp( nodeConst3.w, 0.0, 1.0 ) ) );\n\n\t// result\n\n\toutput.color = fn0( vec4<f32>( sRGBTransferOETF( nodeConst4.xyz ), nodeConst4.w ) );\n\n\treturn output;\n\n}\n"
+    }
+  ],
+  "errors": [],
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+  "timestampEnabled": true,
+  "camera": [
+    0.9993777439159625,
+    0,
+    -0.03527215566762165,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0.03527215566762165,
+    0,
+    0.9993777439159625,
+    0,
+    0.4,
+    1.7,
+    9,
+    1
+  ],
+  "info": {
+    "calls": 100,
+    "triangles": 0
+  },
+  "adapter": {
+    "vendor": "amd",
+    "architecture": "rdna-3",
+    "device": "0x1586",
+    "description": "Radeon 8060S Graphics (RADV STRIX_HALO)"
+  },
+  "backend": true
+}

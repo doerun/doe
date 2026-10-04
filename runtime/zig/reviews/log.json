@@ -27792,6 +27792,47 @@
         "src/compiler/wgsl/emit",
         "src/compiler/wgsl/runtime"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/external-projects/three-webgpu-screen/analyze-screen.mjs",
+          "sha256": "226ef63c17c54abb71d96240de0cda4b50d51862bb16eebda03b2e227abafd98"
+        },
+        {
+          "path": "bench/external-projects/three-webgpu-screen/run-screen.mjs",
+          "sha256": "5fa760470389a65290cc77724fa9143ad3e658ca8b0cc14ff0cc775e1b9cb86a"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/browser-compiler/20261004/three-screen/README.md",
+          "sha256": "49bc96e6b0177fd1de2964551c79e679f33f2f83209e0043884bdb83b89efb46"
+        },
+        {
+          "path": "reports/browser-compiler/20261004/three-screen/manifest.json",
+          "sha256": "669665407546dd8266c7d23c503513b96fae2f01231a25d40f44e072bb61ebbe"
+        }
+      ],
+      "findings": [
+        "No worthwhile automatic WGSL transformation identified. Native-family matching is not an exact per-pipeline receipt; no independent image oracle or material application benefit is established. Close browser discovery and activate only the separately queued native Vulkan full-generation contract."
+      ],
+      "inputHash": "d608cce28cb8ee32ecc09b1699c09e9bc92d6048cac69e12cafb0a4c2e948fed",
+      "level": "cross_directory",
+      "nextAction": "Freeze the public Doppler full text-generation contract on native Vulkan with independent numerical/stopping oracle; preserve browser delivery and closed particle/graphics dispositions.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "browser_three_screen_20261004",
+      "reviewedAt": "2026-10-04T21:58:27.499385+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "6c7a83ad22945dd87c0f243bd0ab627554a566ac",
+      "status": "in_progress",
+      "summary": "Pinned independent Three.js graphics screen closed without promotion. Driver-family captures show surviving samples but no demonstrated redundant uniform loads or scratch traffic; offline Doe emits byte-identical blur fragments. Asynchronous cached/incomplete timestamp records limit latency attribution and A/A host-frame differences reverse. Full compiler relationship review remains unfinished.",
+      "supersedes": "browser_wgsl_aa_20261004",
+      "targets": [
+        "src/compiler/wgsl/emit",
+        "src/compiler/wgsl/runtime"
+      ]
     }
   ],
   "schemaVersion": 1

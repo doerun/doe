@@ -1,0 +1,14 @@
+PASS: node --check bench/external-projects/three-webgpu-screen/run-screen.mjs
+PASS: node --check bench/external-projects/three-webgpu-screen/analyze-screen.mjs
+PASS: node bench/external-projects/three-webgpu-screen/analyze-screen.mjs reports/browser-compiler/20261004/three-screen
+PASS: python3 bench/gates/schema_gate.py
+PASS: python3 bench/gates/tool_surface_gate.py
+PASS: python3 bench/gates/catscan_gate.py
+PASS: python3 -m unittest bench.tests.test_doc_link_coverage
+PASS: python3 runtime/zig/tools/review_log.py --write
+PASS: python3 runtime/zig/tools/review_log.py --check
+Screen runner physical application processes completed; receipts retained.
+Asynchronous timestamp freshness and A/A stability remain unqualified.
+No transformed shader, independent image oracle or performance promotion.
+Runtime and package behavior unchanged; no runtime suite or archive rebuild rerun.
+PASS: authored-file git diff whitespace check. Captured upstream HTML/WGSL retains original trailing whitespace for byte identity.

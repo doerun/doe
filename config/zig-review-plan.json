@@ -4,40 +4,10 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "browser_wgsl_output_attribution",
-      "state": "active",
-      "objective": "Identify a profitable general WGSL transformation using direct browser execution, independent of compiler delivery.",
-      "rationale": "Balanced independent-process A/A trials with identical warmup and paired uncertainty leave control stability inconclusive. The unsigned rewrite eliminates no demonstrated native instruction or memory cost and has no attributable application advantage. Close it without promotion; preserve delivery.",
-      "scopes": [
-        {
-          "level": "cross_directory",
-          "targets": [
-            "src/compiler/wgsl/emit",
-            "src/compiler/wgsl/runtime"
-          ]
-        }
-      ],
-      "findingReviewIds": [
-        "browser_wgsl_aa_20261004"
-      ],
-      "nextAction": "Keep the power-of-two candidate closed. Profile one independent application with recoverable shader cost and inspect original/emitted work before proposing one general transformation. Carry A/A controls and fixed stopping into qualification; resolve execution-condition variation before attributing performance. Do not expand packaging or select favorable particle cohorts.",
-      "acceptance": [
-        "Run all WGSL directly through the same browser with compiler requests outside measurement, identical inputs/geometry/numerical oracle, rotated cohorts and instrumented/uninstrumented scopes.",
-        "Reject gains explainable by identical-shader control variation, pipeline preparation or overlapping host work; preserve unfavorable cohorts.",
-        "Require a repeatable material complete-application gain from one general transformation and an independent workload check before promotion."
-      ],
-      "stopCondition": "Retain an attributable shader improvement or close the unprofitable transformation with evidence. No delivery or native runtime gain may substitute for shader quality.",
-      "requiredEnvironment": [
-        "Ordinary WebGPU browser with observable adapter identity",
-        "Pinned WASM digest in trusted application metadata",
-        "Fixed seeded particle state and independent CPU oracle"
-      ]
-    },
-    {
       "batchId": "vulkan_doppler_generation_contract",
-      "state": "ready",
+      "state": "active",
       "objective": "Freeze a new full Doppler text-generation application contract and attribute a recoverable Vulkan execution cost.",
-      "rationale": "The UMAP binding-cache pass finds effective lower-level reuse and only a small descriptor preparation interval; no substantial recoverable binding cost is established. Close that line and retain UMAP as regression coverage. Select actual full Gemma generation instead of another isolated kernel statistic or a retired provider-comparison family.",
+      "rationale": "The UMAP binding-cache pass finds effective lower-level reuse and only a small descriptor preparation interval; no substantial recoverable binding cost is established. Close that line and retain UMAP as regression coverage. Select actual full Gemma generation instead of another isolated kernel statistic or a retired provider-comparison family. The independent Three.js graphics screen identifies no worthwhile automatic WGSL transformation; native family capture shows no redundant uniform or scratch traffic, and A/A application control is unstable. Close browser discovery and activate only this native application campaign.",
       "scopes": [
         {
           "level": "cross_directory",
@@ -48,7 +18,8 @@
         }
       ],
       "findingReviewIds": [
-        "vulkan_binding_attribution_20261004"
+        "vulkan_binding_attribution_20261004",
+        "browser_three_screen_20261004"
       ],
       "nextAction": "Stop the UMAP binding optimization line. Freeze a separate full Doppler Gemma text-generation contract on Node/Vulkan, then profile model load, prefill, first streamed token, decode and final completion before choosing one correction. Preserve cancellation and resource lifetimes; do not inherit retired or Electron performance credit.",
       "acceptance": [

@@ -1496,6 +1496,14 @@
     {
       "schema": "config/browser-compiler-statistics.schema.json",
       "data": "reports/browser-compiler/20261004/paired-output/paired-statistics.json"
+    },
+    {
+      "schema": "config/three-webgpu-screen.schema.json",
+      "data": "bench/external-projects/three-webgpu-screen/screen.json"
+    },
+    {
+      "schema": "config/three-webgpu-screen-summary.schema.json",
+      "data": "reports/browser-compiler/20261004/three-screen/summary.json"
     }
   ],
   "globTargets": [

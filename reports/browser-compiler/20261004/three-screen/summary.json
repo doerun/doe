@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "classification": "diagnostic",
+  "performancePromoted": false,
+  "passObservations": [
+    {
+      "scattering": 2,
+      "observations": 5,
+      "gpuTotalMedianMs": 1.255836,
+      "blurGpuMedianMs": 0.201498,
+      "blurFractionMedian": 0.1525969033332985
+    },
+    {
+      "scattering": 0,
+      "observations": 6,
+      "gpuTotalMedianMs": 1.1964255,
+      "blurGpuMedianMs": 0.11144899999999999,
+      "blurFractionMedian": 0.09300155125237686
+    },
+    {
+      "scattering": 5,
+      "observations": 5,
+      "gpuTotalMedianMs": 1.313384,
+      "blurGpuMedianMs": 0.24301699999999998,
+      "blurFractionMedian": 0.18342124287129508
+    }
+  ],
+  "excludedRows": [
+    {
+      "index": 0,
+      "reason": "incomplete-pass-set"
+    },
+    {
+      "index": 3,
+      "reason": "cached-timestamp-uids"
+    },
+    {
+      "index": 5,
+      "reason": "cached-timestamp-uids"
+    },
+    {
+      "index": 12,
+      "reason": "cached-timestamp-uids"
+    },
+    {
+      "index": 15,
+      "reason": "cached-timestamp-uids"
+    },
+    {
+      "index": 17,
+      "reason": "incomplete-pass-set"
+    },
+    {
+      "index": 18,
+      "reason": "incomplete-pass-set"
+    },
+    {
+      "index": 22,
+      "reason": "incomplete-pass-set"
+    }
+  ],
+  "aa": [
+    {
+      "artifact": "aa-0.json",
+      "pairs": [
+        {
+          "differenceMs": -0.09999990463256836,
+          "logCostRatio": -0.03922067647349926
+        },
+        {
+          "differenceMs": 4.76837158203125e-7,
+          "logCostRatio": 2.0732050791973928e-7
+        },
+        {
+          "differenceMs": -9.199999809265137,
+          "logCostRatio": -1.018569532597641
+        },
+        {
+          "differenceMs": 29.59999942779541,
+          "logCostRatio": 2.1735547716356813
+        }
+      ],
+      "meanDifferenceMs": 5.075000047683716,
+      "meanLogCostRatio": 0.27894119247126226
+    },
+    {
+      "artifact": "aa-1.json",
+      "pairs": [
+        {
+          "differenceMs": -28.59999990463257,
+          "logCostRatio": -1.3889224810230778
+        },
+        {
+          "differenceMs": -11.399999618530273,
+          "logCostRatio": -1.3862942983781605
+        },
+        {
+          "differenceMs": -0.5999999046325684,
+          "logCostRatio": -0.043802615541420474
+        },
+        {
+          "differenceMs": -1.1999998092651367,
+          "logCostRatio": -0.41985376263206603
+        }
+      ],
+      "meanDifferenceMs": -10.449999809265137,
+      "meanLogCostRatio": -0.8097182893936812
+    }
+  ],
+  "driverFindings": [
+    {
+      "artifact": "gaussian-family-driver-133.txt.gz",
+      "identification": "Gaussian coefficient signature and fragment sample count, not a per-pipeline execution receipt",
+      "sourceBlake3": "{0xdd42e251, 0x24a869ce, 0x930df17c, 0x16276d17, 0x1a44949d, 0xbf1012bb, 0xd559ec30, 0x709de881}",
+      "nativeTextureSamples": 21,
+      "nativeScalarBufferLoads": 1,
+      "scratchInstructions": 0,
+      "nirUniformLoads": 1
+    },
+    {
+      "artifact": "gaussian-family-driver-135.txt.gz",
+      "identification": "Gaussian coefficient signature and fragment sample count, not a per-pipeline execution receipt",
+      "sourceBlake3": "{0x20c02fde, 0xdacea724, 0x5aff33d0, 0xe7f198e1, 0x85b8310d, 0x48166313, 0x10975b0f, 0xe88e7850}",
+      "nativeTextureSamples": 21,
+      "nativeScalarBufferLoads": 1,
+      "scratchInstructions": 0,
+      "nirUniformLoads": 1
+    }
+  ],
+  "timingScope": "Driver-debug instrumented unique complete pass observations; asynchronous pool freshness not qualified per application frame. Uninstrumented A/A complete host frames retained separately.",
+  "materialApplicationCostQualified": false,
+  "disposition": "close-screen-no-worthwhile-automatic-transformation-identified",
+  "independentOracle": "Not qualified; no transformed shader executed.",
+  "nextBatch": "vulkan_doppler_generation_contract"
+}

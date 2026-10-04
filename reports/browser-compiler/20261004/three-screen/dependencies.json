@@ -1,0 +1,167 @@
+{
+  "upstreamCommit": "3d3a92e467aafd6749eb06f732a5f42e6d117fe4",
+  "acquired": [
+    {
+      "path": "examples/webgpu_custom_fog_scattering.html",
+      "gitBlob": "6e0f9ed9575492567e5bd244ec912e783348dcf5",
+      "sha256": "f70cfa61732d2d82ab0a2cb4c4bdaaa0c39da26d806cae5caa90c5195a7016b2",
+      "bytes": 8243
+    },
+    {
+      "path": "LICENSE",
+      "gitBlob": "8ada2a5f982916b0ba4b7a0aa7de347587e745d7",
+      "sha256": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+      "bytes": 1081
+    },
+    {
+      "path": "examples/example.css",
+      "gitBlob": "8640f424d00d5ae46117eb5b44c6b054b45ee636",
+      "sha256": "4a36d01077948a8a7531721c2c31339825715d1d87ffed4698a118e6fa84f65f",
+      "bytes": 2479
+    },
+    {
+      "path": "examples/jsm/tsl/display/GaussianBlurNode.js",
+      "gitBlob": "77827370773ea2c916a163ada51f99ee086f0924",
+      "sha256": "7da1d6c70f4af9f601d6a7714fbcc43330fb1d03c8ce73d15554c1d4657c7c7a",
+      "bytes": 11001
+    },
+    {
+      "path": "build/three.webgpu.js",
+      "gitBlob": "2de8df95f44fff3affd7f27b036789cb439ea712",
+      "sha256": "48a21c08b44276973cc992563d8e15707ef1a457f375084439975a14f094cecf",
+      "bytes": 1297689
+    },
+    {
+      "path": "build/three.tsl.js",
+      "gitBlob": "426747f97e6e0901e9e9e0fecfb0dc4307768f7c",
+      "sha256": "b2262f58aa71930d1e7765c18cbea8a6055d91eb9527207d740d91de08bb76c4",
+      "bytes": 1031018
+    },
+    {
+      "path": "examples/jsm/controls/FirstPersonControls.js",
+      "gitBlob": "0d056925416ee1b36c748fde4b368480c53a2604",
+      "sha256": "4f6c4bf60c8956a1201c966de1592f4f035be47b4f6fe97879a782898945992c",
+      "bytes": 11889
+    },
+    {
+      "path": "examples/jsm/inspector/Inspector.js",
+      "gitBlob": "606c4c7e8c73344e78705d04b327eafc82c53c0e",
+      "sha256": "d923d9269f7bc02feb0e2b33b9089813076da19370df7c2b8e8729e7a91feb9f",
+      "bytes": 11307
+    },
+    {
+      "path": "examples/jsm/generators/TreeGenerator.js",
+      "gitBlob": "58a3c1a548b2aee93bb299284d390c112262c584",
+      "sha256": "489e54ec07b870e3902c922e603e153298c85c7d178ac52bb25cc9417c5d7b52",
+      "bytes": 13002
+    },
+    {
+      "path": "examples/jsm/inspector/RendererInspector.js",
+      "gitBlob": "df66e88916ab0d4ca71388000a1b4225896d2cc0",
+      "sha256": "4252223601805bb32df911328e1626c3161284b5211d95ad399865d880dbeeae",
+      "bytes": 10602
+    },
+    {
+      "path": "examples/jsm/inspector/ui/Profiler.js",
+      "gitBlob": "621ffcbcf0d4a2d8912d94c51f2d8b06b0ed42c7",
+      "sha256": "52e4935a701dd41158ee597ab2969e61568233ea75807dc685e4536c8f8968a6",
+      "bytes": 55170
+    },
+    {
+      "path": "examples/jsm/inspector/tabs/Performance.js",
+      "gitBlob": "9cfc4a1ba448722c3ac01c1d22c91d418ac99ba3",
+      "sha256": "d312db4453d35681f23baccdae42716c07325d18d1c7b82e9d6c0d38715c79bc",
+      "bytes": 6301
+    },
+    {
+      "path": "examples/jsm/inspector/tabs/Memory.js",
+      "gitBlob": "53c29510968e1d3323f1bb0a04e2b59abb419137",
+      "sha256": "d0033867fbb34c62df64b0201b27a6ded163bdef2016d28db8dc27ff8ea08567",
+      "bytes": 4700
+    },
+    {
+      "path": "examples/jsm/inspector/tabs/Console.js",
+      "gitBlob": "62c30eb259a07d387a2e72730416e0e0c6cbf2f2",
+      "sha256": "7cfaf8456722acdd98877e085861601b8e03dd19b71c6e04bafe8cad06bb593e",
+      "bytes": 9861
+    },
+    {
+      "path": "examples/jsm/inspector/tabs/Parameters.js",
+      "gitBlob": "1724c1d6d100b52846415d2ecce0a2e168c6b67f",
+      "sha256": "2eb3aa11c8c067c3f64d8680b991f44d6de2deb700529aaefd77c5bc46cb36c9",
+      "bytes": 8703
+    },
+    {
+      "path": "examples/jsm/inspector/tabs/Settings.js",
+      "gitBlob": "d04815e60b3c9d8f6a644f065c5b451b64660753",
+      "sha256": "f01a1f1c44d1d0d65ed0e49c291762820646ad18f39a2686c30598e817b13c23",
+      "bytes": 5902
+    },
+    {
+      "path": "examples/jsm/inspector/ui/utils.js",
+      "gitBlob": "26363a2b490d976685805bc02601b956b850476e",
+      "sha256": "c533e48658cf18063c6b79e500470fc10f63ff9a8c9e9c7f2afd75d1df8c5e97",
+      "bytes": 3871
+    },
+    {
+      "path": "examples/jsm/inspector/tabs/Viewer.js",
+      "gitBlob": "a9e6a32e62665a93744385f4d2a3a2a259686cb5",
+      "sha256": "8543c3d53931358d861532f76454272dc7fe487391a9768a1000f0c7895dddb1",
+      "bytes": 32867
+    },
+    {
+      "path": "examples/jsm/inspector/tabs/Timeline.js",
+      "gitBlob": "f50ccefe076f09b47ebd6c9487934e5a8f000979",
+      "sha256": "a47daa0118225c2d475dd3d7bed0e18d1fd148ed11922d8b921be5b27358ddfd",
+      "bytes": 44502
+    },
+    {
+      "path": "examples/jsm/inspector/Storage.js",
+      "gitBlob": "ec589e3023a243bcd06ef2618c405c8e9ea4ddf8",
+      "sha256": "f29ff74ba354b3ea19c7a4ec439cbf3cc018827a06b576e8495ae7c89c49f5d3",
+      "bytes": 986
+    },
+    {
+      "path": "examples/jsm/inspector/ui/Tab.js",
+      "gitBlob": "9564ee078b0aa1e4f7482af80c16ebeac7a3345f",
+      "sha256": "8e5de0319aa154cd1650bb733dfd11f5d36bdbb355453f9038d24b1e4dad35d5",
+      "bytes": 6088
+    },
+    {
+      "path": "examples/jsm/inspector/ui/List.js",
+      "gitBlob": "a896ee69cb13c7c4baf16391dec2d1df8ca8ff99",
+      "sha256": "47358b131fdadb488226e74c513a32ee3fb2e68ec177b612645b0f900b5b73b3",
+      "bytes": 1528
+    },
+    {
+      "path": "examples/jsm/inspector/ui/Graph.js",
+      "gitBlob": "5daa83f2aefdfb5e80e103c1d966f26c23b784f6",
+      "sha256": "a472d2bff6191da471159eee9ebb08616581ad7a138841bc03c01d158688f904",
+      "bytes": 4199
+    },
+    {
+      "path": "examples/jsm/inspector/ui/Item.js",
+      "gitBlob": "b64ec2a92c51792110accd8b87a493eca014eecc",
+      "sha256": "dff0df175e734575102093a9b4e6fe90ad1b67131a44ef9b33061aa368d9f452",
+      "bytes": 4186
+    },
+    {
+      "path": "examples/jsm/inspector/ui/Style.js",
+      "gitBlob": "14657dd291c58411eccfd13052f1c1ef045485c1",
+      "sha256": "766b31871eeca311823c61e6d6dd0362da16ad1076c93f32c7798e7a99640352",
+      "bytes": 50211
+    },
+    {
+      "path": "build/three.core.js",
+      "gitBlob": "b27525238962731cc7216ee524b1545f99bfec00",
+      "sha256": "2a9eea11cbf9e593db5adaa33f0d135c4fd3776f0045516041ba56bf37f9f8a3",
+      "bytes": 1461427
+    },
+    {
+      "path": "examples/jsm/inspector/ui/Values.js",
+      "gitBlob": "273cba042dc71f5a468dcf8281af116b83333775",
+      "sha256": "c583befa8c9d321ee1b151619ae58bd3e3de3753d9961720ce300d7ce491993b",
+      "bytes": 8811
+    }
+  ]
+}

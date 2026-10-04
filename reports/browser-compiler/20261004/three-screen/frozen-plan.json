@@ -1,0 +1,54 @@
+{
+  "plan": {
+    "schemaVersion": 1,
+    "upstreamCommit": "3d3a92e467aafd6749eb06f732a5f42e6d117fe4",
+    "application": "examples/webgpu_custom_fog_scattering.html",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "deviceScaleFactor": 1,
+    "processes": 2,
+    "warmupFrames": 6,
+    "trialLabels": [
+      [
+        "A",
+        "B"
+      ],
+      [
+        "B",
+        "A"
+      ],
+      [
+        "A",
+        "B"
+      ],
+      [
+        "B",
+        "A"
+      ]
+    ],
+    "scattering": [
+      2,
+      0,
+      5
+    ],
+    "browser": "/usr/bin/google-chrome",
+    "browserArgs": [
+      "--no-sandbox",
+      "--enable-unsafe-webgpu",
+      "--ignore-gpu-blocklist",
+      "--enable-webgpu-developer-features",
+      "--use-angle=vulkan",
+      "--enable-features=Vulkan",
+      "--disable-vulkan-surface"
+    ],
+    "driverCaptureEnv": {
+      "RADV_DEBUG": "nocache,shaders,shaderstats"
+    },
+    "minimumInterestingPassShare": 0.1,
+    "stoppingRule": "One driver/source capture and the configured independent A/A browser processes; no transformation, no outcome-selected repeats. Close screening unless material pass cost and surviving removable work are demonstrated.",
+    "scratch": "bench/out/three-screen/20261004"
+  },
+  "runnerSha256": "5fa760470389a65290cc77724fa9143ad3e658ca8b0cc14ff0cc775e1b9cb86a"
+}

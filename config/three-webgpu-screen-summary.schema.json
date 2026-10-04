@@ -1,0 +1,193 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "classification",
+    "performancePromoted",
+    "passObservations",
+    "excludedRows",
+    "aa",
+    "driverFindings",
+    "timingScope",
+    "materialApplicationCostQualified",
+    "disposition",
+    "independentOracle",
+    "nextBatch"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "classification": {
+      "const": "diagnostic"
+    },
+    "performancePromoted": {
+      "const": false
+    },
+    "passObservations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scattering",
+          "observations",
+          "gpuTotalMedianMs",
+          "blurGpuMedianMs",
+          "blurFractionMedian"
+        ],
+        "properties": {
+          "scattering": {
+            "type": "number"
+          },
+          "observations": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "gpuTotalMedianMs": {
+            "type": "number"
+          },
+          "blurGpuMedianMs": {
+            "type": "number"
+          },
+          "blurFractionMedian": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "excludedRows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "index",
+          "reason"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "enum": [
+              "incomplete-pass-set",
+              "cached-timestamp-uids"
+            ]
+          }
+        }
+      }
+    },
+    "aa": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact",
+          "pairs",
+          "meanDifferenceMs",
+          "meanLogCostRatio"
+        ],
+        "properties": {
+          "artifact": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pairs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "differenceMs",
+                "logCostRatio"
+              ],
+              "properties": {
+                "differenceMs": {
+                  "type": "number"
+                },
+                "logCostRatio": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "meanDifferenceMs": {
+            "type": "number"
+          },
+          "meanLogCostRatio": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "driverFindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact",
+          "identification",
+          "sourceBlake3",
+          "nativeTextureSamples",
+          "nativeScalarBufferLoads",
+          "scratchInstructions",
+          "nirUniformLoads"
+        ],
+        "properties": {
+          "artifact": {
+            "type": "string",
+            "minLength": 1
+          },
+          "identification": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceBlake3": {
+            "type": "string",
+            "minLength": 1
+          },
+          "nativeTextureSamples": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nativeScalarBufferLoads": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scratchInstructions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nirUniformLoads": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "timingScope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "materialApplicationCostQualified": {
+      "const": false
+    },
+    "disposition": {
+      "const": "close-screen-no-worthwhile-automatic-transformation-identified"
+    },
+    "independentOracle": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nextBatch": {
+      "const": "vulkan_doppler_generation_contract"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Diagnostic Three.js application screen disposition"
+}

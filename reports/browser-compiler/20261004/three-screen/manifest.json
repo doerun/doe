@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "classification": "diagnostic",
+  "sourceCommit": "6c7a83ad22945dd87c0f243bd0ab627554a566ac",
+  "files": [
+    {
+      "path": "THREE-LICENSE.txt",
+      "sha256": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+      "bytes": 1081
+    },
+    {
+      "path": "aa-0.json",
+      "sha256": "b41bbf32e68b5752d1088522e41336808e1942730b214348d147aaaac35e7939",
+      "bytes": 94127
+    },
+    {
+      "path": "aa-1.json",
+      "sha256": "3c23ba1dda2a65d2a7e15439b78b2f5f3fc619403341d0c203da9a46d1f263c7",
+      "bytes": 94097
+    },
+    {
+      "path": "application-observed.html",
+      "sha256": "4609ee3bce5afa02dfb75814939e29e342cd03b6caa83423b782f47dbf80d48e",
+      "bytes": 8425
+    },
+    {
+      "path": "application-original.html",
+      "sha256": "f70cfa61732d2d82ab0a2cb4c4bdaaa0c39da26d806cae5caa90c5195a7016b2",
+      "bytes": 8243
+    },
+    {
+      "path": "application.png",
+      "sha256": "1e9e4fa7c690deb16bef3325c617e7e17d807ff629f613a2aa2da22164d6ed12",
+      "bytes": 1029830
+    },
+    {
+      "path": "dependencies.json",
+      "sha256": "e0c161efa894f97d20fe7adab688c0ba9152d36457acff29da34a0c2d18b916e",
+      "bytes": 6306
+    },
+    {
+      "path": "doe-admission.json",
+      "sha256": "dc1b0f797c19c6e9b5adcd014d5ff752aea133a6df502c61881ca6cb6b1135f7",
+      "bytes": 211
+    },
+    {
+      "path": "driver-capture.log.gz",
+      "sha256": "c286af2cde4048b8f89cc585ef1c1fb82a496bfe5fb3e2e0e45aa324aaaa04fb",
+      "bytes": 1164070
+    },
+    {
+      "path": "driver-findings.json",
+      "sha256": "c02ffadc1fc26229dd2167433034ee90031763ca9f7a41521dff6595197754a5",
+      "bytes": 849
+    },
+    {
+      "path": "failed-setup.json",
+      "sha256": "4f1590bf7235252a29b865f5285db4e61d020c438ed5bcac3e622b2dcb0ec7cb",
+      "bytes": 466
+    },
+    {
+      "path": "failed-setup.log.gz",
+      "sha256": "697fa8c5973453e88f4c71216e2e3f254a29c3f3534c201fdaea267f227e1ddd",
+      "bytes": 281
+    },
+    {
+      "path": "frozen-plan.json",
+      "sha256": "b35597470964746415e4ad44c8426bf3b1ea2ccde358c1170754955bc1c79346",
+      "bytes": 1352
+    },
+    {
+      "path": "gaussian-family-driver-133.txt.gz",
+      "sha256": "ffe8f76ff80b8495c2e763a6b216293fcd6ece3ea3ab06f94575d47ac568586f",
+      "bytes": 8328
+    },
+    {
+      "path": "gaussian-family-driver-135.txt.gz",
+      "sha256": "c4335556a281616d173c2e9bb292142250a2afa006f16402765281472a86f5cb",
+      "bytes": 8317
+    },
+    {
+      "path": "profile-0.json",
+      "sha256": "37275787de7c11a385490f0b8424dfae951b6b9bdeff671383521c7e24fdafd8",
+      "bytes": 112784
+    },
+    {
+      "path": "shader-0.wgsl",
+      "sha256": "f086d621ac2023c6636ac092e4735b2f6da6d611f92404758be6c644167ecc0e",
+      "bytes": 2003
+    },
+    {
+      "path": "shader-1.wgsl",
+      "sha256": "dc9861049c42f2d514f6fee5ce60ecab826d129fc9cec6a53939bf3592471392",
+      "bytes": 16366
+    },
+    {
+      "path": "shader-10.wgsl",
+      "sha256": "6979043c20725bc66958df3dd6c427d0fdc324ab29b9ef1f956fed83b4149a20",
+      "bytes": 3213
+    },
+    {
+      "path": "shader-11.wgsl",
+      "sha256": "70d931f703ff2c41a6409acda68a73f76aef0803f701f66277636e9c73cefcbf",
+      "bytes": 3213
+    },
+    {
+      "path": "shader-12.wgsl",
+      "sha256": "d5cdb9f5f845859d0bdb556b81b66e2b46aa57a79a5a0360c875f7c5a7439403",
+      "bytes": 3213
+    },
+    {
+      "path": "shader-13.wgsl",
+      "sha256": "13d756774003e51e341a5daeda0ae03ff62dc3432d680aaa3e70e12970a2d610",
+      "bytes": 3212
+    },
+    {
+      "path": "shader-14.wgsl",
+      "sha256": "7fa01372dedd405f6bb584a21f85890092d4331c7a3694579273523537b4ef67",
+      "bytes": 3213
+    },
+    {
+      "path": "shader-15.wgsl",
+      "sha256": "cf55c85aad29d7c292d4b0f0afe4c159ad84bfee1b7d745c00861502deed101c",
+      "bytes": 655
+    },
+    {
+      "path": "shader-16.doe.wgsl",
+      "sha256": "3dd035d5a3de4e46f80e29360e8b6baedbaf6f0743dd935e44db52d1a394cf6b",
+      "bytes": 5601
+    },
+    {
+      "path": "shader-16.wgsl",
+      "sha256": "3dd035d5a3de4e46f80e29360e8b6baedbaf6f0743dd935e44db52d1a394cf6b",
+      "bytes": 5601
+    },
+    {
+      "path": "shader-17.doe.wgsl",
+      "sha256": "76261c13a53beee8ee523952af24d6c221c04efad3fbf7759de15ed471c15648",
+      "bytes": 5601
+    },
+    {
+      "path": "shader-17.wgsl",
+      "sha256": "76261c13a53beee8ee523952af24d6c221c04efad3fbf7759de15ed471c15648",
+      "bytes": 5601
+    },
+    {
+      "path": "shader-18.wgsl",
+      "sha256": "2fb589f3114f075be30af71fe902b9b49d1e28c1eb0cf7a16580939a36fbac51",
+      "bytes": 655
+    },
+    {
+      "path": "shader-19.wgsl",
+      "sha256": "a58378a9df84b50b4863036ebe62a05bb6ffc298ead5c273fe26dfafbfb3894a",
+      "bytes": 2823
+    },
+    {
+      "path": "shader-2.wgsl",
+      "sha256": "6051bccff9d192babb8472e3702e6389044b1e4783f67e72dafdb02e5ef095e4",
+      "bytes": 3213
+    },
+    {
+      "path": "shader-3.wgsl",
+      "sha256": "69f06580729a60b5f3e47e9809db28c818f459c248b588562f12e605e8d8e355",
+      "bytes": 16366
+    },
+    {
+      "path": "shader-4.wgsl",
+      "sha256": "d90939d00aa90b22ca5d0320845b4ff1017a0ee3144ee38da074944865ea6ed3",
+      "bytes": 3213
+    },
+    {
+      "path": "shader-5.wgsl",
+      "sha256": "5c812d28085b48953fc0b93ab355729a0243e6cba1dd6fecd89539f29fdc359f",
+      "bytes": 3213
+    },
+    {
+      "path": "shader-6.wgsl",
+      "sha256": "3e8306db4c5f4e3ab8458b929afab7df7697b0f0ff0a8d4ead94756891441268",
+      "bytes": 3213
+    },
+    {
+      "path": "shader-7.wgsl",
+      "sha256": "986dcadad675b0097db4566bb1b1a1632e5a4848ccfb0698da3248906bb991a7",
+      "bytes": 1754
+    },
+    {
+      "path": "shader-8.wgsl",
+      "sha256": "6dd7669e1b53e3ec304ca6f08a1694560bd95b560e8a51ca662b841c880b3178",
+      "bytes": 3046
+    },
+    {
+      "path": "shader-9.wgsl",
+      "sha256": "e70139df647096f0e9a9a9adc1ad9e4109f69d15cbc0438125ffd90adcbc5274",
+      "bytes": 3213
+    },
+    {
+      "path": "summary.json",
+      "sha256": "fa9aeb520423afd282705f672892e0b8605ab6b8ca7c648dd1725683279eb1d5",
+      "bytes": 3888
+    }
+  ],
+  "sources": [
+    {
+      "path": "bench/external-projects/three-webgpu-screen/run-screen.mjs",
+      "sha256": "5fa760470389a65290cc77724fa9143ad3e658ca8b0cc14ff0cc775e1b9cb86a"
+    },
+    {
+      "path": "bench/external-projects/three-webgpu-screen/analyze-screen.mjs",
+      "sha256": "226ef63c17c54abb71d96240de0cda4b50d51862bb16eebda03b2e227abafd98"
+    },
+    {
+      "path": "bench/external-projects/three-webgpu-screen/screen.json",
+      "sha256": "a3c1dfd1208ef772c210809cb811fe9849c58e0e146fff887cb8eb1919cc2531"
+    }
+  ],
+  "emitter": {
+    "path": "runtime/zig/zig-out/bin/doe-emit-wgsl",
+    "sha256": "30015db3a80af96d0b7f365ca9b4de03fd794c457364f94555c195bbd9a506dd"
+  },
+  "generatedReceipts": "Raw application/driver snapshots, hash-bound unchanged; manifest follows existing diagnostic report convention."
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "shader": "shader-16.wgsl",
+    "exitCode": 0,
+    "stderr": "",
+    "byteIdentical": true
+  },
+  {
+    "shader": "shader-17.wgsl",
+    "exitCode": 0,
+    "stderr": "",
+    "byteIdentical": true
+  }
+]

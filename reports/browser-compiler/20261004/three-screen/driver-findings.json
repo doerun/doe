@@ -1,0 +1,20 @@
+[
+  {
+    "artifact": "gaussian-family-driver-133.txt.gz",
+    "identification": "Gaussian coefficient signature and fragment sample count, not a per-pipeline execution receipt",
+    "sourceBlake3": "{0xdd42e251, 0x24a869ce, 0x930df17c, 0x16276d17, 0x1a44949d, 0xbf1012bb, 0xd559ec30, 0x709de881}",
+    "nativeTextureSamples": 21,
+    "nativeScalarBufferLoads": 1,
+    "scratchInstructions": 0,
+    "nirUniformLoads": 1
+  },
+  {
+    "artifact": "gaussian-family-driver-135.txt.gz",
+    "identification": "Gaussian coefficient signature and fragment sample count, not a per-pipeline execution receipt",
+    "sourceBlake3": "{0x20c02fde, 0xdacea724, 0x5aff33d0, 0xe7f198e1, 0x85b8310d, 0x48166313, 0x10975b0f, 0xe88e7850}",
+    "nativeTextureSamples": 21,
+    "nativeScalarBufferLoads": 1,
+    "scratchInstructions": 0,
+    "nirUniformLoads": 1
+  }
+]

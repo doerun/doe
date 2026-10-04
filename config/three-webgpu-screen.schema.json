@@ -1,0 +1,124 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "upstreamCommit",
+    "application",
+    "viewport",
+    "deviceScaleFactor",
+    "processes",
+    "warmupFrames",
+    "trialLabels",
+    "scattering",
+    "browser",
+    "browserArgs",
+    "driverCaptureEnv",
+    "minimumInterestingPassShare",
+    "stoppingRule",
+    "scratch"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "upstreamCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "application": {
+      "type": "string",
+      "minLength": 1
+    },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "width",
+        "height"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "deviceScaleFactor": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "processes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "warmupFrames": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "trialLabels": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "uniqueItems": true,
+        "items": {
+          "enum": [
+            "A",
+            "B"
+          ]
+        }
+      }
+    },
+    "scattering": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "browser": {
+      "type": "string",
+      "minLength": 1
+    },
+    "browserArgs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "driverCaptureEnv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "RADV_DEBUG"
+      ],
+      "properties": {
+        "RADV_DEBUG": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "minimumInterestingPassShare": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "stoppingRule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scratch": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pinned Three.js application screening plan"
+}

@@ -1,0 +1,4 @@
+{
+  "error": "page.evaluate: TypeError: Cannot read properties of undefined (reading 'info')\n    at eval (eval at evaluate (:290:30), <anonymous>:35:48)\n    at async <anonymous>:316:30",
+  "stack": "page.evaluate: TypeError: Cannot read properties of undefined (reading 'info')\n    at eval (eval at evaluate (:290:30), <anonymous>:35:48)\n    at async <anonymous>:316:30\n    at /home/x/deco/doe/bench/external-projects/three-webgpu-screen/run-screen.mjs:86:35"
+}

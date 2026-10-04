@@ -3,6 +3,17 @@
 This is the live status front door for the non-TSIR WGSL compiler and WebGPU
 runtime path. Artifacts and executable tests own pass/fail state.
 
+## Independent graphics screen closed
+
+The [Three.js fog-scattering screen](../../reports/browser-compiler/20261004/three-screen/README.md)
+retains generated WGSL and matching Gaussian-family native captures. It identifies
+no worthwhile automatic transformation; Doe emits the blur fragments unchanged.
+Cached/incomplete engine timestamps limit pass attribution, and independent A/A
+frame differences reverse. No image oracle or application advantage is qualified.
+The browser delivery prototype is preserved. Only the existing full Doppler
+native Vulkan generation contract batch is active; graphics discovery is closed.
+The new screen plan and derived summary are schema-backed repo-only diagnostics.
+
 ## Browser shader attribution
 
 The [paired direct-WGSL control](../../reports/browser-compiler/20261004/paired-output/README.md)
