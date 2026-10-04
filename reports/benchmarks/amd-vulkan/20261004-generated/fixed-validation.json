@@ -1,0 +1,17 @@
+[
+  {
+    "shader": "private-zero",
+    "exitCode": 0,
+    "stderr": ""
+  },
+  {
+    "shader": "private-aggregate",
+    "exitCode": 0,
+    "stderr": ""
+  },
+  {
+    "shader": "sgd",
+    "exitCode": 0,
+    "stderr": ""
+  }
+]

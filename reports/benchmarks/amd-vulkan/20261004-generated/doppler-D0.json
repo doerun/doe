@@ -1,0 +1,251 @@
+{
+  "schema": "doe.doppler-matmul-f16w-f32a-tiled-lane/v1",
+  "provider": "D0",
+  "shader": {
+    "path": "/home/x/deco/doppler/.worktrees/doe-provider-compare-e6e8be4a/src/gpu/kernels/matmul_f16w_f32a_tiled.wgsl",
+    "sha256": "569971d79c3ea3ae9e632a06befe43bc9d9a1a657ddd53357368fa24b073cd7d",
+    "bytes": 7142
+  },
+  "providerModule": {
+    "path": "/home/x/deco/doe/packages/doe-gpu/src/compute.js",
+    "sha256": "f0c7e4c93097a4960e91034f0a56f399ed702a250cf1bf38fb2afb5565b651a7"
+  },
+  "incumbentModule": null,
+  "providerReceipt": {
+    "schema": "doe.webgpu-provider-receipt/v1",
+    "contract": "doe.webgpu-provider/v1",
+    "providers": [
+      {
+        "id": "D0",
+        "kind": "module",
+        "module": "file:///home/x/deco/doe/packages/doe-gpu/src/compute.js",
+        "gpu": {
+          "kind": "factory",
+          "path": "create",
+          "args": [
+            [
+              "enable-dawn-features=allow_unsafe_apis"
+            ]
+          ],
+          "resultPath": null
+        },
+        "globals": {
+          "GPUBufferUsage": "globals.GPUBufferUsage",
+          "GPUShaderStage": "globals.GPUShaderStage",
+          "GPUMapMode": "globals.GPUMapMode",
+          "GPUTextureUsage": "globals.GPUTextureUsage"
+        }
+      }
+    ],
+    "providerOrder": [
+      "D0"
+    ],
+    "adapterOptions": null,
+    "globals": {
+      "mode": "replace",
+      "installed": [
+        "navigator.gpu",
+        "GPUBufferUsage",
+        "GPUShaderStage",
+        "GPUMapMode",
+        "GPUTextureUsage"
+      ],
+      "restored": false
+    },
+    "attempts": [
+      {
+        "providerId": "D0",
+        "kind": "module",
+        "module": "file:///home/x/deco/doe/packages/doe-gpu/src/compute.js",
+        "ok": true,
+        "stage": "complete",
+        "code": null,
+        "detail": null
+      }
+    ],
+    "selectedProviderId": "D0",
+    "ok": true
+  },
+  "lifecycle": {
+    "supported": false
+  },
+  "cases": [
+    {
+      "id": "edge",
+      "shape": {
+        "M": 5,
+        "N": 7,
+        "K": 33
+      },
+      "dispatch": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "inputs": {
+        "aSha256": "2d1f2723cb371a744bf85697f2b0a98247b457d86b5ec5957b5c4d7ac269c896",
+        "bSha256": "9ac2598a09f3964fe7c734865ba7ade4de6224f8d7f8856d20c5e0778b3ad3f8",
+        "uniformsSha256": "a5da2343413ec6fe8673464f72f061d036905e2e2cda712528ab999bce1164a3"
+      },
+      "compilationMessages": [
+        {
+          "type": "info",
+          "message": "WGSL enable directive `f16` accepted by the Doe compiler.",
+          "lineNum": 16,
+          "linePos": 8
+        }
+      ],
+      "output": {
+        "outputSha256": "92be5ba71d56c42a23f465c8fa44b915ea2c8d6665db0d929b27ac0db4a8efc9",
+        "elementCount": 35,
+        "zeroCount": 0,
+        "nonFiniteCount": 0,
+        "maxAbs": 2.546875,
+        "maxSampleAbsoluteError": 0,
+        "samples": [
+          {
+            "row": 0,
+            "column": 0,
+            "actual": -1.3203125,
+            "expected": -1.3203125,
+            "absoluteError": 0
+          },
+          {
+            "row": 0,
+            "column": 6,
+            "actual": -1.79296875,
+            "expected": -1.79296875,
+            "absoluteError": 0
+          },
+          {
+            "row": 4,
+            "column": 0,
+            "actual": 0.984375,
+            "expected": 0.984375,
+            "absoluteError": 0
+          },
+          {
+            "row": 4,
+            "column": 6,
+            "actual": 0.75390625,
+            "expected": 0.75390625,
+            "absoluteError": 0
+          },
+          {
+            "row": 2,
+            "column": 3,
+            "actual": 2.44921875,
+            "expected": 2.44921875,
+            "absoluteError": 0
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "actual": 2.203125,
+            "expected": 2.203125,
+            "absoluteError": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "production-qkv",
+      "shape": {
+        "M": 72,
+        "N": 1536,
+        "K": 640
+      },
+      "dispatch": {
+        "x": 2,
+        "y": 24,
+        "z": 1
+      },
+      "inputs": {
+        "aSha256": "9173a1cb9db740e83af26117918de8c7d396c06b912a6efd60975e33584fb33b",
+        "bSha256": "e4a3b6e610d58588e60e4023f72e2858690cf9cef3e3554e8bc40ba17e6c0548",
+        "uniformsSha256": "65cef2c6b9574790ed0c85a158112029c6bda9c693628d2eb09877dc188510c2"
+      },
+      "compilationMessages": [
+        {
+          "type": "info",
+          "message": "WGSL enable directive `f16` accepted by the Doe compiler.",
+          "lineNum": 16,
+          "linePos": 8
+        }
+      ],
+      "output": {
+        "outputSha256": "cf3128c53ae389f3488e0e3d57eb598c622e6b5d98a87b094eec4c223f23d271",
+        "elementCount": 110592,
+        "zeroCount": 0,
+        "nonFiniteCount": 0,
+        "maxAbs": 3.23046875,
+        "maxSampleAbsoluteError": 0,
+        "samples": [
+          {
+            "row": 0,
+            "column": 0,
+            "actual": -0.96484375,
+            "expected": -0.96484375,
+            "absoluteError": 0
+          },
+          {
+            "row": 0,
+            "column": 1535,
+            "actual": -0.31640625,
+            "expected": -0.31640625,
+            "absoluteError": 0
+          },
+          {
+            "row": 71,
+            "column": 0,
+            "actual": -0.06640625,
+            "expected": -0.06640625,
+            "absoluteError": 0
+          },
+          {
+            "row": 71,
+            "column": 1535,
+            "actual": 1.4375,
+            "expected": 1.4375,
+            "absoluteError": 0
+          },
+          {
+            "row": 36,
+            "column": 768,
+            "actual": 1,
+            "expected": 1,
+            "absoluteError": 0
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "actual": -0.69921875,
+            "expected": -0.69921875,
+            "absoluteError": 0
+          },
+          {
+            "row": 4,
+            "column": 6,
+            "actual": -1.109375,
+            "expected": -1.109375,
+            "absoluteError": 0
+          },
+          {
+            "row": 63,
+            "column": 63,
+            "actual": -1.140625,
+            "expected": -1.140625,
+            "absoluteError": 0
+          },
+          {
+            "row": 64,
+            "column": 64,
+            "actual": 2.04296875,
+            "expected": 2.04296875,
+            "absoluteError": 0
+          }
+        ]
+      }
+    }
+  ]
+}

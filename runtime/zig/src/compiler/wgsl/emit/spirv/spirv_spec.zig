@@ -222,6 +222,7 @@ pub const Opcode = struct {
     pub const ConstantFalse: u16 = 42;
     pub const Constant: u16 = 43;
     pub const ConstantComposite: u16 = 44;
+    pub const ConstantNull: u16 = 46;
     pub const Function: u16 = 54;
     pub const FunctionParameter: u16 = 55;
     pub const FunctionEnd: u16 = 56;

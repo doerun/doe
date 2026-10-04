@@ -1,0 +1,132 @@
+{
+  "classification": "diagnostic",
+  "configuration": "500 iterations, 50 excluded warmups; one initial pair, no reliability or speed claim",
+  "publicTranslationRobustness": "Default translation clamps storage arrays; runtime driver captures use Vulkan hardware robustness. These are separate compiler entry points.",
+  "records": [
+    {
+      "lane": "baseline",
+      "shader": "sgd",
+      "timing": {
+        "kind": "compilation_bench",
+        "version": 2,
+        "shader": "sgd",
+        "tier": "external",
+        "target": "spirv",
+        "sourceLines": 106,
+        "iterations": 500,
+        "warmup": 50,
+        "p50_ns": 99477,
+        "p95_ns": 139272,
+        "p99_ns": 219604,
+        "min_ns": 91372,
+        "max_ns": 592616,
+        "mean_ns": 111981,
+        "stddev_ns": 33594,
+        "bytesOut": 8344,
+        "p50_us": 99.477,
+        "compiler": "doe_wgsl"
+      },
+      "allocationScope": "external arena backing allocations, excludes individual internal allocation calls",
+      "allocations": {
+        "allocations": 7,
+        "resizes": 4,
+        "allocatedBytes": 244911,
+        "freedBytes": 244911
+      }
+    },
+    {
+      "lane": "baseline",
+      "shader": "apply-forces",
+      "timing": {
+        "kind": "compilation_bench",
+        "version": 2,
+        "shader": "apply-forces",
+        "tier": "external",
+        "target": "spirv",
+        "sourceLines": 27,
+        "iterations": 500,
+        "warmup": 50,
+        "p50_ns": 31960,
+        "p95_ns": 36879,
+        "p99_ns": 45997,
+        "min_ns": 24196,
+        "max_ns": 193054,
+        "mean_ns": 32752,
+        "stddev_ns": 9916,
+        "bytesOut": 1636,
+        "p50_us": 31.96,
+        "compiler": "doe_wgsl"
+      },
+      "allocationScope": "external arena backing allocations, excludes individual internal allocation calls",
+      "allocations": {
+        "allocations": 5,
+        "resizes": 33,
+        "allocatedBytes": 28618,
+        "freedBytes": 28618
+      }
+    },
+    {
+      "lane": "candidate",
+      "shader": "sgd",
+      "timing": {
+        "kind": "compilation_bench",
+        "version": 2,
+        "shader": "sgd",
+        "tier": "external",
+        "target": "spirv",
+        "sourceLines": 106,
+        "iterations": 500,
+        "warmup": 50,
+        "p50_ns": 100059,
+        "p95_ns": 142509,
+        "p99_ns": 185600,
+        "min_ns": 91302,
+        "max_ns": 377892,
+        "mean_ns": 103495,
+        "stddev_ns": 20796,
+        "bytesOut": 8324,
+        "p50_us": 100.059,
+        "compiler": "doe_wgsl"
+      },
+      "allocationScope": "external arena backing allocations, excludes individual internal allocation calls",
+      "allocations": {
+        "allocations": 7,
+        "resizes": 4,
+        "allocatedBytes": 244911,
+        "freedBytes": 244911
+      }
+    },
+    {
+      "lane": "candidate",
+      "shader": "apply-forces",
+      "timing": {
+        "kind": "compilation_bench",
+        "version": 2,
+        "shader": "apply-forces",
+        "tier": "external",
+        "target": "spirv",
+        "sourceLines": 27,
+        "iterations": 500,
+        "warmup": 50,
+        "p50_ns": 32591,
+        "p95_ns": 41108,
+        "p99_ns": 51106,
+        "min_ns": 23434,
+        "max_ns": 148309,
+        "mean_ns": 33370,
+        "stddev_ns": 7579,
+        "bytesOut": 1636,
+        "p50_us": 32.591,
+        "compiler": "doe_wgsl"
+      },
+      "allocationScope": "external arena backing allocations, excludes individual internal allocation calls",
+      "allocations": {
+        "allocations": 5,
+        "resizes": 33,
+        "allocatedBytes": 28618,
+        "freedBytes": 28618
+      }
+    }
+  ],
+  "schemaVersion": 1
+}

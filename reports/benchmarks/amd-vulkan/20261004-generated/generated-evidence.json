@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "vulkan-generated-execution-diagnostic",
+  "evidenceClass": "diagnostic",
+  "baselineCommit": "9cade80418c49aade838ee01de0c68189a9a89a5",
+  "readmeIntegratedCommit": "9f0f2a84d744b9f3b7345adba30ef8c1fd318c92",
+  "host": {
+    "platform": "linux",
+    "architecture": "x64",
+    "node": "v22.22.1",
+    "renderNodes": [
+      "/dev/dri/renderD128"
+    ],
+    "accessibleRenderNodes": [
+      "/dev/dri/renderD128"
+    ],
+    "physicalGpuEligible": true
+  },
+  "upstream": {
+    "repositoryUrl": "https://github.com/Achuttarsing/umap-gpu",
+    "commit": "7884b287f49bc057df7e0856c5539f130a20e0ad",
+    "licenseIdentifier": "MIT"
+  },
+  "immutableInputs": {
+    "inputs": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.inputs.json",
+      "sha256": "2d453439b8f597fd38d4dddd4e88b4b5de83fa0d18ab4dd68767d674e9184b39"
+    },
+    "oracle": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.oracle.md",
+      "sha256": "7f4937e8fd86fae2a167e80e7d9a6abb52e98cba96f064c7a177ce92d290b552"
+    },
+    "workload": {
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.workload.test.ts",
+      "sha256": "55e971f997f5618367e2b5168215e20790305de271f76825dc5ef8a732575028"
+    },
+    "config": {
+      "path": "bench/external-projects/umap-gpu/vitest-sgd-benchmark.config.mjs",
+      "sha256": "885abf58629bb6ab25587e7dafbf24e3759cfcdd99a1f0034748a8c8e877c00e"
+    },
+    "runner": {
+      "path": "bench/external-projects/umap-gpu/run-sgd-benchmark.mjs",
+      "sha256": "62d21914ad1495ee50d33bcc0a829be02184a4acdaca2d948089d8cdc0f28798"
+    },
+    "sgdImplementation": {
+      "path": "src/gpu/sgd.ts",
+      "sha256": "1cfa4b71c6f734450f9b8d810a6afb19e3ffb53f1ed2bce7bb018660dfdc2a63"
+    },
+    "sgdShader": {
+      "path": "src/gpu/shaders/sgd.wgsl",
+      "sha256": "3af8e076009f75b17dec45898e026db8f413f76d9992f00619583077a338485d"
+    },
+    "applyForcesShader": {
+      "path": "src/gpu/shaders/apply-forces.wgsl",
+      "sha256": "47e8ca3495ea67f3266b0365860f8eccae9b165c175231cf8c0559ffdc13b272"
+    },
+    "packageLock": {
+      "path": "package-lock.json",
+      "sha256": "b59a0b82e8430962d8a5229d2e04d7c440efa4fbd59bc7ba92e5cc357e65fb91"
+    }
+  },
+  "productionSource": [
+    {
+      "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv.zig",
+      "sha256": "2a168a62be39cb71172fd85ed1d110011aefbad8b336d159f4df96d525fe410f"
+    },
+    {
+      "path": "runtime/zig/src/compiler/wgsl/emit/spirv/spirv_builder.zig",
+      "sha256": "d6f37663544fb2c2ed718c93b29890192b3bc6e7524a3e987254b9717bd5beb2"
+    },
+    {
+      "path": "runtime/zig/src/compiler/wgsl/emit/spirv/spirv_spec.zig",
+      "sha256": "e9386d54b5daa65a28e32f3cbf11f6d5cac4625e3244c43d930ee68ceb5667a9"
+    },
+    {
+      "path": "runtime/zig/tests/wgsl/emit_spirv_builder_test.zig",
+      "sha256": "14a72389e20ad2c27f60a19677e4dd5f855ce9e8bc1440aa52cd19c7e8ec39e5"
+    },
+    {
+      "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+      "sha256": "fe2379c6cd02273663f15504ab5305a51ea71f527bc724469d1b1d8a9cb367b1"
+    }
+  ],
+  "selectedFamily": "UMAP attractive/repulsive SGD; larger diagnostic pass time than apply-forces.",
+  "hypothesis": "Repeated immutable integer addressing and uniform loads inside loops consume final generated instructions.",
+  "experiment": "A function-owned dominated scope hoisted modular integer arithmetic over existing SSA values and fixed uniform member loads; floating arithmetic, division, calls and mutable memory remained at original evaluation points.",
+  "disposition": {
+    "loopInvariantCandidate": "rejected; removed from production and retained as patch",
+    "reason": "No declared GPU gain and repeated complete-operation median regression above the frozen bound.",
+    "privateInitializationRepair": "retained",
+    "speedAdvantageEstablished": false,
+    "ordinaryMaterialMilestoneComplete": false
+  },
+  "validation": {
+    "combinedSuites": {
+      "passes": 5850,
+      "skips": 22,
+      "overlapBetweenSuites": true,
+      "log": "test-final.log.gz"
+    },
+    "publicChecks": {
+      "fixed": 64,
+      "dawn": 64,
+      "baselineFailures": 4,
+      "baselineFailure": "zero-iteration private calls returned untouched storage value 5 instead of required zero",
+      "fixedLog": "shader-semantics-fixed-valid.log.gz",
+      "dawnLog": "shader-semantics-dawn-valid.log.gz",
+      "baselineLog": "shader-semantics-baseline-valid.log.gz"
+    },
+    "spirv": "spirv-validation.json and fixed-validation.json",
+    "doppler": "doppler-result.json",
+    "fixedUMAPSgdPublicBinaryIdenticalToBaseline": true,
+    "packageContracts": {
+      "status": "pass",
+      "artifact": "package-contracts.log.gz"
+    }
+  },
+  "privateFailureBoundary": {
+    "required": "Private WGSL declarations with no initializer have a zero initial value.",
+    "specification": "https://www.w3.org/TR/WGSL/#var-declarations",
+    "before": "SPIR-V OpVariable Private without initializer, allowing undefined contents.",
+    "repair": "Global emitter supplies type-correct OpConstantNull through the existing builder constant owner; explicit initializers and external buffers retain their behavior.",
+    "cacheInvalidation": "Existing translation contract hashes compiler source content; compiler changes invalidate translations."
+  },
+  "failedProbes": [
+    {
+      "failure": "8192 query count exceeds Dawn device limit 4096; zero timestamps invalid",
+      "exclusion": "Use only corrected 2048-query captures with error scopes."
+    },
+    {
+      "failure": "512-vertex diagnostic input fails frozen cluster oracle on both runtimes",
+      "exclusion": "All sixteen failed processes retained; excluded from timing acceptance."
+    },
+    {
+      "failure": "Independent Dawn rejected fixture variable named alias, a WGSL keyword",
+      "repair": "Rename fixture variable pointerAlias; all valid physical checks pass on both providers. Doe acceptance of keyword as identifier remains a separately identified frontend validation gap."
+    },
+    {
+      "failure": "Initial private-fix build used unsupported CLI argument and step; corrected build subsequently failed formatting gate",
+      "repair": "Correct build arguments and apply zig fmt; complete suites pass."
+    }
+  ],
+  "limitations": [
+    "Driver instruction counts and static latency estimates are not execution measurements.",
+    "Timestamp instrumentation adds resolve/copy/readback; it cannot establish ordinary application speed.",
+    "Some initial timestamp captures overlapped compiler diagnostic builds.",
+    "Compilation allocation counters observe arena backing allocations, not every internal allocation call.",
+    "Compilation results are a single diagnostic pair, not a reliable speed claim.",
+    "Peak process-tree RSS is not physical GPU residency.",
+    "Doppler check covers retained kernels and shapes, not full-model inference.",
+    "Browser replacement, installed release qualification, device loss and conformance remain separate."
+  ],
+  "nextAction": "Locate a generated-program cost with a measurable application contribution before selecting another general SPIR-V transformation. Preserve the accepted Vulkan baseline."
+}

@@ -1,0 +1,542 @@
+{
+  "classification": "diagnostic",
+  "extraResolveCopyReadback": true,
+  "quantizationDisabledForDawn": true,
+  "samplesPerProcess": {
+    "warmupExcluded": 1,
+    "measured": 3
+  },
+  "cohorts": [
+    {
+      "cohort": 1,
+      "lane": "baseline",
+      "passingProcesses": 8,
+      "measuredOperations": [
+        {
+          "sgdSumNs": 1985383,
+          "applySumNs": 1075405,
+          "sgdPassMedianNs": 3768.0
+        },
+        {
+          "sgdSumNs": 2005245,
+          "applySumNs": 1074958,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1903531,
+          "applySumNs": 1025541,
+          "sgdPassMedianNs": 3768.0
+        },
+        {
+          "sgdSumNs": 1931102,
+          "applySumNs": 1059961,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2008172,
+          "applySumNs": 1094525,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1907312,
+          "applySumNs": 1042825,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1902263,
+          "applySumNs": 1039124,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1899127,
+          "applySumNs": 1038219,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1909463,
+          "applySumNs": 1039898,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1929018,
+          "applySumNs": 1048551,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2148727,
+          "applySumNs": 1163409,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1987774,
+          "applySumNs": 1083063,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2008732,
+          "applySumNs": 1087824,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1904939,
+          "applySumNs": 1041062,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1909292,
+          "applySumNs": 1037808,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1959157,
+          "applySumNs": 1062424,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2009340,
+          "applySumNs": 1086544,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1987336,
+          "applySumNs": 1070125,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1932635,
+          "applySumNs": 1058492,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2062776,
+          "applySumNs": 1124892,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1903703,
+          "applySumNs": 1036861,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2003601,
+          "applySumNs": 1097524,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2068819,
+          "applySumNs": 1129022,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1927457,
+          "applySumNs": 1046278,
+          "sgdPassMedianNs": 3807.0
+        }
+      ],
+      "p50": {
+        "sgdSumNs": 1945896.0,
+        "applySumNs": 1061192.5,
+        "sgdPassMedianNs": 3807.0
+      }
+    },
+    {
+      "cohort": 2,
+      "lane": "candidate",
+      "passingProcesses": 8,
+      "measuredOperations": [
+        {
+          "sgdSumNs": 1986607,
+          "applySumNs": 1096051,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2103555,
+          "applySumNs": 1154792,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1987867,
+          "applySumNs": 1096723,
+          "sgdPassMedianNs": 3767.5
+        },
+        {
+          "sgdSumNs": 1964132,
+          "applySumNs": 1071665,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2059200,
+          "applySumNs": 1125813,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1885858,
+          "applySumNs": 1035441,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2022397,
+          "applySumNs": 1113364,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2042196,
+          "applySumNs": 1125772,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1892756,
+          "applySumNs": 1036928,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1941666,
+          "applySumNs": 1069078,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2021279,
+          "applySumNs": 1112348,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1902443,
+          "applySumNs": 1045836,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1949187,
+          "applySumNs": 1074394,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2154105,
+          "applySumNs": 1187180,
+          "sgdPassMedianNs": 3768.0
+        },
+        {
+          "sgdSumNs": 1991584,
+          "applySumNs": 1092635,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1882147,
+          "applySumNs": 1026838,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2106926,
+          "applySumNs": 1141780,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1884179,
+          "applySumNs": 1028623,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1916290,
+          "applySumNs": 1059404,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2028519,
+          "applySumNs": 1116804,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2030692,
+          "applySumNs": 1116236,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1948297,
+          "applySumNs": 1073268,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2026930,
+          "applySumNs": 1108423,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1989582,
+          "applySumNs": 1088855,
+          "sgdPassMedianNs": 3767.0
+        }
+      ],
+      "p50": {
+        "sgdSumNs": 1988724.5,
+        "applySumNs": 1094343.0,
+        "sgdPassMedianNs": 3767.0
+      }
+    },
+    {
+      "cohort": 3,
+      "lane": "candidate",
+      "passingProcesses": 8,
+      "measuredOperations": [
+        {
+          "sgdSumNs": 1905936,
+          "applySumNs": 1044230,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2134224,
+          "applySumNs": 1154952,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1890254,
+          "applySumNs": 1029997,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1974522,
+          "applySumNs": 1089512,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2046061,
+          "applySumNs": 1128946,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1893235,
+          "applySumNs": 1037803,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1967162,
+          "applySumNs": 1072478,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2151776,
+          "applySumNs": 1164690,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1888727,
+          "applySumNs": 1030960,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1993143,
+          "applySumNs": 1082011,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2072942,
+          "applySumNs": 1127774,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1975471,
+          "applySumNs": 1077250,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1947615,
+          "applySumNs": 1067988,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2174216,
+          "applySumNs": 1188058,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2020990,
+          "applySumNs": 1103300,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1994144,
+          "applySumNs": 1095040,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2067490,
+          "applySumNs": 1130236,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1894037,
+          "applySumNs": 1040850,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1993482,
+          "applySumNs": 1098973,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 2055873,
+          "applySumNs": 1139483,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1894304,
+          "applySumNs": 1043982,
+          "sgdPassMedianNs": 3767.0
+        },
+        {
+          "sgdSumNs": 1929621,
+          "applySumNs": 1065428,
+          "sgdPassMedianNs": 3768.0
+        },
+        {
+          "sgdSumNs": 2055662,
+          "applySumNs": 1132112,
+          "sgdPassMedianNs": 3768.0
+        },
+        {
+          "sgdSumNs": 1898168,
+          "applySumNs": 1045791,
+          "sgdPassMedianNs": 3767.0
+        }
+      ],
+      "p50": {
+        "sgdSumNs": 1984307.0,
+        "applySumNs": 1085761.5,
+        "sgdPassMedianNs": 3767.0
+      }
+    },
+    {
+      "cohort": 4,
+      "lane": "baseline",
+      "passingProcesses": 8,
+      "measuredOperations": [
+        {
+          "sgdSumNs": 1950012,
+          "applySumNs": 1069560,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1957564,
+          "applySumNs": 1068632,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1907294,
+          "applySumNs": 1043100,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1979572,
+          "applySumNs": 1076691,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2119754,
+          "applySumNs": 1149064,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2002753,
+          "applySumNs": 1091466,
+          "sgdPassMedianNs": 3847.0
+        },
+        {
+          "sgdSumNs": 1932668,
+          "applySumNs": 1049905,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2101348,
+          "applySumNs": 1137646,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1897678,
+          "applySumNs": 1029922,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1977922,
+          "applySumNs": 1073599,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2098076,
+          "applySumNs": 1138502,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1923139,
+          "applySumNs": 1043464,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1946370,
+          "applySumNs": 1057124,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2154654,
+          "applySumNs": 1161530,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1900518,
+          "applySumNs": 1031201,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1973905,
+          "applySumNs": 1069949,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2204346,
+          "applySumNs": 1184122,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1903014,
+          "applySumNs": 1032048,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1975918,
+          "applySumNs": 1078010,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2011422,
+          "applySumNs": 1095604,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1903565,
+          "applySumNs": 1037450,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2047446,
+          "applySumNs": 1103850,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 2197699,
+          "applySumNs": 1186126,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "sgdSumNs": 1911865,
+          "applySumNs": 1034895,
+          "sgdPassMedianNs": 3807.0
+        }
+      ],
+      "p50": {
+        "sgdSumNs": 1974911.5,
+        "applySumNs": 1071774.0,
+        "sgdPassMedianNs": 3807.0
+      }
+    }
+  ],
+  "validation": "2048-query valid captures only; failed 8192-query probes excluded",
+  "cpuContentionCaveat": "Some initial GPU diagnostic captures overlapped compiler diagnostic builds; no instrumented result establishes application speed.",
+  "schemaVersion": 1
+}

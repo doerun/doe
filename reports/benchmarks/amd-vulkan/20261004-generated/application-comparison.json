@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "vulkan-generated-unchanged-application-comparison",
+  "classification": "diagnostic",
+  "instrumentationDisabled": true,
+  "cacheState": "Fresh processes, populated shared shader and driver disk caches; empty caches not measured.",
+  "evaluationPolicy": {
+    "source": {
+      "path": "config/vulkan-submission-evaluation.json",
+      "sha256": "04aa9433fefae292bf3614eeb5c68dda8b433ed4edbbb61b4fb7a73ee86e8e5e"
+    },
+    "content": {
+      "schemaVersion": 1,
+      "cohortOrder": [
+        "baseline-1",
+        "candidate-1",
+        "candidate-2",
+        "baseline-2"
+      ],
+      "cleanProcessesPerLane": 10,
+      "maxRegressionFraction": 0.05,
+      "requiredRegressingPairs": 2,
+      "regressionMetrics": [
+        "selectedOperationLatencyMs.p50",
+        "selectedOperationLatencyMs.p95",
+        "cleanProcessLatencyMs.p50",
+        "cleanProcessLatencyMs.p95",
+        "peakProcessTreeRssBytes"
+      ],
+      "materialPerformanceContract": "bench/external-projects/umap-gpu/sgd-benchmark.harness.json"
+    }
+  },
+  "cohorts": [
+    {
+      "cohort": 1,
+      "lane": "baseline",
+      "receipt": {
+        "path": "reports/benchmarks/amd-vulkan/20261004-generated/1-baseline-receipt-summary.json.gz",
+        "sha256": "bd77b8f82a6cafd054bcd4ffd4aa95ba516cfd3fb8b28af8bcb67c8744f8382e"
+      },
+      "doe": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 298680320,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 14.438717999999994,
+          "p95": 17.517025999999987,
+          "p99": 19.49387999999999
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 616.601801,
+          "p95": 668.492945,
+          "p99": 668.492945
+        }
+      },
+      "dawn": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 304082944,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 17.153640999999993,
+          "p95": 28.026512000000025,
+          "p99": 28.429710999999998
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 634.182899,
+          "p95": 671.28683,
+          "p99": 671.28683
+        }
+      },
+      "reportedMaterialDawnWin": true,
+      "outputIdentities": {
+        "I0": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "I1": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "W0": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "D0": [
+          "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+        ]
+      }
+    },
+    {
+      "cohort": 2,
+      "lane": "candidate",
+      "receipt": {
+        "path": "reports/benchmarks/amd-vulkan/20261004-generated/2-candidate-receipt-summary.json.gz",
+        "sha256": "7e347bf4480a5c98575b20815e98c0529f134f2b319fbf9fce6ad9988ffd8fd7"
+      },
+      "doe": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 298876928,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 15.51293099999998,
+          "p95": 18.350284999999985,
+          "p99": 19.589148999999964
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 625.202749,
+          "p95": 653.271259,
+          "p99": 653.271259
+        }
+      },
+      "dawn": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 304816128,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 15.869451999999967,
+          "p95": 25.227108999999984,
+          "p99": 26.906682999999987
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 621.081286,
+          "p95": 656.086794,
+          "p99": 656.086794
+        }
+      },
+      "reportedMaterialDawnWin": false,
+      "outputIdentities": {
+        "I0": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "I1": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "W0": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "D0": [
+          "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+        ]
+      }
+    },
+    {
+      "cohort": 3,
+      "lane": "candidate",
+      "receipt": {
+        "path": "reports/benchmarks/amd-vulkan/20261004-generated/3-candidate-receipt-summary.json.gz",
+        "sha256": "1f543b17b156d59d7968e09d75c85ec11b4fdae875a330ff62673b686f8d34a9"
+      },
+      "doe": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 299212800,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 15.563926999999978,
+          "p95": 18.852851999999984,
+          "p99": 19.287590999999964
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 626.212586,
+          "p95": 648.704433,
+          "p99": 648.704433
+        }
+      },
+      "dawn": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 304492544,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 15.672660999999948,
+          "p95": 25.668188999999984,
+          "p99": 26.400599
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 629.478009,
+          "p95": 666.464027,
+          "p99": 666.464027
+        }
+      },
+      "reportedMaterialDawnWin": false,
+      "outputIdentities": {
+        "I0": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "I1": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "W0": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "D0": [
+          "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+        ]
+      }
+    },
+    {
+      "cohort": 4,
+      "lane": "baseline",
+      "receipt": {
+        "path": "reports/benchmarks/amd-vulkan/20261004-generated/4-baseline-receipt-summary.json.gz",
+        "sha256": "e4ec19a27c8d5c0c56994d5c793263b9247502f01faf02e4162fed78ad9d0580"
+      },
+      "doe": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 297897984,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 14.309864000000005,
+          "p95": 16.207699000000048,
+          "p99": 16.355969000000016
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 618.239855,
+          "p95": 640.776948,
+          "p99": 640.776948
+        }
+      },
+      "dawn": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 305086464,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 15.900751000000014,
+          "p95": 25.203022999999973,
+          "p99": 30.83826799999997
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 624.877549,
+          "p95": 646.622159,
+          "p99": 646.622159
+        }
+      },
+      "reportedMaterialDawnWin": true,
+      "outputIdentities": {
+        "I0": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "I1": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "W0": [
+          "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+        ],
+        "D0": [
+          "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+        ]
+      }
+    }
+  ],
+  "pairedComparisons": [
+    {
+      "baselineCohort": 1,
+      "candidateCohort": 2,
+      "candidateOverBaseline": {
+        "selectedOperationLatencyMs.p50": 1.0743980871431928,
+        "selectedOperationLatencyMs.p95": 1.0475685199074316,
+        "cleanProcessLatencyMs.p50": 1.0139489504994164,
+        "cleanProcessLatencyMs.p95": 0.9772298479529953,
+        "peakProcessTreeRssBytes": 1.0006582556226
+      }
+    },
+    {
+      "baselineCohort": 4,
+      "candidateCohort": 3,
+      "candidateOverBaseline": {
+        "selectedOperationLatencyMs.p50": 1.0876362626507123,
+        "selectedOperationLatencyMs.p95": 1.1632034874290256,
+        "cleanProcessLatencyMs.p50": 1.0128958541503281,
+        "cleanProcessLatencyMs.p95": 1.012371676329405,
+        "peakProcessTreeRssBytes": 1.0044136451759271
+      }
+    }
+  ],
+  "regressingPairCounts": {
+    "selectedOperationLatencyMs.p50": 2,
+    "selectedOperationLatencyMs.p95": 1,
+    "cleanProcessLatencyMs.p50": 0,
+    "cleanProcessLatencyMs.p95": 0,
+    "peakProcessTreeRssBytes": 0
+  },
+  "candidateRejected": true,
+  "claimCredit": false
+}

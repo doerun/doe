@@ -430,6 +430,49 @@ test "spirv private global: variable remains private storage" {
     try testing.expect(has_spirv_variable_with_storage_class(binary, spirv.StorageClass.Private));
 }
 
+test "spirv private default values have a typed zero initializer" {
+    for ([_][]const u8{ "u32", "bool", "vec4f", "mat2x2f", "array<u32, 3>", "State" }) |ty| {
+        const source = try std.fmt.allocPrint(allocator, "struct State {{ v: vec4f, a: array<u32, 2> }}\nvar<private> state: {s};\n@compute @workgroup_size(1) fn main() {{}}", .{ty});
+        defer allocator.free(source);
+        var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+        const binary = out[0..try translateToSpirv(allocator, source, &out)];
+        var zero_id: u32 = 0;
+        var initialized_private = false;
+        var i: usize = 5;
+        while (i < binary.len / 4) {
+            const header = read_u32_le(binary, i * 4);
+            const opcode = header & 0xffff;
+            const count = header >> 16;
+            if (opcode == spirv.Opcode.ConstantNull) zero_id = read_u32_le(binary, (i + 2) * 4);
+            if (opcode == spirv.Opcode.Variable and read_u32_le(binary, (i + 3) * 4) == spirv.StorageClass.Private) {
+                try testing.expectEqual(@as(u32, 5), count);
+                try testing.expect(zero_id != 0);
+                try testing.expectEqual(zero_id, read_u32_le(binary, (i + 4) * 4));
+                initialized_private = true;
+            }
+            i += count;
+        }
+        try testing.expect(initialized_private);
+    }
+}
+
+fn exercise_private_initialization(alloc: std.mem.Allocator) !void {
+    const source =
+        \\struct State { a: array<u32, 2>, b: vec4f }
+        \\var<private> a: State;
+        \\var<private> b: State;
+        \\var<private> flag: bool;
+        \\@compute @workgroup_size(1) fn main() {}
+    ;
+    const output = try alloc.alloc(u8, MAX_SPIRV_OUTPUT);
+    defer alloc.free(output);
+    _ = try translateToSpirv(alloc, source, output);
+}
+
+test "spirv private zero constants unwind allocation failure" {
+    try testing.checkAllAllocationFailures(allocator, exercise_private_initialization, .{});
+}
+
 test "spirv private global: struct member value loads" {
     const source =
         \\struct State {

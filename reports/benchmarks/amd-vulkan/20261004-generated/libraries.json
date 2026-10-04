@@ -1,0 +1,47 @@
+{
+  "baseline": {
+    "libraryPath": "bench/out/vulkan-submission/20261004/candidate/lib/libwebgpu_doe.so",
+    "sha256": "e4c6a19214850fe5a176cb54a0b60e880f2896f10a47b9fd1f059d8b289af0c0",
+    "metadata": {
+      "schemaVersion": 1,
+      "artifact": "libwebgpu_doe",
+      "leanVerifiedBuild": false,
+      "proofArtifactSha256": null,
+      "wgslCompilerSourceSha256": "ded7d7e8c0bfcc4ebc18381aadb87958faf53c5e7727d22dd6242ab9bf0b66eb",
+      "shaderTranslationCacheSourceSha256": "098a68f68fea41c9cb3f15495ba0a3c23c35ca0bed7c793f155011b9a3c05bd4",
+      "pipelineCacheSourceSha256": "eb10699a0de97452d281dc6629eda1fa8b0b7b0b9dc42f5a09e14a43553378df"
+    },
+    "retainedArchive": "bench/out/vulkan-generated/20261004/baseline-runtime.tgz",
+    "archiveSha256": "28196f09e57d8c257c8a67421d20beff0de50ef158b0493846e342ad423c4b31"
+  },
+  "rejectedCandidate": {
+    "libraryPath": "bench/out/vulkan-generated/20261004/candidate-uniform/lib/libwebgpu_doe.so",
+    "sha256": "a84ad647adb3b33b986c8f1168a3a2f1be52b09c1376ed00526815b5004cad0f",
+    "metadata": {
+      "schemaVersion": 1,
+      "artifact": "libwebgpu_doe",
+      "leanVerifiedBuild": false,
+      "proofArtifactSha256": null,
+      "wgslCompilerSourceSha256": "b9b8ccc23ef666de0785ca51540fe9f6fb17df63459b6724be5933e7af550fc2",
+      "shaderTranslationCacheSourceSha256": "098a68f68fea41c9cb3f15495ba0a3c23c35ca0bed7c793f155011b9a3c05bd4",
+      "pipelineCacheSourceSha256": "eb10699a0de97452d281dc6629eda1fa8b0b7b0b9dc42f5a09e14a43553378df"
+    },
+    "retainedArchive": "bench/out/vulkan-generated/20261004/rejectedCandidate-runtime.tgz",
+    "archiveSha256": "6a6af331044326cbe48b8d88f2c7ba512b66a81dd76009d9e06278824eab36d1"
+  },
+  "privateFix": {
+    "libraryPath": "bench/out/vulkan-generated/20261004/private-fix/lib/libwebgpu_doe.so",
+    "sha256": "d77974365d9752c2cafabb1638c9ad76b9535d34ca25d3e5e8f73e3abd7d3aea",
+    "metadata": {
+      "schemaVersion": 1,
+      "artifact": "libwebgpu_doe",
+      "leanVerifiedBuild": false,
+      "proofArtifactSha256": null,
+      "wgslCompilerSourceSha256": "49fcd10c7b8316d4276404ce08864ff520fbc581f1be2f8c979d58a8e88e23f8",
+      "shaderTranslationCacheSourceSha256": "098a68f68fea41c9cb3f15495ba0a3c23c35ca0bed7c793f155011b9a3c05bd4",
+      "pipelineCacheSourceSha256": "eb10699a0de97452d281dc6629eda1fa8b0b7b0b9dc42f5a09e14a43553378df"
+    },
+    "retainedArchive": "bench/out/vulkan-generated/20261004/privateFix-runtime.tgz",
+    "archiveSha256": "905a57cd7dabad8b3b719e804f90bea41f684a9a9132d4b100fa0261e06dc42f"
+  }
+}

@@ -1,0 +1,751 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "vulkan-generated-curated-artifact-index",
+  "artifacts": [
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/1-baseline-raw-benchmark.json.gz",
+      "sha256": "612d5db120813a1cc225fc7a6d49199c193b91eaaca3dbcda8a20901a28e211e",
+      "bytes": 15679
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/1-baseline-receipt-summary.json.gz",
+      "sha256": "bd77b8f82a6cafd054bcd4ffd4aa95ba516cfd3fb8b28af8bcb67c8744f8382e",
+      "bytes": 2925
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/2-candidate-raw-benchmark.json.gz",
+      "sha256": "7fed670ef381277023a2a6813bffdda18e98536e21de995e5883949d7619c134",
+      "bytes": 15750
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/2-candidate-receipt-summary.json.gz",
+      "sha256": "7e347bf4480a5c98575b20815e98c0529f134f2b319fbf9fce6ad9988ffd8fd7",
+      "bytes": 2928
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/3-candidate-raw-benchmark.json.gz",
+      "sha256": "24751d93bb1413ca3a4152f7fea28147b5c4cc1da78aeb9cce97e5f109bcb0c8",
+      "bytes": 15720
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/3-candidate-receipt-summary.json.gz",
+      "sha256": "1f543b17b156d59d7968e09d75c85ec11b4fdae875a330ff62673b686f8d34a9",
+      "bytes": 2911
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/4-baseline-raw-benchmark.json.gz",
+      "sha256": "60f49aedfe1437e632ecdc8d61d7a5758299a87697809ea8dff6a90deeb293a7",
+      "bytes": 15652
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/4-baseline-receipt-summary.json.gz",
+      "sha256": "e4ec19a27c8d5c0c56994d5c793263b9247502f01faf02e4162fed78ad9d0580",
+      "bytes": 2926
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/README.md",
+      "sha256": "28d42c457b9d3fabee0686952577a3925a2c066b14f1a0cd202e784564d3c06d",
+      "bytes": 7033
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/application-comparison.json",
+      "sha256": "e35cbeff777aff8962c73ad8d4561205d7daa9360428a4eaabb57134fda5f16f",
+      "bytes": 9623
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/baseline-allocation-build.log.gz",
+      "sha256": "3047db8cfe9a7bdf84de588561d645e968211a01f3550d5a830517cb9942a72b",
+      "bytes": 149
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/baseline-apply-forces-compile.jsonl.gz",
+      "sha256": "8ac6aa2ca497addb50885ab9fca46d9026acb2fccbcefb7ac9471d5419ace121",
+      "bytes": 342
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/baseline-apply-forces-compile.jsonl.spv.gz",
+      "sha256": "3c35b4b12b8f304011832e8ff0d99a1f58e2a2d238a3fc28994c775f7171bfb1",
+      "bytes": 643
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/baseline-apply-forces-compile.log.gz",
+      "sha256": "c94984c1d97bfe97e587bfe9144dabc94f445db85966457c80bee3b38ae6e788",
+      "bytes": 214
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/baseline-compiler-diagnostic.patch.gz",
+      "sha256": "113698f19cf99637e4b0605ed4abdcde3ead093696cc2773c4b91384d50d0f11",
+      "bytes": 539
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/baseline-sgd-compile.jsonl.gz",
+      "sha256": "eb6c01131274eede6e2745028148ac9fdfef4bbecbc3c06f65d27a9b0ff1089a",
+      "bytes": 341
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/baseline-sgd-compile.jsonl.spv.gz",
+      "sha256": "6fb4017b905e3be235ee65089b2668f2223b040bcbea4525b634d91c8f462f23",
+      "bytes": 2683
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/baseline-sgd-compile.log.gz",
+      "sha256": "8e08d8a81055d304e0ffe062e875a3956a5f5eddcea708a0a93c4ae69ea3d329",
+      "bytes": 208
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-allocation-build.log.gz",
+      "sha256": "234b5d30247b41a36301bfa54ab0de11a4286850fad5ca67ae9b9a217dfaa1e4",
+      "bytes": 149
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-apply-forces-compile.jsonl.gz",
+      "sha256": "345fb83d90a21a86403fd56379168c397027a9be2d17b84d36a30518410826dc",
+      "bytes": 344
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-apply-forces-compile.jsonl.spv.gz",
+      "sha256": "3c35b4b12b8f304011832e8ff0d99a1f58e2a2d238a3fc28994c775f7171bfb1",
+      "bytes": 643
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-apply-forces-compile.log.gz",
+      "sha256": "43bc75c100c416ba83bda36ee8563334b927f7adc7b8540697e3a95c94cfc1c8",
+      "bytes": 212
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-build.log.gz",
+      "sha256": "97bc03a50351899179a4ff47dfcbe32b6ad3f46eacb214ad7d9f6fa584b664c4",
+      "bytes": 835
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-compiler-diagnostic.patch.gz",
+      "sha256": "113698f19cf99637e4b0605ed4abdcde3ead093696cc2773c4b91384d50d0f11",
+      "bytes": 539
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-driver.log.gz",
+      "sha256": "5d569ffa9b46186a878dcc90272e803e6e38fd27c9c32b9bfc81d1b5a76e0fe5",
+      "bytes": 10832
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-sgd-compile.jsonl.gz",
+      "sha256": "aac2353ff1fec6780c83f7b90ef313511716ba5c5ccd27bc88883051433804e7",
+      "bytes": 336
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-sgd-compile.jsonl.spv.gz",
+      "sha256": "167853535fe7700c0ac12d56de29d4bf54bed73e15f65f1e8f5f8ee775a43737",
+      "bytes": 2674
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-sgd-compile.log.gz",
+      "sha256": "71da3cdc58d51a40e12c02d0ed83184b538942aa63a971e686cf6a9b0efa4d9d",
+      "bytes": 207
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-timestamps.log.gz",
+      "sha256": "d302d5dde5bb9943ff781601b9c28a8d83cbf23c4de516150458ef3834e3690c",
+      "bytes": 8603
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-uniform-build.log.gz",
+      "sha256": "b010e4667eacaeaa6ec1959a9642327c48dd74d081275b5f38bb63773f75e994",
+      "bytes": 830
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/candidate-uniform-driver.log.gz",
+      "sha256": "c63ecb418012027211652aa147a5392dc80fe0a92cf8bcd15aa4f79e89af67de",
+      "bytes": 8559
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/catscan-gate.log.gz",
+      "sha256": "51de57509544e2892c788b3fd8acbe6b6ce45cebe827d76361523e344cb284a0",
+      "bytes": 74
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/compiler-costs.json",
+      "sha256": "07fd37759f651f62d3f7a9a815e7b2ba247cc878135f83a4786a6f95cae83bf2",
+      "bytes": 3681
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/dawn-driver.stderr.gz",
+      "sha256": "72377ee39d1381564b5e62aa914230f233498e1f24f8b7651ab7b5cf9344b021",
+      "bytes": 49593
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/dawn-driver.stdout.gz",
+      "sha256": "206ad8d40cc55490cd2e9bc43bbf7c86dab7daeade20c7511b890d165ffa6a52",
+      "bytes": 983
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/dawn-provider.js",
+      "sha256": "3698baafd008746d10fc09ffaf04c890ad7edf451192e2ddca21fccac1a2413e",
+      "bytes": 573
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/dawn-timestamps.log.gz",
+      "sha256": "c82044e78286234a81866a9bac8b333b5a8a2939c8b361f3221a0a2fae92bfe3",
+      "bytes": 10959
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/dawn-unquantized-timestamps.log.gz",
+      "sha256": "d2997316c36d8e10c9547f9e8e470f3cc0bbe51ce18ccbad020653094ca7c59a",
+      "bytes": 10966
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/dawn-valid-timestamps.log.gz",
+      "sha256": "8ddb61064b959a31e7ee2e978e7946a595a08ddb21359fe4e50636999d6de2df",
+      "bytes": 8562
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/doc-links-final.log.gz",
+      "sha256": "4e07a848bf26784dd6d8c5a024cdafa640716fa81bc7ed01b213e667643cbaa7",
+      "bytes": 51
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/doc-links.log.gz",
+      "sha256": "f3fe4639d00181eea1118160232efdde304d19485cf6781c9c13283b2e166f58",
+      "bytes": 51
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/doe-driver.stderr.gz",
+      "sha256": "ca4feee40fd1f23f3dd31b271467e13bfd4546936c666d05f84bc4e7a4fd97ee",
+      "bytes": 9522
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/doe-driver.stdout.gz",
+      "sha256": "2f2810272013d82006a0883399e8cac1148b5fc327cf1b979565fe32555bd0e4",
+      "bytes": 979
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/doe-timestamps.log.gz",
+      "sha256": "2481858fb268e99f7ba4b8079b571499a74c7a96f3520ac4af1cd60705aa999c",
+      "bytes": 8499
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/doe-valid-timestamps.log.gz",
+      "sha256": "230d9aaf325722dfa4e8597e562e046fdc255253e72c561df458f515a4bfaa25",
+      "bytes": 7911
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/doppler-D0.json",
+      "sha256": "31160f02912224c4a9e507c7d9c5ff42cdffafbb66bb9de9318a4424bec5ca68",
+      "bytes": 6523
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/doppler-P0.json",
+      "sha256": "448191b8356aeb57a6315fc216e357b10ca5b9f77f35980239bc85923ab4f302",
+      "bytes": 6544
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/doppler-fixed.log.gz",
+      "sha256": "aea08f42b59709bfbd089441d7bf496a4bdce8a59931b026af3e98c607040904",
+      "bytes": 183
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/doppler-result.json",
+      "sha256": "1a4c15717565c83a38ddadf2edd252137bb7a650a6a5ef8069ed14c555256a74",
+      "bytes": 2994
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/driver-statistics.json",
+      "sha256": "1692dbc1946be2e0294a426e969fa6fca9a4b11b6dee7bd237e913ce38c87911",
+      "bytes": 6196
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-allocation-build.log.gz",
+      "sha256": "c970cf6933eb9e066cf5db1215961c799cf271cc89e78c83b01414067aef1e75",
+      "bytes": 149
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-private-aggregate.jsonl.gz",
+      "sha256": "8ae5e39668d39dd30ab8965acd9ac80b546b1bd1f96c79f64333deb71386679e",
+      "bytes": 317
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-private-aggregate.jsonl.spv.gz",
+      "sha256": "d0153cb56d51a074a28b3307aa06c08ed11b3b822a64e4673c6526e8b56b5817",
+      "bytes": 313
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-private-aggregate.log.gz",
+      "sha256": "ba8edda172fabc6e67ece5a89555bc16690ae24cf43cc4d46a88877e98a03c59",
+      "bytes": 204
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-private-zero.jsonl.gz",
+      "sha256": "b088ba6085d726a750011ae4d8b25f83885fa48146d858970adf2bae363b59ce",
+      "bytes": 316
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-private-zero.jsonl.spv.gz",
+      "sha256": "599749f9322e3d78823d031c0efada8e34181e46a3a7a5413bffa9621905b60f",
+      "bytes": 319
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-private-zero.log.gz",
+      "sha256": "6797509e1f698ce37f3dc92ed31dd4a81e63a64c3fe9bf16d8552fc1d23b833b",
+      "bytes": 201
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-sgd.jsonl.gz",
+      "sha256": "42e3f6f96165e2f895312bb46efae60952faf3bb77782d995670278b9fea8816",
+      "bytes": 310
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-sgd.jsonl.spv.gz",
+      "sha256": "6fb4017b905e3be235ee65089b2668f2223b040bcbea4525b634d91c8f462f23",
+      "bytes": 2683
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-sgd.log.gz",
+      "sha256": "e53689533be29e894587807da331a58eedcc1f946b9b63095e0327e676642260",
+      "bytes": 197
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/fixed-validation.json",
+      "sha256": "2ba80f392b0398b7aff0305d54074d0f1ec2e54b0104fa484b507ec5302bf954",
+      "bytes": 224
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/generated-evidence.json",
+      "sha256": "cf0ed2067bdc087540fc3b4c52bdd5f0bc528831e46aa100b2e80b6177cccb05",
+      "bytes": 7241
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-1-baseline-1.log.gz",
+      "sha256": "e60024af02c915f29eb18ed052149b8cac8c322970a441a25614ee1beafa92b6",
+      "bytes": 8024
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-1-baseline-2.log.gz",
+      "sha256": "f2693efb22bfaa1f16e7ad74fdf5ae4b6605aad4640a3f6756f8963fa74ce5d8",
+      "bytes": 7872
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-1-baseline-3.log.gz",
+      "sha256": "b1caab2fc929398677f562cc468991a3e497174f07d76d23fc8540c518946ebe",
+      "bytes": 8008
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-1-baseline-4.log.gz",
+      "sha256": "7441707f919c3b9b5824aa8a9572c827e03f212b289afb5bc41010be96f119a7",
+      "bytes": 7940
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-1-baseline-5.log.gz",
+      "sha256": "cd1eae68ad1f5661838f97faa68da79099b9ba7c5eb265d508627e0a5c82a370",
+      "bytes": 7846
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-1-baseline-6.log.gz",
+      "sha256": "367c556c913077b105131da593ca1655bdf1ffc2984812506a31a58f8eece5a0",
+      "bytes": 8063
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-1-baseline-7.log.gz",
+      "sha256": "741d40736edb32ba3e286c8efb118ea45981d51a9707c9e2a1a44197e09d5a7e",
+      "bytes": 8164
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-1-baseline-8.log.gz",
+      "sha256": "6bca02f15159e17af66e64e46838ef1ddf53d153e41c4d5059731f945eae88dc",
+      "bytes": 8161
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-2-candidate-1.log.gz",
+      "sha256": "c7b4652be4eb8668846fc2cad8590716a3cadbe5cb603d8bcae8eda2658d8225",
+      "bytes": 7907
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-2-candidate-2.log.gz",
+      "sha256": "7677a61695b88cfffe685ead90553dc074c2d657c6d67f0e541aecd28e8fa41f",
+      "bytes": 7785
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-2-candidate-3.log.gz",
+      "sha256": "40d1f7c3eacb0db684e99cc6d618cc5a1c4e54605b47622f3509835d7e9f0669",
+      "bytes": 8032
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-2-candidate-4.log.gz",
+      "sha256": "766e30a618ddf9b3bb27c022030c54485604ea26366273537b64551601b39a62",
+      "bytes": 7927
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-2-candidate-5.log.gz",
+      "sha256": "10805eee2ba0cdc8aafe5d3a9cc60de79b88439c6375d0b6c2832755c8748b81",
+      "bytes": 8115
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-2-candidate-6.log.gz",
+      "sha256": "42660d82e9be020618306b335cd74bcccee784e3b381a458e2a0fa7751c72b3b",
+      "bytes": 8007
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-2-candidate-7.log.gz",
+      "sha256": "a040e1712a4992bb5de4dc190414245b202f6a4e2e84a6b32f67269e0eb02692",
+      "bytes": 7995
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-2-candidate-8.log.gz",
+      "sha256": "ef3a649f4e98ecc5abea231acc4628c77f18cdb171ccc359f594671daa434dc4",
+      "bytes": 7938
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-3-candidate-1.log.gz",
+      "sha256": "369714bf3646867f83de163229be74fab0216ca2d756c37fa94b64a3add61e95",
+      "bytes": 8064
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-3-candidate-2.log.gz",
+      "sha256": "29f47dbf194d284aa6316552b470f9bea53227cd463dd9568b6d280fa224fd4d",
+      "bytes": 7914
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-3-candidate-3.log.gz",
+      "sha256": "08117508768d55d64757ad8d0099046084c1505d6e752dba664178432867fbeb",
+      "bytes": 8015
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-3-candidate-4.log.gz",
+      "sha256": "470911573984d8dff24cccf5ab4213ac0fcdc7b0cd3d22a73603817b8abe69ee",
+      "bytes": 7998
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-3-candidate-5.log.gz",
+      "sha256": "a3c4fce07c97d0a1551c93ba0881c767b6b8894dc8ced49ec7d82d98e9284c6e",
+      "bytes": 8034
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-3-candidate-6.log.gz",
+      "sha256": "5e8b06fa415579681bd2662f7102c846aa5b4afb48935122f9ef613ff792046f",
+      "bytes": 8078
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-3-candidate-7.log.gz",
+      "sha256": "cfacf94db27181e9035ba4bfe745338544dfdb812759e48efabbba0152fe232a",
+      "bytes": 8049
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-3-candidate-8.log.gz",
+      "sha256": "e34b61348020cf48d2b62337cfd3a6a1d785becae9a0447a5a8d6d160463a89d",
+      "bytes": 7871
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-4-baseline-1.log.gz",
+      "sha256": "362454bb396efee6c1a9562b86861b6e9ca810c21b02c66953ab9b39af74b7e4",
+      "bytes": 7899
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-4-baseline-2.log.gz",
+      "sha256": "d1efc838c11e9b341b99a1ae6b3d7f937ff9fe2d8779cf5029affdd33eee0a90",
+      "bytes": 7978
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-4-baseline-3.log.gz",
+      "sha256": "3803d5e542ea88c5175fbcc239339a6e7e2b7d18d8769a30d3d7a381f060a923",
+      "bytes": 8263
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-4-baseline-4.log.gz",
+      "sha256": "5c2a48a584e6e1c4d6b471efbe22c0962e2bc98c3b37113540882e348cc4512d",
+      "bytes": 7986
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-4-baseline-5.log.gz",
+      "sha256": "5ddd2b72df842bd16f4648cf9f09167125db11ef1032f7ca0bb92e0733bd3b41",
+      "bytes": 7940
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-4-baseline-6.log.gz",
+      "sha256": "c4747c09fe0828073f644bb9a33423922d261521a4bb6802666db195ad43496a",
+      "bytes": 8063
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-4-baseline-7.log.gz",
+      "sha256": "85d0ffcdfad98f0b40138bd462baaed19c23aa91fdff36e3de43a45d1eafe260",
+      "bytes": 8156
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-4-baseline-8.log.gz",
+      "sha256": "bd70ff42d5c6676d3dbfb3c08c0e84359287fd8c461939cc43e7ae5522aab54a",
+      "bytes": 8043
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-policy.json",
+      "sha256": "601eba497352ae8cf19cbe3e0bacd106b0ac58170fcb4f061ac82422fef0da1b",
+      "bytes": 463
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/gpu-timings.json",
+      "sha256": "562a250f933b2c0552c47953bcf799bb0a61d2a1d0678b39a40ed7c9c28d450c",
+      "bytes": 13071
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/invariant-tests.log.gz",
+      "sha256": "c4e91670972009b3c5e4ffe11d89fa9d4810f2dddc3e17356cd5a0bba9aa1e63",
+      "bytes": 701
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-1-baseline-1.log.gz",
+      "sha256": "07f39db2efaa60e338d1e96673ab32a099b6a2ffc2f03e1780007c637119caa1",
+      "bytes": 7836
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-1-baseline-2.log.gz",
+      "sha256": "496447ee6e477c1e1753712d49ddebb6aa272d8ccd96853b2815301753597d81",
+      "bytes": 7956
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-1-baseline-3.log.gz",
+      "sha256": "dfb2d2f75840a54797e90675f3208145b40d0d43ff0ba99e6fb31b384a6be7b9",
+      "bytes": 8234
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-1-baseline-4.log.gz",
+      "sha256": "d074f2508a10ec9e056d1bee7c22cff5c5a29ba713332616488296ea78059783",
+      "bytes": 8305
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-2-candidate-1.log.gz",
+      "sha256": "20e70604d6f1b332adb8f5eade13f23ddf21d7f301835564e1448cf3aba51fbe",
+      "bytes": 7980
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-2-candidate-2.log.gz",
+      "sha256": "e676a8cd976a69c13d03a660491deaa4bf5b32cce61d2ee18c413f1c8ce6b8b0",
+      "bytes": 8189
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-2-candidate-3.log.gz",
+      "sha256": "86d3de51d9357efacf400561374f786aec61c0320c4bb22b049ab72834c3dae3",
+      "bytes": 8413
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-2-candidate-4.log.gz",
+      "sha256": "5732f8ed6df3db7691884935dbc9fb884a5952ed8a896696b3eaa9558d799af0",
+      "bytes": 8662
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-3-candidate-1.log.gz",
+      "sha256": "65382c52ffda06f61f93454105cef251f24e411ae540d4eb49ace4d28cf2f795",
+      "bytes": 8665
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-3-candidate-2.log.gz",
+      "sha256": "01ae0fbf33d3237fcd7777e42c48215323b41a18f87e092ccde92c6ba291bca5",
+      "bytes": 8182
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-3-candidate-3.log.gz",
+      "sha256": "cefecf8b968acd1a6c40674185c9e1f42de8ccf0abe56e4b525e8302352341ab",
+      "bytes": 8320
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-3-candidate-4.log.gz",
+      "sha256": "7bdbe9a2c3dc75eaaa1aa6da5b43f2107d5908e128ea17c6030f074be2cd4e30",
+      "bytes": 8085
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-4-baseline-1.log.gz",
+      "sha256": "55d38b00cc08299ebf0c65fccfbc49b61fbabc2ea05b50447ebe3ec78325f89b",
+      "bytes": 8391
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-4-baseline-2.log.gz",
+      "sha256": "684900514abf8255fb6f3b232e81248c4b38a8f5d2ce0fe19d224dff2036faed",
+      "bytes": 8623
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-4-baseline-3.log.gz",
+      "sha256": "255d509aa5eaf5d9030f2aa984aa58a46acbb018b820b90f9a6de36b7311f57e",
+      "bytes": 8600
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-4-baseline-4.log.gz",
+      "sha256": "7bf800ba3e6ddec06c2a40bac96be1d3fa3ffd7e5edefaa430fa113274998229",
+      "bytes": 8200
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large-policy.json",
+      "sha256": "a4d762477a4d74c86ff3aa5e75efa6d5d97550c97ab45c1b98b11ed90c8ee1b5",
+      "bytes": 631
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/large.inputs.json",
+      "sha256": "fc95bbb20ad31c2e3dc0e2b668ed79262c8b3f9229fe61395fc7b78981d41181",
+      "bytes": 553
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/libraries.json",
+      "sha256": "6453125199dd8e91a5abc2d65442d251542086de31b158b90011a6d8018bd537",
+      "bytes": 2538
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/package-contracts.log.gz",
+      "sha256": "347cffc565aec544703df889a697f443cd298847a62dadf6a3da2c0021c1b58f",
+      "bytes": 1047
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/plain-1-baseline.log.gz",
+      "sha256": "0b78de5701287cb98ff3568ea62aa7f6650671e412c3ae82bcf5f702ba0185ac",
+      "bytes": 259
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/plain-2-candidate.log.gz",
+      "sha256": "4caaf19ef1155c3c2d123524f5de04460e1b0db703880e3d0178bb159f780017",
+      "bytes": 260
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/plain-3-candidate.log.gz",
+      "sha256": "ec223da6f65460ff531c6f8c5ceb725b6defd8367f843351cb02b642ce8fb96d",
+      "bytes": 260
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/plain-4-baseline.log.gz",
+      "sha256": "69faf26bd219d9cea4fd58a657bbbc4d1973754d7932f3fb93dd77aee1392bed",
+      "bytes": 259
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-aggregate.wgsl",
+      "sha256": "d525c149080a99cafd32f4e4d6435505942c934402eee9924228052d387e5614",
+      "bytes": 231
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-fix-build-corrected.log.gz",
+      "sha256": "78d4f184966a284269cb8cca2bb1e811f356568ebd18151b707d91eb294d1453",
+      "bytes": 1159
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-fix-build-final.log.gz",
+      "sha256": "beccdacda86cf235c195e24ce3f8932bd82386930d3ed62720ab9695f31b10ab",
+      "bytes": 350
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-fix-build.log.gz",
+      "sha256": "650ae96cc811277f983f69dde2d3cfbeb105ff857f756a95628b8a3901b8f828",
+      "bytes": 359
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-fix.patch.gz",
+      "sha256": "e61adbca2e639e97757fa49057b20b1a9bf6d3a5697ea4514bafff407e014d67",
+      "bytes": 3966
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-zero-baseline.jsonl.gz",
+      "sha256": "6b238b81e70d3c69aaeb9fe302a548385352e723b98302d4779c02af974655db",
+      "bytes": 314
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-zero-baseline.jsonl.spv.gz",
+      "sha256": "1021ad72f443522ddaed4f988d9593a2252afb7cc636574fa83b8713f60c6176",
+      "bytes": 319
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-zero-baseline.log.gz",
+      "sha256": "6c4443e9973c9887611858a71e2e2fcfedfafb1ebe639adb310ff3fdc4dbb095",
+      "bytes": 201
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-zero-baseline.spvasm",
+      "sha256": "4dd40250da68dcd8a0148513caac4a2196e598b41138e6e7958876fc0a7fcc24",
+      "bytes": 1879
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-zero-fixed.spvasm",
+      "sha256": "f7166aa70f21d5ca927cf86445abf4c499620bcbebdeb370518cb86d7fe675f0",
+      "bytes": 1879
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/private-zero.wgsl",
+      "sha256": "5e719535057260002c77835a56c06f0fd6314d62433743cc5e2e6f455ef68c67",
+      "bytes": 149
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/profile-provider.js",
+      "sha256": "5b19ea501e6ba679632c59c7e9094ad57b424207f3e2df80561f2f8675469b84",
+      "bytes": 2837
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/public-claims.log.gz",
+      "sha256": "5aa2999ef52049568a148d970ffd9e3adb0cb741cc21376b7929ea984879eabb",
+      "bytes": 54
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/rejected-loop-invariants.patch.gz",
+      "sha256": "412244dc9bc965479a537923eddb979909be5c92341f1e39978e23e29ff88174",
+      "bytes": 4723
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/review-log-check.log.gz",
+      "sha256": "b1d52d4981f0ebb7fcb2fc7932a605d970aa3b09f314053d4d074fd8c1283074",
+      "bytes": 82
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/schema-gate-final.log.gz",
+      "sha256": "70f47af569c54daa56a5defb987e89a5732ad8dd4aa2380169c3aa94dfd1a1b6",
+      "bytes": 25
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/schema-gate.log.gz",
+      "sha256": "70f47af569c54daa56a5defb987e89a5732ad8dd4aa2380169c3aa94dfd1a1b6",
+      "bytes": 25
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/shader-semantics-baseline-valid.log.gz",
+      "sha256": "21bf124699525c0e5b8d4a4ba51b37ec9807f541803da3f0216bf24eea66fd65",
+      "bytes": 3049
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/shader-semantics-baseline.log.gz",
+      "sha256": "0a5cf563116de42a7812dc45d19154a05b490d0769a8635f71f48f57f3e684c7",
+      "bytes": 2902
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/shader-semantics-candidate.log.gz",
+      "sha256": "c3948edb5cd3d3d0e67c16c50fde43305cc542af24b7601364f422b3e146ea1f",
+      "bytes": 2904
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/shader-semantics-dawn-valid.log.gz",
+      "sha256": "c9c5f9babb0d596166455c18798cf78e88374f43f42620bc6d3ee86715b4f9c7",
+      "bytes": 2485
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/shader-semantics-dawn.js",
+      "sha256": "95c38568fabe303d042f3edc5c1e2fea18d510f94ed6ec6bf1878d7aac3c52b8",
+      "bytes": 19147
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/shader-semantics-dawn.log.gz",
+      "sha256": "20c14b4a8f5eda54f002a6b611390dd84c19b070e48808588687044b0043e8e9",
+      "bytes": 3486
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/shader-semantics-fixed-valid.log.gz",
+      "sha256": "7393c85d878718e5373f04aa6aad7a7b9a492183e3d67df331b6d4240989196c",
+      "bytes": 2703
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/shader-semantics-fixed.log.gz",
+      "sha256": "1ffb93ca0f15c2dae94746b3cd8a666c94cf02dbaeaa6ddef22ab6bbf2332fde",
+      "bytes": 2710
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/shader-semantics-reproduction.js",
+      "sha256": "fe2379c6cd02273663f15504ab5305a51ea71f527bc724469d1b1d8a9cb367b1",
+      "bytes": 19118
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/spirv-validation.json",
+      "sha256": "e9d8766cb67b854f300d0cc683209bd26054227c9cabec1ee06796c3dcb013ac",
+      "bytes": 479
+    },
+    {
+      "path": "reports/benchmarks/amd-vulkan/20261004-generated/test-final.log.gz",
+      "sha256": "42bdfd48afb3580919b15ce738c6a4359b0f3b1da4fe5847b426e5bbc1d1ed74",
+      "bytes": 1062
+    }
+  ]
+}

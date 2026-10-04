@@ -46,8 +46,14 @@ successful execution. Injection is distinct from physical hardware loss.
   [submission investigation](../../reports/benchmarks/amd-vulkan/20261004-submission/README.md)
   retains shader-owner metadata reuse and native phase observations. Its
   alternating application cohorts preserve correctness but do not establish a
-  repeatable application gain or Dawn superiority. Generated Vulkan execution
-  profiling is the next bounded campaign. ONNX Runtime substitution remains an independent
+  repeatable application gain or Dawn superiority. The
+  [generated-execution investigation](../../reports/benchmarks/amd-vulkan/20261004-generated/README.md)
+  rejects loop-invariant hoisting after repeated complete-operation regression,
+  while retaining the independently reproduced private-zero initialization repair.
+  Fewer final instructions did not establish a GPU execution gain. The next
+  transformation requires a recoverable execution cost with a measured application
+  contribution; a separately observed keyword-identifier admission gap remains open.
+  ONNX Runtime substitution remains an independent
   integration investigation.
 - Native coverage requires retained executable hashes, successful physical work,
   backend/driver identity, and replay. Sample-based rows remain diagnostic until

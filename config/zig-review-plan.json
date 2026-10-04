@@ -4,10 +4,38 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "vulkan_generated_execution_profile",
+      "batchId": "wgsl_keyword_identifier_admission",
+      "state": "ready",
+      "objective": "Reject WGSL keywords used as variable identifiers while preserving valid type aliases, diagnostics and pointer semantics.",
+      "rationale": "The independent pinned Dawn run rejects the alias identifier in an ordinary shader fixture, while Doe accepts it. Correct the first language-admission boundary; renaming the fixture does not repair compiler validation.",
+      "scopes": [
+        {
+          "level": "within_directory",
+          "targets": [
+            "src/compiler/wgsl/frontend"
+          ]
+        }
+      ],
+      "findingReviewIds": [
+        "vulkan_generated_20261004"
+      ],
+      "nextAction": "Reproduce the keyword fixture from the retained generated-execution report, trace identifier admission, repair its semantic owner and exercise valid alias declarations plus rejected declaration/use sites.",
+      "acceptance": [
+        "Invalid keyword identifiers fail with source-linked diagnostics; valid aliases and named pointer references retain their semantics.",
+        "Combined runtime/full/WGSL suites and physical package computation/render checks pass."
+      ],
+      "stopCondition": "One reproduced keyword-admission gap is repaired and independently validated; no broader conformance credit.",
+      "requiredEnvironment": [
+        "Pinned Zig toolchain",
+        "Pinned Dawn compiler control",
+        "Physical Vulkan package provider"
+      ]
+    },
+    {
+      "batchId": "vulkan_recoverable_execution_cost",
       "state": "ready",
       "objective": "Select one Vulkan generated-program optimization from recoverable unchanged-application execution cost.",
-      "rationale": "The submission campaign retains explicit shader-owner metadata and lower repeated inspection cost without a repeatable UMAP application gain. Driver submission dominates the measured native submission phases. Shared pointer-IR emitter compatibility is freshly validated; compiler correctness maintenance does not reopen a non-Vulkan optimization campaign.",
+      "rationale": "The retained loop-invariant candidate produces fewer instructions but lacks the declared GPU gain and repeatedly regresses complete-operation medians. UMAP pass times account for only part of ordinary operation cost. Select the next correction from measured application contribution.",
       "scopes": [
         {
           "level": "within_directory",
@@ -23,9 +51,9 @@
         }
       ],
       "findingReviewIds": [
-        "vulkan_submission_vk_pipeline_20261004_custody"
+        "vulkan_generated_20261004"
       ],
-      "nextAction": "Profile Vulkan GPU execution in unchanged UMAP and an inference transfer workload. Retain shader hashes, final instructions, register pressure, scratch traffic and addressing; select a transformation only after locating recoverable application cost. If submission dominates end-to-end cost, retain that finding and choose the next correction from it.",
+      "nextAction": "Attribute remaining generated execution and ordinary operation cost under the existing unchanged application and transfer fixtures. Require measured recoverable cost before selecting the next IR or SPIR-V transformation.",
       "acceptance": [
         "Numerical, bounds and alias semantics are preserved through independent physical output oracles; existing runtime and full WGSL suites pass.",
         "Compiler time and allocations, generated-program execution time, full application latency and memory are measured independently against the accepted baseline and pinned Dawn, with declared regression limits and every cohort retained."

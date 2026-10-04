@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "classification": "diagnostic",
+  "inputs": "bench/external-projects/umap-gpu/sgd-benchmark.inputs.json",
+  "cohortOrder": [
+    "baseline",
+    "candidate",
+    "candidate",
+    "baseline"
+  ],
+  "processesPerCohort": 8,
+  "requiredZeroValidationErrors": true,
+  "gpuTimer": "unquantized nanoseconds, pass timestamp instrumentation",
+  "minimumShaderSpeedupRatio": 1.05,
+  "maximumRegressionRatio": 1.05,
+  "timingClaimCredit": false
+}

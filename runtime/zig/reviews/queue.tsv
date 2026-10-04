@@ -904,7 +904,7 @@ within_directory	src/compiler/wgsl/emit/csl	pending		directory:src/compiler/wgsl
 within_directory	src/compiler/wgsl/emit/dxil	pending		directory:src/compiler/wgsl/emit/dxil	Read and review the complete scope.
 within_directory	src/compiler/wgsl/emit/hlsl	pending		directory:src/compiler/wgsl/emit/hlsl	Read and review the complete scope.
 within_directory	src/compiler/wgsl/emit/msl	pending		directory:src/compiler/wgsl/emit/msl	Read and review the complete scope.
-within_directory	src/compiler/wgsl/emit/spirv	pending		directory:src/compiler/wgsl/emit/spirv	Read and review the complete scope.
+within_directory	src/compiler/wgsl/emit/spirv	in_progress	vulkan_generated_20261004	directory:src/compiler/wgsl/emit/spirv	Repair the observed keyword-identifier admission boundary, then select another generated-program transformation only from an execution cost with measured application contribution. Preserve the accepted Vulkan baseline.
 within_directory	src/compiler/wgsl/frontend	pending		directory:src/compiler/wgsl/frontend	Read and review the complete scope.
 within_directory	src/compiler/wgsl/ir	pending		directory:src/compiler/wgsl/ir	Read and review the complete scope.
 within_directory	src/compiler/wgsl/pipeline	pending		directory:src/compiler/wgsl/pipeline	Read and review the complete scope.

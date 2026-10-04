@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "classification": "separate-diagnostic-input",
+  "upstreamCommit": "7884b287f49bc057df7e0856c5539f130a20e0ad",
+  "input": "large.inputs.json",
+  "originalOracleUnchanged": true,
+  "change": "512 vertices; all other parameters and output requirements unchanged",
+  "cohortOrder": [
+    "baseline",
+    "candidate",
+    "candidate",
+    "baseline"
+  ],
+  "processesPerCohort": 4,
+  "requiredZeroValidationErrors": true,
+  "gpuTimer": "unquantized nanoseconds, diagnostic pass boundaries",
+  "maximumCompilerAndApplicationRegressionRatio": 1.05,
+  "minimumShaderSpeedupRatio": 1.05,
+  "claimCredit": false
+}

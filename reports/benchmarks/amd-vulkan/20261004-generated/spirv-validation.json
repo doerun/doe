@@ -1,0 +1,27 @@
+[
+  {
+    "path": "baseline-apply-forces-compile.jsonl.spv",
+    "exitCode": 0,
+    "stderr": ""
+  },
+  {
+    "path": "baseline-sgd-compile.jsonl.spv",
+    "exitCode": 0,
+    "stderr": ""
+  },
+  {
+    "path": "candidate-apply-forces-compile.jsonl.spv",
+    "exitCode": 0,
+    "stderr": ""
+  },
+  {
+    "path": "candidate-sgd-compile.jsonl.spv",
+    "exitCode": 0,
+    "stderr": ""
+  },
+  {
+    "path": "private-zero-baseline.jsonl.spv",
+    "exitCode": 0,
+    "stderr": ""
+  }
+]

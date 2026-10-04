@@ -161,6 +161,10 @@ pub const Emitter = struct {
 
             const var_id = if (global.initializer) |initializer|
                 try self.builder.variable_global_init(ptr_type, storage_class, try self.lower_constant(initializer, global.ty))
+            else if (global.class == .var_ and storage_class == spirv.StorageClass.Private)
+                // WGSL requires zero initialization; an initializer-free SPIR-V
+                // private variable instead has an undefined initial value.
+                try self.builder.variable_global_init(ptr_type, storage_class, try self.builder.const_zero(value_type))
             else
                 try self.builder.variable_global(ptr_type, storage_class);
 

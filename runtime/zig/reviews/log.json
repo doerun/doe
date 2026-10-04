@@ -27375,6 +27375,42 @@
       "targets": [
         "src/backend/vulkan/mod.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "fe2379c6cd02273663f15504ab5305a51ea71f527bc724469d1b1d8a9cb367b1"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-generated/generated-evidence.json",
+          "sha256": "cf0ed2067bdc087540fc3b4c52bdd5f0bc528831e46aa100b2e80b6177cccb05"
+        }
+      ],
+      "findings": [
+        "The hoisting candidate lowers final instructions without a qualified GPU gain and regresses the complete operation median in both matched pairs. No ordinary application advantage is established.",
+        "Independent Dawn validation rejects alias as a fixture identifier; Doe admits that keyword. The fixture is corrected, while frontend keyword admission requires a separate owned repair."
+      ],
+      "inputHash": "f37f89c58dc4baace00f909e3ac5c1833328ccd255ed48033e3ef762ff13b9ff",
+      "level": "within_directory",
+      "nextAction": "Repair the observed keyword-identifier admission boundary, then select another generated-program transformation only from an execution cost with measured application contribution. Preserve the accepted Vulkan baseline.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Private WGSL defaults previously lowered to initializer-free SPIR-V private variables. The global emitter supplies typed null constants through the existing builder; independent physical output, SPIR-V validation, allocation unwinding and complete runtime/WGSL suites pass.",
+        "Candidate output comparisons, failing probes and executable custody are retained. The optimization is removed from production under the frozen regression bound."
+      ],
+      "reviewId": "vulkan_generated_20261004",
+      "reviewedAt": "2026-10-04T16:37:37.935228+00:00",
+      "reviewer": "codex-vulkan-generated-20261004",
+      "sourceCommit": "9f0f2a84d744b9f3b7345adba30ef8c1fd318c92",
+      "status": "in_progress",
+      "summary": "Scoped generated-program investigation: reject loop-invariant arithmetic and uniform-load hoisting after frozen application regression; repair the separately reproduced missing private zero initializer. This is not a complete directory or compiler review.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/emit/spirv"
+      ]
     }
   ],
   "schemaVersion": 1

@@ -425,6 +425,17 @@ pub const Builder = struct {
         return id;
     }
 
+    /// Null and an existing scalar zero have the same value for this type.
+    /// Composite types also use the existing type-keyed constant owner.
+    pub fn const_zero(self: *Builder, ty: u32) EmitError!u32 {
+        const key = ScalarConstKey{ .ty = ty, .bits = 0 };
+        if (self.scalar_constants.get(key)) |id| return id;
+        const id = self.reserve_id();
+        try self.append_inst(&self.types_globals, Opcode.ConstantNull, &.{ ty, id });
+        try self.scalar_constants.put(self.allocator, key, id);
+        return id;
+    }
+
     pub fn variable_global(self: *Builder, ptr_type: u32, storage_class: u32) EmitError!u32 {
         const id = self.reserve_id();
         try self.append_inst(&self.types_globals, Opcode.Variable, &.{ ptr_type, id, storage_class });
