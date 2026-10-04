@@ -315,7 +315,7 @@ else
 fi
 
 if [[ -d "${RESOURCES_DIR}" ]]; then
-  for RESOURCE_SRC in "${LANE_ROOT}"/resources/fawn-*.html; do
+  for RESOURCE_SRC in "${LANE_ROOT}"/resources/fawn-*.{html,svg}; do
     if [[ -f "${RESOURCE_SRC}" ]]; then
       cp -f "${RESOURCE_SRC}" "${RESOURCES_DIR}/$(basename "${RESOURCE_SRC}")"
     fi

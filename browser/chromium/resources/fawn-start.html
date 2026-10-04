@@ -2,115 +2,67 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fawn</title>
+<link rel="icon" type="image/svg+xml" href="./fawn-icon.svg">
 <style>
-*, *::before, *::after { box-sizing: border-box; }
-html { min-height: 100%; }
-body {
-  min-height: 100vh; margin: 0; overflow-x: hidden;
-  color: #f2f6ed; background: #07100e;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+:root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #fff; background: #020405; --edge: #ffffff38; --glass: #080d16d9; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+button, select, summary, a { -webkit-tap-highlight-color: transparent; }
+button, select, .search { border: 1px solid var(--edge); background: var(--glass); border-radius: 14px; }
+button, select { min-height: 44px; padding: 0 18px; cursor: pointer; }
+button { position: relative; overflow: hidden; transition: border-color .2s, background .2s; }
+button:hover { border-color: #fff; background: #344464; }
+button:active { background: #6857ae; }
+button[aria-pressed="true"] { background: #fff; color: #000; border-color: #fff; }
+button:disabled { cursor: wait; border-style: dashed; }
+:focus-visible { outline: 2px solid #b4c8ff; outline-offset: 4px; }
+a { color: inherit; text-underline-offset: 4px; }
+#view { position: fixed; inset: 0; width: 100%; height: 100dvh; touch-action: none; outline-offset: -6px; }
+.chrome { position: fixed; inset: 0; padding: max(24px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left)); display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; background: linear-gradient(#020405b3, transparent 22%, transparent 70%, #020405d9); }
+.chrome button, .chrome form, .chrome details, .chrome a, .chrome select { pointer-events: auto; }
+header, .toolbar, .metrics, .controls { display: flex; align-items: center; gap: 12px; }
+header { justify-content: space-between; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 650; letter-spacing: -.06em; text-decoration: none; }
+.brand-logo { width: 46px; height: 41px; fill: currentColor; flex: none; }
+.search { display: flex; width: min(320px, 45vw); padding: 3px; backdrop-filter: blur(16px); }
+.search input { width: 100%; min-width: 0; background: none; border: 0; padding: 0 12px; font-size: 13px; outline-offset: 0; }
+.search button { border: 0; background: none; padding: 0 14px; min-height: 36px; }
+.bottom { display: grid; gap: 20px; }
+.caption { margin: 0; font-size: clamp(20px, 3vw, 36px); font-weight: 450; letter-spacing: -.04em; }
+.toolbar { justify-content: space-between; flex-wrap: wrap; }
+.metrics { font: 12px/1.5 ui-monospace, monospace; flex-wrap: wrap; gap: 12px 24px; min-height: 32px; }
+#fps-graph { width: 110px; height: 24px; }
+#status { margin-left: auto; }
+.details { position: relative; }
+summary { cursor: pointer; list-style: none; padding: 12px; font-size: 13px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: ' +'; }
+.details[open] summary::after { content: ' −'; }
+.details-panel { position: absolute; right: 0; bottom: calc(100% + 16px); width: min(360px, calc(100vw - 40px)); padding: 20px; border: 1px solid var(--edge); border-radius: 18px; background: #080d16f5; line-height: 1.5; font-size: 13px; }
+.details-panel p { margin: 0 0 16px; }
+.settings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.settings label { display: grid; gap: 8px; }
+.settings select { width: 100%; min-width: 0; padding: 0 8px; }
+.links { display: flex; gap: 14px; flex-wrap: wrap; }
+#failure { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); width: min(420px, 85vw); padding: 24px; border: 1px solid var(--edge); border-radius: 18px; background: #080d16; text-align: center; line-height: 1.6; }
+#failure[hidden] { display: none; }
+@media (max-width: 650px) {
+ .chrome { padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); }
+ .brand-logo { width: 36px; height: 32px; } .search { width: 62vw; }
+ .bottom { gap: 14px; } .toolbar { gap: 12px; }
+ .controls { width: 100%; } .details { margin-left: auto; } .metrics { gap: 8px 16px; font-size: 11px; } #status { margin-left: 0; } #fps-graph { width: 72px; }
 }
-body::before {
-  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background:
-    radial-gradient(ellipse at 76% 37%, rgba(64, 152, 122, .27), transparent 36%),
-    radial-gradient(ellipse at 20% 85%, rgba(206, 129, 78, .12), transparent 42%),
-    linear-gradient(120deg, #08130f 5%, #08110f 50%, #070d0d 100%);
-}
-body::after {
-  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1;
-  opacity: .22;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.68' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.19'/%3E%3C/svg%3E");
-}
-button, input { font: inherit; }
-button, a, input { -webkit-tap-highlight-color: transparent; }
-button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid #c4f9d8; outline-offset: 4px; }
-a { color: inherit; }
-#gpu-overlay { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-.page { position: relative; z-index: 2; max-width: 1480px; min-height: 100vh; margin: auto; padding: 30px clamp(24px, 5vw, 84px) 16px; display: flex; flex-direction: column; }
-.masthead, .brand, .live, .metrics-head, .section-head, .demo-top, .demo-bottom { display: flex; align-items: center; justify-content: space-between; }
-.masthead { gap: 20px; }
-.brand { gap: 12px; text-decoration: none; font-size: 21px; font-weight: 750; letter-spacing: -.06em; }
-.brand-mark { width: 23px; height: 23px; border: 2px solid #bdeed2; border-radius: 5px 12px 5px 12px; transform: rotate(-21deg); box-shadow: 0 0 24px rgba(133, 253, 185, .36), inset 0 0 12px rgba(133, 253, 185, .22); }
-.brand span:last-child { padding-bottom: 2px; }
-.live { gap: 10px; color: #b4c6b9; font-size: 11px; font-weight: 650; letter-spacing: .17em; text-transform: uppercase; }
-.dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: #9bf3b4; box-shadow: 0 0 13px #88eaae; }
-.live .dot { animation: breathe 2.8s ease-in-out infinite; }
-@keyframes breathe { 50% { opacity: .45; box-shadow: 0 0 4px #88eaae; } }
-.hero { position: relative; flex: 1; min-height: 455px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .95fr); align-items: center; gap: 2vw; }
-.hero-copy { position: relative; z-index: 3; padding: 60px 0; }
-.eyebrow, .section-head { color: #99d6af; font-size: 11px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; }
-.eyebrow { margin: 0 0 25px; }
-h1 { max-width: 670px; margin: 0; font-size: clamp(76px, 10vw, 160px); line-height: .83; font-weight: 720; letter-spacing: -.095em; }
-h1 span { color: #b4edba; }
-.hero-caption { margin: 28px 0 33px; color: #b5c9b8; font-size: clamp(16px, 1.6vw, 20px); letter-spacing: -.015em; }
-.search { display: flex; align-items: center; gap: 12px; width: min(100%, 490px); padding: 7px 7px 7px 20px; border: 1px solid rgba(213, 243, 219, .27); border-radius: 18px; background: rgba(12, 27, 22, .79); box-shadow: 0 18px 60px rgba(0, 0, 0, .19), inset 0 1px rgba(255, 255, 255, .06); backdrop-filter: blur(20px); }
-.search:focus-within { border-color: #b4edba; }
-.search-icon { width: 17px; height: 17px; flex: none; border: 1.8px solid #abc8b4; border-radius: 50%; position: relative; }
-.search-icon::after { content: ""; width: 7px; height: 1.8px; position: absolute; right: -5px; bottom: -2px; background: #abc8b4; transform: rotate(45deg); border-radius: 2px; }
-.search input { min-width: 0; flex: 1; border: 0; outline: 0; color: #f5fbf3; background: transparent; font-size: 15px; }
-.search input::placeholder { color: #a1b4a6; }
-.search button { width: 43px; height: 43px; flex: none; border: 0; border-radius: 12px; color: #10251a; background: #b9ecc3; cursor: pointer; font-size: 23px; transition: transform .2s, background .2s; }
-.search button:hover { transform: translateX(2px); background: #e1ffe5; }
-.hero-art { position: relative; display: grid; place-items: center; min-height: 455px; align-self: stretch; pointer-events: none; }
-.hero-art::before { content: ""; position: absolute; width: min(41vw, 540px); aspect-ratio: 1; border: 1px solid rgba(197, 249, 218, .28); border-radius: 50%; box-shadow: 0 0 0 38px rgba(173, 242, 198, .025), 0 0 0 90px rgba(173, 242, 198, .025), inset 0 0 110px rgba(83, 210, 139, .11), 0 0 125px rgba(88, 195, 147, .18); background: radial-gradient(circle at 56% 45%, rgba(166, 235, 172, .12), rgba(31, 78, 59, .06) 43%, transparent 70%); }
-.hero-art::after { content: ""; position: absolute; width: min(41vw, 540px); aspect-ratio: 1; border-radius: 50%; border: 1px dashed rgba(193, 242, 210, .12); transform: scale(1.18); }
-.logo { width: min(30vw, 390px); height: auto; z-index: 1; fill: #d9f3dc; opacity: .89; filter: drop-shadow(0 0 42px rgba(144, 248, 171, .31)); transform: translateY(-4%); }
-.orbit-label { position: absolute; bottom: 9%; right: 2%; color: #afc9b7; font: 11px/1.5 "SF Mono", Menlo, monospace; letter-spacing: .12em; text-transform: uppercase; }
-.showcase { position: relative; z-index: 2; padding-bottom: 4px; }
-.section-head { margin-bottom: 16px; }
-.section-head span:last-child { color: #829989; letter-spacing: .12em; }
-.demo-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.demo-link { position: relative; min-height: 174px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 17px 21px 20px; border: 1px solid rgba(190, 240, 204, .2); border-radius: 20px; text-decoration: none; background: #13251e; isolation: isolate; transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
-.demo-link:hover { transform: translateY(-6px); border-color: rgba(198, 249, 213, .68); box-shadow: 0 18px 35px rgba(0, 0, 0, .22); }
-.demo-link::before { content: ""; position: absolute; inset: 0; z-index: -2; }
-.demo-link::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(4, 14, 12, .8), transparent 70%); }
-.prismatic::before { background: radial-gradient(ellipse at 73% 37%, #bfe5cc 0, #689997 12%, #623d64 22%, #103f4c 38%, transparent 65%), radial-gradient(ellipse at 40% 100%, #bd7373, transparent 61%), #101e2a; }
-.particles::before { background: radial-gradient(circle at 68% 50%, #fff0c6 0 2px, transparent 4px), radial-gradient(circle at 44% 29%, #e8ad8e 0 2px, transparent 5px), radial-gradient(circle at 85% 26%, #d7f5d1 0 3px, transparent 5px), radial-gradient(ellipse at 62% 65%, #7e944c, #284847 35%, #0b201f 70%); }
-.image-lab::before { background: linear-gradient(90deg, transparent 49.5%, rgba(233, 255, 233, .85) 50%, transparent 50.5%), radial-gradient(circle at 72% 42%, #f7e1a5 0 7%, #dd947f 13%, transparent 33%), linear-gradient(138deg, #242e56 0%, #745174 48%, #223e4a 49%, #15262c 100%); }
-.demo-top { color: #d5e6d9; font: 12px "SF Mono", Menlo, monospace; }
-.demo-top span:last-child { font-size: 19px; transition: transform .2s; }
-.demo-link:hover .demo-top span:last-child { transform: translate(3px, -3px); }
-.demo-bottom strong { font-size: clamp(20px, 2.1vw, 30px); font-weight: 650; letter-spacing: -.045em; }
-.demo-bottom small { color: #d8e9dc; font-size: 10px; font-weight: 700; letter-spacing: .16em; }
-.metrics { position: fixed; z-index: 4; top: 90px; right: clamp(24px, 5vw, 84px); width: 206px; padding: 15px 16px 14px; border: 1px solid rgba(175, 236, 190, .25); border-radius: 17px; background: rgba(9, 25, 20, .76); backdrop-filter: blur(20px); box-shadow: 0 15px 45px rgba(0, 0, 0, .13); font-family: "SF Mono", Menlo, monospace; }
-.metrics-head { gap: 8px; color: #a6c3ae; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
-.status-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
-.status-row span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.metrics-value { margin: 16px 0 4px; color: #effff0; font-size: 34px; line-height: 1; letter-spacing: -.065em; }
-.metrics-value small { color: #9ac7a4; font-size: 12px; letter-spacing: 0; }
-.frame-info, .gpu-info { color: #a4b9aa; font-size: 10px; line-height: 1.5; }
-.fps-graph { display: block; width: 100%; height: 43px; margin: 10px 0 8px; border-radius: 7px; }
-.gpu-info { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.source-link { display: inline-block; margin-top: 10px; color: #b5d7ba; font: 10px "SF Mono", Menlo, monospace; text-decoration: none; }
-.source-link:hover { color: #e2ffe7; }
-@media (max-width: 1000px) { .metrics { right: 24px; } .hero { grid-template-columns: 1fr .7fr; } .hero-art { min-height: 360px; } }
-@media (max-width: 700px) { .page { padding: 22px 20px 28px; } .hero { display: block; min-height: 0; overflow: hidden; } .hero-copy { padding: 80px 0 30px; } h1 { font-size: clamp(70px, 16vw, 110px); } .hero-art { position: absolute; inset: 0 0 auto 35%; height: 430px; min-height: 0; opacity: .42; } .hero-art::before, .hero-art::after { width: 300px; } .logo { width: 220px; } .orbit-label { display: none; } .showcase { margin-top: 40px; } .demo-nav { grid-template-columns: 1fr; } .demo-link { min-height: 120px; } .metrics { position: relative; inset: auto; width: 100%; margin-top: 20px; } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+@media (prefers-reduced-motion: reduce) { button { transition: none; } }
 </style>
 </head>
 <body>
-<canvas id="gpu-overlay"></canvas>
-<div class="page">
-<header class="masthead">
-  <a class="brand" href="./fawn-start.html" aria-label="Fawn home"><span class="brand-mark" aria-hidden="true"></span><span>fawn</span></a>
-  <span class="live"><span class="dot" id="live-dot" aria-hidden="true"></span><span id="live-label">WebGPU canvas</span></span>
-</header>
-<main class="hero">
-  <div class="hero-copy">
-    <p class="eyebrow">A browser with a pulse</p>
-    <h1>Feel the<br>GPU<span>.</span></h1>
-    <p class="hero-caption">Draw across the screen.</p>
-    <form class="search" id="search-form" role="search">
-      <span class="search-icon" aria-hidden="true"></span>
-      <input id="search-input" type="text" aria-label="Search or enter a URL" placeholder="Search or enter a URL" autocomplete="off" spellcheck="false">
-      <button type="submit" aria-label="Go">↗</button>
-    </form>
-  </div>
-  <div class="hero-art" aria-hidden="true">
-<svg class="logo" viewBox="0 0 1024 912" fill="#d0d0d0" xmlns="http://www.w3.org/2000/svg">
+<canvas id="view" tabindex="0" aria-label="Interactive particle field. Drag to pull particles. Arrow keys move the attractor; hold Space to pull."></canvas>
+<div class="chrome">
+<header>
+ <a class="brand" href="./fawn-start.html" aria-label="Fawn home"><svg class="brand-logo" viewBox="0 0 1024 912" aria-hidden="true" focusable="false">
 <path d="M561.72,622.79c-7.99,5.18-15.71,10.12-23.35,15.17-2.55,1.69-4.92,1.93-7.96,1.07-33.63-9.48-67.31-18.76-100.96-28.19-2.66-.74-4.65-.41-6.91,1.27-31.22,23.06-61.52,46.01-92.76,69.04-1.83,1.35-4.11,2.28-5.28,5.09,9.31,10.81,18.74,21.77,28.17,32.72,4.24,4.92,8.54,9.8,12.68,14.8,2.04,2.47,4.29,2.97,7.46,2.56,23.59-3.02,47.21-5.77,70.81-8.71,13.86-1.72,27.7-3.62,41.55-5.44,2.08-.27,4.19-1.01,6.93.64-3.78,4.37-7.37,8.6-11.05,12.77-17.53,19.86-35.18,39.61-52.54,59.61-3.72,4.29-8.54,3.43-12.88,3.9-32.41,3.56-64.85,6.74-97.28,10.09-3.33.34-6.04-.32-8.7-2.61-15.14-13.06-30.38-26-45.69-38.87-2.54-2.13-3.8-4.17-3.05-7.67,4.69-21.78,9.26-43.58,13.7-65.41.86-4.25,2.81-6.89,6.76-9.01,39.14-20.78,78.16-41.77,117.23-62.68,3.21-1.72,6.49-3.29,9.55-5.38-13.42,5.14-26.85,10.24-40.25,15.43-32.92,12.75-65.83,25.53-98.71,38.37-2.34.91-4.41.83-6.75.08-15.37-4.95-30.76-9.85-46.17-14.64-3.07-.96-5.16-2.55-6.52-5.56-20.89-46.29-41.84-92.56-62.84-138.8-.92-2.02-.75-3.82-.11-5.77,11.88-36.39,23.75-72.78,35.61-109.17,3.35-10.29,6.69-20.58,9.98-30.89.44-1.39,1.08-2.82.35-5.07-7.28-1.99-14.94-4.09-22.6-6.17-9.47-2.57-18.94-5.15-28.43-7.64-2.69-.7-4.81-2.06-6.66-4.11C112.23,319.55,90.41,295.49,68.49,271.51c-2.6-2.84-2.96-6.26-3.64-9.62-8.27-41.26-16.48-82.53-24.7-123.8-1.48-7.44-2.92-14.88-4.46-22.73,4.74-.44,8.35,1.54,12.03,2.68,51.55,15.9,103.03,32,154.59,47.86,5.39,1.66,9.25,4.77,12.93,8.78,26.57,29,53.29,57.83,79.84,86.82,2.83,3.09,5.22,3.9,9.45,2.52,24.86-8.07,49.86-15.7,74.78-23.6,3.18-1.01,6.04-1.03,9.22-.03,32.72,10.29,65.47,20.47,98.22,30.66,2.47.77,4.41,2.22,6.18,4.05,13.9,14.37,27.96,28.59,41.67,43.14,3.01,3.2,5.9,2.96,9.42,2.13,29.63-6.99,59.26-13.95,88.89-20.95,10.69-2.52,21.35-5.15,32.04-7.63,1.52-.35,3.14-1.34,4.85-.21.38,2.44-1.4,4.01-2.5,5.76C636.98,345.77,606.64,394.2,576.12,442.51c-2.74,4.34-3,7.72-.6,12.31,15.01,28.79,29.69,57.76,44.6,86.6,1.79,3.47,2.39,6.6,1.18,10.43-3.66,11.58-7.07,23.24-10.44,34.91-1.08,3.72-3.08,6.38-6.4,8.48-14.22,9-28.31,18.2-42.74,27.55zM389.16,357.4c-11.27-6.81-22.58-13.53-33.77-20.46-3.14-1.94-5.6-1.83-8.61.32-26.96,19.29-53.98,38.49-81.04,57.65-2.2,1.56-3.41,3.25-3.71,6.03-2.82,26.45-5.72,52.9-8.72,79.33-.47,4.09,1.35,6.94,3.72,9.87,18.35,22.66,36.68,45.32,54.88,68.1,2.34,2.93,5.08,4.46,8.58,5.44,66.03,18.52,132.08,36.95,198,55.87,9.19,2.64,16.98,3.3,24.21-3.7.94-.9,2.25-1.4,3.37-2.13,9.05-5.83,18.1-11.67,27.15-17.52-.06-.47-.47-1.14-1.91-2.26-8.93-6.97-17.8-14.03-26.83-20.86-2.88-2.18-4-4.21-2.87-7.96,2.49-8.28,4.51-16.7,6.56-25.1.67-2.73,2.04-4.29,4.79-5.03,7.07-1.91,14.09-3.97,21.11-6.03,6.16-1.81,12.29-3.7,18.2-5.48.07-2.92-1.17-4.57-2.06-6.31-9.43-18.56-18.86-37.12-28.35-55.65-1.33-2.59-1.98-5.22-2.02-8.13-.33-25.99-.76-51.97-1.06-77.96-.03-2.8-.66-5.11-2.39-7.37-7.08-9.26-14.01-18.65-21.02-27.97-1.01-1.34-1.85-2.97-4.38-3.55.47,1.95.68,3.41,1.17,4.78,3.79,10.49,7.54,20.99,11.51,31.41,1.17,3.08,1.44,5.91.8,9.19-3.24,16.47-6.11,33.02-9.38,49.49-.84,4.23-.74,8.84-3.43,13.06C482.72,413.85,436.25,385.82,389.16,357.4zM56.57,140.46c.7,3.42,1.37,6.84,2.1,10.25,7.01,32.83,13.97,65.67,21.09,98.48,1.07,4.94,1.46,10.03,5.26,14.25,19.8,22.05,39.39,44.31,59.02,66.52,1.82,2.06,3.77,3.36,6.65,3.9,27.12,5.1,54.22,10.37,81.31,15.65,9.76,1.9,19.05,4.02,28.49-2.69,8.7-6.16,9.14-5.33,4.91-15.46-19.51-46.68-38.97-93.38-58.33-140.13-1.34-3.24-3.19-5-6.49-6.12-40.2-13.59-80.35-27.31-120.52-40.98-6.61-2.25-13.23-4.49-19.88-6.63-1.86-.6-4.23-1.47-3.58,2.92z"/>
 <path d="M731.23,682.46c5.4-1.96,5.84-3.16,2.68-7.57-16.2-22.62-32.45-45.2-48.68-67.8-11.08-15.42-22.13-30.86-33.28-46.23-1.51-2.09-1.91-3.97-1.13-6.46,13.81-43.97,27.54-87.97,41.34-131.95.38-1.21.44-2.68,1.84-3.57,1.78-.28,2.39,1.31,3.32,2.38,23.89,27.34,48.01,54.49,71.5,82.18,6.01,7.09,12.81,11.27,21.43,14.2,46.66,15.85,93.17,32.15,139.73,48.28,1.71.59,3.44,1.11,6.24,2.02,10.89-48.27,21.68-96.11,32.47-143.95,3.44,5.45,3.47,11.31,4.45,16.92,6.07,34.87,11.3,67.91,18.15,102.62,2.96,15.03-.01,28.55-4.25,42.41-3.35,10.98-6.54,21.01-9.76,32.02-.62,2.12-1.52,3.96-3.18,5.52-21.14,19.83-42.27,39.68-63.31,59.6-2.1,1.99-4.26,2.88-7.12,2.85-4.11-.05-8.27-.49-12.26.6-1.3,2.24-.06,3.76.69,5.37,4.98,10.73,9.95,21.46,15.06,32.12,1.17,2.45,1.35,4.5.1,7.04-4.7,9.57-9.35,19.16-13.63,28.92-1.81,4.12-4.2,5.47-8.72,5.46-65.99-.15-131.97-.1-197.96-.09-22.5,0-44.99.03-67.49-.04-3.28-.01-6.14.64-8.93,2.49-23.85,15.87-47.79,31.61-71.63,47.49-3.18,2.12-6.35,3.15-10.21,3.14-32.16-.11-64.32-.04-96.48-.03-1.61,0-3.31.46-5.25-.72,1.12-2.82,3.47-4.76,5.36-6.91,29.91-34.04,60.08-67.85,89.66-102.17,5.44-6.31,11.97-5.82,18.45-6.62,38.77-4.83,77.58-9.44,116.38-14.02,24.44-2.89,48.91-5.6,73.77-8.46zM503.77,757.26c-13.43,15.45-26.86,30.9-40.29,46.34,12.62,1.16,24.41,1.2,36.2,1.14,10.31-.05,21.28,1.93,30.76-.94,9.48-2.87,17.51-10.61,26.11-16.3,2.42-1.61,5.23-2.83,6.95-5.31-.41-.74-.54-1.31-.9-1.58-15.14-11.44-30.31-22.84-45.46-34.27-1.98-1.5-3.35-.53-4.67.99-2.73,3.14-5.49,6.25-8.71,9.91z"/>
 <path d="M442.08,131.1c15.72-18.47,31.21-36.67,47.37-55.65,4.08,9.68,7.74,18.19,11.27,26.76,5.78,14,11.32,28.1,17.29,42.02,2.04,4.74,2.77,9.58,2.92,14.56.55,17.97.92,35.96,1.42,53.93.08,2.76-.59,5.17-1.98,7.57-6.83,11.82-13.64,23.66-20.21,35.63-1.84,3.36-3.84,4.26-7.57,3.35-32.3-7.9-64.64-15.62-96.96-23.44-6.38-1.54-6.42-1.76-4.61-8.09,4.72-16.47,9.48-32.93,14.1-49.43,1.06-3.78,2.82-7.02,5.36-9.99,10.51-12.27,20.92-24.62,31.6-36.21z"/>
@@ -121,462 +73,867 @@ h1 span { color: #b4edba; }
 <path d="M821.01,457.93c3.64,2.52,7.52,4.09,11.1,7.96-14.59,4.9-28.49,9.57-43.66,14.66,1.41-13.71,2.69-26.25,4.11-39.57,10.12,6.21,19.13,11.73,28.45,17.44z"/>
 <path d="M435.16,493.79c-3.02-4.66-6.91-5.91-12.11-5.71-11.65.46-23.32.16-34.98.37-3.26.06-5.64-.84-7.83-3.35-8.54-9.79-17.2-19.48-25.97-29.06-2.24-2.45-2.15-4.13.34-6.13,11.67-9.35,6.94-11.16,18.16.92,5.36,5.7,10.41,11.7,15.45,17.68,1.99,2.36,4.2,3.45,7.33,3.34,12.15-.4,24.31-.52,36.46-.98,3.87-.15,6.57,1.2,9.09,4.07,5.49,6.26,11.18,12.35,16.94,18.37,2.35,2.45,2.33,4.19-.18,6.61-11.23,10.8-7.32,9.53-17.28-.27-1.78-1.75-3.45-3.62-5.4-5.7z"/>
 <path d="M218.75,268.3c13.19,21.55,26.18,42.8,39.11,63.96-2.15,1.82-3.47.55-4.77.1-30.72-10.46-61.43-20.97-92.16-31.42-2.32-.79-4.02-2.04-5.32-4.18-18.07-29.95-36.2-59.86-54.29-89.79-.75-1.25-1.85-2.4-1.73-4.17,1.87-1.17,3.45.13,5.01.73,31.55,12.12,63.07,24.29,94.62,36.43,2.29.88,3.89,2.34,5.14,4.46,4.67,7.88,9.45,15.7,14.39,23.84z"/>
-</svg>
-    <span class="orbit-label">Move · Click · Play</span>
+</svg><span>fawn</span></a>
+ <form class="search" id="search-form" role="search"><input id="search-input" aria-label="Search or enter a URL" placeholder="Search or enter a URL" autocomplete="off"><button aria-label="Go">↗</button></form>
+</header>
+<main class="bottom">
+ <h1 class="caption" id="hint">Drag to shape the current.</h1>
+ <div class="toolbar">
+  <div class="controls"><button id="pause" disabled>Pause</button><button id="restart" disabled>Reset</button>
+   <details class="details"><summary>Details</summary><div class="details-panel">
+    <p id="adapter">Connecting to your GPU…</p>
+    <p>WebGPU computes every particle. FPS counts completed frames, including browser scheduling and GPU waits. It is not a GPU-only benchmark. This page cannot verify the browser’s Doe/Dawn provider.</p>
+    <div class="settings"><label>Particles<select id="count-select"><option value="32768">32,768</option><option value="65536" selected>65,536</option><option value="131072">131,072</option></select></label><label>Steps / frame<select id="steps-select"><option value="2">2</option><option value="4" selected>4</option><option value="8">8</option></select></label></div>
+    <p>Touch and drag to pull. With the canvas focused, use arrow keys and hold Space.</p>
+    <div class="links"><a href="./fawn-prismatic-fluids.html">Prismatic fluid ↗</a><a href="./fawn-magnetic-fluids.html">Magnetic fluid ↗</a><a href="https://github.com/doerun/doe">Source ↗</a></div>
+   </div></details>
   </div>
+ </div>
+ <div class="metrics"><span id="frame">— fps · — ms</span><canvas id="fps-graph" aria-label="Completed frames per second over time"></canvas><span id="workload">65,536 particles</span><span id="status" role="status">Connecting…</span></div>
 </main>
-<section class="showcase" aria-label="WebGPU experiments">
-<div class="section-head"><span>Explore WebGPU</span><span>01 / 03</span></div>
-<div class="demo-nav">
-  <a class="demo-link prismatic" href="./fawn-prismatic-fluids.html">
-    <span class="demo-top"><span>01 / FLUID</span><span aria-hidden="true">↗</span></span>
-    <span class="demo-bottom"><strong>Prismatic</strong><small>PLAY</small></span>
-  </a>
-  <a class="demo-link particles" href="./fawn-heavy-particles.html">
-    <span class="demo-top"><span>02 / COMPUTE</span><span aria-hidden="true">↗</span></span>
-    <span class="demo-bottom"><strong>Particles</strong><small>PLAY</small></span>
-  </a>
-  <a class="demo-link image-lab" href="./fawn-image-lab.html">
-    <span class="demo-top"><span>03 / IMAGE</span><span aria-hidden="true">↗</span></span>
-    <span class="demo-bottom"><strong>Image Lab</strong><small>OPEN</small></span>
-  </a>
 </div>
-</section>
-<aside class="metrics" aria-label="Live WebGPU metrics">
-  <div class="metrics-head"><span class="status-row"><span class="dot" id="gpu-dot"></span><span id="gpu-status">checking WebGPU...</span></span><span>LIVE</span></div>
-  <div class="metrics-value"><span id="fps-value">--</span> <small>fps</small></div>
-  <div class="frame-info" id="frame">-- ms / frame</div>
-  <canvas class="fps-graph" id="fps-graph" aria-label="Recent frame rate graph"></canvas>
-  <div class="gpu-info" id="gpu-info"></div>
-  <div class="gpu-info" id="gpu-backend">runtime: detecting...</div>
-  <a class="source-link" href="https://github.com/doerun/doe" target="_blank" rel="noopener noreferrer">SOURCE ↗</a>
-</aside>
-</div>
+<div id="failure" role="alert" hidden></div>
 <script>
-document.getElementById('search-form').addEventListener('submit', function(event) {
-  event.preventDefault();
-  var value = document.getElementById('search-input').value.trim();
-  if (!value) return;
-  var address = /^(https?:\/\/)/i.test(value) ? value : /^(localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/i.test(value) ? 'http://' + value : 'https://' + value;
-  var looksLikeAddress = !/\s/.test(value) && (/^https?:\/\//i.test(value) || /^localhost(?::\d+)?(?:\/|$)/i.test(value) || /^[\w-]+(?:\.[\w-]+)+(?::\d+)?(?:\/|$)/.test(value));
-  if (looksLikeAddress) {
-    try {
-      var parsed = new URL(address);
-      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-        location.href = parsed.href;
-        return;
-      }
-    } catch (_) {}
-  }
-  location.href = 'https://www.google.com/search?q=' + encodeURIComponent(value);
-});
 
-const WGSL_OVERLAY = `
+const WORKGROUP_SIZE = 128;
+const SIM_UNIFORM_FLOATS = 8;
+const PARTICLE_STRIDE_FLOATS = 8;
+
+const COMPUTE_WGSL = `
 struct Params {
-  resolution: vec2<f32>,
+  dt: f32,
   time: f32,
-  phase: f32,
-  c0: vec4<f32>,
-  c1: vec4<f32>,
-  c2: vec4<f32>,
-  c3: vec4<f32>,
+  aspect: f32,
+  mouseForce: f32,
+  mouse: vec2<f32>,
+  pad: vec2<f32>,
+}
+
+struct Particle {
+  pos: vec2<f32>,
+  vel: vec2<f32>,
+  color: vec4<f32>,
 }
 
 @group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> srcParticles: array<Particle>;
+@group(0) @binding(2) var<storage, read_write> dstParticles: array<Particle>;
 
-fn hash(p: vec2<f32>) -> f32 {
-  var n = fract(vec3<f32>(p.x, p.y, p.x) * vec3<f32>(0.1031, 0.1030, 0.0973));
-  n = n + dot(n, vec3<f32>(n.y + 33.33, n.z + 33.33, n.x + 33.33));
-  return fract((n.x + n.y) * n.z);
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let lenSq = max(dot(v, v), 1e-6);
+  return v * inverseSqrt(lenSq);
 }
 
-fn gmod(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-  return a - b * floor(a / b);
-}
-
-fn hexSDF(p: vec2<f32>) -> f32 {
-  let q = abs(p);
-  return max(dot(q, vec2<f32>(0.866025, 0.5)), q.y) - 0.5;
-}
-
-struct HexCell { id: vec2<f32>, local: vec2<f32>, }
-
-fn hexGrid(uv: vec2<f32>, scale: f32) -> HexCell {
-  let p = uv * scale;
-  let s = vec2<f32>(1.0, 1.7320508);
-  let h = s * 0.5;
-  let a = gmod(p, s) - h;
-  let b = gmod(p - h, s) - h;
-  if (dot(a, a) < dot(b, b)) {
-    return HexCell(floor(p / s), a);
+@compute @workgroup_size(${WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let i = gid.x;
+  if (i >= arrayLength(&srcParticles)) {
+    return;
   }
-  return HexCell(floor((p - h) / s), b);
-}
 
-struct FlipResult {
-  scaleX: f32,
-  scaleY: f32,
-  tiltX: f32,
-  tiltY: f32,
-  glow: f32,
-}
+  var p = srcParticles[i];
+  let pos = p.pos;
+  let vel = p.vel;
+  let radius = length(pos / vec2<f32>(u.aspect, 1.0));
+  let orbit = safeNormalize(vec2<f32>(-pos.y, pos.x));
+  let inward = -safeNormalize(pos + vec2<f32>(0.0001, 0.0));
+  let mouseDelta = u.mouse - pos;
+  let mouseDistSq = max(dot(mouseDelta, mouseDelta), 0.018);
+  let mouseDir = safeNormalize(mouseDelta);
+  let mouseOrbit = vec2<f32>(-mouseDir.y, mouseDir.x);
 
-fn calcFlip(click: vec4<f32>, center: vec2<f32>, aspect: f32) -> FlipResult {
-  if (click.w < 0.5) { return FlipResult(1.0, 1.0, 0.0, 0.0, 0.0); }
-  let origin = vec2<f32>((click.x - 0.5) * aspect, click.y - 0.5);
-  let delta = center - origin;
-  let dist = length(delta);
-  var dir = vec2<f32>(0.0, 1.0);
-  if (dist > 0.0001) { dir = delta / dist; }
-  let t = click.z;
-  let waveFront = t * 0.44;
-  let band = smoothstep(0.24, 0.0, abs(dist - waveFront));
-  let rise = smoothstep(0.0, 0.10, t);
-  let decay = 1.0 - smoothstep(0.35, 2.35, t);
-  let distanceFade = 1.0 - smoothstep(0.18, 1.55, waveFront + dist * 0.65);
-  let pulse = band * rise * decay * distanceFade;
-  let tiltX = dir.y * pulse * 1.05;
-  let tiltY = -dir.x * pulse * 1.05;
-  let scaleX = 1.0 - abs(tiltY) * 0.28;
-  let scaleY = 1.0 - abs(tiltX) * 0.28;
-  let glow = pulse * (0.28 + 0.72 * smoothstep(0.20, 0.0, abs(dist - waveFront)));
-  return FlipResult(scaleX, scaleY, tiltX, tiltY, glow);
-}
+  var field = orbit * (0.020 + 0.034 * (1.0 - smoothstep(0.18, 1.05, radius)));
+  field += inward * (0.006 + 0.014 * (1.0 - smoothstep(0.24, 1.08, radius)));
+  field += mouseDir * (u.mouseForce * 0.0014 / mouseDistSq);
+  field += mouseOrbit * (u.mouseForce * 0.0006 / mouseDistSq);
+  let flow = vec2<f32>(cos(pos.y * 3.0 + u.time * 0.2), sin(pos.x * 2.0 - u.time * 0.16));
+  let flowField = flow * 0.045 + mouseDir * (u.mouseForce * 0.0014 / mouseDistSq);
+  let scatterField = orbit * 0.035 + inward * 0.025 - mouseDir * (u.mouseForce * 0.0018 / mouseDistSq);
+  var fields = array<vec2<f32>, 3>(field, flowField, scatterField);
+  let phase = u32(floor(u.pad.y)) % 3u;
+  field = mix(fields[phase], fields[(phase + 1u) % 3u], fract(u.pad.y));
+  field += -vel * 0.010;
 
-@vertex
-fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
-  let x = f32(i32(i & 1u)) * 4.0 - 1.0;
-  let y = f32(i32(i >> 1u)) * 4.0 - 1.0;
-  return vec4<f32>(x, y, 0.0, 1.0);
-}
+  var nextVel = vel * 0.986 + field * (u.dt * 60.0);
+  let speed = length(nextVel);
+  if (speed > 1.75) {
+    nextVel = nextVel * (1.75 / speed);
+  }
 
-@fragment
-fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
-  let uv = fc.xy / u.resolution;
-  let asp = u.resolution.x / u.resolution.y;
-  let co = vec2<f32>((uv.x - 0.5) * asp, uv.y - 0.5);
+  var nextPos = pos + nextVel * u.dt;
+  let maxX = u.aspect * 1.02;
+  if (nextPos.x < -maxX || nextPos.x > maxX) {
+    nextPos.x = clamp(nextPos.x, -maxX, maxX);
+    nextVel.x = -nextVel.x * 0.92;
+  }
+  if (nextPos.y < -1.02 || nextPos.y > 1.02) {
+    nextPos.y = clamp(nextPos.y, -1.02, 1.02);
+    nextVel.y = -nextVel.y * 0.92;
+  }
 
-  let gridScale = 12.0;
-  let cell = hexGrid(co, gridScale);
-  let id = cell.id;
-  var g = cell.local;
-  let cellCenter = co - cell.local / gridScale;
-
-  let r1 = hash(id);
-  let r2 = hash(id + vec2<f32>(71.0, 137.0));
-  let r3 = hash(id + vec2<f32>(213.0, 47.0));
-
-  let f0 = calcFlip(u.c0, cellCenter, asp);
-  let f1 = calcFlip(u.c1, cellCenter, asp);
-  let f2 = calcFlip(u.c2, cellCenter, asp);
-  let f3 = calcFlip(u.c3, cellCenter, asp);
-  let totalScaleX = f0.scaleX * f1.scaleX * f2.scaleX * f3.scaleX;
-  let totalScaleY = f0.scaleY * f1.scaleY * f2.scaleY * f3.scaleY;
-  let totalTiltX = clamp(f0.tiltX + f1.tiltX + f2.tiltX + f3.tiltX, -1.0, 1.0);
-  let totalTiltY = clamp(f0.tiltY + f1.tiltY + f2.tiltY + f3.tiltY, -1.0, 1.0);
-  let waveGlow = max(max(f0.glow, f1.glow), max(f2.glow, f3.glow));
-
-  g = vec2<f32>(g.x * totalScaleX, g.y * totalScaleY);
-
-  // Smooth radius noise — organic wobble instead of perfect hexagons
-  let angle = atan2(g.y, g.x);
-  let wobble = sin(angle * 3.0 + r1 * 6.28) * 0.02
-             + sin(angle * 5.0 + r2 * 6.28) * 0.015
-             + sin(angle * 7.0 + r3 * 6.28) * 0.008;
-  let d = hexSDF(g) + wobble;
-  let cl = length(g);
-
-  // Ambient boundary shimmer so the lattice reads faintly at rest
-  let edgeBand = smoothstep(0.095, 0.0, abs(d));
-  let ambientWave = 0.5 + 0.5 * sin(u.time * (0.42 + r1 * 0.34) + r2 * 6.28);
-  let edgeGlow = edgeBand * (0.36 + ambientWave * 0.22 + waveGlow * 0.24);
-  let edgeCol = mix(
-    vec3<f32>(0.22, 0.64, 0.39),
-    mix(vec3<f32>(0.24, 0.72, 0.46), vec3<f32>(0.72, 0.92, 0.80), vec3<f32>(waveGlow)),
-    vec3<f32>(r1)
-  );
-
-  // Cell interior stays faintly present, then brightens along the wave
-  let fillBase = smoothstep(0.03, -0.25, d) * 0.13;
-  let fill = fillBase + waveGlow * 0.08;
-  let fillCol = mix(
-    mix(vec3<f32>(0.05, 0.13, 0.07), vec3<f32>(0.14, 0.28, 0.18), vec3<f32>(waveGlow)),
-    mix(vec3<f32>(0.07, 0.18, 0.10), vec3<f32>(0.20, 0.36, 0.24), vec3<f32>(waveGlow)),
-    vec3<f32>(r1)
-  );
-
-  let waveCol = mix(
-    vec3<f32>(0.70, 0.64, 0.38),
-    vec3<f32>(0.92, 0.93, 0.78),
-    vec3<f32>(waveGlow)
-  );
-
-  // Firefly sparkle — very slow, smooth
-  let st = u.time * (0.057 + r1 * 0.12) + r1 * 6.283;
-  let sparkle = pow(max(sin(st), 0.0), 3.0) * step(0.65, r2);
-  let sparkleCol = mix(
-    vec3<f32>(0.90, 0.72, 0.28),
-    vec3<f32>(0.45, 0.82, 0.48),
-    vec3<f32>(r1 * 0.6)
-  );
-  let sr = smoothstep(0.22, 0.0, cl);
-
-  // Two-axis lighting makes the ripple read like a softer x/y flip
-  let tiltShade = 1.0 + g.y * totalTiltX * 1.25 + g.x * totalTiltY * 1.25;
-  let specular = pow(max(0.0, 1.0 - abs(d) * 5.5), 3.0) * (abs(totalTiltX) + abs(totalTiltY)) * 0.22;
-
-  // Compose
-  var col = fillCol * fill;
-  col = col + edgeCol * edgeGlow * 0.56;
-  col = col + sparkleCol * sparkle * sr * 0.8;
-  col = col + waveCol * waveGlow * 0.16;
-  col = col + vec3<f32>(0.96, 0.94, 0.84) * specular;
-  col = col * tiltShade;
-
-  let localPhase = u.phase + waveGlow * (1.0 - u.phase);
-  let a = (edgeGlow * 0.56 + fill * 0.46 + sparkle * sr * 0.8 + waveGlow * 0.12 + specular * 0.7) * localPhase;
-  return vec4<f32>(col * a, a);
+  p.pos = nextPos;
+  p.vel = nextVel;
+  p.color.w = clamp(0.0016 + speed * 0.0018, 0.0016, 0.0040);
+  dstParticles[i] = p;
 }
 `;
 
-(async () => {
-  const dot = document.getElementById('gpu-dot');
-  const liveDot = document.getElementById('live-dot');
-  const liveLabel = document.getElementById('live-label');
-  const status = document.getElementById('gpu-status');
-  const backendInfo = document.getElementById('gpu-backend');
-  const info = document.getElementById('gpu-info');
-  const frame = document.getElementById('frame');
-  const fpsValue = document.getElementById('fps-value');
-  const fpsGraph = document.getElementById('fps-graph');
-  const fpsGraphCtx = fpsGraph.getContext('2d');
-  const overlay = document.getElementById('gpu-overlay');
+const PARTICLE_WGSL = `
+struct Params {
+  dt: f32,
+  time: f32,
+  aspect: f32,
+  mouseForce: f32,
+  mouse: vec2<f32>,
+  pad: vec2<f32>,
+}
 
-  var device = null, pipeline = null, uniformBuf = null, bindGroup = null, gpuCtx = null;
-  var pageStart = performance.now() * 0.001;
-  var lastFrameMs = performance.now();
-  var clicks = [];
-  var MAX_CLICKS = 4;
-  var AMBIENT = 0.45;
-  var fpsHistory = [];
-  var smoothedMs = 16.7;
-  var lastPointerTrailMs = 0;
-  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var running = true;
+struct Particle {
+  pos: vec2<f32>,
+  vel: vec2<f32>,
+  color: vec4<f32>,
+}
+
+struct VSOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) local: vec2<f32>,
+  @location(1) color: vec3<f32>,
+  @location(2) energy: f32,
+}
+
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> particles: array<Particle>;
+
+@vertex
+fn vs(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32) -> VSOut {
+  var quad = array<vec2<f32>, 6>(
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>( 1.0, -1.0),
+    vec2<f32>( 1.0,  1.0),
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>( 1.0,  1.0),
+    vec2<f32>(-1.0,  1.0)
+  );
+
+  let p = particles[instanceIndex];
+  let local = quad[vertexIndex];
+  let size = p.color.w * max(u.pad.x, 0.1);
+  let world = p.pos + local * size;
+
+  var out: VSOut;
+  out.position = vec4<f32>(world.x / u.aspect, world.y, 0.0, 1.0);
+  out.local = local;
+  out.color = p.color.xyz;
+  out.energy = clamp(length(p.vel) * 0.85, 0.0, 1.0);
+  return out;
+}
+
+@fragment
+fn fs(in: VSOut) -> @location(0) vec4<f32> {
+  let d = length(in.local);
+  if (d > 1.0) {
+    discard;
+  }
+  let core = smoothstep(1.0, 0.0, d);
+  let halo = pow(max(0.0, 1.0 - d), 3.0);
+  let color = mix(in.color * 0.55, vec3<f32>(0.98, 0.97, 0.86), in.energy * 0.35);
+  let alpha = core * 0.06 + halo * (0.18 + in.energy * 0.08);
+  return vec4<f32>(color * alpha, alpha);
+}
+`;
+
+const FADE_WGSL = `
+struct VSOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+}
+
+@group(0) @binding(0) var linearSampler: sampler;
+@group(0) @binding(1) var historyTex: texture_2d<f32>;
+
+@vertex
+fn vs(@builtin(vertex_index) vertexIndex: u32) -> VSOut {
+  var positions = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -3.0),
+    vec2<f32>(-1.0,  1.0),
+    vec2<f32>( 3.0,  1.0)
+  );
+  let pos = positions[vertexIndex];
+  var out: VSOut;
+  out.position = vec4<f32>(pos, 0.0, 1.0);
+  out.uv = pos * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5);
+  return out;
+}
+
+@fragment
+fn fs(in: VSOut) -> @location(0) vec4<f32> {
+  let prev = textureSample(historyTex, linearSampler, in.uv);
+  let uv = in.uv * 2.0 - 1.0;
+  let vignette = 1.0 - smoothstep(0.15, 1.2, length(uv));
+  let background = vec3<f32>(0.010, 0.016, 0.013) + vignette * vec3<f32>(0.008, 0.020, 0.012);
+  let faded = prev.rgb * 0.972;
+  return vec4<f32>(max(faded, background), 1.0);
+}
+`;
+
+const COMPOSITE_WGSL = `
+struct VSOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+}
+
+@group(0) @binding(0) var linearSampler: sampler;
+@group(0) @binding(1) var sourceTex: texture_2d<f32>;
+
+@vertex
+fn vs(@builtin(vertex_index) vertexIndex: u32) -> VSOut {
+  var positions = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -3.0),
+    vec2<f32>(-1.0,  1.0),
+    vec2<f32>( 3.0,  1.0)
+  );
+  let pos = positions[vertexIndex];
+  var out: VSOut;
+  out.position = vec4<f32>(pos, 0.0, 1.0);
+  out.uv = pos * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5);
+  return out;
+}
+
+@fragment
+fn fs(in: VSOut) -> @location(0) vec4<f32> {
+  let color = textureSample(sourceTex, linearSampler, in.uv).rgb;
+  return vec4<f32>(color, 1.0);
+}
+`;
+
+function hslToRgb(h, s, l) {
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  if (s === 0) return [l, l, l];
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return [
+    hue2rgb(p, q, h + 1 / 3),
+    hue2rgb(p, q, h),
+    hue2rgb(p, q, h - 1 / 3),
+  ];
+}
+
+const SCENE_INTERVAL_SECONDS = 7;
+const SCENE_BLEND_SECONDS = 1;
+const SCENE_COUNT = 3;
+
+function scenePhase(seconds) {
+  const index = Math.floor(seconds / SCENE_INTERVAL_SECONDS) % SCENE_COUNT;
+  const offset = seconds % SCENE_INTERVAL_SECONDS;
+  const t = Math.max(0, (offset - (SCENE_INTERVAL_SECONDS - SCENE_BLEND_SECONDS)) / SCENE_BLEND_SECONDS);
+  const eased = t * t * (3 - 2 * t);
+  return index + eased;
+}
+
+(async () => {
+  const statusEl = document.getElementById('status');
+  const adapterEl = document.getElementById('adapter');
+  const frameEl = document.getElementById('frame');
+  const graphCanvas = document.getElementById('fps-graph');
+  const workloadEl = document.getElementById('workload');
+  const countSelect = document.getElementById('count-select');
+  const stepsSelect = document.getElementById('steps-select');
+  const restartButton = document.getElementById('restart');
+  const canvas = document.getElementById('view');
+  const pauseButton = document.getElementById('pause');
+  let sceneElapsed = 0;
+  let paused = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let raf = 0;
+  let elapsed = 0;
+  const METRIC_INTERVAL_MS = 500;
+  const GRAPH_HISTORY_LENGTH = 120;
+  let lastCompletionTime = null;
+  let inFlight = false;
+  let redrawRequested = false;
+  let metricGeneration = 0;
+  let measuredFrames = 0;
+  let measuredMs = 0;
+  const graphCtx = graphCanvas.getContext('2d');
+  const fpsHistory = [];
+
+  let adapter = null;
+  let device = null;
+  let context = null;
+  let format = null;
+  let sampler = null;
+
+  let computePipeline = null;
+  let particlePipeline = null;
+  let fadePipeline = null;
+  let compositePipeline = null;
+  let simUniformBuffer = null;
+
+  let particleBuffers = [];
+  let computeBindGroups = [];
+  let renderBindGroups = [];
+  let currentParticleIndex = 0;
+  let particleCount = parseInt(countSelect.value, 10);
+  let stepsPerFrame = parseInt(stepsSelect.value, 10);
+
+  let trailTextures = [];
+  let trailViews = [];
+  let fadeBindGroups = [];
+  let compositeBindGroups = [];
+  let currentTrailIndex = 0;
+
+  let pointer = { x: 0, y: 0, active: false, force: 0.0 };
+  let running = false;
+  let lastFrameTime = performance.now();
 
   function resizeGraphCanvas() {
-    var dpr = window.devicePixelRatio || 1;
-    var width = Math.max(1, Math.floor(fpsGraph.clientWidth * dpr));
-    var height = Math.max(1, Math.floor(fpsGraph.clientHeight * dpr));
-    if (fpsGraph.width === width && fpsGraph.height === height) return;
-    fpsGraph.width = width;
-    fpsGraph.height = height;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.max(1, Math.floor(graphCanvas.clientWidth * dpr));
+    const height = Math.max(1, Math.floor(graphCanvas.clientHeight * dpr));
+    if (graphCanvas.width === width && graphCanvas.height === height) return;
+    graphCanvas.width = width;
+    graphCanvas.height = height;
   }
 
   function drawFpsGraph() {
     resizeGraphCanvas();
-    var width = fpsGraph.width;
-    var height = fpsGraph.height;
-    fpsGraphCtx.clearRect(0, 0, width, height);
-    fpsGraphCtx.fillStyle = 'rgba(10, 18, 14, 0.88)';
-    fpsGraphCtx.fillRect(0, 0, width, height);
+    const width = graphCanvas.width;
+    const height = graphCanvas.height;
+    graphCtx.clearRect(0, 0, width, height);
+    graphCtx.fillStyle = '#080d16';
+    graphCtx.fillRect(0, 0, width, height);
     if (fpsHistory.length < 2) return;
 
-    var minFps = Math.max(0, Math.min.apply(null, fpsHistory) * 0.96);
-    var maxFps = Math.max(minFps + 1, Math.max.apply(null, fpsHistory) * 1.04);
-    var range = maxFps - minFps;
+    const maxFps = Math.max(60, Math.ceil(Math.max(...fpsHistory) / 60) * 60);
 
-    fpsGraphCtx.beginPath();
-    for (var i = 0; i < fpsHistory.length; i++) {
-      var x = fpsHistory.length === 1 ? 0 : (i / (fpsHistory.length - 1)) * width;
-      var y = height - 1 - ((fpsHistory[i] - minFps) / range) * Math.max(1, height - 2);
-      if (i === 0) {
-        fpsGraphCtx.moveTo(x, y);
+    graphCtx.beginPath();
+    fpsHistory.forEach((fps, index) => {
+      const x = fpsHistory.length === 1 ? 0 : (index / (fpsHistory.length - 1)) * width;
+      const y = height - 1 - (fps / maxFps) * Math.max(1, height - 2);
+      if (index === 0) {
+        graphCtx.moveTo(x, y);
       } else {
-        fpsGraphCtx.lineTo(x, y);
+        graphCtx.lineTo(x, y);
       }
-    }
-    fpsGraphCtx.lineJoin = 'round';
-    fpsGraphCtx.lineCap = 'round';
-    fpsGraphCtx.lineWidth = Math.max(1.5, (window.devicePixelRatio || 1) * 1.1);
-    fpsGraphCtx.strokeStyle = '#a9dbc0';
-    fpsGraphCtx.stroke();
+    });
+    graphCtx.lineJoin = 'round';
+    graphCtx.lineCap = 'round';
+    graphCtx.lineWidth = Math.max(1.5, (window.devicePixelRatio || 1) * 1.1);
+    graphCtx.strokeStyle = '#a9dbc0';
+    graphCtx.stroke();
   }
 
   function recordFrameSample(dtMs) {
     fpsHistory.push(1000 / Math.max(dtMs, 0.001));
-    if (fpsHistory.length > 120) fpsHistory.shift();
+    if (fpsHistory.length > GRAPH_HISTORY_LENGTH) fpsHistory.shift();
     drawFpsGraph();
   }
 
-  try {
-    if (!navigator.gpu) throw new Error('WebGPU not available');
-    var adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+  function updateWorkloadLabel() {
+    workloadEl.textContent = `${particleCount.toLocaleString()} particles · ${stepsPerFrame} steps`;
+  }
+
+  function createParticleData(count, aspect) {
+    const data = new Float32Array(count * PARTICLE_STRIDE_FLOATS);
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < count; i++) {
+      const t = i / count;
+      const radius = Math.sqrt(t) * 0.92;
+      const angle = i * goldenAngle;
+      const x = Math.cos(angle) * radius * aspect * 0.92;
+      const y = Math.sin(angle) * radius * 0.92;
+      const tangentX = -Math.sin(angle);
+      const tangentY = Math.cos(angle);
+      const [r, g, b] = hslToRgb((0.54 + t * 0.55) % 1, 0.82, 0.62);
+      const base = i * PARTICLE_STRIDE_FLOATS;
+      data[base + 0] = x;
+      data[base + 1] = y;
+      data[base + 2] = tangentX * 0.042;
+      data[base + 3] = tangentY * 0.042;
+      data[base + 4] = r;
+      data[base + 5] = g;
+      data[base + 6] = b;
+      data[base + 7] = 0.0016 + t * 0.0006;
+    }
+    return data;
+  }
+
+  function createParticleBuffers() {
+    const byteLength = particleCount * PARTICLE_STRIDE_FLOATS * 4;
+    particleBuffers = [
+      device.createBuffer({
+        size: byteLength,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+      }),
+      device.createBuffer({
+        size: byteLength,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+      }),
+    ];
+  }
+
+  function createTrailTargets() {
+    const width = Math.max(1, canvas.width);
+    const height = Math.max(1, canvas.height);
+    trailTextures.forEach((texture) => texture.destroy());
+    trailTextures = [];
+    trailViews = [];
+    currentTrailIndex = 0;
+    for (let i = 0; i < 2; i++) {
+      const texture = device.createTexture({
+        size: { width, height },
+        format,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      });
+      trailTextures.push(texture);
+      trailViews.push(texture.createView());
+    }
+
+    fadeBindGroups = [
+      device.createBindGroup({
+        layout: fadePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sampler },
+          { binding: 1, resource: trailViews[0] },
+        ],
+      }),
+      device.createBindGroup({
+        layout: fadePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sampler },
+          { binding: 1, resource: trailViews[1] },
+        ],
+      }),
+    ];
+
+    compositeBindGroups = [
+      device.createBindGroup({
+        layout: compositePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sampler },
+          { binding: 1, resource: trailViews[0] },
+        ],
+      }),
+      device.createBindGroup({
+        layout: compositePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sampler },
+          { binding: 1, resource: trailViews[1] },
+        ],
+      }),
+    ];
+  }
+
+  function recreateBindGroups() {
+    computeBindGroups = [
+      device.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: simUniformBuffer } },
+          { binding: 1, resource: { buffer: particleBuffers[0] } },
+          { binding: 2, resource: { buffer: particleBuffers[1] } },
+        ],
+      }),
+      device.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: simUniformBuffer } },
+          { binding: 1, resource: { buffer: particleBuffers[1] } },
+          { binding: 2, resource: { buffer: particleBuffers[0] } },
+        ],
+      }),
+    ];
+
+    renderBindGroups = [
+      device.createBindGroup({
+        layout: particlePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: simUniformBuffer } },
+          { binding: 1, resource: { buffer: particleBuffers[0] } },
+        ],
+      }),
+      device.createBindGroup({
+        layout: particlePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: simUniformBuffer } },
+          { binding: 1, resource: { buffer: particleBuffers[1] } },
+        ],
+      }),
+    ];
+  }
+
+  function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+    const height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+    if (canvas.width === width && canvas.height === height) return;
+    canvas.width = width;
+    canvas.height = height;
+    context.configure({ device, format, alphaMode: 'opaque' });
+    createTrailTargets();
+    drawFpsGraph();
+  }
+
+  function resetSimulation() {
+    particleCount = parseInt(countSelect.value, 10);
+    stepsPerFrame = parseInt(stepsSelect.value, 10);
+    updateWorkloadLabel();
+
+    particleBuffers.forEach((buffer) => buffer.destroy());
+    createParticleBuffers();
+    recreateBindGroups();
+
+    const aspect = canvas.width > 0 && canvas.height > 0 ? canvas.width / canvas.height : 1;
+    const data = createParticleData(particleCount, aspect);
+    device.queue.writeBuffer(particleBuffers[0], 0, data);
+    device.queue.writeBuffer(particleBuffers[1], 0, data);
+    currentParticleIndex = 0;
+    statusEl.textContent = paused ? 'Paused' : 'WebGPU active';
+  }
+
+  async function initialize() {
+    if (!navigator.gpu) throw new Error('WebGPU unavailable');
+    adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) throw new Error('No adapter');
     device = await adapter.requestDevice();
-    device.lost.then(function(reason) {
-      running = false;
-      dot.style.background = '#ff9477';
-      liveDot.style.background = '#ff9477';
-      liveDot.style.boxShadow = '0 0 13px #ff9477';
-      liveLabel.textContent = 'WebGPU lost';
-      status.textContent = 'WebGPU device lost';
-      info.textContent = reason.message || 'Reload to reconnect';
+    context = canvas.getContext('webgpu');
+    format = navigator.gpu.getPreferredCanvasFormat();
+    sampler = device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
     });
 
-    var ai = adapter.info || {};
-    dot.style.background = '#4a9';
-    liveLabel.textContent = 'WebGPU active';
-    status.textContent = 'WebGPU active';
-    backendInfo.textContent = 'runtime: not exposed';
-    var parts = [];
-    if (ai.vendor) parts.push(ai.vendor);
-    if (ai.architecture) parts.push(ai.architecture);
-    if (ai.device) parts.push(ai.device);
-    if (device.limits.maxBufferSize) parts.push('maxBuffer: ' + (device.limits.maxBufferSize / (1024*1024*1024)).toFixed(1) + ' GB');
-    info.textContent = parts.join(' \u00b7 ');
-
-    var format = navigator.gpu.getPreferredCanvasFormat();
-    var dpr = window.devicePixelRatio || 1;
-    overlay.width = window.innerWidth * dpr;
-    overlay.height = window.innerHeight * dpr;
-    gpuCtx = overlay.getContext('webgpu');
-    gpuCtx.configure({ device, format, alphaMode: 'premultiplied' });
-
-    var module = device.createShaderModule({ code: WGSL_OVERLAY });
-    uniformBuf = device.createBuffer({
-      size: 80,
+    simUniformBuffer = device.createBuffer({
+      size: SIM_UNIFORM_FLOATS * 4,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    pipeline = device.createRenderPipeline({
+
+    computePipeline = device.createComputePipeline({
       layout: 'auto',
-      vertex: { module, entryPoint: 'vs' },
-      fragment: { module, entryPoint: 'fs', targets: [{ format }] },
+      compute: {
+        module: device.createShaderModule({ code: COMPUTE_WGSL }),
+        entryPoint: 'main',
+      },
+    });
+
+    particlePipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: PARTICLE_WGSL }),
+        entryPoint: 'vs',
+      },
+      fragment: {
+        module: device.createShaderModule({ code: PARTICLE_WGSL }),
+        entryPoint: 'fs',
+        targets: [{
+          format,
+          blend: {
+            color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+            alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+          },
+        }],
+      },
       primitive: { topology: 'triangle-list' },
     });
-    bindGroup = device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [{ binding: 0, resource: { buffer: uniformBuf } }],
+
+    fadePipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: FADE_WGSL }),
+        entryPoint: 'vs',
+      },
+      fragment: {
+        module: device.createShaderModule({ code: FADE_WGSL }),
+        entryPoint: 'fs',
+        targets: [{ format }],
+      },
+      primitive: { topology: 'triangle-list' },
     });
+
+    compositePipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: COMPOSITE_WGSL }),
+        entryPoint: 'vs',
+      },
+      fragment: {
+        module: device.createShaderModule({ code: COMPOSITE_WGSL }),
+        entryPoint: 'fs',
+        targets: [{ format }],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
+    const adapterInfo = adapter.info || {};
+    const parts = [];
+    if (adapterInfo.vendor) parts.push(adapterInfo.vendor);
+    if (adapterInfo.architecture) parts.push(adapterInfo.architecture);
+    if (adapterInfo.device) parts.push(adapterInfo.device);
+    adapterEl.textContent = parts.join(' · ') || 'Adapter acquired';
+
+    resizeCanvas();
+    resetSimulation();
+    running = true;
+    device.lost.then(info => { if (running) fail(new Error(info.message || 'GPU connection lost')); });
+    device.addEventListener('uncapturederror', event => { if (running) fail(event.error); });
+  }
+
+  function updatePointerFromEvent(event) {
+    const rect = canvas.getBoundingClientRect();
+    const aspect = canvas.width > 0 && canvas.height > 0 ? canvas.width / canvas.height : 1;
+    const x = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
+    const y = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0.5;
+    pointer.x = (x * 2 - 1) * aspect;
+    pointer.y = -(y * 2 - 1);
+  }
+
+  function schedule() {
+    if (!running || document.hidden) return;
+    if (inFlight) { redrawRequested = true; return; }
+    if (!raf) raf = requestAnimationFrame(frame);
+  }
+
+  function resetMeter() {
+    metricGeneration += 1;
+    lastCompletionTime = null;
+    measuredFrames = 0;
+    measuredMs = 0;
+    fpsHistory.length = 0;
+    frameEl.textContent = paused ? 'Paused' : '— fps · — ms';
     drawFpsGraph();
+  }
 
-    function addPulse(e) {
-      if (e.target.closest('a, button, input')) return;
-      var rect = overlay.getBoundingClientRect();
-      var x = rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0.5;
-      var y = rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5;
-      clicks.push({
-        x: Math.max(0, Math.min(1, x)),
-        y: Math.max(0, Math.min(1, y)),
-        t: performance.now() * 0.001
+  function recordCompletion(now) {
+    if (lastCompletionTime !== null) {
+      measuredMs += now - lastCompletionTime;
+      measuredFrames += 1;
+    }
+    lastCompletionTime = now;
+    if (measuredMs < METRIC_INTERVAL_MS) return;
+    const average = measuredMs / measuredFrames;
+    frameEl.textContent = `${Math.round(1000 / average)} fps · ${average.toFixed(1)} ms`;
+    recordFrameSample(average);
+    measuredFrames = 0;
+    measuredMs = 0;
+  }
+
+  function fail(error) {
+    running = false;
+    cancelAnimationFrame(raf);
+    raf = 0;
+    statusEl.textContent = 'WebGPU unavailable';
+    frameEl.textContent = '— fps · — ms';
+    const message = document.getElementById('failure');
+    message.hidden = false;
+    message.textContent = `${error.message}. Try a WebGPU-enabled browser, or reload to reconnect.`;
+    pauseButton.disabled = true;
+    restartButton.disabled = true;
+    countSelect.disabled = true;
+    stepsSelect.disabled = true;
+    device?.destroy();
+  }
+
+  async function frame(now) {
+    raf = 0;
+    if (!running || document.hidden) return;
+    inFlight = true;
+    redrawRequested = false;
+    try { await render(now); } catch (error) { fail(error); }
+    finally {
+      inFlight = false;
+      if (running && (!paused || redrawRequested)) schedule();
+    }
+  }
+
+  async function render(now) {
+    const generation = metricGeneration;
+    resizeCanvas();
+
+    const frameMs = now - lastFrameTime;
+    const dtMs = Math.min(32, frameMs);
+    lastFrameTime = now;
+    const dt = paused ? 0 : dtMs / 1000;
+    elapsed += dt;
+    if (!paused) sceneElapsed += frameMs / 1000;
+    const aspect = canvas.width > 0 && canvas.height > 0 ? canvas.width / canvas.height : 1;
+    const resolutionScale = Math.max(0.55, Math.min(1.0, Math.sqrt(900 / Math.max(canvas.height, 1))));
+
+    const pulse = pointer.active ? 1.0 : 0.0;
+    pointer.force = pointer.force * 0.85 + pulse * 4.0;
+    const uniformData = new Float32Array([
+      dt / stepsPerFrame,
+      elapsed,
+      aspect,
+      pointer.force,
+      pointer.x,
+      pointer.y,
+      resolutionScale,
+      scenePhase(sceneElapsed),
+    ]);
+    device.queue.writeBuffer(simUniformBuffer, 0, uniformData);
+
+    const encoder = device.createCommandEncoder();
+
+    for (let step = 0; step < (paused ? 0 : stepsPerFrame); step++) {
+      const pass = encoder.beginComputePass();
+      pass.setPipeline(computePipeline);
+      pass.setBindGroup(0, computeBindGroups[currentParticleIndex]);
+      pass.dispatchWorkgroups(Math.ceil(particleCount / WORKGROUP_SIZE));
+      pass.end();
+      currentParticleIndex = 1 - currentParticleIndex;
+    }
+
+    const dstTrailIndex = 1 - currentTrailIndex;
+    {
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: trailViews[dstTrailIndex],
+          clearValue: { r: 0.01, g: 0.016, b: 0.013, a: 1 },
+          loadOp: 'clear',
+          storeOp: 'store',
+        }],
       });
-      if (clicks.length > MAX_CLICKS) clicks.shift();
-    }
-    document.body.addEventListener('pointerdown', addPulse);
-    document.body.addEventListener('pointermove', function(e) {
-      if (reducedMotion || e.pointerType === 'touch') return;
-      var now = performance.now();
-      if (now - lastPointerTrailMs < 95) return;
-      lastPointerTrailMs = now;
-      addPulse(e);
-    });
-
-    requestAnimationFrame(renderFrame);
-
-  } catch (e) {
-    dot.style.background = '#a33';
-    liveDot.style.background = '#ff9477';
-    liveDot.style.boxShadow = '0 0 13px #ff9477';
-    liveLabel.textContent = 'WebGPU unavailable';
-    status.textContent = 'WebGPU: ' + e.message;
-    backendInfo.textContent = 'runtime: unavailable';
-    return;
-  }
-
-  function renderFrame() {
-    if (!running || document.hidden) {
-      if (running) requestAnimationFrame(renderFrame);
-      return;
-    }
-    try {
-      renderActiveFrame();
-    } catch (error) {
-      running = false;
-      dot.style.background = '#ff9477';
-      liveDot.style.background = '#ff9477';
-      liveDot.style.boxShadow = '0 0 13px #ff9477';
-      liveLabel.textContent = 'WebGPU error';
-      status.textContent = 'WebGPU error';
-      info.textContent = error.message || String(error);
-    }
-  }
-
-  function renderActiveFrame() {
-    var nowMs = performance.now();
-    var dtMs = Math.min(64, nowMs - lastFrameMs);
-    lastFrameMs = nowMs;
-    var dpr = window.devicePixelRatio || 1;
-    var w = window.innerWidth * dpr;
-    var h = window.innerHeight * dpr;
-    if (overlay.width !== w || overlay.height !== h) {
-      overlay.width = w;
-      overlay.height = h;
-      gpuCtx.configure({ device, format, alphaMode: 'premultiplied' });
+      pass.setPipeline(fadePipeline);
+      pass.setBindGroup(0, fadeBindGroups[currentTrailIndex]);
+      pass.draw(3);
+      pass.end();
     }
 
-    var now = nowMs * 0.001;
-    var elapsed = reducedMotion ? 0 : now - pageStart;
-    var phase = AMBIENT;
-
-    // Expire old clicks (brightness boost is local, handled in shader)
-    var alive = [];
-    for (var i = 0; i < clicks.length; i++) {
-      if (now - clicks[i].t < 8.0) alive.push(clicks[i]);
+    {
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: trailViews[dstTrailIndex],
+          loadOp: 'load',
+          storeOp: 'store',
+        }],
+      });
+      pass.setPipeline(particlePipeline);
+      pass.setBindGroup(0, renderBindGroups[currentParticleIndex]);
+      pass.draw(6, particleCount);
+      pass.end();
     }
-    clicks = alive;
 
-    // Pack uniforms: resolution(2) + time(1) + phase(1) + 4 click slots(4*4=16) = 20 floats = 80 bytes
-    var data = new Float32Array(20);
-    data[0] = overlay.width;
-    data[1] = overlay.height;
-    data[2] = elapsed;
-    data[3] = phase;
-    // c0..c3 at offsets 4,8,12,16 — each is (x, y, elapsed_since_click, active)
-    for (var i = 0; i < 4; i++) {
-      var base = 4 + i * 4;
-      if (i < clicks.length) {
-        data[base]     = clicks[i].x;
-        data[base + 1] = clicks[i].y;
-        data[base + 2] = now - clicks[i].t;
-        data[base + 3] = 1.0;
-      } else {
-        data[base + 3] = 0.0;
-      }
+    {
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: context.getCurrentTexture().createView(),
+          clearValue: { r: 0.01, g: 0.016, b: 0.013, a: 1 },
+          loadOp: 'clear',
+          storeOp: 'store',
+        }],
+      });
+      pass.setPipeline(compositePipeline);
+      pass.setBindGroup(0, compositeBindGroups[dstTrailIndex]);
+      pass.draw(3);
+      pass.end();
     }
-    device.queue.writeBuffer(uniformBuf, 0, data);
 
-    var encoder = device.createCommandEncoder();
-    var pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view: gpuCtx.getCurrentTexture().createView(),
-        clearValue: { r: 0, g: 0, b: 0, a: 0 },
-        loadOp: 'clear',
-        storeOp: 'store',
-      }],
-    });
-    pass.setPipeline(pipeline);
-    pass.setBindGroup(0, bindGroup);
-    pass.draw(3);
-    pass.end();
     device.queue.submit([encoder.finish()]);
-    smoothedMs = smoothedMs * 0.9 + dtMs * 0.1;
-    frame.textContent = smoothedMs.toFixed(1) + ' ms / frame';
-    fpsValue.textContent = Math.round(1000 / Math.max(smoothedMs, 0.001));
-    liveLabel.textContent = 'WebGPU · ' + fpsValue.textContent + ' FPS';
-    recordFrameSample(smoothedMs);
-    requestAnimationFrame(renderFrame);
+    currentTrailIndex = dstTrailIndex;
+
+    // Keep at most one submitted frame pending; count only completed work.
+    await device.queue.onSubmittedWorkDone();
+    if (running && !paused && !document.hidden && generation === metricGeneration) {
+      recordCompletion(performance.now());
+    }
+  }
+
+  function refresh() {
+    if (!running) return;
+    sceneElapsed = 0;
+    elapsed = 0;
+    resetSimulation();
+    createTrailTargets();
+    resetMeter();
+    schedule();
+  }
+
+  countSelect.addEventListener('change', refresh);
+  stepsSelect.addEventListener('change', () => {
+    stepsPerFrame = Number(stepsSelect.value);
+    updateWorkloadLabel();
+  });
+  restartButton.addEventListener('click', refresh);
+  pauseButton.addEventListener('click', () => {
+    if (!running) return;
+    paused = !paused;
+    pauseButton.textContent = paused ? 'Resume' : 'Pause';
+    statusEl.textContent = paused ? 'Paused' : 'WebGPU active';
+    lastFrameTime = performance.now();
+    resetMeter();
+    if (paused) { cancelAnimationFrame(raf); raf = 0; }
+    else schedule();
+  });
+  canvas.addEventListener('pointermove', updatePointerFromEvent);
+  canvas.addEventListener('pointerdown', event => {
+    updatePointerFromEvent(event);
+    pointer.active = true;
+    canvas.setPointerCapture(event.pointerId);
+    canvas.focus({ preventScroll: true });
+  });
+  const releasePointer = () => { pointer.active = false; };
+  canvas.addEventListener('pointerup', releasePointer);
+  canvas.addEventListener('pointercancel', releasePointer);
+  canvas.addEventListener('lostpointercapture', releasePointer);
+  canvas.addEventListener('blur', releasePointer);
+  canvas.addEventListener('keydown', event => {
+    const offsets = { ArrowLeft: [-.08, 0], ArrowRight: [.08, 0], ArrowUp: [0, .08], ArrowDown: [0, -.08] };
+    if (offsets[event.key]) {
+      event.preventDefault();
+      const [x, y] = offsets[event.key];
+      const aspect = canvas.width / canvas.height;
+      pointer.x = Math.max(-aspect, Math.min(aspect, pointer.x + x));
+      pointer.y = Math.max(-1, Math.min(1, pointer.y + y));
+    }
+    if (event.code === 'Space') { event.preventDefault(); pointer.active = true; }
+  });
+  canvas.addEventListener('keyup', event => { if (event.code === 'Space') releasePointer(); });
+  document.addEventListener('visibilitychange', () => {
+    releasePointer();
+    lastFrameTime = performance.now();
+    resetMeter();
+    if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+    else schedule();
+  });
+  addEventListener('resize', () => { if (running) { resizeCanvas(); schedule(); } });
+  addEventListener('pagehide', () => {
+    running = false;
+    cancelAnimationFrame(raf);
+    device?.destroy();
+  });
+  addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
+
+  try {
+    updateWorkloadLabel();
+    await initialize();
+    pauseButton.disabled = false;
+    restartButton.disabled = false;
+    pauseButton.textContent = paused ? 'Resume' : 'Pause';
+    resetMeter();
+    lastFrameTime = performance.now();
+    schedule();
+  } catch (error) {
+    fail(error);
   }
 })();
+
+document.getElementById('search-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const query = document.getElementById('search-input').value.trim();
+  if (!query) return;
+  let url;
+  try { url = new URL(query.includes('://') ? query : `https://${query}`); } catch {}
+  const looksLikeHost = !/\s/.test(query) && (query.includes('.') || query.startsWith('localhost'));
+  location.href = looksLikeHost && url && ['http:', 'https:'].includes(url.protocol)
+    ? url.href : `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+});
+
 </script>
 </body>
 </html>

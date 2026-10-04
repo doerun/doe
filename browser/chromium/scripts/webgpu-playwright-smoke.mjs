@@ -1380,10 +1380,11 @@ async function runFawnPrismaticLifecycleProbe(browser, localUrl, timeoutMs) {
     const page = await lifecycleContext.newPage();
     await page.goto(startUrl, { waitUntil: "load", timeout: timeoutMs });
     await page.waitForFunction(
-      () => document.querySelector("#gpu-status")?.textContent === "WebGPU active",
+      () => document.querySelector("#status")?.textContent === "WebGPU active",
       null,
       { timeout: timeoutMs },
     );
+    await page.click('summary');
     await page.click('a[href="./fawn-prismatic-fluids.html"]');
     await page.waitForFunction(
       () => document.querySelector("#status")?.textContent === "Running prismatic fluid reactor",
