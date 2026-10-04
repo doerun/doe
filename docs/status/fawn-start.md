@@ -5,9 +5,15 @@ interactive GPU particle field. Its configurations share the particle simulation
 and trail renderer. Each seven-second interval holds for six seconds, then eases
 into the next field over one second, including the final-to-first transition.
 The active clock pauses with the page; transitions preserve particles and trails.
+Particle counts follow powers of two through the configured maximum, disabled
+where adapter buffer limits exclude them. Larger fields use two-dimensional
+compute dispatch and chunked initialization uploads. Adapter limits describe
+capability, not guaranteed free memory.
 Pause, reset, touch cancellation, keyboard attraction, and reduced-motion
 startup belong to the page. Search remains available, with workload settings,
-adapter information, and links to the fluid demonstrations under Details.
+adapter information, and links to the fluid demonstrations under Settings. The settings panel is anchored inside the page, with bounded
+height, scrolling, and an opaque surface. Its copy is limited to GPU identity,
+workload controls, and a completed-frame caption.
 
 Frame measurements count completed frames with a bounded submission loop.
 They include browser scheduling and GPU waits, not GPU-only execution time.
@@ -25,7 +31,7 @@ reset cleanup, workload changes, teardown, reduced motion, and unavailable-GPU
 handling. Deterministic clocks and delayed queue completion additionally checked
 frame-rate accuracy, submission backpressure, and pausing during GPU work. These checks do not establish rendered appearance or physical GPU
 execution. The existing browser lifecycle probe follows the new status and
-Details control but was not run: the user requested personal review without
+Settings control but was not run: the user requested personal review without
 agent browser use or screenshots.
 
 The user approved publication through D4DA at `/doe/fawn-start.html`; its Doe

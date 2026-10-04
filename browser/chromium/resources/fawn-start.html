@@ -36,12 +36,13 @@ header { justify-content: space-between; }
 .metrics { font: 12px/1.5 ui-monospace, monospace; flex-wrap: wrap; gap: 12px 24px; min-height: 32px; }
 #fps-graph { width: 110px; height: 24px; }
 #status { margin-left: auto; }
-.details { position: relative; }
+.controls { position: relative; }
+.details { position: static; }
 summary { cursor: pointer; list-style: none; padding: 12px; font-size: 13px; }
 summary::-webkit-details-marker { display: none; }
 summary::after { content: ' +'; }
 .details[open] summary::after { content: ' −'; }
-.details-panel { position: absolute; right: 0; bottom: calc(100% + 16px); width: min(360px, calc(100vw - 40px)); padding: 20px; border: 1px solid var(--edge); border-radius: 18px; background: #080d16f5; line-height: 1.5; font-size: 13px; }
+.details-panel { position: absolute; z-index: 5; left: 0; bottom: calc(100% + 12px); width: min(360px, calc(100vw - 40px)); max-height: calc(100dvh - 220px); overflow-y: auto; overscroll-behavior: contain; padding: 20px; border: 1px solid var(--edge); border-radius: 18px; background: #080d16; line-height: 1.5; font-size: 13px; }
 .details-panel p { margin: 0 0 16px; }
 .settings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
 .settings label { display: grid; gap: 8px; }
@@ -80,12 +81,12 @@ summary::after { content: ' +'; }
  <h1 class="caption" id="hint">Drag to shape the current.</h1>
  <div class="toolbar">
   <div class="controls"><button id="pause" disabled>Pause</button><button id="restart" disabled>Reset</button>
-   <details class="details"><summary>Details</summary><div class="details-panel">
+   <details class="details"><summary>Settings</summary><div class="details-panel">
     <p id="adapter">Connecting to your GPU…</p>
-    <p>WebGPU computes every particle. FPS counts completed frames, including browser scheduling and GPU waits. It is not a GPU-only benchmark. This page cannot verify the browser’s Doe/Dawn provider.</p>
-    <div class="settings"><label>Particles<select id="count-select"><option value="32768">32,768</option><option value="65536" selected>65,536</option><option value="131072">131,072</option></select></label><label>Steps / frame<select id="steps-select"><option value="2">2</option><option value="4" selected>4</option><option value="8">8</option></select></label></div>
-    <p>Touch and drag to pull. With the canvas focused, use arrow keys and hold Space.</p>
-    <div class="links"><a href="./fawn-prismatic-fluids.html">Prismatic fluid ↗</a><a href="./fawn-magnetic-fluids.html">Magnetic fluid ↗</a><a href="https://github.com/doerun/doe">Source ↗</a></div>
+
+    <div class="settings"><label>Particles<select id="count-select"><option value="32768">32,768</option><option value="65536" selected>65,536</option><option value="131072">131,072</option><option value="262144">262,144</option><option value="524288">524,288</option><option value="1048576">1,048,576</option><option value="2097152">2,097,152</option><option value="4194304">4,194,304</option><option value="8388608">8,388,608</option><option value="16777216">16,777,216</option></select></label><label>Steps / frame<select id="steps-select"><option value="2">2</option><option value="4" selected>4</option><option value="8">8</option></select></label></div>
+    <p>FPS = completed frames per second.</p>
+    <div class="links"><a href="./fawn-prismatic-fluids.html">Fluids ↗</a><a href="https://github.com/doerun/doe">Source ↗</a></div>
    </div></details>
   </div>
  </div>
@@ -98,6 +99,8 @@ summary::after { content: ' +'; }
 const WORKGROUP_SIZE = 128;
 const SIM_UNIFORM_FLOATS = 8;
 const PARTICLE_STRIDE_FLOATS = 8;
+const MAX_PARTICLE_COUNT = 2 ** 24;
+const PARTICLE_UPLOAD_CHUNK = 2 ** 16;
 
 const COMPUTE_WGSL = `
 struct Params {
@@ -125,8 +128,8 @@ fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
 }
 
 @compute @workgroup_size(${WORKGROUP_SIZE})
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let i = gid.x;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
+  let i = gid.x + gid.y * groups.x * ${WORKGROUP_SIZE}u;
   if (i >= arrayLength(&srcParticles)) {
     return;
   }
@@ -439,13 +442,13 @@ function scenePhase(seconds) {
     workloadEl.textContent = `${particleCount.toLocaleString()} particles · ${stepsPerFrame} steps`;
   }
 
-  function createParticleData(count, aspect) {
+  function createParticleData(count, aspect, start, total) {
     const data = new Float32Array(count * PARTICLE_STRIDE_FLOATS);
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
     for (let i = 0; i < count; i++) {
-      const t = i / count;
+      const t = (start + i) / total;
       const radius = Math.sqrt(t) * 0.92;
-      const angle = i * goldenAngle;
+      const angle = (start + i) * goldenAngle;
       const x = Math.cos(angle) * radius * aspect * 0.92;
       const y = Math.sin(angle) * radius * 0.92;
       const tangentX = -Math.sin(angle);
@@ -590,9 +593,13 @@ function scenePhase(seconds) {
     recreateBindGroups();
 
     const aspect = canvas.width > 0 && canvas.height > 0 ? canvas.width / canvas.height : 1;
-    const data = createParticleData(particleCount, aspect);
-    device.queue.writeBuffer(particleBuffers[0], 0, data);
-    device.queue.writeBuffer(particleBuffers[1], 0, data);
+    for (let start = 0; start < particleCount; start += PARTICLE_UPLOAD_CHUNK) {
+      const count = Math.min(PARTICLE_UPLOAD_CHUNK, particleCount - start);
+      const data = createParticleData(count, aspect, start, particleCount);
+      const offset = start * PARTICLE_STRIDE_FLOATS * Float32Array.BYTES_PER_ELEMENT;
+      device.queue.writeBuffer(particleBuffers[0], offset, data);
+      device.queue.writeBuffer(particleBuffers[1], offset, data);
+    }
     currentParticleIndex = 0;
     statusEl.textContent = paused ? 'Paused' : 'WebGPU active';
   }
@@ -601,7 +608,20 @@ function scenePhase(seconds) {
     if (!navigator.gpu) throw new Error('WebGPU unavailable');
     adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) throw new Error('No adapter');
-    device = await adapter.requestDevice();
+    const bufferLimit = Math.min(
+      adapter.limits.maxStorageBufferBindingSize,
+      adapter.limits.maxBufferSize,
+      MAX_PARTICLE_COUNT * PARTICLE_STRIDE_FLOATS * Float32Array.BYTES_PER_ELEMENT,
+    );
+    device = await adapter.requestDevice({ requiredLimits: {
+      maxStorageBufferBindingSize: bufferLimit,
+      maxBufferSize: bufferLimit,
+    } });
+    for (const option of countSelect.options) {
+      const bytes = Number(option.value) * PARTICLE_STRIDE_FLOATS * Float32Array.BYTES_PER_ELEMENT;
+      option.disabled = bytes > bufferLimit;
+      if (option.disabled) option.textContent += ' (GPU limit)';
+    }
     context = canvas.getContext('webgpu');
     format = navigator.gpu.getPreferredCanvasFormat();
     sampler = device.createSampler({
@@ -674,8 +694,8 @@ function scenePhase(seconds) {
     const parts = [];
     if (adapterInfo.vendor) parts.push(adapterInfo.vendor);
     if (adapterInfo.architecture) parts.push(adapterInfo.architecture);
-    if (adapterInfo.device) parts.push(adapterInfo.device);
-    adapterEl.textContent = parts.join(' · ') || 'Adapter acquired';
+
+    adapterEl.textContent = parts.join(' · ') || 'WebGPU connected';
 
     resizeCanvas();
     resetSimulation();
@@ -784,7 +804,10 @@ function scenePhase(seconds) {
       const pass = encoder.beginComputePass();
       pass.setPipeline(computePipeline);
       pass.setBindGroup(0, computeBindGroups[currentParticleIndex]);
-      pass.dispatchWorkgroups(Math.ceil(particleCount / WORKGROUP_SIZE));
+      const totalGroups = Math.ceil(particleCount / WORKGROUP_SIZE);
+      const rows = Math.ceil(totalGroups / device.limits.maxComputeWorkgroupsPerDimension);
+      const columns = Math.ceil(totalGroups / rows);
+      pass.dispatchWorkgroups(columns, rows);
       pass.end();
       currentParticleIndex = 1 - currentParticleIndex;
     }
