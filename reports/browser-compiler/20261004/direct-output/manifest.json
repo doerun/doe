@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "b5829d158e56fb0ee8af2b83e4fc3f86e1fee7c6",
+  "classification": "diagnostic",
+  "executionOwner": "browser",
+  "compilerWorkerInMeasurement": false,
+  "files": [
+    {
+      "path": "bench/executors/run-browser-wgsl-output.mjs",
+      "sha256": "374d67a8f68e818639885f009d12d1a3140ab909ef84f9fd913e87192c998dd6"
+    },
+    {
+      "path": "config/browser-compiler-output.json",
+      "sha256": "67727477088cd02dbc90a349476215ca1bfcdb8f390cf57a65ea98b0a3449c64"
+    },
+    {
+      "path": "config/browser-compiler-output.schema.json",
+      "sha256": "46756dc96d160689e6f21a57453f98abc043cdcd3b8013c5bf669d446a37de68"
+    },
+    {
+      "path": "packages/doe-gpu/assets/doe-wgsl-cff0e5502ab99769.wasm",
+      "sha256": "cff0e5502ab9976943936150e29ee521d4da590295bfcc7b1fbeca55136168af"
+    },
+    {
+      "path": "packages/doe-gpu/examples/browser-compiler/benchmark.js",
+      "sha256": "cf8342eaf558d7ba02bb3444f75ecff0758ed5632cda405de71845bbbf8e4984"
+    },
+    {
+      "path": "packages/doe-gpu/examples/browser-compiler/contract.json",
+      "sha256": "0b4388da9502ed5de6780bd2ffdbe3786019fcb489de92be0c4b10ba25ba9baa"
+    },
+    {
+      "path": "packages/doe-gpu/examples/browser-compiler/particles.js",
+      "sha256": "f1969b95211ae9972ccada36fec3cbcd79fac7a33caba8d6429031946a5ac85d"
+    },
+    {
+      "path": "packages/doe-gpu/examples/browser-compiler/particles.wgsl",
+      "sha256": "50a7ffa353796edafc9880069190d7ca929f8227b84f512b26c0c8fbc4f0c4eb"
+    },
+    {
+      "path": "packages/doe-gpu/src/browser-compiler-artifact.js",
+      "sha256": "11cd017a8dcad321ad6421ab77dc3be6c8695a4e9c3ad0d66f8de9679ee2e149"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/README.md",
+      "sha256": "24507fc0e11575f378ec4a25b7cdeef0a4ef13cac66443724706c51ac19c00a5"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/disabled.wgsl",
+      "sha256": "50a7ffa353796edafc9880069190d7ca929f8227b84f512b26c0c8fbc4f0c4eb"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/environment.json",
+      "sha256": "d67653df5ea228cf57d25a1fd7829fefd6bab5c77445acf561c60b6fe4d4a9aa"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/execution.log",
+      "sha256": "5b5b2db5d6ccd407b9deeeb80eecd11a105e1143ea24a6d44b39970026848063"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/failed-node-memory-view.log",
+      "sha256": "1916d7f2bc29dcc2ae9d6c24e2b713f30362aa860ed81c93752f73e6e1d823ac"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/original.wgsl",
+      "sha256": "50a7ffa353796edafc9880069190d7ca929f8227b84f512b26c0c8fbc4f0c4eb"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/session-0-plain.json",
+      "sha256": "d1465cc82d9c1f40a130fea381204693411c1da34c747e492ff4c5829d308779"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/session-0-timestamped.json",
+      "sha256": "5de502c33509d5015e02eac819521092ccc68a809cd011d22ab2976551485fba"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/session-1-plain.json",
+      "sha256": "2f683c72f68418c7aede99585edb9fed18050f7091d8946e689d8b71cd85c875"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/session-1-timestamped.json",
+      "sha256": "8a837e53e2506b3c947cb773bd65f8def89b62ff18a1cebac00be1678f8a796f"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/session-2-plain.json",
+      "sha256": "473663144f833434baef62cd72521b9fd27e073d47f9a2460acabe442f08efad"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/session-2-timestamped.json",
+      "sha256": "d59a4f8f0777464198361c137092632537679f949160ef94461a36ebb57e902e"
+    },
+    {
+      "path": "reports/browser-compiler/20261004/direct-output/transformed.wgsl",
+      "sha256": "57f3f18bf84f3302acdfadd6ea40ab3375bf4ae1f3b0edafd161cdeb86f112de"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "sessions": 3,
+  "browser": "/usr/bin/google-chrome",
+  "args": ["--no-sandbox", "--enable-unsafe-webgpu", "--ignore-gpu-blocklist", "--enable-webgpu-developer-features", "--use-angle=vulkan", "--enable-features=Vulkan", "--disable-vulkan-surface"],
+  "viewport": {"width": 1440, "height": 1100},
+  "output": "bench/out/browser-compiler/20261004/direct-output"
+}

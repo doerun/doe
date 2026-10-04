@@ -1488,6 +1488,10 @@
     {
       "schema": "config/browser-compiler-offline.schema.json",
       "data": "reports/browser-compiler/20261004/offline-uninstrumented.json"
+    },
+    {
+      "schema": "config/browser-compiler-output.schema.json",
+      "data": "config/browser-compiler-output.json"
     }
   ],
   "globTargets": [
@@ -1661,6 +1665,11 @@
       "schema": "config/compute-program-package.schema.json",
       "glob": "bench/out/compute-program/*command-storage-completion/qualified-*/summary.json",
       "allowEmpty": true
+    },
+    {
+      "schema": "config/browser-compiler-offline.schema.json",
+      "glob": "reports/browser-compiler/20261004/direct-output/session-*.json",
+      "allowEmpty": false
     }
   ]
 }

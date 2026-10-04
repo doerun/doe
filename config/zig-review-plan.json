@@ -7,7 +7,7 @@
       "batchId": "browser_wgsl_output_attribution",
       "state": "active",
       "objective": "Identify a profitable general WGSL transformation using direct browser execution, independent of compiler delivery.",
-      "rationale": "The final archive passes lifecycle and numerical checks but the assisted path loses. Direct original and disabled shaders have identical hashes with varying timings; apparent transformed gains are not attributable. Preserve the prototype without promoting its performance.",
+      "rationale": "Final archive delivery checks pass but assisted execution loses. Repeated direct-shader execution without any Worker finds identical-control variation and application timing sign reversals. Close the power-of-two performance hypothesis; no attributable shader gain is established.",
       "scopes": [
         {
           "level": "cross_directory",
@@ -20,7 +20,7 @@
       "findingReviewIds": [
         "browser_wgsl_prototype_20261004"
       ],
-      "nextAction": "Retain direct original/disabled/transformed WGSL and identical particle work. Resolve control timing variation before choosing one transformation from recoverable shader cost; use an independent application for transfer. Do not expand Worker packaging, backends or demo features.",
+      "nextAction": "Keep unsigned power-of-two rewriting unpromoted. Profile one existing independent inference or rendering application, identify its largest recoverable shader cost, and propose one general WGSL transformation. Qualify emitted text offline before runtime delivery; do not expand packaging or reselect favorable particle cohorts.",
       "acceptance": [
         "Run all WGSL directly through the same browser with compiler requests outside measurement, identical inputs/geometry/numerical oracle, rotated cohorts and instrumented/uninstrumented scopes.",
         "Reject gains explainable by identical-shader control variation, pipeline preparation or overlapping host work; preserve unfavorable cohorts.",

@@ -1,0 +1,9 @@
+file:///home/x/deco/doe/bench/executors/run-browser-wgsl-output.mjs:25
+new Uint8Array(wasm.memory.buffer, wasm.reserve_source(bytes.length), bytes.length).set(bytes);
+^
+
+TypeError: Cannot perform Construct on a detached ArrayBuffer
+    at new Uint8Array (<anonymous>)
+    at file:///home/x/deco/doe/bench/executors/run-browser-wgsl-output.mjs:25:1
+
+Node.js v22.22.1

@@ -104,7 +104,8 @@
         "bench/executors/run-doppler-kv-divergence.mjs",
         "bench/tools/generate_backend_workloads.py",
         "bench/gates/tint_compiler_evidence_gate.py",
-        "bench/tools/render_implementation_peers.py"
+        "bench/tools/render_implementation_peers.py",
+        "bench/executors/run-browser-wgsl-output.mjs"
       ],
       "docs": [
         "bench/README.md",

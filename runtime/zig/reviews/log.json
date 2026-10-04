@@ -27714,6 +27714,43 @@
         "src/compiler/wgsl/emit",
         "src/compiler/wgsl/runtime"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/executors/run-browser-wgsl-output.mjs",
+          "sha256": "374d67a8f68e818639885f009d12d1a3140ab909ef84f9fd913e87192c998dd6"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/browser-compiler/20261004/direct-output/README.md",
+          "sha256": "24507fc0e11575f378ec4a25b7cdeef0a4ef13cac66443724706c51ac19c00a5"
+        },
+        {
+          "path": "reports/browser-compiler/20261004/direct-output/manifest.json",
+          "sha256": "2ab1c2bf555079752b125210720ecea76e26d948873d774d0dc1368631050383"
+        }
+      ],
+      "findings": [
+        "Unsigned power-of-two source rewriting has no attributable application advantage; keep it unpromoted and choose a measured independent shader cost before a new general transformation."
+      ],
+      "inputHash": "d608cce28cb8ee32ecc09b1699c09e9bc92d6048cac69e12cafb0a4c2e948fed",
+      "level": "cross_directory",
+      "nextAction": "Profile one existing independent inference or rendering application, separate recoverable shader execution from preparation and settlement, then qualify one general emitted-WGSL transformation offline.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "browser_wgsl_output_attribution_20261004",
+      "reviewedAt": "2026-10-04T20:52:59.695202+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "b5829d158e56fb0ee8af2b83e4fc3f86e1fee7c6",
+      "status": "in_progress",
+      "summary": "Direct browser execution without compiler delivery verifies matched numerical work across fresh contexts. Application timing signs reverse and identical-text controls vary; no repeatable shader gain is established. Complete emit/runtime relationship review remains unfinished.",
+      "supersedes": "browser_wgsl_prototype_20261004",
+      "targets": [
+        "src/compiler/wgsl/emit",
+        "src/compiler/wgsl/runtime"
+      ]
     }
   ],
   "schemaVersion": 1
