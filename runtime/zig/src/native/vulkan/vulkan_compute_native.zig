@@ -727,28 +727,30 @@ pub fn vulkan_record_prepared_dispatch(rt: *NativeVulkanRuntime, dispatch: anyty
     var repeat_index: u32 = 0;
     while (repeat_index < repeat_count) : (repeat_index += 1) {
         try rt.record_prepared_dispatch_replay_on(command_buffer, dispatch.x, dispatch.y, dispatch.z);
-        const pipeline = cast(DoeComputePipeline, dispatch.compute_pipeline) orelse continue;
-        const binding_state = dispatch.vulkan_binding_state;
-        var resource_hasher = std.hash.Wyhash.init(0);
-        if (binding_state.valid) {
-            for (binding_state.bindings[0..binding_state.count]) |binding| {
-                resource_hasher.update(std.mem.asBytes(&binding.group));
-                resource_hasher.update(std.mem.asBytes(&binding.binding));
-                resource_hasher.update(std.mem.asBytes(&binding.resource_handle));
-                resource_hasher.update(std.mem.asBytes(&binding.buffer_offset));
-                resource_hasher.update(std.mem.asBytes(&binding.buffer_size));
+        if (program_identity_trace.enabled()) {
+            const pipeline = cast(DoeComputePipeline, dispatch.compute_pipeline) orelse continue;
+            const binding_state = dispatch.vulkan_binding_state;
+            var resource_hasher = std.hash.Wyhash.init(0);
+            if (binding_state.valid) {
+                for (binding_state.bindings[0..binding_state.count]) |binding| {
+                    resource_hasher.update(std.mem.asBytes(&binding.group));
+                    resource_hasher.update(std.mem.asBytes(&binding.binding));
+                    resource_hasher.update(std.mem.asBytes(&binding.resource_handle));
+                    resource_hasher.update(std.mem.asBytes(&binding.buffer_offset));
+                    resource_hasher.update(std.mem.asBytes(&binding.buffer_size));
+                }
             }
+            program_identity_trace.recordVulkanDispatch(
+                pipeline,
+                dispatch.x,
+                dispatch.y,
+                dispatch.z,
+                repeat_index,
+                if (binding_state.valid) binding_state.descriptor_hash else 0,
+                if (binding_state.valid) @intCast(binding_state.count) else 0,
+                if (binding_state.valid) resource_hasher.final() else 0,
+            );
         }
-        program_identity_trace.recordVulkanDispatch(
-            pipeline,
-            dispatch.x,
-            dispatch.y,
-            dispatch.z,
-            repeat_index,
-            if (binding_state.valid) binding_state.descriptor_hash else 0,
-            if (binding_state.valid) @intCast(binding_state.count) else 0,
-            if (binding_state.valid) resource_hasher.final() else 0,
-        );
     }
 }
 

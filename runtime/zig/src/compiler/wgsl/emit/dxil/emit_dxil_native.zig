@@ -302,6 +302,7 @@ const Emitter = struct {
             .local_ref => |_| return self.b.add_const_i32(0),
             .global_ref => |_| return self.b.add_const_i32(0),
             .load => |inner| return self.emit_expr_value(body, function, inner),
+            .address_of, .deref => return error.UnsupportedConstruct,
             .unary => |unary| {
                 const operand = try self.emit_expr_value(body, function, unary.operand);
                 return self.emit_unary_op(body, unary.op, operand, expr.ty);

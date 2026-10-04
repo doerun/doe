@@ -451,6 +451,7 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                     if (idx < module.globals.items.len) try write(buf, pos, module.globals.items[idx].name);
                 },
                 .load => |inner| try expr(buf, pos, module, function, inner),
+                .address_of, .deref => return error.UnsupportedConstruct,
                 .unary => |u| {
                     try write(buf, pos, maps.unaryOpText(u.op));
                     try write(buf, pos, "(");

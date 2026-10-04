@@ -389,6 +389,7 @@ pub fn write_expr(module: *const ir.Module, function: ir.Function, expr_id: ir.E
         .local_ref => |index| try write_str(buf, pos, function.locals.items[index].name),
         .global_ref => |index| try write_str(buf, pos, module.globals.items[index].name),
         .load => |inner| try write_expr(module, function, inner, buf, pos),
+        .address_of, .deref => return error.InvalidIr,
         .unary => |unary| {
             try write_str(buf, pos, "(");
             try write_str(buf, pos, unary_op_text(unary.op));

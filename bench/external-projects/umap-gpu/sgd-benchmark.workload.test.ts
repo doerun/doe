@@ -204,7 +204,13 @@ async function executeSample(sampleKind: 'warmup' | 'measured', sampleIndex: num
 
 describe('governed UMAP SGD selected operation', () => {
   it('records exact deterministic output and complete operation timing', async () => {
-    const { create, globals } = await import('webgpu');
+    const provider = await import('webgpu');
+    const { create, globals } = provider;
+    const diagnostics = process.env.DOE_UMAP_SUBMISSION_DIAGNOSTIC === '1'
+      && 'providerDiagnostics' in provider
+      && typeof provider.providerDiagnostics === 'function'
+      ? provider.providerDiagnostics
+      : null;
     Object.assign(globalThis, globals);
     const gpu = create([]);
     if (typeof globalThis.navigator === 'undefined') {
@@ -217,11 +223,27 @@ describe('governed UMAP SGD selected operation', () => {
       (globalThis.navigator as { gpu?: unknown }).gpu = gpu;
     }
     const samples = [];
+    const recordSample = async (sampleKind: 'warmup' | 'measured', sampleIndex: number) => {
+      const before = diagnostics?.();
+      const sample = await executeSample(sampleKind, sampleIndex);
+      samples.push(sample);
+      if (before) {
+        const after = diagnostics?.();
+        console.log(`DOE_UMAP_SUBMISSION_DIAGNOSTIC=${JSON.stringify({
+          sampleKind, sampleIndex,
+          queueSubmitCalls: after.queueSubmitCalls - before.queueSubmitCalls,
+          submittedCommandBuffers: after.submittedCommandBuffers - before.submittedCommandBuffers,
+          submitBreakdownNs: Object.fromEntries(Object.entries(after.submitBreakdownNs).map(
+            ([key, value]) => [key, value - before.submitBreakdownNs[key]],
+          )),
+        })}`);
+      }
+    };
     for (let index = 0; index < inputs.sampling.warmupRuns; index += 1) {
-      samples.push(await executeSample('warmup', index + 1));
+      await recordSample('warmup', index + 1);
     }
     for (let index = 0; index < inputs.sampling.measuredRuns; index += 1) {
-      samples.push(await executeSample('measured', index + 1));
+      await recordSample('measured', index + 1);
     }
     const measured = samples.filter(({ sampleKind }) => sampleKind === 'measured');
     const identities = new Set(measured.map(({ outputSha256 }) => outputSha256));

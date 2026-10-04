@@ -2038,7 +2038,7 @@
       },
       "src/compiler/wgsl/emit/csl/emit_csl_ir_walk.zig": {
         "decision": "Keep",
-        "moduleSha256": "4baf4768ef3192118571d61201581d195d9e126df6afbb905fd1a14cb039cac8",
+        "moduleSha256": "47f03070f4082dc2593710b5d1f400a74aa62edc6fd74b2d5227e0d68d278071",
         "reason": "Keep: cohesive CSL IR traversal/lowering phase shared by target emission.",
         "reviewer": "codex-dry-recomposition/2026-08-09"
       },
@@ -2182,7 +2182,7 @@
       },
       "src/compiler/wgsl/emit/dxil/emit_dxil_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "697b26b1cc5aeb47eb449e5fe315c1c5b15363427d8591a9cab652d6557fd446",
+        "moduleSha256": "935fe1c9fa46ed6bf98d8051cc58028a7d02e2821deda8a47be772673d605910",
         "reason": "Keep: reachable compiler implementation with private behavior tests and no merge, elevation, recomposition, or deletion signal.",
         "reviewer": "codex-recomposition-review/2026-08-08"
       },
@@ -2248,7 +2248,7 @@
       },
       "src/compiler/wgsl/emit/msl/emit_msl_shared.zig": {
         "decision": "Keep",
-        "moduleSha256": "185a0e9d40c114c3794e299d9376f367c7c2b6b771fd13a2dc568e4ac92d98a7",
+        "moduleSha256": "eb774fb9c80f51e83563500b72ff5db774d9170261aa690a72fffb51834e964c",
         "reason": "Keep: reachable compiler implementation shared by 4 production consumers with no conflicting ownership signal.",
         "reviewer": "codex-doe-completion/2026-08-24"
       },
@@ -3784,7 +3784,7 @@
       },
       "src/native/vulkan/vulkan_compute_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "5f670e07d43028502d4e35003259a935658ec8b17801450cd5eb16b03b5b861e",
+        "moduleSha256": "65fe1ac6898dd9b253cfc0b438b7aaf91595e2fde07e5b30db4688ace75116cf",
         "reason": "Keep: Vulkan pipeline preparation consumes translation-owned binding metadata and preserves specialized-override metadata from the same analyzed IR.",
         "reviewer": "codex-vulkan-preparation/2026-10-02"
       },
