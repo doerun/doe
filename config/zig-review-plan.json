@@ -4,37 +4,31 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "vulkan_recoverable_execution_cost",
+      "batchId": "vulkan_native_submission_attribution",
       "state": "active",
-      "objective": "Select one Vulkan generated-program optimization from recoverable unchanged-application execution cost.",
-      "rationale": "The retained loop-invariant candidate produces fewer instructions but lacks the declared GPU gain and repeatedly regresses complete-operation medians. UMAP pass times account for only part of ordinary operation cost. Select the next correction from measured application contribution. Subgroup normalization removes the VGPR discrepancy; width 64 fails the shader-gain requirement and supplies no repeatable ordinary benefit. Do not interpret reported register count as recoverable lowering cost.",
+      "objective": "Identify the largest avoidable native submission cost in unchanged UMAP and retain or reject one correction in its actual owner.",
+      "rationale": "The complete-operation report rejects current-source native-addon optimization. Public and driver timelines locate substantial synchronous submission time but do not yet identify its recoverable portion. GPU duration probes have no calibrated host origin; do not infer a disjoint cost by subtraction. Preserve the identifier repair and rejected hoisting/subgroup experiments.",
       "scopes": [
         {
-          "level": "within_directory",
+          "level": "cross_directory",
           "targets": [
-            "src/compiler/wgsl/emit/spirv"
-          ]
-        },
-        {
-          "level": "within_directory",
-          "targets": [
-            "src/backend/vulkan"
+            "src/backend/vulkan",
+            "src/native/queue"
           ]
         }
       ],
       "findingReviewIds": [
-        "vulkan_generated_20261004",
-        "vulkan_subgroup_normalization_20261004"
+        "vulkan_operation_timeline_20261004"
       ],
-      "nextAction": "Identify a recoverable cost in unchanged UMAP SGD execution with subgroup width and execution conditions matched, using final instructions and actual pass timing. Do not revive rejected hoisting or width 64; select one general IR/SPIR-V improvement only after measuring application contribution.",
+      "nextAction": "Attribute binding preparation, synchronization preparation and driver work inside ordinary native submission before choosing a correction. Preserve identifier admission, pending-resource lifetimes, rejected hoisting/subgroup changes and unresolved compiler timing samples.",
       "acceptance": [
         "Numerical, bounds and alias semantics are preserved through independent physical output oracles; existing runtime and full WGSL suites pass.",
         "Compiler time and allocations, generated-program execution time, full application latency and memory are measured independently against the accepted baseline and pinned Dawn, with declared regression limits and every cohort retained."
       ],
-      "stopCondition": "Retain or reject one measured Vulkan candidate; no shader optimization or application superiority is inferred from preparation savings alone.",
+      "stopCondition": "Retain one owned correction only after frozen correctness, replay and complete-operation acceptance, or reject it with all cohorts retained. Vulkan remains active; no shader transformation is required by this batch.",
       "requiredEnvironment": [
         "Pinned Zig toolchain",
-        "Physical AMD Vulkan provider and final-program profiling",
+        "Physical AMD Vulkan provider and existing native phase diagnostics",
         "Pinned Dawn control and unchanged application inputs"
       ]
     }

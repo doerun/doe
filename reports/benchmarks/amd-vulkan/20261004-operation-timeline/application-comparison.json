@@ -1,0 +1,540 @@
+{
+  "candidateRetained": false,
+  "classification": "diagnostic",
+  "cohorts": {
+    "baseline-1": {
+      "comparison": {
+        "W0OverD0Speedup": {
+          "p50": 0.9856750735466193,
+          "p95": 1.2686264530301328,
+          "p99": 1.267690901512682
+        },
+        "crossProviderExactOutputIdentity": false,
+        "materialPerformanceWin": false,
+        "outputIdentities": {
+          "D0": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "I0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "I1": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "W0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ]
+        }
+      },
+      "decision": {
+        "applicationPromotionCredit": false,
+        "correctnessEvidence": true,
+        "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis",
+        "performanceCredit": false,
+        "releaseCredit": false,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": false,
+        "status": "terminal"
+      },
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 611.142722,
+            "p95": 628.193238,
+            "p99": 628.193238
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 297766912,
+          "selectedOperationLatencyMs": {
+            "p50": 14.851804000000016,
+            "p95": 18.111634000000038,
+            "p99": 18.653925000000015
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "I0": {
+          "cleanProcessLatencyMs": {
+            "p50": 635.433581,
+            "p95": 681.712599,
+            "p99": 681.712599
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 305000448,
+          "selectedOperationLatencyMs": {
+            "p50": 16.830820999999958,
+            "p95": 25.62381399999998,
+            "p99": 27.515356999999995
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "I1": {
+          "cleanProcessLatencyMs": {
+            "p50": 620.055543,
+            "p95": 658.315278,
+            "p99": 658.315278
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 305369088,
+          "selectedOperationLatencyMs": {
+            "p50": 16.66902700000003,
+            "p95": 26.499392999999998,
+            "p99": 28.331444000000033
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 606.710846,
+            "p95": 615.204165,
+            "p99": 615.204165
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 305156096,
+          "selectedOperationLatencyMs": {
+            "p50": 14.63905299999999,
+            "p95": 22.976898000000006,
+            "p99": 23.647410999999977
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      }
+    },
+    "baseline-2": {
+      "comparison": {
+        "W0OverD0Speedup": {
+          "p50": 1.1536149482063467,
+          "p95": 1.5014460178400972,
+          "p99": 1.5168215414787414
+        },
+        "crossProviderExactOutputIdentity": false,
+        "materialPerformanceWin": true,
+        "outputIdentities": {
+          "D0": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "I0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "I1": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "W0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ]
+        }
+      },
+      "decision": {
+        "applicationPromotionCredit": false,
+        "correctnessEvidence": true,
+        "nextGate": "run-promotion-scale-reliability-installation-and-receipt-overhead-gates",
+        "performanceCredit": true,
+        "releaseCredit": false,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": true,
+        "status": "terminal"
+      },
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 616.163688,
+            "p95": 648.003209,
+            "p99": 648.003209
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 298639360,
+          "selectedOperationLatencyMs": {
+            "p50": 14.89516500000002,
+            "p95": 17.889475000000004,
+            "p99": 18.349121000000025
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "I0": {
+          "cleanProcessLatencyMs": {
+            "p50": 622.290373,
+            "p95": 645.395099,
+            "p99": 645.395099
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 305770496,
+          "selectedOperationLatencyMs": {
+            "p50": 15.738372999999967,
+            "p95": 24.62152500000002,
+            "p99": 29.039085999999998
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "I1": {
+          "cleanProcessLatencyMs": {
+            "p50": 624.124234,
+            "p95": 662.742473,
+            "p99": 662.742473
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 307097600,
+          "selectedOperationLatencyMs": {
+            "p50": 18.18423999999999,
+            "p95": 26.206710999999984,
+            "p99": 29.956893999999977
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 629.323907,
+            "p95": 659.377905,
+            "p99": 659.377905
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 305852416,
+          "selectedOperationLatencyMs": {
+            "p50": 17.183285000000012,
+            "p95": 26.86008099999998,
+            "p99": 27.832341999999983
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      }
+    },
+    "candidate-1": {
+      "comparison": {
+        "W0OverD0Speedup": {
+          "p50": 1.0160746274888477,
+          "p95": 1.359536736632502,
+          "p99": 1.319833688652231
+        },
+        "crossProviderExactOutputIdentity": false,
+        "materialPerformanceWin": false,
+        "outputIdentities": {
+          "D0": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "I0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "I1": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "W0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ]
+        }
+      },
+      "decision": {
+        "applicationPromotionCredit": false,
+        "correctnessEvidence": true,
+        "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis",
+        "performanceCredit": false,
+        "releaseCredit": false,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": false,
+        "status": "terminal"
+      },
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 620.31462,
+            "p95": 656.299439,
+            "p99": 656.299439
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 297930752,
+          "selectedOperationLatencyMs": {
+            "p50": 15.088810000000024,
+            "p95": 18.277206000000035,
+            "p99": 19.001710000000003
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "I0": {
+          "cleanProcessLatencyMs": {
+            "p50": 623.138834,
+            "p95": 631.032974,
+            "p99": 631.032974
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 305283072,
+          "selectedOperationLatencyMs": {
+            "p50": 15.913833999999952,
+            "p95": 24.835628000000042,
+            "p99": 26.092967999999985
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "I1": {
+          "cleanProcessLatencyMs": {
+            "p50": 623.568443,
+            "p95": 651.675062,
+            "p99": 651.675062
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 304926720,
+          "selectedOperationLatencyMs": {
+            "p50": 15.811360999999977,
+            "p95": 25.049751999999955,
+            "p99": 26.733934999999974
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 624.064976,
+            "p95": 646.893895,
+            "p99": 646.893895
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 305201152,
+          "selectedOperationLatencyMs": {
+            "p50": 15.331357000000025,
+            "p95": 24.84853300000003,
+            "p99": 25.07909699999999
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      }
+    },
+    "candidate-2": {
+      "comparison": {
+        "W0OverD0Speedup": {
+          "p50": 1.0766094850711816,
+          "p95": 1.4597643702446617,
+          "p99": 1.4019265820492481
+        },
+        "crossProviderExactOutputIdentity": false,
+        "materialPerformanceWin": false,
+        "outputIdentities": {
+          "D0": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "I0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "I1": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "W0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ]
+        }
+      },
+      "decision": {
+        "applicationPromotionCredit": false,
+        "correctnessEvidence": true,
+        "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis",
+        "performanceCredit": false,
+        "releaseCredit": false,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": false,
+        "status": "terminal"
+      },
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 619.57459,
+            "p95": 640.853839,
+            "p99": 640.853839
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 298385408,
+          "selectedOperationLatencyMs": {
+            "p50": 14.942745000000002,
+            "p95": 17.625448000000006,
+            "p99": 18.895950999999968
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "I0": {
+          "cleanProcessLatencyMs": {
+            "p50": 632.135203,
+            "p95": 653.815178,
+            "p99": 653.815178
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 305119232,
+          "selectedOperationLatencyMs": {
+            "p50": 16.678664000000026,
+            "p95": 23.913472000000013,
+            "p99": 24.658915999999977
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "I1": {
+          "cleanProcessLatencyMs": {
+            "p50": 631.623727,
+            "p95": 660.232934,
+            "p99": 660.232934
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 305356800,
+          "selectedOperationLatencyMs": {
+            "p50": 15.241627999999992,
+            "p95": 23.736707999999965,
+            "p99": 23.995046000000002
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 617.709529,
+            "p95": 636.330811,
+            "p99": 636.330811
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 305254400,
+          "selectedOperationLatencyMs": {
+            "p50": 16.087500999999975,
+            "p95": 25.72900100000004,
+            "p99": 26.490736000000027
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      }
+    }
+  },
+  "decision": "reject-addon-O3; no repeatable material complete-operation gain",
+  "limitations": [
+    "Existing populated disk caches; fresh processes are not empty-cache measurements.",
+    "All ordinary cohorts run sequentially without timeline, native observer, submission breakdown, or GPU timestamp instrumentation.",
+    "A favorable individual Doe/Dawn cohort does not establish repeatable replacement value."
+  ],
+  "pairs": [
+    {
+      "materialGain": false,
+      "pair": 1,
+      "regressionFractions": {
+        "cleanProcessLatencyMs": {
+          "p50": 0.01500778405735459,
+          "p95": 0.04474133005551395,
+          "p99": 0.04474133005551395
+        },
+        "peakProcessTreeRssBytes": 0.0005502290328349702,
+        "selectedOperationLatencyMs": {
+          "p50": 0.015958061391061262,
+          "p95": 0.009141748337007982,
+          "p99": 0.018644065525083242
+        }
+      },
+      "speedupRatios": {
+        "cleanProcessLatencyMs": {
+          "p50": 0.9852141192480681,
+          "p95": 0.9571747295063586,
+          "p99": 0.9571747295063586
+        },
+        "selectedOperationLatencyMs": {
+          "p50": 0.9842925982897255,
+          "p95": 0.9909410661563919,
+          "p99": 0.9816971735701688
+        }
+      }
+    },
+    {
+      "materialGain": false,
+      "pair": 2,
+      "regressionFractions": {
+        "cleanProcessLatencyMs": {
+          "p50": 0.005535707582949856,
+          "p95": -0.011032923758252489,
+          "p99": -0.011032923758252489
+        },
+        "peakProcessTreeRssBytes": -0.0008503634618022282,
+        "selectedOperationLatencyMs": {
+          "p50": 0.0031943251383910187,
+          "p95": -0.0147587897353052,
+          "p99": 0.029801427545218306
+        }
+      },
+      "speedupRatios": {
+        "cleanProcessLatencyMs": {
+          "p50": 0.994494767772836,
+          "p95": 1.011156007134413,
+          "p99": 1.011156007134413
+        },
+        "selectedOperationLatencyMs": {
+          "p50": 0.9968158460845058,
+          "p95": 1.0149798745541105,
+          "p99": 0.9710609960832379
+        }
+      }
+    }
+  ]
+}

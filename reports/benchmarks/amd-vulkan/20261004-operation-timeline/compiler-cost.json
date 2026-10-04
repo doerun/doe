@@ -1,0 +1,135 @@
+{
+  "classification": "diagnostic",
+  "cohortOrder": [
+    "previous",
+    "current",
+    "current",
+    "previous"
+  ],
+  "decision": "No compiler change in this candidate. Earlier slower apply-forces samples remain unresolved; these cohorts do not consistently reproduce them.",
+  "iterations": 500,
+  "priorEvidence": "../20261004-identifiers-subgroups/compiler-costs.json",
+  "samples": [
+    {
+      "backingAllocatorObservation": {
+        "allocatedBytes": 28618,
+        "allocations": 5,
+        "freedBytes": 28618,
+        "resizes": 33
+      },
+      "cohort": "compiler-0-previous-apply-forces",
+      "outputBytes": 1636,
+      "p50Us": 43.181,
+      "p95Us": 48.511,
+      "p99Us": 51.607,
+      "shader": "apply-forces",
+      "target": "spirv"
+    },
+    {
+      "backingAllocatorObservation": {
+        "allocatedBytes": 244911,
+        "allocations": 7,
+        "freedBytes": 244911,
+        "resizes": 4
+      },
+      "cohort": "compiler-0-previous-sgd",
+      "outputBytes": 8344,
+      "p50Us": 96.361,
+      "p95Us": 135.776,
+      "p99Us": 249.9,
+      "shader": "sgd",
+      "target": "spirv"
+    },
+    {
+      "backingAllocatorObservation": {
+        "allocatedBytes": 28618,
+        "allocations": 5,
+        "freedBytes": 28618,
+        "resizes": 33
+      },
+      "cohort": "compiler-1-current-apply-forces",
+      "outputBytes": 1636,
+      "p50Us": 39.534,
+      "p95Us": 48.802,
+      "p99Us": 70.182,
+      "shader": "apply-forces",
+      "target": "spirv"
+    },
+    {
+      "backingAllocatorObservation": {
+        "allocatedBytes": 244911,
+        "allocations": 7,
+        "freedBytes": 244911,
+        "resizes": 4
+      },
+      "cohort": "compiler-1-current-sgd",
+      "outputBytes": 8344,
+      "p50Us": 135.846,
+      "p95Us": 145.805,
+      "p99Us": 290.407,
+      "shader": "sgd",
+      "target": "spirv"
+    },
+    {
+      "backingAllocatorObservation": {
+        "allocatedBytes": 28618,
+        "allocations": 5,
+        "freedBytes": 28618,
+        "resizes": 33
+      },
+      "cohort": "compiler-2-current-apply-forces",
+      "outputBytes": 1636,
+      "p50Us": 43.342,
+      "p95Us": 49.193,
+      "p99Us": 56.527,
+      "shader": "apply-forces",
+      "target": "spirv"
+    },
+    {
+      "backingAllocatorObservation": {
+        "allocatedBytes": 244911,
+        "allocations": 7,
+        "freedBytes": 244911,
+        "resizes": 4
+      },
+      "cohort": "compiler-2-current-sgd",
+      "outputBytes": 8344,
+      "p50Us": 98.015,
+      "p95Us": 136.617,
+      "p99Us": 238.49,
+      "shader": "sgd",
+      "target": "spirv"
+    },
+    {
+      "backingAllocatorObservation": {
+        "allocatedBytes": 28618,
+        "allocations": 5,
+        "freedBytes": 28618,
+        "resizes": 33
+      },
+      "cohort": "compiler-3-previous-apply-forces",
+      "outputBytes": 1636,
+      "p50Us": 42.661,
+      "p95Us": 47.73,
+      "p99Us": 51.247,
+      "shader": "apply-forces",
+      "target": "spirv"
+    },
+    {
+      "backingAllocatorObservation": {
+        "allocatedBytes": 244911,
+        "allocations": 7,
+        "freedBytes": 244911,
+        "resizes": 4
+      },
+      "cohort": "compiler-3-previous-sgd",
+      "outputBytes": 8344,
+      "p50Us": 98.385,
+      "p95Us": 139.713,
+      "p99Us": 389.293,
+      "shader": "sgd",
+      "target": "spirv"
+    }
+  ],
+  "warmup": 50
+}

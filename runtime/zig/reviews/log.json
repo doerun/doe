@@ -27506,6 +27506,55 @@
         "src/backend/vulkan",
         "src/compiler/wgsl/emit/spirv"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "packages/doe-gpu/scripts/build-addon.js",
+          "sha256": "ac1e99f77038670efd2d7dbbd7d7adeecf210f49046c0b11a0039b9bc48520ec"
+        },
+        {
+          "path": "runtime/bridge/webgpu-addon/doe_napi_queue.c",
+          "sha256": "5eb759b5bcad9d0622d867193a46e4a1708c6cb113d6abc874d385eb2786b6e9"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-operation-timeline/application-comparison.json",
+          "sha256": "64bbb69084e27871e8c7fb2567d31583c34a171ff6d402ace8918540d29f535e"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-operation-timeline/evidence.json",
+          "sha256": "4688f1a7813fecf1676fe01419f783a0689ffc526657996af400fefdbd397ab7"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-operation-timeline/operation-timeline.json",
+          "sha256": "c9f60c2f98b9c2d130515ad203ccb414591a7df069c3b85ca41e6e2a12bd881e"
+        }
+      ],
+      "findings": [
+        "Synchronous queue submission includes significant driver time and bridge/native replay. No largest avoidable native cost is established; GPU pass durations lack calibrated host placement and cannot be subtracted as disjoint phases.",
+        "Per-operation host allocations and internal cache misses remain incompletely attributed. Earlier slower apply-forces compiler samples are not consistently reproduced and remain unresolved."
+      ],
+      "inputHash": "c7b0d38f5fd172d23f0a549239b4d994dbced5916c739af1cc33d3a731bd627f",
+      "level": "cross_directory",
+      "nextAction": "Attribute binding preparation, synchronization preparation and driver work inside ordinary native submission before choosing a correction. Preserve identifier admission, pending-resource lifetimes, rejected hoisting/subgroup changes and unresolved compiler timing samples.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "The direct addon builder has no optimization flag. Identical-source baseline versus -O3 cohorts do not meet the predeclared repeatable complete-operation gain; every cohort and oracle is retained and the baseline addon is restored.",
+        "Independent physical shader/render, command ownership, render lifetime, selected Doppler kernel and combined runtime/WGSL checks pass for the scoped candidate. No production compiler/runtime change is retained."
+      ],
+      "reviewId": "vulkan_operation_timeline_20261004",
+      "reviewedAt": "2026-10-04T18:58:39.283313+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "3759a804e08708e0b5f26959990a40e1d64cc66d",
+      "status": "in_progress",
+      "summary": "Scoped complete-operation investigation: reject identical-source addon optimization under the frozen alternating application policy. Public and native timelines identify submission as a host interval to attribute; this is not a complete queue/backend review.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan",
+        "src/native/queue"
+      ]
     }
   ],
   "schemaVersion": 1

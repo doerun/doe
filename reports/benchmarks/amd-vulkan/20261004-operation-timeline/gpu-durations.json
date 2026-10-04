@@ -1,0 +1,88 @@
+{
+  "classification": "instrumented-pass-duration-diagnostic",
+  "limits": [
+    "Query resolution, timestamp copies and extra readback change execution.",
+    "No absolute GPU/host clock calibration; no claimed execution improvement or summed critical-path attribution."
+  ],
+  "samples": {
+    "gpu-baseline-doe": [
+      {
+        "applyPassTotalMs": 1.120489,
+        "epochs": 500,
+        "sampleKind": "warmup",
+        "sgdPassTotalMs": 2.075805
+      },
+      {
+        "applyPassTotalMs": 1.087925,
+        "epochs": 500,
+        "sampleKind": "measured",
+        "sgdPassTotalMs": 1.992749
+      },
+      {
+        "applyPassTotalMs": 1.1336,
+        "epochs": 500,
+        "sampleKind": "measured",
+        "sgdPassTotalMs": 2.095784
+      },
+      {
+        "applyPassTotalMs": 1.164718,
+        "epochs": 500,
+        "sampleKind": "measured",
+        "sgdPassTotalMs": 2.137695
+      }
+    ],
+    "gpu-current-dawn": [
+      {
+        "applyPassTotalMs": 0.938997,
+        "epochs": 500,
+        "sampleKind": "warmup",
+        "sgdPassTotalMs": 2.71609
+      },
+      {
+        "applyPassTotalMs": 0.997143,
+        "epochs": 500,
+        "sampleKind": "measured",
+        "sgdPassTotalMs": 2.889383
+      },
+      {
+        "applyPassTotalMs": 0.955343,
+        "epochs": 500,
+        "sampleKind": "measured",
+        "sgdPassTotalMs": 2.751111
+      },
+      {
+        "applyPassTotalMs": 0.940119,
+        "epochs": 500,
+        "sampleKind": "measured",
+        "sgdPassTotalMs": 2.735372
+      }
+    ],
+    "gpu-current-doe": [
+      {
+        "applyPassTotalMs": 1.145934,
+        "epochs": 500,
+        "sampleKind": "warmup",
+        "sgdPassTotalMs": 2.162071
+      },
+      {
+        "applyPassTotalMs": 1.15204,
+        "epochs": 500,
+        "sampleKind": "measured",
+        "sgdPassTotalMs": 2.15513
+      },
+      {
+        "applyPassTotalMs": 1.144293,
+        "epochs": 500,
+        "sampleKind": "measured",
+        "sgdPassTotalMs": 2.111442
+      },
+      {
+        "applyPassTotalMs": 1.191265,
+        "epochs": 500,
+        "sampleKind": "measured",
+        "sgdPassTotalMs": 2.212758
+      }
+    ]
+  },
+  "timestampQuantizationDisabledForDawn": true
+}

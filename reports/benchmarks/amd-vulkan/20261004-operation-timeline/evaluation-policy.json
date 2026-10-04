@@ -1,0 +1,32 @@
+{
+  "artifacts": {
+    "baseline-addon.node": "4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66",
+    "candidate-addon.node": "3ead94d8e7e0acafae568266e16579a5ad63cb98f7516f383fe87220d0d1354b",
+    "original-addon.node": "4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66"
+  },
+  "candidate": "current-source addon compiled with -O3 rather than direct-builder default",
+  "classification": "diagnostic-candidate-evaluation",
+  "cleanProcessesPerLane": 10,
+  "cohortOrder": [
+    "baseline-1",
+    "candidate-1",
+    "candidate-2",
+    "baseline-2"
+  ],
+  "instrumentationDisabledForAcceptance": true,
+  "materialPerformanceContract": "bench/external-projects/umap-gpu/sgd-benchmark.harness.json",
+  "maxRegressionFraction": 0.05,
+  "minimumMaterialSpeedupRatio": 1.1,
+  "oraclesUnchanged": true,
+  "regressionMetrics": [
+    "selectedOperationLatencyMs.p50",
+    "selectedOperationLatencyMs.p95",
+    "cleanProcessLatencyMs.p50",
+    "cleanProcessLatencyMs.p95",
+    "peakProcessTreeRssBytes"
+  ],
+  "requireBothMatchedPairs": true,
+  "requiredRegressingPairs": 2,
+  "schemaVersion": 1,
+  "sourceCommit": "3759a804e"
+}

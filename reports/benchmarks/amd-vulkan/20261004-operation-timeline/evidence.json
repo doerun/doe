@@ -1,0 +1,149 @@
+{
+  "classification": "diagnostic-source-workspace-experiment",
+  "commands": [
+    "node packages/doe-gpu/scripts/build-addon.js",
+    "CC=<cc-optimized wrapper> node packages/doe-gpu/scripts/build-addon.js",
+    "DOE_WEBGPU_LIB=<retained runtime> node bench/external-projects/umap-gpu/run-sgd-benchmark.mjs --clean-process-runs 10 --run-id 20261004-operation-<cohort> --require-all-pass",
+    "zig build test test-full test-wgsl -Doptimize=ReleaseFast --summary all",
+    "<compiler tool> --shader-path <unchanged upstream shader> --shader-name <name> --shader-tier external --target spirv --iterations 500 --warmup 50 --out <ndjson>"
+  ],
+  "correctness": {
+    "allCohortsRequireAllPassSucceeded": true,
+    "candidateCommandOwnership": "pass",
+    "candidateRenderOwnership": "pass",
+    "candidateShaderRender": "pass",
+    "cleanProcessesPerLanePerCohort": 10,
+    "combinedSuitePassed": 5854,
+    "combinedSuiteSkipped": 22,
+    "lanesPerCohort": 4,
+    "ordinaryCohorts": 4,
+    "selectedDopplerKernelParity": "pass; not full inference"
+  },
+  "decision": {
+    "baselineAddonRestored": true,
+    "candidateRetained": false,
+    "hoistingAndSubgroupRejectionsPreserved": true,
+    "identifierAdmissionPreserved": true,
+    "materialApplicationAdvantageEstablished": false,
+    "productionRuntimeUnchanged": true
+  },
+  "executables": [
+    {
+      "bytes": 19874384,
+      "custody": "local ignored artifacts; not a portable release or installed-package qualification",
+      "path": "bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/dist/linux-x64.dawn.node",
+      "sha256": "dc2a6007318287a62436e220fa9a8cf698301b6320153a48182398fc68eea5ff"
+    },
+    {
+      "bytes": 11860920,
+      "custody": "local ignored artifacts; not a portable release or installed-package qualification",
+      "path": "bench/out/vulkan-identifiers/20261004/runtime/lib/libwebgpu_doe.so",
+      "sha256": "9f1ba8bd0670d799f18f8af322afa4244dd5d569f6bf824d4b281f1a3fbae292"
+    },
+    {
+      "bytes": 424080,
+      "custody": "local ignored artifacts; not a portable release or installed-package qualification",
+      "path": "bench/out/vulkan-operation/20261004/original-addon.node",
+      "sha256": "4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66"
+    },
+    {
+      "bytes": 424080,
+      "custody": "local ignored artifacts; not a portable release or installed-package qualification",
+      "path": "bench/out/vulkan-operation/20261004/baseline-addon.node",
+      "sha256": "4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66"
+    },
+    {
+      "bytes": 350240,
+      "custody": "local ignored artifacts; not a portable release or installed-package qualification",
+      "path": "bench/out/vulkan-operation/20261004/candidate-addon.node",
+      "sha256": "3ead94d8e7e0acafae568266e16579a5ad63cb98f7516f383fe87220d0d1354b"
+    },
+    {
+      "bytes": 5836680,
+      "custody": "local ignored artifacts; not a portable release or installed-package qualification",
+      "path": "bench/out/vulkan-generated/20261004/fixed-allocation-tools/bin/doe-compilation-bench",
+      "sha256": "e00ec08a541c6aa1e00cfcaeb13215ed3ae9a40cdf448d035e6287f8266c8e61"
+    },
+    {
+      "bytes": 5848712,
+      "custody": "local ignored artifacts; not a portable release or installed-package qualification",
+      "path": "bench/out/vulkan-identifiers/20261004/allocation-tools/bin/doe-compilation-bench",
+      "sha256": "55b3e38dae90511f288848bbb7776a5ece5b68f5a072a308a0207fc621cec1b2"
+    },
+    {
+      "bytes": 16944,
+      "custody": "local ignored artifacts; not a portable release or installed-package qualification",
+      "path": "bench/out/vulkan-operation/20261004/vulkan-boundaries.so",
+      "sha256": "ea85a98e5ec58f60efdf9c260013864a50fff06a57ca3f653de5750da2bccb7b"
+    }
+  ],
+  "limitations": [
+    "The original addon and fresh baseline rebuild have identical hashes; no stale-source difference is credited.",
+    "No accepted production performance change, universal superiority, full WGSL conformance, full inference, installed archive qualification or physical device-loss claim.",
+    "Initial LD_PRELOAD resolution failed because the runtime loads Vulkan locally. Failure log is retained; successful observation explicitly resolves libvulkan.so.1."
+  ],
+  "sourceCommit": "3759a804e08708e0b5f26959990a40e1d64cc66d",
+  "sourceInputs": [
+    {
+      "bytes": 2997,
+      "path": "packages/doe-gpu/scripts/build-addon.js",
+      "sha256": "ac1e99f77038670efd2d7dbbd7d7adeecf210f49046c0b11a0039b9bc48520ec"
+    },
+    {
+      "bytes": 1783,
+      "path": "packages/doe-gpu/binding.gyp",
+      "sha256": "68cc50fd7d7abfb1ca3bc335d99d789eb45f4bf57ec24e1e58b364b4b2215ba1"
+    },
+    {
+      "bytes": 94118,
+      "path": "runtime/bridge/webgpu-addon/doe_napi_queue.c",
+      "sha256": "5eb759b5bcad9d0622d867193a46e4a1708c6cb113d6abc874d385eb2786b6e9"
+    },
+    {
+      "bytes": 19435,
+      "path": "runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig",
+      "sha256": "c059e543ee44e3bbda0fec9c7e12f1a28189f836453b3497d50161f88990b184"
+    },
+    {
+      "bytes": 32373,
+      "path": "runtime/zig/src/backend/vulkan/vk_upload.zig",
+      "sha256": "fce6a0ca3e81a3d9d1281b848d2c7dbe843786127df92201e6daca03dbb4541f"
+    },
+    {
+      "bytes": 7521,
+      "path": "config/backend-runtime-policy.json",
+      "sha256": "1169005f898e33fe9583e3d20f13478427c498de6f195037f07160bbfebf270a"
+    },
+    {
+      "bytes": 6956,
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.harness.json",
+      "sha256": "0fbb5d2d44871e7a4184228a897f3e6e7050fc5663883298bf046748e53afbe5"
+    },
+    {
+      "bytes": 552,
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.inputs.json",
+      "sha256": "2d453439b8f597fd38d4dddd4e88b4b5de83fa0d18ab4dd68767d674e9184b39"
+    },
+    {
+      "bytes": 1205,
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.oracle.md",
+      "sha256": "7f4937e8fd86fae2a167e80e7d9a6abb52e98cba96f064c7a177ce92d290b552"
+    },
+    {
+      "bytes": 8859,
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.workload.test.ts",
+      "sha256": "55e971f997f5618367e2b5168215e20790305de271f76825dc5ef8a732575028"
+    },
+    {
+      "bytes": 19740,
+      "path": "bench/external-projects/umap-gpu/run-sgd-benchmark.mjs",
+      "sha256": "62d21914ad1495ee50d33bcc0a829be02184a4acdaca2d948089d8cdc0f28798"
+    }
+  ],
+  "toolchain": {
+    "cc": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "node": "v22.22.1",
+    "zig": "0.15.2"
+  },
+  "upstreamCommit": "7884b287f49bc057df7e0856c5539f130a20e0ad"
+}

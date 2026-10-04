@@ -1,5 +1,20 @@
 # Doe status: runtime backends and benchmarks
 
+## Complete-operation submission attribution
+
+The [operation investigation](../../reports/benchmarks/amd-vulkan/20261004-operation-timeline/README.md)
+rejects native-addon optimization after identical-source alternating application
+cohorts. The baseline build is restored and production runtime policy is unchanged.
+Public, native driver and GPU-duration observations remain distinct; nested calls
+and overlapping GPU work cannot be added into a serial total. Favorable individual
+Doe/Dawn cohorts do not establish repeatable replacement value.
+
+The existing review plan now selects attribution inside native submission before
+another correction. Recoverable driver/bridge cost, complete host-allocation and
+cache-miss attribution, and the earlier compiler timing discrepancy remain open.
+Identifier admission and prior hoisting/subgroup rejections are preserved.
+Vulkan remains active; Metal follows a closed campaign and D3D12 is deferred.
+
 ## Current boundary
 
 The [strategy contract](../../config/doe-product-strategy.json) owns milestone

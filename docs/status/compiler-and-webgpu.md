@@ -5,6 +5,12 @@ runtime path. Artifacts and executable tests own pass/fail state.
 
 ## Identifier eligibility
 
+The [operation follow-up](../../reports/benchmarks/amd-vulkan/20261004-operation-timeline/README.md)
+preserves identifier admission while separately measuring compilation and
+execution. New alternating compiler samples do not consistently reproduce the
+earlier apply-forces slowdown; the earlier observations remain unresolved.
+No compiler nonregression or generated-program improvement is established.
+
 The [identifier and subgroup checkpoint](../../reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/README.md)
 repairs declaration and parameter admission, with exact parser spans and owned
 public diagnostics. Language keywords, reserved words and prohibited underscore
