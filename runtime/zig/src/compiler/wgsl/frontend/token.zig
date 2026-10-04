@@ -14,7 +14,112 @@ pub const Token = struct {
     pub fn slice(self: Token, source: []const u8) []const u8 {
         return source[self.loc.start..self.loc.end];
     }
+
+    /// Identifier eligibility is distinct from the lexer's contextual type tags.
+    /// WGSL 2026-09-21 sections 3.7.1 and 16 own these spelling restrictions.
+    pub fn isIdentifier(self: Token, source: []const u8) bool {
+        switch (self.tag) {
+            .ident,
+            .kw_bool,
+            .kw_f16,
+            .kw_f32,
+            .kw_i32,
+            .kw_u32,
+            .kw_vec2,
+            .kw_vec3,
+            .kw_vec4,
+            .kw_mat2x2,
+            .kw_mat3x3,
+            .kw_mat4x4,
+            .kw_mat2x3,
+            .kw_mat2x4,
+            .kw_mat3x2,
+            .kw_mat3x4,
+            .kw_mat4x2,
+            .kw_mat4x3,
+            .kw_array,
+            .kw_atomic,
+            .kw_ptr,
+            .kw_sampler,
+            .kw_texture_1d,
+            .kw_texture_2d,
+            .kw_texture_external,
+            .kw_uniform,
+            .kw_storage,
+            .kw_workgroup,
+            .kw_private,
+            .kw_function,
+            .kw_read,
+            .kw_read_write,
+            .kw_vec2f,
+            .kw_vec3f,
+            .kw_vec4f,
+            .kw_vec2h,
+            .kw_vec3h,
+            .kw_vec4h,
+            .kw_vec2i,
+            .kw_vec3i,
+            .kw_vec4i,
+            .kw_vec2u,
+            .kw_vec3u,
+            .kw_vec4u,
+            .kw_mat2x2f,
+            .kw_mat3x3f,
+            .kw_mat4x4f,
+            .kw_mat2x2h,
+            .kw_mat3x3h,
+            .kw_mat4x4h,
+            => {},
+            else => return false,
+        }
+        const name = self.slice(source);
+        return !std.mem.eql(u8, name, "_") and
+            !std.mem.startsWith(u8, name, "__") and
+            !NON_IDENTIFIER_WORDS.has(name);
+    }
 };
+
+// Reserved words, plus the keyword `requires` (not yet a directive token).
+// https://www.w3.org/TR/2026/CRD-WGSL-20260921/#reserved-words
+const NON_IDENTIFIER_WORDS = std.StaticStringMap(void).initComptime(.{
+    .{ "NULL", {} },             .{ "Self", {} },          .{ "abstract", {} },        .{ "active", {} },
+    .{ "alignas", {} },          .{ "alignof", {} },       .{ "as", {} },              .{ "asm", {} },
+    .{ "asm_fragment", {} },     .{ "async", {} },         .{ "attribute", {} },       .{ "auto", {} },
+    .{ "await", {} },            .{ "become", {} },        .{ "cast", {} },            .{ "catch", {} },
+    .{ "class", {} },            .{ "co_await", {} },      .{ "co_return", {} },       .{ "co_yield", {} },
+    .{ "coherent", {} },         .{ "column_major", {} },  .{ "common", {} },          .{ "compile", {} },
+    .{ "compile_fragment", {} }, .{ "concept", {} },       .{ "const_cast", {} },      .{ "consteval", {} },
+    .{ "constexpr", {} },        .{ "constinit", {} },     .{ "crate", {} },           .{ "debugger", {} },
+    .{ "decltype", {} },         .{ "delete", {} },        .{ "demote", {} },          .{ "demote_to_helper", {} },
+    .{ "do", {} },               .{ "dynamic_cast", {} },  .{ "enum", {} },            .{ "explicit", {} },
+    .{ "export", {} },           .{ "extends", {} },       .{ "extern", {} },          .{ "external", {} },
+    .{ "fallthrough", {} },      .{ "filter", {} },        .{ "final", {} },           .{ "finally", {} },
+    .{ "friend", {} },           .{ "from", {} },          .{ "fxgroup", {} },         .{ "get", {} },
+    .{ "goto", {} },             .{ "groupshared", {} },   .{ "highp", {} },           .{ "impl", {} },
+    .{ "implements", {} },       .{ "import", {} },        .{ "inline", {} },          .{ "instanceof", {} },
+    .{ "interface", {} },        .{ "layout", {} },        .{ "lowp", {} },            .{ "macro", {} },
+    .{ "macro_rules", {} },      .{ "match", {} },         .{ "mediump", {} },         .{ "meta", {} },
+    .{ "mod", {} },              .{ "module", {} },        .{ "move", {} },            .{ "mut", {} },
+    .{ "mutable", {} },          .{ "namespace", {} },     .{ "new", {} },             .{ "nil", {} },
+    .{ "noexcept", {} },         .{ "noinline", {} },      .{ "nointerpolation", {} }, .{ "non_coherent", {} },
+    .{ "noncoherent", {} },      .{ "noperspective", {} }, .{ "null", {} },            .{ "nullptr", {} },
+    .{ "of", {} },               .{ "operator", {} },      .{ "package", {} },         .{ "packoffset", {} },
+    .{ "partition", {} },        .{ "pass", {} },          .{ "patch", {} },           .{ "pixelfragment", {} },
+    .{ "precise", {} },          .{ "precision", {} },     .{ "premerge", {} },        .{ "priv", {} },
+    .{ "protected", {} },        .{ "pub", {} },           .{ "public", {} },          .{ "readonly", {} },
+    .{ "ref", {} },              .{ "regardless", {} },    .{ "register", {} },        .{ "reinterpret_cast", {} },
+    .{ "require", {} },          .{ "requires", {} },      .{ "resource", {} },        .{ "restrict", {} },
+    .{ "self", {} },             .{ "set", {} },           .{ "shared", {} },          .{ "sizeof", {} },
+    .{ "smooth", {} },           .{ "snorm", {} },         .{ "static", {} },          .{ "static_assert", {} },
+    .{ "static_cast", {} },      .{ "std", {} },           .{ "subroutine", {} },      .{ "super", {} },
+    .{ "target", {} },           .{ "template", {} },      .{ "this", {} },            .{ "thread_local", {} },
+    .{ "throw", {} },            .{ "trait", {} },         .{ "try", {} },             .{ "type", {} },
+    .{ "typedef", {} },          .{ "typeid", {} },        .{ "typename", {} },        .{ "typeof", {} },
+    .{ "union", {} },            .{ "unless", {} },        .{ "unorm", {} },           .{ "unsafe", {} },
+    .{ "unsized", {} },          .{ "use", {} },           .{ "using", {} },           .{ "varying", {} },
+    .{ "virtual", {} },          .{ "volatile", {} },      .{ "wgsl", {} },            .{ "where", {} },
+    .{ "with", {} },             .{ "writeonly", {} },     .{ "yield", {} },
+});
 
 pub const Tag = enum(u8) {
     // Literals and identifiers.

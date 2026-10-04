@@ -81,7 +81,7 @@ fn parseLocalVarStmt(self: anytype) @TypeOf(self.*).Error!u32 {
         _ = try self.expect(.@">");
     }
 
-    self.advance(); // consume name
+    _ = try self.expectIdentifier();
 
     var type_node: u32 = NULL_NODE;
     if (self.peekTag() == .@":") {
@@ -106,7 +106,7 @@ fn parseLocalVarStmt(self: anytype) @TypeOf(self.*).Error!u32 {
 fn parseLocalLetStmt(self: anytype) @TypeOf(self.*).Error!u32 {
     const main_token = self.token_idx;
     self.advance(); // consume `let`
-    self.advance(); // consume name
+    _ = try self.expectIdentifier();
 
     var type_node: u32 = NULL_NODE;
     if (self.peekTag() == .@":") {
@@ -128,7 +128,7 @@ fn parseLocalLetStmt(self: anytype) @TypeOf(self.*).Error!u32 {
 fn parseLocalConstStmt(self: anytype) @TypeOf(self.*).Error!u32 {
     const main_token = self.token_idx;
     self.advance(); // consume `const`
-    self.advance(); // consume name
+    _ = try self.expectIdentifier();
 
     var type_node: u32 = NULL_NODE;
     if (self.peekTag() == .@":") {

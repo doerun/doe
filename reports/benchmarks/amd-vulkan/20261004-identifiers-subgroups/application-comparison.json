@@ -1,0 +1,258 @@
+{
+  "classification": "diagnostic",
+  "instrumentationDisabled": true,
+  "diskCaches": "fresh processes with populated disk caches; empty-cache performance not measured",
+  "policy": {
+    "source": "config/vulkan-submission-evaluation.json",
+    "policy": {
+      "schemaVersion": 1,
+      "cohortOrder": [
+        "baseline-1",
+        "candidate-1",
+        "candidate-2",
+        "baseline-2"
+      ],
+      "cleanProcessesPerLane": 10,
+      "maxRegressionFraction": 0.05,
+      "requiredRegressingPairs": 2,
+      "regressionMetrics": [
+        "selectedOperationLatencyMs.p50",
+        "selectedOperationLatencyMs.p95",
+        "cleanProcessLatencyMs.p50",
+        "cleanProcessLatencyMs.p95",
+        "peakProcessTreeRssBytes"
+      ],
+      "materialPerformanceContract": "bench/external-projects/umap-gpu/sgd-benchmark.harness.json"
+    },
+    "treatment": "diagnostic existing subgroup-width override; no runtime patch",
+    "instrumentationDisabled": true
+  },
+  "cohorts": [
+    {
+      "cohort": 1,
+      "width": 32,
+      "receipt": "1-width32-receipt-summary.json.gz",
+      "raw": "1-width32-raw-benchmark.json.gz",
+      "doe": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 298405888,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 15.531917000000021,
+          "p95": 23.99965099999997,
+          "p99": 25.066530999999998
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 638.014201,
+          "p95": 665.435686,
+          "p99": 665.435686
+        }
+      },
+      "dawn": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 306393088,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 18.217353000000003,
+          "p95": 33.086573000000044,
+          "p99": 33.108835
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 633.174749,
+          "p95": 666.100198,
+          "p99": 666.100198
+        }
+      },
+      "decision": {
+        "status": "terminal",
+        "correctnessEvidence": true,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": true,
+        "performanceCredit": true,
+        "applicationPromotionCredit": false,
+        "releaseCredit": false,
+        "nextGate": "run-promotion-scale-reliability-installation-and-receipt-overhead-gates"
+      }
+    },
+    {
+      "cohort": 2,
+      "width": 64,
+      "receipt": "2-width64-receipt-summary.json.gz",
+      "raw": "2-width64-raw-benchmark.json.gz",
+      "doe": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 297844736,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 15.573794999999961,
+          "p95": 19.029192000000023,
+          "p99": 29.994189000000006
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 638.809096,
+          "p95": 680.383861,
+          "p99": 680.383861
+        }
+      },
+      "dawn": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 305999872,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 16.19774099999995,
+          "p95": 24.693377999999996,
+          "p99": 26.577905999999984
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 631.08422,
+          "p95": 678.314435,
+          "p99": 678.314435
+        }
+      },
+      "decision": {
+        "status": "terminal",
+        "correctnessEvidence": true,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": false,
+        "performanceCredit": false,
+        "applicationPromotionCredit": false,
+        "releaseCredit": false,
+        "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis"
+      }
+    },
+    {
+      "cohort": 3,
+      "width": 64,
+      "receipt": "3-width64-receipt-summary.json.gz",
+      "raw": "3-width64-raw-benchmark.json.gz",
+      "doe": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 298242048,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 14.803696000000002,
+          "p95": 16.711727999999994,
+          "p99": 16.958623000000046
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 640.263812,
+          "p95": 690.885684,
+          "p99": 690.885684
+        }
+      },
+      "dawn": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 304340992,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 16.506121000000007,
+          "p95": 25.259263000000033,
+          "p99": 27.375338
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 619.596776,
+          "p95": 641.042889,
+          "p99": 641.042889
+        }
+      },
+      "decision": {
+        "status": "terminal",
+        "correctnessEvidence": true,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": true,
+        "performanceCredit": true,
+        "applicationPromotionCredit": false,
+        "releaseCredit": false,
+        "nextGate": "run-promotion-scale-reliability-installation-and-receipt-overhead-gates"
+      }
+    },
+    {
+      "cohort": 4,
+      "width": 32,
+      "receipt": "4-width32-receipt-summary.json.gz",
+      "raw": "4-width32-raw-benchmark.json.gz",
+      "doe": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 298696704,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 15.141161000000011,
+          "p95": 17.936014,
+          "p99": 18.587259000000017
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 618.1932,
+          "p95": 652.833869,
+          "p99": 652.833869
+        }
+      },
+      "dawn": {
+        "cleanProcessRuns": 10,
+        "successes": 10,
+        "failures": 0,
+        "crashes": 0,
+        "hangs": 0,
+        "timeouts": 0,
+        "peakProcessTreeRssBytes": 304754688,
+        "selectedOperationSamples": 30,
+        "selectedOperationLatencyMs": {
+          "p50": 15.388586999999973,
+          "p95": 27.240023000000008,
+          "p99": 28.992823999999985
+        },
+        "cleanProcessLatencyMs": {
+          "p50": 604.697949,
+          "p95": 672.09574,
+          "p99": 672.09574
+        }
+      },
+      "decision": {
+        "status": "terminal",
+        "correctnessEvidence": true,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": false,
+        "performanceCredit": false,
+        "applicationPromotionCredit": false,
+        "releaseCredit": false,
+        "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis"
+      }
+    }
+  ],
+  "widthChangeRetained": false,
+  "reason": "No repeatable selected-operation gain; no declared shader gain. All incumbent controls and unfavorable cohorts retained."
+}

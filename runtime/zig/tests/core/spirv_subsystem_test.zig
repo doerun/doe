@@ -561,11 +561,11 @@ test "emit: uniform buffer uses Uniform class" {
 
 test "emit: workgroup variable uses Workgroup class" {
     const source =
-        \\var<workgroup> shared: array<f32, 64>;
+        \\var<workgroup> workgroupValues: array<f32, 64>;
         \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
         \\@compute @workgroup_size(64)
         \\fn main(@builtin(local_invocation_index) lid: u32) {
-        \\    shared[lid] = buf[lid]; workgroupBarrier(); buf[lid] = shared[63u - lid];
+        \\    workgroupValues[lid] = buf[lid]; workgroupBarrier(); buf[lid] = workgroupValues[63u - lid];
         \\}
     ;
     var out: [MAX_SPIRV]u8 = undefined;

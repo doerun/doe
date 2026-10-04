@@ -27411,6 +27411,101 @@
       "targets": [
         "src/compiler/wgsl/emit/spirv"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-shader-semantics.js",
+          "sha256": "a7ca08c16f9899212def37f6d8ed3fd0228127b31e57d4ca2fe821cc8d0992df"
+        },
+        {
+          "path": "runtime/zig/src/compiler/wgsl/WGSL_SUPPORT.md",
+          "sha256": "edabdb76f6f898866d637e2195a1885acb4da517942909a91958e434e47dce97"
+        },
+        {
+          "path": "runtime/zig/tests/wgsl/mod_error_contract_test.zig",
+          "sha256": "f087fa4ee5e8539430c3c74fbc587c5fe885baa8296d15f90a0b25711daa9488"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/combined-final.log.gz",
+          "sha256": "7aa6d7c9ca8753e7de83ce001e3b2c84a73c049da7f1dc76110bea29c18d7fdb"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/evidence.json",
+          "sha256": "86af93d5f5677fcb9dfd02aefd876f693bec6d63362e3c26ea5b4ac8dda2a74b"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/wgsl-final.log.gz",
+          "sha256": "3fd8daeb156a1e635f371f554e3f1a374fb567a0d41876bfeb56b3c8d5683de2"
+        }
+      ],
+      "findings": [
+        "Unicode lexing, complete name resolution and directive admission remain outside this bounded repair; the complete frontend relationship review is unfinished."
+      ],
+      "inputHash": "fa33ef2391cd04c3801dfcdd63d37df25e1166645bd82ace831cc7df3fdda01d",
+      "level": "within_directory",
+      "nextAction": "Continue unexamined frontend coverage separately; declaration admission repair is executed and complete.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Keyword alias was accepted by ordinary declarations; declarations and parameters now reject every language keyword and pinned reserved spelling, preserving contextual names and exact original spans.",
+        "Public package invalid-name diagnostics, independent expected compute/render results, pointer aliases and partial AST allocation cleanup pass on the retained Vulkan library; Dawn independently passes the same physical fixture."
+      ],
+      "reviewId": "wgsl_identifier_admission_20261004",
+      "reviewedAt": "2026-10-04T18:17:46.061995+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "b398e9bebb88cf1d58797bc5444b5a39643afa9c",
+      "status": "in_progress",
+      "summary": "Repaired declaration identifier admission at the first incorrect parser boundary through one explicit helper and token-owned eligibility. This is scoped repair evidence, not a complete frontend review.",
+      "supersedes": null,
+      "targets": [
+        "src/compiler/wgsl/frontend"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "config/backend-runtime-policy.json",
+          "sha256": "1169005f898e33fe9583e3d20f13478427c498de6f195037f07160bbfebf270a"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/application-comparison.json",
+          "sha256": "5ab7132838998c8cea5d0d10e99933d195cabdc82111ae3ec9ee412a7284146d"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/driver-statistics.json",
+          "sha256": "f47198d6d6a47e9a921518819b108314eecce759704a1e7c36ee6566d6877dc6"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/gpu-widths.json",
+          "sha256": "2e9ba6d6ec1dabbedcdd6519c9fd32cd29ce2d3359bfc5a28bf13c433056d9fb"
+        }
+      ],
+      "findings": [
+        "Post-build timestamp cohorts do not meet the declared shader-gain bound; ordinary complete-operation and fresh-process cohorts establish no repeatable benefit for width 64.",
+        "No recoverable lowering cost affecting unchanged application latency is identified for the next production IR/SPIR-V improvement."
+      ],
+      "inputHash": "e68d368d12b6321bcd9accca86ef08f60af5878fdb702358678ae3ba570b8970",
+      "level": "cross_directory",
+      "nextAction": "Attribute remaining SGD execution using equal subgroup widths and unchanged application inputs; select an IR/SPIR-V candidate only after identifying recoverable cost. Preserve production width 32 and rejected hoisting.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Doe width 32 and Dawn width 64 caused the retained 24 versus 12 VGPR discrepancy. At width 64 Doe also reports 12 VGPRs, zero spills and scratch. This does not establish excess live values in Doe lowering."
+      ],
+      "reviewId": "vulkan_subgroup_normalization_20261004",
+      "reviewedAt": "2026-10-04T18:17:47.593430+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "b398e9bebb88cf1d58797bc5444b5a39643afa9c",
+      "status": "in_progress",
+      "summary": "Normalized final-program subgroup widths and rejected changing the production width. No generated-code transformation is retained.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan",
+        "src/compiler/wgsl/emit/spirv"
+      ]
     }
   ],
   "schemaVersion": 1

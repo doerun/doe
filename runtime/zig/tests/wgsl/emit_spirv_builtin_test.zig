@@ -28,7 +28,7 @@ test "named and direct pointers preserve mutation through calls and branches" {
     ;
     const cases = .{
         prefix ++ "@compute @workgroup_size(1) fn main() { var x = 1u; change(&x);" ++ suffix,
-        prefix ++ "@compute @workgroup_size(1) fn main() { var x = 1u; let alias = &x; change(alias);" ++ suffix,
+        prefix ++ "@compute @workgroup_size(1) fn main() { var x = 1u; let pointerAlias = &x; change(pointerAlias);" ++ suffix,
     };
     inline for (cases) |source| {
         var module = try mod.analyzeToIr(allocator, source);
@@ -845,13 +845,13 @@ test "spirv builtin: mixed plain and subgroup entry points preserve inner scope"
 
 test "spirv builtin: workgroupBarrier produces valid SPIR-V" {
     const source =
-        \\var<workgroup> shared: array<f32, 64>;
+        \\var<workgroup> workgroupValues: array<f32, 64>;
         \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
         \\@compute @workgroup_size(64)
         \\fn main(@builtin(local_invocation_index) lid: u32) {
-        \\    shared[lid] = buf[lid];
+        \\    workgroupValues[lid] = buf[lid];
         \\    workgroupBarrier();
-        \\    buf[lid] = shared[63u - lid];
+        \\    buf[lid] = workgroupValues[63u - lid];
         \\}
     ;
     var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
@@ -907,11 +907,11 @@ test "spirv builtin: atomicAdd produces valid SPIR-V" {
 test "spirv builtin: atomic operations use relaxed memory semantics" {
     const source =
         \\@group(0) @binding(0) var<storage, read_write> counter: atomic<u32>;
-        \\var<workgroup> shared: atomic<u32>;
+        \\var<workgroup> workgroupValues: atomic<u32>;
         \\@compute @workgroup_size(1)
         \\fn main(@builtin(global_invocation_id) id: vec3u) {
-        \\    atomicStore(&shared, 1u);
-        \\    let loaded = atomicLoad(&shared);
+        \\    atomicStore(&workgroupValues, 1u);
+        \\    let loaded = atomicLoad(&workgroupValues);
         \\    let old = atomicAdd(&counter, loaded + id.x);
         \\    atomicStore(&counter, old);
         \\}

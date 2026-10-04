@@ -4,38 +4,10 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "wgsl_keyword_identifier_admission",
-      "state": "ready",
-      "objective": "Reject WGSL keywords used as variable identifiers while preserving valid type aliases, diagnostics and pointer semantics.",
-      "rationale": "The independent pinned Dawn run rejects the alias identifier in an ordinary shader fixture, while Doe accepts it. Correct the first language-admission boundary; renaming the fixture does not repair compiler validation.",
-      "scopes": [
-        {
-          "level": "within_directory",
-          "targets": [
-            "src/compiler/wgsl/frontend"
-          ]
-        }
-      ],
-      "findingReviewIds": [
-        "vulkan_generated_20261004"
-      ],
-      "nextAction": "Reproduce the keyword fixture from the retained generated-execution report, trace identifier admission, repair its semantic owner and exercise valid alias declarations plus rejected declaration/use sites.",
-      "acceptance": [
-        "Invalid keyword identifiers fail with source-linked diagnostics; valid aliases and named pointer references retain their semantics.",
-        "Combined runtime/full/WGSL suites and physical package computation/render checks pass."
-      ],
-      "stopCondition": "One reproduced keyword-admission gap is repaired and independently validated; no broader conformance credit.",
-      "requiredEnvironment": [
-        "Pinned Zig toolchain",
-        "Pinned Dawn compiler control",
-        "Physical Vulkan package provider"
-      ]
-    },
-    {
       "batchId": "vulkan_recoverable_execution_cost",
-      "state": "ready",
+      "state": "active",
       "objective": "Select one Vulkan generated-program optimization from recoverable unchanged-application execution cost.",
-      "rationale": "The retained loop-invariant candidate produces fewer instructions but lacks the declared GPU gain and repeatedly regresses complete-operation medians. UMAP pass times account for only part of ordinary operation cost. Select the next correction from measured application contribution.",
+      "rationale": "The retained loop-invariant candidate produces fewer instructions but lacks the declared GPU gain and repeatedly regresses complete-operation medians. UMAP pass times account for only part of ordinary operation cost. Select the next correction from measured application contribution. Subgroup normalization removes the VGPR discrepancy; width 64 fails the shader-gain requirement and supplies no repeatable ordinary benefit. Do not interpret reported register count as recoverable lowering cost.",
       "scopes": [
         {
           "level": "within_directory",
@@ -51,9 +23,10 @@
         }
       ],
       "findingReviewIds": [
-        "vulkan_generated_20261004"
+        "vulkan_generated_20261004",
+        "vulkan_subgroup_normalization_20261004"
       ],
-      "nextAction": "Attribute remaining generated execution and ordinary operation cost under the existing unchanged application and transfer fixtures. Require measured recoverable cost before selecting the next IR or SPIR-V transformation.",
+      "nextAction": "Identify a recoverable cost in unchanged UMAP SGD execution with subgroup width and execution conditions matched, using final instructions and actual pass timing. Do not revive rejected hoisting or width 64; select one general IR/SPIR-V improvement only after measuring application contribution.",
       "acceptance": [
         "Numerical, bounds and alias semantics are preserved through independent physical output oracles; existing runtime and full WGSL suites pass.",
         "Compiler time and allocations, generated-program execution time, full application latency and memory are measured independently against the accepted baseline and pinned Dawn, with declared regression limits and every cohort retained."

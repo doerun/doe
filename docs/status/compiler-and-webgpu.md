@@ -3,6 +3,17 @@
 This is the live status front door for the non-TSIR WGSL compiler and WebGPU
 runtime path. Artifacts and executable tests own pass/fail state.
 
+## Identifier eligibility
+
+The [identifier and subgroup checkpoint](../../reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/README.md)
+repairs declaration and parameter admission, with exact parser spans and owned
+public diagnostics. Language keywords, reserved words and prohibited underscore
+spellings reject; contextual names and valid aliases remain admitted. Existing
+fixtures that incorrectly used `alias`, `shared` or `target` now use legal names
+while retaining their pointer, barrier and atomic checks. Physical computation
+and rendering pass on Doe and pinned Dawn. This does not qualify all identifiers,
+name resolution, directives, or WGSL conformance.
+
 ## Vulkan preparation
 
 The [entry-point reflection investigation](../../reports/benchmarks/amd-vulkan/20261002-preparation/README.md)

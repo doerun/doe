@@ -201,3 +201,98 @@ test "analysis request preserves numeric parse overflow as invalid WGSL" {
     }));
     try std.testing.expectEqual(CompilationStage.sema, diagnostic.lastErrorStage());
 }
+
+const parser = @import("../../src/compiler/wgsl/frontend/parser.zig");
+
+const IDENTIFIER_DECLARATIONS = [_][]const u8{
+    "\nvar<private> {s}: u32;",
+    "\noverride {s}: u32 = 1u;",
+    "\nconst {s}: u32 = 1u;",
+    "\nalias {s} = u32;",
+    "\nstruct {s} {{ value: u32, }}",
+    "\nstruct S {{ @size(4) {s}: u32, }}",
+    "\nfn {s}() {{}}",
+    "\nfn helper({s}: u32) {{}}",
+    "\nfn main() {{ var {s}: u32; }}",
+    "\nfn main() {{ let {s} = 1u; }}",
+    "\nfn main() {{ const {s} = 1u; }}",
+    "\nfn main() {{ for (var {s}: u32 = 0u; false;) {{}} }}",
+};
+
+test "declaration identifiers reject keywords reserved names and punctuation at their source span" {
+    const names = [_][]const u8{
+        "alias",    "break",      "case",    "const",  "const_assert", "continue", "continuing",
+        "default",  "diagnostic", "discard", "else",   "enable",       "false",    "fn",
+        "for",      "if",         "let",     "loop",   "override",     "requires", "return",
+        "struct",   "switch",     "true",    "var",    "while",        "NULL",     "Self",
+        "abstract", "typeof",     "shared",  "target", "_",            "__hidden", "123",
+        "+",
+    };
+    inline for (IDENTIFIER_DECLARATIONS) |format| {
+        const marked = try std.fmt.allocPrint(std.testing.allocator, format, .{"identifierLocationMarker"});
+        defer std.testing.allocator.free(marked);
+        const start = std.mem.indexOf(u8, marked, "identifierLocationMarker").?;
+        for (names) |name| {
+            const source = try std.fmt.allocPrint(std.testing.allocator, format, .{name});
+            defer std.testing.allocator.free(source);
+            var failure = parser.FailureContext{};
+            if (parser.parseSourceWithContext(std.testing.allocator, source, &failure)) |parsed| {
+                var tree = parsed;
+                defer tree.deinit();
+                std.debug.print("accepted invalid declaration: {s}\n", .{source});
+                return error.ExpectedIdentifierRejection;
+            } else |err| {
+                try std.testing.expectEqual(error.UnexpectedToken, err);
+            }
+            const loc = failure.loc.?;
+            try std.testing.expectEqual(start, loc.start);
+            try std.testing.expectEqual(start + name.len, loc.end);
+            try std.testing.expect(failure.token_idx != null);
+        }
+    }
+}
+
+fn exerciseInvalidIdentifierAllocation(allocator: std.mem.Allocator) !void {
+    var failure = parser.FailureContext{};
+    const source = "struct Values { value: u32, } fn helper(value: u32, alias: u32) {}";
+    if (parser.parseSourceWithContext(allocator, source, &failure)) |parsed| {
+        var tree = parsed;
+        defer tree.deinit();
+        return error.ExpectedIdentifierRejection;
+    } else |err| switch (err) {
+        error.OutOfMemory => return err,
+        error.UnexpectedToken => {
+            try std.testing.expectEqualStrings("alias", source[failure.loc.?.start..failure.loc.?.end]);
+        },
+    }
+}
+
+test "invalid declaration identifier releases partial AST through allocation failure" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, exerciseInvalidIdentifierAllocation, .{});
+}
+
+test "declaration identifiers preserve contextual names type spellings and single underscore prefixes" {
+    const names = [_][]const u8{ "storage", "read", "workgroup", "private", "function", "array", "f32", "vec4f", "_value", "Alias", "requiresValue", "abstractValue" };
+    inline for (IDENTIFIER_DECLARATIONS) |format| {
+        for (names) |name| {
+            const source = try std.fmt.allocPrint(std.testing.allocator, format, .{name});
+            defer std.testing.allocator.free(source);
+            var tree = try parser.parseSource(std.testing.allocator, source);
+            defer tree.deinit();
+        }
+    }
+}
+
+test "invalid declaration name survives analysis as an owned parser diagnostic" {
+    const source = "@compute @workgroup_size(1)\nfn main() {\n  let alias = 1u;\n}";
+    var diagnostic = analysis.Diagnostic{};
+    try std.testing.expectError(error.UnexpectedToken, analysis.analyzeToIrWithDiagnostic(std.testing.allocator, source, &diagnostic));
+    const info = diagnostic.lastErrorInfo();
+    try std.testing.expectEqual(CompilationStage.parser, info.stage);
+    try std.testing.expectEqual(@as(u32, 3), info.location.?.line);
+    try std.testing.expectEqual(@as(u32, 7), info.location.?.column);
+    try std.testing.expect(std.mem.indexOf(u8, info.context, "let alias = 1u;") != null);
+    var success = try analyzeToIr(std.testing.allocator, VALID_DIAGNOSTIC_SOURCE);
+    defer success.deinit();
+    try std.testing.expectEqualStrings(info.context, diagnostic.lastErrorContext());
+}

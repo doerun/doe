@@ -38,6 +38,17 @@ const POINTER_EXPECTED = [2, 4, 9, 19, 22, 4, 5, 10, 30, 33,
   6, 6, 11, 21, 24, 8, 7, 12, 32, 35];
 const CASES = [
   {
+    label: 'contextual member names and valid aliases remain executable',
+    code: `alias Word = u32;
+      struct Values { storage: Word, read: Word }
+      @group(0) @binding(0) var<storage, read_write> data: array<u32>;
+      @compute @workgroup_size(1) fn main() {
+        let _value = Values(7u, 9u);
+        data[0] = _value.storage + _value.read;
+      }`,
+    expected: [16],
+  },
+  {
     label: 'private default values and mutation are isolated per invocation',
     code: `struct State { vector: vec4f, matrix: mat2x2f, values: array<u32, 2> }
       @group(0) @binding(0) var<storage, read_write> data: array<u32>;
@@ -184,6 +195,40 @@ const CASES = [
     expected: [9, 5, 8, 10, 5, 5, 5, 5],
   },
 ];
+
+async function runIdentifierAdmissionCase() {
+  const declarations = [
+    name => `var<private> ${name}: u32;`,
+    name => `override ${name}: u32 = 1u;`,
+    name => `const ${name}: u32 = 1u;`,
+    name => `alias ${name} = u32;`,
+    name => `struct ${name} { value: u32, }`,
+    name => `struct Values { ${name}: u32, }`,
+    name => `fn ${name}() {}`,
+    name => `fn helper(${name}: u32) {}`,
+    name => `fn main() { var ${name}: u32; }`,
+    name => `fn main() { let ${name} = 1u; }`,
+    name => `fn main() { const ${name} = 1u; }`,
+  ];
+  for (const declaration of declarations) {
+    for (const name of ['alias', 'shared', 'target', '_', '__hidden']) {
+      const code = `// identifier admission\n${declaration(name)}`;
+      device.pushErrorScope('validation');
+      const module = device.createShaderModule({ code });
+      try {
+        const info = await module.getCompilationInfo();
+        const diagnostic = info.messages.find(message => message.type === 'error');
+        assert.ok(diagnostic, `accepted invalid name: ${code}`);
+        assert.equal(diagnostic.lineNum, 2);
+        assert.equal(diagnostic.linePos, code.lastIndexOf(name) - code.indexOf('\n'));
+        console.log(JSON.stringify({ label: 'identifier rejection', code, diagnostic }));
+      } finally {
+        releaseOwnedResource(module);
+        await device.popErrorScope();
+      }
+    }
+  }
+}
 
 async function runCase({ label, code, entryPoint = 'main', dispatch = 1, expected, texture }, path) {
   const size = expected.length * Uint32Array.BYTES_PER_ELEMENT;
@@ -445,6 +490,7 @@ async function runUintRenderClearCase() {
 let failures = 0;
 try {
   const checks = [
+    { label: 'declaration identifier diagnostics', run: runIdentifierAdmissionCase },
     ...CASES.flatMap(testCase => ['batched', 'native', 'dispatch-copy', 'multi-buffer'].map(path => ({
       label: `${testCase.label} / ${path}`, run: () => runCase(testCase, path),
     }))),

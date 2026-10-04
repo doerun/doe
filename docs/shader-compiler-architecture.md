@@ -1,5 +1,20 @@
 # Shader compiler architecture
 
+## Identifier admission
+
+The token owner distinguishes identifier eligibility from contextual lexer tags.
+`Parser.expectIdentifier` admits declaration and parameter names before advancing
+and records the rejected token's original span. Declaration and statement owners
+share that helper without changing AST name indices, diagnostic ownership, or
+allocation policy. A static spelling table binds reserved words to the pinned
+WGSL specification. Invalid names retain `UnexpectedToken` at the parser stage;
+public descriptors and serialized schemas are unchanged.
+
+Scope and evidence: the
+[identifier checkpoint](../reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/README.md).
+Legal contextual spellings remain admitted; this does not establish complete
+Unicode lexing or shadowed-name resolution.
+
 ## Diagnostic and reflection ownership
 
 The addon rejects failed or oversized reflection results before allocating a

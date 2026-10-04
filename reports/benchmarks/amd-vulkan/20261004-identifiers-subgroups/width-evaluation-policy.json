@@ -1,0 +1,16 @@
+{
+  "classification": "diagnostic-width-normalization",
+  "cohortOrder": [
+    "doe32",
+    "doe64",
+    "doe64",
+    "doe32",
+    "dawn64"
+  ],
+  "processesPerCohort": 8,
+  "warmupSamplesExcluded": 1,
+  "minimumShaderSpeedupRatio": 1.05,
+  "maximumRegressionRatio": 1.05,
+  "runtimeChangeAuthorizedByThisProbe": false,
+  "instrumented": true
+}

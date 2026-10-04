@@ -52,7 +52,11 @@ successful execution. Injection is distinct from physical hardware loss.
   while retaining the independently reproduced private-zero initialization repair.
   Fewer final instructions did not establish a GPU execution gain. The next
   transformation requires a recoverable execution cost with a measured application
-  contribution; a separately observed keyword-identifier admission gap remains open.
+  contribution. The [identifier and subgroup follow-up](../../reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/README.md)
+  repairs declaration admission. Normalizing subgroup width removes the retained
+  register-count gap, but the width experiment establishes no repeatable ordinary
+  application benefit. The existing production subgroup policy remains selected;
+  identifying a justified generated-execution improvement remains open.
   ONNX Runtime substitution remains an independent
   integration investigation.
 - Native coverage requires retained executable hashes, successful physical work,

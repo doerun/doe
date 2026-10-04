@@ -1,0 +1,801 @@
+{
+  "policy": {
+    "classification": "diagnostic-width-normalization",
+    "cohortOrder": [
+      "doe32",
+      "doe64",
+      "doe64",
+      "doe32",
+      "dawn64"
+    ],
+    "processesPerCohort": 8,
+    "warmupSamplesExcluded": 1,
+    "minimumShaderSpeedupRatio": 1.05,
+    "maximumRegressionRatio": 1.05,
+    "runtimeChangeAuthorizedByThisProbe": false,
+    "instrumented": true
+  },
+  "cohorts": [
+    {
+      "cohort": 1,
+      "name": "doe32",
+      "operations": [
+        {
+          "process": 0,
+          "sgdSumNs": 2085437,
+          "applySumNs": 1123887,
+          "sgdPassMedianNs": 4008.0
+        },
+        {
+          "process": 0,
+          "sgdSumNs": 2110725,
+          "applySumNs": 1141287,
+          "sgdPassMedianNs": 4007.5
+        },
+        {
+          "process": 0,
+          "sgdSumNs": 2017614,
+          "applySumNs": 1068916,
+          "sgdPassMedianNs": 4007.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 1990994,
+          "applySumNs": 1062295,
+          "sgdPassMedianNs": 3928.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2120310,
+          "applySumNs": 1132754,
+          "sgdPassMedianNs": 3927.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2059053,
+          "applySumNs": 1071277,
+          "sgdPassMedianNs": 4008.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2083746,
+          "applySumNs": 1105022,
+          "sgdPassMedianNs": 4008.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2192233,
+          "applySumNs": 1177161,
+          "sgdPassMedianNs": 3967.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 1962601,
+          "applySumNs": 1066996,
+          "sgdPassMedianNs": 3888.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2233436,
+          "applySumNs": 1191187,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2122890,
+          "applySumNs": 1130385,
+          "sgdPassMedianNs": 4007.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2145711,
+          "applySumNs": 1162207,
+          "sgdPassMedianNs": 3907.5
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2067913,
+          "applySumNs": 1088912,
+          "sgdPassMedianNs": 4008.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2353643,
+          "applySumNs": 1229046,
+          "sgdPassMedianNs": 4008.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 1975120,
+          "applySumNs": 1051357,
+          "sgdPassMedianNs": 3927.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 1925804,
+          "applySumNs": 1043856,
+          "sgdPassMedianNs": 3807.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2015305,
+          "applySumNs": 1085304,
+          "sgdPassMedianNs": 3768.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 1899093,
+          "applySumNs": 1025672,
+          "sgdPassMedianNs": 3787.5
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2002251,
+          "applySumNs": 1081296,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2136585,
+          "applySumNs": 1160409,
+          "sgdPassMedianNs": 3927.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 1994787,
+          "applySumNs": 1072357,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2068976,
+          "applySumNs": 1125654,
+          "sgdPassMedianNs": 3928.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2136532,
+          "applySumNs": 1133314,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 1997712,
+          "applySumNs": 1076445,
+          "sgdPassMedianNs": 3927.0
+        }
+      ],
+      "failures": [],
+      "p50": {
+        "sgdSumNs": 2068444.5,
+        "applySumNs": 1096967.0,
+        "sgdPassMedianNs": 3967.5
+      }
+    },
+    {
+      "cohort": 2,
+      "name": "doe64",
+      "operations": [
+        {
+          "process": 0,
+          "sgdSumNs": 2219482,
+          "applySumNs": 1108827,
+          "sgdPassMedianNs": 4208.0
+        },
+        {
+          "process": 0,
+          "sgdSumNs": 2243785,
+          "applySumNs": 1113997,
+          "sgdPassMedianNs": 4208.0
+        },
+        {
+          "process": 0,
+          "sgdSumNs": 2083086,
+          "applySumNs": 1055892,
+          "sgdPassMedianNs": 4167.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2180705,
+          "applySumNs": 1110707,
+          "sgdPassMedianNs": 4128.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2386060,
+          "applySumNs": 1210823,
+          "sgdPassMedianNs": 4167.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2084530,
+          "applySumNs": 1056939,
+          "sgdPassMedianNs": 4128.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2165465,
+          "applySumNs": 1107466,
+          "sgdPassMedianNs": 4128.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2186502,
+          "applySumNs": 1117441,
+          "sgdPassMedianNs": 4128.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2191754,
+          "applySumNs": 1118964,
+          "sgdPassMedianNs": 4128.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2008422,
+          "applySumNs": 1047586,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2130649,
+          "applySumNs": 1105531,
+          "sgdPassMedianNs": 4007.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2002284,
+          "applySumNs": 1038619,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2231008,
+          "applySumNs": 1128426,
+          "sgdPassMedianNs": 4208.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2221569,
+          "applySumNs": 1152717,
+          "sgdPassMedianNs": 4128.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2063803,
+          "applySumNs": 1072887,
+          "sgdPassMedianNs": 4088.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2208675,
+          "applySumNs": 1119454,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2331786,
+          "applySumNs": 1171707,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2081467,
+          "applySumNs": 1060302,
+          "sgdPassMedianNs": 4167.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2150770,
+          "applySumNs": 1103621,
+          "sgdPassMedianNs": 4128.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2260336,
+          "applySumNs": 1154272,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2102390,
+          "applySumNs": 1068268,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2124622,
+          "applySumNs": 1070752,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2224033,
+          "applySumNs": 1109347,
+          "sgdPassMedianNs": 4208.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2126529,
+          "applySumNs": 1060214,
+          "sgdPassMedianNs": 4208.0
+        }
+      ],
+      "failures": [],
+      "p50": {
+        "sgdSumNs": 2173085.0,
+        "applySumNs": 1108146.5,
+        "sgdPassMedianNs": 4167.0
+      }
+    },
+    {
+      "cohort": 3,
+      "name": "doe64",
+      "operations": [
+        {
+          "process": 0,
+          "sgdSumNs": 2157175,
+          "applySumNs": 1113515,
+          "sgdPassMedianNs": 4088.0
+        },
+        {
+          "process": 0,
+          "sgdSumNs": 2390952,
+          "applySumNs": 1212662,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 0,
+          "sgdSumNs": 2055547,
+          "applySumNs": 1049399,
+          "sgdPassMedianNs": 4088.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2143009,
+          "applySumNs": 1111282,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 1994715,
+          "applySumNs": 1037420,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2005409,
+          "applySumNs": 1040305,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2222701,
+          "applySumNs": 1133941,
+          "sgdPassMedianNs": 4248.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2269944,
+          "applySumNs": 1153114,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2145363,
+          "applySumNs": 1092023,
+          "sgdPassMedianNs": 4249.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2210591,
+          "applySumNs": 1110076,
+          "sgdPassMedianNs": 4248.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2253971,
+          "applySumNs": 1137636,
+          "sgdPassMedianNs": 4248.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2192729,
+          "applySumNs": 1118563,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2100134,
+          "applySumNs": 1091075,
+          "sgdPassMedianNs": 4128.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2123516,
+          "applySumNs": 1084610,
+          "sgdPassMedianNs": 4248.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2098334,
+          "applySumNs": 1085094,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2214485,
+          "applySumNs": 1118324,
+          "sgdPassMedianNs": 4208.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2409302,
+          "applySumNs": 1219683,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2185440,
+          "applySumNs": 1117088,
+          "sgdPassMedianNs": 4208.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2196936,
+          "applySumNs": 1119402,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2225462,
+          "applySumNs": 1124288,
+          "sgdPassMedianNs": 4168.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2098335,
+          "applySumNs": 1066663,
+          "sgdPassMedianNs": 4128.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2098182,
+          "applySumNs": 1084947,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2081140,
+          "applySumNs": 1076877,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 1989060,
+          "applySumNs": 1031393,
+          "sgdPassMedianNs": 3968.0
+        }
+      ],
+      "failures": [],
+      "p50": {
+        "sgdSumNs": 2151269.0,
+        "applySumNs": 1110679.0,
+        "sgdPassMedianNs": 4168.0
+      }
+    },
+    {
+      "cohort": 4,
+      "name": "doe32",
+      "operations": [
+        {
+          "process": 0,
+          "sgdSumNs": 2017795,
+          "applySumNs": 1095602,
+          "sgdPassMedianNs": 4008.0
+        },
+        {
+          "process": 0,
+          "sgdSumNs": 2227264,
+          "applySumNs": 1202116,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 0,
+          "sgdSumNs": 1976499,
+          "applySumNs": 1084060,
+          "sgdPassMedianNs": 3927.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2141956,
+          "applySumNs": 1158690,
+          "sgdPassMedianNs": 4048.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2198311,
+          "applySumNs": 1193467,
+          "sgdPassMedianNs": 4007.5
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2023849,
+          "applySumNs": 1099210,
+          "sgdPassMedianNs": 3967.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2071620,
+          "applySumNs": 1119006,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2241547,
+          "applySumNs": 1189859,
+          "sgdPassMedianNs": 4088.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2122403,
+          "applySumNs": 1142138,
+          "sgdPassMedianNs": 4047.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2055935,
+          "applySumNs": 1106359,
+          "sgdPassMedianNs": 4008.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2102513,
+          "applySumNs": 1143336,
+          "sgdPassMedianNs": 3927.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2005839,
+          "applySumNs": 1093443,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2276669,
+          "applySumNs": 1218194,
+          "sgdPassMedianNs": 4047.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2134852,
+          "applySumNs": 1136718,
+          "sgdPassMedianNs": 4008.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2045529,
+          "applySumNs": 1076847,
+          "sgdPassMedianNs": 4047.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2066235,
+          "applySumNs": 1098324,
+          "sgdPassMedianNs": 4048.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2115948,
+          "applySumNs": 1136150,
+          "sgdPassMedianNs": 3968.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2090372,
+          "applySumNs": 1134352,
+          "sgdPassMedianNs": 3887.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2061749,
+          "applySumNs": 1086420,
+          "sgdPassMedianNs": 4007.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2017819,
+          "applySumNs": 1102217,
+          "sgdPassMedianNs": 3887.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2078101,
+          "applySumNs": 1103137,
+          "sgdPassMedianNs": 3967.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2075338,
+          "applySumNs": 1096363,
+          "sgdPassMedianNs": 4007.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2163392,
+          "applySumNs": 1140209,
+          "sgdPassMedianNs": 4007.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 1970006,
+          "applySumNs": 1061907,
+          "sgdPassMedianNs": 3887.0
+        }
+      ],
+      "failures": [],
+      "p50": {
+        "sgdSumNs": 2076719.5,
+        "applySumNs": 1112682.5,
+        "sgdPassMedianNs": 4007.0
+      }
+    },
+    {
+      "cohort": 5,
+      "name": "dawn64",
+      "operations": [
+        {
+          "process": 0,
+          "sgdSumNs": 2636990,
+          "applySumNs": 899403,
+          "sgdPassMedianNs": 5129.0
+        },
+        {
+          "process": 0,
+          "sgdSumNs": 2801347,
+          "applySumNs": 964452,
+          "sgdPassMedianNs": 5090.0
+        },
+        {
+          "process": 0,
+          "sgdSumNs": 2647730,
+          "applySumNs": 904257,
+          "sgdPassMedianNs": 5130.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2664878,
+          "applySumNs": 923627,
+          "sgdPassMedianNs": 5129.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2878539,
+          "applySumNs": 1005168,
+          "sgdPassMedianNs": 5090.0
+        },
+        {
+          "process": 1,
+          "sgdSumNs": 2617753,
+          "applySumNs": 902487,
+          "sgdPassMedianNs": 5130.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2673144,
+          "applySumNs": 913713,
+          "sgdPassMedianNs": 5169.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2776767,
+          "applySumNs": 961723,
+          "sgdPassMedianNs": 5090.0
+        },
+        {
+          "process": 2,
+          "sgdSumNs": 2712443,
+          "applySumNs": 935924,
+          "sgdPassMedianNs": 5169.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2593897,
+          "applySumNs": 896472,
+          "sgdPassMedianNs": 5129.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2891236,
+          "applySumNs": 995078,
+          "sgdPassMedianNs": 5170.0
+        },
+        {
+          "process": 3,
+          "sgdSumNs": 2615746,
+          "applySumNs": 900957,
+          "sgdPassMedianNs": 5130.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2663106,
+          "applySumNs": 926178,
+          "sgdPassMedianNs": 5129.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2747491,
+          "applySumNs": 952299,
+          "sgdPassMedianNs": 5090.0
+        },
+        {
+          "process": 4,
+          "sgdSumNs": 2569859,
+          "applySumNs": 891443,
+          "sgdPassMedianNs": 5130.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2631226,
+          "applySumNs": 897240,
+          "sgdPassMedianNs": 5130.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2863505,
+          "applySumNs": 976906,
+          "sgdPassMedianNs": 5129.0
+        },
+        {
+          "process": 5,
+          "sgdSumNs": 2652121,
+          "applySumNs": 903769,
+          "sgdPassMedianNs": 5130.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2585462,
+          "applySumNs": 888911,
+          "sgdPassMedianNs": 5129.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2795994,
+          "applySumNs": 966856,
+          "sgdPassMedianNs": 5090.0
+        },
+        {
+          "process": 6,
+          "sgdSumNs": 2572664,
+          "applySumNs": 888046,
+          "sgdPassMedianNs": 5130.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2571865,
+          "applySumNs": 886335,
+          "sgdPassMedianNs": 5129.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2813586,
+          "applySumNs": 972518,
+          "sgdPassMedianNs": 5129.0
+        },
+        {
+          "process": 7,
+          "sgdSumNs": 2690030,
+          "applySumNs": 925776,
+          "sgdPassMedianNs": 5130.0
+        }
+      ],
+      "failures": [],
+      "p50": {
+        "sgdSumNs": 2663992.0,
+        "applySumNs": 918670.0,
+        "sgdPassMedianNs": 5129.0
+      }
+    }
+  ],
+  "concurrentCompilerBuilds": false
+}

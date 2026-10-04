@@ -217,17 +217,17 @@ test "hlsl compute: all compute builtins map to correct HLSL semantics" {
 
 test "hlsl compute: groupshared for workgroup variable" {
     const source =
-        \\var<workgroup> shared: array<f32, 256>;
+        \\var<workgroup> workgroupValues: array<f32, 256>;
         \\@compute @workgroup_size(256)
         \\fn main(@builtin(local_invocation_index) idx: u32) {
-        \\    shared[idx] = f32(idx);
+        \\    workgroupValues[idx] = f32(idx);
         \\}
     ;
     var out: [MAX_HLSL]u8 = undefined;
     const len = try translateToHlsl(allocator, source, &out);
     const hlsl = out[0..len];
     try testing.expect(contains(hlsl, "groupshared"));
-    try testing.expect(contains(hlsl, "float shared[256]"));
+    try testing.expect(contains(hlsl, "float workgroupValues[256]"));
 }
 
 // ============================================================
@@ -678,13 +678,13 @@ test "hlsl builtin: select ternary and barrier mapping" {
     // workgroupBarrier
     {
         const source =
-            \\var<workgroup> shared: array<f32, 64>;
+            \\var<workgroup> workgroupValues: array<f32, 64>;
             \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
             \\@compute @workgroup_size(64)
             \\fn main(@builtin(local_invocation_index) idx: u32) {
-            \\    shared[idx] = buf[idx];
+            \\    workgroupValues[idx] = buf[idx];
             \\    workgroupBarrier();
-            \\    buf[idx] = shared[63u - idx];
+            \\    buf[idx] = workgroupValues[63u - idx];
             \\}
         ;
         var out: [MAX_HLSL]u8 = undefined;

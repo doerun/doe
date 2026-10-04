@@ -52,8 +52,7 @@ pub fn parseStructDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32
     _ = attrs;
     const main_token = self.token_idx;
     self.advance(); // consume `struct`
-    const name_token = self.token_idx;
-    self.advance(); // consume name
+    const name_token = try self.expectIdentifier();
     _ = try self.expect(.@"{");
 
     const scratch_top = self.scratch.items.len;
@@ -78,8 +77,7 @@ pub fn parseStructDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32
 
 fn parseStructMember(self: anytype) @TypeOf(self.*).Error!u32 {
     const member_attrs = try parseAttributes(self);
-    const name_token = self.token_idx;
-    self.advance(); // consume member name
+    const name_token = try self.expectIdentifier();
     _ = try self.expect(.@":");
     const type_node = try parser_expr.parseTypeExpr(self);
     // Optional trailing comma.
@@ -99,8 +97,7 @@ fn parseStructMember(self: anytype) @TypeOf(self.*).Error!u32 {
 pub fn parseFnDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32 {
     const main_token = self.token_idx;
     self.advance(); // consume `fn`
-    const name_token = self.token_idx;
-    self.advance(); // consume function name
+    const name_token = try self.expectIdentifier();
     _ = try self.expect(.@"(");
 
     // Parse parameters.
@@ -151,8 +148,7 @@ pub fn parseFnDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32 {
 
 fn parseFnParam(self: anytype) @TypeOf(self.*).Error!u32 {
     const param_attrs = try parseAttributes(self);
-    const name_token = self.token_idx;
-    self.advance(); // consume param name
+    const name_token = try self.expectIdentifier();
     _ = try self.expect(.@":");
     const type_node = try parser_expr.parseTypeExpr(self);
 
@@ -187,8 +183,7 @@ pub fn parseGlobalVar(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32 
         _ = try self.expect(.@">");
     }
 
-    const name_token = self.token_idx;
-    self.advance(); // consume name
+    const name_token = try self.expectIdentifier();
 
     var type_node: u32 = NULL_NODE;
     if (self.peekTag() == .@":") {
@@ -224,8 +219,7 @@ pub fn parseOverrideDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u
     const main_token = self.token_idx;
     self.advance(); // consume `override`
 
-    const name_token = self.token_idx;
-    self.advance(); // consume name
+    const name_token = try self.expectIdentifier();
 
     var type_node: u32 = NULL_NODE;
     if (self.peekTag() == .@":") {
@@ -261,8 +255,7 @@ pub fn parseConstDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32 
     const main_token = self.token_idx;
     self.advance(); // consume `const` or `let`
 
-    // skip name
-    self.advance();
+    _ = try self.expectIdentifier();
 
     var type_node: u32 = NULL_NODE;
     if (self.peekTag() == .@":") {
@@ -288,7 +281,7 @@ pub fn parseConstDecl(self: anytype, attrs: AttrSpan) @TypeOf(self.*).Error!u32 
 pub fn parseAliasDecl(self: anytype) @TypeOf(self.*).Error!u32 {
     const main_token = self.token_idx;
     self.advance(); // consume `alias`
-    self.advance(); // consume name
+    _ = try self.expectIdentifier();
     _ = try self.expect(.@"=");
     const type_node = try parser_expr.parseTypeExpr(self);
     self.skipSemicolon();

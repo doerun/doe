@@ -1,0 +1,22 @@
+{
+  "classification": "diagnostic-source-workspace-qualification",
+  "combinedCanonicalSuites": {
+    "passes": 5854,
+    "skips": 22,
+    "overlapBetweenSuites": true,
+    "log": "combined-current.log.gz"
+  },
+  "gates": {
+    "schema": "pass",
+    "localMarkdownLinks": "pass",
+    "publicClaimSurfaces": "pass",
+    "reviewHistory": "pass",
+    "packageContracts": "pass"
+  },
+  "physicalPackageChecks": {
+    "doe": 69,
+    "pinnedDawn": 69
+  },
+  "dopplerKernels": "edge and production-QKV passed; full inference not qualified",
+  "runtimeExecutionOptimizationRetained": false
+}

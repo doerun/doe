@@ -17,6 +17,14 @@ label below is not promotable when that generated view is partial or failing.
 
 ## Feature coverage
 
+Declaration names and parameters enforce WGSL identifier eligibility: language
+keywords, reserved words, `_`, and names beginning with `__` are rejected at
+their token span. Predeclared type spellings and contextual address/access names
+remain eligible. This is declaration admission, not full Unicode identifier,
+name-resolution, directive, or WGSL conformance qualification. The
+[admission and subgroup checkpoint](../../../../../reports/benchmarks/amd-vulkan/20261004-identifiers-subgroups/README.md)
+retains independent compiler and physical package checks.
+
 `unpack4xU8` function expressions lower to shared unsigned vector shifts and
 masks, with one evaluation of the argument. Frontend checks reject wrong
 argument types and arity; abstract integer inputs must fit `u32`. MSL, HLSL,

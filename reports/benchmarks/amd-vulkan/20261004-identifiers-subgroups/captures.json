@@ -1,0 +1,44 @@
+[
+  {
+    "name": "doe32",
+    "exitCode": 0,
+    "command": [
+      "node",
+      "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/vitest/vitest.mjs",
+      "run",
+      "--config",
+      "/home/x/deco/doe/bench/external-projects/umap-gpu/vitest-sgd-benchmark.config.mjs"
+    ],
+    "provider": "/home/x/deco/doe/packages/doe-gpu/src/index.js",
+    "requiredSubgroupSize": "32",
+    "driverDebug": "nocache,shaders,shaderstats"
+  },
+  {
+    "name": "doe64",
+    "exitCode": 0,
+    "command": [
+      "node",
+      "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/vitest/vitest.mjs",
+      "run",
+      "--config",
+      "/home/x/deco/doe/bench/external-projects/umap-gpu/vitest-sgd-benchmark.config.mjs"
+    ],
+    "provider": "/home/x/deco/doe/packages/doe-gpu/src/index.js",
+    "requiredSubgroupSize": "64",
+    "driverDebug": "nocache,shaders,shaderstats"
+  },
+  {
+    "name": "dawn64",
+    "exitCode": 0,
+    "command": [
+      "node",
+      "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/vitest/vitest.mjs",
+      "run",
+      "--config",
+      "/home/x/deco/doe/bench/external-projects/umap-gpu/vitest-sgd-benchmark.config.mjs"
+    ],
+    "provider": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js",
+    "requiredSubgroupSize": null,
+    "driverDebug": "nocache,shaders,shaderstats"
+  }
+]

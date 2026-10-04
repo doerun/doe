@@ -2368,9 +2368,9 @@
       },
       "src/compiler/wgsl/frontend/parser.zig": {
         "decision": "Keep",
-        "moduleSha256": "d467873418a38bdbd079ab9fafba712e5acc0ee351aa0d99dea6923bb900763f",
-        "reason": "Compiler stage retains its source and lowering responsibility; explicit request-owned diagnostic and failure context replace shared mutation, with legacy boundary adapters preserved.",
-        "reviewer": "codex-shader-ownership/2026-09-06"
+        "moduleSha256": "96be44be7514f3b14288a37da81bde5060a9d3d34b87e8c179fea1a819f84b13",
+        "reason": "Keep: lexical eligibility belongs to token definitions; one parser helper admits declaration names and preserves exact failure spans without changing AST ownership.",
+        "reviewer": "codex-wgsl-identifiers/2026-10-04"
       },
       "src/compiler/wgsl/frontend/parser_attrs.zig": {
         "decision": "Keep",
@@ -2380,9 +2380,9 @@
       },
       "src/compiler/wgsl/frontend/parser_decl.zig": {
         "decision": "Keep",
-        "moduleSha256": "11eada404c68db67cea1d804ab3aac236116e2a642fb4d3cf5d3e10f8ba9ccd2",
-        "reason": "Keep: reachable compiler implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "a955fa1659e2cb644acf7107fd985569ee1c337fc61818d028a1663b7a8ec501",
+        "reason": "Keep: lexical eligibility belongs to token definitions; one parser helper admits declaration names and preserves exact failure spans without changing AST ownership.",
+        "reviewer": "codex-wgsl-identifiers/2026-10-04"
       },
       "src/compiler/wgsl/frontend/parser_expr.zig": {
         "decision": "Keep",
@@ -2392,9 +2392,9 @@
       },
       "src/compiler/wgsl/frontend/parser_stmt.zig": {
         "decision": "Keep",
-        "moduleSha256": "c8f8cddc2a75a8e1b2e2cad3e2823e59ccd484e86380a6277a8fce13e6fc879b",
-        "reason": "Keep: reachable compiler implementation shared by 2 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-doe-wgsl-correctness/2026-09-01"
+        "moduleSha256": "68a829163912c9b57355a5634791db07b77a81892356751e4d1f6b813a2a3541",
+        "reason": "Keep: lexical eligibility belongs to token definitions; one parser helper admits declaration names and preserves exact failure spans without changing AST ownership.",
+        "reviewer": "codex-wgsl-identifiers/2026-10-04"
       },
       "src/compiler/wgsl/frontend/sema.zig": {
         "decision": "Keep",
@@ -2446,9 +2446,9 @@
       },
       "src/compiler/wgsl/frontend/token.zig": {
         "decision": "Keep",
-        "moduleSha256": "882a686eb333be897f8138645d7f645da39aa108ddf0ff8e81434479548de7f3",
-        "reason": "Keep: reachable compiler implementation shared by 12 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-doe-wgsl-correctness/2026-09-01"
+        "moduleSha256": "05566c3c62611909ee4713ca98398531ea774c12731fc81fb5611afc531e812a",
+        "reason": "Keep: lexical eligibility belongs to token definitions; one parser helper admits declaration names and preserves exact failure spans without changing AST ownership.",
+        "reviewer": "codex-wgsl-identifiers/2026-10-04"
       },
       "src/compiler/wgsl/ir/ir.zig": {
         "decision": "Keep",

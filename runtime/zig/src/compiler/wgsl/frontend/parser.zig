@@ -201,6 +201,21 @@ pub const Parser = struct {
         return ParseError.UnexpectedToken;
     }
 
+    pub fn expectIdentifier(self: *Parser) ParseError!u32 {
+        if (self.token_idx < self.tree.tokens.items.len) {
+            const token = self.tree.tokens.items[self.token_idx];
+            if (token.isIdentifier(self.tree.source)) {
+                const index = self.token_idx;
+                self.advance();
+                return index;
+            }
+            self.failure_context = .{ .token_idx = self.token_idx, .loc = token.loc };
+        } else {
+            self.failure_context = .{ .token_idx = self.token_idx };
+        }
+        return ParseError.UnexpectedToken;
+    }
+
     pub fn skipSemicolon(self: anytype) void {
         if (self.peekTag() == .@";") self.advance();
     }
