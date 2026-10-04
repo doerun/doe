@@ -49,6 +49,11 @@ Other matrices using those exact bytes retain relative symlinks at their origina
 provider paths. Receipt paths and hashes remain unchanged; the existing
 `bench.lib.hash_utils.file_sha256` reader verifies the resolved bytes.
 
+Within these matrices, a `doe-recorded.<hash>.provider.bin` whose bytes match
+the adjacent `doe-webgpu.<hash>.provider.bin` links to that file. Each run retains
+its own WebGPU provider binary, and recorded-mode receipts keep their original
+provider names and execution-mode metadata.
+
 Preserve the canonical providers alongside these matrices. Check out Git symlinks
 as links when replaying this Linux evidence. This consolidation reduces checkout
 storage; it does not remove historical Git objects or qualify a new execution.
