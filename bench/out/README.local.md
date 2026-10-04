@@ -40,12 +40,15 @@ Current intent
 
 Shared provider custody
 
-The September Linux compute-program matrices retain the shared wgpu provider at
-`compute-program/20260907-linux-application-matrix/wgpu.bceb5b6a6239b0b010418406d8c77a508f67cf4337d94288f1c19fe71304aab0.provider.bin`.
+The September Linux compute-program matrices retain their shared providers at:
+
+- `compute-program/20260907-linux-application-matrix/wgpu.bceb5b6a6239b0b010418406d8c77a508f67cf4337d94288f1c19fe71304aab0.provider.bin`
+- `compute-program/20260907-linux-application-matrix/dawn.fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1.provider.bin`
+
 Other matrices using those exact bytes retain relative symlinks at their original
 provider paths. Receipt paths and hashes remain unchanged; the existing
 `bench.lib.hash_utils.file_sha256` reader verifies the resolved bytes.
 
-Preserve the canonical provider alongside these matrices. Check out Git symlinks
+Preserve the canonical providers alongside these matrices. Check out Git symlinks
 as links when replaying this Linux evidence. This consolidation reduces checkout
 storage; it does not remove historical Git objects or qualify a new execution.
