@@ -1,0 +1,30 @@
+ok: ordinary browser initialized
+ok: offline-emitted WGSL matches browser and independent CPU oracle
+ok: all three modes execute matched work and verify every component
+ok: confirmation runs with GPU query instrumentation disabled
+ok: explicit switching drains, recreates and verifies state; navigator.gpu unchanged
+ok: verified cache hit, corruption, loss, disabled cache and untrusted digest
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
++ [
++   'Failed to load resource: the server responded with a status of 404 (Not Found)'
++ ]
+- []
+
+    at file:///home/x/deco/doe/packages/doe-gpu/scripts/test-browser-compiler.js:132:10 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [
+    'Failed to load resource: the server responded with a status of 404 (Not Found)'
+  ],
+  expected: [],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.1

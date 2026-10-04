@@ -1,0 +1,7 @@
+ok: ordinary browser initialized
+ok: offline-emitted WGSL matches browser and independent CPU oracle
+ok: all three modes execute matched work and verify every component
+ok: confirmation runs with GPU query instrumentation disabled
+ok: explicit switching drains, recreates and verifies state; navigator.gpu unchanged
+ok: verified cache hit, corruption, loss, disabled cache and untrusted digest
+{"applicationMedianMs":{"browser":11.300000190734863,"disabled":5.199999809265137,"enabled":13.299999713897705},"netRatio":0.8496240927679899,"passRatio":0.3909774376785473}

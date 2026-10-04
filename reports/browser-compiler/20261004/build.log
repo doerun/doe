@@ -1,0 +1,10 @@
+
+Build Summary: 6/6 steps succeeded
+browser-wasm success
++- install doe-wgsl success
+   +- compile exe doe-wgsl ReleaseSmall wasm32-freestanding success 1s MaxRSS:153M
+emit-wgsl success
++- install doe-emit-wgsl success
+   +- compile exe doe-emit-wgsl ReleaseFast native success 3s MaxRSS:232M
+
+{"schemaVersion":1,"abiVersion":1,"asset":"doe-wgsl-cff0e5502ab99769.wasm","sha256":"cff0e5502ab9976943936150e29ee521d4da590295bfcc7b1fbeca55136168af","byteLength":140163,"sourceHash":"59da6dd5c932c20cea63943401decc883720e345580b0fdc7a4575bd06134962"}

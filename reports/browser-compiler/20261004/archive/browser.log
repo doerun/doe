@@ -1,0 +1,47 @@
+2026-10-04T20:03:56.063Z pw:browser <launching> /usr/bin/google-chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --enable-unsafe-webgpu --ignore-gpu-blocklist --enable-features=Vulkan --disable-vulkan-surface --user-data-dir=/tmp/playwright_chromiumdev_profile-vRlQrx --remote-debugging-pipe --no-startup-window
+2026-10-04T20:03:56.066Z pw:browser <launched> pid=2773023
+2026-10-04T20:03:56.131Z pw:browser [pid=2773023][err] [2773066:2773066:1004/160356.130205:ERROR:base/memory/shared_memory_switch.cc:289] Failed global descriptor lookup: 7
+2026-10-04T20:03:56.283Z pw:browser [pid=2773023][err] [2773064:2773064:1004/160356.282649:ERROR:gpu/command_buffer/service/shared_image/shared_image_factory.cc:1015] Could not find SharedImageBackingFactory with params: usage: RasterRead|DisplayRead|WebgpuRead|WebgpuSwapChainTexture|RasterWrite|WebgpuWrite, format: RGBA_8888, share_between_threads: 0, gmb_type: empty, size: 1280x720, debug_label: WebGPUSwapBufferProvider_Pid:0
+2026-10-04T20:03:56.289Z pw:browser [pid=2773023][err] [2773064:2773064:1004/160356.289235:ERROR:gpu/ipc/service/shared_image_stub.cc:257] SharedImageStub: Unable to create shared image
+2026-10-04T20:03:56.290Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.290437:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.291Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.290551:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.291Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.290581:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.291Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.290612:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.291Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.290671:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.291Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.290704:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.291933:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.291967:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.291994:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.292355:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.292375:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.292391:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.292409:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.292427:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.292443:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.292458:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.292527:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.292545:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.292Z pw:browser [pid=2773023][err] [2773064:2773186:1004/160356.292571:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:385] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+2026-10-04T20:03:56.304Z pw:browser [pid=2773023] <gracefully close start>
+2026-10-04T20:03:56.338Z pw:browser [pid=2773023] <process did exit: exitCode=0, signal=null>
+2026-10-04T20:03:56.338Z pw:browser [pid=2773023] starting temporary directories cleanup
+2026-10-04T20:03:56.342Z pw:browser [pid=2773023] finished temporary directories cleanup
+2026-10-04T20:03:56.342Z pw:browser [pid=2773023] <gracefully close end>
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: A valid external Instance reference no longer exists.
+
+true !== false
+
+    at file:///home/x/deco/doe/packages/doe-gpu/scripts/test-browser-compiler.js:55:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: true,
+  expected: false,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.1
