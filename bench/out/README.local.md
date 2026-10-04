@@ -37,3 +37,15 @@ Current intent
 - Keep the mirrored archive roots stable for analysis and blog work.
 - Keep partial or failed reruns under `_wip/`.
 - If `AMD Dawn / 16step` is rerun cleanly, write it to `amd-vulkan-dawn-full-greedy-16step/` at the top level and then move or delete the partial `_wip/` copy.
+
+Shared provider custody
+
+The September Linux compute-program matrices retain the shared wgpu provider at
+`compute-program/20260907-linux-application-matrix/wgpu.bceb5b6a6239b0b010418406d8c77a508f67cf4337d94288f1c19fe71304aab0.provider.bin`.
+Other matrices using those exact bytes retain relative symlinks at their original
+provider paths. Receipt paths and hashes remain unchanged; the existing
+`bench.lib.hash_utils.file_sha256` reader verifies the resolved bytes.
+
+Preserve the canonical provider alongside these matrices. Check out Git symlinks
+as links when replaying this Linux evidence. This consolidation reduces checkout
+storage; it does not remove historical Git objects or qualify a new execution.
