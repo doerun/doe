@@ -4,32 +4,33 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "vulkan_native_submission_attribution",
-      "state": "active",
-      "objective": "Identify the largest avoidable native submission cost in unchanged UMAP and retain or reject one correction in its actual owner.",
-      "rationale": "The complete-operation report rejects current-source native-addon optimization. Public and driver timelines locate substantial synchronous submission time but do not yet identify its recoverable portion. GPU duration probes have no calibrated host origin; do not infer a disjoint cost by subtraction. Preserve the identifier repair and rejected hoisting/subgroup experiments.",
+      "batchId": "vulkan_doppler_generation_contract",
+      "state": "ready",
+      "objective": "Freeze a new full Doppler text-generation application contract and attribute a recoverable Vulkan execution cost.",
+      "rationale": "The UMAP binding-cache pass finds effective lower-level reuse and only a small descriptor preparation interval; no substantial recoverable binding cost is established. Close that line and retain UMAP as regression coverage. Select actual full Gemma generation instead of another isolated kernel statistic or a retired provider-comparison family.",
       "scopes": [
         {
           "level": "cross_directory",
           "targets": [
             "src/backend/vulkan",
-            "src/native/queue"
+            "src/native/vulkan"
           ]
         }
       ],
       "findingReviewIds": [
-        "vulkan_operation_timeline_20261004"
+        "vulkan_binding_attribution_20261004"
       ],
-      "nextAction": "Attribute binding preparation, synchronization preparation and driver work inside ordinary native submission before choosing a correction. Preserve identifier admission, pending-resource lifetimes, rejected hoisting/subgroup changes and unresolved compiler timing samples.",
+      "nextAction": "Stop the UMAP binding optimization line. Freeze a separate full Doppler Gemma text-generation contract on Node/Vulkan, then profile model load, prefill, first streamed token, decode and final completion before choosing one correction. Preserve cancellation and resource lifetimes; do not inherit retired or Electron performance credit.",
       "acceptance": [
-        "Numerical, bounds and alias semantics are preserved through independent physical output oracles; existing runtime and full WGSL suites pass.",
-        "Compiler time and allocations, generated-program execution time, full application latency and memory are measured independently against the accepted baseline and pinned Dawn, with declared regression limits and every cohort retained."
+        "Freeze the supported Doppler revision, real Gemma model/shards/tokenizer, prompt, generation settings, exact provider archives, physical adapter and independent numerical/stopping oracle before candidate timing. The new Node application contract is separate from retired comparisons and Electron acceptance.",
+        "Predeclare first streamed token and complete requested generation latency, loading versus retained-device scopes, median/tail material-gain bounds, memory/regression limits, sample order and failure policy. Confirm any candidate without instrumentation under matched Doe and pinned Dawn application work.",
+        "Preserve streaming, cancellation, resource release and output correctness. Measure compiler/preparation costs separately; keep unchanged UMAP and independent rendering as regression workloads."
       ],
-      "stopCondition": "Retain one owned correction only after frozen correctness, replay and complete-operation acceptance, or reject it with all cohorts retained. Vulkan remains active; no shader transformation is required by this batch.",
+      "stopCondition": "Retain or reject one application-backed Vulkan correction under the frozen new criteria; do not resume the closed UMAP binding or -O3 hypotheses.",
       "requiredEnvironment": [
-        "Pinned Zig toolchain",
-        "Physical AMD Vulkan provider and existing native phase diagnostics",
-        "Pinned Dawn control and unchanged application inputs"
+        "Pinned supported Doppler public generation API and real Gemma 3 270M artifacts",
+        "Physical AMD Vulkan provider and source-bound Doe/Dawn archives",
+        "Fresh independently reviewed Node generation oracle and workload contract"
       ]
     }
   ]

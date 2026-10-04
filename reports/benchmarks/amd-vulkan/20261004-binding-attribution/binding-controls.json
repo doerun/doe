@@ -1,0 +1,793 @@
+{
+  "classification": "physical-buffer-binding-controls",
+  "diagnosticCases": [
+    {
+      "case": "initial",
+      "output": {
+        "actual": 10,
+        "case": "initial",
+        "expected": 10,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 0,
+          "allocations": 6,
+          "cached": 0,
+          "calls": 1,
+          "descriptors_ns": 23875,
+          "driver_ns": 264137,
+          "end_ns": 1032,
+          "misses": 1,
+          "pools": 1,
+          "prepare_ns": 730355,
+          "record_ns": 71003,
+          "resolve_ns": 802,
+          "sets": 1,
+          "snapshot_ns": 350,
+          "snapshots": 2,
+          "sync_ns": 6863,
+          "updates": 1,
+          "writes": 2
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 14968,
+          "end_ns": 481,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 2876,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "unchanged-0",
+      "output": {
+        "actual": 10,
+        "case": "unchanged-0",
+        "expected": 10,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 1,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 1,
+          "descriptors_ns": 431,
+          "driver_ns": 16852,
+          "end_ns": 250,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 1993,
+          "record_ns": 5300,
+          "resolve_ns": 351,
+          "sets": 0,
+          "snapshot_ns": 131,
+          "snapshots": 2,
+          "sync_ns": 4198,
+          "updates": 0,
+          "writes": 0
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 10159,
+          "end_ns": 130,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1914,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "unchanged-1",
+      "output": {
+        "actual": 10,
+        "case": "unchanged-1",
+        "expected": 10,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 1,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 1,
+          "descriptors_ns": 271,
+          "driver_ns": 9498,
+          "end_ns": 121,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 1002,
+          "record_ns": 1893,
+          "resolve_ns": 220,
+          "sets": 0,
+          "snapshot_ns": 80,
+          "snapshots": 2,
+          "sync_ns": 1603,
+          "updates": 0,
+          "writes": 0
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 7343,
+          "end_ns": 100,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1052,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "unchanged-2",
+      "output": {
+        "actual": 10,
+        "case": "unchanged-2",
+        "expected": 10,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 1,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 1,
+          "descriptors_ns": 321,
+          "driver_ns": 14437,
+          "end_ns": 220,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 1372,
+          "record_ns": 3056,
+          "resolve_ns": 261,
+          "sets": 0,
+          "snapshot_ns": 81,
+          "snapshots": 2,
+          "sync_ns": 3537,
+          "updates": 0,
+          "writes": 0
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 7544,
+          "end_ns": 120,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1252,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "equivalent-new-bindgroup",
+      "output": {
+        "actual": 10,
+        "case": "equivalent-new-bindgroup",
+        "expected": 10,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 1,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 1,
+          "descriptors_ns": 261,
+          "driver_ns": 10320,
+          "end_ns": 111,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 1032,
+          "record_ns": 1883,
+          "resolve_ns": 220,
+          "sets": 0,
+          "snapshot_ns": 80,
+          "snapshots": 2,
+          "sync_ns": 1933,
+          "updates": 0,
+          "writes": 0
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 7714,
+          "end_ns": 120,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1413,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "changed-buffer-content",
+      "output": {
+        "actual": 99,
+        "case": "changed-buffer-content",
+        "expected": 99,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 1,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 1,
+          "descriptors_ns": 270,
+          "driver_ns": 10670,
+          "end_ns": 150,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 1153,
+          "record_ns": 1653,
+          "resolve_ns": 220,
+          "sets": 0,
+          "snapshot_ns": 80,
+          "snapshots": 2,
+          "sync_ns": 1603,
+          "updates": 0,
+          "writes": 0
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 8416,
+          "end_ns": 160,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1553,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "changed-resource",
+      "output": {
+        "actual": 20,
+        "case": "changed-resource",
+        "expected": 20,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 0,
+          "allocations": 6,
+          "cached": 0,
+          "calls": 1,
+          "descriptors_ns": 35426,
+          "driver_ns": 12744,
+          "end_ns": 220,
+          "misses": 1,
+          "pools": 1,
+          "prepare_ns": 36489,
+          "record_ns": 3066,
+          "resolve_ns": 210,
+          "sets": 1,
+          "snapshot_ns": 70,
+          "snapshots": 2,
+          "sync_ns": 2014,
+          "updates": 1,
+          "writes": 2
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 8837,
+          "end_ns": 140,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1653,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "return-original-resource",
+      "output": {
+        "actual": 99,
+        "case": "return-original-resource",
+        "expected": 99,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 1,
+          "calls": 1,
+          "descriptors_ns": 521,
+          "driver_ns": 14568,
+          "end_ns": 200,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 1473,
+          "record_ns": 3036,
+          "resolve_ns": 310,
+          "sets": 0,
+          "snapshot_ns": 80,
+          "snapshots": 2,
+          "sync_ns": 3296,
+          "updates": 0,
+          "writes": 0
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 7364,
+          "end_ns": 150,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1252,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "changed-range",
+      "output": {
+        "actual": 99,
+        "case": "changed-range",
+        "expected": 99,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 0,
+          "allocations": 6,
+          "cached": 0,
+          "calls": 1,
+          "descriptors_ns": 27221,
+          "driver_ns": 10449,
+          "end_ns": 131,
+          "misses": 1,
+          "pools": 1,
+          "prepare_ns": 27912,
+          "record_ns": 2124,
+          "resolve_ns": 190,
+          "sets": 1,
+          "snapshot_ns": 70,
+          "snapshots": 2,
+          "sync_ns": 1543,
+          "updates": 1,
+          "writes": 2
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 7524,
+          "end_ns": 131,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1522,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "return-original-range",
+      "output": {
+        "actual": 99,
+        "case": "return-original-range",
+        "expected": 99,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 1,
+          "calls": 1,
+          "descriptors_ns": 431,
+          "driver_ns": 13205,
+          "end_ns": 150,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 1403,
+          "record_ns": 2164,
+          "resolve_ns": 270,
+          "sets": 0,
+          "snapshot_ns": 70,
+          "snapshots": 2,
+          "sync_ns": 2535,
+          "updates": 0,
+          "writes": 0
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 13776,
+          "end_ns": 160,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1173,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "changed-layout",
+      "output": {
+        "actual": 99,
+        "case": "changed-layout",
+        "expected": 99,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 0,
+          "allocations": 6,
+          "cached": 0,
+          "calls": 1,
+          "descriptors_ns": 34344,
+          "driver_ns": 15679,
+          "end_ns": 320,
+          "misses": 1,
+          "pools": 1,
+          "prepare_ns": 278595,
+          "record_ns": 4429,
+          "resolve_ns": 210,
+          "sets": 1,
+          "snapshot_ns": 101,
+          "snapshots": 2,
+          "sync_ns": 2936,
+          "updates": 1,
+          "writes": 2
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 7634,
+          "end_ns": 150,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1413,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    },
+    {
+      "case": "return-original-layout",
+      "output": {
+        "actual": 20,
+        "case": "return-original-layout",
+        "expected": 20,
+        "pass": true
+      },
+      "phases": [
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 1,
+          "calls": 1,
+          "descriptors_ns": 491,
+          "driver_ns": 10139,
+          "end_ns": 120,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 2144,
+          "record_ns": 2054,
+          "resolve_ns": 290,
+          "sets": 0,
+          "snapshot_ns": 80,
+          "snapshots": 2,
+          "sync_ns": 1593,
+          "updates": 0,
+          "writes": 0
+        },
+        {
+          "active": 0,
+          "allocations": 0,
+          "cached": 0,
+          "calls": 0,
+          "descriptors_ns": 0,
+          "driver_ns": 6712,
+          "end_ns": 110,
+          "misses": 0,
+          "pools": 0,
+          "prepare_ns": 0,
+          "record_ns": 0,
+          "resolve_ns": 0,
+          "sets": 0,
+          "snapshot_ns": 0,
+          "snapshots": 0,
+          "sync_ns": 1112,
+          "updates": 0,
+          "writes": 0
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Independent literal expected outputs and pinned Dawn validate these buffer cases, not every texture, sampler, collision, allocation-failure or device-loss path.",
+    "No production change is retained, so this is characterization rather than a new runtime conformance claim."
+  ],
+  "uninstrumentedControls": {
+    "binding-reuse-baseline": {
+      "outputs": [
+        {
+          "actual": 10,
+          "case": "initial",
+          "expected": 10,
+          "pass": true
+        },
+        {
+          "actual": 10,
+          "case": "unchanged-0",
+          "expected": 10,
+          "pass": true
+        },
+        {
+          "actual": 10,
+          "case": "unchanged-1",
+          "expected": 10,
+          "pass": true
+        },
+        {
+          "actual": 10,
+          "case": "unchanged-2",
+          "expected": 10,
+          "pass": true
+        },
+        {
+          "actual": 10,
+          "case": "equivalent-new-bindgroup",
+          "expected": 10,
+          "pass": true
+        },
+        {
+          "actual": 99,
+          "case": "changed-buffer-content",
+          "expected": 99,
+          "pass": true
+        },
+        {
+          "actual": 20,
+          "case": "changed-resource",
+          "expected": 20,
+          "pass": true
+        },
+        {
+          "actual": 99,
+          "case": "return-original-resource",
+          "expected": 99,
+          "pass": true
+        },
+        {
+          "actual": 99,
+          "case": "changed-range",
+          "expected": 99,
+          "pass": true
+        },
+        {
+          "actual": 99,
+          "case": "return-original-range",
+          "expected": 99,
+          "pass": true
+        },
+        {
+          "actual": 99,
+          "case": "changed-layout",
+          "expected": 99,
+          "pass": true
+        },
+        {
+          "actual": 20,
+          "case": "return-original-layout",
+          "expected": 20,
+          "pass": true
+        }
+      ],
+      "provider": {
+        "adapter": {
+          "architecture": "vulkan",
+          "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+          "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+          "vendor": "AMD"
+        },
+        "provider": "/home/x/deco/doe/packages/doe-gpu/src/index.js"
+      }
+    },
+    "binding-reuse-dawn": {
+      "outputs": [
+        {
+          "actual": 10,
+          "case": "initial",
+          "expected": 10,
+          "pass": true
+        },
+        {
+          "actual": 10,
+          "case": "unchanged-0",
+          "expected": 10,
+          "pass": true
+        },
+        {
+          "actual": 10,
+          "case": "unchanged-1",
+          "expected": 10,
+          "pass": true
+        },
+        {
+          "actual": 10,
+          "case": "unchanged-2",
+          "expected": 10,
+          "pass": true
+        },
+        {
+          "actual": 10,
+          "case": "equivalent-new-bindgroup",
+          "expected": 10,
+          "pass": true
+        },
+        {
+          "actual": 99,
+          "case": "changed-buffer-content",
+          "expected": 99,
+          "pass": true
+        },
+        {
+          "actual": 20,
+          "case": "changed-resource",
+          "expected": 20,
+          "pass": true
+        },
+        {
+          "actual": 99,
+          "case": "return-original-resource",
+          "expected": 99,
+          "pass": true
+        },
+        {
+          "actual": 99,
+          "case": "changed-range",
+          "expected": 99,
+          "pass": true
+        },
+        {
+          "actual": 99,
+          "case": "return-original-range",
+          "expected": 99,
+          "pass": true
+        },
+        {
+          "actual": 99,
+          "case": "changed-layout",
+          "expected": 99,
+          "pass": true
+        },
+        {
+          "actual": 20,
+          "case": "return-original-layout",
+          "expected": 20,
+          "pass": true
+        }
+      ],
+      "provider": {
+        "adapter": {
+          "architecture": "rdna-3",
+          "description": "radv: Mesa 26.0.3-1ubuntu1",
+          "device": "radeon-8060s-graphics-radv-strix-halo-",
+          "vendor": "amd"
+        },
+        "provider": "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/index.js"
+      }
+    }
+  }
+}

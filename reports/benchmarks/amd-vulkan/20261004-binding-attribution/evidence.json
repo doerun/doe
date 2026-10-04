@@ -1,0 +1,145 @@
+{
+  "buildCommand": "zig build dropin -Doptimize=ReleaseFast --prefix <diagnostic-runtime> from runtime/zig",
+  "classification": "diagnostic-source-workspace-attribution",
+  "commands": [
+    {
+      "command": [
+        "node",
+        "/home/x/deco/doe/bench/out/external-projects/umap-gpu/upstream/node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "/home/x/deco/doe/bench/external-projects/umap-gpu/vitest-sgd-benchmark.config.mjs"
+      ],
+      "exitCode": 0,
+      "name": "umap"
+    },
+    {
+      "command": [
+        "node",
+        "/home/x/deco/doe/bench/out/vulkan-bindings/20261004/binding-reuse.mjs"
+      ],
+      "exitCode": 0,
+      "name": "binding-reuse"
+    }
+  ],
+  "decision": {
+    "O3RejectionPreserved": true,
+    "applicationPerformanceAdvantageEstablished": false,
+    "instrumentationRemoved": true,
+    "productionBehaviorChanged": false,
+    "productionCandidateEvaluated": false,
+    "stopUmapBindingOptimization": true,
+    "umapRole": "regression workload"
+  },
+  "executables": [
+    {
+      "bytes": 11935080,
+      "custody": "local; native binaries not duplicated into tracked report",
+      "path": "bench/out/vulkan-bindings/20261004/diagnostic-runtime/lib/libwebgpu_doe.so",
+      "sha256": "1355320bbb3d3d62c537117dace3e24d694f6b1d2634560186f1c41cd10abed9"
+    },
+    {
+      "bytes": 11860920,
+      "custody": "local; native binaries not duplicated into tracked report",
+      "path": "bench/out/vulkan-identifiers/20261004/runtime/lib/libwebgpu_doe.so",
+      "sha256": "9f1ba8bd0670d799f18f8af322afa4244dd5d569f6bf824d4b281f1a3fbae292"
+    },
+    {
+      "bytes": 424080,
+      "custody": "local; native binaries not duplicated into tracked report",
+      "path": "packages/doe-gpu/build/Release/doe_napi.node",
+      "sha256": "4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66"
+    },
+    {
+      "bytes": 19874384,
+      "custody": "local; native binaries not duplicated into tracked report",
+      "path": "bench/out/external-projects/umap-gpu/upstream/node_modules/webgpu/dist/linux-x64.dawn.node",
+      "sha256": "dc2a6007318287a62436e220fa9a8cf698301b6320153a48182398fc68eea5ff"
+    }
+  ],
+  "hardware": {
+    "adapter": "Radeon 8060S Graphics RADV STRIX_HALO",
+    "backend": "Vulkan",
+    "driver": "Mesa 26.0.3-1ubuntu1"
+  },
+  "nextWorkloadSelection": {
+    "application": "Doppler full Gemma 3 270M text generation on Node/Vulkan",
+    "criteriaToFreeze": [
+      "First streamed useful token and final requested completion",
+      "Cold loading and retained-device generation separately",
+      "Logit/tokens, stopping and cancellation correctness with matched provider work",
+      "Complete-operation median/tail, peak memory, failures and cleanup",
+      "Instrumentation-disabled alternating candidate acceptance"
+    ],
+    "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+    "priorEvidenceBoundary": "Retired provider-compare and Electron qualification contracts are not reopened and grant no acceptance credit.",
+    "status": "selected; new model/prompt/provider contract and performance limits must be frozen before execution"
+  },
+  "sourceCommit": "ed9d746cb98f614a11843569d84a5333c443a3c1",
+  "sourceInputs": [
+    {
+      "bytes": 19435,
+      "path": "runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig",
+      "sha256": "c059e543ee44e3bbda0fec9c7e12f1a28189f836453b3497d50161f88990b184"
+    },
+    {
+      "bytes": 38602,
+      "path": "runtime/zig/src/native/vulkan/vulkan_compute_native.zig",
+      "sha256": "65fe1ac6898dd9b253cfc0b438b7aaf91595e2fde07e5b30db4688ace75116cf"
+    },
+    {
+      "bytes": 18141,
+      "path": "runtime/zig/src/backend/vulkan/vk_descriptors.zig",
+      "sha256": "fd6306e0262ed26af067bc280c488c4552ab29a7e108effe53f45f2546021162"
+    },
+    {
+      "bytes": 3293,
+      "path": "runtime/zig/src/backend/vulkan/vk_descriptor_identity.zig",
+      "sha256": "b05a8441a64f5bf01fa89206ae0270a2b6fc6522d1018a614c0981bd65835b3d"
+    },
+    {
+      "bytes": 28726,
+      "path": "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+      "sha256": "ae4d56c9bb707f9c97a6f4462a487c4c8078e7094b9dd25dde3682d148b24607"
+    },
+    {
+      "bytes": 25888,
+      "path": "runtime/zig/src/backend/vulkan/vk_pipeline.zig",
+      "sha256": "38acbb7de6189332bab8d30f9aa93e9dd3bbdf836282dd37bb49160f03e211ea"
+    },
+    {
+      "bytes": 32373,
+      "path": "runtime/zig/src/backend/vulkan/vk_upload.zig",
+      "sha256": "fce6a0ca3e81a3d9d1281b848d2c7dbe843786127df92201e6daca03dbb4541f"
+    },
+    {
+      "bytes": 6956,
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.harness.json",
+      "sha256": "0fbb5d2d44871e7a4184228a897f3e6e7050fc5663883298bf046748e53afbe5"
+    },
+    {
+      "bytes": 552,
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.inputs.json",
+      "sha256": "2d453439b8f597fd38d4dddd4e88b4b5de83fa0d18ab4dd68767d674e9184b39"
+    },
+    {
+      "bytes": 1205,
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.oracle.md",
+      "sha256": "7f4937e8fd86fae2a167e80e7d9a6abb52e98cba96f064c7a177ce92d290b552"
+    },
+    {
+      "bytes": 8859,
+      "path": "bench/external-projects/umap-gpu/sgd-benchmark.workload.test.ts",
+      "sha256": "55e971f997f5618367e2b5168215e20790305de271f76825dc5ef8a732575028"
+    }
+  ],
+  "toolchain": {
+    "node": "v22.22.1",
+    "zig": "0.15.2"
+  },
+  "uninstrumentedControlCommands": [
+    "DOE_WEBGPU_LIB=<accepted-runtime> node <binding-reuse.mjs>",
+    "DOE_BINDING_PROVIDER=<pinned Dawn module> node <binding-reuse.mjs>"
+  ],
+  "upstreamCommit": "7884b287f49bc057df7e0856c5539f130a20e0ad"
+}

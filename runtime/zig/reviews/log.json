@@ -27555,6 +27555,60 @@
         "src/backend/vulkan",
         "src/native/queue"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_descriptor_identity.zig",
+          "sha256": "b05a8441a64f5bf01fa89206ae0270a2b6fc6522d1018a614c0981bd65835b3d"
+        },
+        {
+          "path": "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+          "sha256": "ae4d56c9bb707f9c97a6f4462a487c4c8078e7094b9dd25dde3682d148b24607"
+        },
+        {
+          "path": "runtime/zig/src/native/vulkan/vulkan_compute_native.zig",
+          "sha256": "65fe1ac6898dd9b253cfc0b438b7aaf91595e2fde07e5b30db4688ace75116cf"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-binding-attribution/binding-controls.json",
+          "sha256": "4e89f5bd996b17c2402573ea2ab1af7b7124bbb221c75a407e0c29f5c162246c"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-binding-attribution/evidence.json",
+          "sha256": "340cc8aecfa2e8639032fe1e1235ff6d815ba9ac74ce56cd6311ca1742a73c2c"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-binding-attribution/umap-attribution.json",
+          "sha256": "f245751da0b0edd874f0d4003af142840d61db22f6ca2f656fa3e9e94e091ef7"
+        }
+      ],
+      "findings": [
+        "Descriptor identity checking and dispatch preparation remain necessary to establish live resources; this bounded UMAP profile does not identify a substantial recoverable binding cost. General pipeline, synchronization, rendering, collision and recovery review remains unfinished.",
+        "A new actual Doppler generation workload requires a separately frozen model/prompt/provider/oracle/performance contract; retired provider comparisons and prior Electron qualification grant no new acceptance credit."
+      ],
+      "inputHash": "c7b0d38f5fd172d23f0a549239b4d994dbced5916c739af1cc33d3a731bd627f",
+      "level": "cross_directory",
+      "nextAction": "Stop the UMAP binding optimization line. Freeze a separate full Doppler Gemma text-generation contract on Node/Vulkan, then profile model load, prefill, first streamed token, decode and final completion before choosing one correction. Preserve cancellation and resource lifetimes; do not inherit retired or Electron performance credit.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "An empty submission-local PreparedVulkanDispatchState does not imply descriptor rebuilding across calls. Physical UMAP observations show initial program preparation followed by active descriptor reuse, with no repeated-epoch descriptor allocation requests or updates.",
+        "Changed-binding controls distinguish equivalent objects/content writes from new resources/ranges/layouts and retained-state restoration, with independent expected outputs reproduced on diagnostic Doe, unchanged Doe and pinned Dawn.",
+        "Temporary instrumentation is removed, the default addon remains selected, and UMAP is retained as a regression workload. No new candidate, performance advantage or revived -O3 experiment is claimed."
+      ],
+      "reviewId": "vulkan_binding_attribution_20261004",
+      "reviewedAt": "2026-10-04T19:28:30.047763+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "ed9d746cb98f614a11843569d84a5333c443a3c1",
+      "status": "in_progress",
+      "summary": "Scoped cache-effectiveness attribution closes the UMAP binding-optimization line without a production candidate. Owned lower-level state reuses bindings across public submissions; this is not a complete queue/backend review.",
+      "supersedes": "vulkan_operation_timeline_20261004",
+      "targets": [
+        "src/backend/vulkan",
+        "src/native/queue"
+      ]
     }
   ],
   "schemaVersion": 1

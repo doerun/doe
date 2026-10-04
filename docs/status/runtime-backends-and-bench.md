@@ -1,18 +1,21 @@
 # Doe status: runtime backends and benchmarks
 
-## Complete-operation submission attribution
+## Application selection after submission attribution
 
-The [operation investigation](../../reports/benchmarks/amd-vulkan/20261004-operation-timeline/README.md)
-rejects native-addon optimization after identical-source alternating application
-cohorts. The baseline build is restored and production runtime policy is unchanged.
-Public, native driver and GPU-duration observations remain distinct; nested calls
-and overlapping GPU work cannot be added into a serial total. Favorable individual
-Doe/Dawn cohorts do not establish repeatable replacement value.
+The [binding-cache pass](../../reports/benchmarks/amd-vulkan/20261004-binding-attribution/README.md)
+closes the UMAP binding-optimization line without a production candidate.
+Lower-level owned descriptors already reuse unchanged resources across public
+submissions. Changed-binding controls exercise necessary preparation and retained
+state restoration on Doe and pinned Dawn. UMAP remains a regression workload.
+The [addon experiment](../../reports/benchmarks/amd-vulkan/20261004-operation-timeline/README.md)
+stays rejected. No new application-performance advantage is established.
 
-The existing review plan now selects attribution inside native submission before
-another correction. Recoverable driver/bridge cost, complete host-allocation and
-cache-miss attribution, and the earlier compiler timing discrepancy remain open.
-Identifier admission and prior hoisting/subgroup rejections are preserved.
+The existing review plan selects a fresh full Doppler Gemma generation contract
+on Node/Vulkan. Model, prompt, provider, oracle and performance criteria must be
+frozen before execution; retired comparisons and earlier Electron qualification
+grant no acceptance credit. This new workload has not executed here. Doppler's
+product work remains independent of Doe. The earlier compiler timing discrepancy
+remains open; identifier admission and hoisting/subgroup rejections are preserved.
 Vulkan remains active; Metal follows a closed campaign and D3D12 is deferred.
 
 ## Current boundary
