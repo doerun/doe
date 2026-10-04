@@ -2,6 +2,10 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/vulkan-submission-evaluation.schema.json",
+      "data": "config/vulkan-submission-evaluation.json"
+    },
+    {
       "schema": "config/implementation-peers.schema.json",
       "data": "config/implementation-peers.json"
     },

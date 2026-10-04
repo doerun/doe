@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "vulkan-submission-evaluation-policy",
+  "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+  "cohortOrder": [
+    "baseline-1",
+    "candidate-1",
+    "candidate-2",
+    "baseline-2"
+  ],
+  "cleanProcessesPerCohortPerLane": 10,
+  "workload": "bench/external-projects/umap-gpu/sgd-benchmark.harness.json",
+  "cacheScope": "fresh processes with existing populated shared shader and driver disk caches; pipeline owners start empty in each process",
+  "instrumentation": "disabled for application comparisons",
+  "correctness": "all provider lanes pass frozen output oracle, exact within-provider replay and physical hardware eligibility; candidate and baseline Doe output hashes match",
+  "regressionFraction": 0.05,
+  "regressionMetrics": [
+    "selectedOperationLatencyMs.p50",
+    "selectedOperationLatencyMs.p95",
+    "cleanProcessLatencyMs.p50",
+    "cleanProcessLatencyMs.p95",
+    "peakProcessTreeRssBytes"
+  ],
+  "regressionRule": "A metric exceeds its limit if candidate/baseline exceeds 1.05 in both matched pairs (baseline-1/candidate-1 and baseline-2/candidate-2). An isolated cohort difference remains visible and does not establish a repeatable regression or gain.",
+  "scopedAcceptance": "Retain only if physical correctness holds, immutable metadata stays with its exact shader owner, diagnostic repeated policy-inspection cost falls, and no declared metric has a repeatable regression. Application performance is reported independently.",
+  "materialPerformanceRule": "Existing UMAP contract requires at least 1.10x over pinned W0 at selected-operation p50 and p95. Complete process, memory and opposite timing signs are reported separately; no operation gain can establish complete-application advantage.",
+  "libraries": {
+    "baseline": {
+      "path": "bench/out/vulkan-submission/20261004/baseline/lib/libwebgpu_doe.so",
+      "sha256": "480b7ff65581772bbd77d2d498f103d6b056af6eb671c873078438ac77d3f3c3"
+    },
+    "candidate": {
+      "path": "bench/out/vulkan-submission/20261004/candidate/lib/libwebgpu_doe.so",
+      "sha256": "e4c6a19214850fe5a176cb54a0b60e880f2896f10a47b9fd1f059d8b289af0c0"
+    }
+  }
+}

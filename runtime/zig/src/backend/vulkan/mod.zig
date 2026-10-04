@@ -617,6 +617,7 @@ test "new command discards prewarm or failed-command artifact staging" {
         .layout = &.{},
         .required_subgroup_size = null,
         .references = 2,
+        .compute_metadata = .{},
     };
     backend.runtime.?.allocator = std.testing.allocator;
     backend.runtime.?.device = null;
@@ -653,6 +654,7 @@ test "Vulkan artifact capture releases its shader owner on success and every all
             .layout = &.{},
             .required_subgroup_size = null,
             .references = 2,
+            .compute_metadata = .{},
         };
         backend.runtime = .{ .allocator = std.testing.allocator, .kernel_root = null, .pending_spirv_pipeline = &pipeline };
         defer backend.runtime = null;

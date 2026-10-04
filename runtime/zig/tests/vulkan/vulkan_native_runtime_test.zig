@@ -567,6 +567,43 @@ test "Vulkan pipeline identity survives collision chains beyond the hot cache" {
     try expect_reuse_output(&rt, bindings[0].resource_handle, &expected);
 }
 
+test "Vulkan subgroup metadata follows changed shaders despite a shared hash" {
+    if (std.posix.getenv("DOE_VULKAN_REQUIRED_SUBGROUP_SIZE") != null) return error.SkipZigTest;
+    var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
+        error.UnsupportedFeature => return error.SkipZigTest,
+        else => return err,
+    };
+    defer rt.deinit();
+    if (!rt.has_subgroup_size_control_ext or rt.required_compute_subgroup_size == 0) return error.SkipZigTest;
+    rt.vulkan_subgroup_size_policy = .suppress_for_workgroup_memory_256_or_single_invocation;
+    const prefix = "@group(0) @binding(0) var<storage, read_write> output: array<u32>;\n";
+    const sources = [_][]const u8{
+        prefix ++ "@compute @workgroup_size(1) fn main() { output[0] += 7u; }",
+        prefix ++ "@compute @workgroup_size(64) fn main(@builtin(local_invocation_id) id: vec3u) { if (id.x == 0u) { output[0] += 11u; } }",
+        prefix ++ "var<workgroup> values: array<u32, 256>;\n@compute @workgroup_size(256) fn main(@builtin(local_invocation_id) id: vec3u) { values[id.x] = id.x; workgroupBarrier(); if (id.x == 0u) { output[0] += values[255]; } }",
+    };
+    const bindings = [_]compute.KernelBinding{.{ .binding = 0, .resource_kind = .buffer, .resource_handle = 551, .buffer_size = REUSE_BUFFER_BYTES, .buffer_type = binding_types.WGPUBufferBindingType_Storage }};
+    var handles: [sources.len]vk.VkPipeline = undefined;
+    var expected: u32 = 0;
+    const increments = [_]u32{ 7, 11, 255 };
+    for ([_]usize{ 0, 1, 2, 1, 0, 2 }, 0..) |index, iteration| {
+        var output: [compiler.MAX_SPIRV_OUTPUT]u8 align(@alignOf(u32)) = undefined;
+        const length = try compiler.translateToSpirv(std.testing.allocator, sources[index], &output);
+        const words = std.mem.bytesAsSlice(u32, output[0..length]);
+        try rt.set_compute_shader_spirv_with_hashes(words, 1, 1, null, "main", &bindings, true);
+        const entry = rt.shared_pipeline.?;
+        try std.testing.expectEqual(if (index == 1) @as(?u32, rt.required_compute_subgroup_size) else null, entry.required_subgroup_size);
+        try std.testing.expectEqual(@as(u32, if (index == 0) 1 else if (index == 1) 64 else 256), entry.compute_metadata.local_size.?.x);
+        try std.testing.expectEqual(index == 2, entry.compute_metadata.has_workgroup_storage);
+        if (iteration < sources.len) {
+            handles[index] = rt.pipeline;
+        } else try std.testing.expectEqual(handles[index], rt.pipeline);
+        _ = try rt.run_dispatch(1, 1, 1, .per_command, .wait_any, .off);
+        expected += increments[index];
+        try expect_reuse_output(&rt, bindings[0].resource_handle, &.{ expected, 0, 0, 0 });
+    }
+}
+
 test "Vulkan buffer publication failure cannot leave an unowned initialization command" {
     var rt = native_runtime.NativeVulkanRuntime.init(std.testing.allocator, null) catch |err| switch (err) {
         error.UnsupportedFeature => return error.SkipZigTest,

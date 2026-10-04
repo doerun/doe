@@ -1,0 +1,150 @@
+
+> doe-gpu@0.5.0 test:smoke
+> node test/smoke/test-smoke-load.js
+
+=== doe-gpu smoke test ===
+
+  ok: import succeeds
+  ok: exports gpu
+  ok: exports createGpuNamespace
+  ok: exports createDoeNamespace
+  ok: exports create
+  ok: exports createNativeDirect
+  ok: exports requestDevice
+  ok: exports requestAdapter
+  ok: exports providerInfo
+  ok: exports nativeFastPathInfo
+  ok: exports globals
+  ok: exports createDoeRuntime
+
+gpu namespace shape:
+  ok: gpu is an object
+  ok: gpu.requestDevice is a function
+  ok: gpu.bind is a function
+
+gpu determinism shape:
+  ok: gpu.bind({}) exposes determinism namespace
+  ok: gpu.bind({}).determinism.stableToken is a function
+  ok: gpu.bind({}).determinism.stableChoice is a function
+  ok: gpu.bind({}).determinism.reviewedChoice is a function
+
+gpu numericStability shape:
+  ok: gpu.ordinaryExecution is a function
+  ok: gpu.bind({}).ordinaryExecution is a function
+  ok: gpu.bind({}) exposes numericStability namespace
+  ok: gpu.bind({}).numericStability.matmulLogitsSlice is a function
+  ok: gpu.bind({}).numericStability.ordinaryExecution is a function
+  ok: gpu.bind({}).ordinaryExecution aliases numericStability.ordinaryExecution
+  ok: stableToken returns lowest max index for host logits
+  ok: stableToken receipt reports policy registry path
+  ok: stableToken receipt reports policy registry version
+  ok: stableToken receipt reports policy id
+  ok: stableToken receipt reports host-bytes source
+  ok: stableToken receipt reports tied max count
+  ok: stableToken receipt reports explicit tie-break rule
+  ok: stableToken receipt reports selectedBy policy
+  ok: stableToken receipt exposes proof links
+  ok: stableChoice exact tie follows fixed-priority order
+  ok: stableChoice receipt reports stable-choice mode
+  ok: stableChoice receipt reports policy registry path
+  ok: stableChoice receipt reports policy registry version
+  ok: stableChoice receipt reports policy trigger
+  ok: stableChoice receipt records selectedBy policy
+  ok: stableChoice receipt preserves policyId
+  ok: stableChoice receipt preserves triggerPolicyId
+  ok: stableChoice receipt preserves candidateSetId
+  ok: stableChoice receipt preserves candidateSetSource
+  ok: stableChoice receipt exposes proof links
+  ok: reviewedChoice exact tie honors reviewed token
+  ok: reviewedChoice receipt reports reviewed-choice mode
+  ok: reviewedChoice receipt reports policy registry path
+  ok: reviewedChoice receipt reports policy registry version
+  ok: reviewedChoice receipt records decision acceptance
+  ok: reviewedChoice receipt records selectedBy decision
+  ok: reviewedChoice receipt preserves reviewerId
+  ok: reviewedChoice receipt exposes proof links
+
+globals shape:
+  ok: globals.GPUBufferUsage exists
+  ok: globals.GPUBufferUsage.STORAGE
+  ok: globals.GPUShaderStage exists
+  ok: globals.GPUShaderStage.COMPUTE
+  ok: globals.GPUMapMode exists
+  ok: globals.GPUMapMode.READ
+
+createGpuNamespace shape:
+  ok: createGpuNamespace() returns object
+  ok: namespace.requestDevice
+  ok: namespace.bind
+
+compute surface:
+  ok: compute import succeeds
+  ok: compute.gpu exists
+  ok: compute.createGpuNamespace
+  ok: compute.create
+  ok: compute.requestDevice
+  ok: compute.requestAdapter
+  ok: compute.providerInfo
+  ok: compute.globals exists
+  ok: compute.gpu.requestDevice
+  ok: compute.gpu.bind
+
+split package surfaces:
+  ok: api import succeeds
+  ok: api.createDoeNamespace
+  ok: api.createGpuNamespace
+  ok: api.gpu.bind
+  ok: native import succeeds
+  ok: native.requestDevice
+  ok: native.providerInfo
+  ok: native.gpu.requestDevice
+  ok: node-webgpu import succeeds
+  ok: node-webgpu exports bootstrapNodeWebGPU
+  ok: node-webgpu exports bootstrapNodeWebGPUProvider
+  ok: node-webgpu exports runGovernedNodeWebGPU
+  ok: node-webgpu exports validateGovernedNodeWebGPUReceipt
+  ok: node-webgpu exports hasNavigatorGpu
+  ok: node-webgpu exports installNavigatorGpu
+  ok: node-webgpu-process import succeeds
+  ok: node-webgpu-process exports runGovernedNodeWebGPUProcess
+  ok: node-webgpu-process exports validateGovernedNodeWebGPUProcessReceipt
+  ok: plan import succeeds
+  ok: plan validates command streams
+  ok: plan recognizes capture evidence artifact kind
+  ok: plan exposes lowering stages
+  ok: plan exposes WebGPU globals
+  ok: plan exposes capture gpu provider
+  ok: plan exposes capture provider
+  ok: capture import succeeds
+  ok: capture.requestDevice
+  ok: capture snapshot is capture graph
+  ok: capture snapshot validates as artifact
+  ok: capture snapshot validates as capture graph
+  ok: capture snapshot hashes WGSL
+  ok: capture snapshot hashes buffer writes
+  ok: capture snapshot records submit
+  ok: capture exports WebGPU enum globals
+  ok: capture exports gpu provider
+
+doe runtime tooling surface:
+  ok: createDoeRuntime() returns object
+  ok: runtime.runBench is a function
+  ok: runtime.runModule is a function
+  ok: runtime.runOrdinaryExecution is a function
+  ok: runtime.runNumericStabilityMatmulLogitsSlice is a function
+  ok: runtime.runNumericStabilityOrdinaryExecution is a function
+  ok: numericStability host helper returns prefer-stable route
+  ok: numericStability host helper returns stable token
+  ok: numericStability receipt reports numeric-stability mode
+  ok: numericStability receipt reports policy registry path
+  ok: numericStability receipt reports policy registry version
+  ok: numericStability receipt reports route taxonomy version
+  ok: numericStability receipt reports route selection mode
+  ok: numericStability host helper returns accept-fast route
+  ok: numericStability host helper returns fast token for accept-fast
+  ok: numericStability host helper returns abstain route
+  ok: numericStability host helper returns null token for abstain
+  skip: ordinaryExecution (no in-path artifacts found)
+  skip: ordinaryExecution decode demo (requires darwin metal lane)
+
+Results: 124 passed, 0 failed

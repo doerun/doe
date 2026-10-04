@@ -1,0 +1,699 @@
+{
+  "adapter": {
+    "adapter": {
+      "architecture": "vulkan",
+      "description": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+      "device": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+      "vendor": "AMD"
+    },
+    "features": [
+      "bgra8unorm-storage",
+      "clip-distances",
+      "depth-clip-control",
+      "depth32float-stencil8",
+      "dual-source-blending",
+      "float32-blendable",
+      "float32-filterable",
+      "indirect-first-instance",
+      "primitive-index",
+      "rg11b10ufloat-renderable",
+      "shader-f16",
+      "subgroups",
+      "texture-component-swizzle",
+      "texture-compression-astc-sliced-3d",
+      "texture-compression-bc",
+      "texture-compression-bc-sliced-3d",
+      "texture-formats-tier1",
+      "texture-formats-tier2",
+      "timestamp-query"
+    ],
+    "isFallbackAdapter": null,
+    "provider": {
+      "id": "doe-gpu",
+      "modulePath": "/home/x/deco/doe/packages/doe-gpu/src/index.js",
+      "providerInfo": {
+        "buildMetadataPath": "/home/x/deco/doe/bench/out/vulkan-submission/20261004/baseline/share/doe-build-metadata.json",
+        "buildMetadataSource": "workspace",
+        "defaultCreateArgs": [],
+        "doeLibraryPath": "/home/x/deco/doe/bench/out/vulkan-submission/20261004/baseline/lib/libwebgpu_doe.so",
+        "doeNative": true,
+        "leanVerifiedBuild": false,
+        "libraryFlavor": "doe-dropin",
+        "loadError": "",
+        "loaded": true,
+        "module": "doe-gpu",
+        "nativeFastPaths": {
+          "appleFastPathCompiled": false,
+          "bufferMapReadCopyUnmap": true,
+          "computeDispatchBatchCopyFlush": true,
+          "computeDispatchBatchCopyFlushBreakdown": true,
+          "computeDispatchBatchFlush": true,
+          "computeDispatchFlush": true,
+          "computeDispatchFlushBreakdown": true,
+          "computePrewarmDispatchBindings": true,
+          "queueFlush": true,
+          "queueFlushBreakdown": true,
+          "queueWriteBufferBatch": true,
+          "queueWriteBufferBatchDataPtrs": true
+        },
+        "proofArtifactSha256": null
+      }
+    }
+  },
+  "allocationScope": {
+    "addedLookupHeapAllocations": 0,
+    "basis": "Lookup reads already-owned metadata; registry retains fields in its existing Pipeline allocation. Native command-buffer growth is in phase-observations.json. Complete allocator accounting is not established.",
+    "gpuAllocationPolicyChanged": false
+  },
+  "artifactKind": "vulkan-submission-campaign-evidence",
+  "baselineCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+  "candidateSource": "Production source hashes below and accompanying commit; instrumentation patches are diagnostic only.",
+  "checks": {
+    "build-baseline.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/build-baseline.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build-candidate-diagnostic.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/build-candidate-diagnostic.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build-candidate.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/build-candidate.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build-diagnostic.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/build-diagnostic.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build-preparation-diagnostic.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/build-preparation-diagnostic.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build-validation-diagnostic.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/build-validation-diagnostic.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "candidate-preparation-phase-instrumentation.patch": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/candidate-preparation-phase-instrumentation.patch",
+      "sha256": "d193c991b0f637948938f9da27d17a6f9e553e635aac72e91a56987f7214f869"
+    },
+    "doppler-D0.json": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/doppler-D0.json",
+      "sha256": "31160f02912224c4a9e507c7d9c5ff42cdffafbb66bb9de9318a4424bec5ca68"
+    },
+    "doppler-P0.json": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/doppler-P0.json",
+      "sha256": "448191b8356aeb57a6315fc216e357b10ca5b9f77f35980239bc85923ab4f302"
+    },
+    "doppler-result.json": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/doppler-result.json",
+      "sha256": "67a20a7623e5d2a67869371c6b4393f7c4ee49928831094d51c785e0328535e9"
+    },
+    "evaluation-policy.json": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/evaluation-policy.json",
+      "sha256": "620f8554f20804ff9d125fc4539f36b345ba3c103a0c6d9bb3921c03bf94b23a"
+    },
+    "native-phase-instrumentation.patch": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/native-phase-instrumentation.patch",
+      "sha256": "6690370c075cecd0805c7645242bd0f744b54a1561802b5463042102ad9e5452"
+    },
+    "package-contracts.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/package-contracts.log",
+      "sha256": "f59bfe6e387e0b028dfea9e02c4c1b7cd2aabacdb50eacc2bccef4cdc83020c8"
+    },
+    "package-smoke.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/package-smoke.log",
+      "sha256": "ce5eb33447c8d9bf3e669154a79cb0b6036263e9f829cba5fe65c6f9efd4d9bc"
+    },
+    "preparation-phase-instrumentation.patch": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/preparation-phase-instrumentation.patch",
+      "sha256": "12a32930e3ebaa13abc03b277e38a2bb2f93cf572d519289bfc161c5a8209bb8"
+    },
+    "preparation-physical-candidate.json": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/preparation-physical-candidate.json",
+      "sha256": "976371ea1cf7715fe4c4a3c3fa67a92064e5652d8becfff275ade5a91bd78d82"
+    },
+    "preparation-physical-candidate.stderr": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/preparation-physical-candidate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "shader-semantics-candidate.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/shader-semantics-candidate.log",
+      "sha256": "d45347fab8d671754d567fdde8574d69ac474f000b04a9d4f13e284af5cf49e8"
+    },
+    "test-candidate-final.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+      "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+    },
+    "test-candidate.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate.log",
+      "sha256": "e7911946c652b366d9b7055d805e7ad697149cc12f0f7241a19ca823ed1e22ec"
+    },
+    "test-wgsl-baseline.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-wgsl-baseline.log",
+      "sha256": "3e2d0e81a0ebc3805afe9781527c69d89e90f8036e51c832538c8602ec605ea6"
+    },
+    "validation-metadata-instrumentation.patch": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/validation-metadata-instrumentation.patch",
+      "sha256": "307a1d87e11063db4f87de0046dd2175001c7c59c385b809b2d71bcf80a3b3a8"
+    }
+  },
+  "cohorts": {
+    "baseline-1": {
+      "allLanesPhysical": true,
+      "comparison": {
+        "W0OverD0Speedup": {
+          "p50": 1.081588357729445,
+          "p95": 1.5321197481762523,
+          "p99": 1.466352205272228
+        },
+        "crossProviderExactOutputIdentity": false,
+        "materialPerformanceWin": false,
+        "outputIdentities": {
+          "D0": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "I0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "I1": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "W0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ]
+        }
+      },
+      "decision": {
+        "applicationPromotionCredit": false,
+        "correctnessEvidence": true,
+        "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis",
+        "performanceCredit": false,
+        "releaseCredit": false,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": false,
+        "status": "terminal"
+      },
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 609.540181,
+            "p95": 677.611197,
+            "p99": 677.611197
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 298536960,
+          "selectedOperationLatencyMs": {
+            "p50": 15.560676,
+            "p95": 18.363001999999994,
+            "p99": 19.58375000000001
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 627.973443,
+            "p95": 664.669531,
+            "p99": 664.669531
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 304443392,
+          "selectedOperationLatencyMs": {
+            "p50": 16.83024599999999,
+            "p95": 28.134318000000007,
+            "p99": 28.71667500000001
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      },
+      "raw": {
+        "path": "reports/benchmarks/amd-vulkan/20261004-submission/baseline-1-raw.json.gz",
+        "sha256": "5233e8928b1337c92976f1bfc9d2c47aca974578bfb9e5ba649c4bd9b4e7a35a",
+        "uncompressedSha256": "afa3cfefee56756e56c3d453da3a3bd5fe0ea5979c00cb2740e4e9ab300fed37"
+      },
+      "replays": {
+        "D0": "pass",
+        "W0": "pass"
+      }
+    },
+    "baseline-2": {
+      "allLanesPhysical": true,
+      "comparison": {
+        "W0OverD0Speedup": {
+          "p50": 1.0380910436104376,
+          "p95": 1.3783862405350287,
+          "p99": 1.4322002298184857
+        },
+        "crossProviderExactOutputIdentity": false,
+        "materialPerformanceWin": false,
+        "outputIdentities": {
+          "D0": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "I0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "I1": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "W0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ]
+        }
+      },
+      "decision": {
+        "applicationPromotionCredit": false,
+        "correctnessEvidence": true,
+        "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis",
+        "performanceCredit": false,
+        "releaseCredit": false,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": false,
+        "status": "terminal"
+      },
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 628.807554,
+            "p95": 669.40057,
+            "p99": 669.40057
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 298532864,
+          "selectedOperationLatencyMs": {
+            "p50": 15.28537799999998,
+            "p95": 17.824006999999995,
+            "p99": 18.391906000000006
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 633.080799,
+            "p95": 647.935516,
+            "p99": 647.935516
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 304685056,
+          "selectedOperationLatencyMs": {
+            "p50": 15.867614000000003,
+            "p95": 24.568366000000026,
+            "p99": 26.340891999999997
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      },
+      "raw": {
+        "path": "reports/benchmarks/amd-vulkan/20261004-submission/baseline-2-raw.json.gz",
+        "sha256": "0000008c4b2fe4b2556facc620a435e960a89355a29538f379677d6acfe283f9",
+        "uncompressedSha256": "25a77316af6338dfc57a2b68cf5fe7251d4b8343c98c51b175acb3ad25352fdc"
+      },
+      "replays": {
+        "D0": "pass",
+        "W0": "pass"
+      }
+    },
+    "candidate-1": {
+      "allLanesPhysical": true,
+      "comparison": {
+        "W0OverD0Speedup": {
+          "p50": 1.059055898650189,
+          "p95": 1.3979460120760656,
+          "p99": 1.2959374920581639
+        },
+        "crossProviderExactOutputIdentity": false,
+        "materialPerformanceWin": false,
+        "outputIdentities": {
+          "D0": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "I0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "I1": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "W0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ]
+        }
+      },
+      "decision": {
+        "applicationPromotionCredit": false,
+        "correctnessEvidence": true,
+        "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis",
+        "performanceCredit": false,
+        "releaseCredit": false,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": false,
+        "status": "terminal"
+      },
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 626.098167,
+            "p95": 646.606839,
+            "p99": 646.606839
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 297750528,
+          "selectedOperationLatencyMs": {
+            "p50": 14.79896199999996,
+            "p95": 16.73359400000004,
+            "p99": 19.674300000000017
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 616.755256,
+            "p95": 633.229613,
+            "p99": 633.229613
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 304541696,
+          "selectedOperationLatencyMs": {
+            "p50": 15.672927999999956,
+            "p95": 23.392661000000032,
+            "p99": 25.496662999999955
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      },
+      "raw": {
+        "path": "reports/benchmarks/amd-vulkan/20261004-submission/candidate-1-raw.json.gz",
+        "sha256": "2df09c8e2228eb7f43b4ebc468f0993140ce53d6506618abb250b2d21ab10567",
+        "uncompressedSha256": "6014f5073c059422b13d60f313abf5472996ddf8d43618641708998d64b81ce3"
+      },
+      "replays": {
+        "D0": "pass",
+        "W0": "pass"
+      }
+    },
+    "candidate-2": {
+      "allLanesPhysical": true,
+      "comparison": {
+        "W0OverD0Speedup": {
+          "p50": 0.9756034420125042,
+          "p95": 1.4793533313935037,
+          "p99": 1.6095437616018586
+        },
+        "crossProviderExactOutputIdentity": false,
+        "materialPerformanceWin": false,
+        "outputIdentities": {
+          "D0": [
+            "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+          ],
+          "I0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "I1": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ],
+          "W0": [
+            "ecf7d9fb4c6ad10fc191a414a7f11a8cbcddd6bcdd5d6d251dc04956b1f7d6b5"
+          ]
+        }
+      },
+      "decision": {
+        "applicationPromotionCredit": false,
+        "correctnessEvidence": true,
+        "nextGate": "retain-exact-output-regression-and-close-frozen-performance-hypothesis",
+        "performanceCredit": false,
+        "releaseCredit": false,
+        "replayEvidence": true,
+        "runtimeOwnershipCredit": false,
+        "status": "terminal"
+      },
+      "lanes": {
+        "D0": {
+          "cleanProcessLatencyMs": {
+            "p50": 619.05994,
+            "p95": 641.422181,
+            "p99": 641.422181
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 298614784,
+          "selectedOperationLatencyMs": {
+            "p50": 15.59424899999999,
+            "p95": 17.78165800000005,
+            "p99": 18.93823500000002
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        },
+        "W0": {
+          "cleanProcessLatencyMs": {
+            "p50": 613.449256,
+            "p95": 623.082763,
+            "p99": 623.082763
+          },
+          "cleanProcessRuns": 10,
+          "crashes": 0,
+          "failures": 0,
+          "hangs": 0,
+          "peakProcessTreeRssBytes": 304672768,
+          "selectedOperationLatencyMs": {
+            "p50": 15.213803000000041,
+            "p95": 26.30535500000002,
+            "p99": 30.481918000000007
+          },
+          "selectedOperationSamples": 30,
+          "successes": 10,
+          "timeouts": 0
+        }
+      },
+      "raw": {
+        "path": "reports/benchmarks/amd-vulkan/20261004-submission/candidate-2-raw.json.gz",
+        "sha256": "e98aa051c0363912b1593a703092f4f4f475062cb1db3e4bb8734e87538d3735",
+        "uncompressedSha256": "47953cc82a2256581e896a2bbaa41a2ddec373be607d15648ee3e0c50accaba7"
+      },
+      "replays": {
+        "D0": "pass",
+        "W0": "pass"
+      }
+    }
+  },
+  "custodyRepair": {
+    "cause": "Post-measurement objcopy --dump-section rewrote the candidate ELF layout in place.",
+    "measuredSha256": "e4c6a19214850fe5a176cb54a0b60e880f2896f10a47b9fd1f059d8b289af0c0",
+    "repair": "The unmodified rebuild plus the preserved original .debug_line bytes reproduced the complete original measured SHA-256 exactly. The restored measured candidate is retained independently and archived.",
+    "restoredSha256": "e4c6a19214850fe5a176cb54a0b60e880f2896f10a47b9fd1f059d8b289af0c0",
+    "runtimeBytesChanged": false
+  },
+  "disposition": {
+    "materialPerformanceOverDawnEstablished": false,
+    "nextInvestigation": "Profile generated Vulkan execution; select a shader family by recoverable application cost before changing SPIR-V.",
+    "releaseCredit": false,
+    "repeatableCompleteApplicationGainEstablished": false,
+    "repeatableSelectedOperationGainEstablished": false,
+    "retainCandidate": true,
+    "scope": "Shader-owner metadata reuse with preserved physical output and lower repeated inspection cost.",
+    "wholeDopplerInferenceQualified": false
+  },
+  "doeOutputIdentityPreserved": {
+    "baseline-1": [
+      "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+    ],
+    "baseline-2": [
+      "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+    ],
+    "candidate-1": [
+      "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+    ],
+    "candidate-2": [
+      "1edb2e02983fd7b6730432fa6304957a107e1d73249d79f420ac01ecb5bee92c"
+    ]
+  },
+  "evaluationPolicy": {
+    "configLimitsMatchRecordedPolicy": true,
+    "recordedBeforeComparison": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/evaluation-policy.json",
+      "sha256": "620f8554f20804ff9d125fc4539f36b345ba3c103a0c6d9bb3921c03bf94b23a"
+    },
+    "versionedConfig": {
+      "path": "config/vulkan-submission-evaluation.json",
+      "sha256": "04aa9433fefae292bf3614eeb5c68dda8b433ed4edbbb61b4fb7a73ee86e8e5e"
+    }
+  },
+  "evidenceClass": "diagnostic",
+  "host": {
+    "accessibleRenderNodes": [
+      "/dev/dri/renderD128"
+    ],
+    "architecture": "x64",
+    "node": "v22.22.1",
+    "physicalGpuEligible": true,
+    "platform": "linux",
+    "renderNodes": [
+      "/dev/dri/renderD128"
+    ]
+  },
+  "libraries": {
+    "baseline": {
+      "path": "bench/out/vulkan-submission/20261004/baseline/lib/libwebgpu_doe.so",
+      "sha256": "480b7ff65581772bbd77d2d498f103d6b056af6eb671c873078438ac77d3f3c3"
+    },
+    "candidate": {
+      "path": "bench/out/vulkan-submission/20261004/candidate/lib/libwebgpu_doe.so",
+      "sha256": "e4c6a19214850fe5a176cb54a0b60e880f2896f10a47b9fd1f059d8b289af0c0"
+    },
+    "candidate-preparation-diagnostic": {
+      "path": "bench/out/vulkan-submission/20261004/candidate-preparation-diagnostic/lib/libwebgpu_doe.so",
+      "sha256": "e1ca5486c9e74b4f07e52b77c448b4a097e7cdc9bfe44a282c64c63e05ee4141"
+    },
+    "diagnostic": {
+      "path": "bench/out/vulkan-submission/20261004/diagnostic/lib/libwebgpu_doe.so",
+      "sha256": "580ff8606315e1cb2190d1e52d927b2cd5ecb7953c7688ce186c7230e1b840b9"
+    },
+    "preparation-diagnostic": {
+      "path": "bench/out/vulkan-submission/20261004/preparation-diagnostic/lib/libwebgpu_doe.so",
+      "sha256": "7910774092240647164b1b657954af6b3cc8459e4ac34a01aa2d2d4043661fc4"
+    },
+    "validation-diagnostic": {
+      "path": "bench/out/vulkan-submission/20261004/validation-diagnostic/lib/libwebgpu_doe.so",
+      "sha256": "6bf2af64bee69e5eac24ef3d1c392bdad52a8ecdedb04c8ffb406598dfa94d4b"
+    }
+  },
+  "limitations": [
+    "Both cohorts use fresh processes with populated existing shader/driver disk caches; empty disk-cache cost was not requalified.",
+    "D0 and W0 preserve independent frozen cluster oracles, not identical cross-provider output bytes.",
+    "Doppler transfer is the existing exact-kernel QKV and edge fixture, not a complete conversation or model qualification.",
+    "No package publication, browser release, independent adoption, conformance or physical device-loss claim.",
+    "Isolated positive and negative application cohorts are all retained."
+  ],
+  "phaseObservations": {
+    "path": "reports/benchmarks/amd-vulkan/20261004-submission/phase-observations.json",
+    "sha256": "099c54fddb632b4ceecb2238bbd8697962f3d71ee84d97a3095f279820408d8c"
+  },
+  "rebuildObservation": {
+    "allAllocatedSectionsMatchMeasuredCandidate": true,
+    "differentSections": {
+      ".debug_line": {
+        "candidate": {
+          "allocated": false,
+          "sha256": "622371544e9a47aa677e7bc5ce6d53be362c615846757dcfc7e130c8c5cf4d55",
+          "size": 1075694
+        },
+        "rebuilt": {
+          "allocated": false,
+          "sha256": "f74b075222017e919d0d904c5f6cfe1dc927bc059a72264b7d663d545392e95c",
+          "size": 1075694
+        }
+      }
+    },
+    "path": "bench/out/vulkan-submission/20261004/recovered-candidate/lib/libwebgpu_doe.so",
+    "qualification": "Comparisons remain bound to the exact original candidate hash. Rebuild differs only in the generated Zig cache directory named by non-allocated .debug_line data; all allocated sections match.",
+    "sha256": "93df252a32be9271e2663b45aab49a1ffa176e62ff8b7e7a57ffe45dedbb5b1d"
+  },
+  "regressions": {
+    "cleanProcessLatencyMs.p50": {
+      "candidateOverBaselineByPair": [
+        1.0271647161518298,
+        0.98449825556644
+      ],
+      "repeatableRegression": false
+    },
+    "cleanProcessLatencyMs.p95": {
+      "candidateOverBaselineByPair": [
+        0.9542446197210641,
+        0.9582038165877271
+      ],
+      "repeatableRegression": false
+    },
+    "peakProcessTreeRssBytes": {
+      "candidateOverBaselineByPair": [
+        0.9973657131096934,
+        1.0002744086493607
+      ],
+      "repeatableRegression": false
+    },
+    "selectedOperationLatencyMs.p50": {
+      "candidateOverBaselineByPair": [
+        0.9510487847700164,
+        1.0202069585717808
+      ],
+      "repeatableRegression": false
+    },
+    "selectedOperationLatencyMs.p95": {
+      "candidateOverBaselineByPair": [
+        0.9112667961371482,
+        0.997624047162911
+      ],
+      "repeatableRegression": false
+    }
+  },
+  "retainedLocalArchives": {
+    "baseline": {
+      "path": "bench/out/vulkan-submission/20261004/baseline-checkpoint.tar.gz",
+      "scope": "Local executable custody with baseline commit and candidate source patch; no installed-package or release qualification.",
+      "sha256": "88aa4f7856e6595ae72531ad93badc36acae7f3de63c07697543bb920517bbe1"
+    },
+    "candidate": {
+      "path": "bench/out/vulkan-submission/20261004/candidate-checkpoint.tar.gz",
+      "scope": "Local executable custody with baseline commit and candidate source patch; no installed-package or release qualification.",
+      "sha256": "ff0cc25f962d30a6007e3cf307ba58bf1192ab82007bda297c090de35d7ffee7"
+    }
+  },
+  "schemaVersion": 1,
+  "sourceSha256": {
+    "bench/external-projects/doppler/matmul-f16w-f32a-tiled-parity-qm0.plan.json": "5ab3a1f0729071985c14f0ee24509127c28209beb9097145b433747c7e1847da",
+    "bench/external-projects/umap-gpu/run-sgd-benchmark.mjs": "62d21914ad1495ee50d33bcc0a829be02184a4acdaca2d948089d8cdc0f28798",
+    "bench/external-projects/umap-gpu/sgd-benchmark.workload.test.ts": "55e971f997f5618367e2b5168215e20790305de271f76825dc5ef8a732575028",
+    "bench/vulkan/preparation-physical.mjs": "3e81c49634c80f4e5a358f1821d833d394905a49e38de90e0cc3eed47193a4a1",
+    "config/vulkan-submission-evaluation.json": "04aa9433fefae292bf3614eeb5c68dda8b433ed4edbbb61b4fb7a73ee86e8e5e",
+    "config/vulkan-submission-evaluation.schema.json": "0ed87195f8bd5e59afedf427b04c298c5f2cc0190abb7d32bc90a3fd04f38b4f",
+    "runtime/zig/src/backend/vulkan/mod.zig": "dc95dfbc5ffdaea6d75a422e053fd650751cfad4b8c24e236a6297535969d630",
+    "runtime/zig/src/backend/vulkan/vk_pipeline.zig": "38acbb7de6189332bab8d30f9aa93e9dd3bbdf836282dd37bb49160f03e211ea",
+    "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig": "ae4d56c9bb707f9c97a6f4462a487c4c8078e7094b9dd25dde3682d148b24607",
+    "runtime/zig/src/backend/vulkan/vk_shared_pipeline.zig": "8c6b8c90474eb7751cd35019a6f650618515df4eddbeeb164e79f8b07aaa879f",
+    "runtime/zig/src/backend/vulkan/vk_spirv_inspect.zig": "6658a202d087cf55ce315915fc22e1aa54ceb2661a523843cfbc356bcdaf8d0b",
+    "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+  },
+  "workloadWaits": {
+    "dispatchesPerSample": 1000,
+    "epochs": 500,
+    "explicitCompletionRequestsPerSample": 50,
+    "queueSubmitsPerSample": 501,
+    "reasons": [
+      "Frozen application explicitly requests completion every ten epochs.",
+      "Final mapped readback requires completed copy work.",
+      "Render and texture-copy flush boundaries preserve queue ordering; this compute UMAP workload does not exercise them."
+    ],
+    "submissionSemanticsChanged": false
+  }
+}

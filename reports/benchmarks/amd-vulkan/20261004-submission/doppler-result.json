@@ -1,0 +1,86 @@
+{
+  "schema": "doe.doppler-matmul-f16w-f32a-tiled-parity/v1",
+  "candidateId": "doppler-matmul-f16w-f32a-tiled-parity-qm0-v1",
+  "status": "pass",
+  "evidenceClass": "diagnostic-correctness-localization",
+  "plan": {
+    "path": "/home/x/deco/doe/bench/external-projects/doppler/matmul-f16w-f32a-tiled-parity-qm0.plan.json",
+    "sha256": "5ab3a1f0729071985c14f0ee24509127c28209beb9097145b433747c7e1847da"
+  },
+  "processesPass": true,
+  "providerInputsMatch": true,
+  "cases": [
+    {
+      "id": "edge",
+      "identityMatches": true,
+      "outputHashesMatch": true,
+      "p0": {
+        "outputSha256": "92be5ba71d56c42a23f465c8fa44b915ea2c8d6665db0d929b27ac0db4a8efc9",
+        "zeroCount": 0,
+        "nonFiniteCount": 0,
+        "maxAbs": 2.546875,
+        "maxSampleAbsoluteError": 0,
+        "numericallyValid": true
+      },
+      "d0": {
+        "outputSha256": "92be5ba71d56c42a23f465c8fa44b915ea2c8d6665db0d929b27ac0db4a8efc9",
+        "zeroCount": 0,
+        "nonFiniteCount": 0,
+        "maxAbs": 2.546875,
+        "maxSampleAbsoluteError": 0,
+        "numericallyValid": true
+      },
+      "pass": true
+    },
+    {
+      "id": "production-qkv",
+      "identityMatches": true,
+      "outputHashesMatch": true,
+      "p0": {
+        "outputSha256": "cf3128c53ae389f3488e0e3d57eb598c622e6b5d98a87b094eec4c223f23d271",
+        "zeroCount": 0,
+        "nonFiniteCount": 0,
+        "maxAbs": 3.23046875,
+        "maxSampleAbsoluteError": 0,
+        "numericallyValid": true
+      },
+      "d0": {
+        "outputSha256": "cf3128c53ae389f3488e0e3d57eb598c622e6b5d98a87b094eec4c223f23d271",
+        "zeroCount": 0,
+        "nonFiniteCount": 0,
+        "maxAbs": 3.23046875,
+        "maxSampleAbsoluteError": 0,
+        "numericallyValid": true
+      },
+      "pass": true
+    }
+  ],
+  "decision": "exact-kernel-and-shape-correct;-localize-production-buffer-or-command-state",
+  "authorize": [
+    "production-qkv-buffer-and-command-state-parity"
+  ],
+  "lanes": {
+    "P0": {
+      "process": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "stdoutTail": "",
+        "stderrTail": "Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\nWarning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.\n"
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/external-projects/doppler/20261004-submission-candidate/P0.json",
+      "outputSha256": "448191b8356aeb57a6315fc216e357b10ca5b9f77f35980239bc85923ab4f302"
+    },
+    "D0": {
+      "process": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "stdoutTail": "",
+        "stderrTail": ""
+      },
+      "outputPath": "/home/x/deco/doe/bench/out/external-projects/doppler/20261004-submission-candidate/D0.json",
+      "outputSha256": "31160f02912224c4a9e507c7d9c5ff42cdffafbb66bb9de9318a4424bec5ca68"
+    }
+  }
+}

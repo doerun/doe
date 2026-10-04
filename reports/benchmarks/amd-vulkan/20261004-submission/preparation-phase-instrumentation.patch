@@ -1,0 +1,34 @@
+diff --git a/runtime/zig/src/backend/vulkan/vk_pipeline.zig b/runtime/zig/src/backend/vulkan/vk_pipeline.zig
+index 172c80507..0b6cb9c78 100644
+--- a/runtime/zig/src/backend/vulkan/vk_pipeline.zig
++++ b/runtime/zig/src/backend/vulkan/vk_pipeline.zig
+@@ -235,13 +235,16 @@ pub fn set_compute_shader_spirv_with_hashes(
+     bindings: ?[]const model_compute_types.KernelBinding,
+     initialize_buffers_on_create: bool,
+ ) !void {
++    const diagnostic_start = std.time.nanoTimestamp();
+     const request = shared.Request{
+         .words = words,
+         .entry_point = entry_point orelse "main",
+         .bindings = bindings orelse &.{},
+         .required_subgroup_size = required_subgroup_size_for_pipeline(self, words),
+     };
++    const diagnostic_policy_end = std.time.nanoTimestamp();
+     const cache_hash = try vk_pipeline_cache.resolve_compute_state_hash(self, pipeline_hash, request);
++    const diagnostic_resolve_end = std.time.nanoTimestamp();
+     if (!self.has_pipeline or cache_hash != self.current_pipeline_hash) {
+         const previous_pipeline_hash = self.current_pipeline_hash;
+         const had_active_state = has_active_compute_state(self);
+@@ -255,9 +258,12 @@ pub fn set_compute_shader_spirv_with_hashes(
+             try build_pipeline_for_request(self, request, cache_hash, layout_hash);
+         }
+     }
++    const diagnostic_state_end = std.time.nanoTimestamp();
+     try descriptors.prepare(self, bindings, initialize_buffers_on_create, descriptor_bindings_hash);
++    const diagnostic_descriptor_end = std.time.nanoTimestamp();
+     vk_compute_sync.capture_current_compute_bindings(self, bindings);
+     try stageSpirvForArtifact(self);
++    std.debug.print("DOE_NATIVE_PREP_PHASE policy={d} resolve={d} activate={d} descriptors={d} capture={d}\n", .{ diagnostic_policy_end - diagnostic_start, diagnostic_resolve_end - diagnostic_policy_end, diagnostic_state_end - diagnostic_resolve_end, diagnostic_descriptor_end - diagnostic_state_end, std.time.nanoTimestamp() - diagnostic_descriptor_end });
+ }
+ pub fn rebuild_compute_shader_spirv(self: anytype, words: []const u32) !void {
+     if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;

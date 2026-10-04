@@ -26995,6 +26995,386 @@
       "targets": [
         "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/submission-evidence.json",
+          "sha256": "1f50ff39561ac03b33d9dbb3e93ed69a8f1813712d98775410ce918b4ec5eee2"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+          "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+        }
+      ],
+      "findings": [
+        "Full component review and general shader-policy/conformance qualification are outside this bounded submission diagnosis."
+      ],
+      "inputHash": "315e52329908d640c1d9f82c3703a1c2ea680833fc3ccde08b25e85d51877582",
+      "level": "file",
+      "nextAction": "Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Repeated subgroup-policy scans are replaced by shader-owner metadata lookup, exact words authorize facts, and physical collision/policy/lifetime regressions plus uninstrumented UMAP controls preserve outputs. The bounded preparation batch is closed as a scoped improvement; complete application advantage remains unestablished."
+      ],
+      "reviewId": "vulkan_submission_vk_spirv_inspect_20261004",
+      "reviewedAt": "2026-10-04T15:10:52.235891+00:00",
+      "reviewer": "codex-vulkan-submission",
+      "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+      "status": "in_progress",
+      "summary": "Immutable SPIR-V compute facts remain the bounded inspection owner; device policy and storage lifetime belong to callers.",
+      "supersedes": "vk_spirv_inspect_20260923_submission_audit",
+      "targets": [
+        "src/backend/vulkan/vk_spirv_inspect.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/submission-evidence.json",
+          "sha256": "1f50ff39561ac03b33d9dbb3e93ed69a8f1813712d98775410ce918b4ec5eee2"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+          "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+        }
+      ],
+      "findings": [
+        "Full component review and general shader-policy/conformance qualification are outside this bounded submission diagnosis."
+      ],
+      "inputHash": "3056c09aca5410521146f51268c2e375ed8c21ac655751797ec794aa25588612",
+      "level": "file",
+      "nextAction": "Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Repeated subgroup-policy scans are replaced by shader-owner metadata lookup, exact words authorize facts, and physical collision/policy/lifetime regressions plus uninstrumented UMAP controls preserve outputs. The bounded preparation batch is closed as a scoped improvement; complete application advantage remains unestablished."
+      ],
+      "reviewId": "vulkan_submission_vk_shared_pipeline_20261004",
+      "reviewedAt": "2026-10-04T15:10:53.733032+00:00",
+      "reviewer": "codex-vulkan-submission",
+      "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+      "status": "in_progress",
+      "summary": "Shared device-owned pipelines retain words, metadata, entry-point name, layouts and native handles together; acquisition rollback and reference release preserve ownership.",
+      "supersedes": "vk_shared_pipeline_20260923_submission_audit",
+      "targets": [
+        "src/backend/vulkan/vk_shared_pipeline.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/submission-evidence.json",
+          "sha256": "1f50ff39561ac03b33d9dbb3e93ed69a8f1813712d98775410ce918b4ec5eee2"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+          "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+        }
+      ],
+      "findings": [
+        "Full component review and general shader-policy/conformance qualification are outside this bounded submission diagnosis."
+      ],
+      "inputHash": "1c158b97ae4d630e80c8923baba0d8a8fdd37343a8039da803f20fd951240a98",
+      "level": "file",
+      "nextAction": "Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Repeated subgroup-policy scans are replaced by shader-owner metadata lookup, exact words authorize facts, and physical collision/policy/lifetime regressions plus uninstrumented UMAP controls preserve outputs. The bounded preparation batch is closed as a scoped improvement; complete application advantage remains unestablished."
+      ],
+      "reviewId": "vulkan_submission_vk_pipeline_cache_20261004",
+      "reviewedAt": "2026-10-04T15:10:55.215481+00:00",
+      "reviewer": "codex-vulkan-submission",
+      "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+      "status": "in_progress",
+      "summary": "Traced metadata lookup through active, hot and spilled owners and exact-byte authorization; complete descriptor and collision-path review remains open.",
+      "supersedes": "vulkan_batch_20260920_27_vk_pipeline_cache",
+      "targets": [
+        "src/backend/vulkan/vk_pipeline_cache.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/submission-evidence.json",
+          "sha256": "1f50ff39561ac03b33d9dbb3e93ed69a8f1813712d98775410ce918b4ec5eee2"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+          "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+        }
+      ],
+      "findings": [
+        "Full component review and general shader-policy/conformance qualification are outside this bounded submission diagnosis."
+      ],
+      "inputHash": "5adf9fb55e177da4c92e5a4e9d02c49a2b87007dac081f77d1b9c98c5c3a185f",
+      "level": "file",
+      "nextAction": "Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Repeated subgroup-policy scans are replaced by shader-owner metadata lookup, exact words authorize facts, and physical collision/policy/lifetime regressions plus uninstrumented UMAP controls preserve outputs. The bounded preparation batch is closed as a scoped improvement; complete application advantage remains unestablished."
+      ],
+      "reviewId": "vulkan_submission_vk_pipeline_20261004",
+      "reviewedAt": "2026-10-04T15:10:56.723123+00:00",
+      "reviewer": "codex-vulkan-submission",
+      "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+      "status": "in_progress",
+      "summary": "Traced policy selection, shader reuse, artifact staging and retirement through native callers; retained compact immutable facts without caching effective policy.",
+      "supersedes": "vulkan_batch_20260920_26_vk_pipeline",
+      "targets": [
+        "src/backend/vulkan/vk_pipeline.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/submission-evidence.json",
+          "sha256": "1f50ff39561ac03b33d9dbb3e93ed69a8f1813712d98775410ce918b4ec5eee2"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+          "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+        }
+      ],
+      "findings": [
+        "Full component review and general shader-policy/conformance qualification are outside this bounded submission diagnosis."
+      ],
+      "inputHash": "6560bcba65f1c29246a4dc74bf6ea648e446ee457523a8b023b6174ec51a63b5",
+      "level": "file",
+      "nextAction": "Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Repeated subgroup-policy scans are replaced by shader-owner metadata lookup, exact words authorize facts, and physical collision/policy/lifetime regressions plus uninstrumented UMAP controls preserve outputs. The bounded preparation batch is closed as a scoped improvement; complete application advantage remains unestablished."
+      ],
+      "reviewId": "vulkan_submission_mod_20261004",
+      "reviewedAt": "2026-10-04T15:10:58.214942+00:00",
+      "reviewer": "codex-vulkan-submission",
+      "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+      "status": "in_progress",
+      "summary": "Updated artifact fixtures for explicit metadata while preserving native backend ports; complete composition review remains open.",
+      "supersedes": "vulkan_batch_20260920_05_mod",
+      "targets": [
+        "src/backend/vulkan/mod.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/submission-evidence.json",
+          "sha256": "0d22d4ca4568c879e2afacc64837c43a6b0de676175ba63607ceba95aff860c5"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+          "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+        }
+      ],
+      "findings": [
+        "Full component review and general shader-policy/conformance qualification are outside this bounded submission diagnosis."
+      ],
+      "inputHash": "315e52329908d640c1d9f82c3703a1c2ea680833fc3ccde08b25e85d51877582",
+      "level": "file",
+      "nextAction": "Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Repeated subgroup-policy scans are replaced by shader-owner metadata lookup, exact words authorize facts, and physical collision/policy/lifetime regressions plus uninstrumented UMAP controls preserve outputs. The bounded preparation batch is closed as a scoped improvement; complete application advantage remains unestablished."
+      ],
+      "reviewId": "vulkan_submission_vk_spirv_inspect_20261004_custody",
+      "reviewedAt": "2026-10-04T15:18:55.924834+00:00",
+      "reviewer": "codex-vulkan-submission",
+      "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+      "status": "in_progress",
+      "summary": "Immutable SPIR-V compute facts remain the bounded inspection owner; device policy and storage lifetime belong to callers. Refreshed evidence after verifying exact measured executable custody.",
+      "supersedes": "vulkan_submission_vk_spirv_inspect_20261004",
+      "targets": [
+        "src/backend/vulkan/vk_spirv_inspect.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/submission-evidence.json",
+          "sha256": "0d22d4ca4568c879e2afacc64837c43a6b0de676175ba63607ceba95aff860c5"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+          "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+        }
+      ],
+      "findings": [
+        "Full component review and general shader-policy/conformance qualification are outside this bounded submission diagnosis."
+      ],
+      "inputHash": "3056c09aca5410521146f51268c2e375ed8c21ac655751797ec794aa25588612",
+      "level": "file",
+      "nextAction": "Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Repeated subgroup-policy scans are replaced by shader-owner metadata lookup, exact words authorize facts, and physical collision/policy/lifetime regressions plus uninstrumented UMAP controls preserve outputs. The bounded preparation batch is closed as a scoped improvement; complete application advantage remains unestablished."
+      ],
+      "reviewId": "vulkan_submission_vk_shared_pipeline_20261004_custody",
+      "reviewedAt": "2026-10-04T15:18:57.409090+00:00",
+      "reviewer": "codex-vulkan-submission",
+      "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+      "status": "in_progress",
+      "summary": "Shared device-owned pipelines retain words, metadata, entry-point name, layouts and native handles together; acquisition rollback and reference release preserve ownership. Refreshed evidence after verifying exact measured executable custody.",
+      "supersedes": "vulkan_submission_vk_shared_pipeline_20261004",
+      "targets": [
+        "src/backend/vulkan/vk_shared_pipeline.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/submission-evidence.json",
+          "sha256": "0d22d4ca4568c879e2afacc64837c43a6b0de676175ba63607ceba95aff860c5"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+          "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+        }
+      ],
+      "findings": [
+        "Full component review and general shader-policy/conformance qualification are outside this bounded submission diagnosis."
+      ],
+      "inputHash": "1c158b97ae4d630e80c8923baba0d8a8fdd37343a8039da803f20fd951240a98",
+      "level": "file",
+      "nextAction": "Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Repeated subgroup-policy scans are replaced by shader-owner metadata lookup, exact words authorize facts, and physical collision/policy/lifetime regressions plus uninstrumented UMAP controls preserve outputs. The bounded preparation batch is closed as a scoped improvement; complete application advantage remains unestablished."
+      ],
+      "reviewId": "vulkan_submission_vk_pipeline_cache_20261004_custody",
+      "reviewedAt": "2026-10-04T15:18:58.930404+00:00",
+      "reviewer": "codex-vulkan-submission",
+      "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+      "status": "in_progress",
+      "summary": "Traced metadata lookup through active, hot and spilled owners and exact-byte authorization; complete descriptor and collision-path review remains open. Refreshed evidence after verifying exact measured executable custody.",
+      "supersedes": "vulkan_submission_vk_pipeline_cache_20261004",
+      "targets": [
+        "src/backend/vulkan/vk_pipeline_cache.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/submission-evidence.json",
+          "sha256": "0d22d4ca4568c879e2afacc64837c43a6b0de676175ba63607ceba95aff860c5"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+          "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+        }
+      ],
+      "findings": [
+        "Full component review and general shader-policy/conformance qualification are outside this bounded submission diagnosis."
+      ],
+      "inputHash": "5adf9fb55e177da4c92e5a4e9d02c49a2b87007dac081f77d1b9c98c5c3a185f",
+      "level": "file",
+      "nextAction": "Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Repeated subgroup-policy scans are replaced by shader-owner metadata lookup, exact words authorize facts, and physical collision/policy/lifetime regressions plus uninstrumented UMAP controls preserve outputs. The bounded preparation batch is closed as a scoped improvement; complete application advantage remains unestablished."
+      ],
+      "reviewId": "vulkan_submission_vk_pipeline_20261004_custody",
+      "reviewedAt": "2026-10-04T15:19:00.427505+00:00",
+      "reviewer": "codex-vulkan-submission",
+      "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+      "status": "in_progress",
+      "summary": "Traced policy selection, shader reuse, artifact staging and retirement through native callers; retained compact immutable facts without caching effective policy. Refreshed evidence after verifying exact measured executable custody.",
+      "supersedes": "vulkan_submission_vk_pipeline_20261004",
+      "targets": [
+        "src/backend/vulkan/vk_pipeline.zig"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "runtime/zig/tests/vulkan/vulkan_native_runtime_test.zig",
+          "sha256": "b5742692d855dd9e6d008e42b254b6aefedb24c44e603884095ff5c74c1a56a7"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/submission-evidence.json",
+          "sha256": "0d22d4ca4568c879e2afacc64837c43a6b0de676175ba63607ceba95aff860c5"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-submission/test-candidate-final.log",
+          "sha256": "851471f49844f2f81d099a1a883de4ae87b9298ae0a3e9168461008d0257a1ad"
+        }
+      ],
+      "findings": [
+        "Full component review and general shader-policy/conformance qualification are outside this bounded submission diagnosis."
+      ],
+      "inputHash": "6560bcba65f1c29246a4dc74bf6ea648e446ee457523a8b023b6174ec51a63b5",
+      "level": "file",
+      "nextAction": "Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Repeated subgroup-policy scans are replaced by shader-owner metadata lookup, exact words authorize facts, and physical collision/policy/lifetime regressions plus uninstrumented UMAP controls preserve outputs. The bounded preparation batch is closed as a scoped improvement; complete application advantage remains unestablished."
+      ],
+      "reviewId": "vulkan_submission_mod_20261004_custody",
+      "reviewedAt": "2026-10-04T15:19:01.903369+00:00",
+      "reviewer": "codex-vulkan-submission",
+      "sourceCommit": "3bcadf42096e6e1e29605b29374b9a5c445ac030",
+      "status": "in_progress",
+      "summary": "Updated artifact fixtures for explicit metadata while preserving native backend ports; complete composition review remains open. Refreshed evidence after verifying exact measured executable custody.",
+      "supersedes": "vulkan_submission_mod_20261004",
+      "targets": [
+        "src/backend/vulkan/mod.zig"
+      ]
     }
   ],
   "schemaVersion": 1

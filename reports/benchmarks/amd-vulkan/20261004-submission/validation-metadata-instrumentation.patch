@@ -1,0 +1,37 @@
+--- a/runtime/zig/src/native/queue/doe_queue_submit_native.zig
++++ b/runtime/zig/src/native/queue/doe_queue_submit_native.zig
+@@ -1,3 +1,4 @@
++const std = @import("std");
+ const abi_core = @import("../../core/abi/wgpu_core_base_types.zig");
+ const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
+ const abi_copy = @import("../../core/abi/wgpu_copy_descriptor_types.zig");
+@@ -39,6 +40,7 @@
+     count: usize,
+     cmd_bufs: [*]const ?*anyopaque,
+ ) callconv(.c) void {
++    const diagnostic_validation_start = std.time.nanoTimestamp();
+     const q = cast(DoeQueue, q_raw) orelse return;
+     for (cmd_bufs[0..count]) |raw| {
+         const buffer = cast(native_types.DoeCommandBuffer, raw) orelse {
+@@ -54,6 +56,8 @@
+             return;
+         };
+     }
++    const diagnostic_validation_ns = std.time.nanoTimestamp() - diagnostic_validation_start;
++    std.debug.print("DOE_NATIVE_VALIDATION ns={d} command_buffers={d}\n", .{ diagnostic_validation_ns, count });
+     if (q.dev.backend == .vulkan) {
+         vulkan_submit.submit_vulkan_commands(q, count, cmd_bufs);
+         return;
+--- a/runtime/zig/src/backend/vulkan/vk_pipeline.zig
++++ b/runtime/zig/src/backend/vulkan/vk_pipeline.zig
+@@ -401,7 +401,9 @@
+     }
+     if (self.required_compute_subgroup_size == 0) return null;
+     if (self.vulkan_subgroup_size_policy == .fixed_32_when_supported) return self.required_compute_subgroup_size;
+-    const metadata = vk_pipeline_cache.compute_shader_metadata(self, pipeline_hash, words) orelse vk_spirv_inspect.ComputeMetadata.from(words);
++    const diagnostic_cached = vk_pipeline_cache.compute_shader_metadata(self, pipeline_hash, words);
++    std.debug.print("DOE_NATIVE_METADATA hit={d}\n", .{@intFromBool(diagnostic_cached != null)});
++    const metadata = diagnostic_cached orelse vk_spirv_inspect.ComputeMetadata.from(words);
+     switch (self.vulkan_subgroup_size_policy) {
+         .fixed_32_when_supported => {},
+         .suppress_for_workgroup_memory_256 => {

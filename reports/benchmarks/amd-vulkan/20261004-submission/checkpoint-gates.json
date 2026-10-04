@@ -1,0 +1,34 @@
+{
+  "artifactKind": "vulkan-submission-checkpoint-gates",
+  "checks": {
+    "build-final.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/build-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "catscan-gate.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/catscan-gate.log",
+      "sha256": "8e7326e76fbc48a30bcc1b513eda7481808bc7fa56fa497967188b699f8bc209"
+    },
+    "doc-links.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/doc-links.log",
+      "sha256": "9f75add94930d82f86f40553d972627172fa9fcad2415eaa9947d6de3d460011"
+    },
+    "public-claims.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/public-claims.log",
+      "sha256": "e87e56d1a8ef441f343654321cb4cb6eff140d3308e5766a24fc9b573a8f8568"
+    },
+    "review-log-check.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/review-log-check.log",
+      "sha256": "4c26e6668afce6074faa13f0c7e7b6947b3e7bc3a207ce31235e43db2b49bdff"
+    },
+    "review-log-final-check.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/review-log-final-check.log",
+      "sha256": "4c26e6668afce6074faa13f0c7e7b6947b3e7bc3a207ce31235e43db2b49bdff"
+    },
+    "schema-gate.log": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/schema-gate.log",
+      "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+    }
+  },
+  "schemaVersion": 1
+}

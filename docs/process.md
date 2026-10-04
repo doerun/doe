@@ -491,6 +491,16 @@ classified and cannot be promoted by benchmark results.
   gate recomputes projections and rejects changed workload semantics or missing
   treatments. Warmup effects and profiler samples cannot grant promotion;
   procedure changes require fresh calibration before candidate evaluation.
+- Vulkan submission diagnosis uses the existing submit breakdown and temporary
+  native boundary measurements. Immutable SPIR-V facts may be retained by the
+  existing shader owner; effective subgroup policy remains a selection input
+  and exact words authorize metadata reuse. The repository-only
+  [submission evaluation policy](../config/vulkan-submission-evaluation.json)
+  preserves the separately recorded experiment limits and alternating cohort
+  order. Record complete operation, fresh-process latency, and memory with
+  diagnostics disabled. Zero unavailable counters are not measured zero cost.
+  Scoped inspection savings cannot promote a complete application or Dawn
+  advantage, and these diagnostic checks do not replace release gates.
 - Startup experiments use `config/compute-program-startup-experiment.json`, an
   additive repository-only contract validated through the schema target registry.
   It inherits frozen workload and regression limits while testing provider import

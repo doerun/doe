@@ -3,6 +3,7 @@ const c = @import("vk_constants.zig");
 const identity = @import("vk_descriptor_identity.zig");
 const compute = @import("../../contracts/model/model_compute_types.zig");
 const shared = @import("vk_shared_pipeline.zig");
+const spirv_inspect = @import("vk_spirv_inspect.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
 pub const HOT_COMPUTE_STATE_CACHE_CAPACITY: usize = 16;
@@ -180,6 +181,59 @@ fn cached_compute_state(self: anytype, key: u64) ?*const CachedComputeState {
         if (hash == key) return &self.hot_compute_states[index];
     }
     return self.cached_compute_states.getPtr(key);
+}
+
+/// Borrow facts from an existing shader owner only after checking its words.
+/// Policy, entry-point and layout identity still gate pipeline reuse separately.
+pub fn compute_shader_metadata(self: anytype, hash: u64, words: []const u32) ?spirv_inspect.ComputeMetadata {
+    const key = if (hash == 0) 1 else hash;
+    const owner = if (self.has_pipeline and self.current_pipeline_hash == key)
+        self.shared_pipeline
+    else if (cached_compute_state(self, key)) |cached|
+        cached.shared_pipeline
+    else
+        null;
+    const entry = owner orelse return null;
+    if (!std.mem.eql(u32, entry.words, words)) return null;
+    return entry.compute_metadata;
+}
+
+test "shader metadata requires exact words across active hot and spilled owners" {
+    const words = [_]u32{ 0x07230203, 0, 0, 0, 0, (6 << 16) | 16, 1, 17, 256, 1, 1, (4 << 16) | 59, 2, 3, 4 };
+    var changed = words;
+    changed[8] = 64;
+    var owner = shared.Pipeline{
+        .handle = VK_NULL_U64,
+        .creation_layout = VK_NULL_U64,
+        .words = &words,
+        .entry_point = @constCast("main"),
+        .layout = &.{},
+        .required_subgroup_size = null,
+        .compute_metadata = spirv_inspect.ComputeMetadata.from(&words),
+    };
+    var context = struct {
+        has_pipeline: bool = true,
+        current_pipeline_hash: u64 = 1,
+        shared_pipeline: ?*shared.Pipeline = null,
+        hot_compute_state_hashes: [HOT_COMPUTE_STATE_CACHE_CAPACITY]u64 = [_]u64{0} ** HOT_COMPUTE_STATE_CACHE_CAPACITY,
+        hot_compute_states: [HOT_COMPUTE_STATE_CACHE_CAPACITY]CachedComputeState = undefined,
+        cached_compute_states: std.AutoHashMapUnmanaged(u64, CachedComputeState) = .{},
+    }{ .shared_pipeline = &owner };
+    defer context.cached_compute_states.deinit(std.testing.allocator);
+    try context.cached_compute_states.put(std.testing.allocator, 1, .{ .shared_pipeline = &owner });
+    for (0..3) |tier| {
+        context.has_pipeline = tier == 0;
+        context.hot_compute_state_hashes[0] = if (tier == 1) 1 else 0;
+        context.hot_compute_states[0] = .{ .shared_pipeline = &owner };
+        const metadata = compute_shader_metadata(&context, 0, &words).?;
+        try std.testing.expectEqual(@as(u32, 256), metadata.local_size.?.x);
+        try std.testing.expect(metadata.has_workgroup_storage);
+        try std.testing.expect(compute_shader_metadata(&context, 1, &changed) == null);
+        try std.testing.expect(compute_shader_metadata(&context, 2, &words) == null);
+        try std.testing.expectEqual(@as(usize, 1), owner.references);
+    }
+    context.cached_compute_states.clearRetainingCapacity();
+    try std.testing.expect(compute_shader_metadata(&context, 1, &words) == null);
 }
 
 /// Hashes locate candidates; exact identity authorizes reuse. Collision entries

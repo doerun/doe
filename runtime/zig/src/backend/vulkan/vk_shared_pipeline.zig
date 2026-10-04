@@ -2,6 +2,7 @@ const std = @import("std");
 const c = @import("vk_constants.zig");
 const compute = @import("../../contracts/model/model_compute_types.zig");
 const binding_types = @import("../../contracts/model/model_binding_value_types.zig");
+const spirv_inspect = @import("vk_spirv_inspect.zig");
 
 // These are the variable fields of the layouts built by vk_pipeline. All
 // descriptors have count one, compute visibility, and no immutable samplers;
@@ -46,6 +47,7 @@ pub const Pipeline = struct {
     layout: []LayoutBinding,
     required_subgroup_size: ?u32,
     references: usize = 1,
+    compute_metadata: spirv_inspect.ComputeMetadata,
 
     pub fn retain(self: *Pipeline) !void {
         self.references = try std.math.add(usize, self.references, 1);
@@ -136,7 +138,7 @@ pub const Registry = struct {
         var handle: c.VkPipeline = c.VK_NULL_U64;
         errdefer if (handle != c.VK_NULL_U64) c.vkDestroyPipeline(device, handle, null);
         try c.check_vk(c.vkCreateComputePipelines(device, driver_cache, 1, @ptrCast(&info), null, @ptrCast(&handle)));
-        entry.* = .{ .handle = handle, .creation_layout = layout, .words = words, .entry_point = entry_point, .layout = bindings, .required_subgroup_size = request.required_subgroup_size };
+        entry.* = .{ .handle = handle, .creation_layout = layout, .words = words, .entry_point = entry_point, .layout = bindings, .required_subgroup_size = request.required_subgroup_size, .compute_metadata = spirv_inspect.ComputeMetadata.from(words) };
         self.entries.appendAssumeCapacity(entry);
         return entry;
     }

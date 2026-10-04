@@ -1,0 +1,994 @@
+{
+  "artifactKind": "vulkan-submission-phase-diagnostic",
+  "limitations": [
+    "Nested timers must not be added as disjoint whole-process phases.",
+    "Existing unavailable fine-grained exported counters are zero placeholders, not measured zero cost.",
+    "Metadata hit logging and validation timing use a separate diagnostic build from policy timing.",
+    "Native buffer growth is observed; complete process or compiler allocator counts were not collected.",
+    "Driver submission remains the largest measured native submission phase.",
+    "Timing probes alter cost; only uninstrumented cohorts evaluate application behavior."
+  ],
+  "observations": {
+    "baseline-diagnostic": {
+      "evidenceClass": "instrumented-diagnostic",
+      "samples": [
+        {
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 1,
+            "sampleKind": "warmup",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 0,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 0,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 0,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 0,
+              "submitPostSubmitBookkeepingTotalNs": 0,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 0,
+              "submitQueueFlushWaitCompletedTotalNs": 1043357,
+              "submitQueueWaitBookkeepingTotalNs": 0
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 1,
+          "sampleKind": "warmup"
+        },
+        {
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 1,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 0,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 0,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 0,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 0,
+              "submitPostSubmitBookkeepingTotalNs": 0,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 0,
+              "submitQueueFlushWaitCompletedTotalNs": 1283016,
+              "submitQueueWaitBookkeepingTotalNs": 0
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 1,
+          "sampleKind": "measured"
+        },
+        {
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 2,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 0,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 0,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 0,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 0,
+              "submitPostSubmitBookkeepingTotalNs": 0,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 0,
+              "submitQueueFlushWaitCompletedTotalNs": 952245,
+              "submitQueueWaitBookkeepingTotalNs": 0
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 2,
+          "sampleKind": "measured"
+        },
+        {
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 3,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 0,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 0,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 0,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 0,
+              "submitPostSubmitBookkeepingTotalNs": 0,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 0,
+              "submitQueueFlushWaitCompletedTotalNs": 1533227,
+              "submitQueueWaitBookkeepingTotalNs": 0
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 3,
+          "sampleKind": "measured"
+        }
+      ]
+    },
+    "baseline-phases": {
+      "evidenceClass": "instrumented-diagnostic",
+      "samples": [
+        {
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 1,
+            "sampleKind": "warmup",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 12631536,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3710606,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 6570545,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 150166,
+              "submitPostSubmitBookkeepingTotalNs": 211833,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 872092,
+              "submitQueueFlushWaitCompletedTotalNs": 796695,
+              "submitQueueWaitBookkeepingTotalNs": 23048
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 1,
+          "sampleKind": "warmup"
+        },
+        {
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 1,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 10784816,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3190120,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 5520685,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 73325,
+              "submitPostSubmitBookkeepingTotalNs": 268406,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1040606,
+              "submitQueueFlushWaitCompletedTotalNs": 994987,
+              "submitQueueWaitBookkeepingTotalNs": 6293
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 1,
+          "sampleKind": "measured"
+        },
+        {
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 2,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 10867570,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3145635,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 5832439,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 67168,
+              "submitPostSubmitBookkeepingTotalNs": 84662,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1303712,
+              "submitQueueFlushWaitCompletedTotalNs": 1246385,
+              "submitQueueWaitBookkeepingTotalNs": 4874
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 2,
+          "sampleKind": "measured"
+        },
+        {
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 3,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 11850722,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3562766,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 6010440,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 92584,
+              "submitPostSubmitBookkeepingTotalNs": 118882,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1055125,
+              "submitQueueFlushWaitCompletedTotalNs": 997995,
+              "submitQueueWaitBookkeepingTotalNs": 7425
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 3,
+          "sampleKind": "measured"
+        }
+      ]
+    },
+    "candidate-preparation-phases": {
+      "evidenceClass": "instrumented-diagnostic",
+      "samples": [
+        {
+          "pipelinePreparation": {
+            "calls": 1000,
+            "firstTwoDispatchesNs": [
+              {
+                "activate": 124384,
+                "capture": 150,
+                "descriptors": 26560,
+                "policy": 1893,
+                "resolve": 141
+              },
+              {
+                "activate": 20969,
+                "capture": 70,
+                "descriptors": 10721,
+                "policy": 601,
+                "resolve": 50
+              }
+            ],
+            "totalsNs": {
+              "activate": 231534,
+              "capture": 32700,
+              "descriptors": 118152,
+              "policy": 168678,
+              "resolve": 56348
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 1,
+            "sampleKind": "warmup",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 13386661,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3781620,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 7334007,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 154596,
+              "submitPostSubmitBookkeepingTotalNs": 217979,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1040722,
+              "submitQueueFlushWaitCompletedTotalNs": 971592,
+              "submitQueueWaitBookkeepingTotalNs": 26893
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 1,
+          "sampleKind": "warmup"
+        },
+        {
+          "pipelinePreparation": {
+            "calls": 1000,
+            "firstTwoDispatchesNs": [
+              {
+                "activate": 331,
+                "capture": 190,
+                "descriptors": 30868,
+                "policy": 672,
+                "resolve": 190
+              },
+              {
+                "activate": 130,
+                "capture": 60,
+                "descriptors": 9659,
+                "policy": 250,
+                "resolve": 60
+              }
+            ],
+            "totalsNs": {
+              "activate": 84182,
+              "capture": 31577,
+              "descriptors": 115650,
+              "policy": 159894,
+              "resolve": 54412
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 1,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 11682466,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3274210,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 6334351,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 78138,
+              "submitPostSubmitBookkeepingTotalNs": 137674,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1354643,
+              "submitQueueFlushWaitCompletedTotalNs": 1306189,
+              "submitQueueWaitBookkeepingTotalNs": 7072
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 1,
+          "sampleKind": "measured"
+        },
+        {
+          "pipelinePreparation": {
+            "calls": 1000,
+            "firstTwoDispatchesNs": [
+              {
+                "activate": 451,
+                "capture": 181,
+                "descriptors": 32691,
+                "policy": 591,
+                "resolve": 201
+              },
+              {
+                "activate": 130,
+                "capture": 70,
+                "descriptors": 9017,
+                "policy": 320,
+                "resolve": 81
+              }
+            ],
+            "totalsNs": {
+              "activate": 84438,
+              "capture": 31911,
+              "descriptors": 120268,
+              "policy": 158750,
+              "resolve": 54880
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 2,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 11713187,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3290374,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 6408464,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 76039,
+              "submitPostSubmitBookkeepingTotalNs": 97500,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1115567,
+              "submitQueueFlushWaitCompletedTotalNs": 1070163,
+              "submitQueueWaitBookkeepingTotalNs": 6263
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 2,
+          "sampleKind": "measured"
+        },
+        {
+          "pipelinePreparation": {
+            "calls": 1000,
+            "firstTwoDispatchesNs": [
+              {
+                "activate": 481,
+                "capture": 190,
+                "descriptors": 42059,
+                "policy": 1252,
+                "resolve": 181
+              },
+              {
+                "activate": 120,
+                "capture": 71,
+                "descriptors": 12233,
+                "policy": 531,
+                "resolve": 60
+              }
+            ],
+            "totalsNs": {
+              "activate": 91979,
+              "capture": 34462,
+              "descriptors": 131815,
+              "policy": 177675,
+              "resolve": 60836
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 3,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 13090730,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3526506,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 7203965,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 94156,
+              "submitPostSubmitBookkeepingTotalNs": 136996,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1045519,
+              "submitQueueFlushWaitCompletedTotalNs": 916158,
+              "submitQueueWaitBookkeepingTotalNs": 8405
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 3,
+          "sampleKind": "measured"
+        }
+      ]
+    },
+    "native-phases": {
+      "evidenceClass": "instrumented-diagnostic",
+      "samples": [
+        {
+          "nativeSubmit": {
+            "firstSubmit": {
+              "driverNs": 144432,
+              "endNs": 771,
+              "newDeferredCommandBuffers": 1,
+              "prepareNs": 210305,
+              "recordNs": 60464,
+              "syncNs": 5891
+            },
+            "newDeferredCommandBuffers": 10,
+            "totalsNs": {
+              "driver": 3749799,
+              "end": 22984,
+              "prepare": 1247698,
+              "record": 768521,
+              "sync": 568283
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 1,
+            "sampleKind": "warmup",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 15520813,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 4533140,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 7601838,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 192964,
+              "submitPostSubmitBookkeepingTotalNs": 319476,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 837301,
+              "submitQueueFlushWaitCompletedTotalNs": 755062,
+              "submitQueueWaitBookkeepingTotalNs": 31902
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 1,
+          "sampleKind": "warmup"
+        },
+        {
+          "nativeSubmit": {
+            "firstSubmit": {
+              "driverNs": 17853,
+              "endNs": 320,
+              "newDeferredCommandBuffers": 0,
+              "prepareNs": 47861,
+              "recordNs": 4178,
+              "syncNs": 2756
+            },
+            "newDeferredCommandBuffers": 0,
+            "totalsNs": {
+              "driver": 3491801,
+              "end": 18551,
+              "prepare": 998300,
+              "record": 368633,
+              "sync": 411043
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 1,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 12061175,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3500000,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 6204037,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 98691,
+              "submitPostSubmitBookkeepingTotalNs": 160955,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1368005,
+              "submitQueueFlushWaitCompletedTotalNs": 1315274,
+              "submitQueueWaitBookkeepingTotalNs": 8113
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 1,
+          "sampleKind": "measured"
+        },
+        {
+          "nativeSubmit": {
+            "firstSubmit": {
+              "driverNs": 33743,
+              "endNs": 892,
+              "newDeferredCommandBuffers": 0,
+              "prepareNs": 52929,
+              "recordNs": 15319,
+              "syncNs": 5060
+            },
+            "newDeferredCommandBuffers": 0,
+            "totalsNs": {
+              "driver": 3233986,
+              "end": 20265,
+              "prepare": 1006030,
+              "record": 400067,
+              "sync": 536322
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 2,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 12007732,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3554860,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 6174638,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 91696,
+              "submitPostSubmitBookkeepingTotalNs": 118144,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 915735,
+              "submitQueueFlushWaitCompletedTotalNs": 861531,
+              "submitQueueWaitBookkeepingTotalNs": 7155
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 2,
+          "sampleKind": "measured"
+        },
+        {
+          "nativeSubmit": {
+            "firstSubmit": {
+              "driverNs": 20568,
+              "endNs": 320,
+              "newDeferredCommandBuffers": 0,
+              "prepareNs": 53010,
+              "recordNs": 5900,
+              "syncNs": 3467
+            },
+            "newDeferredCommandBuffers": 0,
+            "totalsNs": {
+              "driver": 2854324,
+              "end": 17284,
+              "prepare": 956141,
+              "record": 332212,
+              "sync": 409161
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 3,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 10890859,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3204291,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 5441872,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 81529,
+              "submitPostSubmitBookkeepingTotalNs": 109902,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1291055,
+              "submitQueueFlushWaitCompletedTotalNs": 1216099,
+              "submitQueueWaitBookkeepingTotalNs": 5564
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 3,
+          "sampleKind": "measured"
+        }
+      ]
+    },
+    "preparation-phases": {
+      "evidenceClass": "instrumented-diagnostic",
+      "samples": [
+        {
+          "pipelinePreparation": {
+            "calls": 1000,
+            "firstTwoDispatchesNs": [
+              {
+                "activate": 137579,
+                "capture": 741,
+                "descriptors": 28193,
+                "policy": 1863,
+                "resolve": 181
+              },
+              {
+                "activate": 24777,
+                "capture": 100,
+                "descriptors": 12193,
+                "policy": 571,
+                "resolve": 60
+              }
+            ],
+            "totalsNs": {
+              "activate": 248053,
+              "capture": 35100,
+              "descriptors": 117139,
+              "policy": 473977,
+              "resolve": 73033
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 1,
+            "sampleKind": "warmup",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 13303074,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3944388,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 7107929,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 164432,
+              "submitPostSubmitBookkeepingTotalNs": 234731,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 828571,
+              "submitQueueFlushWaitCompletedTotalNs": 766424,
+              "submitQueueWaitBookkeepingTotalNs": 24733
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 1,
+          "sampleKind": "warmup"
+        },
+        {
+          "pipelinePreparation": {
+            "calls": 1000,
+            "firstTwoDispatchesNs": [
+              {
+                "activate": 401,
+                "capture": 191,
+                "descriptors": 30397,
+                "policy": 1372,
+                "resolve": 401
+              },
+              {
+                "activate": 110,
+                "capture": 40,
+                "descriptors": 9168,
+                "policy": 431,
+                "resolve": 100
+              }
+            ],
+            "totalsNs": {
+              "activate": 85709,
+              "capture": 32586,
+              "descriptors": 116784,
+              "policy": 479560,
+              "resolve": 70412
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 1,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 11552427,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3350526,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 5908508,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 79730,
+              "submitPostSubmitBookkeepingTotalNs": 123430,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 951262,
+              "submitQueueFlushWaitCompletedTotalNs": 906957,
+              "submitQueueWaitBookkeepingTotalNs": 8094
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 1,
+          "sampleKind": "measured"
+        },
+        {
+          "pipelinePreparation": {
+            "calls": 1000,
+            "firstTwoDispatchesNs": [
+              {
+                "activate": 682,
+                "capture": 210,
+                "descriptors": 29415,
+                "policy": 1243,
+                "resolve": 270
+              },
+              {
+                "activate": 141,
+                "capture": 70,
+                "descriptors": 7604,
+                "policy": 391,
+                "resolve": 120
+              }
+            ],
+            "totalsNs": {
+              "activate": 85300,
+              "capture": 32364,
+              "descriptors": 114555,
+              "policy": 478052,
+              "resolve": 68963
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 2,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 11864726,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3346225,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 6661695,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 72258,
+              "submitPostSubmitBookkeepingTotalNs": 92416,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1212922,
+              "submitQueueFlushWaitCompletedTotalNs": 1156324,
+              "submitQueueWaitBookkeepingTotalNs": 5381
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 2,
+          "sampleKind": "measured"
+        },
+        {
+          "pipelinePreparation": {
+            "calls": 1000,
+            "firstTwoDispatchesNs": [
+              {
+                "activate": 420,
+                "capture": 190,
+                "descriptors": 41108,
+                "policy": 1413,
+                "resolve": 251
+              },
+              {
+                "activate": 120,
+                "capture": 70,
+                "descriptors": 13516,
+                "policy": 411,
+                "resolve": 120
+              }
+            ],
+            "totalsNs": {
+              "activate": 87912,
+              "capture": 33653,
+              "descriptors": 130605,
+              "policy": 484965,
+              "resolve": 73115
+            }
+          },
+          "publicSubmission": {
+            "queueSubmitCalls": 501,
+            "sampleIndex": 3,
+            "sampleKind": "measured",
+            "submitBreakdownNs": {
+              "submitAddonCallTotalNs": 12306993,
+              "submitAddonCommandBufferEndTotalNs": 0,
+              "submitAddonCommandReplayCopyTotalNs": 0,
+              "submitAddonCommandReplayPrepareTotalNs": 0,
+              "submitAddonCommandReplayRecordTotalNs": 0,
+              "submitAddonCommandReplayTotalNs": 3573934,
+              "submitAddonDriverSubmitTotalNs": 0,
+              "submitAddonFlushTotalNs": 0,
+              "submitAddonQueueSubmitTotalNs": 6396458,
+              "submitAddonSyncPrepareTotalNs": 0,
+              "submitCommandPrepTotalNs": 89275,
+              "submitPostSubmitBookkeepingTotalNs": 138213,
+              "submitQueueFlushDeferredCopyTotalNs": 0,
+              "submitQueueFlushDeferredResolveTotalNs": 0,
+              "submitQueueFlushTotalNs": 1758021,
+              "submitQueueFlushWaitCompletedTotalNs": 1669573,
+              "submitQueueWaitBookkeepingTotalNs": 8393
+            },
+            "submittedCommandBuffers": 501
+          },
+          "sampleIndex": 3,
+          "sampleKind": "measured"
+        }
+      ]
+    },
+    "validation-metadata": {
+      "evidenceClass": "instrumented-diagnostic",
+      "samples": [
+        {
+          "apiValidation": {
+            "calls": 501,
+            "firstSubmitNs": 1693,
+            "totalNs": 45101
+          },
+          "metadataLookup": {
+            "hits": 998,
+            "misses": 2
+          },
+          "sampleIndex": 1,
+          "sampleKind": "warmup"
+        },
+        {
+          "apiValidation": {
+            "calls": 501,
+            "firstSubmitNs": 741,
+            "totalNs": 42428
+          },
+          "metadataLookup": {
+            "hits": 1000,
+            "misses": 0
+          },
+          "sampleIndex": 1,
+          "sampleKind": "measured"
+        },
+        {
+          "apiValidation": {
+            "calls": 501,
+            "firstSubmitNs": 541,
+            "totalNs": 40171
+          },
+          "metadataLookup": {
+            "hits": 1000,
+            "misses": 0
+          },
+          "sampleIndex": 2,
+          "sampleKind": "measured"
+        },
+        {
+          "apiValidation": {
+            "calls": 501,
+            "firstSubmitNs": 521,
+            "totalNs": 58120
+          },
+          "metadataLookup": {
+            "hits": 1000,
+            "misses": 0
+          },
+          "sampleIndex": 3,
+          "sampleKind": "measured"
+        }
+      ]
+    }
+  },
+  "raw": {
+    "baseline-diagnostic": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/baseline-diagnostic-raw.json.gz",
+      "sha256": "c67741ec3672bf09c1bfa60a322322b437c78478d959de481726ef040205e3ea",
+      "uncompressedSha256": "a2d28aa5c34d37b61ab7fd90ba8315d9d2a59529227eac0076eafe75b2809b06"
+    },
+    "baseline-phases": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/baseline-phases-raw.json.gz",
+      "sha256": "1dc7849de1db84db6e1265a2ccc492df976073d38df033064e53ca716e99aa03",
+      "uncompressedSha256": "0743e94b030ce4b0a67f071f8a53be3e8d655e6bbbfb5a5e5dea4a399fea16a8"
+    },
+    "candidate-preparation-phases": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/candidate-preparation-phases-raw.json.gz",
+      "sha256": "25a07f1196e96fd3e1f1b79346e77b6fafcd88980d36ee8f11d737ac065582e2",
+      "uncompressedSha256": "3cd8b1fe1cfdec9aa84f5e14b7d8edd11c0a88be5926c42248500d997ce0db88"
+    },
+    "native-phases": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/native-phases-raw.json.gz",
+      "sha256": "ff5395c5d384050658c180d275cdda5995075343f89cac35c17595259c2b18f4",
+      "uncompressedSha256": "d577b8ad6303e428a2a25fc0dda185e973201c37241aeb0fb571c649f1112010"
+    },
+    "preparation-phases": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/preparation-phases-raw.json.gz",
+      "sha256": "53fe952e862da4cde41e74e53ffb3ca4341c79ef228d79b705ae60bcad9774a5",
+      "uncompressedSha256": "94407a6ee566c3f211d84dadfb0d5180a16fdbb18804871ed13442a67e0d14b0"
+    },
+    "validation-metadata": {
+      "path": "reports/benchmarks/amd-vulkan/20261004-submission/validation-metadata-raw.json.gz",
+      "sha256": "b6a49ac33593d45a1cc1bb5a58a7b5ceb4968fda102240e16c3716bd8826c955",
+      "uncompressedSha256": "b9156c8309b2183eb4bf70f1c04fd5c15c93368d0e838b0c0563e96a9ac6f38e"
+    }
+  },
+  "repeatedPolicyCost": {
+    "baselineMedianNsPer1000Calls": 479560,
+    "candidateMedianNsPer1000Calls": 159894,
+    "instrumentationDisabledApplicationCredit": false
+  },
+  "schemaVersion": 1,
+  "units": "nanoseconds unless field names state otherwise"
+}

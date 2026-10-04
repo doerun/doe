@@ -1,0 +1,3 @@
+# Retained patches and command output preserve their original bytes.
+*.patch whitespace=-blank-at-eol
+*.log whitespace=-blank-at-eof

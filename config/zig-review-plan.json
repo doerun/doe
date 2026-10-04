@@ -4,23 +4,38 @@
   "maxReadyBatches": 2,
   "batches": [
     {
-      "batchId": "vulkan_shader_pipeline_preparation",
-      "state": "active",
-      "objective": "Resolve measured Vulkan device-request and queue-submission preparation costs after retaining source-bound entry-point reflection reuse.",
-      "rationale": "The pointer, test-isolation, and public-render batches passed in reports/maintenance/20260928-pointer-public. The 20261002 Vulkan preparation report retained entry-point reflection and corrected asymmetric UMAP provider loading. Native profiling located redundant instance creation and physical-device selection during device request. Adapter-owned reuse passes native lifetime and physical shader checks; alternating unchanged UMAP cohorts support a scoped process-median gain, while tails and material advantage remain unestablished.",
+      "batchId": "vulkan_generated_execution_profile",
+      "state": "ready",
+      "objective": "Select one Vulkan generated-program optimization from recoverable unchanged-application execution cost.",
+      "rationale": "The submission campaign retains explicit shader-owner metadata and lower repeated inspection cost without a repeatable UMAP application gain. Driver submission dominates the measured native submission phases. Shared pointer-IR emitter compatibility is freshly validated; compiler correctness maintenance does not reopen a non-Vulkan optimization campaign.",
       "scopes": [
-        {"level": "within_directory", "targets": ["src/backend/vulkan"]},
-        {"level": "within_directory", "targets": ["src/native/lifecycle"]},
-        {"level": "within_directory", "targets": ["src/native/support"]}
+        {
+          "level": "within_directory",
+          "targets": [
+            "src/compiler/wgsl/emit/spirv"
+          ]
+        },
+        {
+          "level": "within_directory",
+          "targets": [
+            "src/backend/vulkan"
+          ]
+        }
       ],
-      "findingReviewIds": ["spirv_ownership_function_20260928"],
-      "nextAction": "Attribute the measured queue-submission host cost before changing it. Select a generated-SPIR-V execution candidate only from a current shader/ISA profile, and measure compiler allocations if another compiler change is selected. Preserve the negative standalone UMAP cohort alongside the favorable alternating cohorts.",
+      "findingReviewIds": [
+        "vulkan_submission_vk_pipeline_20261004_custody"
+      ],
+      "nextAction": "Profile Vulkan GPU execution in unchanged UMAP and an inference transfer workload. Retain shader hashes, final instructions, register pressure, scratch traffic and addressing; select a transformation only after locating recoverable application cost. If submission dominates end-to-end cost, retain that finding and choose the next correction from it.",
       "acceptance": [
-        "Multiple pipelines and entry points, changed overrides, failures, cache hits and misses, and caller release preserve reflection, specialization, and diagnostic behavior; the 20261002 focused physical result is retained.",
-        "Native phase and allocation measurements establish any next mechanism; an unchanged physical Vulkan application comparison records full latency, memory, correctness, and pinned Dawn control."
+        "Numerical, bounds and alias semantics are preserved through independent physical output oracles; existing runtime and full WGSL suites pass.",
+        "Compiler time and allocations, generated-program execution time, full application latency and memory are measured independently against the accepted baseline and pinned Dawn, with declared regression limits and every cohort retained."
       ],
-      "stopCondition": "Retain or reject the candidate from complete application and regression evidence, with generated-SPIR-V execution left as the subsequent bounded investigation.",
-      "requiredEnvironment": ["Pinned Zig toolchain", "Physical AMD Vulkan provider", "Pinned Dawn control and unchanged UMAP application"]
+      "stopCondition": "Retain or reject one measured Vulkan candidate; no shader optimization or application superiority is inferred from preparation savings alone.",
+      "requiredEnvironment": [
+        "Pinned Zig toolchain",
+        "Physical AMD Vulkan provider and final-program profiling",
+        "Pinned Dawn control and unchanged application inputs"
+      ]
     }
   ]
 }

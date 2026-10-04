@@ -42,8 +42,12 @@ successful execution. Injection is distinct from physical hardware loss.
   The [adapter selection follow-up](../../reports/benchmarks/amd-vulkan/20261002-device-selection/README.md)
   removes repeated instance creation and physical-device selection on device
   request; alternating unchanged UMAP cohorts support a scoped process-median
-  gain while tail and material advantage remain unestablished. Queue submission remains a measured host
-  cost to attribute. ONNX Runtime substitution remains an independent
+  gain while tail and material advantage remain unestablished. The
+  [submission investigation](../../reports/benchmarks/amd-vulkan/20261004-submission/README.md)
+  retains shader-owner metadata reuse and native phase observations. Its
+  alternating application cohorts preserve correctness but do not establish a
+  repeatable application gain or Dawn superiority. Generated Vulkan execution
+  profiling is the next bounded campaign. ONNX Runtime substitution remains an independent
   integration investigation.
 - Native coverage requires retained executable hashes, successful physical work,
   backend/driver identity, and replay. Sample-based rows remain diagnostic until

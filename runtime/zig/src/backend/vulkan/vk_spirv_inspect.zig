@@ -9,6 +9,20 @@ pub const LocalSize = struct {
     z: u32,
 };
 
+/// Immutable module facts; device policy and environment overrides remain
+/// pipeline-selection inputs rather than cached shader properties.
+pub const ComputeMetadata = struct {
+    local_size: ?LocalSize = null,
+    has_workgroup_storage: bool = false,
+
+    pub fn from(words: []const u32) ComputeMetadata {
+        return .{
+            .local_size = compute_local_size(words),
+            .has_workgroup_storage = has_workgroup_storage(words),
+        };
+    }
+};
+
 pub fn compute_local_size(words: []const u32) ?LocalSize {
     if (words.len < 5) return null;
     var i: usize = 5;

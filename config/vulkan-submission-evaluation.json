@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "cohortOrder": ["baseline-1", "candidate-1", "candidate-2", "baseline-2"],
+  "cleanProcessesPerLane": 10,
+  "maxRegressionFraction": 0.05,
+  "requiredRegressingPairs": 2,
+  "regressionMetrics": [
+    "selectedOperationLatencyMs.p50",
+    "selectedOperationLatencyMs.p95",
+    "cleanProcessLatencyMs.p50",
+    "cleanProcessLatencyMs.p95",
+    "peakProcessTreeRssBytes"
+  ],
+  "materialPerformanceContract": "bench/external-projects/umap-gpu/sgd-benchmark.harness.json"
+}

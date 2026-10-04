@@ -1222,9 +1222,9 @@
       },
       "src/backend/vulkan/mod.zig": {
         "decision": "Keep",
-        "moduleSha256": "8a67445f6f20ac0eb7b717127c9f0ced7cfa21cec1898e0f777b60c1a14532ad",
-        "reason": "Keep: Explicit artifact capture consumes a retained shader owner and releases it on success or capture failure; command boundaries discard stale ownership.",
-        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+        "moduleSha256": "dc95dfbc5ffdaea6d75a422e053fd650751cfad4b8c24e236a6297535969d630",
+        "reason": "Keep: backend composition retains explicit shader artifact ownership; diagnostic fixtures supply immutable shader metadata without changing public ports.",
+        "reviewer": "codex-vulkan-submission/2026-10-04"
       },
       "src/backend/vulkan/native_runtime.zig": {
         "decision": "Keep",
@@ -1330,15 +1330,15 @@
       },
       "src/backend/vulkan/vk_pipeline.zig": {
         "decision": "Keep",
-        "moduleSha256": "1a5025c5960da8753b62979a15ca1312089f2c33a8d85cbf004a6d81d79d2ff1",
-        "reason": "Keep: Shader selection retains its actual immutable pipeline owner instead of copying SPIR-V on cache hits; replacement acquires before releasing the previous owner.",
-        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+        "moduleSha256": "38acbb7de6189332bab8d30f9aa93e9dd3bbdf836282dd37bb49160f03e211ea",
+        "reason": "Keep: pipeline selection reads retained immutable shader facts while recomputing effective subgroup policy and exact pipeline identity; submission and retirement remain with existing owners.",
+        "reviewer": "codex-vulkan-submission/2026-10-04"
       },
       "src/backend/vulkan/vk_pipeline_cache.zig": {
         "decision": "Keep",
-        "moduleSha256": "b7a36a995d3ff7e39da0b9450dc39fb03d43a13e145c31c57d2f9b314f9f9399",
-        "reason": "Keep: compute and descriptor caches own exact identities across active, hot, and map storage; collision probing and rollback preserve recorded state.",
-        "reviewer": "codex-resource-lifetime/2026-09-06"
+        "moduleSha256": "ae4d56c9bb707f9c97a6f4462a487c4c8078e7094b9dd25dde3682d148b24607",
+        "reason": "Keep: existing active, hot and spilled pipeline owners lend compact metadata after exact word comparison; hashes cannot authorize shader or resource reuse.",
+        "reviewer": "codex-vulkan-submission/2026-10-04"
       },
       "src/backend/vulkan/vk_pipeline_cache_persistent.zig": {
         "decision": "Keep",
@@ -1390,9 +1390,9 @@
       },
       "src/backend/vulkan/vk_spirv_inspect.zig": {
         "decision": "Keep",
-        "moduleSha256": "3933c321287c1d1c3f090f4d28275425c2fb1eb589941adbcf6c30a06da40c53",
-        "reason": "Keep: reachable backend implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "6658a202d087cf55ce315915fc22e1aa54ceb2661a523843cfbc356bcdaf8d0b",
+        "reason": "Keep: bounded SPIR-V inspection owns immutable compute metadata; no device policy, allocation or second reflection implementation.",
+        "reviewer": "codex-vulkan-submission/2026-10-04"
       },
       "src/backend/vulkan/vk_structs.zig": {
         "decision": "Keep",
@@ -4228,9 +4228,9 @@
       },
       "src/backend/vulkan/vk_shared_pipeline.zig": {
         "decision": "Keep",
-        "moduleSha256": "f15d1c9e6fa7db80957fe165f263cf2c3d2633542cc3f444329b19cbf98be9d0",
-        "reason": "Keep: The device-local registry owns immutable words and native pipelines; checked reference acquisition is shared by cache, program and artifact owners.",
-        "reviewer": "codex-qwen-owner-sync/2026-09-23"
+        "moduleSha256": "8c6b8c90474eb7751cd35019a6f650618515df4eddbeeb164e79f8b07aaa879f",
+        "reason": "Keep: device-owned shared native pipelines retain shader words and derived compute metadata together through explicit reference release; no new cache or allocation.",
+        "reviewer": "codex-vulkan-submission/2026-10-04"
       },
       "src/backend/vulkan/vk_descriptor_identity.zig": {
         "decision": "Keep",

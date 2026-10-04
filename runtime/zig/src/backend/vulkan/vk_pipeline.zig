@@ -239,7 +239,7 @@ pub fn set_compute_shader_spirv_with_hashes(
         .words = words,
         .entry_point = entry_point orelse "main",
         .bindings = bindings orelse &.{},
-        .required_subgroup_size = required_subgroup_size_for_pipeline(self, words),
+        .required_subgroup_size = required_subgroup_size_for_pipeline(self, words, pipeline_hash),
     };
     const cache_hash = try vk_pipeline_cache.resolve_compute_state_hash(self, pipeline_hash, request);
     if (!self.has_pipeline or cache_hash != self.current_pipeline_hash) {
@@ -277,7 +277,7 @@ pub fn build_pipeline_for_words(
         .words = words,
         .entry_point = entry_point orelse "main",
         .bindings = bindings orelse &.{},
-        .required_subgroup_size = required_subgroup_size_for_pipeline(self, words),
+        .required_subgroup_size = required_subgroup_size_for_pipeline(self, words, pipeline_hash),
     }, pipeline_hash, layout_hash);
 }
 
@@ -388,10 +388,10 @@ test "SPIR-V staging failed acquisition preserves the previous owner" {
 }
 
 fn artifactTestPipeline(words: []const u32) shared.Pipeline {
-    return .{ .handle = c.VK_NULL_U64, .creation_layout = c.VK_NULL_U64, .words = words, .entry_point = @constCast("main"), .layout = &.{}, .required_subgroup_size = null };
+    return .{ .handle = c.VK_NULL_U64, .creation_layout = c.VK_NULL_U64, .words = words, .entry_point = @constCast("main"), .layout = &.{}, .required_subgroup_size = null, .compute_metadata = vk_spirv_inspect.ComputeMetadata.from(words) };
 }
 
-fn required_subgroup_size_for_pipeline(self: anytype, words: []const u32) ?u32 {
+fn required_subgroup_size_for_pipeline(self: anytype, words: []const u32, pipeline_hash: u64) ?u32 {
     if (!self.has_subgroup_size_control_ext) return null;
     if (std.posix.getenv("DOE_VULKAN_REQUIRED_SUBGROUP_SIZE")) |value| {
         if (value.len == 0) return null;
@@ -400,20 +400,22 @@ fn required_subgroup_size_for_pipeline(self: anytype, words: []const u32) ?u32 {
         return parsed;
     }
     if (self.required_compute_subgroup_size == 0) return null;
+    if (self.vulkan_subgroup_size_policy == .fixed_32_when_supported) return self.required_compute_subgroup_size;
+    const metadata = vk_pipeline_cache.compute_shader_metadata(self, pipeline_hash, words) orelse vk_spirv_inspect.ComputeMetadata.from(words);
     switch (self.vulkan_subgroup_size_policy) {
         .fixed_32_when_supported => {},
         .suppress_for_workgroup_memory_256 => {
-            if ((vk_spirv_inspect.compute_local_size_x(words) orelse 0) >= WORKGROUP_MEMORY_SUBGROUP_HINT_LOCAL_SIZE_X_MIN and
-                vk_spirv_inspect.has_workgroup_storage(words))
+            if ((if (metadata.local_size) |size| size.x else 0) >= WORKGROUP_MEMORY_SUBGROUP_HINT_LOCAL_SIZE_X_MIN and
+                metadata.has_workgroup_storage)
             {
                 return null;
             }
         },
         .suppress_for_workgroup_memory_256_or_single_invocation => {
-            const local_size = vk_spirv_inspect.compute_local_size(words);
+            const local_size = metadata.local_size;
             if (is_single_invocation_workgroup(local_size)) return null;
             if ((if (local_size) |size| size.x else 0) >= WORKGROUP_MEMORY_SUBGROUP_HINT_LOCAL_SIZE_X_MIN and
-                vk_spirv_inspect.has_workgroup_storage(words))
+                metadata.has_workgroup_storage)
             {
                 return null;
             }
