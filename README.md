@@ -1,10 +1,28 @@
 # Doe
 
-DoeRuntime is Doe's primary product: a source-preserving WGSL compiler and GPU
-runtime that applications can select through their normal provider seam.
-DoeProof is its supporting qualification and evidence feature, usable with both
-DoeRuntime and an incumbent. Browser replacement is the destination; Fawn is
-the separately qualified Chromium integration surface. The `doe/` repository owns these components.
+Doe compiles WGSL shaders and runs WebGPU applications on native GPU backends.
+Use it through `doe-gpu`, or explore its Chromium integration, Fawn.
+
+**[Try the particle demo](https://d4da.com/doe/fawn-heavy-particles.html)** · [Run your first Doe kernel](#how-to-use-doe)
+
+Drag through the particles to change their motion. The browser demo uses your
+browser's WebGPU implementation. Running it in ordinary Chrome demonstrates the
+workload; running Doe itself requires the native package or a qualified Fawn build.
+
+```mermaid
+flowchart TD
+    App[WebGPU application and WGSL shaders] --> Package["doe-gpu: Node or Bun"]
+    App --> Fawn["Fawn: Chromium integration"]
+    Package --> Runtime["DoeRuntime: resources and submission"]
+    Fawn --> Runtime
+    Runtime --> Compiler[WGSL compiler]
+    Compiler --> Backends["Metal / Vulkan / D3D12"]
+    Backends --> GPU[GPU execution and results]
+    GPU --> Proof["Optional DoeProof: validation and replay"]
+```
+
+Native and browser paths have separate support and release gates. See the
+[architecture](docs/architecture.md) and [support matrix](docs/doe-support-matrix.md).
 
 ## Mission, goal, and value
 
