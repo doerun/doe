@@ -1,5 +1,18 @@
 # Doe status: runtime backends and benchmarks
 
+## Stock Chrome and webpage-only delivery
+
+The [native-boundary investigation](../../reports/browser-runtime/20261005-stock-chrome/README.md)
+retains a launcher-assisted GPU-server forwarding control and independent Doe
+execution in that process. The page still uses Dawn. Earlier wire-client
+interception is explicitly distinguished from the corrected server observation,
+and failed loader, sandbox, driver and table controls remain retained.
+The user requires only a webpage and downloaded WASM, which excludes the native
+launcher mechanism. No supported page API for installing a native WebGPU provider
+was found. The existing browser WASM owns shader processing; browser WebGPU owns
+native execution. Native hot swapping, page-only replacement and acceleration
+remain unqualified; production and the Fawn demo are unchanged.
+
 ## Independent ONNX integration
 
 The [pinned proc-table integration](../../reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/README.md)
