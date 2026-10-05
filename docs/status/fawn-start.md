@@ -4,6 +4,8 @@ The canonical demo is [CanvasContext](https://canvascontext.com/). Doe owns the
 HTML/WGSL under `browser/chromium/resources/`; the sibling D4DA repository owns
 packaging and publication through `firebase.fawn.json`. Legacy D4DA Doe routes
 redirect to CanvasContext with their demo filenames intact.
+The [live release manifest](https://canvascontext.com/release.json) identifies
+the published demo source and hosting package.
 
 The hosted main page previews the local HTML start page selected by Fawn's
 launcher. Packaging copies that source into the app bundle; an existing
@@ -18,18 +20,19 @@ diagnostics. Existing hosted fixture URLs remain available; Image Lab remains
 repository-only. Lifecycle probes navigate directly to the fluid fixture rather
 than requiring a public navigation link.
 
-The unpublished candidate adds a compact Demos disclosure to the main page and
-benchmark pages. It marks the current page and switches between the particle
+The hosted main page and benchmark pages have a compact Demos disclosure.
+It marks the current page and switches between the particle
 cycle, Particle Trails, Magnetic Fluids, and Prismatic Fluids. Image Lab is
 excluded from the menu and retained as a repository-only benchmark. The
 main page continues cycling its own particle fields; choosing another simulator
 navigates to that separate implementation. Escape restores focus and outside
 interaction closes the disclosure.
 
-The benchmark-page candidate aligns Particle Trails, Magnetic
+The benchmark pages align Particle Trails, Magnetic
 Fluids, Prismatic Fluids, and Image Lab with the main page's fullscreen canvas,
 Fawn branding, Settings panel, GitHub link, and compact footer. It has no address
-field. Live hosting is unchanged by this candidate. Simulation
+field. The packaged simulators are published on CanvasContext; Image Lab remains
+repository-only. Simulation
 shaders, default workloads, and image-processing resolution remain unchanged.
 Pause freezes simulation and shader time; reset and resize can redraw while
 paused. Image Lab renders on demand and reports completed-update latency.
