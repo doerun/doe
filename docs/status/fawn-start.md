@@ -9,7 +9,7 @@ The hosted main page previews the local HTML start page selected by Fawn's
 launcher. Packaging copies that source into the app bundle; an existing
 installation can retain an older copy. The preview visibly links to Fawn's
 Chromium integration on GitHub and identifies the visitor's browser WebGPU
-backend in Settings.
+backend in Settings. The preview has no search/address field.
 
 The main page is the public demo entry point. Settings and the README no longer
 send visitors to standalone demos. Particle Trails, Magnetic Fluids, Prismatic
@@ -19,7 +19,7 @@ repository-only. Lifecycle probes navigate directly to the fluid fixture rather
 than requiring a public navigation link.
 
 The prismatic fluid page shares the landing page's fullscreen canvas, Fawn
-header, search, typography, Settings panel, and compact metrics. Pause freezes
+branding, typography, Settings panel, and compact metrics. Pause freezes
 simulation and shader time; reset and resize can redraw while paused. Reduced
 motion starts paused. The fluid shaders and default workload remain unchanged.
 [The prismatic UI check](../../browser/chromium/scripts/test-fawn-prismatic-controls.mjs)
@@ -29,7 +29,7 @@ an installed Playwright ESM module; artifacts go under
 `bench/out/fawn-prismatic-ui/` by default.
 
 The landing page retains particle settings, continuous field transitions,
-search, pointer and keyboard interaction, pause, reset, and reduced-motion
+pointer and keyboard interaction, pause, reset, and reduced-motion
 startup. The particle renderer uses triangle strips and draws fading trails and
 particles within the same render pass. Simulation dispatches share a compute
 pass while preserving their order. The prismatic solver stores scalar pressure.
