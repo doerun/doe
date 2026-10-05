@@ -11,7 +11,7 @@ compute dispatch and chunked initialization uploads. Adapter limits describe
 capability, not guaranteed free memory.
 Pause, reset, touch cancellation, keyboard attraction, and reduced-motion
 startup belong to the page. Search remains available, with workload settings,
-adapter information, and links to the fluid demonstrations under Settings. The settings panel is anchored inside the page, with bounded
+adapter information, and the source link under Settings. The settings panel is anchored inside the page, with bounded
 height, scrolling, and an opaque surface. Its copy is limited to GPU identity,
 workload controls, and a completed-frame caption.
 
@@ -31,10 +31,13 @@ reset cleanup, workload changes, teardown, reduced motion, and unavailable-GPU
 handling. Deterministic clocks and delayed queue completion additionally checked
 frame-rate accuracy, submission backpressure, and pausing during GPU work. These checks do not establish rendered appearance or physical GPU
 execution. The existing browser lifecycle probe follows the new status and
-Settings control but was not run: the user requested personal review without
+Settings control and opens the retained fluid benchmark directly, but was not run:
+the user requested personal review without
 agent browser use or screenshots.
 
 The user approved publication through D4DA at `/doe/fawn-start.html`; its Doe
 navigation links there directly. This page is not browser release qualification.
+The standalone particle, fluid, and image pages remain available for benchmark
+use; the main page does not link to them.
 `node browser/chromium/scripts/test-fawn-start-cycle.mjs` verifies the cycle
 boundaries, eased endpoints, and repeat behavior without browser automation.
