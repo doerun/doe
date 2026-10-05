@@ -1,0 +1,390 @@
+{
+  "classification": "Chrome application diagnostics; no Doe-vs-Dawn performance claim",
+  "observedAt": "2026-10-05T22:34:11.412Z",
+  "browser": "154.0.8037.95",
+  "baselineRef": "b599d2e3a8ad09fa3aff66a2d08d3fa1515647fb",
+  "sourceHashes": {
+    "start": {
+      "candidate": "dfbbc8493c019871c02b1b0077df6a5759ccef9624fcc9a9eb5c1b3ee38697b0",
+      "baseline": "76cbcd389581864e8c407fc06360425db75792aef955001b96b316092cc03aba"
+    },
+    "heavy-particles": {
+      "candidate": "11b2e258757bd6f2b950dec753f9c6610ded9f46243136c8869a6f32af79a44f",
+      "baseline": "b56e02b5b96fb45d08acaae31de7ef2400dea0944eb6a3dcc995daecd82bb9ac"
+    },
+    "magnetic-fluids": {
+      "candidate": "664d9247261c18f00c2d2e103983cca2fbad6421b2207dc3fd41f926bc1f72c1",
+      "baseline": "573f32ffaf3e666ce468137081e62110e90b9707476d66ecbe0b29e7ae54dee8"
+    },
+    "prismatic-fluids": {
+      "candidate": "ee902a48e49af147a3b4fbb072ca01a636622e8a70162b359e68cf75b7abd54d",
+      "baseline": "aa62de53be413b5156fb2a3f9e74593ad05a896017260a061410fc0515791c33"
+    },
+    "image-lab": {
+      "candidate": "1f6e98455ad4b9e96683ad68e252783c8e46a6bb7a5d4f8f5f3f7c42b2d39348",
+      "baseline": "f98054cb19bcf6b7b349d04dc19e6877bb54d2c082e09313ba6a47ace7041209"
+    }
+  },
+  "navigation": [
+    {
+      "name": "start",
+      "next": "heavy-particles",
+      "screen": "desktop",
+      "menuBox": {
+        "x": 1192,
+        "y": 76,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "heavy-particles",
+      "next": "magnetic-fluids",
+      "screen": "desktop",
+      "menuBox": {
+        "x": 1192,
+        "y": 76,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "magnetic-fluids",
+      "next": "prismatic-fluids",
+      "screen": "desktop",
+      "menuBox": {
+        "x": 1192,
+        "y": 76,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "prismatic-fluids",
+      "next": "image-lab",
+      "screen": "desktop",
+      "menuBox": {
+        "x": 1192,
+        "y": 76,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "image-lab",
+      "next": "start",
+      "screen": "desktop",
+      "menuBox": {
+        "x": 1192,
+        "y": 76,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "start",
+      "next": "heavy-particles",
+      "screen": "mobile",
+      "menuBox": {
+        "x": 154,
+        "y": 70,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "heavy-particles",
+      "next": "magnetic-fluids",
+      "screen": "mobile",
+      "menuBox": {
+        "x": 154,
+        "y": 70,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "magnetic-fluids",
+      "next": "prismatic-fluids",
+      "screen": "mobile",
+      "menuBox": {
+        "x": 154,
+        "y": 70,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "prismatic-fluids",
+      "next": "image-lab",
+      "screen": "mobile",
+      "menuBox": {
+        "x": 154,
+        "y": 70,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "image-lab",
+      "next": "start",
+      "screen": "mobile",
+      "menuBox": {
+        "x": 154,
+        "y": 70,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "start",
+      "next": "heavy-particles",
+      "screen": "small",
+      "menuBox": {
+        "x": 84,
+        "y": 70,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "heavy-particles",
+      "next": "magnetic-fluids",
+      "screen": "small",
+      "menuBox": {
+        "x": 84,
+        "y": 70,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "magnetic-fluids",
+      "next": "prismatic-fluids",
+      "screen": "small",
+      "menuBox": {
+        "x": 84,
+        "y": 70,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "prismatic-fluids",
+      "next": "image-lab",
+      "screen": "small",
+      "menuBox": {
+        "x": 84,
+        "y": 70,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    },
+    {
+      "name": "image-lab",
+      "next": "start",
+      "screen": "small",
+      "menuBox": {
+        "x": 84,
+        "y": 70,
+        "width": 220,
+        "height": 234
+      },
+      "keyboard": "open and Escape restore focus",
+      "dismissal": "outside canvas and Settings",
+      "gpuStartup": "passed"
+    }
+  ],
+  "clocks": [
+    {
+      "name": "start",
+      "rafTimestamp": 990,
+      "initializationClock": 1000,
+      "baseline": {
+        "uniforms": [
+          {
+            "dt": -0.0024999999441206455,
+            "phase": -1
+          }
+        ],
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "isFallbackAdapter": false
+        }
+      },
+      "candidate": {
+        "uniforms": [
+          {
+            "dt": 0,
+            "phase": 0
+          }
+        ],
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "isFallbackAdapter": false
+        }
+      }
+    },
+    {
+      "name": "heavy-particles",
+      "rafTimestamp": 990,
+      "initializationClock": 1000,
+      "baseline": {
+        "uniforms": [
+          {
+            "dt": -0.009999999776482582,
+            "phase": null
+          }
+        ],
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "isFallbackAdapter": false
+        }
+      },
+      "candidate": {
+        "uniforms": [
+          {
+            "dt": 0,
+            "phase": null
+          }
+        ],
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "isFallbackAdapter": false
+        }
+      }
+    },
+    {
+      "name": "magnetic-fluids",
+      "rafTimestamp": 990,
+      "initializationClock": 1000,
+      "baseline": {
+        "uniforms": [
+          {
+            "dt": -0.010999999940395355,
+            "phase": null
+          }
+        ],
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "isFallbackAdapter": false
+        }
+      },
+      "candidate": {
+        "uniforms": [
+          {
+            "dt": 0,
+            "phase": null
+          }
+        ],
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "isFallbackAdapter": false
+        }
+      }
+    },
+    {
+      "name": "prismatic-fluids",
+      "rafTimestamp": 990,
+      "initializationClock": 1000,
+      "baseline": {
+        "uniforms": [
+          {
+            "dt": -0.008200000040233135,
+            "phase": null
+          }
+        ],
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "isFallbackAdapter": false
+        }
+      },
+      "candidate": {
+        "uniforms": [
+          {
+            "dt": 0,
+            "phase": null
+          }
+        ],
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "isFallbackAdapter": false
+        }
+      }
+    }
+  ],
+  "cycle": {
+    "fields": [
+      0,
+      1,
+      2,
+      0
+    ],
+    "errors": [],
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "isFallbackAdapter": false
+    }
+  },
+  "passed": true,
+  "errors": []
+}

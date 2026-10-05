@@ -1,0 +1,110 @@
+{
+  "origin": "http://127.0.0.1:53021",
+  "results": [
+    {
+      "name": "desktop",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "header": {
+          "x": 28,
+          "y": 24,
+          "width": 1384,
+          "height": 44
+        },
+        "footer": {
+          "x": 28,
+          "y": 689.5,
+          "width": 1384,
+          "height": 186.5
+        },
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false
+      },
+      "frozen": {
+        "submissions": 53,
+        "computePasses": 53,
+        "simulationTime": 1.056399941444397
+      },
+      "rebuilt": {
+        "submissions": 54,
+        "computePasses": 53,
+        "simulationTime": 1.056399941444397
+      },
+      "reset": {
+        "submissions": 55,
+        "computePasses": 53,
+        "simulationTime": 1.056399941444397
+      },
+      "resized": {
+        "submissions": 56,
+        "computePasses": 53,
+        "simulationTime": 1.056399941444397
+      },
+      "controls": "passed"
+    },
+    {
+      "name": "mobile",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844
+        },
+        "header": {
+          "x": 16,
+          "y": 18,
+          "width": 358,
+          "height": 44
+        },
+        "footer": {
+          "x": 16,
+          "y": 574.5,
+          "width": 358,
+          "height": 251.5
+        },
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false
+      },
+      "frozen": {
+        "submissions": 54,
+        "computePasses": 54,
+        "simulationTime": 0.9254000186920166
+      },
+      "rebuilt": {
+        "submissions": 55,
+        "computePasses": 54,
+        "simulationTime": 0.9254000186920166
+      },
+      "reset": {
+        "submissions": 56,
+        "computePasses": 54,
+        "simulationTime": 0.9254000186920166
+      },
+      "resized": {
+        "submissions": 57,
+        "computePasses": 54,
+        "simulationTime": 0.9254000186920166
+      },
+      "controls": "passed"
+    },
+    {
+      "reducedMotion": "passed"
+    },
+    {
+      "unsupportedGpu": "visible error; disabled controls"
+    }
+  ],
+  "errors": []
+}
