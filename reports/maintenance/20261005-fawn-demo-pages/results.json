@@ -1,0 +1,964 @@
+{
+  "classification": "Physical Chrome application diagnostics; no Doe-vs-Dawn or portable speed claim",
+  "observedAt": "2026-10-05T21:28:52.142Z",
+  "baselineRef": "b5bcc3c04ac0cc469d6c16dd270e5f0d66e6546e",
+  "browser": "154.0.8037.95",
+  "method": {
+    "fixedFrames": 12,
+    "absoluteTolerance": 0.000001,
+    "canvas": [
+      640,
+      480
+    ],
+    "readback": "Instrumented storage buffers add COPY_SRC on both variants; screenshots capture matched canvases",
+    "optimization": "Resource and submission counts; no GPU latency comparison"
+  },
+  "sourceHashes": {
+    "heavy-particles": {
+      "baseline": "f69b2bfcd311e7dd6b6f9229c0b4d0344986ffd1f1250d1ceed9ac0571a73f6e",
+      "candidate": "b56e02b5b96fb45d08acaae31de7ef2400dea0944eb6a3dcc995daecd82bb9ac"
+    },
+    "magnetic-fluids": {
+      "baseline": "4f0cb9209ebb6f0db9067a47dfdda8f4b135c313a35b71f2efde41f490373a8b",
+      "candidate": "573f32ffaf3e666ce468137081e62110e90b9707476d66ecbe0b29e7ae54dee8"
+    },
+    "prismatic-fluids": {
+      "baseline": "545c40d972beeca2c5bbe0c40f4e6139478f8c677514c94236e89c149704d0e0",
+      "candidate": "aa62de53be413b5156fb2a3f9e74593ad05a896017260a061410fc0515791c33"
+    },
+    "image-lab": {
+      "baseline": "574d02aab641ee24740f5e8026fabaf250c17bddeeec31b444e946c16d5fee87",
+      "candidate": "f98054cb19bcf6b7b349d04dc19e6877bb54d2c082e09313ba6a47ace7041209"
+    }
+  },
+  "correctness": [
+    {
+      "name": "heavy-particles",
+      "shaderHashes": [
+        [
+          "COMPUTE_WGSL",
+          "4c96da777ebce8f1c86ea171f36dc50e670d8d359b30debdf967a8044ae07b22"
+        ],
+        [
+          "PARTICLE_WGSL",
+          "7e92ac04bc66f7870263e438fcbfaa8c4395b451d2cff64edf5ec6345b62f977"
+        ],
+        [
+          "FADE_WGSL",
+          "a2cca6e771e35502f068ee4b03a557061ae85cca90588f3948d2b1bb8f7ae177"
+        ],
+        [
+          "COMPOSITE_WGSL",
+          "09462ba5f833cfc4d0914ce9b5a1f9efc2c9240676349fc64849e8ef157415ce"
+        ]
+      ],
+      "maxAbsoluteError": 0,
+      "images": {
+        "simulation": "b62081e3daad62f1b00de44880b5a4793cb464818c2f62a2d52b7193a7b633ef"
+      },
+      "setup": {
+        "before": {
+          "submissions": 0,
+          "compute": 0,
+          "time": null,
+          "maxPending": 0,
+          "modules": 7,
+          "storageAllocations": 4,
+          "storageWriteBytes": 4194304,
+          "uniformObjects": 0,
+          "errors": [],
+          "adapter": {
+            "vendor": "apple",
+            "architecture": "metal-3",
+            "device": "",
+            "isFallbackAdapter": false
+          },
+          "dispatches": 0
+        },
+        "after": {
+          "submissions": 0,
+          "compute": 0,
+          "time": null,
+          "maxPending": 0,
+          "modules": 4,
+          "storageAllocations": 2,
+          "storageWriteBytes": 4194304,
+          "uniformObjects": 0,
+          "errors": [],
+          "adapter": {
+            "vendor": "apple",
+            "architecture": "metal-3",
+            "device": "",
+            "isFallbackAdapter": false
+          },
+          "dispatches": 0
+        }
+      },
+      "uniformObjects": {
+        "before": 1,
+        "after": 1
+      }
+    },
+    {
+      "name": "magnetic-fluids",
+      "shaderHashes": [
+        [
+          "COMPUTE_WGSL",
+          "069a1472fae03dfa1d4b1fe55e9aa8deb552fd0cc958c2935ab2d89b44f1d69f"
+        ],
+        [
+          "RENDER_WGSL",
+          "0cbdcc1c1fe2f50fb7888f6879877e6e5fb4ff05abf95dabcb47b1fc62164075"
+        ]
+      ],
+      "maxAbsoluteError": 0,
+      "images": {
+        "simulation": "a0c41d57add09a3d8e18965cdfa02bc132562dd0244a9061e2ccbeecad1fe1ac"
+      },
+      "setup": {
+        "before": {
+          "submissions": 0,
+          "compute": 0,
+          "time": null,
+          "maxPending": 0,
+          "modules": 3,
+          "storageAllocations": 2,
+          "storageWriteBytes": 33554432,
+          "uniformObjects": 0,
+          "errors": [],
+          "adapter": {
+            "vendor": "apple",
+            "architecture": "metal-3",
+            "device": "",
+            "isFallbackAdapter": false
+          },
+          "dispatches": 0
+        },
+        "after": {
+          "submissions": 0,
+          "compute": 0,
+          "time": null,
+          "maxPending": 0,
+          "modules": 2,
+          "storageAllocations": 2,
+          "storageWriteBytes": 0,
+          "uniformObjects": 0,
+          "errors": [],
+          "adapter": {
+            "vendor": "apple",
+            "architecture": "metal-3",
+            "device": "",
+            "isFallbackAdapter": false
+          },
+          "dispatches": 0
+        }
+      },
+      "uniformObjects": {
+        "before": 1,
+        "after": 1
+      }
+    },
+    {
+      "name": "prismatic-fluids",
+      "shaderHashes": [
+        [
+          "ADVECT_VEL_WGSL",
+          "6954d0eb8d440c15065c295077bb1cc2c3b4df0f39df8802ef8f3ef4a37e0790"
+        ],
+        [
+          "DIV_CURL_WGSL",
+          "47a47563337fa3b6193d13c49f80037842e14a1108eaea6bd7a1e59e0f34622f"
+        ],
+        [
+          "PRESSURE_WGSL",
+          "3ee7ee5980b71d3eef70b5ab4b5a306de1ad0c8afa96d1252e940c87cb4b6305"
+        ],
+        [
+          "PROJECT_WGSL",
+          "504b6b1a6aada60cdd5bf5e4bc7f30ae93996643977259338578d4090404c4b8"
+        ],
+        [
+          "ADVECT_DYE_WGSL",
+          "c7fe5f49b6ac3dbc8a92d32e503dd840f2958ffb4e6601f176a9efd16167c2d8"
+        ],
+        [
+          "RENDER_WGSL",
+          "0587c01ac3114500927c26fbd940357fad630131522076388874e6268efef881"
+        ]
+      ],
+      "maxAbsoluteError": 0,
+      "images": {
+        "simulation": "2ebea9e80df678962dc9e21beadf0da788d68469f18b1fd4ab599d06a134073e"
+      },
+      "setup": {
+        "before": {
+          "submissions": 0,
+          "compute": 0,
+          "time": null,
+          "maxPending": 0,
+          "modules": 7,
+          "storageAllocations": 7,
+          "storageWriteBytes": 23068672,
+          "uniformObjects": 0,
+          "errors": [],
+          "adapter": {
+            "vendor": "apple",
+            "architecture": "metal-3",
+            "device": "",
+            "isFallbackAdapter": false
+          },
+          "dispatches": 0
+        },
+        "after": {
+          "submissions": 0,
+          "compute": 0,
+          "time": null,
+          "maxPending": 0,
+          "modules": 6,
+          "storageAllocations": 7,
+          "storageWriteBytes": 8388608,
+          "uniformObjects": 0,
+          "errors": [],
+          "adapter": {
+            "vendor": "apple",
+            "architecture": "metal-3",
+            "device": "",
+            "isFallbackAdapter": false
+          },
+          "dispatches": 0
+        }
+      },
+      "uniformObjects": {
+        "before": 1,
+        "after": 1
+      }
+    },
+    {
+      "name": "image-lab",
+      "shaderHashes": [
+        [
+          "SHADER",
+          "dbdbfee3fb95714f0f8a4017f8dee28ba415da0a84689db3286e33664492540d"
+        ]
+      ],
+      "maxAbsoluteError": 0,
+      "images": {
+        "0": "7f8d62bad8e4fa795b055bf99c96a28a1cc2866df083b0cdcb9540cf02a31757",
+        "1": "ecbf04a7352dc2cf382a923c6f9ed770f13996548ee31798942f98348036ee77",
+        "2": "04ccebf548b6e434e28adbb4f66a5c80a0954602f2694040c002ee6ab0db0d82",
+        "3": "40ea238cabbcea2e587609b20d0bc9b1eb32991243de31f3f6b851ad565f73fe"
+      },
+      "setup": {
+        "before": {
+          "submissions": 2,
+          "compute": 0,
+          "time": 0.699999988079071,
+          "maxPending": 2,
+          "modules": 1,
+          "storageAllocations": 0,
+          "storageWriteBytes": 0,
+          "uniformObjects": 2,
+          "errors": [],
+          "adapter": {
+            "vendor": "apple",
+            "architecture": "metal-3",
+            "device": "",
+            "isFallbackAdapter": false
+          },
+          "dispatches": 0
+        },
+        "after": {
+          "submissions": 0,
+          "compute": 0,
+          "time": null,
+          "maxPending": 0,
+          "modules": 1,
+          "storageAllocations": 0,
+          "storageWriteBytes": 0,
+          "uniformObjects": 0,
+          "errors": [],
+          "adapter": {
+            "vendor": "apple",
+            "architecture": "metal-3",
+            "device": "",
+            "isFallbackAdapter": false
+          },
+          "dispatches": 0
+        }
+      },
+      "uniformObjects": {
+        "before": 6,
+        "after": 1
+      }
+    }
+  ],
+  "controls": [
+    {
+      "name": "heavy-particles",
+      "screen": "desktop",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "header": {
+          "x": 28,
+          "y": 24,
+          "width": 1384,
+          "height": 41
+        },
+        "footer": {
+          "x": 28,
+          "y": 689.5,
+          "width": 1384,
+          "height": 186.5
+        },
+        "panel": {
+          "x": 28,
+          "y": 544,
+          "width": 360,
+          "height": 224
+        },
+        "width": 1440,
+        "height": 900,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 78,
+        "compute": 75,
+        "time": 1.3454999923706055,
+        "maxPending": 2,
+        "modules": 4,
+        "storageAllocations": 6,
+        "storageWriteBytes": 8388608,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 352
+      }
+    },
+    {
+      "name": "heavy-particles",
+      "screen": "mobile",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844
+        },
+        "header": {
+          "x": 16,
+          "y": 18,
+          "width": 358,
+          "height": 32
+        },
+        "footer": {
+          "x": 16,
+          "y": 558,
+          "width": 358,
+          "height": 268
+        },
+        "panel": {
+          "x": 16,
+          "y": 386.5,
+          "width": 350,
+          "height": 224
+        },
+        "width": 390,
+        "height": 844,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 72,
+        "compute": 69,
+        "time": 1.1884000301361084,
+        "maxPending": 2,
+        "modules": 4,
+        "storageAllocations": 6,
+        "storageWriteBytes": 8388608,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 328
+      }
+    },
+    {
+      "name": "heavy-particles",
+      "screen": "small",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568
+        },
+        "header": {
+          "x": 16,
+          "y": 18,
+          "width": 288,
+          "height": 32
+        },
+        "footer": {
+          "x": 16,
+          "y": 282,
+          "width": 288,
+          "height": 268
+        },
+        "panel": {
+          "x": 16,
+          "y": 110.5,
+          "width": 280,
+          "height": 224
+        },
+        "width": 320,
+        "height": 568,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 72,
+        "compute": 69,
+        "time": 1.1783000230789185,
+        "maxPending": 2,
+        "modules": 4,
+        "storageAllocations": 6,
+        "storageWriteBytes": 8388608,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 328
+      }
+    },
+    {
+      "name": "heavy-particles",
+      "reducedMotion": "initial render without simulation; resume works"
+    },
+    {
+      "name": "magnetic-fluids",
+      "screen": "desktop",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "header": {
+          "x": 28,
+          "y": 24,
+          "width": 1384,
+          "height": 41
+        },
+        "footer": {
+          "x": 28,
+          "y": 689.5,
+          "width": 1384,
+          "height": 186.5
+        },
+        "panel": {
+          "x": 28,
+          "y": 544,
+          "width": 360,
+          "height": 224
+        },
+        "width": 1440,
+        "height": 900,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 77,
+        "compute": 74,
+        "time": 1.294600009918213,
+        "maxPending": 1,
+        "modules": 2,
+        "storageAllocations": 6,
+        "storageWriteBytes": 0,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 496
+      }
+    },
+    {
+      "name": "magnetic-fluids",
+      "screen": "mobile",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844
+        },
+        "header": {
+          "x": 16,
+          "y": 18,
+          "width": 358,
+          "height": 32
+        },
+        "footer": {
+          "x": 16,
+          "y": 558,
+          "width": 358,
+          "height": 268
+        },
+        "panel": {
+          "x": 16,
+          "y": 386.5,
+          "width": 350,
+          "height": 224
+        },
+        "width": 390,
+        "height": 844,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 76,
+        "compute": 73,
+        "time": 1.2295000553131104,
+        "maxPending": 2,
+        "modules": 2,
+        "storageAllocations": 6,
+        "storageWriteBytes": 0,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 490
+      }
+    },
+    {
+      "name": "magnetic-fluids",
+      "screen": "small",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568
+        },
+        "header": {
+          "x": 16,
+          "y": 18,
+          "width": 288,
+          "height": 32
+        },
+        "footer": {
+          "x": 16,
+          "y": 282,
+          "width": 288,
+          "height": 268
+        },
+        "panel": {
+          "x": 16,
+          "y": 91,
+          "width": 280,
+          "height": 243.5
+        },
+        "width": 320,
+        "height": 568,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 73,
+        "compute": 70,
+        "time": 1.1837999820709229,
+        "maxPending": 1,
+        "modules": 2,
+        "storageAllocations": 6,
+        "storageWriteBytes": 0,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 472
+      }
+    },
+    {
+      "name": "magnetic-fluids",
+      "reducedMotion": "initial render without simulation; resume works"
+    },
+    {
+      "name": "prismatic-fluids",
+      "screen": "desktop",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "header": {
+          "x": 28,
+          "y": 24,
+          "width": 1384,
+          "height": 41
+        },
+        "footer": {
+          "x": 28,
+          "y": 689.5,
+          "width": 1384,
+          "height": 186.5
+        },
+        "panel": {
+          "x": 28,
+          "y": 563.5,
+          "width": 360,
+          "height": 204.5
+        },
+        "width": 1440,
+        "height": 900,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 72,
+        "compute": 69,
+        "time": 1.174399971961975,
+        "maxPending": 1,
+        "modules": 6,
+        "storageAllocations": 21,
+        "storageWriteBytes": 8978432,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 2244
+      }
+    },
+    {
+      "name": "prismatic-fluids",
+      "screen": "mobile",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844
+        },
+        "header": {
+          "x": 16,
+          "y": 18,
+          "width": 358,
+          "height": 32
+        },
+        "footer": {
+          "x": 16,
+          "y": 574.5,
+          "width": 358,
+          "height": 251.5
+        },
+        "panel": {
+          "x": 16,
+          "y": 422.5,
+          "width": 350,
+          "height": 204.5
+        },
+        "width": 390,
+        "height": 844,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 69,
+        "compute": 66,
+        "time": 1.1160999536514282,
+        "maxPending": 1,
+        "modules": 6,
+        "storageAllocations": 21,
+        "storageWriteBytes": 8978432,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 2160
+      }
+    },
+    {
+      "name": "prismatic-fluids",
+      "screen": "small",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568
+        },
+        "header": {
+          "x": 16,
+          "y": 18,
+          "width": 288,
+          "height": 32
+        },
+        "footer": {
+          "x": 16,
+          "y": 282,
+          "width": 288,
+          "height": 268
+        },
+        "panel": {
+          "x": 16,
+          "y": 130,
+          "width": 280,
+          "height": 204.5
+        },
+        "width": 320,
+        "height": 568,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 72,
+        "compute": 69,
+        "time": 1.1576000452041626,
+        "maxPending": 2,
+        "modules": 6,
+        "storageAllocations": 21,
+        "storageWriteBytes": 8978432,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 2244
+      }
+    },
+    {
+      "name": "prismatic-fluids",
+      "reducedMotion": "initial render without simulation; resume works"
+    },
+    {
+      "name": "image-lab",
+      "screen": "desktop",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "header": {
+          "x": 28,
+          "y": 24,
+          "width": 1384,
+          "height": 41
+        },
+        "footer": {
+          "x": 28,
+          "y": 689.5,
+          "width": 1384,
+          "height": 186.5
+        },
+        "panel": {
+          "x": 28,
+          "y": 385.5,
+          "width": 360,
+          "height": 382.5
+        },
+        "width": 1440,
+        "height": 900,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 7,
+        "compute": 0,
+        "time": 0.699999988079071,
+        "maxPending": 1,
+        "modules": 1,
+        "storageAllocations": 0,
+        "storageWriteBytes": 0,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 0
+      }
+    },
+    {
+      "name": "image-lab",
+      "screen": "mobile",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844
+        },
+        "header": {
+          "x": 16,
+          "y": 18,
+          "width": 358,
+          "height": 32
+        },
+        "footer": {
+          "x": 16,
+          "y": 606.5,
+          "width": 358,
+          "height": 219.5
+        },
+        "panel": {
+          "x": 16,
+          "y": 276.5,
+          "width": 350,
+          "height": 382.5
+        },
+        "width": 390,
+        "height": 844,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 7,
+        "compute": 0,
+        "time": 0.699999988079071,
+        "maxPending": 1,
+        "modules": 1,
+        "storageAllocations": 0,
+        "storageWriteBytes": 0,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 0
+      }
+    },
+    {
+      "name": "image-lab",
+      "screen": "small",
+      "boxes": {
+        "canvas": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568
+        },
+        "header": {
+          "x": 16,
+          "y": 18,
+          "width": 288,
+          "height": 32
+        },
+        "footer": {
+          "x": 16,
+          "y": 306,
+          "width": 288,
+          "height": 244
+        },
+        "panel": {
+          "x": 16,
+          "y": 110.5,
+          "width": 280,
+          "height": 248
+        },
+        "width": 320,
+        "height": 568,
+        "overflow": false
+      },
+      "activity": {
+        "submissions": 7,
+        "compute": 0,
+        "time": 0.699999988079071,
+        "maxPending": 1,
+        "modules": 1,
+        "storageAllocations": 0,
+        "storageWriteBytes": 0,
+        "uniformObjects": 1,
+        "errors": [],
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "device": "",
+          "isFallbackAdapter": false
+        },
+        "dispatches": 0
+      }
+    },
+    {
+      "name": "image-lab",
+      "upload": "PNG upload, invalid-file recovery, sample reset, and late-decode cancellation passed"
+    },
+    {
+      "name": "heavy-particles",
+      "canvasDefaultDimensions": "configured and rendered"
+    },
+    {
+      "name": "magnetic-fluids",
+      "canvasDefaultDimensions": "configured and rendered"
+    },
+    {
+      "name": "prismatic-fluids",
+      "canvasDefaultDimensions": "configured and rendered"
+    }
+  ],
+  "failures": [
+    {
+      "name": "heavy-particles",
+      "unsupported": "visible error; controls disabled",
+      "deviceLost": "work stops; visible error; controls disabled",
+      "hidden": "scheduling stops; visible redraw resumes"
+    },
+    {
+      "name": "magnetic-fluids",
+      "unsupported": "visible error; controls disabled",
+      "deviceLost": "work stops; visible error; controls disabled",
+      "hidden": "scheduling stops; visible redraw resumes"
+    },
+    {
+      "name": "prismatic-fluids",
+      "unsupported": "visible error; controls disabled",
+      "deviceLost": "work stops; visible error; controls disabled",
+      "hidden": "scheduling stops; visible redraw resumes"
+    },
+    {
+      "name": "image-lab",
+      "unsupported": "visible error; controls disabled",
+      "deviceLost": "work stops; visible error; controls disabled",
+      "hidden": "scheduling stops; visible redraw resumes"
+    }
+  ],
+  "errors": []
+}

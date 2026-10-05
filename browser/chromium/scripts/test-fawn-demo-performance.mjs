@@ -11,9 +11,11 @@ const { chromium } = await import(process.env.FAWN_PLAYWRIGHT_MODULE || 'playwri
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const resources = 'browser/chromium/resources';
 const baselineRef = process.env.FAWN_BASELINE_REF || 'e7b7cb06b176a3660bd52bc848476d75271f2b0e';
+const correctnessOnly = process.env.FAWN_CORRECTNESS_ONLY === '1';
 const output = path.resolve(process.env.FAWN_REPORT_DIR || 'bench/out/fawn-demo-optimization');
 const pages = ['start', 'heavy-particles', 'magnetic-fluids', 'prismatic-fluids'];
 const sources = {};
+const correctnessCanvas = {};
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 mkdirSync(output, { recursive: true });
 for (const name of pages) {
@@ -24,9 +26,15 @@ for (const name of pages) {
   };
 }
 const server = http.createServer((request, response) => {
-  const [, variant, name] = request.url.split('/');
-  const source = sources[name]?.[variant];
+  const url = new URL(request.url, 'http://localhost');
+  const [, variant, name] = url.pathname.split('/');
+  let source = sources[name]?.[variant];
   if (!source) { response.writeHead(404).end(); return; }
+  if (url.searchParams.has('fixed')) {
+    const { width, height } = correctnessCanvas[name];
+    const style = `<style>#view{position:fixed!important;inset:0!important;width:${width}px!important;height:${height}px!important;z-index:100!important;border:0!important;border-radius:0!important;box-shadow:none!important}.chrome{display:none!important}</style>`;
+    source = source.replace('</head>', style + '</head>');
+  }
   response.setHeader('Content-Type', 'text/html');
   response.end(source);
 });
@@ -38,6 +46,9 @@ const report = {
   observedAt: new Date().toISOString(), baselineRef, browser: browser.version(),
   method: {
     fixedFrames: 12, simulationAbsoluteTolerance: 1e-6,
+    correctnessCanvas: 'Baseline CSS canvas extent applied to both variants; page chrome excluded from pixel captures',
+    canvasDimensions: correctnessCanvas,
+    phases: correctnessOnly ? ['correctness'] : ['correctness', 'lifecycle', 'performance'],
     slowFrameDelayMs: 70, warmupMs: 1500, measuredMs: 3500,
     order: ['baseline/candidate', 'candidate/baseline'],
     timing: 'queue-completed frames, including browser scheduling; GPU-only time is not measured',
@@ -124,7 +135,7 @@ async function open(variant, name, options = {}) {
   const page = await context.newPage();
   page.on('pageerror', error => page.evaluate(message => window.__fawnTest?.errors.push(message), error.message).catch(() => {}));
   await page.addInitScript(instrument, options);
-  await page.goto(`${origin}/${variant}/${name}`);
+  await page.goto(`${origin}/${variant}/${name}${options.fixed ? '?fixed' : ''}`);
   try {
     await page.waitForFunction(() => window.__fawnTest?.device && /WebGPU active|Running|Paused/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 30000, polling: 50 });
   } catch (error) {
@@ -181,6 +192,13 @@ function statistics(values) {
 
 try {
   for (const name of pages) {
+    const geometry = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await geometry.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+    const probe = await geometry.newPage();
+    await probe.goto(`${origin}/baseline/${name}`);
+    correctnessCanvas[name] = await probe.locator('#view').evaluate(canvas =>
+      ({ width: canvas.clientWidth, height: canvas.clientHeight }));
+    await geometry.close();
     const before = await state('baseline', name);
     const after = await state('candidate', name);
     assert.equal(before.buffers.length, after.buffers.length);
@@ -208,123 +226,128 @@ try {
     });
     console.log(`Fixed-frame GPU state preserved: ${name}, max error ${maxError}`);
   }
-  for (const name of pages) {
-    const { context, page } = await open('candidate', name, { delay: 70 });
-    await page.evaluate(() => { window.__fawnTest.active = true; });
-    await page.waitForTimeout(2200);
-    const result = await page.evaluate(async () => {
-      const s = window.__fawnTest;
-      s.active = false;
-      await s.device.queue.onSubmittedWorkDone();
-      return { name: location.pathname.split('/').at(-1), errors: s.errors,
-        maxPending: s.maxPending, display: document.querySelector('#frame').textContent,
-        measuredFps: 1000 * (s.completions.length - 1) / (s.completions.at(-1) - s.completions[0]) };
-    });
-    const displayed = Number(result.display.match(/([\d.]+)\s*fps/)?.[1]);
-    assert.ok(displayed > 0 && displayed < 20, `${name} slow frame metric: ${result.display}`);
-    assert.ok(Math.abs(displayed - result.measuredFps) < 3, `${name} completion metric mismatch`);
-    assert.ok(result.maxPending <= 2, `${name} queue bound`);
-    await page.locator('#restart').click();
-    await page.setViewportSize({ width: 1000, height: 720 });
-    await page.waitForTimeout(800);
-    if (name === 'start') {
-      await page.locator('#pause').click();
+  if (!correctnessOnly) {
+    for (const name of pages) {
+      const { context, page } = await open('candidate', name, { delay: 70 });
+      await page.evaluate(() => { window.__fawnTest.active = true; });
+      await page.waitForTimeout(2200);
+      const result = await page.evaluate(async () => {
+        const s = window.__fawnTest;
+        s.active = false;
+        await s.device.queue.onSubmittedWorkDone();
+        return { name: location.pathname.split('/').at(-1), errors: s.errors,
+          maxPending: s.maxPending, display: document.querySelector('#frame').textContent,
+          measuredFps: 1000 * (s.completions.length - 1) / (s.completions.at(-1) - s.completions[0]) };
+      });
+      const displayed = Number(result.display.match(/([\d.]+)\s*fps/)?.[1]);
+      assert.ok(displayed > 0 && displayed < 20, `${name} slow frame metric: ${result.display}`);
+      assert.ok(Math.abs(displayed - result.measuredFps) < 3, `${name} completion metric mismatch`);
+      assert.ok(result.maxPending <= 2, `${name} queue bound`);
+      await page.locator('#restart').click();
+      await page.setViewportSize({ width: 1000, height: 720 });
+      await page.waitForTimeout(800);
+      if (name === 'start') {
+        await page.locator('#pause').click();
+        await page.waitForTimeout(300);
+        assert.equal(await page.locator('#frame').textContent(), 'Paused');
+        await page.locator('#pause').click();
+        await page.locator('details summary').click();
+        await page.locator('#count-select').selectOption('131072');
+        await page.locator('#steps-select').selectOption('8');
+        await page.locator('details summary').click();
+      } else if (name === 'heavy-particles') {
+        const settings = page.locator('details summary');
+        if (await settings.count()) await settings.click();
+        await page.locator('#count-select').selectOption('131072');
+        await page.locator('#steps-select').selectOption('8');
+        if (await settings.count()) await settings.click();
+      } else {
+        const settings = page.locator('details summary');
+        if (await settings.count()) await settings.click();
+        await page.locator('#grid-select').selectOption('256');
+        await page.locator(name === 'magnetic-fluids' ? '#steps-select' : '#pressure-select')
+          .selectOption(name === 'magnetic-fluids' ? '10' : '48');
+        if (await settings.count()) await settings.click();
+      }
+      await page.mouse.move(640, 400);
+      await page.mouse.down();
+      await page.mouse.move(700, 450);
+      await page.mouse.up();
+      await page.evaluate(() => {
+        window.__fawnTest.active = true;
+        window.__fawnHidden = true;
+        Object.defineProperty(document, 'hidden', { get: () => window.__fawnHidden, configurable: true });
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
       await page.waitForTimeout(300);
-      assert.equal(await page.locator('#frame').textContent(), 'Paused');
-      await page.locator('#pause').click();
-      await page.locator('details summary').click();
-      await page.locator('#count-select').selectOption('131072');
-      await page.locator('#steps-select').selectOption('8');
-      await page.locator('details summary').click();
-    } else if (name === 'heavy-particles') {
-      await page.locator('#count-select').selectOption('131072');
-      await page.locator('#steps-select').selectOption('8');
-    } else {
-      const settings = page.locator('details summary');
-      if (await settings.count()) await settings.click();
-      await page.locator('#grid-select').selectOption('256');
-      await page.locator(name === 'magnetic-fluids' ? '#steps-select' : '#pressure-select')
-        .selectOption(name === 'magnetic-fluids' ? '10' : '48');
-      if (await settings.count()) await settings.click();
+      const hiddenSubmissions = await page.evaluate(() => window.__fawnTest.submissions.length);
+      await page.waitForTimeout(300);
+      assert.equal(await page.evaluate(() => window.__fawnTest.submissions.length), hiddenSubmissions,
+        `${name} hidden-page scheduling`);
+      await page.evaluate(() => {
+        window.__fawnHidden = false;
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      await page.waitForTimeout(800);
+      assert.ok(await page.evaluate(() => /\d/.test(document.querySelector('#frame').textContent)),
+        `${name} resumed metrics`);
+      assert.deepEqual(await page.evaluate(() => window.__fawnTest.errors), []);
+      result.controlsAndVisibilityPassed = true;
+      report.lifecycle.push(result);
+      await context.close();
+      console.log(`Slow-frame metric, queue bound, reset and resize passed: ${name}`);
     }
-    await page.mouse.move(640, 400);
-    await page.mouse.down();
-    await page.mouse.move(700, 450);
-    await page.mouse.up();
-    await page.evaluate(() => {
-      window.__fawnTest.active = true;
-      window.__fawnHidden = true;
-      Object.defineProperty(document, 'hidden', { get: () => window.__fawnHidden, configurable: true });
-      document.dispatchEvent(new Event('visibilitychange'));
-    });
-    await page.waitForTimeout(300);
-    const hiddenSubmissions = await page.evaluate(() => window.__fawnTest.submissions.length);
-    await page.waitForTimeout(300);
-    assert.equal(await page.evaluate(() => window.__fawnTest.submissions.length), hiddenSubmissions,
-      `${name} hidden-page scheduling`);
-    await page.evaluate(() => {
-      window.__fawnHidden = false;
-      document.dispatchEvent(new Event('visibilitychange'));
-    });
-    await page.waitForTimeout(800);
-    assert.ok(await page.evaluate(() => /\d/.test(document.querySelector('#frame').textContent)),
-      `${name} resumed metrics`);
-    assert.deepEqual(await page.evaluate(() => window.__fawnTest.errors), []);
-    result.controlsAndVisibilityPassed = true;
-    report.lifecycle.push(result);
-    await context.close();
-    console.log(`Slow-frame metric, queue bound, reset and resize passed: ${name}`);
-  }
-  {
-    const { context, page } = await open('candidate', 'start', { reducedMotion: 'reduce' });
-    await page.evaluate(() => { window.__fawnTest.active = true; });
-    await page.waitForTimeout(300);
-    assert.equal(await page.locator('#status').textContent(), 'Paused');
-    const submissions = await page.evaluate(() => window.__fawnTest.submissions.length);
-    await page.waitForTimeout(300);
-    assert.equal(await page.evaluate(() => window.__fawnTest.submissions.length), submissions);
-    await page.locator('#pause').click();
-    await page.waitForTimeout(800);
-    assert.ok(await page.evaluate(() => window.__fawnTest.submissions.length > 0));
-    assert.deepEqual(await page.evaluate(() => window.__fawnTest.errors), []);
-    report.lifecycle.push({ name: 'start', reducedMotionPauseAndResumePassed: true });
-    await context.close();
-  }
-  const cases = [
-    { name: 'start', count: '65536', dpr: 2 },
-    { name: 'start', count: '1048576', dpr: 2 },
-    { name: 'start', count: '4194304', dpr: 2 },
-    { name: 'prismatic-fluids', dpr: 2 },
-  ];
-  for (let cohort = 0; cohort < 2; cohort++) {
-    for (const scenario of cases) {
-      for (const variant of cohort ? ['candidate', 'baseline'] : ['baseline', 'candidate']) {
-        const { context, page } = await open(variant, scenario.name, scenario);
-        if (scenario.count) {
-          await page.locator('details summary').click();
-          await page.locator('#count-select').selectOption(scenario.count);
-          await page.locator('details summary').click();
+    {
+      const { context, page } = await open('candidate', 'start', { reducedMotion: 'reduce' });
+      await page.evaluate(() => { window.__fawnTest.active = true; });
+      await page.waitForTimeout(300);
+      assert.equal(await page.locator('#status').textContent(), 'Paused');
+      const submissions = await page.evaluate(() => window.__fawnTest.submissions.length);
+      await page.waitForTimeout(300);
+      assert.equal(await page.evaluate(() => window.__fawnTest.submissions.length), submissions);
+      await page.locator('#pause').click();
+      await page.waitForTimeout(800);
+      assert.ok(await page.evaluate(() => window.__fawnTest.submissions.length > 0));
+      assert.deepEqual(await page.evaluate(() => window.__fawnTest.errors), []);
+      report.lifecycle.push({ name: 'start', reducedMotionPauseAndResumePassed: true });
+      await context.close();
+    }
+    const cases = [
+      { name: 'start', count: '65536', dpr: 2 },
+      { name: 'start', count: '1048576', dpr: 2 },
+      { name: 'start', count: '4194304', dpr: 2 },
+      { name: 'prismatic-fluids', dpr: 2 },
+    ];
+    for (let cohort = 0; cohort < 2; cohort++) {
+      for (const scenario of cases) {
+        for (const variant of cohort ? ['candidate', 'baseline'] : ['baseline', 'candidate']) {
+          const { context, page } = await open(variant, scenario.name, scenario);
+          if (scenario.count) {
+            await page.locator('details summary').click();
+            await page.locator('#count-select').selectOption(scenario.count);
+            await page.locator('details summary').click();
+          }
+          await page.waitForTimeout(1500);
+          await page.evaluate(() => { window.__fawnTest.active = true; });
+          await page.waitForTimeout(3500);
+          const raw = await page.evaluate(async () => {
+            const s = window.__fawnTest;
+            s.active = false;
+            await s.device.queue.onSubmittedWorkDone();
+            return { submissions: s.submissions, completions: s.completions, errors: s.errors,
+              maxPending: s.maxPending, adapter: s.adapter,
+              canvas: { width: document.querySelector('#view').width, height: document.querySelector('#view').height },
+              display: document.querySelector('#frame').textContent };
+          });
+          assert.deepEqual(raw.errors, []);
+          const times = raw.completions;
+          const result = { ...scenario, variant, cohort, raw,
+            completedFps: 1000 * (times.length - 1) / (times.at(-1) - times[0]),
+            completedIntervalMs: statistics(times.slice(1).map((t, i) => t - times[i])) };
+          report.performance.push(result);
+          await context.close();
+          console.log(`${scenario.name}/${scenario.count || 'default'} ${variant}: ${result.completedFps.toFixed(1)} completed fps`);
         }
-        await page.waitForTimeout(1500);
-        await page.evaluate(() => { window.__fawnTest.active = true; });
-        await page.waitForTimeout(3500);
-        const raw = await page.evaluate(async () => {
-          const s = window.__fawnTest;
-          s.active = false;
-          await s.device.queue.onSubmittedWorkDone();
-          return { submissions: s.submissions, completions: s.completions, errors: s.errors,
-            maxPending: s.maxPending, adapter: s.adapter,
-            canvas: { width: document.querySelector('#view').width, height: document.querySelector('#view').height },
-            display: document.querySelector('#frame').textContent };
-        });
-        assert.deepEqual(raw.errors, []);
-        const times = raw.completions;
-        const result = { ...scenario, variant, cohort, raw,
-          completedFps: 1000 * (times.length - 1) / (times.at(-1) - times[0]),
-          completedIntervalMs: statistics(times.slice(1).map((t, i) => t - times[i])) };
-        report.performance.push(result);
-        await context.close();
-        console.log(`${scenario.name}/${scenario.count || 'default'} ${variant}: ${result.completedFps.toFixed(1)} completed fps`);
       }
     }
   }

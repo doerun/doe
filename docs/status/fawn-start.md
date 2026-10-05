@@ -18,15 +18,22 @@ diagnostics. Existing hosted fixture URLs remain available; Image Lab remains
 repository-only. Lifecycle probes navigate directly to the fluid fixture rather
 than requiring a public navigation link.
 
-The prismatic fluid page shares the landing page's fullscreen canvas, Fawn
-branding, typography, Settings panel, and compact metrics. Pause freezes
-simulation and shader time; reset and resize can redraw while paused. Reduced
-motion starts paused. The fluid shaders and default workload remain unchanged.
-[The prismatic UI check](../../browser/chromium/scripts/test-fawn-prismatic-controls.mjs)
-exercises desktop/mobile layout, controls, GPU submission suspension, search,
-and unsupported-WebGPU errors. Run it with `FAWN_PLAYWRIGHT_MODULE` pointing to
-an installed Playwright ESM module; artifacts go under
-`bench/out/fawn-prismatic-ui/` by default.
+The unpublished benchmark-page candidate aligns Particle Trails, Magnetic
+Fluids, Prismatic Fluids, and Image Lab with the main page's fullscreen canvas,
+Fawn branding, Settings panel, GitHub link, and compact footer. It has no address
+field. The main page and live hosting are unchanged by this candidate. Simulation
+shaders, default workloads, and image-processing resolution remain unchanged.
+Pause freezes simulation and shader time; reset and resize can redraw while
+paused. Image Lab renders on demand and reports completed-update latency.
+
+[Candidate application evidence](../../reports/maintenance/20261005-fawn-demo-pages/README.md)
+binds local source to matched GPU state and pixels, allocation/upload counts,
+desktop/mobile controls, pause/reset/resize, image upload recovery, and device
+lifecycle checks. [The standalone-page check](../../browser/chromium/scripts/test-fawn-demo-pages.mjs)
+runs with `FAWN_PLAYWRIGHT_MODULE` pointing to an installed Playwright ESM module;
+artifacts go under `bench/out/fawn-demo-pages/` by default. The
+[prismatic-specific UI check](../../browser/chromium/scripts/test-fawn-prismatic-controls.mjs)
+remains available for narrower validation.
 
 The landing page retains particle settings, continuous field transitions,
 pointer and keyboard interaction, pause, reset, and reduced-motion

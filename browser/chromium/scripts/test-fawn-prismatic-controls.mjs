@@ -132,17 +132,7 @@ try {
   assert.ok(initial.submissions > 0, 'reduced motion still renders the initial field');
   await page.locator('#pause').click();
   await page.waitForFunction(() => window.gpuActivity.computePasses > 0);
-  for (const [query, target] of [
-    ['example.com', 'https://example.com/'],
-    ['prismatic fluids', 'https://www.google.com/search?q=prismatic%20fluids'],
-  ]) {
-    await page.route(target, route => route.fulfill({ body: '<title>Search destination</title>' }));
-    await page.locator('#search-input').fill(query);
-    await Promise.all([page.waitForURL(target), page.locator('.search button').click()]);
-    await page.goto(route);
-    await page.waitForFunction(() => !document.querySelector('#pause').disabled);
-  }
-  results.push({ reducedMotion: 'passed', searchUrlAndQuery: 'passed' });
+  results.push({ reducedMotion: 'passed' });
   await context.close();
   const unsupported = await browser.newContext();
   await unsupported.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
@@ -155,7 +145,7 @@ try {
   await unsupported.close();
   assert.deepEqual(errors, []);
   await writeFile(`${output}/results.json`, JSON.stringify({ origin, results, errors }, null, 2) + '\n');
-  console.log(`Prismatic desktop/mobile layout, paused GPU work, reset, settings, resize, reduced motion, search, and error UI passed: ${output}`);
+  console.log(`Prismatic desktop/mobile layout, paused GPU work, reset, settings, resize, reduced motion, and error UI passed: ${output}`);
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

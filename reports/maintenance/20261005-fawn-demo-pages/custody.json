@@ -1,0 +1,57 @@
+{
+  "classification": "Unpublished physical Chrome application diagnostics; no website deployment",
+  "baselineRef": "b5bcc3c04ac0cc469d6c16dd270e5f0d66e6546e",
+  "component": "Fawn Chromium application resources",
+  "intent": "preserved",
+  "boundaryEffects": "none; native runtime and hosting unchanged",
+  "htmlSourceHashes": {
+    "heavy-particles": {
+      "baseline": "f69b2bfcd311e7dd6b6f9229c0b4d0344986ffd1f1250d1ceed9ac0571a73f6e",
+      "candidate": "b56e02b5b96fb45d08acaae31de7ef2400dea0944eb6a3dcc995daecd82bb9ac"
+    },
+    "magnetic-fluids": {
+      "baseline": "4f0cb9209ebb6f0db9067a47dfdda8f4b135c313a35b71f2efde41f490373a8b",
+      "candidate": "573f32ffaf3e666ce468137081e62110e90b9707476d66ecbe0b29e7ae54dee8"
+    },
+    "prismatic-fluids": {
+      "baseline": "545c40d972beeca2c5bbe0c40f4e6139478f8c677514c94236e89c149704d0e0",
+      "candidate": "aa62de53be413b5156fb2a3f9e74593ad05a896017260a061410fc0515791c33"
+    },
+    "image-lab": {
+      "baseline": "574d02aab641ee24740f5e8026fabaf250c17bddeeec31b444e946c16d5fee87",
+      "candidate": "f98054cb19bcf6b7b349d04dc19e6877bb54d2c082e09313ba6a47ace7041209"
+    }
+  },
+  "files": {
+    "browser/chromium/scripts/test-fawn-demo-pages.mjs": "e4d2c6553b5b27fcb0f3b8232f91f9386af9248407dc73f68506ceb9f206b9f1",
+    "browser/chromium/scripts/test-fawn-demo-performance.mjs": "2e21b6a838a9de48412b46cc902c02c65f69e42eaf2c3727626f56611c444668",
+    "browser/chromium/scripts/test-fawn-prismatic-controls.mjs": "1bca3fd162c8eecc00228ffb2b9e47c91749432a8ac79a0b57dc67442f2ed5f7",
+    "browser/chromium/scripts/test-fawn-start-cycle.mjs": "3c49892070058c0ff4be71bc06524884bebbd8b6bec82207a203ae5143b72bae",
+    "reports/maintenance/20261005-fawn-demo-pages/README.md": "96b45d3c4f434c61195a396c9a1215bd803710b49398dfb0ee6aceded3cd2196",
+    "reports/maintenance/20261005-fawn-demo-pages/historical-correctness.json": "9ca0a8f172ba541202a2c7f2fc30757ef959986c0cd8354a34e2eb37be1c5491",
+    "reports/maintenance/20261005-fawn-demo-pages/previews/heavy-particles.png": "d1f836276fd9c331e01bd5a9f8b2a9f2f8516e691763f2d832b86f329d0e136d",
+    "reports/maintenance/20261005-fawn-demo-pages/previews/image-lab-settings-small.png": "15fe2f15fef9d45a86cfd3f7666849de90f18192f0022ee7b44bcad6a3f2956f",
+    "reports/maintenance/20261005-fawn-demo-pages/previews/image-lab.png": "e48785686b46186faade0174ea1b7e99c084fa962a3f46a92eca51b15d17532f",
+    "reports/maintenance/20261005-fawn-demo-pages/previews/magnetic-fluids.png": "e7ec869618d23050e092647d32e0d8a0e983d9a7de27dfb708fd21e1a774567f",
+    "reports/maintenance/20261005-fawn-demo-pages/previews/prismatic-fluids.png": "36a7fdaf37d06e6a2a8275836c42bc32f4bd084e5a4165f264c475c30bda5008",
+    "reports/maintenance/20261005-fawn-demo-pages/prismatic-controls.json": "1f7e3ca7d37cdf33b5529c86d7eee23157a74d4058787cb75c3c3b6f9e9fe773",
+    "reports/maintenance/20261005-fawn-demo-pages/results.json": "a0c2e2a10d7899a43928416599813b572abcab37507262fa0c5e6a07462e5838",
+    "reports/maintenance/20261005-fawn-demo-pages/workloads.json": "a808613df6222e90ae121d8c3ae98c1965947f1311984c5b317e773ba7070337"
+  },
+  "checks": [
+    "Standalone page GPU state and exact pixels",
+    "Unchanged shaders, control defaults and option order",
+    "Desktop, mobile and small-screen layout",
+    "Pause/reset/resize and frozen shader time",
+    "Hidden scheduling and reduced motion",
+    "Unsupported WebGPU and device loss",
+    "Image upload, invalid-file recovery and late decode cancellation",
+    "Historical optimization fixed-frame correctness",
+    "Prismatic controls",
+    "Main-page cycle",
+    "CATSCAN gate",
+    "Scoped documentation links",
+    "JavaScript syntax",
+    "git diff --check"
+  ]
+}

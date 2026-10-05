@@ -1,0 +1,261 @@
+{
+  "classification": "Source control workload invariants; GPU correctness is in results.json",
+  "baselineRef": "b5bcc3c04ac0cc469d6c16dd270e5f0d66e6546e",
+  "pages": {
+    "heavy-particles": {
+      "unchanged": {
+        "selects": {
+          "count-select": [
+            {
+              "value": "32768",
+              "selected": false,
+              "text": "32,768"
+            },
+            {
+              "value": "65536",
+              "selected": true,
+              "text": "65,536"
+            },
+            {
+              "value": "98304",
+              "selected": false,
+              "text": "98,304"
+            },
+            {
+              "value": "131072",
+              "selected": false,
+              "text": "131,072"
+            }
+          ],
+          "steps-select": [
+            {
+              "value": "2",
+              "selected": false,
+              "text": "2"
+            },
+            {
+              "value": "4",
+              "selected": true,
+              "text": "4"
+            },
+            {
+              "value": "6",
+              "selected": false,
+              "text": "6"
+            },
+            {
+              "value": "8",
+              "selected": false,
+              "text": "8"
+            }
+          ]
+        },
+        "inputs": {},
+        "modes": {}
+      },
+      "sourceHashes": {
+        "baseline": "f69b2bfcd311e7dd6b6f9229c0b4d0344986ffd1f1250d1ceed9ac0571a73f6e",
+        "candidate": "b56e02b5b96fb45d08acaae31de7ef2400dea0944eb6a3dcc995daecd82bb9ac"
+      }
+    },
+    "magnetic-fluids": {
+      "unchanged": {
+        "selects": {
+          "grid-select": [
+            {
+              "value": "256",
+              "selected": false,
+              "text": "256 \u00d7 256"
+            },
+            {
+              "value": "320",
+              "selected": false,
+              "text": "320 \u00d7 320"
+            },
+            {
+              "value": "384",
+              "selected": false,
+              "text": "384 \u00d7 384"
+            },
+            {
+              "value": "448",
+              "selected": false,
+              "text": "448 \u00d7 448"
+            },
+            {
+              "value": "512",
+              "selected": false,
+              "text": "512 \u00d7 512"
+            },
+            {
+              "value": "640",
+              "selected": false,
+              "text": "640 \u00d7 640"
+            },
+            {
+              "value": "768",
+              "selected": false,
+              "text": "768 \u00d7 768"
+            },
+            {
+              "value": "1024",
+              "selected": true,
+              "text": "1024 \u00d7 1024"
+            }
+          ],
+          "steps-select": [
+            {
+              "value": "2",
+              "selected": false,
+              "text": "2"
+            },
+            {
+              "value": "4",
+              "selected": false,
+              "text": "4"
+            },
+            {
+              "value": "6",
+              "selected": true,
+              "text": "6"
+            },
+            {
+              "value": "8",
+              "selected": false,
+              "text": "8"
+            },
+            {
+              "value": "10",
+              "selected": false,
+              "text": "10"
+            }
+          ]
+        },
+        "inputs": {},
+        "modes": {}
+      },
+      "sourceHashes": {
+        "baseline": "4f0cb9209ebb6f0db9067a47dfdda8f4b135c313a35b71f2efde41f490373a8b",
+        "candidate": "573f32ffaf3e666ce468137081e62110e90b9707476d66ecbe0b29e7ae54dee8"
+      }
+    },
+    "prismatic-fluids": {
+      "unchanged": {
+        "selects": {
+          "grid-select": [
+            {
+              "value": "192",
+              "selected": false,
+              "text": "192 \u00d7 192"
+            },
+            {
+              "value": "256",
+              "selected": false,
+              "text": "256 \u00d7 256"
+            },
+            {
+              "value": "320",
+              "selected": false,
+              "text": "320 \u00d7 320"
+            },
+            {
+              "value": "384",
+              "selected": false,
+              "text": "384 \u00d7 384"
+            },
+            {
+              "value": "448",
+              "selected": false,
+              "text": "448 \u00d7 448"
+            },
+            {
+              "value": "512",
+              "selected": false,
+              "text": "512 \u00d7 512"
+            },
+            {
+              "value": "640",
+              "selected": false,
+              "text": "640 \u00d7 640"
+            },
+            {
+              "value": "768",
+              "selected": false,
+              "text": "768 \u00d7 768"
+            },
+            {
+              "value": "1024",
+              "selected": true,
+              "text": "1024 \u00d7 1024"
+            }
+          ],
+          "pressure-select": [
+            {
+              "value": "20",
+              "selected": false,
+              "text": "20 iters"
+            },
+            {
+              "value": "24",
+              "selected": true,
+              "text": "24 iters"
+            },
+            {
+              "value": "32",
+              "selected": false,
+              "text": "32 iters"
+            },
+            {
+              "value": "36",
+              "selected": false,
+              "text": "36 iters"
+            },
+            {
+              "value": "48",
+              "selected": false,
+              "text": "48 iters"
+            }
+          ]
+        },
+        "inputs": {},
+        "modes": {}
+      },
+      "sourceHashes": {
+        "baseline": "545c40d972beeca2c5bbe0c40f4e6139478f8c677514c94236e89c149704d0e0",
+        "candidate": "aa62de53be413b5156fb2a3f9e74593ad05a896017260a061410fc0515791c33"
+      }
+    },
+    "image-lab": {
+      "unchanged": {
+        "selects": {},
+        "inputs": {
+          "strength": {
+            "type": "range",
+            "min": "0",
+            "max": "100",
+            "step": null,
+            "value": "70"
+          },
+          "split": {
+            "type": "range",
+            "min": "0",
+            "max": "100",
+            "step": null,
+            "value": "50"
+          }
+        },
+        "modes": {
+          "0": "false",
+          "1": "true",
+          "2": "false",
+          "3": "false"
+        }
+      },
+      "sourceHashes": {
+        "baseline": "574d02aab641ee24740f5e8026fabaf250c17bddeeec31b444e946c16d5fee87",
+        "candidate": "f98054cb19bcf6b7b349d04dc19e6877bb54d2c082e09313ba6a47ace7041209"
+      },
+      "maxImageDimension": 2048
+    }
+  }
+}

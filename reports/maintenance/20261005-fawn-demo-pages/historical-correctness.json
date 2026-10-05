@@ -1,0 +1,187 @@
+{
+  "classification": "Chrome application diagnostics on its existing WebGPU backend; no Doe-vs-Dawn claim",
+  "observedAt": "2026-10-05T21:25:55.786Z",
+  "baselineRef": "e7b7cb06b176a3660bd52bc848476d75271f2b0e",
+  "browser": "154.0.8037.95",
+  "method": {
+    "fixedFrames": 12,
+    "simulationAbsoluteTolerance": 0.000001,
+    "correctnessCanvas": "Baseline CSS canvas extent applied to both variants; page chrome excluded from pixel captures",
+    "canvasDimensions": {
+      "start": {
+        "width": 1280,
+        "height": 800
+      },
+      "heavy-particles": {
+        "width": 1198,
+        "height": 544
+      },
+      "magnetic-fluids": {
+        "width": 1178,
+        "height": 544
+      },
+      "prismatic-fluids": {
+        "width": 1178,
+        "height": 544
+      }
+    },
+    "phases": [
+      "correctness"
+    ],
+    "slowFrameDelayMs": 70,
+    "warmupMs": 1500,
+    "measuredMs": 3500,
+    "order": [
+      "baseline/candidate",
+      "candidate/baseline"
+    ],
+    "timing": "queue-completed frames, including browser scheduling; GPU-only time is not measured"
+  },
+  "sourceHashes": {
+    "start": {
+      "baseline": "02be842494320049090e0770300af6fc2dc9a1e6ae9e902a79afc8553d039563",
+      "candidate": "76cbcd389581864e8c407fc06360425db75792aef955001b96b316092cc03aba"
+    },
+    "heavy-particles": {
+      "baseline": "468eaf7255ccf6dffb288bcd1c09dff0db08405030545463665484cffc2f1c1e",
+      "candidate": "b56e02b5b96fb45d08acaae31de7ef2400dea0944eb6a3dcc995daecd82bb9ac"
+    },
+    "magnetic-fluids": {
+      "baseline": "80f51d20c4299c59a302a7abb5970900b2ef69ee71d9278aed43b77bdab1a5bb",
+      "candidate": "573f32ffaf3e666ce468137081e62110e90b9707476d66ecbe0b29e7ae54dee8"
+    },
+    "prismatic-fluids": {
+      "baseline": "55997e8055cd04a1772cd481e7885639e4b0c3a5b0f6e08b38af70ff9de95874",
+      "candidate": "aa62de53be413b5156fb2a3f9e74593ad05a896017260a061410fc0515791c33"
+    }
+  },
+  "correctness": [
+    {
+      "name": "start",
+      "maxAbsoluteError": 1.1920928955078125e-7,
+      "adapter": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "isFallbackAdapter": false
+      },
+      "screenshots": {
+        "baseline": "bb6616764c43589d5ae7436e4f29cab692c263a21f6e244098103439a7f527b6",
+        "candidate": "bb6616764c43589d5ae7436e4f29cab692c263a21f6e244098103439a7f527b6"
+      },
+      "storageBytes": {
+        "before": 4194304,
+        "after": 4194304
+      },
+      "dispatches": {
+        "before": 48,
+        "after": 48
+      },
+      "passes": {
+        "before": [
+          48,
+          36
+        ],
+        "after": [
+          12,
+          24
+        ]
+      }
+    },
+    {
+      "name": "heavy-particles",
+      "maxAbsoluteError": 0,
+      "adapter": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "isFallbackAdapter": false
+      },
+      "screenshots": {
+        "baseline": "84619885732e091123e65fa4c6ac16d9e9a1b09c38927fd5539e14320fa8569a",
+        "candidate": "84619885732e091123e65fa4c6ac16d9e9a1b09c38927fd5539e14320fa8569a"
+      },
+      "storageBytes": {
+        "before": 4194304,
+        "after": 4194304
+      },
+      "dispatches": {
+        "before": 48,
+        "after": 48
+      },
+      "passes": {
+        "before": [
+          48,
+          36
+        ],
+        "after": [
+          12,
+          24
+        ]
+      }
+    },
+    {
+      "name": "magnetic-fluids",
+      "maxAbsoluteError": 0,
+      "adapter": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "isFallbackAdapter": false
+      },
+      "screenshots": {
+        "baseline": "1fb23c1f06ee310f4c6e993a45abc2699ef4e44ae22a2c013e15e1427b8b9d97",
+        "candidate": "1fb23c1f06ee310f4c6e993a45abc2699ef4e44ae22a2c013e15e1427b8b9d97"
+      },
+      "storageBytes": {
+        "before": 33554432,
+        "after": 33554432
+      },
+      "dispatches": {
+        "before": 72,
+        "after": 72
+      },
+      "passes": {
+        "before": [
+          72,
+          12
+        ],
+        "after": [
+          12,
+          12
+        ]
+      }
+    },
+    {
+      "name": "prismatic-fluids",
+      "maxAbsoluteError": 0,
+      "adapter": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "isFallbackAdapter": false
+      },
+      "screenshots": {
+        "baseline": "57a3c99578873c12612ac2d70d5c7072da276cd97585fc9345b5da0f61c1bf13",
+        "candidate": "57a3c99578873c12612ac2d70d5c7072da276cd97585fc9345b5da0f61c1bf13"
+      },
+      "storageBytes": {
+        "before": 29360128,
+        "after": 23068672
+      },
+      "dispatches": {
+        "before": 336,
+        "after": 336
+      },
+      "passes": {
+        "before": [
+          336,
+          12
+        ],
+        "after": [
+          12,
+          12
+        ]
+      }
+    }
+  ],
+  "lifecycle": [],
+  "performance": [],
+  "passed": true
+}

@@ -16,7 +16,7 @@ verdicts. Historical narrative lives under [`status/archive/`](status/archive/).
 | CSL runtime bring-up | [`status/cerebras-csl-runtime-bringup.md`](status/cerebras-csl-runtime-bringup.md) | Cerebras snapshot and model ledgers |
 | Continuous integration | [`status/ci.md`](status/ci.md) | workflows and CI inventory tests |
 | Chromium | [`browser-lane.md`](browser-lane.md) | browser milestone manifest and artifacts |
-| Fawn start-page preview | [`status/fawn-start.md`](status/fawn-start.md) | `browser/chromium/resources/fawn-start.html` and user visual review |
+| Fawn preview and benchmark pages | [`status/fawn-start.md`](status/fawn-start.md) | [application evidence](../reports/maintenance/20261005-fawn-demo-pages/README.md), `browser/chromium/resources/`, and user visual review |
 
 Do not add dated progress entries here. Update the owning artifact or live
 boundary, and preserve resolved narrative in an archive shard.
