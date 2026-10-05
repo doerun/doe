@@ -1,0 +1,25 @@
+{
+  "classification": "Retained application diagnostics; no runtime claim admission",
+  "observedAt": "2026-10-05T20:19:45.587Z",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "25.6.0"
+  },
+  "node": "v22.20.0",
+  "baselineRef": "e7b7cb06b176a3660bd52bc848476d75271f2b0e",
+  "reports": {
+    "results.json": "c46785c88294da0d845707a19f01a4832c3ce66047faf1bc8a360e703e053b33",
+    "particle-fields.json": "96cc638bc1637efff64db284fb9c9c842e30af803ad99943988bfbdd1540e86b",
+    "failed-open.json": "a936434bf2e2d0b93200c55f8ab62c6c791e54d0b9ea94098d4f8cfdabcf69b0",
+    "failed-open-diagnostic.json": "1bb13182785c9b115727927d8b37b5320e6e16442572ca0c421aace8c9669327"
+  },
+  "testSources": {
+    "browser/chromium/scripts/test-fawn-demo-performance.mjs": "cb724413521252d91032094dd3f32c2fe4e5f11f592eaee8c7dc13f6de321a88",
+    "browser/chromium/scripts/test-fawn-particle-fields.mjs": "fb0fb65ead8f69ab89bbab5403140175836cbd470aa8fc663c79218939e85243",
+    "browser/chromium/scripts/test-fawn-start-cycle.mjs": "3c49892070058c0ff4be71bc06524884bebbd8b6bec82207a203ae5143b72bae"
+  },
+  "failures": {
+    "startup": "Test startup polling waited on the mocked RAF clock despite WebGPU active with no GPU errors; corrected to timer polling."
+  }
+}

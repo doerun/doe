@@ -1,0 +1,46 @@
+F
+======================================================================
+FAIL: test_markdown_links_in_docs_resolve_to_existing_paths (bench.tests.test_doc_link_coverage.DocLinkCoverage.test_markdown_links_in_docs_resolve_to_existing_paths)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xyz/deco/doe/bench/tests/test_doc_link_coverage.py", line 122, in test_markdown_links_in_docs_resolve_to_existing_paths
+    self.fail(
+    ~~~~~~~~~^
+        "markdown links to missing in-repo paths "
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        f"({len(broken)} broken):\n" + "\n".join(lines)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: markdown links to missing in-repo paths (26 broken):
+  docs/command-storage-development.md: `../bench/out/compute-program/20260912-command-storage-contract/` → bench/out/compute-program/20260912-command-storage-contract
+  docs/command-storage-development.md: `../bench/out/compute-program/20260912-command-storage-completion/README.md` → bench/out/compute-program/20260912-command-storage-completion/README.md
+  docs/reusable-compute-programs.md: `../bench/out/compute-program/20260908-startup-scope/README.md` → bench/out/compute-program/20260908-startup-scope/README.md
+  docs/reusable-compute-programs.md: `../bench/out/compute-program/20260908-startup-scope/validation/outcome.json` → bench/out/compute-program/20260908-startup-scope/validation/outcome.json
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260912-runtime-resolution-final/README.md` → bench/out/compute-program/20260912-runtime-resolution-final/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260912-command-storage-completion/README.md` → bench/out/compute-program/20260912-command-storage-completion/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260912-command-storage-calibration-uncertainty/report.json` → bench/out/compute-program/20260912-command-storage-calibration-uncertainty/report.json
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260912-command-storage-experiment-ordinary/report.json` → bench/out/compute-program/20260912-command-storage-experiment-ordinary/report.json
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-startup-aa/completion.md` → bench/out/compute-program/20260908-startup-aa/completion.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-adapter-instance/completion.md` → bench/out/compute-program/20260908-adapter-instance/completion.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-helper-cleanup/README.md` → bench/out/compute-program/20260908-helper-cleanup/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-startup-enumeration/completion.md` → bench/out/compute-program/20260908-startup-enumeration/completion.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-startup-enumeration/reproduction-bundle.tar.gz` → bench/out/compute-program/20260908-startup-enumeration/reproduction-bundle.tar.gz
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-startup-scope/README.md` → bench/out/compute-program/20260908-startup-scope/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-startup-scope/validation/outcome.json` → bench/out/compute-program/20260908-startup-scope/validation/outcome.json
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-candidate-isolation/README.md` → bench/out/compute-program/20260908-candidate-isolation/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-ordinary-node-resume/README.md` → bench/out/compute-program/20260908-ordinary-node-resume/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-timeline-poll-experiment/README.md` → bench/out/compute-program/20260908-timeline-poll-experiment/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-live-handoff/README.md` → bench/out/compute-program/20260908-live-handoff/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-ordinary-node-recheck/README.md` → bench/out/compute-program/20260908-ordinary-node-recheck/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-live-terminal/README.md` → bench/out/compute-program/20260908-live-terminal/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-live-terminal-qualified/summary.json` → bench/out/compute-program/20260908-live-terminal-qualified/summary.json
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-tail-experiment/README.md` → bench/out/compute-program/20260908-tail-experiment/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-tail-experiment/baseline-manifest.tsv` → bench/out/compute-program/20260908-tail-experiment/baseline-manifest.tsv
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260908-tail-experiment/reproduction-bundle/README.md` → bench/out/compute-program/20260908-tail-experiment/reproduction-bundle/README.md
+  docs/status/reusable-compute-programs.md: `../../bench/out/compute-program/20260907-command-storage/heat-diffusion-ordinary-encoding-profile.json` → bench/out/compute-program/20260907-command-storage/heat-diffusion-ordinary-encoding-profile.json
+
+----------------------------------------------------------------------
+Ran 1 test in 0.035s
+
+FAILED (failures=1)

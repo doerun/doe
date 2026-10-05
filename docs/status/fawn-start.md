@@ -1,43 +1,46 @@
-# Fawn start-page preview
+# Fawn hosted demonstrations
 
-The start page at `browser/chromium/resources/fawn-start.html` now opens an
-interactive GPU particle field. Its configurations share the particle simulation
-and trail renderer. Each seven-second interval holds for six seconds, then eases
-into the next field over one second, including the final-to-first transition.
-The active clock pauses with the page; transitions preserve particles and trails.
-Particle counts follow powers of two through the configured maximum, disabled
-where adapter buffer limits exclude them. Larger fields use two-dimensional
-compute dispatch and chunked initialization uploads. Adapter limits describe
-capability, not guaranteed free memory.
-Pause, reset, touch cancellation, keyboard attraction, and reduced-motion
-startup belong to the page. Search remains available, with workload settings,
-adapter information, and the source link under Settings. The settings panel is anchored inside the page, with bounded
-height, scrolling, and an opaque surface. Its copy is limited to GPU identity,
-workload controls, and a completed-frame caption.
+The canonical demo is [CanvasContext](https://canvascontext.com/). Doe owns the
+HTML/WGSL under `browser/chromium/resources/`; the sibling D4DA repository owns
+packaging and publication through `firebase.fawn.json`. Legacy D4DA Doe routes
+redirect to CanvasContext with their demo filenames intact.
 
-Frame measurements count completed frames with a bounded submission loop.
-They include browser scheduling and GPU waits, not GPU-only execution time.
-The graph uses a zero-based scale; pause and visibility changes reset sampling.
-The original Fawn mark appears in the header without the playground label.
-The matching SVG favicon is included in both website sync and installed-app packaging. The
-page makes no inferred Doe/Dawn provider claim. Resource disposal runs on
-page exit; hidden pages stop scheduling frames. No native runtime or Vulkan
-campaign behavior changed.
+The hosted main page previews the local HTML start page selected by Fawn's
+launcher. Packaging copies that source into the app bundle; an existing
+installation can retain an older copy. The preview visibly links to Fawn's
+Chromium integration on GitHub and identifies the visitor's browser WebGPU
+backend in Settings. The preview has no search/address field.
 
-Validation: inline JavaScript syntax and whitespace checks passed. Extracted
-WGSL translated through the local `doe-emit-msl` tool. A DOM harness with mock
-WebGPU exercised dispatch, continuous field changes, pause/resume, pointer cancellation,
-reset cleanup, workload changes, teardown, reduced motion, and unavailable-GPU
-handling. Deterministic clocks and delayed queue completion additionally checked
-frame-rate accuracy, submission backpressure, and pausing during GPU work. These checks do not establish rendered appearance or physical GPU
-execution. The existing browser lifecycle probe follows the new status and
-Settings control and opens the retained fluid benchmark directly, but was not run:
-the user requested personal review without
-agent browser use or screenshots.
+The main page is the public demo entry point. Settings and the README no longer
+send visitors to standalone demos. Particle Trails, Magnetic Fluids, Prismatic
+Fluids, and Image Lab remain in `browser/chromium/resources/` for benchmarks and
+diagnostics. Existing hosted fixture URLs remain available; Image Lab remains
+repository-only. Lifecycle probes navigate directly to the fluid fixture rather
+than requiring a public navigation link.
 
-The user approved publication through D4DA at `/doe/fawn-start.html`; its Doe
-navigation links there directly. This page is not browser release qualification.
-The standalone particle, fluid, and image pages remain available for benchmark
-use; the main page does not link to them.
-`node browser/chromium/scripts/test-fawn-start-cycle.mjs` verifies the cycle
-boundaries, eased endpoints, and repeat behavior without browser automation.
+The prismatic fluid page shares the landing page's fullscreen canvas, Fawn
+branding, typography, Settings panel, and compact metrics. Pause freezes
+simulation and shader time; reset and resize can redraw while paused. Reduced
+motion starts paused. The fluid shaders and default workload remain unchanged.
+[The prismatic UI check](../../browser/chromium/scripts/test-fawn-prismatic-controls.mjs)
+exercises desktop/mobile layout, controls, GPU submission suspension, search,
+and unsupported-WebGPU errors. Run it with `FAWN_PLAYWRIGHT_MODULE` pointing to
+an installed Playwright ESM module; artifacts go under
+`bench/out/fawn-prismatic-ui/` by default.
+
+The landing page retains particle settings, continuous field transitions,
+pointer and keyboard interaction, pause, reset, and reduced-motion
+startup. The particle renderer uses triangle strips and draws fading trails and
+particles within the same render pass. Simulation dispatches share a compute
+pass while preserving their order. The prismatic solver stores scalar pressure.
+All hosted demos bound pending frames, stop scheduling while hidden, and sample
+completed-frame intervals separately from clamped simulation time.
+
+[Retained application evidence](../../reports/maintenance/20261005-fawn-demo-optimization/README.md)
+binds the source HTML to physical Chrome GPU state comparisons, screenshot
+identity, field-transition checks, controls, lifecycle checks, and alternating
+before/after observations. These are application diagnostics on the visitor's
+browser WebGPU backend. They do not qualify a forced-Doe Chromium release or
+establish a portable optimality claim. Tail variation remains in the raw report.
+
+History: [the earlier start-page preview](archive/20261005-fawn-start-preview.md).

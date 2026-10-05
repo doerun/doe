@@ -1,0 +1,20 @@
+{
+  "application": true,
+  "particleFields": true,
+  "cycle": true,
+  "componentGate": {
+    "failures": [],
+    "ok": true,
+    "summary": {
+      "charterCount": 22,
+      "indexPath": "docs/component-index.md",
+      "maxWords": 250
+    }
+  },
+  "documentationLinks": {
+    "passed": false,
+    "reason": "Existing documentation links reference missing local benchmark artifacts",
+    "log": "documentation-links.log"
+  },
+  "fawnStatusLinks": true
+}
