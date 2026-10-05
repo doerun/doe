@@ -1384,10 +1384,9 @@ async function runFawnPrismaticLifecycleProbe(browser, localUrl, timeoutMs) {
       null,
       { timeout: timeoutMs },
     );
-    await page.click('summary');
-    await page.click('a[href="./fawn-prismatic-fluids.html"]');
+    await page.goto(fluidUrl, { waitUntil: "load", timeout: timeoutMs });
     await page.waitForFunction(
-      () => document.querySelector("#status")?.textContent === "Running prismatic fluid reactor",
+      () => document.querySelector("#status")?.textContent === "WebGPU active",
       null,
       { timeout: timeoutMs },
     );
@@ -1431,7 +1430,7 @@ async function runFawnPrismaticLifecycleProbe(browser, localUrl, timeoutMs) {
     await page.goto(fluidUrl, { waitUntil: "load", timeout: timeoutMs });
     await page.setViewportSize({ width: 1100, height: 720 });
     await page.waitForFunction(
-      () => document.querySelector("#status")?.textContent === "Running prismatic fluid reactor",
+      () => document.querySelector("#status")?.textContent === "WebGPU active",
       null,
       { timeout: timeoutMs },
     );

@@ -3,7 +3,7 @@
 Doe compiles WGSL shaders and runs WebGPU applications on native GPU backends.
 Use it through `doe-gpu`, or explore its Chromium integration, Fawn.
 
-**[Try the particle demo](https://d4da.com/doe/fawn-heavy-particles.html)** · [Run your first Doe kernel](#how-to-use-doe)
+**[Try the Fawn demo](https://canvascontext.com/)** · [Run your first Doe kernel](#how-to-use-doe)
 
 Drag through the particles to change their motion. The browser demo uses your
 browser's WebGPU implementation. Running it in ordinary Chrome demonstrates the

@@ -5,6 +5,13 @@ HTML/WGSL under `browser/chromium/resources/`; the sibling D4DA repository owns
 packaging and publication through `firebase.fawn.json`. Legacy D4DA Doe routes
 redirect to CanvasContext with their demo filenames intact.
 
+The main page is the public demo entry point. Settings and the README no longer
+send visitors to standalone demos. Particle Trails, Magnetic Fluids, Prismatic
+Fluids, and Image Lab remain in `browser/chromium/resources/` for benchmarks and
+diagnostics. Existing hosted fixture URLs remain available; Image Lab remains
+repository-only. Lifecycle probes navigate directly to the fluid fixture rather
+than requiring a public navigation link.
+
 The prismatic fluid page shares the landing page's fullscreen canvas, Fawn
 header, search, typography, Settings panel, and compact metrics. Pause freezes
 simulation and shader time; reset and resize can redraw while paused. Reduced
