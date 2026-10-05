@@ -240,9 +240,12 @@ try {
       await page.locator('#count-select').selectOption('131072');
       await page.locator('#steps-select').selectOption('8');
     } else {
+      const settings = page.locator('details summary');
+      if (await settings.count()) await settings.click();
       await page.locator('#grid-select').selectOption('256');
       await page.locator(name === 'magnetic-fluids' ? '#steps-select' : '#pressure-select')
         .selectOption(name === 'magnetic-fluids' ? '10' : '48');
+      if (await settings.count()) await settings.click();
     }
     await page.mouse.move(640, 400);
     await page.mouse.down();

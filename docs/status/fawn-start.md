@@ -5,6 +5,16 @@ HTML/WGSL under `browser/chromium/resources/`; the sibling D4DA repository owns
 packaging and publication through `firebase.fawn.json`. Legacy D4DA Doe routes
 redirect to CanvasContext with their demo filenames intact.
 
+The prismatic fluid page shares the landing page's fullscreen canvas, Fawn
+header, search, typography, Settings panel, and compact metrics. Pause freezes
+simulation and shader time; reset and resize can redraw while paused. Reduced
+motion starts paused. The fluid shaders and default workload remain unchanged.
+[The prismatic UI check](../../browser/chromium/scripts/test-fawn-prismatic-controls.mjs)
+exercises desktop/mobile layout, controls, GPU submission suspension, search,
+and unsupported-WebGPU errors. Run it with `FAWN_PLAYWRIGHT_MODULE` pointing to
+an installed Playwright ESM module; artifacts go under
+`bench/out/fawn-prismatic-ui/` by default.
+
 The landing page retains particle settings, continuous field transitions,
 search, pointer and keyboard interaction, pause, reset, and reduced-motion
 startup. The particle renderer uses triangle strips and draws fading trails and

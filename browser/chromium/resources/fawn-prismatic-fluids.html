@@ -2,142 +2,89 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fawn Prismatic Fluids</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prismatic Fluids · Fawn</title>
+<link rel="icon" type="image/svg+xml" href="./fawn-icon.svg">
 <style>
-*, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top, #12221b 0%, #0a110e 44%, #050606 100%);
-  color: #e8f0eb;
+:root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #fff; background: #020405; --edge: #ffffff38; --glass: #080d16d9; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+button, select, summary, a { -webkit-tap-highlight-color: transparent; }
+button, select, .search { border: 1px solid var(--edge); background: var(--glass); border-radius: 14px; }
+button, select { min-height: 44px; padding: 0 18px; cursor: pointer; }
+button { position: relative; overflow: hidden; transition: border-color .2s, background .2s; }
+button:hover { border-color: #fff; background: #344464; }
+button:active { background: #6857ae; }
+button[aria-pressed="true"] { background: #fff; color: #000; border-color: #fff; }
+button:disabled { cursor: wait; border-style: dashed; }
+:focus-visible { outline: 2px solid #b4c8ff; outline-offset: 4px; }
+a { color: inherit; text-underline-offset: 4px; }
+#view { position: fixed; inset: 0; width: 100%; height: 100dvh; touch-action: none; outline-offset: -6px; }
+.chrome { position: fixed; inset: 0; padding: max(24px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left)); display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; background: linear-gradient(#020405b3, transparent 22%, transparent 70%, #020405d9); }
+.chrome button, .chrome form, .chrome details, .chrome a, .chrome select { pointer-events: auto; }
+header, .toolbar, .metrics, .controls { display: flex; align-items: center; gap: 12px; }
+header { justify-content: space-between; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 650; letter-spacing: -.06em; text-decoration: none; }
+.brand-logo { width: 46px; height: 41px; fill: currentColor; flex: none; }
+.search { display: flex; width: min(320px, 45vw); padding: 3px; backdrop-filter: blur(16px); }
+.search input { width: 100%; min-width: 0; background: none; border: 0; padding: 0 12px; font-size: 13px; outline-offset: 0; }
+.search button { border: 0; background: none; padding: 0 14px; min-height: 36px; }
+.bottom { display: grid; gap: 20px; }
+.caption { margin: 0; font-size: clamp(20px, 3vw, 36px); font-weight: 450; letter-spacing: -.04em; }
+.toolbar { justify-content: space-between; flex-wrap: wrap; }
+.metrics { font: 12px/1.5 ui-monospace, monospace; flex-wrap: wrap; gap: 12px 24px; min-height: 32px; }
+#fps-graph { width: 110px; height: 24px; }
+#status { margin-left: auto; }
+.controls { position: relative; }
+.details { position: static; }
+summary { cursor: pointer; list-style: none; padding: 12px; font-size: 13px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: ' +'; }
+.details[open] summary::after { content: ' −'; }
+.details-panel { position: absolute; z-index: 5; left: 0; bottom: calc(100% + 12px); width: min(360px, calc(100vw - 40px)); max-height: calc(100dvh - 220px); overflow-y: auto; overscroll-behavior: contain; padding: 20px; border: 1px solid var(--edge); border-radius: 18px; background: #080d16; line-height: 1.5; font-size: 13px; }
+.details-panel p { margin: 0 0 16px; }
+.settings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.settings label { display: grid; gap: 8px; }
+.settings select { width: 100%; min-width: 0; padding: 0 8px; }
+.links { display: flex; gap: 14px; flex-wrap: wrap; }
+#failure { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); width: min(420px, 85vw); padding: 24px; border: 1px solid var(--edge); border-radius: 18px; background: #080d16; text-align: center; line-height: 1.6; }
+#failure[hidden] { display: none; }
+@media (max-width: 650px) {
+ .chrome { padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); }
+ .brand-logo { width: 36px; height: 32px; } .search { width: 62vw; }
+ .bottom { gap: 14px; } .toolbar { gap: 12px; }
+ .controls { width: 100%; } .details { margin-left: auto; } .metrics { gap: 8px 16px; font-size: 11px; } #status { margin-left: 0; } #fps-graph { width: 72px; }
 }
-.shell {
-  width: min(1180px, calc(100vw - 32px));
-  margin: 28px auto;
-  display: grid;
-  gap: 18px;
-}
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 18px;
-}
-.eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #8ba99a;
-}
-h1 {
-  margin: 4px 0 8px;
-  font-size: 30px;
-  font-weight: 520;
-}
-.subtle {
-  max-width: 760px;
-  color: #8aa094;
-  font-size: 13px;
-  line-height: 1.6;
-}
-.actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.back, button, select {
-  color: #dce8e0;
-  text-decoration: none;
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(139, 169, 154, 0.26);
-  background: rgba(10, 18, 15, 0.75);
-  font: inherit;
-}
-button { cursor: pointer; }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-.panel {
-  background: rgba(10, 18, 15, 0.82);
-  border: 1px solid rgba(139, 169, 154, 0.16);
-  border-radius: 20px;
-  padding: 18px;
-  backdrop-filter: blur(8px);
-}
-.label {
-  font-size: 11px;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  color: #8fa59a;
-}
-.value {
-  margin-top: 8px;
-  font-size: 13px;
-  color: #eef8f1;
-  line-height: 1.6;
-}
-.fps-graph {
-  display: block;
-  width: 100%;
-  height: 32px;
-  margin-top: 6px;
-  border-radius: 6px;
-  background: rgba(12, 21, 17, 0.72);
-}
-.stage {
-  position: relative;
-  border-radius: 22px;
-  overflow: hidden;
-  border: 1px solid rgba(139, 169, 154, 0.18);
-  background: #020404;
-}
-.stage > canvas {
-  display: block;
-  width: 100%;
-  height: min(68vh, 760px);
-}
-.note {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(7, 14, 11, 0.66);
-  color: #88a095;
-  font-size: 11px;
-  line-height: 1.5;
-  max-width: 320px;
-}
-@media (max-width: 980px) {
-  .topbar { flex-direction: column; }
-  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 640px) {
-  .grid { grid-template-columns: 1fr; }
-  .stage > canvas { height: 58vh; }
-}
+@media (prefers-reduced-motion: reduce) { button { transition: none; } }
 </style>
 </head>
 <body>
-<main class="shell">
-  <div class="topbar">
-    <div>
-      <div class="eyebrow">Fluid Dynamics Demo</div>
-      <h1>Prismatic Fluids</h1>
-      <div class="subtle">
-        A denser WebGPU fluid field that keeps the stable-fluid backbone and renders it with prismatic metallic shading.
-        Pointer motion injects force and color inside a bounded box without any autonomous magnetic field.
-      </div>
-    </div>
-    <div class="actions">
-      <label>
-        <span class="eyebrow">Grid</span><br>
-        <select id="grid-select">
+<canvas id="view" tabindex="0" aria-label="Interactive prismatic fluid. Drag to stir the fluid."></canvas>
+<div class="chrome">
+<header>
+ <a class="brand" href="./fawn-start.html" aria-label="Fawn home"><svg class="brand-logo" viewBox="0 0 1024 912" aria-hidden="true" focusable="false">
+<path d="M561.72,622.79c-7.99,5.18-15.71,10.12-23.35,15.17-2.55,1.69-4.92,1.93-7.96,1.07-33.63-9.48-67.31-18.76-100.96-28.19-2.66-.74-4.65-.41-6.91,1.27-31.22,23.06-61.52,46.01-92.76,69.04-1.83,1.35-4.11,2.28-5.28,5.09,9.31,10.81,18.74,21.77,28.17,32.72,4.24,4.92,8.54,9.8,12.68,14.8,2.04,2.47,4.29,2.97,7.46,2.56,23.59-3.02,47.21-5.77,70.81-8.71,13.86-1.72,27.7-3.62,41.55-5.44,2.08-.27,4.19-1.01,6.93.64-3.78,4.37-7.37,8.6-11.05,12.77-17.53,19.86-35.18,39.61-52.54,59.61-3.72,4.29-8.54,3.43-12.88,3.9-32.41,3.56-64.85,6.74-97.28,10.09-3.33.34-6.04-.32-8.7-2.61-15.14-13.06-30.38-26-45.69-38.87-2.54-2.13-3.8-4.17-3.05-7.67,4.69-21.78,9.26-43.58,13.7-65.41.86-4.25,2.81-6.89,6.76-9.01,39.14-20.78,78.16-41.77,117.23-62.68,3.21-1.72,6.49-3.29,9.55-5.38-13.42,5.14-26.85,10.24-40.25,15.43-32.92,12.75-65.83,25.53-98.71,38.37-2.34.91-4.41.83-6.75.08-15.37-4.95-30.76-9.85-46.17-14.64-3.07-.96-5.16-2.55-6.52-5.56-20.89-46.29-41.84-92.56-62.84-138.8-.92-2.02-.75-3.82-.11-5.77,11.88-36.39,23.75-72.78,35.61-109.17,3.35-10.29,6.69-20.58,9.98-30.89.44-1.39,1.08-2.82.35-5.07-7.28-1.99-14.94-4.09-22.6-6.17-9.47-2.57-18.94-5.15-28.43-7.64-2.69-.7-4.81-2.06-6.66-4.11C112.23,319.55,90.41,295.49,68.49,271.51c-2.6-2.84-2.96-6.26-3.64-9.62-8.27-41.26-16.48-82.53-24.7-123.8-1.48-7.44-2.92-14.88-4.46-22.73,4.74-.44,8.35,1.54,12.03,2.68,51.55,15.9,103.03,32,154.59,47.86,5.39,1.66,9.25,4.77,12.93,8.78,26.57,29,53.29,57.83,79.84,86.82,2.83,3.09,5.22,3.9,9.45,2.52,24.86-8.07,49.86-15.7,74.78-23.6,3.18-1.01,6.04-1.03,9.22-.03,32.72,10.29,65.47,20.47,98.22,30.66,2.47.77,4.41,2.22,6.18,4.05,13.9,14.37,27.96,28.59,41.67,43.14,3.01,3.2,5.9,2.96,9.42,2.13,29.63-6.99,59.26-13.95,88.89-20.95,10.69-2.52,21.35-5.15,32.04-7.63,1.52-.35,3.14-1.34,4.85-.21.38,2.44-1.4,4.01-2.5,5.76C636.98,345.77,606.64,394.2,576.12,442.51c-2.74,4.34-3,7.72-.6,12.31,15.01,28.79,29.69,57.76,44.6,86.6,1.79,3.47,2.39,6.6,1.18,10.43-3.66,11.58-7.07,23.24-10.44,34.91-1.08,3.72-3.08,6.38-6.4,8.48-14.22,9-28.31,18.2-42.74,27.55zM389.16,357.4c-11.27-6.81-22.58-13.53-33.77-20.46-3.14-1.94-5.6-1.83-8.61.32-26.96,19.29-53.98,38.49-81.04,57.65-2.2,1.56-3.41,3.25-3.71,6.03-2.82,26.45-5.72,52.9-8.72,79.33-.47,4.09,1.35,6.94,3.72,9.87,18.35,22.66,36.68,45.32,54.88,68.1,2.34,2.93,5.08,4.46,8.58,5.44,66.03,18.52,132.08,36.95,198,55.87,9.19,2.64,16.98,3.3,24.21-3.7.94-.9,2.25-1.4,3.37-2.13,9.05-5.83,18.1-11.67,27.15-17.52-.06-.47-.47-1.14-1.91-2.26-8.93-6.97-17.8-14.03-26.83-20.86-2.88-2.18-4-4.21-2.87-7.96,2.49-8.28,4.51-16.7,6.56-25.1.67-2.73,2.04-4.29,4.79-5.03,7.07-1.91,14.09-3.97,21.11-6.03,6.16-1.81,12.29-3.7,18.2-5.48.07-2.92-1.17-4.57-2.06-6.31-9.43-18.56-18.86-37.12-28.35-55.65-1.33-2.59-1.98-5.22-2.02-8.13-.33-25.99-.76-51.97-1.06-77.96-.03-2.8-.66-5.11-2.39-7.37-7.08-9.26-14.01-18.65-21.02-27.97-1.01-1.34-1.85-2.97-4.38-3.55.47,1.95.68,3.41,1.17,4.78,3.79,10.49,7.54,20.99,11.51,31.41,1.17,3.08,1.44,5.91.8,9.19-3.24,16.47-6.11,33.02-9.38,49.49-.84,4.23-.74,8.84-3.43,13.06C482.72,413.85,436.25,385.82,389.16,357.4zM56.57,140.46c.7,3.42,1.37,6.84,2.1,10.25,7.01,32.83,13.97,65.67,21.09,98.48,1.07,4.94,1.46,10.03,5.26,14.25,19.8,22.05,39.39,44.31,59.02,66.52,1.82,2.06,3.77,3.36,6.65,3.9,27.12,5.1,54.22,10.37,81.31,15.65,9.76,1.9,19.05,4.02,28.49-2.69,8.7-6.16,9.14-5.33,4.91-15.46-19.51-46.68-38.97-93.38-58.33-140.13-1.34-3.24-3.19-5-6.49-6.12-40.2-13.59-80.35-27.31-120.52-40.98-6.61-2.25-13.23-4.49-19.88-6.63-1.86-.6-4.23-1.47-3.58,2.92z"/>
+<path d="M731.23,682.46c5.4-1.96,5.84-3.16,2.68-7.57-16.2-22.62-32.45-45.2-48.68-67.8-11.08-15.42-22.13-30.86-33.28-46.23-1.51-2.09-1.91-3.97-1.13-6.46,13.81-43.97,27.54-87.97,41.34-131.95.38-1.21.44-2.68,1.84-3.57,1.78-.28,2.39,1.31,3.32,2.38,23.89,27.34,48.01,54.49,71.5,82.18,6.01,7.09,12.81,11.27,21.43,14.2,46.66,15.85,93.17,32.15,139.73,48.28,1.71.59,3.44,1.11,6.24,2.02,10.89-48.27,21.68-96.11,32.47-143.95,3.44,5.45,3.47,11.31,4.45,16.92,6.07,34.87,11.3,67.91,18.15,102.62,2.96,15.03-.01,28.55-4.25,42.41-3.35,10.98-6.54,21.01-9.76,32.02-.62,2.12-1.52,3.96-3.18,5.52-21.14,19.83-42.27,39.68-63.31,59.6-2.1,1.99-4.26,2.88-7.12,2.85-4.11-.05-8.27-.49-12.26.6-1.3,2.24-.06,3.76.69,5.37,4.98,10.73,9.95,21.46,15.06,32.12,1.17,2.45,1.35,4.5.1,7.04-4.7,9.57-9.35,19.16-13.63,28.92-1.81,4.12-4.2,5.47-8.72,5.46-65.99-.15-131.97-.1-197.96-.09-22.5,0-44.99.03-67.49-.04-3.28-.01-6.14.64-8.93,2.49-23.85,15.87-47.79,31.61-71.63,47.49-3.18,2.12-6.35,3.15-10.21,3.14-32.16-.11-64.32-.04-96.48-.03-1.61,0-3.31.46-5.25-.72,1.12-2.82,3.47-4.76,5.36-6.91,29.91-34.04,60.08-67.85,89.66-102.17,5.44-6.31,11.97-5.82,18.45-6.62,38.77-4.83,77.58-9.44,116.38-14.02,24.44-2.89,48.91-5.6,73.77-8.46zM503.77,757.26c-13.43,15.45-26.86,30.9-40.29,46.34,12.62,1.16,24.41,1.2,36.2,1.14,10.31-.05,21.28,1.93,30.76-.94,9.48-2.87,17.51-10.61,26.11-16.3,2.42-1.61,5.23-2.83,6.95-5.31-.41-.74-.54-1.31-.9-1.58-15.14-11.44-30.31-22.84-45.46-34.27-1.98-1.5-3.35-.53-4.67.99-2.73,3.14-5.49,6.25-8.71,9.91z"/>
+<path d="M442.08,131.1c15.72-18.47,31.21-36.67,47.37-55.65,4.08,9.68,7.74,18.19,11.27,26.76,5.78,14,11.32,28.1,17.29,42.02,2.04,4.74,2.77,9.58,2.92,14.56.55,17.97.92,35.96,1.42,53.93.08,2.76-.59,5.17-1.98,7.57-6.83,11.82-13.64,23.66-20.21,35.63-1.84,3.36-3.84,4.26-7.57,3.35-32.3-7.9-64.64-15.62-96.96-23.44-6.38-1.54-6.42-1.76-4.61-8.09,4.72-16.47,9.48-32.93,14.1-49.43,1.06-3.78,2.82-7.02,5.36-9.99,10.51-12.27,20.92-24.62,31.6-36.21z"/>
+<path d="M253,712.79c-2.68,12.61-5.27,24.8-7.84,37-1.22,5.81-1.65,6.03-7.26,4.77-21.4-4.8-42.81-9.6-64.25-14.24-4.4-.95-7.95-2.71-11.05-6.1-8.78-9.56-17.82-18.89-26.83-28.24-2.35-2.44-3.19-5.12-3.21-8.52-.08-14.48-.42-28.96-.72-43.44-.06-2.76.26-5.25,2.3-7.37,11.54-12,23.03-24.05,34.56-36.06.55-.57,1.3-.94,1.97-1.4,2.48,1.32,2.85,3.8,3.81,5.82,7.72,16.23,15.44,32.46,22.98,48.77,1.67,3.61,4.06,5.7,7.87,6.9,16.18,5.09,32.27,10.51,48.46,15.6,3.44,1.08,4.46,2.62,3.61,6.11-1.61,6.62-2.88,13.32-4.39,20.4z"/>
+<path d="M862.72,430.89c-4.32,1.15-7.94,3.42-13.09,3.56,2.24-21.72,4.44-42.98,6.78-63.68,22.47,13.97,43.79,27.23,65.1,40.49.01.5.03,1,.04,1.5-19.49,6.67-38.97,13.33-58.83,20.13z"/>
+<path d="M821.23,403.93c-1.56,9.03-1.21,17.89-3.51,27.29-16.55-10.16-32.43-19.9-48.31-29.65.01-.55.03-1.1.04-1.65,17.52-6.06,35.04-12.12,53.33-18.44.42,8.05-1.46,14.98-1.55,22.46z"/>
+<path d="M864.29,484.42c1.21-11.47,2.33-22.5,3.58-33.81,16.28,10.03,31.58,19.45,47.58,29.28-3.37,2.51-6.46,3.17-9.33,4.17-12.71,4.44-25.48,8.75-38.22,13.11-4.62,1.58-5.07,1.17-4.45-3.9.3-2.47.5-4.96.83-7.87z"/>
+<path d="M821.01,457.93c3.64,2.52,7.52,4.09,11.1,7.96-14.59,4.9-28.49,9.57-43.66,14.66,1.41-13.71,2.69-26.25,4.11-39.57,10.12,6.21,19.13,11.73,28.45,17.44z"/>
+<path d="M435.16,493.79c-3.02-4.66-6.91-5.91-12.11-5.71-11.65.46-23.32.16-34.98.37-3.26.06-5.64-.84-7.83-3.35-8.54-9.79-17.2-19.48-25.97-29.06-2.24-2.45-2.15-4.13.34-6.13,11.67-9.35,6.94-11.16,18.16.92,5.36,5.7,10.41,11.7,15.45,17.68,1.99,2.36,4.2,3.45,7.33,3.34,12.15-.4,24.31-.52,36.46-.98,3.87-.15,6.57,1.2,9.09,4.07,5.49,6.26,11.18,12.35,16.94,18.37,2.35,2.45,2.33,4.19-.18,6.61-11.23,10.8-7.32,9.53-17.28-.27-1.78-1.75-3.45-3.62-5.4-5.7z"/>
+<path d="M218.75,268.3c13.19,21.55,26.18,42.8,39.11,63.96-2.15,1.82-3.47.55-4.77.1-30.72-10.46-61.43-20.97-92.16-31.42-2.32-.79-4.02-2.04-5.32-4.18-18.07-29.95-36.2-59.86-54.29-89.79-.75-1.25-1.85-2.4-1.73-4.17,1.87-1.17,3.45.13,5.01.73,31.55,12.12,63.07,24.29,94.62,36.43,2.29.88,3.89,2.34,5.14,4.46,4.67,7.88,9.45,15.7,14.39,23.84z"/>
+</svg><span>fawn</span></a>
+ <form class="search" id="search-form" role="search"><input id="search-input" aria-label="Search or enter a URL" placeholder="Search or enter a URL" autocomplete="off"><button aria-label="Go">↗</button></form>
+</header>
+<main class="bottom">
+ <h1 class="caption">Drag to stir the spectrum.</h1>
+ <div class="toolbar">
+  <div class="controls"><button id="pause" disabled>Pause</button><button id="restart" disabled>Reset</button>
+   <details class="details"><summary>Settings</summary><div class="details-panel">
+    <p id="adapter">Connecting to your GPU…</p>
+    <div class="settings">
+     <label>Grid<select id="grid-select" disabled>
           <option value="192">192 × 192</option>
           <option value="256">256 × 256</option>
           <option value="320">320 × 320</option>
@@ -147,51 +94,25 @@ button { cursor: pointer; }
           <option value="640">640 × 640</option>
           <option value="768">768 × 768</option>
           <option value="1024" selected>1024 × 1024</option>
-        </select>
-      </label>
-      <label>
-        <span class="eyebrow">Pressure</span><br>
-        <select id="pressure-select">
+        </select></label>
+     <label>Pressure<select id="pressure-select" disabled>
           <option value="20">20 iters</option>
           <option value="24" selected>24 iters</option>
           <option value="32">32 iters</option>
           <option value="36">36 iters</option>
           <option value="48">48 iters</option>
-        </select>
-      </label>
-      <button id="restart">Restart</button>
-      <a class="back" href="https://github.com/doerun/doe" target="_blank" rel="noopener noreferrer">GitHub: doe-gpu</a>
-      <a class="back" href="./fawn-start.html">Back to welcome</a>
+        </select></label>
     </div>
+    <p id="load">Connecting…</p>
+    <p>FPS = completed frames per second.</p>
+    <div class="links"><a href="./fawn-start.html">Particles ↗</a><a href="https://github.com/doerun/doe">Source ↗</a></div>
+   </div></details>
   </div>
-
-  <div class="stage">
-    <canvas id="view"></canvas>
-    <div class="note">
-      This stays a bounded box, not a wraparound texture. Pointer motion injects stronger force and dye, and the render stage turns curl and density into a metallic prismatic surface.
-    </div>
-  </div>
-
-  <div class="grid">
-    <div class="panel">
-      <div class="label">Status</div>
-      <div class="value" id="status">Initializing WebGPU...</div>
-    </div>
-    <div class="panel">
-      <div class="label">Adapter</div>
-      <div class="value" id="adapter">Waiting</div>
-    </div>
-    <div class="panel">
-      <div class="label">Frame</div>
-      <div class="value" id="frame">-- ms · -- fps</div>
-      <canvas class="fps-graph" id="fps-graph"></canvas>
-    </div>
-    <div class="panel">
-      <div class="label">Solver Load</div>
-      <div class="value" id="load">--</div>
-    </div>
-  </div>
+ </div>
+ <div class="metrics"><span id="frame">— fps · — ms</span><canvas id="fps-graph" aria-label="Completed frames per second over time"></canvas><span id="workload">Prismatic fluids</span><span id="status" role="status">Connecting…</span></div>
 </main>
+</div>
+<div id="failure" role="alert" hidden></div>
 <script>
 const WORKGROUP_SIZE = 16;
 const SIM_DENSITY_SCALE = 0.5;
@@ -567,6 +488,9 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   const frameEl = document.getElementById('frame');
   const graphCanvas = document.getElementById('fps-graph');
   const loadEl = document.getElementById('load');
+  const workloadEl = document.getElementById('workload');
+  const pauseButton = document.getElementById('pause');
+  const failureEl = document.getElementById('failure');
   const gridSelect = document.getElementById('grid-select');
   const pressureSelect = document.getElementById('pressure-select');
   const restartButton = document.getElementById('restart');
@@ -582,6 +506,11 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   let currentGrid = parseInt(gridSelect.value, 10);
   let pressureIterations = parseInt(pressureSelect.value, 10);
   let running = false;
+  let paused = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let redrawRequested = true;
+  let pausedSince = performance.now();
+  let pausedMs = 0;
+  let simulationTime = pausedSince;
   let lastFrameTime = performance.now();
   const uniformData = new Float32Array(16);
 
@@ -622,7 +551,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     const width = graphCanvas.width;
     const height = graphCanvas.height;
     graphCtx.clearRect(0, 0, width, height);
-    graphCtx.fillStyle = 'rgba(10, 19, 15, 0.90)';
+    graphCtx.fillStyle = '#080d16';
     graphCtx.fillRect(0, 0, width, height);
     if (fpsHistory.length < 2) return;
 
@@ -655,8 +584,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
 
   function updateLoadLabel() {
     const effectiveGrid = simGrid();
-    const cells = effectiveGrid * effectiveGrid;
-    const passes = pressureIterations + 4;
+    workloadEl.textContent = `${effectiveGrid}² fluid · ${pressureIterations} pressure iterations`;
     loadEl.textContent = `${currentGrid}² selected · ${effectiveGrid}² sim · ${pressureIterations} pressure iterations`;
   }
 
@@ -671,6 +599,8 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     if (!context || !device || !format) return;
     context.configure({ device, format, alphaMode: 'opaque' });
     drawFpsGraph();
+    redrawRequested = true;
+    schedule();
   }
 
   async function requestAdapter() {
@@ -819,6 +749,8 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     ];
 
     updateLoadLabel();
+    redrawRequested = true;
+    schedule();
   }
 
   function updatePointer(event) {
@@ -838,10 +770,9 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     device = await adapter.requestDevice();
     const activeDevice = device;
     device.lost.then((info) => {
-      if (device !== activeDevice) return;
-      running = false;
+      if (device !== activeDevice || !running) return;
       const detail = info.message || info.reason || 'unknown reason';
-      statusEl.textContent = `WebGPU device lost: ${detail}`;
+      fail(new Error(`WebGPU device lost: ${detail}`));
     });
     context = canvas.getContext('webgpu');
     if (!context) throw new Error('WebGPU canvas context unavailable');
@@ -888,7 +819,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
 
     resizeCanvas();
     rebuildSimulationBuffers();
-    statusEl.textContent = 'Running prismatic fluid reactor';
+    statusEl.textContent = paused ? 'Paused' : 'WebGPU active';
     running = true;
   }
 
@@ -907,26 +838,28 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     measuredMs = 0;
     measuredFrames = 0;
     fpsHistory.length = 0;
-    frameEl.textContent = '— fps · — ms';
+    frameEl.textContent = paused ? 'Paused' : '— fps · — ms';
     drawFpsGraph();
   }
 
   function schedule() {
-    if (running && !document.hidden && pendingFrames < MAX_PENDING_FRAMES && !raf) {
+    if (running && (!paused || redrawRequested) && !document.hidden
+        && pendingFrames < MAX_PENDING_FRAMES && !raf) {
       raf = requestAnimationFrame(frame);
     }
   }
 
   async function frame(now) {
     raf = 0;
-    if (!running || document.hidden) return;
+    if (!running || document.hidden || (paused && !redrawRequested)) return;
     const generation = metricGeneration;
     pendingFrames += 1;
     try {
+      redrawRequested = false;
       render(now);
       schedule();
       await device.queue.onSubmittedWorkDone();
-      if (running && !document.hidden && generation === metricGeneration) {
+      if (running && !paused && !document.hidden && generation === metricGeneration) {
         const completed = performance.now();
         if (lastCompletion !== null) {
           measuredMs += completed - lastCompletion;
@@ -935,17 +868,14 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
         lastCompletion = completed;
         if (measuredMs >= METRIC_INTERVAL_MS) {
           const average = measuredMs / measuredFrames;
-          frameEl.textContent = `${average.toFixed(2)} ms · ${(1000 / average).toFixed(1)} fps`;
+          frameEl.textContent = `${(1000 / average).toFixed(0)} fps · ${average.toFixed(1)} ms`;
           recordFrameSample(average);
           measuredMs = 0;
           measuredFrames = 0;
         }
       }
     } catch (error) {
-      if (running) {
-        running = false;
-        statusEl.textContent = `Error: ${error.message}`;
-      }
+      if (running) fail(error);
     } finally {
       pendingFrames -= 1;
       schedule();
@@ -981,7 +911,8 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     uniformData[6] = mouseForce;
     uniformData[7] = 0.10;
     uniformData[8] = dt * 0.82;
-    uniformData[9] = now * 0.001;
+    if (!paused) simulationTime = now - pausedMs;
+    uniformData[9] = simulationTime * 0.001;
     uniformData[10] = 2.0;
     uniformData[11] = 0.95;
     uniformData[12] = pointer.dx;
@@ -993,36 +924,38 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     pointer.dy *= 0.72;
 
     const encoder = device.createCommandEncoder();
-    const pass = encoder.beginComputePass();
-    {
-      pass.setPipeline(advectVelPipeline);
-      pass.setBindGroup(0, advectVelBindGroup);
-      pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+    if (!paused) {
+      const pass = encoder.beginComputePass();
+      {
+        pass.setPipeline(advectVelPipeline);
+        pass.setBindGroup(0, advectVelBindGroup);
+        pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+      }
+      {
+        pass.setPipeline(divCurlPipeline);
+        pass.setBindGroup(0, divCurlBindGroup);
+        pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+      }
+      let pressureIndex = 0;
+      for (let i = 0; i < pressureIterations; i++) {
+        pass.setPipeline(pressurePipeline);
+        pass.setBindGroup(0, pressureBindGroups[pressureIndex]);
+        pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+        pressureIndex = 1 - pressureIndex;
+      }
+      {
+        pass.setPipeline(projectPipeline);
+        pass.setBindGroup(0, projectBindGroup);
+        pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+      }
+      {
+        pass.setPipeline(advectDyePipeline);
+        pass.setBindGroup(0, advectDyeBindGroups[currentDyeIndex]);
+        pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+      }
+      pass.end();
+      currentDyeIndex = 1 - currentDyeIndex;
     }
-    {
-      pass.setPipeline(divCurlPipeline);
-      pass.setBindGroup(0, divCurlBindGroup);
-      pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
-    }
-    let pressureIndex = 0;
-    for (let i = 0; i < pressureIterations; i++) {
-      pass.setPipeline(pressurePipeline);
-      pass.setBindGroup(0, pressureBindGroups[pressureIndex]);
-      pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
-      pressureIndex = 1 - pressureIndex;
-    }
-    {
-      pass.setPipeline(projectPipeline);
-      pass.setBindGroup(0, projectBindGroup);
-      pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
-    }
-    {
-      pass.setPipeline(advectDyePipeline);
-      pass.setBindGroup(0, advectDyeBindGroups[currentDyeIndex]);
-      pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
-    }
-    pass.end();
-    currentDyeIndex = 1 - currentDyeIndex;
 
     const renderPass = encoder.beginRenderPass({
       colorAttachments: [{
@@ -1049,23 +982,84 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     pressureIterations = parseInt(pressureSelect.value, 10);
     updateLoadLabel();
   });
-  restartButton.addEventListener('click', () => rebuildSimulationBuffers());
+  function fail(error) {
+    running = false;
+    cancelAnimationFrame(raf);
+    raf = 0;
+    pauseButton.disabled = true;
+    restartButton.disabled = true;
+    gridSelect.disabled = true;
+    pressureSelect.disabled = true;
+    statusEl.textContent = `Error: ${error.message}`;
+    failureEl.textContent = error.message;
+    failureEl.hidden = false;
+  }
+
+  pauseButton.addEventListener('click', () => {
+    const now = performance.now();
+    paused = !paused;
+    if (paused) {
+      pausedSince = now;
+      pointer.down = false;
+      pointer.dx = 0;
+      pointer.dy = 0;
+    } else {
+      pausedMs += now - pausedSince;
+    }
+    pauseButton.textContent = paused ? 'Resume' : 'Pause';
+    pauseButton.setAttribute('aria-pressed', String(paused));
+    statusEl.textContent = paused ? 'Paused' : 'WebGPU active';
+    cancelAnimationFrame(raf);
+    raf = 0;
+    lastFrameTime = now;
+    resetMeter();
+    schedule();
+  });
+  restartButton.addEventListener('click', () => {
+    pointer.dx = 0;
+    pointer.dy = 0;
+    rebuildSimulationBuffers();
+  });
   canvas.addEventListener('pointerenter', () => { pointer.hover = true; });
   canvas.addEventListener('pointerleave', () => { pointer.hover = false; pointer.down = false; });
   canvas.addEventListener('pointermove', (event) => updatePointer(event));
-  canvas.addEventListener('pointerdown', (event) => { updatePointer(event); pointer.down = true; pointer.hover = true; });
+  canvas.addEventListener('pointerdown', (event) => {
+    updatePointer(event);
+    pointer.down = true;
+    pointer.hover = true;
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener('pointercancel', () => { pointer.down = false; pointer.hover = false; });
   addEventListener('pointerup', () => { pointer.down = false; });
   addEventListener('resize', () => resizeCanvas());
 
   try {
     await init();
+    pauseButton.disabled = false;
+    restartButton.disabled = false;
+    gridSelect.disabled = false;
+    pressureSelect.disabled = false;
+    pauseButton.textContent = paused ? 'Resume' : 'Pause';
+    pauseButton.setAttribute('aria-pressed', String(paused));
     drawFpsGraph();
     lastFrameTime = performance.now();
     schedule();
   } catch (error) {
-    statusEl.textContent = `Error: ${error.message}`;
+    fail(error);
   }
 })();
+
+document.getElementById('search-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const query = document.getElementById('search-input').value.trim();
+  if (!query) return;
+  let url;
+  try { url = new URL(query.includes('://') ? query : `https://${query}`); } catch {}
+  const looksLikeHost = !/\s/.test(query) && (query.includes('.') || query.startsWith('localhost'));
+  location.href = looksLikeHost && url && ['http:', 'https:'].includes(url.protocol)
+    ? url.href : `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+});
+
 </script>
 </body>
 </html>
