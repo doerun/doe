@@ -28,6 +28,29 @@ strategy change grants no browser promotion.
 `doe-gpu/browser` delegates to the browser's existing `navigator.gpu`. Only a
 forced-Doe Chromium artifact can support browser-runtime claims.
 
+## Native replacement acceptance
+
+The installation-free compiler route requires a webpage and downloaded WASM.
+It submits through browser-owned WebGPU. The separately authorized native-loader
+investigation permits additional local software. Its
+[retained evidence](../reports/browser-runtime/20261005-stock-chrome/README.md)
+establishes loading and independent Doe computation inside Chrome's GPU process;
+the webpage's work remains Dawn-owned. Browser replacement is deferred while
+active integration returns to ONNX's procedure-table boundary.
+
+When native browser replacement is explicitly reopened, first trace an ordinary
+webpage request through device creation, shader compilation, submission, mapped
+readback and destruction, all owned by Doe. Disable Doe execution as a negative
+control and require that page operation to fail. Preserve validation, state
+tracking, resource lifetimes and browser security responsibilities across any
+procedure-table or wire integration. Loading and adjacent native computation
+alone cannot satisfy this test. Live switching, preserved existing devices and
+unchanged sandbox protections require their own acceptance evidence.
+
+Keep rejected browser shader transformations closed. Compatibility acceptance
+does not establish acceleration; product acceptance still requires correct,
+unchanged applications receiving a repeatable material advantage.
+
 ## Four-lane Fawn-Doe experimental matrix
 
 The vertical product thesis evaluates four distinct operational lanes:

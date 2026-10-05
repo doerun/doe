@@ -7,6 +7,7 @@ verdicts. Historical narrative lives under [`status/archive/`](status/archive/).
 | --- | --- | --- |
 | Strategy milestones | [`status/runtime-backends-and-bench.md`](status/runtime-backends-and-bench.md) | [`config/doe-product-strategy.json`](../config/doe-product-strategy.json), [migration](product-strategy-contract.md) |
 | Runtime and benchmarks | [`status/runtime-backends-and-bench.md`](status/runtime-backends-and-bench.md) | `reports/claim-index.json`, `bench/out/` |
+| Active independent framework integration | [`status/runtime-backends-and-bench.md#independent-onnx-integration`](status/runtime-backends-and-bench.md#independent-onnx-integration) | [Pinned ONNX proc-table evidence](../reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/README.md) |
 | Execution ownership, calibration and shared-GPU interference, measurement resolution, and reusable programs | [`status/reusable-compute-programs.md`](status/reusable-compute-programs.md) | `config/doe-product-strategy.json`, `config/compute-program-decision.json`, `bench/out/compute-program/` |
 | Implementation quality, runtime architecture, command contracts, and snapshot ownership | [`status/runtime-architecture-audit.md`](status/runtime-architecture-audit.md) | [bounded quality plan](../config/zig-review-plan.json), `runtime/zig/reviews/log.json`, coverage inventory in `runtime/zig/reviews/queue.tsv`, and `runtime/zig/source-layout.json` |
 | Compiler and WebGPU | [`status/compiler-and-webgpu.md`](status/compiler-and-webgpu.md) | `zig build test-wgsl`, schema-registered evidence |

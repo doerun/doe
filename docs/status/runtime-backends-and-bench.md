@@ -1,19 +1,14 @@
 # Doe status: runtime backends and benchmarks
 
-## Stock Chrome and webpage-only delivery
-
-The [native-boundary investigation](../../reports/browser-runtime/20261005-stock-chrome/README.md)
-retains a launcher-assisted GPU-server forwarding control and independent Doe
-execution in that process. The page still uses Dawn. Earlier wire-client
-interception is explicitly distinguished from the corrected server observation,
-and failed loader, sandbox, driver and table controls remain retained.
-The user requires only a webpage and downloaded WASM, which excludes the native
-launcher mechanism. No supported page API for installing a native WebGPU provider
-was found. The existing browser WASM owns shader processing; browser WebGPU owns
-native execution. Native hot swapping, page-only replacement and acceleration
-remain unqualified; production and the Fawn demo are unchanged.
-
 ## Independent ONNX integration
+
+Active integration work returns to ONNX's procedure-table boundary under the
+[selected milestone order](../../config/doe-product-strategy.json). Preserve the
+existing operators and application interfaces. The retained disposition names
+the remaining callback, lifecycle, operator and host qualification gaps; a matched
+source-built Dawn control is required before an ownership or performance decision.
+Browser loading does not reopen rejected shader transformations or establish
+repeatable material advantage for unchanged applications.
 
 The [pinned proc-table integration](../../reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/README.md)
 runs the existing ONNX WebGPU operators through Doe with independent outputs,
@@ -30,6 +25,28 @@ execution is scoped to the tested host. General future/callback conformance,
 termination during submitted GPU work, other operators/hosts, performance,
 Chromium switching and upstream adoption remain unqualified. The separate custom
 operator plugin is unchanged; no replacement optimization campaign is opened.
+
+## Retained stock Chrome native investigation
+
+The [native-boundary investigation](../../reports/browser-runtime/20261005-stock-chrome/README.md)
+establishes launcher-assisted loading and correct independent Doe Vulkan
+computation inside Chrome's GPU process in the tested configuration. The page's
+request still uses Dawn; webpage-originated native replacement remains
+unimplemented. Earlier wire-client attribution and failed loader, sandbox, driver
+and table controls remain retained. Unchanged sandbox protections, live switching
+and preservation of existing devices were not established.
+
+Webpage-and-WASM-only constrains the installation-free compiler route. The
+authorized native-loader investigation permits additional local software; that
+route is not invalidated by the compiler route's delivery restriction. Browser
+WASM can own shader processing through exposed WebGPU while the browser owns
+native execution. No supported page API for installing a native provider was found.
+
+Browser replacement stays retained groundwork until explicitly reopened. Its
+[first acceptance test](../browser-lane.md#native-replacement-acceptance) must trace
+an ordinary webpage's device creation, compilation, submission, mapped readback
+and destruction through Doe, with a disabling control that fails the page's
+operation. Compatibility and acceleration require separate evidence.
 
 ## Independent installation
 

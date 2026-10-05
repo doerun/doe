@@ -1,9 +1,16 @@
 # Stock Chrome native-boundary investigation
 
-Disposition: diagnostic investigation. The user's accepted scope is a webpage
-and downloaded WASM only. No launcher, extension, native host, modified Chrome,
-or Fawn installation is permitted for that product. No page-only native provider
-replacement was established. No production runtime or demo selector changed.
+Disposition: diagnostic native investigation. Native loading and correct
+independent Doe Vulkan computation succeeded inside Chrome's GPU process in the
+tested configuration. Webpage-originated native replacement remains
+unimplemented: the page's WebGPU request still used Dawn. No production runtime
+or demo selector changed.
+
+The webpage-and-downloaded-WASM-only requirement applies to the installation-free
+compiler route. The separately authorized native-loader investigation permits
+additional local software. That delivery restriction does not retroactively
+invalidate native loading or computation. The original commit and raw evidence
+remain retained; this clarification changes scope interpretation, not the trials.
 
 ## What executed
 
@@ -19,7 +26,8 @@ This is native interception and independent Doe execution within a stock browser
 process. **The page's request still executed through Dawn.** It does not establish
 native provider selection, hot swapping, canvas compatibility, performance,
 clean installation, or a webpage-only mechanism. Loading the probe required a
-local native launcher dependency, excluded by the user's subsequent scope.
+local native launcher dependency permitted for this investigation. It does not
+establish preservation of existing devices or unchanged sandbox protections.
 
 The raw observations and exact trial source snapshots are retained in
 [raw-evidence.tar.gz](raw-evidence.tar.gz), with
@@ -72,7 +80,7 @@ proc-name records caused the initial mapping ambiguity; pinned native and wire
 queue source separated them. The browser executable on disk remained unchanged.
 Its process memory was deliberately patched by the launcher probe.
 
-## Why this does not solve the accepted scope
+## Installation-free compiler boundary
 
 The existing browser WASM artifact,
 `packages/doe-gpu/assets/doe-wgsl-cff0e5502ab99769.wasm`, has no imports and exports
@@ -118,9 +126,25 @@ passing Dawn-owned handles into Doe was not attempted.
   Doe's native GPU acceleration.
 
 These are distinct alternatives, not completed implementations or changes to the
-user's requested native replacement. A browser-exposed provider interface is
-missing for the accepted webpage-only native-swap objective. No such supported
+native replacement. A browser-exposed provider interface is
+missing for webpage-only native replacement. No such supported
 mechanism was found in the inspected build, implementation, or documented APIs.
+
+## Integration priority and reopening criterion
+
+Return active integration to the
+[ONNX procedure-table boundary](../../benchmarks/amd-vulkan/20261005-onnx-proc-adapter/README.md).
+Retain this browser prototype as groundwork. Do not reopen rejected browser
+shader transformations because native loading worked.
+
+When browser replacement is explicitly reopened, its first acceptance test must
+trace one ordinary webpage request through device creation, shader compilation,
+submission, mapped readback and destruction, all owned by Doe. A negative control
+must make that page operation fail when Doe execution is disabled. Preserve
+validation and state tracking across the native and wire boundaries. A private
+Doe computation alongside a successful Dawn page does not satisfy this test.
+Correct unchanged applications and repeatable material advantage remain separate
+product obligations.
 
 Component: `doe.bench.external-projects`, `doe.reports`, `doe.docs.status`.
 Intent: preserved. Acceptance evidence: archived physical controls, exact source
