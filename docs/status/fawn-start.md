@@ -5,6 +5,12 @@ HTML/WGSL under `browser/chromium/resources/`; the sibling D4DA repository owns
 packaging and publication through `firebase.fawn.json`. Legacy D4DA Doe routes
 redirect to CanvasContext with their demo filenames intact.
 
+The hosted main page previews the local HTML start page selected by Fawn's
+launcher. Packaging copies that source into the app bundle; an existing
+installation can retain an older copy. The preview visibly links to Fawn's
+Chromium integration on GitHub and identifies the visitor's browser WebGPU
+backend in Settings.
+
 The main page is the public demo entry point. Settings and the README no longer
 send visitors to standalone demos. Particle Trails, Magnetic Fluids, Prismatic
 Fluids, and Image Lab remain in `browser/chromium/resources/` for benchmarks and

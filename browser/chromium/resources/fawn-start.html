@@ -31,6 +31,8 @@ header { justify-content: space-between; }
 .search input { width: 100%; min-width: 0; background: none; border: 0; padding: 0 12px; font-size: 13px; outline-offset: 0; }
 .search button { border: 0; background: none; padding: 0 14px; min-height: 36px; }
 .bottom { display: grid; gap: 20px; }
+.intro p { margin: 8px 0 0; color: #ffffffb3; font-size: 13px; line-height: 1.5; }
+.project-link { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; }
 .caption { margin: 0; font-size: clamp(20px, 3vw, 36px); font-weight: 450; letter-spacing: -.04em; }
 .toolbar { justify-content: space-between; flex-wrap: wrap; }
 .metrics { font: 12px/1.5 ui-monospace, monospace; flex-wrap: wrap; gap: 12px 24px; min-height: 32px; }
@@ -78,7 +80,7 @@ summary::after { content: ' +'; }
  <form class="search" id="search-form" role="search"><input id="search-input" aria-label="Search or enter a URL" placeholder="Search or enter a URL" autocomplete="off"><button aria-label="Go">↗</button></form>
 </header>
 <main class="bottom">
- <h1 class="caption" id="hint">Drag to shape the current.</h1>
+ <div class="intro"><h1 class="caption" id="hint">Drag to shape the current.</h1><p>Fawn start-page preview</p></div>
  <div class="toolbar">
   <div class="controls"><button id="pause" disabled>Pause</button><button id="restart" disabled>Reset</button>
    <details class="details"><summary>Settings</summary><div class="details-panel">
@@ -86,9 +88,10 @@ summary::after { content: ' +'; }
 
     <div class="settings"><label>Particles<select id="count-select"><option value="32768">32,768</option><option value="65536" selected>65,536</option><option value="131072">131,072</option><option value="262144">262,144</option><option value="524288">524,288</option><option value="1048576">1,048,576</option><option value="2097152">2,097,152</option><option value="4194304">4,194,304</option><option value="8388608">8,388,608</option><option value="16777216">16,777,216</option></select></label><label>Steps / frame<select id="steps-select"><option value="2">2</option><option value="4" selected>4</option><option value="8">8</option></select></label></div>
     <p>FPS = completed frames per second.</p>
-    <div class="links"><a href="https://github.com/doerun/doe">Source ↗</a></div>
+    <p>This preview runs on your browser’s WebGPU.</p>
    </div></details>
   </div>
+  <a class="project-link" href="https://github.com/doerun/doe/tree/main/browser/chromium">Fawn on GitHub ↗</a>
  </div>
  <div class="metrics"><span id="frame">— fps · — ms</span><canvas id="fps-graph" aria-label="Completed frames per second over time"></canvas><span id="workload">65,536 particles</span><span id="status" role="status">Connecting…</span></div>
 </main>
