@@ -1,0 +1,49 @@
+[692.1ms][Platform] No specific platform matched for adapter (vendor=AMD, arch=vulkan), falling back to generic
+[GPU] AMD vulkan, f16/subgroups, 4.0GB, submit probe: 2.3ms
+[747.9ms][Pipeline] Execution v1 enabled (steps=35, kernelPathInline=yes, pipelineInline=no)
+[748.1ms][Config] Using manifest-first config (source of truth)
+[750.8ms][Pipeline] Resolved session applied (gemma-3-270m-it-q4k-ehf16-af32): batchSize=1, stopCheckMode=batch, readbackInterval=1, disableCommandBatching=false
+[751.7ms][Pipeline] KernelPath: gemma-3-270m-it-q4k-ehf16-af32-execution-inline (15 decode steps, 10 kernels, source=execution-v1)
+[752.0ms][Pipeline] 18L/640H/4heads (256dim), kernelPath=gemma-3-270m-it-q4k-ehf16-af32-execution-inline
+[752.4ms][Tokenizer] Loading bundled tokenizer from tokenizer.json
+[970.0ms][Tokenizer] HuggingFace model.type="BPE", using type="bpe"
+[1410.1ms][Tokenizer] Loaded HuggingFace 262145 tokens (bpe), 6413 special patterns, 514906 merges
+[1410.6ms][Pipeline] Tokenizer vocabSize=262145 differs from model=262144, using model size
+[1418.0ms][Pipeline] KV cache allocated: kvDtype=f16, maxSeqLen=4096, layout=contiguous, modelMaxSeqLen=32768, requestedKvDtype=f16, requestedMaxSeqLen=4096
+[1419.0ms][Pipeline] Execution plan: active=primary, dtype=f32, kernelPath=gemma-3-270m-it-q4k-ehf16-af32-execution-inline
+[1470.6ms][ShardCache] Custom shard loader configured
+[1470.9ms][Loader] Initializing...
+[1542.7ms][HeapManager] Allocated segment 0: 1024MB
+[1542.9ms][HeapManager] Segmented heap: 1GB per segment
+[1542.9ms][HeapManager] Initialized with strategy: SEGMENTED
+[1543.0ms][Loader] Initialized (f16, subgroups)
+[1543.6ms][Loader] Loading: gemma-3-270m-it-q4k-ehf16-af32
+[1544.8ms][Loader] [0.0s] Memory (start): | RSS=346.02 MB (heap=91.10 MB/175.16 MB, external=2.00 GB, arrayBuffers=2.00 GB) | GPU=0 B (0 active, 0 pooled, peak=0 B) | ShardCache=0 B (0 shards) | Layers=0, GPUBuffers=0
+[1545.4ms][Loader] Dense model on discrete GPU - performance limited. Consider MoE model.
+[1645.6ms][Loader] Embeddings tensor loaded: name=model.embed_tokens.weight, hasShape=true, shape=[262144,640], isWeightBuffer=true
+[1646.0ms][Loader] Layers: 0-17
+[1798.2ms][Loader] Layers: 18 complete (0.15s)
+[1799.6ms][Loader] Complete: 380.86 MB in 0.25s (1.47 GB/s)
+[1800.1ms][Loader] [0.3s] Memory (complete): | RSS=367.83 MB (heap=94.27 MB/128.16 MB, external=1.02 GB, arrayBuffers=1.01 GB) | GPU=514.27 MB (236 active, 12 pooled, peak=514.27 MB) | ShardCache=0 B (0 shards) | Layers=18, GPUBuffers=236
+[1823.6ms][Pipeline] Model loaded successfully (1078ms)
+{"lane":"doe","stage":"loaded","identity":{"vendor":"AMD","architecture":"vulkan","device":"Radeon 8060S Graphics (RADV STRIX_HALO)","description":"Radeon 8060S Graphics (RADV STRIX_HALO)"},"loadMs":1172.5702079999999}
+[1844.1ms][KernelSelect] matmul variant=f16w_f32a_tiled reason=path_override
+[1856.2ms][KernelSelect] attention variant=prefill_head256_f16kv reason=path_override:tiled_small
+[2106.4ms][KernelSelect] matmul variant=gemv_subgroup_vec4 reason=path_override
+[2110.0ms][KernelSelect] attention variant=decode_online_head256_f16kv reason=path_override:subgroup
+[2171.0ms][KernelSelect] matmul variant=gemv_subgroup_multicol reason=path_override
+[2832.5ms][Perf] Load: 1078ms | TTFT: 273ms | Prefill: 268ms | Decode: 728ms (16 tokens @ 22.0 tok/s)
+{"lane":"doe","mode":"qualification","label":"full_sentence","id":"full_sentence","firstTokenMs":275.48155999999994,"completeMs":1004.7195719999997,"stopReason":"stop-token"}
+[3030.6ms][Perf] Load: 1078ms | TTFT: 80ms | Prefill: 79ms | Decode: 115ms (3 tokens @ 26.1 tok/s)
+{"lane":"doe","mode":"qualification","label":"short_reply","id":"short_reply","firstTokenMs":81.31998199999998,"completeMs":196.6474629999998,"stopReason":"stop-token"}
+[3224.0ms][Perf] Load: 1078ms | TTFT: 74ms | Prefill: 72ms | Decode: 117ms (3 tokens @ 25.7 tok/s)
+{"lane":"doe","mode":"qualification","label":"length_limit","id":"length_limit","firstTokenMs":74.77619999999979,"completeMs":192.478697,"stopReason":"max-tokens"}
+[3378.8ms][Perf] Load: 1078ms | TTFT: 76ms | Prefill: 75ms | Decode: 75ms (2 tokens @ 26.5 tok/s)
+{"lane":"doe","mode":"qualification","label":"sequence_stop","id":"sequence_stop","firstTokenMs":77.41688699999986,"completeMs":153.35136999999986,"stopReason":"stop-sequence"}
+[3498.3ms][Perf] Load: 1078ms | TTFT: 79ms | Prefill: 77ms | Decode: 38ms (1 tokens @ 26.1 tok/s)
+[4189.2ms][Perf] Load: 1078ms | TTFT: 74ms | Prefill: 72ms | Decode: 616ms (16 tokens @ 26.0 tok/s)
+[4194.2ms][ExpertCache] Cache cleared
+[4206.2ms][Pipeline] Unloaded
+[4206.8ms][GPU] Device lost: GPUDevice.destroy() was called, Reason: destroyed
+[4208.0ms][BufferPool] Deferred destruction failed: GPUQueue.onSubmittedWorkDone: GPUQueue was destroyed
+{"lane":"doe","label":"final-transfer","passed":true,"failure":null}

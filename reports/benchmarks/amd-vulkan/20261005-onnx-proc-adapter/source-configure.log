@@ -1,0 +1,267 @@
+CMake Deprecation Warning at CMakeLists.txt:9 (cmake_policy):
+  The OLD behavior for policy CMP0104 will be removed from a future version
+  of CMake.
+
+  The cmake-policies(7) manual explains that the OLD behaviors of all
+  policies are deprecated and that a policy should be set to OLD only under
+  specific short-term circumstances.  Projects should be ported to the NEW
+  behavior and not rely on setting a policy to OLD.
+
+
+-- Setting CMAKE_C_STANDARD to 99
+-- Setting CMAKE_CXX_STANDARD to 20
+-- onnxruntime_target_platform = x86_64
+Patch found: /usr/bin/patch
+-- Loading Dependencies URLs ...
+-- Loading Dependencies ...
+-- Fetch abseil_cpp from https://github.com/abseil/abseil-cpp/archive/refs/tags/20250814.0.zip
+-- Abseil source dir:/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/_deps/abseil_cpp-src
+-- Fetch re2 from https://github.com/google/re2/archive/refs/tags/2024-07-02.zip
+-- Fetch Protobuf from https://github.com/protocolbuffers/protobuf/archive/refs/tags/v21.12.zip
+CMake Deprecation Warning at /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/_deps/protobuf-src/CMakeLists.txt:2 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- 
+-- 3.21.12.0
+-- Fetch date from https://github.com/HowardHinnant/date/archive/refs/tags/v3.0.1.zip
+CMake Deprecation Warning at /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/_deps/date-src/CMakeLists.txt:18 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Fetch mp11 from https://github.com/boostorg/mp11/archive/refs/tags/boost-1.82.0.zip
+CMake Warning (dev) at /usr/share/cmake-4.2/Modules/FetchContent.cmake:1963 (message):
+  Calling FetchContent_Populate(mp11) is deprecated, call
+  FetchContent_MakeAvailable(mp11) instead.  Policy CMP0169 can be set to OLD
+  to allow FetchContent_Populate(mp11) to be called directly for now, but the
+  ability to call it with declared details will be removed completely in a
+  future version.
+Call Stack (most recent call first):
+  external/onnxruntime_external_deps.cmake:295 (FetchContent_Populate)
+  CMakeLists.txt:588 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Fetch nlohmann_json from https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.zip
+-- Using the multi-header code from /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/_deps/nlohmann_json-src/include/
+-- Applying sysfs fallback patch for cpuinfo on Linux
+-- Fetch pytorch_cpuinfo from https://github.com/pytorch/cpuinfo/archive/403d652dca4c1046e8145950b1c0997a9f748b57.zip
+-- Fetch GSL from https://github.com/microsoft/GSL/archive/refs/tags/v4.0.0.zip
+-- Fetch safeint from https://github.com/dcleblanc/SafeInt/archive/refs/tags/3.0.28.zip
+CMake Warning (dev) at /usr/share/cmake-4.2/Modules/FetchContent.cmake:1963 (message):
+  Calling FetchContent_Populate(safeint) is deprecated, call
+  FetchContent_MakeAvailable(safeint) instead.  Policy CMP0169 can be set to
+  OLD to allow FetchContent_Populate(safeint) to be called directly for now,
+  but the ability to call it with declared details will be removed completely
+  in a future version.
+Call Stack (most recent call first):
+  external/onnxruntime_external_deps.cmake:448 (FetchContent_Populate)
+  CMakeLists.txt:588 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Fetch flatbuffers from https://github.com/google/flatbuffers/archive/refs/tags/v23.5.26.zip
+-- Proceeding with version: 23.5.26.0
+-- CMAKE_CXX_FLAGS: -Wno-error=maybe-uninitialized -ffunction-sections -fdata-sections
+-- Fetch onnx from https://github.com/onnx/onnx/archive/refs/tags/v1.21.0.zip
+-- ONNX_PROTOC_EXECUTABLE: $<TARGET_FILE:protobuf::protoc>
+Generated: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/_deps/onnx-build/onnx/onnx-ml.proto
+Generated: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/_deps/onnx-build/onnx/onnx-operators-ml.proto
+Generated: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/_deps/onnx-build/onnx/onnx-data.proto
+-- 
+-- ******** Summary ********
+--   CMake version                     : 4.2.3
+--   CMake command                     : /usr/bin/cmake
+--   System                            : Linux
+--   C++ compiler                      : /usr/bin/c++
+--   C++ compiler version              : 15.2.0
+--   Build type                        : Release
+--   CMAKE_INSTALL_PREFIX              : /usr/local
+--   CMAKE_MODULE_PATH                 : /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/onnxruntime-d2ede0adeb300958cfb5a256c09d27c66c3a6d71/cmake/external;/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/_deps/onnx-src/cmake/external
+-- 
+--   ONNX version                      : 1.21.0
+--   ONNX NAMESPACE                    : onnx
+--   ONNX_USE_LITE_PROTO               : ON
+--   ONNX_USE_PROTOBUF_SHARED_LIBS     : OFF
+--   ONNX_DISABLE_EXCEPTIONS           : OFF
+--   ONNX_DISABLE_STATIC_REGISTRATION  : OFF
+--   ONNX_WERROR                       : OFF
+--   ONNX_HARDENING                    : OFF
+--   ONNX_BUILD_TESTS                  : OFF
+--   ONNX_USE_UNITY_BUILD              : OFF
+--   BUILD_SHARED_LIBS                 : OFF
+-- 
+--   onnx compile options              : $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>;-Wall;-Wextra;-Wno-stringop-overflow
+--   onnx_proto compile options        : $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>;-Wall;-Wextra;-Wno-stringop-overflow
+--   onnx compile definitions          : ONNX_NAMESPACE=onnx;ONNX_ML=1;ONNX_USE_LITE_PROTO=1
+--   onnx_proto compile definitions    : ONNX_NAMESPACE=onnx;ONNX_ML=1;ONNX_USE_LITE_PROTO=1
+--   onnx link libraries               : protobuf::libprotobuf-lite
+--   onnx_proto link libraries         : protobuf::libprotobuf-lite
+-- 
+--   Protobuf version                  : 
+--   ONNX_BUILD_PYTHON                 : OFF
+-- Fetch Eigen3 from https://github.com/eigen-mirror/eigen/archive/1d8b82b0740839c0de7f1242a3585e3390ff5f33/eigen-1d8b82b0740839c0de7f1242a3585e3390ff5f33.zip
+-- 
+-- Configured Eigen 3.4.90
+-- 
+-- Fetch dawn from https://github.com/google/dawn/archive/ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38.zip
+-- Build type...........: Release
+-- C++ compiler.........: /usr/bin/c++
+-- CMake generator......: Ninja
+-- CMake version........: 4.2.3
+-- 
+-- Dawn building using Emscripten toolchain: 0
+-- Dawn build D3D11 backend: OFF
+-- Dawn build D3D12 backend: OFF
+-- Dawn build Metal backend: OFF
+-- Dawn build Vulkan backend: ON
+-- Dawn build OpenGL backend: OFF
+-- Dawn build OpenGL ES backend: OFF
+-- Dawn build Null backend: OFF
+-- 
+-- Tint build SPIR-V reader: OFF
+-- Tint build WGSL reader: ON
+-- Tint build GLSL writer: OFF
+-- Tint build GLSL validator: OFF
+-- Tint build HLSL writer: OFF
+-- Tint build MSL writer: OFF
+-- Tint build SPIR-V writer: ON
+-- Tint build WGSL writer: ON
+-- Tint build NULL writer: OFF
+-- 
+-- Dawn build with ASan: OFF
+-- Dawn build with TSan: OFF
+-- Dawn build with MSan: OFF
+-- Dawn build with UBSan: OFF
+-- Dawn build with RTTI: OFF
+-- DAWN Werror: OFF
+-- Dawn enable install: OFF
+-- Dawn allow system component fallback: OFF
+-- Dawn enable SPIR-V validation: OFF
+-- Dawn build with asserts in all configurations: OFF
+-- Dawn build Wayland support: OFF
+-- Dawn build X11 support: OFF
+-- Dawn build GLFW support: OFF
+-- Dawn build Windows UI support: OFF
+-- Dawn build and use DXC: OFF
+-- Dawn enable DXC asserts in non-debug builds: OFF
+-- Dawn target MacOS: OFF
+-- Dawn build samples: OFF
+-- Dawn build Node bindings: OFF
+-- Dawn build Swiftshader: OFF
+-- Dawn build benchmarks: OFF
+-- Dawn build protobuf: OFF
+-- Dawn build monolithic library: OFF
+-- Dawn build PIC: OFF
+-- Dawn emit coverage: OFF
+-- Dawn fetch dependencies: ON
+-- LLVM Source dir: 
+-- 
+-- Tint build command line executable tools: OFF
+-- Tint install: OFF
+-- Tint build IR binary: OFF
+-- Tint build fuzzers: OFF
+-- Tint build fuzzing vulkan drivers: OFF
+-- Tint build benchmarks: OFF
+-- Tint build tests: OFF
+-- Tint build tintd: OFF
+-- Tint enable IR validation: OFF
+-- Tint enable break in debugger: OFF
+-- Tint build checking [chromium-style]: OFF
+-- Tint randomize hashes: OFF
+-- Tint build Mesa: OFF
+-- 
+-- Dawn third_party dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party
+-- Dawn GLFW dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/glfw
+-- Dawn Jinja2 dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/jinja2
+-- Dawn MarkupSafe dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/markupsafe
+-- Dawn Khronos dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/khronos
+-- Dawn Swiftshader dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/swiftshader
+-- Dawn Protobuf dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/_deps/protobuf-src
+-- Dawn LPM dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/libprotobuf-mutator/src
+-- Dawn Emdawnwebgpu dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/emdawnwebgpu
+-- Dawn Spir-Tools dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/spirv-tools/src
+-- Dawn Spirv-Headers dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/spirv-headers/src
+-- Dawn Glslang dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/glslang/src
+-- Dawn Vulkan Headers dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/vulkan-headers/src
+-- Dawn Vulkan Utility Libraries dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/vulkan-utility-libraries/src
+-- 
+-- Node Addon API dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/node-addon-api
+-- Node API Headers dir: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/node-api-headers
+-- Webgpu IDL path: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/gpuweb/webgpu.idl
+-- Go exe: go
+-- 
+-- Dawn: using python at /usr/bin/python3
+-- Running fetch_dawn_dependencies:
+-- -- Listing dependencies from /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38
+-- -- Fetching dependency 'third_party/abseil-cpp'
+-- -- Fetching dependency 'third_party/dxc'
+-- -- Fetching dependency 'third_party/dxheaders'
+-- -- Fetching dependency 'third_party/glfw'
+-- -- Fetching dependency 'third_party/jinja2'
+-- -- Fetching dependency 'third_party/khronos/EGL-Registry'
+-- -- Fetching dependency 'third_party/khronos/OpenGL-Registry'
+-- -- Fetching dependency 'third_party/libprotobuf-mutator/src'
+-- -- Fetching dependency 'third_party/protobuf'
+-- -- Listing dependencies from /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/protobuf
+-- -- WARNING: DEPS file '/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/protobuf/DEPS' does not define a 'deps' variable
+-- -- Fetching dependency 'third_party/markupsafe'
+-- -- Fetching dependency 'third_party/glslang/src'
+-- -- Listing dependencies from /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/glslang/src
+-- -- Fetching dependency 'third_party/google_benchmark/src'
+-- -- Fetching dependency 'third_party/googletest'
+-- -- Fetching dependency 'third_party/spirv-headers/src'
+-- -- Fetching dependency 'third_party/spirv-tools/src'
+-- -- Listing dependencies from /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/spirv-tools/src
+-- -- Fetching dependency 'third_party/vulkan-headers/src'
+-- -- Fetching dependency 'third_party/vulkan-loader/src'
+-- -- Fetching dependency 'third_party/vulkan-utility-libraries/src'
+-- -- Fetching dependency 'third_party/webgpu-headers/src'
+-- Dawn: using SPIRV-Headers at /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/spirv-headers/src
+-- Dawn: using SPIRV-Tools at /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/spirv-tools/src
+-- Dawn: using Vulkan::Headers at /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/vulkan-headers/src
+-- Dawn: using VulkanUtilityLibraries at /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/vulkan-utility-libraries/src
+CMake Warning at /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/vulkan-utility-libraries/src/CMakeLists.txt:27 (find_package):
+  Could not find a configuration file for package "VulkanHeaders" that is
+  compatible with requested version "1.4.343".
+
+  The following configuration files were considered but not accepted:
+
+    /usr/share/cmake/VulkanHeaders/VulkanHeadersConfig.cmake, version: 1.4.341
+      The version found is not compatible with the version requested.
+
+
+
+-- Dawn: using jinja2 at /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/jinja2
+-- Dawn: using markupsafe at /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn-ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38/third_party/markupsafe
+-- Dawn: Configuring DawnGenerator for Dawn WebGPU Emscripten headers.
+-- Dawn: Configuring DawnGenerator for Dawn WebGPU Emscripten JS files.
+-- Dawn: Configuring DawnGenerator for Dawn headers.
+-- Dawn: Configuring DawnGenerator for Dawn C++ headers.
+-- Dawn: Configuring DawnGenerator for Dawn version based utilities.
+-- Dawn: Configuring DawnGenerator for Dawn GPU info utilities.
+-- Dawn: Configuring DawnGenerator for Dawn native utilities.
+-- Dawn: Configuring DawnGenerator for Dawn wire.
+-- Dawn: Configuring DawnGenerator for Dawn native utilities.
+-- Dawn: Configuring DawnGenerator for Dawn C++ wrapper.
+-- Dawn: Configuring DawnGenerator for WebGPU headers.
+-- Finished fetching external dependencies
+-- CMAKE_CXX_COMPILER_ID: GNU
+-- CMAKE_CXX_COMPILER_VERSION: 15.2.0
+-- Using -mavx2 -mfma -mavxvnni flags
+CMake Warning at CMakeLists.txt:1831 (message):
+  CMake target files will not be generated for static onnxruntime builds with
+  WebGPU or Emscripten+XNNPACK support
+
+
+-- Configuring done (2.9s)
+-- Generating done (0.3s)
+-- Build files have been written to: /home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build

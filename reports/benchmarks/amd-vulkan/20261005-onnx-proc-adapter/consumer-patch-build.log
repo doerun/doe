@@ -1,0 +1,3 @@
+[0/2] Re-checking globbed directories...
+[1/3] Building CXX object CMakeFiles/onnxruntime_providers_webgpu.dir/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/onnxruntime-d2ede0adeb300958cfb5a256c09d27c66c3a6d71/onnxruntime/core/providers/webgpu/webgpu_context.cc.o
+[2/3] Linking CXX shared module libonnxruntime_providers_webgpu.so

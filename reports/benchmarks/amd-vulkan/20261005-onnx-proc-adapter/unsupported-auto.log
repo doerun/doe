@@ -1,0 +1,11 @@
+thread 2408281 panic: UnsupportedDawnDescriptorChain: instanceRequestAdapter
+/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/bridge-final-qualification/adapter.zig:88:5: 0x767514dd8e86 in instanceRequestAdapter (adapter)
+    @panic("UnsupportedDawnDescriptorChain: " ++ field);
+    ^
+???:?:?: 0x7674bfb0add4 in ??? (libonnxruntime_providers_webgpu.so)
+Unwind information for `libonnxruntime_providers_webgpu.so:0x7674bfb0add4` was not available, trace may be incomplete
+
+./nptl/pthread_once.c:116:7: 0x7675162a9513 in __pthread_once_slow (pthread_once.c)
+./nptl/pthread_once.c:143:12: 0x7675162a9588 in ___pthread_once (pthread_once.c)
+???:?:?: 0x7674bfafca2e in ??? (libonnxruntime_providers_webgpu.so)
+???:?:?: 0x0 in ??? (???)
