@@ -1,0 +1,41 @@
+{
+  "classification": "Chrome application diagnostics on its existing WebGPU backend; no Doe-vs-Dawn claim",
+  "observedAt": "2026-10-05T20:12:09.569Z",
+  "baselineRef": "e7b7cb06b176a3660bd52bc848476d75271f2b0e",
+  "browser": "154.0.8037.95",
+  "method": {
+    "fixedFrames": 12,
+    "simulationAbsoluteTolerance": 0.000001,
+    "slowFrameDelayMs": 70,
+    "warmupMs": 1500,
+    "measuredMs": 3500,
+    "order": [
+      "baseline/candidate",
+      "candidate/baseline"
+    ],
+    "timing": "queue-completed frames, including browser scheduling; GPU-only time is not measured"
+  },
+  "sourceHashes": {
+    "start": {
+      "baseline": "02be842494320049090e0770300af6fc2dc9a1e6ae9e902a79afc8553d039563",
+      "candidate": "34fc2a6b141c06fe19245c27213cf01a759fe0c4297e304f5d7e831ac59f7242"
+    },
+    "heavy-particles": {
+      "baseline": "468eaf7255ccf6dffb288bcd1c09dff0db08405030545463665484cffc2f1c1e",
+      "candidate": "f69b2bfcd311e7dd6b6f9229c0b4d0344986ffd1f1250d1ceed9ac0571a73f6e"
+    },
+    "magnetic-fluids": {
+      "baseline": "80f51d20c4299c59a302a7abb5970900b2ef69ee71d9278aed43b77bdab1a5bb",
+      "candidate": "4f0cb9209ebb6f0db9067a47dfdda8f4b135c313a35b71f2efde41f490373a8b"
+    },
+    "prismatic-fluids": {
+      "baseline": "55997e8055cd04a1772cd481e7885639e4b0c3a5b0f6e08b38af70ff9de95874",
+      "candidate": "1cbae422394f5c630d563cd84ce7bd678b2e03ed4d6ba0687a7f16e94ed1e34e"
+    }
+  },
+  "correctness": [],
+  "lifecycle": [],
+  "performance": [],
+  "passed": false,
+  "error": "page.waitForFunction: Timeout 30000ms exceeded.\n    at open (/Users/xyz/deco/doe/browser/chromium/scripts/test-fawn-demo-performance.mjs:128:14)\n    at async state (/Users/xyz/deco/doe/browser/chromium/scripts/test-fawn-demo-performance.mjs:133:29)\n    at async file:///Users/xyz/deco/doe/browser/chromium/scripts/test-fawn-demo-performance.mjs:177:20"
+}

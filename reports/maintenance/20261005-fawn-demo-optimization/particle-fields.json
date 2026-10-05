@@ -1,0 +1,140 @@
+{
+  "classification": "Physical Chrome application-shader regression, not runtime qualification",
+  "baselineRef": "e7b7cb06b176a3660bd52bc848476d75271f2b0e",
+  "browser": "154.0.8037.95",
+  "observedAt": "2026-10-05T20:10:19.402Z",
+  "sourceHashes": {
+    "baseline": "02be842494320049090e0770300af6fc2dc9a1e6ae9e902a79afc8553d039563",
+    "candidate": "34fc2a6b141c06fe19245c27213cf01a759fe0c4297e304f5d7e831ac59f7242"
+  },
+  "absoluteTolerance": 0.000001,
+  "cases": [
+    {
+      "phase": 0,
+      "force": 0,
+      "maxAbsoluteError": 7.450580596923828e-9
+    },
+    {
+      "phase": 0,
+      "force": 4,
+      "maxAbsoluteError": 9.313225746154785e-10
+    },
+    {
+      "phase": 0.001,
+      "force": 0,
+      "maxAbsoluteError": 5.960464477539063e-8
+    },
+    {
+      "phase": 0.001,
+      "force": 4,
+      "maxAbsoluteError": 1.4901161193847656e-8
+    },
+    {
+      "phase": 0.25,
+      "force": 0,
+      "maxAbsoluteError": 0
+    },
+    {
+      "phase": 0.25,
+      "force": 4,
+      "maxAbsoluteError": 9.313225746154785e-10
+    },
+    {
+      "phase": 0.5,
+      "force": 0,
+      "maxAbsoluteError": 0
+    },
+    {
+      "phase": 0.5,
+      "force": 4,
+      "maxAbsoluteError": 4.656612873077393e-10
+    },
+    {
+      "phase": 0.999,
+      "force": 0,
+      "maxAbsoluteError": 0
+    },
+    {
+      "phase": 0.999,
+      "force": 4,
+      "maxAbsoluteError": 0
+    },
+    {
+      "phase": 1,
+      "force": 0,
+      "maxAbsoluteError": 0
+    },
+    {
+      "phase": 1,
+      "force": 4,
+      "maxAbsoluteError": 0
+    },
+    {
+      "phase": 1.001,
+      "force": 0,
+      "maxAbsoluteError": 0
+    },
+    {
+      "phase": 1.001,
+      "force": 4,
+      "maxAbsoluteError": 0
+    },
+    {
+      "phase": 1.5,
+      "force": 0,
+      "maxAbsoluteError": 0
+    },
+    {
+      "phase": 1.5,
+      "force": 4,
+      "maxAbsoluteError": 5.960464477539063e-8
+    },
+    {
+      "phase": 1.999,
+      "force": 0,
+      "maxAbsoluteError": 5.960464477539063e-8
+    },
+    {
+      "phase": 1.999,
+      "force": 4,
+      "maxAbsoluteError": 1.1920928955078125e-7
+    },
+    {
+      "phase": 2,
+      "force": 0,
+      "maxAbsoluteError": 5.960464477539063e-8
+    },
+    {
+      "phase": 2,
+      "force": 4,
+      "maxAbsoluteError": 2.9802322387695312e-8
+    },
+    {
+      "phase": 2.5,
+      "force": 0,
+      "maxAbsoluteError": 4.656612873077393e-10
+    },
+    {
+      "phase": 2.5,
+      "force": 4,
+      "maxAbsoluteError": 2.9802322387695312e-8
+    },
+    {
+      "phase": 2.999,
+      "force": 0,
+      "maxAbsoluteError": 5.960464477539063e-8
+    },
+    {
+      "phase": 2.999,
+      "force": 4,
+      "maxAbsoluteError": 2.9802322387695312e-8
+    }
+  ],
+  "errors": [],
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "passed": true
+}

@@ -309,12 +309,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 const PRESSURE_WGSL = `
 ${SHARED_HELPERS}
 @group(0) @binding(0) var<uniform> u: Params;
-@group(0) @binding(1) var<storage, read> pressureSrc: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> pressureSrc: array<f32>;
 @group(0) @binding(2) var<storage, read> divCurl: array<vec4<f32>>;
-@group(0) @binding(3) var<storage, read_write> pressureDst: array<vec4<f32>>;
+@group(0) @binding(3) var<storage, read_write> pressureDst: array<f32>;
 
 fn pressure_at(x: i32, y: i32) -> f32 {
-  return pressureSrc[idx_at(x, y)].x;
+  return pressureSrc[idx_at(x, y)];
 }
 
 @compute @workgroup_size(${WORKGROUP_SIZE}, ${WORKGROUP_SIZE})
@@ -332,7 +332,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let b = pressure_at(x, y - 1);
   let t = pressure_at(x, y + 1);
   let p = (l + r + b + t - div * 0.85) * 0.25;
-  pressureDst[idx_at(x, y)] = vec4<f32>(p, 0.0, 0.0, 0.0);
+  pressureDst[idx_at(x, y)] = p;
 }
 `;
 
@@ -340,12 +340,12 @@ const PROJECT_WGSL = `
 ${SHARED_HELPERS}
 @group(0) @binding(0) var<uniform> u: Params;
 @group(0) @binding(1) var<storage, read> velSrc: array<vec4<f32>>;
-@group(0) @binding(2) var<storage, read> pressure: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> pressure: array<f32>;
 @group(0) @binding(3) var<storage, read> divCurl: array<vec4<f32>>;
 @group(0) @binding(4) var<storage, read_write> velDst: array<vec4<f32>>;
 
 fn pressure_at(x: i32, y: i32) -> f32 {
-  return pressure[idx_at(x, y)].x;
+  return pressure[idx_at(x, y)];
 }
 
 fn curl_at(x: i32, y: i32) -> f32 {
@@ -583,6 +583,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   let pressureIterations = parseInt(pressureSelect.value, 10);
   let running = false;
   let lastFrameTime = performance.now();
+  const uniformData = new Float32Array(16);
 
   let velocityBuffers = [];
   let dyeBuffers = [];
@@ -701,6 +702,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   }
 
   function rebuildSimulationBuffers() {
+    resetMeter();
     const effectiveGrid = simGrid();
     [...velocityBuffers, ...dyeBuffers, ...pressureBuffers].forEach((buffer) => buffer.destroy());
     if (divCurlBuffer) divCurlBuffer.destroy();
@@ -715,15 +717,15 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
       createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
     ];
     pressureBuffers = [
-      createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
-      createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
+      createBuffer(effectiveGrid * effectiveGrid * 4, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
+      createBuffer(effectiveGrid * effectiveGrid * 4, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
     ];
     divCurlBuffer = createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST);
 
     const zero = new Float32Array(effectiveGrid * effectiveGrid * 4);
     const dye = seedDye(effectiveGrid);
     velocityBuffers.forEach((buffer) => device.queue.writeBuffer(buffer, 0, zero));
-    pressureBuffers.forEach((buffer) => device.queue.writeBuffer(buffer, 0, zero));
+    pressureBuffers.forEach((buffer) => device.queue.writeBuffer(buffer, 0, zero.subarray(0, effectiveGrid * effectiveGrid)));
     device.queue.writeBuffer(divCurlBuffer, 0, zero);
     device.queue.writeBuffer(dyeBuffers[0], 0, dye);
     device.queue.writeBuffer(dyeBuffers[1], 0, dye);
@@ -890,14 +892,86 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     running = true;
   }
 
-  function frame(now) {
-    if (!running) return;
+  const MAX_PENDING_FRAMES = 2;
+  const METRIC_INTERVAL_MS = 500;
+  let pendingFrames = 0;
+  let raf = 0;
+  let metricGeneration = 0;
+  let lastCompletion = null;
+  let measuredMs = 0;
+  let measuredFrames = 0;
+
+  function resetMeter() {
+    metricGeneration += 1;
+    lastCompletion = null;
+    measuredMs = 0;
+    measuredFrames = 0;
+    fpsHistory.length = 0;
+    frameEl.textContent = '— fps · — ms';
+    drawFpsGraph();
+  }
+
+  function schedule() {
+    if (running && !document.hidden && pendingFrames < MAX_PENDING_FRAMES && !raf) {
+      raf = requestAnimationFrame(frame);
+    }
+  }
+
+  async function frame(now) {
+    raf = 0;
+    if (!running || document.hidden) return;
+    const generation = metricGeneration;
+    pendingFrames += 1;
+    try {
+      render(now);
+      schedule();
+      await device.queue.onSubmittedWorkDone();
+      if (running && !document.hidden && generation === metricGeneration) {
+        const completed = performance.now();
+        if (lastCompletion !== null) {
+          measuredMs += completed - lastCompletion;
+          measuredFrames += 1;
+        }
+        lastCompletion = completed;
+        if (measuredMs >= METRIC_INTERVAL_MS) {
+          const average = measuredMs / measuredFrames;
+          frameEl.textContent = `${average.toFixed(2)} ms · ${(1000 / average).toFixed(1)} fps`;
+          recordFrameSample(average);
+          measuredMs = 0;
+          measuredFrames = 0;
+        }
+      }
+    } catch (error) {
+      if (running) {
+        running = false;
+        statusEl.textContent = `Error: ${error.message}`;
+      }
+    } finally {
+      pendingFrames -= 1;
+      schedule();
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    cancelAnimationFrame(raf);
+    raf = 0;
+    lastFrameTime = performance.now();
+    resetMeter();
+    schedule();
+  });
+  addEventListener('pagehide', () => {
+    running = false;
+    cancelAnimationFrame(raf);
+    device?.destroy();
+  });
+  addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
+
+  function render(now) {
     const effectiveGrid = simGrid();
     const dtMs = Math.min(33, now - lastFrameTime);
     lastFrameTime = now;
     const dt = dtMs / 1000;
     const mouseForce = pointer.hover ? (pointer.down ? 0.82 : 0.28) : 0.0;
-    let uniformData = new Float32Array(16);
     uniformData[0] = effectiveGrid;
     uniformData[1] = effectiveGrid;
     uniformData[2] = 1 / effectiveGrid;
@@ -919,43 +993,35 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     pointer.dy *= 0.72;
 
     const encoder = device.createCommandEncoder();
+    const pass = encoder.beginComputePass();
     {
-      const pass = encoder.beginComputePass();
       pass.setPipeline(advectVelPipeline);
       pass.setBindGroup(0, advectVelBindGroup);
       pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
-      pass.end();
     }
     {
-      const pass = encoder.beginComputePass();
       pass.setPipeline(divCurlPipeline);
       pass.setBindGroup(0, divCurlBindGroup);
       pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
-      pass.end();
     }
     let pressureIndex = 0;
     for (let i = 0; i < pressureIterations; i++) {
-      const pass = encoder.beginComputePass();
       pass.setPipeline(pressurePipeline);
       pass.setBindGroup(0, pressureBindGroups[pressureIndex]);
       pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
-      pass.end();
       pressureIndex = 1 - pressureIndex;
     }
     {
-      const pass = encoder.beginComputePass();
       pass.setPipeline(projectPipeline);
       pass.setBindGroup(0, projectBindGroup);
       pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
-      pass.end();
     }
     {
-      const pass = encoder.beginComputePass();
       pass.setPipeline(advectDyePipeline);
       pass.setBindGroup(0, advectDyeBindGroups[currentDyeIndex]);
       pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
-      pass.end();
     }
+    pass.end();
     currentDyeIndex = 1 - currentDyeIndex;
 
     const renderPass = encoder.beginRenderPass({
@@ -972,9 +1038,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     renderPass.end();
 
     device.queue.submit([encoder.finish()]);
-    frameEl.textContent = `${dtMs.toFixed(2)} ms · ${(1000 / Math.max(dtMs, 0.001)).toFixed(1)} fps`;
-    recordFrameSample(dtMs);
-    requestAnimationFrame(frame);
+
   }
 
   gridSelect.addEventListener('change', () => {
@@ -996,10 +1060,8 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   try {
     await init();
     drawFpsGraph();
-    requestAnimationFrame((now) => {
-      lastFrameTime = now;
-      requestAnimationFrame(frame);
-    });
+    lastFrameTime = performance.now();
+    schedule();
   } catch (error) {
     statusEl.textContent = `Error: ${error.message}`;
   }

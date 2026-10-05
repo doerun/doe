@@ -127,6 +127,25 @@ fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
   return v * inverseSqrt(lenSq);
 }
 
+fn sceneField(phase: u32, pos: vec2<f32>, mouseDir: vec2<f32>, mouseDistSq: f32) -> vec2<f32> {
+  if (phase == 1u) {
+    let flow = vec2<f32>(cos(pos.y * 3.0 + u.time * 0.2), sin(pos.x * 2.0 - u.time * 0.16));
+    return flow * 0.045 + mouseDir * (u.mouseForce * 0.0014 / mouseDistSq);
+  }
+  let orbit = safeNormalize(vec2<f32>(-pos.y, pos.x));
+  let inward = -safeNormalize(pos + vec2<f32>(0.0001, 0.0));
+  if (phase == 2u) {
+    return orbit * 0.035 + inward * 0.025 - mouseDir * (u.mouseForce * 0.0018 / mouseDistSq);
+  }
+  let radius = length(pos / vec2<f32>(u.aspect, 1.0));
+  let mouseOrbit = vec2<f32>(-mouseDir.y, mouseDir.x);
+  var field = orbit * (0.020 + 0.034 * (1.0 - smoothstep(0.18, 1.05, radius)));
+  field += inward * (0.006 + 0.014 * (1.0 - smoothstep(0.24, 1.08, radius)));
+  field += mouseDir * (u.mouseForce * 0.0014 / mouseDistSq);
+  field += mouseOrbit * (u.mouseForce * 0.0006 / mouseDistSq);
+  return field;
+}
+
 @compute @workgroup_size(${WORKGROUP_SIZE})
 fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
   let i = gid.x + gid.y * groups.x * ${WORKGROUP_SIZE}u;
@@ -137,24 +156,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
   var p = srcParticles[i];
   let pos = p.pos;
   let vel = p.vel;
-  let radius = length(pos / vec2<f32>(u.aspect, 1.0));
-  let orbit = safeNormalize(vec2<f32>(-pos.y, pos.x));
-  let inward = -safeNormalize(pos + vec2<f32>(0.0001, 0.0));
   let mouseDelta = u.mouse - pos;
   let mouseDistSq = max(dot(mouseDelta, mouseDelta), 0.018);
   let mouseDir = safeNormalize(mouseDelta);
-  let mouseOrbit = vec2<f32>(-mouseDir.y, mouseDir.x);
-
-  var field = orbit * (0.020 + 0.034 * (1.0 - smoothstep(0.18, 1.05, radius)));
-  field += inward * (0.006 + 0.014 * (1.0 - smoothstep(0.24, 1.08, radius)));
-  field += mouseDir * (u.mouseForce * 0.0014 / mouseDistSq);
-  field += mouseOrbit * (u.mouseForce * 0.0006 / mouseDistSq);
-  let flow = vec2<f32>(cos(pos.y * 3.0 + u.time * 0.2), sin(pos.x * 2.0 - u.time * 0.16));
-  let flowField = flow * 0.045 + mouseDir * (u.mouseForce * 0.0014 / mouseDistSq);
-  let scatterField = orbit * 0.035 + inward * 0.025 - mouseDir * (u.mouseForce * 0.0018 / mouseDistSq);
-  var fields = array<vec2<f32>, 3>(field, flowField, scatterField);
   let phase = u32(floor(u.pad.y)) % 3u;
-  field = mix(fields[phase], fields[(phase + 1u) % 3u], fract(u.pad.y));
+  let blend = fract(u.pad.y);
+  var field = sceneField(phase, pos, mouseDir, mouseDistSq);
+  if (blend > 0.0) {
+    field = mix(field, sceneField((phase + 1u) % 3u, pos, mouseDir, mouseDistSq), blend);
+  }
   field += -vel * 0.010;
 
   var nextVel = vel * 0.986 + field * (u.dt * 60.0);
@@ -209,15 +219,12 @@ struct VSOut {
 
 @vertex
 fn vs(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32) -> VSOut {
-  var quad = array<vec2<f32>, 6>(
+  var quad = array<vec2<f32>, 4>(
     vec2<f32>(-1.0, -1.0),
     vec2<f32>( 1.0, -1.0),
-    vec2<f32>( 1.0,  1.0),
-    vec2<f32>(-1.0, -1.0),
-    vec2<f32>( 1.0,  1.0),
-    vec2<f32>(-1.0,  1.0)
+    vec2<f32>(-1.0,  1.0),
+    vec2<f32>( 1.0,  1.0)
   );
-
   let p = particles[instanceIndex];
   let local = quad[vertexIndex];
   let size = p.color.w * max(u.pad.x, 0.1);
@@ -358,7 +365,8 @@ function scenePhase(seconds) {
   const METRIC_INTERVAL_MS = 500;
   const GRAPH_HISTORY_LENGTH = 120;
   let lastCompletionTime = null;
-  let inFlight = false;
+  const MAX_PENDING_FRAMES = 2;
+  let inFlight = 0;
   let redrawRequested = false;
   let metricGeneration = 0;
   let measuredFrames = 0;
@@ -394,6 +402,7 @@ function scenePhase(seconds) {
   let pointer = { x: 0, y: 0, active: false, force: 0.0 };
   let running = false;
   let lastFrameTime = performance.now();
+  const uniformData = new Float32Array(8);
 
   function resizeGraphCanvas() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -659,7 +668,7 @@ function scenePhase(seconds) {
           },
         }],
       },
-      primitive: { topology: 'triangle-list' },
+      primitive: { topology: 'triangle-strip' },
     });
 
     fadePipeline = device.createRenderPipeline({
@@ -715,7 +724,7 @@ function scenePhase(seconds) {
 
   function schedule() {
     if (!running || document.hidden) return;
-    if (inFlight) { redrawRequested = true; return; }
+    if (inFlight >= MAX_PENDING_FRAMES) { redrawRequested = true; return; }
     if (!raf) raf = requestAnimationFrame(frame);
   }
 
@@ -762,11 +771,11 @@ function scenePhase(seconds) {
   async function frame(now) {
     raf = 0;
     if (!running || document.hidden) return;
-    inFlight = true;
+    inFlight += 1;
     redrawRequested = false;
     try { await render(now); } catch (error) { fail(error); }
     finally {
-      inFlight = false;
+      inFlight -= 1;
       if (running && (!paused || redrawRequested)) schedule();
     }
   }
@@ -786,7 +795,7 @@ function scenePhase(seconds) {
 
     const pulse = pointer.active ? 1.0 : 0.0;
     pointer.force = pointer.force * 0.85 + pulse * 4.0;
-    const uniformData = new Float32Array([
+    uniformData.set([
       dt / stepsPerFrame,
       elapsed,
       aspect,
@@ -800,16 +809,18 @@ function scenePhase(seconds) {
 
     const encoder = device.createCommandEncoder();
 
-    for (let step = 0; step < (paused ? 0 : stepsPerFrame); step++) {
+    if (!paused) {
       const pass = encoder.beginComputePass();
       pass.setPipeline(computePipeline);
-      pass.setBindGroup(0, computeBindGroups[currentParticleIndex]);
       const totalGroups = Math.ceil(particleCount / WORKGROUP_SIZE);
       const rows = Math.ceil(totalGroups / device.limits.maxComputeWorkgroupsPerDimension);
       const columns = Math.ceil(totalGroups / rows);
-      pass.dispatchWorkgroups(columns, rows);
+      for (let step = 0; step < stepsPerFrame; step++) {
+        pass.setBindGroup(0, computeBindGroups[currentParticleIndex]);
+        pass.dispatchWorkgroups(columns, rows);
+        currentParticleIndex = 1 - currentParticleIndex;
+      }
       pass.end();
-      currentParticleIndex = 1 - currentParticleIndex;
     }
 
     const dstTrailIndex = 1 - currentTrailIndex;
@@ -825,20 +836,9 @@ function scenePhase(seconds) {
       pass.setPipeline(fadePipeline);
       pass.setBindGroup(0, fadeBindGroups[currentTrailIndex]);
       pass.draw(3);
-      pass.end();
-    }
-
-    {
-      const pass = encoder.beginRenderPass({
-        colorAttachments: [{
-          view: trailViews[dstTrailIndex],
-          loadOp: 'load',
-          storeOp: 'store',
-        }],
-      });
       pass.setPipeline(particlePipeline);
       pass.setBindGroup(0, renderBindGroups[currentParticleIndex]);
-      pass.draw(6, particleCount);
+      pass.draw(4, particleCount);
       pass.end();
     }
 
@@ -860,7 +860,8 @@ function scenePhase(seconds) {
     device.queue.submit([encoder.finish()]);
     currentTrailIndex = dstTrailIndex;
 
-    // Keep at most one submitted frame pending; count only completed work.
+    // Overlap encoding with GPU work, with bounded queue depth and completed-frame metrics.
+    if (!paused) schedule();
     await device.queue.onSubmittedWorkDone();
     if (running && !paused && !document.hidden && generation === metricGeneration) {
       recordCompletion(performance.now());
