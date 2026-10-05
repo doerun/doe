@@ -20,7 +20,8 @@ than requiring a public navigation link.
 
 The unpublished candidate adds a compact Demos disclosure to the main page and
 benchmark pages. It marks the current page and switches between the particle
-cycle, Particle Trails, Magnetic Fluids, Prismatic Fluids, and Image Lab. The
+cycle, Particle Trails, Magnetic Fluids, and Prismatic Fluids. Image Lab is
+excluded from the menu and retained as a repository-only benchmark. The
 main page continues cycling its own particle fields; choosing another simulator
 navigates to that separate implementation. Escape restores focus and outside
 interaction closes the disclosure.
@@ -43,12 +44,12 @@ artifacts go under `bench/out/fawn-demo-pages/` by default. The
 remains available for narrower validation.
 
 [Switcher and clock evidence](../../reports/maintenance/20261005-fawn-demo-switcher/README.md)
-binds the current source to navigation, desktop/mobile layout, keyboard dismissal,
+binds the switcher-introduction source to navigation, desktop/mobile layout, keyboard dismissal,
 and a real particle cycle. RAF timestamps earlier than initialization now produce
 zero elapsed time instead of negative simulation steps or a negative field phase.
 These demos have no established Doe-versus-Dawn application speed comparison;
-local diagnostics use Chrome's existing WebGPU provider. Before hosting this
-candidate, D4DA packaging must include Image Lab so its new menu link resolves.
+local diagnostics use Chrome's existing WebGPU provider. The current menu is
+checked by the switcher script and references the existing packaged simulators.
 
 The landing page retains particle settings, continuous field transitions,
 pointer and keyboard interaction, pause, reset, and reduced-motion

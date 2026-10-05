@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 const { chromium } = await import(process.env.FAWN_PLAYWRIGHT_MODULE || 'playwright');
 const output = resolve(process.env.FAWN_REPORT_DIR || 'bench/out/fawn-demo-switcher');
 const baselineRef = 'b599d2e3a8ad09fa3aff66a2d08d3fa1515647fb';
-const names = ['start', 'heavy-particles', 'magnetic-fluids', 'prismatic-fluids', 'image-lab'];
+const names = ['start', 'heavy-particles', 'magnetic-fluids', 'prismatic-fluids'];
 const sources = {};
 const hash = source => createHash('sha256').update(source).digest('hex');
 await mkdir(output, { recursive: true });
