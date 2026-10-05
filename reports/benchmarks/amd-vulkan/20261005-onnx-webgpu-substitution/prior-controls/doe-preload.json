@@ -1,0 +1,121 @@
+{
+  "classification": "framework-substitution-diagnostic",
+  "device": {
+    "metadata": {
+      "version": "0.1.0"
+    },
+    "provider": "WebGpuExecutionProvider",
+    "vendorId": 4098
+  },
+  "doeExecutionEstablished": false,
+  "executionOptions": {
+    "backend": "Vulkan",
+    "cpuFallback": "disabled",
+    "graphOptimization": "disabled",
+    "validation": "full"
+  },
+  "expected": [
+    [
+      15.0,
+      39.0,
+      63.0,
+      87.0
+    ],
+    [
+      39.0,
+      127.0,
+      215.0,
+      303.0
+    ],
+    [
+      63.0,
+      215.0,
+      367.0,
+      519.0
+    ],
+    [
+      87.0,
+      303.0,
+      519.0,
+      735.0
+    ]
+  ],
+  "failure": null,
+  "loadedProviderObserved": true,
+  "mode": "onnx-execution",
+  "model": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/final/doe-preload.onnx",
+    "sha256": "f17b444b3b068c83af921d88e3a9922acf85fa2c70a8dee79742315c193bdfde"
+  },
+  "observed": [
+    [
+      15.0,
+      39.0,
+      63.0,
+      87.0
+    ],
+    [
+      39.0,
+      127.0,
+      215.0,
+      303.0
+    ],
+    [
+      63.0,
+      215.0,
+      367.0,
+      519.0
+    ],
+    [
+      87.0,
+      303.0,
+      519.0,
+      735.0
+    ]
+  ],
+  "operatorNames": [
+    "MatMul",
+    "Add"
+  ],
+  "operatorProviders": [
+    "WebGpuExecutionProvider",
+    "WebGpuExecutionProvider"
+  ],
+  "packages": {
+    "numpy": "2.5.3",
+    "onnx": "1.20.1",
+    "onnxruntime": "1.24.1",
+    "onnxruntime-ep-webgpu": "0.1.0"
+  },
+  "passed": true,
+  "preloadProbe": {
+    "counters": {
+      "instances": 0,
+      "shaders": 0,
+      "submissions": 0
+    },
+    "doeLibrary": {
+      "path": "/tmp/doe-installed-generation-relocated/node_modules/doe-gpu/native/libwebgpu_doe.so",
+      "sha256": "811d4dba9d5cd165060a5aeade705b4c91bb5d1a6d30cdd9528068e9f290c239"
+    },
+    "doeLibraryLoaded": true,
+    "library": {
+      "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/preload-probe.so",
+      "sha256": "c2bf49de0bdde5548a835fbd235a00f7cbbef3cbd25b64d21bfc213e44d16d44"
+    },
+    "probeLibraryLoaded": true
+  },
+  "profile": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/final/doe-preload_2026-10-05_10-13-14.json",
+    "sha256": "c39337cea932efb1e32681273a591c2210c0926ffb553f8e1a523aa5efcd7352"
+  },
+  "providerLibrary": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/venv/lib/python3.14/site-packages/onnxruntime_ep_webgpu/libonnxruntime_providers_webgpu.so",
+    "sha256": "cbdff74e6569e3cf66b46f0d194d87cd3cf49e83b7aa46552c39b0218d58b215"
+  },
+  "runner": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-webgpu-substitution/run.py",
+    "sha256": "9226026f7884c79a35350175ad0dfae64c835891fb702196f96c8c4af0cb0374"
+  },
+  "schemaVersion": 1
+}

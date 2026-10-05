@@ -1,0 +1,1 @@
+The first preload invocation used node_modules/doe-gpu/lib/libwebgpu_doe.so; the installed package owns native/libwebgpu_doe.so. The loader ignored the missing library and run.py raised FileNotFoundError while recording its identity. No Doe execution was established.

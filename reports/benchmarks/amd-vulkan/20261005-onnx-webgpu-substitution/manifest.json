@@ -1,0 +1,161 @@
+{
+  "classification": "onnx-webgpu-substitution-retention",
+  "custody": {
+    "bytes": 62165376,
+    "path": "bench/out/onnx-webgpu-substitution/20261005/onnx-webgpu-substitution-final-linux-x64.tar.gz",
+    "sha256": "826a23064a3197f3e01b5c33d5a76d7f8ddde9fa449c86966ad0f81872dcbc22"
+  },
+  "custodyContents": [
+    "Pinned wheels and their embedded licenses",
+    "Accepted native Doe library and counter probe",
+    "Harness and pinned header",
+    "Model/operator profiles and failed trials",
+    "Pinned ONNX/Dawn source inspection and licenses"
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "a33cec9d8139e78e74ad5dc55b78c678edbc3bd710a95c9177e0a8feb77e6821"
+    },
+    {
+      "path": "dawn-control.json",
+      "sha256": "6bd6dc6c014f2f65705c0df38c79e080ef39785e7519fb5b3ef638b3a0088b31"
+    },
+    {
+      "path": "dawn-control.stderr.txt",
+      "sha256": "dff03ffb976b09056b30ff197406138b8e89cda55effc9a9077193a46867f29c"
+    },
+    {
+      "path": "dawn-control.stdout.txt",
+      "sha256": "9bb0537153ea5fde3070154b4e0e17be17869baca0af567516297ac2ca70049b"
+    },
+    {
+      "path": "dawn-control_2026-10-05_10-27-24.json",
+      "sha256": "63ee5ed30c3c43f83bee3e6faa026c36224230cdbcde762a17a3fb4de06d05cc"
+    },
+    {
+      "path": "disposition.json",
+      "sha256": "0215b6f40d13b2d068cac1b92770c77b21c24a834d3ec8964445d988e1d3593d"
+    },
+    {
+      "path": "doe-preload.json",
+      "sha256": "b5e2511196cd0e14e5559d51b1a86b9d1cb7c70d2f0e378aa8557e6595b0c4a9"
+    },
+    {
+      "path": "doe-preload.stderr.txt",
+      "sha256": "dff03ffb976b09056b30ff197406138b8e89cda55effc9a9077193a46867f29c"
+    },
+    {
+      "path": "doe-preload.stdout.txt",
+      "sha256": "113ddc316d1150e2aae539418cae533396e642f701dd95fcaf62b74b15380e74"
+    },
+    {
+      "path": "doe-preload_2026-10-05_10-27-24.json",
+      "sha256": "124d685146beaf9f17a7c470fbf38381b7d599e41f90a1fd36e5a84ae27c68ac"
+    },
+    {
+      "path": "elf-defined.txt",
+      "sha256": "b91d22d71336a9aa1a97eead10d98e76bce8881ead352cf5676b0a957a74e103"
+    },
+    {
+      "path": "elf-dynamic.txt",
+      "sha256": "67b8f495cead7fcdf5ea2b1869897f1bf55ca744f2da3a08b5bec25c02eb7f31"
+    },
+    {
+      "path": "elf-undefined.txt",
+      "sha256": "ca2654867af8ce9b22fab01cad5b13d17dd13121964b94980b6e3798467282c8"
+    },
+    {
+      "path": "fused-control-failure.json",
+      "sha256": "596aa209ae417f429a77971fec257b1e10ce16bb09ebeb5e816db88478c489f4"
+    },
+    {
+      "path": "missing-preload-library-failure.txt",
+      "sha256": "6105d8f14f2dbb727732ad90c3c751264a65234e9c23f9aaa4fc25e576111902"
+    },
+    {
+      "path": "option-control.json",
+      "sha256": "0d497f6f360cb6d46088dc7452f259c5bbe0dfddf632d113033b0c1df2bdc94e"
+    },
+    {
+      "path": "option-control.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "option-control.stdout.txt",
+      "sha256": "9bb0537153ea5fde3070154b4e0e17be17869baca0af567516297ac2ca70049b"
+    },
+    {
+      "path": "option-control_2026-10-05_10-24-40.json",
+      "sha256": "db9b500fced6dd034035098164557db3e92a436453e9892a37468f1c075d5daf"
+    },
+    {
+      "path": "prior-controls/dawn-control.json",
+      "sha256": "72431e74607f26e5ad67f9b53dc4bfe75972ac112fc41cdab7faa4c95adb485f"
+    },
+    {
+      "path": "prior-controls/dawn-control_2026-10-05_10-13-13.json",
+      "sha256": "0e19c986448af5a1c91784f9d461fa8ee7f9b883aea051c83a15b369e5e924cd"
+    },
+    {
+      "path": "prior-controls/doe-preload.json",
+      "sha256": "dd13bf815de40ed883d4b60ae183e9cfb718425c83f90eeed74d261e24199ce1"
+    },
+    {
+      "path": "prior-controls/doe-preload_2026-10-05_10-13-14.json",
+      "sha256": "c39337cea932efb1e32681273a591c2210c0926ffb553f8e1a523aa5efcd7352"
+    },
+    {
+      "path": "prior-controls/probe-control.json",
+      "sha256": "bafdcdd0b9e744030f8c56988394678f85533cbf9622894733576d81607eb29e"
+    },
+    {
+      "path": "probe-control.json",
+      "sha256": "c2fa75b4c116df7c559f9405caebc4e1d82808aca2acd691047c2de900fd51b5"
+    },
+    {
+      "path": "probe-control.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "probe-control.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "requirements.lock",
+      "sha256": "1d5534af96fd3dff737f60bfb0272a17120ada1497da562d08608480703cb95a"
+    },
+    {
+      "path": "requirements.txt",
+      "sha256": "3d6868c78c90ad35ead3ac34ac7794586d8af55f9587201e8946c16d1d4a55b0"
+    },
+    {
+      "path": "source-inspection.json",
+      "sha256": "f0fef40d4ca4afcead694b2774154e2345993895873b5a40be74b3f8cb736941"
+    }
+  ],
+  "publicDownloadAvailable": false,
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "bench/external-projects/onnx-webgpu-substitution/run.py",
+      "sha256": "bb0a07343ce61d8bc103951a06c94f3686865db9b719bb54c3de2dbd42f09d1f"
+    },
+    {
+      "path": "bench/external-projects/onnx-webgpu-substitution/verify.py",
+      "sha256": "f0998f7e85374a1708bdfd156d718e69eb63a598af53cac7ad96c5e78dadb71c"
+    },
+    {
+      "path": "bench/external-projects/onnx-webgpu-substitution/preload-probe.c",
+      "sha256": "8e8ce0340b7c6354b6383ee84f3c8eca2fe759f0101164525f6a755fd0e31e37"
+    },
+    {
+      "path": "runtime/zig/vendor/webgpu-headers/webgpu.h",
+      "sha256": "7691d76ceb67056f89e97b9ff0b62163eacf19a8e0e09a8fa7dbb32069b7978c"
+    },
+    {
+      "path": "runtime/zig/src/core/abi/generated/webgpu_upstream.zig",
+      "sha256": "01127b0c039ffc3e0b69f02c47197014621a903433e9eb833136b5e7c617c036"
+    }
+  ]
+}

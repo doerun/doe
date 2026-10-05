@@ -1,0 +1,105 @@
+{
+  "classification": "framework-substitution-diagnostic",
+  "device": {
+    "metadata": {
+      "version": "0.1.0"
+    },
+    "provider": "WebGpuExecutionProvider",
+    "vendorId": 4098
+  },
+  "doeExecutionEstablished": false,
+  "executionOptions": {
+    "backend": "Vulkan",
+    "cpuFallback": "disabled",
+    "graphOptimization": "disabled",
+    "validation": "full"
+  },
+  "expected": [
+    [
+      15.0,
+      39.0,
+      63.0,
+      87.0
+    ],
+    [
+      39.0,
+      127.0,
+      215.0,
+      303.0
+    ],
+    [
+      63.0,
+      215.0,
+      367.0,
+      519.0
+    ],
+    [
+      87.0,
+      303.0,
+      519.0,
+      735.0
+    ]
+  ],
+  "failure": null,
+  "loadedProviderObserved": true,
+  "mode": "onnx-execution",
+  "model": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/final/dawn-control.onnx",
+    "sha256": "f17b444b3b068c83af921d88e3a9922acf85fa2c70a8dee79742315c193bdfde"
+  },
+  "observed": [
+    [
+      15.0,
+      39.0,
+      63.0,
+      87.0
+    ],
+    [
+      39.0,
+      127.0,
+      215.0,
+      303.0
+    ],
+    [
+      63.0,
+      215.0,
+      367.0,
+      519.0
+    ],
+    [
+      87.0,
+      303.0,
+      519.0,
+      735.0
+    ]
+  ],
+  "operatorNames": [
+    "MatMul",
+    "Add"
+  ],
+  "operatorProviders": [
+    "WebGpuExecutionProvider",
+    "WebGpuExecutionProvider"
+  ],
+  "packages": {
+    "numpy": "2.5.3",
+    "onnx": "1.20.1",
+    "onnxruntime": "1.24.1",
+    "onnxruntime-ep-webgpu": "0.1.0"
+  },
+  "passed": true,
+  "preloadProbe": null,
+  "profile": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/final/dawn-control_2026-10-05_10-13-13.json",
+    "sha256": "0e19c986448af5a1c91784f9d461fa8ee7f9b883aea051c83a15b369e5e924cd"
+  },
+  "providerLibrary": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/venv/lib/python3.14/site-packages/onnxruntime_ep_webgpu/libonnxruntime_providers_webgpu.so",
+    "sha256": "cbdff74e6569e3cf66b46f0d194d87cd3cf49e83b7aa46552c39b0218d58b215"
+  },
+  "runner": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-webgpu-substitution/run.py",
+    "sha256": "9226026f7884c79a35350175ad0dfae64c835891fb702196f96c8c4af0cb0374"
+  },
+  "schemaVersion": 1
+}

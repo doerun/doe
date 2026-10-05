@@ -1,5 +1,19 @@
 # Doe status: runtime backends and benchmarks
 
+## Independent ONNX integration boundary
+
+The [existing native ONNX WebGPU provider diagnostic](../../reports/benchmarks/amd-vulkan/20261005-onnx-webgpu-substitution/README.md)
+executes original operators with CPU fallback disabled and exact independent
+outputs. Preloading the accepted Doe library does not redirect this published
+provider's internal execution. The forwarding probe's positive control passes;
+the ONNX arm reaches none of its observed external entry points. A separately
+pinned upstream source offers a static/external-Dawn proc-table boundary, and a
+safe published-package control confirms option parsing. Doe's proc table has a
+different ordering; a matched adapter needs ABI, extensions, and lifecycle
+qualification. A source build can pin that boundary; its necessity is not proved.
+That integration remains unqualified. The separate custom operator plugin is
+unchanged; no Doe-backed ONNX inference or performance advantage is established.
+
 ## Independent installation
 
 The [standalone generation installation](../../reports/benchmarks/amd-vulkan/20261005-installed-generation/README.md)
@@ -11,8 +25,8 @@ failure checks. Checkouts and external networking are inaccessible during
 execution. This qualifies the retained Linux snapshot on the tested host; registry
 release, another operator's reproduction, performance superiority, and leak-free
 native teardown remain separate. The previous generation experiment remains
-closed and unchanged. ONNX Runtime's existing WebGPU provider remains the next
-independent integration investigation.
+closed and unchanged. The independent ONNX investigation's current disposition is
+recorded above; no replacement optimization campaign is active.
 
 ## Application selection after submission attribution
 

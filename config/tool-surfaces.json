@@ -114,13 +114,16 @@
         "bench/external-projects/doppler-generation/compare.py",
         "bench/external-projects/doppler-generation/attribute.py",
         "bench/external-projects/doppler-generation/validate.py",
-        "bench/external-projects/doppler-generation/installed-generation.py"
+        "bench/external-projects/doppler-generation/installed-generation.py",
+        "bench/external-projects/onnx-webgpu-substitution/run.py",
+        "bench/external-projects/onnx-webgpu-substitution/verify.py"
       ],
       "docs": [
         "bench/README.md",
         "docs/internal-tooling.md",
         "docs/implementation-peers.md",
-        "bench/external-projects/doppler-generation/README.md"
+        "bench/external-projects/doppler-generation/README.md",
+        "bench/external-projects/onnx-webgpu-substitution/README.md"
       ]
     },
     {

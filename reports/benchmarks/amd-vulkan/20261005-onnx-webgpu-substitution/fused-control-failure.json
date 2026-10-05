@@ -1,0 +1,95 @@
+{
+  "classification": "framework-substitution-diagnostic",
+  "device": {
+    "metadata": {
+      "version": "0.1.0"
+    },
+    "provider": "WebGpuExecutionProvider",
+    "vendorId": 4098
+  },
+  "doeExecutionEstablished": false,
+  "expected": [
+    [
+      15.0,
+      39.0,
+      63.0,
+      87.0
+    ],
+    [
+      39.0,
+      127.0,
+      215.0,
+      303.0
+    ],
+    [
+      63.0,
+      215.0,
+      367.0,
+      519.0
+    ],
+    [
+      87.0,
+      303.0,
+      519.0,
+      735.0
+    ]
+  ],
+  "failure": {
+    "message": "Expected both original operators on WebGPU, without CPU fallback",
+    "type": "RuntimeError"
+  },
+  "model": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/dawn-control.onnx",
+    "sha256": "f17b444b3b068c83af921d88e3a9922acf85fa2c70a8dee79742315c193bdfde"
+  },
+  "observed": [
+    [
+      15.0,
+      39.0,
+      63.0,
+      87.0
+    ],
+    [
+      39.0,
+      127.0,
+      215.0,
+      303.0
+    ],
+    [
+      63.0,
+      215.0,
+      367.0,
+      519.0
+    ],
+    [
+      87.0,
+      303.0,
+      519.0,
+      735.0
+    ]
+  ],
+  "operatorProviders": [
+    "WebGpuExecutionProvider"
+  ],
+  "packages": {
+    "numpy": "2.5.3",
+    "onnx": "1.20.1",
+    "onnxruntime": "1.24.1",
+    "onnxruntime-ep-webgpu": "0.1.0"
+  },
+  "passed": false,
+  "preloadProbe": null,
+  "profile": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/dawn-control_2026-10-05_10-06-06.json",
+    "sha256": "97fc7681e20176bcd8364f46182db84d87771a4644295e98f90d01cf65a2f26a"
+  },
+  "providerLibrary": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/venv/lib/python3.14/site-packages/onnxruntime_ep_webgpu/libonnxruntime_providers_webgpu.so",
+    "sha256": "cbdff74e6569e3cf66b46f0d194d87cd3cf49e83b7aa46552c39b0218d58b215"
+  },
+  "runner": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-webgpu-substitution/run.py",
+    "sha256": "331133c4d1e0ffc1b0095886fe38cf73eb53d00fb608923a4351d592d2ce5bad"
+  },
+  "schemaVersion": 1
+}

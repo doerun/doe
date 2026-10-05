@@ -1,0 +1,44 @@
+{
+  "classification": "framework-substitution-diagnostic",
+  "device": {
+    "metadata": {
+      "version": "0.1.0"
+    },
+    "provider": "WebGpuExecutionProvider",
+    "vendorId": 4098
+  },
+  "doeExecutionEstablished": false,
+  "executionOptions": {
+    "backend": "Vulkan",
+    "cpuFallback": "disabled",
+    "graphOptimization": "disabled",
+    "validation": "full"
+  },
+  "expectedConfigurationRejection": {
+    "message": "/onnxruntime_src/onnxruntime/core/session/plugin_ep/ep_plugin_provider_interfaces.cc:64 virtual std::unique_ptr<onnxruntime::IExecutionProvider> onnxruntime::PluginExecutionProviderFactory::CreateProvider(const OrtSessionOptions&, const OrtLogger&) Error creating execution provider: [ONNXRuntimeError] : 11 : EP_FAIL : /onnxruntime_src/onnxruntime/core/providers/webgpu/webgpu_provider_factory.cc:159 onnxruntime::webgpu::WebGpuContextConfig onnxruntime::{anonymous}::ParseWebGpuContextConfig(const onnxruntime::ConfigOptions&) std::errc{} == std::from_chars(dawn_proc_table_str.data(), dawn_proc_table_str.data() + dawn_proc_table_str.size(), dawn_proc_table).ec was false. \n\n",
+    "type": "RuntimeError"
+  },
+  "failure": null,
+  "mode": "proc-table-option-control",
+  "model": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/final/option-control.onnx",
+    "sha256": "f17b444b3b068c83af921d88e3a9922acf85fa2c70a8dee79742315c193bdfde"
+  },
+  "packages": {
+    "numpy": "2.5.3",
+    "onnx": "1.20.1",
+    "onnxruntime": "1.24.1",
+    "onnxruntime-ep-webgpu": "0.1.0"
+  },
+  "passed": true,
+  "preloadProbe": null,
+  "providerLibrary": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/venv/lib/python3.14/site-packages/onnxruntime_ep_webgpu/libonnxruntime_providers_webgpu.so",
+    "sha256": "cbdff74e6569e3cf66b46f0d194d87cd3cf49e83b7aa46552c39b0218d58b215"
+  },
+  "runner": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-webgpu-substitution/run.py",
+    "sha256": "bb0a07343ce61d8bc103951a06c94f3686865db9b719bb54c3de2dbd42f09d1f"
+  },
+  "schemaVersion": 1
+}

@@ -1,0 +1,45 @@
+{
+  "classification": "framework-substitution-diagnostic",
+  "doeExecutionEstablished": false,
+  "executionOptions": {
+    "backend": "Vulkan",
+    "cpuFallback": "disabled",
+    "graphOptimization": "disabled",
+    "validation": "full"
+  },
+  "failure": null,
+  "mode": "probe-positive-control",
+  "packages": {
+    "numpy": "2.5.3",
+    "onnx": "1.20.1",
+    "onnxruntime": "1.24.1",
+    "onnxruntime-ep-webgpu": "0.1.0"
+  },
+  "passed": true,
+  "preloadProbe": {
+    "counters": {
+      "instances": 1,
+      "shaders": 0,
+      "submissions": 0
+    },
+    "doeLibrary": {
+      "path": "/tmp/doe-installed-generation-relocated/node_modules/doe-gpu/native/libwebgpu_doe.so",
+      "sha256": "811d4dba9d5cd165060a5aeade705b4c91bb5d1a6d30cdd9528068e9f290c239"
+    },
+    "doeLibraryLoaded": true,
+    "library": {
+      "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/preload-probe.so",
+      "sha256": "c2bf49de0bdde5548a835fbd235a00f7cbbef3cbd25b64d21bfc213e44d16d44"
+    },
+    "probeLibraryLoaded": true
+  },
+  "providerLibrary": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/venv/lib/python3.14/site-packages/onnxruntime_ep_webgpu/libonnxruntime_providers_webgpu.so",
+    "sha256": "cbdff74e6569e3cf66b46f0d194d87cd3cf49e83b7aa46552c39b0218d58b215"
+  },
+  "runner": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-webgpu-substitution/run.py",
+    "sha256": "9226026f7884c79a35350175ad0dfae64c835891fb702196f96c8c4af0cb0374"
+  },
+  "schemaVersion": 1
+}

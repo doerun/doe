@@ -1,0 +1,33 @@
+{
+  "checks": {
+    "cpuFallbackDisabled": true,
+    "independentOutputExact": true,
+    "librariesLoaded": true,
+    "originalOperatorsRetained": true,
+    "probePositiveControl": true,
+    "procTableOptionParsed": true,
+    "sameExecutionOptions": true,
+    "sameModel": true,
+    "sameRunner": true,
+    "zeroInterceptedCalls": true
+  },
+  "classification": "onnx-webgpu-substitution-disposition",
+  "disposition": "published-binary-preload-blocked",
+  "doeExecutionEstablished": false,
+  "host": {
+    "machine": "x86_64",
+    "python": "3.14.4",
+    "release": "7.0.0-29-generic",
+    "system": "Linux"
+  },
+  "limitations": [
+    "Published wheel source provenance is not established by the inspected upstream tag.",
+    "No source-built external-Dawn provider or Doe-backed ONNX operator execution is qualified.",
+    "No timings or framework adoption claim.",
+    "Recognized option parsing does not establish whether this published wheel accepts a valid replacement table."
+  ],
+  "performanceClaim": false,
+  "requiredNextBoundary": "Explicit ABI-matched DawnProcTable adapter; qualify descriptors, callbacks, feature admission, and lifetimes. A source-built external-Dawn provider can pin the ABI; the published option parser is already confirmed.",
+  "schemaVersion": 1,
+  "sources": "source-inspection.json"
+}

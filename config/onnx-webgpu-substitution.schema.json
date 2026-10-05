@@ -1,0 +1,651 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Native ONNX WebGPU substitution diagnostic evidence",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/result"
+    },
+    {
+      "$ref": "#/$defs/disposition"
+    },
+    {
+      "$ref": "#/$defs/inspection"
+    },
+    {
+      "$ref": "#/$defs/manifest"
+    }
+  ],
+  "$defs": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "library",
+        "counters",
+        "doeLibrary",
+        "doeLibraryLoaded",
+        "probeLibraryLoaded"
+      ],
+      "properties": {
+        "library": {
+          "$ref": "#/$defs/identity"
+        },
+        "counters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instances",
+            "shaders",
+            "submissions"
+          ],
+          "properties": {
+            "instances": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shaders": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "submissions": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "doeLibrary": {
+          "$ref": "#/$defs/identity"
+        },
+        "doeLibraryLoaded": {
+          "type": "boolean"
+        },
+        "probeLibraryLoaded": {
+          "type": "boolean"
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "classification",
+        "passed",
+        "failure",
+        "doeExecutionEstablished",
+        "packages",
+        "runner",
+        "providerLibrary",
+        "preloadProbe",
+        "executionOptions",
+        "mode",
+        "expectedConfigurationRejection"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "classification": {
+          "const": "framework-substitution-diagnostic"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "failure": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "message"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "doeExecutionEstablished": {
+          "const": false
+        },
+        "packages": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "numpy",
+            "onnx",
+            "onnxruntime",
+            "onnxruntime-ep-webgpu"
+          ],
+          "properties": {
+            "numpy": {
+              "type": "string"
+            },
+            "onnx": {
+              "type": "string"
+            },
+            "onnxruntime": {
+              "type": "string"
+            },
+            "onnxruntime-ep-webgpu": {
+              "type": "string"
+            }
+          }
+        },
+        "runner": {
+          "$ref": "#/$defs/identity"
+        },
+        "providerLibrary": {
+          "$ref": "#/$defs/identity"
+        },
+        "preloadProbe": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/probe"
+            }
+          ]
+        },
+        "executionOptions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "graphOptimization",
+            "cpuFallback",
+            "backend",
+            "validation"
+          ],
+          "properties": {
+            "graphOptimization": {
+              "const": "disabled"
+            },
+            "cpuFallback": {
+              "const": "disabled"
+            },
+            "backend": {
+              "const": "Vulkan"
+            },
+            "validation": {
+              "const": "full"
+            }
+          }
+        },
+        "mode": {
+          "enum": [
+            "onnx-execution",
+            "probe-positive-control",
+            "proc-table-option-control"
+          ]
+        },
+        "device": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "metadata",
+            "provider",
+            "vendorId"
+          ],
+          "properties": {
+            "metadata": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version"
+              ],
+              "properties": {
+                "version": {
+                  "type": "string"
+                }
+              }
+            },
+            "provider": {
+              "const": "WebGpuExecutionProvider"
+            },
+            "vendorId": {
+              "type": "integer"
+            }
+          }
+        },
+        "model": {
+          "$ref": "#/$defs/identity"
+        },
+        "expected": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "observed": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "profile": {
+          "$ref": "#/$defs/identity"
+        },
+        "operatorNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "operatorProviders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "loadedProviderObserved": {
+          "type": "boolean"
+        },
+        "expectedConfigurationRejection": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "message"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "disposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "classification",
+        "disposition",
+        "doeExecutionEstablished",
+        "performanceClaim",
+        "checks",
+        "host",
+        "requiredNextBoundary",
+        "sources",
+        "limitations"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "classification": {
+          "const": "onnx-webgpu-substitution-disposition"
+        },
+        "disposition": {
+          "const": "published-binary-preload-blocked"
+        },
+        "doeExecutionEstablished": {
+          "const": false
+        },
+        "performanceClaim": {
+          "const": false
+        },
+        "checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "originalOperatorsRetained",
+            "sameModel",
+            "sameRunner",
+            "sameExecutionOptions",
+            "independentOutputExact",
+            "cpuFallbackDisabled",
+            "librariesLoaded",
+            "zeroInterceptedCalls",
+            "probePositiveControl",
+            "procTableOptionParsed"
+          ],
+          "properties": {
+            "originalOperatorsRetained": {
+              "type": "boolean"
+            },
+            "sameModel": {
+              "type": "boolean"
+            },
+            "sameRunner": {
+              "type": "boolean"
+            },
+            "sameExecutionOptions": {
+              "type": "boolean"
+            },
+            "independentOutputExact": {
+              "type": "boolean"
+            },
+            "cpuFallbackDisabled": {
+              "type": "boolean"
+            },
+            "librariesLoaded": {
+              "type": "boolean"
+            },
+            "zeroInterceptedCalls": {
+              "type": "boolean"
+            },
+            "probePositiveControl": {
+              "type": "boolean"
+            },
+            "procTableOptionParsed": {
+              "type": "boolean"
+            }
+          }
+        },
+        "host": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "machine",
+            "system",
+            "release",
+            "python"
+          ],
+          "properties": {
+            "machine": {
+              "type": "string"
+            },
+            "system": {
+              "type": "string"
+            },
+            "release": {
+              "type": "string"
+            },
+            "python": {
+              "type": "string"
+            }
+          }
+        },
+        "requiredNextBoundary": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "string"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "inspection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "onnxruntimeCommit",
+        "dawnDependencyCommit",
+        "publishedWheelSourceCommitEstablished",
+        "files",
+        "doeHeader",
+        "procTableQualified",
+        "dawnProcTemplate",
+        "dawnApi",
+        "doeProcTable"
+      ],
+      "properties": {
+        "onnxruntimeCommit": {
+          "type": "string"
+        },
+        "dawnDependencyCommit": {
+          "type": "string"
+        },
+        "publishedWheelSourceCommitEstablished": {
+          "const": false
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256",
+              "url"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "doeHeader": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256",
+            "commit"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "commit": {
+              "type": "string"
+            }
+          }
+        },
+        "procTableQualified": {
+          "const": false
+        },
+        "dawnProcTemplate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256",
+            "url"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "dawnApi": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256",
+            "url"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "doeProcTable": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256",
+            "commit"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "commit": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "classification",
+        "files",
+        "sources",
+        "custody",
+        "custodyContents",
+        "publicDownloadAvailable"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "classification": {
+          "const": "onnx-webgpu-substitution-retention"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "custody": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256",
+            "bytes"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "custodyContents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "publicDownloadAvailable": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "dawnApi": {
+    "path": "dawn/src/dawn/dawn.json",
+    "sha256": "87354eb6d32c3f5c655931c923493bbbfa42b71822dd08705c2983e7f7c5fbb3",
+    "url": "https://raw.githubusercontent.com/google/dawn/13c1635a14574ebb7116b56a69f5519301417fda/src/dawn/dawn.json"
+  },
+  "dawnDependencyCommit": "13c1635a14574ebb7116b56a69f5519301417fda",
+  "dawnProcTemplate": {
+    "path": "dawn/generator/templates/dawn_proc_table.h",
+    "sha256": "acaeacf02bc1612855273c6f5a8c3dba8fef970528308284b5cfd68db90c9b54",
+    "url": "https://raw.githubusercontent.com/google/dawn/13c1635a14574ebb7116b56a69f5519301417fda/generator/templates/dawn_proc_table.h"
+  },
+  "doeHeader": {
+    "commit": "01addc4ba8a2915a061b7095a6768b512071ab96",
+    "path": "runtime/zig/vendor/webgpu-headers/webgpu.h",
+    "sha256": "7691d76ceb67056f89e97b9ff0b62163eacf19a8e0e09a8fa7dbb32069b7978c"
+  },
+  "doeProcTable": {
+    "commit": "cd249a6147bf5f5d73c91f2c4583b67628431776",
+    "path": "runtime/zig/src/core/abi/generated/webgpu_upstream.zig",
+    "sha256": "01127b0c039ffc3e0b69f02c47197014621a903433e9eb833136b5e7c617c036"
+  },
+  "files": [
+    {
+      "path": "cmake/deps.txt",
+      "sha256": "a913db05c4e9965f9725aec7a5b9b10b071d13496e567283e81737ebe91ff027",
+      "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/470ae16099a74fe05e31f2530489332c0525edb5/cmake/deps.txt"
+    },
+    {
+      "path": "cmake/external/helper_functions.cmake",
+      "sha256": "ae5cc8332e93737d92301a3f70cfa5c2fdb529d6a366d403932853f4bb640fa7",
+      "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/470ae16099a74fe05e31f2530489332c0525edb5/cmake/external/helper_functions.cmake"
+    },
+    {
+      "path": "cmake/onnxruntime_providers_webgpu.cmake",
+      "sha256": "1f614d70a29d7c8ddaba58a36ef45c8f3894778f675fedf77d6cd08feea1b22d",
+      "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/470ae16099a74fe05e31f2530489332c0525edb5/cmake/onnxruntime_providers_webgpu.cmake"
+    },
+    {
+      "path": "onnxruntime/core/providers/webgpu/webgpu_context.cc",
+      "sha256": "e60a970205a045b0e21a591881b663355eedcdef93a847cc06d667df2664fd46",
+      "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/470ae16099a74fe05e31f2530489332c0525edb5/onnxruntime/core/providers/webgpu/webgpu_context.cc"
+    },
+    {
+      "path": "onnxruntime/core/providers/webgpu/webgpu_context.h",
+      "sha256": "a791485de585878347092e1b4dd4c4003683ac2b1e273cb7e40b7a3f3cb3e37a",
+      "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/470ae16099a74fe05e31f2530489332c0525edb5/onnxruntime/core/providers/webgpu/webgpu_context.h"
+    },
+    {
+      "path": "onnxruntime/core/providers/webgpu/webgpu_execution_provider.cc",
+      "sha256": "f47ab7f26bf329c9e8136f61f6ee0b9ed0d21c950b167cd8b28e3dfa01bd4c43",
+      "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/470ae16099a74fe05e31f2530489332c0525edb5/onnxruntime/core/providers/webgpu/webgpu_execution_provider.cc"
+    },
+    {
+      "path": "onnxruntime/core/providers/webgpu/webgpu_provider_factory.cc",
+      "sha256": "40919d5bca246ec72cfefc0388e6c26323c7d70b19e0786e7671ec11790e9293",
+      "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/470ae16099a74fe05e31f2530489332c0525edb5/onnxruntime/core/providers/webgpu/webgpu_provider_factory.cc"
+    },
+    {
+      "path": "onnxruntime/core/providers/webgpu/webgpu_provider_options.h",
+      "sha256": "f250cd1c35f7b98da19a41a95f013ed6141b5f3c28ffca9348e5a9029380cfa9",
+      "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/470ae16099a74fe05e31f2530489332c0525edb5/onnxruntime/core/providers/webgpu/webgpu_provider_options.h"
+    }
+  ],
+  "onnxruntimeCommit": "470ae16099a74fe05e31f2530489332c0525edb5",
+  "procTableQualified": false,
+  "publishedWheelSourceCommitEstablished": false
+}

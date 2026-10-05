@@ -1560,6 +1560,34 @@
     {
       "schema": "config/doppler-installed-generation.schema.json",
       "data": "reports/benchmarks/amd-vulkan/20261005-installed-generation/manifest.json"
+    },
+    {
+      "schema": "config/onnx-webgpu-substitution.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-webgpu-substitution/dawn-control.json"
+    },
+    {
+      "schema": "config/onnx-webgpu-substitution.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-webgpu-substitution/doe-preload.json"
+    },
+    {
+      "schema": "config/onnx-webgpu-substitution.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-webgpu-substitution/probe-control.json"
+    },
+    {
+      "schema": "config/onnx-webgpu-substitution.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-webgpu-substitution/disposition.json"
+    },
+    {
+      "schema": "config/onnx-webgpu-substitution.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-webgpu-substitution/source-inspection.json"
+    },
+    {
+      "schema": "config/onnx-webgpu-substitution.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-webgpu-substitution/manifest.json"
+    },
+    {
+      "schema": "config/onnx-webgpu-substitution.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-webgpu-substitution/option-control.json"
     }
   ],
   "globTargets": [
