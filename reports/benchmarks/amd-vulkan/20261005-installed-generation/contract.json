@@ -1,0 +1,147 @@
+{
+  "cancellation": {
+    "abortAfterStreamChunks": 2,
+    "requireFollowingGenerationCorrect": true
+  },
+  "cases": [
+    {
+      "id": "full_sentence",
+      "maxTokens": 32,
+      "prompt": "Explain why leaves are green in one sentence.",
+      "stopSequences": []
+    },
+    {
+      "id": "short_reply",
+      "maxTokens": 32,
+      "prompt": "Reply with just the word hello.",
+      "stopSequences": []
+    },
+    {
+      "id": "length_limit",
+      "maxTokens": 4,
+      "prompt": "Explain why leaves are green in one sentence.",
+      "stopSequences": []
+    },
+    {
+      "id": "sequence_stop",
+      "maxTokens": 32,
+      "prompt": "Explain why leaves are green in one sentence.",
+      "stopSequences": [
+        "green"
+      ]
+    }
+  ],
+  "classification": "standalone-installation-qualification",
+  "doeSourceCommit": "5a4bdd920e8531fe31ad2ca41811a10883a2d798",
+  "dopplerSourceCommit": "3e31ce60fbab709e9f7d9bb2eaa9c33e5ce6f196",
+  "generation": {
+    "eosTokenIds": [
+      1,
+      106
+    ],
+    "presencePenalty": 0,
+    "repetitionPenalty": 1,
+    "temperature": 0,
+    "topK": 1,
+    "topP": 1,
+    "useChatTemplate": true
+  },
+  "model": {
+    "files": [
+      {
+        "bytes": 112143,
+        "path": "manifest.json",
+        "sha256": "afecba81640288d0849838c8d4d8c763af80edc1fc22051853ce6700dda4b315"
+      },
+      {
+        "bytes": 261,
+        "path": "origin.json",
+        "sha256": "4e1d26c6502080a66c14169f5b289d43b67991bc3096d4f230e2aa82d44a1bcc"
+      },
+      {
+        "bytes": 14386247,
+        "path": "tokenizer.json",
+        "sha256": "be6955513a2509d69d18e82180c2a477ad99358d15212fb81d957566d8186075"
+      },
+      {
+        "bytes": 4689074,
+        "path": "tokenizer.model",
+        "sha256": "1299c11d7cf632ef3b4e11937501358ada021bbdf7c47638d13c0ee982f2e79c"
+      },
+      {
+        "bytes": 67108864,
+        "path": "shard_00000.bin",
+        "sha256": "93d8ad2033e7ec42376dafb41c1e89753d0ca40896835c6f012efe47dbdda6d1"
+      },
+      {
+        "bytes": 67108864,
+        "path": "shard_00001.bin",
+        "sha256": "7896aa344a3da4539cdb76bdbfec3a5f665da5e23d15d15ef9a3b0536ebcf3c5"
+      },
+      {
+        "bytes": 67108864,
+        "path": "shard_00002.bin",
+        "sha256": "ff2fc36d9b0008d734f0a82923d47db2383e5a5bae055172630e8ad93ad23ca5"
+      },
+      {
+        "bytes": 67108864,
+        "path": "shard_00003.bin",
+        "sha256": "6170b5f1376dbfe33a58de2603987abde826c0eb7318d6c0a1baa78cdf42f77b"
+      },
+      {
+        "bytes": 67108864,
+        "path": "shard_00004.bin",
+        "sha256": "5c8767e71c920596247b7ea3d0d55b45d6af4255757758dda6aedd907cfa3e2c"
+      },
+      {
+        "bytes": 63812864,
+        "path": "shard_00005.bin",
+        "sha256": "81ff27711b246ec27e3396871547e77f5e4d5d3d029357a66a8f547b6f32c015"
+      }
+    ],
+    "path": "/application/model"
+  },
+  "oracle": {
+    "acceptance": "Exact prompt IDs, generated IDs, complete decoded stream and stop reason against independent CPU reference; fail before performance on any mismatch.",
+    "cpuThreads": 4,
+    "modelConfig": {
+      "bos_token_id": 2,
+      "eos_token_id": 1,
+      "head_dim": 256,
+      "hidden_activation": "gelu_pytorch_tanh",
+      "hidden_size": 640,
+      "intermediate_size": 2048,
+      "max_position_embeddings": 32768,
+      "num_attention_heads": 4,
+      "num_hidden_layers": 18,
+      "num_key_value_heads": 1,
+      "query_pre_attn_scalar": 256,
+      "rms_norm_eps": 1e-06,
+      "sliding_window": 512,
+      "tie_word_embeddings": true,
+      "vocab_size": 262144
+    }
+  },
+  "performance": {
+    "cacheScope": "Fresh process cold shader cache; OS file cache explicitly uncontrolled. Resident model reuse in each process. No origin acquisition claim.",
+    "failurePolicy": "No outcome-selected retry or promotion; retain all failures and unfavorable cohorts.",
+    "maximumControlRatio": 1.05,
+    "maximumMemoryRegressionRatio": 1.05,
+    "maximumTailRegressionRatio": 1.05,
+    "minimumLatencyGainRatio": 1.1,
+    "processes": 8,
+    "residentRuns": 2,
+    "sampleOrder": [
+      "dawn",
+      "doe",
+      "doe",
+      "dawn"
+    ],
+    "timingAdmission": "No candidate timing until all qualification outputs and cancellation settlement pass. Initial A/A stability gates any attribution.",
+    "warmupResidentRuns": 1
+  },
+  "publicApi": "doppler-gpu/compat: load, model.generate, model.advanced tokenization/stats, model.unload",
+  "schemaVersion": 1,
+  "scope": "New full application contract, no retired provider/Electron credit; same model semantics, no rewriting-quality claim.",
+  "workloadId": "doppler_installed_generation_native_vulkan_v1"
+}

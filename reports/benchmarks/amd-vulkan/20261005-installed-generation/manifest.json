@@ -1,0 +1,282 @@
+{
+  "artifacts": [
+    {
+      "bytes": 4637,
+      "path": "contract.json",
+      "sha256": "cbbabc1979812c10e08eb07ae66e8f0d68c82563fc331b61504baba7921d13a2"
+    },
+    {
+      "bytes": 1632,
+      "path": "harness/installed-audit.mjs.gz",
+      "sha256": "911e6884de00d8f89f84fece7eba5619f81a715091a7863da000f85688e71ca6"
+    },
+    {
+      "bytes": 4733,
+      "path": "harness/installed-generation.py.gz",
+      "sha256": "3e18a7df49840241086414427cd6d78baa1751059c0f592af3246628bb1b98a7"
+    },
+    {
+      "bytes": 710,
+      "path": "harness/observe-phases.mjs.gz",
+      "sha256": "f21465f3430568357d48b5f58e959ee38a1af43f91f99f2ea1beaeb3b5779f61"
+    },
+    {
+      "bytes": 2736,
+      "path": "harness/run-generation.mjs.gz",
+      "sha256": "fa4187a40fc8f967387d3a6681f3460ff587e66e7860f0e7c40611b33cbef886"
+    },
+    {
+      "bytes": 1928,
+      "path": "inputs/contract.json.gz",
+      "sha256": "bf0daaba83cc6c794b12f6f4d2c5d7dc9971d4e69d18dd1bf8c1cdaf00628db9"
+    },
+    {
+      "bytes": 993,
+      "path": "inputs/providers.json.gz",
+      "sha256": "a9669840e97d3980c09e069dccba644db41afad85d354f21154e0890dbcc84f1"
+    },
+    {
+      "bytes": 1053,
+      "path": "inputs/reference.json.gz",
+      "sha256": "0273b4401139735fdc0f1faf373215263d2ea7c25486ce231561c55933fe92fd"
+    },
+    {
+      "bytes": 5089,
+      "path": "installation.json",
+      "sha256": "09840397988afe4c56c78bc8cbd12caa096337f9dc14dbb3c980347dcea6c76d"
+    },
+    {
+      "bytes": 106476,
+      "path": "inventory.json.gz",
+      "sha256": "a418ec35e974de3e48953d4f8b71a975737db468307cbe28fbd0a14e384d5cfa"
+    },
+    {
+      "bytes": 1290,
+      "path": "missing-sysfs-failure.json.gz",
+      "sha256": "fbc75f734e709cc5d556bd506d391562b33ccf49a4ba771eda25fface3e659f5"
+    },
+    {
+      "bytes": 4201,
+      "path": "package-lock.json",
+      "sha256": "7cb0e06b3819d6a8fbf945ae46c250884e93b052f18e84519f67a5aa9d3a62ec"
+    },
+    {
+      "bytes": 307,
+      "path": "package.json",
+      "sha256": "ab6d9acbc8099aff05f722fa4403c1fff462bc9d4f6aa58af6da32d30ccf82fc"
+    },
+    {
+      "bytes": 2165,
+      "path": "providers.json",
+      "sha256": "7c1642bc219ef90ced985c85e93a452692048dec53e7d19b193a9a25bdaaab5c"
+    },
+    {
+      "bytes": 3643,
+      "path": "reference.json",
+      "sha256": "8d5f7a3421b84340bee0e044663c02e499075b4b890d6abc2ef43dc9e7c0a88b"
+    },
+    {
+      "bytes": 909,
+      "path": "relocated/dawn-control-audit.json.gz",
+      "sha256": "700b00d5a8e5ef1ff48cacfc1652b275500434ed3845bcf6d68ce340a61abcbc"
+    },
+    {
+      "bytes": 8958,
+      "path": "relocated/dawn-control.json.gz",
+      "sha256": "3023ddc3b4e201667922252a998f1d2610704ae1ce38bc581292f71527a8e6ce"
+    },
+    {
+      "bytes": 1984,
+      "path": "relocated/dawn-control.log.gz",
+      "sha256": "37d50bff0f0a1ce11167ea6c0d47cb39c77811edb30b6479ad41509f284e8165"
+    },
+    {
+      "bytes": 920,
+      "path": "relocated/doe-first-audit.json.gz",
+      "sha256": "2d78e34f09f03c9fdd8f3101a13fcead349c4ddcb988fa6ba656a99b47462a27"
+    },
+    {
+      "bytes": 9264,
+      "path": "relocated/doe-first.json.gz",
+      "sha256": "032ab0ffcdb79e7f4c2ba39530ece05d29beb928d2e0a6eb05ec83f2e7650f01"
+    },
+    {
+      "bytes": 2040,
+      "path": "relocated/doe-first.log.gz",
+      "sha256": "07573959ffb0f9ad256e25c97a3008f1c341056315381c91bd5efbb958ba35f7"
+    },
+    {
+      "bytes": 921,
+      "path": "relocated/doe-reopen-audit.json.gz",
+      "sha256": "a82727b82c6fd75edc9f56b99e2d804896a8ef08d905b6f18fde9c0a1eb9d685"
+    },
+    {
+      "bytes": 9260,
+      "path": "relocated/doe-reopen.json.gz",
+      "sha256": "750b09efc0e2425ccd890e4590a52b06bef88457992480cac2b68223e127cc71"
+    },
+    {
+      "bytes": 2024,
+      "path": "relocated/doe-reopen.log.gz",
+      "sha256": "ff789e2810d06418d07badcbadf5e68fc84bd986659a08ff96e5c38ac9883768"
+    },
+    {
+      "bytes": 399,
+      "path": "relocated/incompatible-package-audit.json.gz",
+      "sha256": "1b6dd266f25cfe66c1e4a02546cf315370069837927e86665524cc989d050317"
+    },
+    {
+      "bytes": 6323,
+      "path": "relocated/incompatible-package.json.gz",
+      "sha256": "0484f7ac69be3704056d15bd9e48b466f84e017b1934c1fbe8ea6bd3c7400002"
+    },
+    {
+      "bytes": 192,
+      "path": "relocated/incompatible-package.log.gz",
+      "sha256": "05d8b35d0ee26a3b12967a824683c66379a14fb596ac19a6f80cc3945fea1453"
+    },
+    {
+      "bytes": 44,
+      "path": "relocated/install.log.gz",
+      "sha256": "27f179c2d3ba8acf52edf6389f9722306564b4aec31f764de60f2de310821c81"
+    },
+    {
+      "bytes": 383,
+      "path": "relocated/missing-library-audit.json.gz",
+      "sha256": "458daf22dfe7dfcaf2bb1d4703c601c727f20173620a4672c4b4be3102ec4c67"
+    },
+    {
+      "bytes": 170,
+      "path": "relocated/missing-library.log.gz",
+      "sha256": "45f9c6366cbb75dd2cd5251301c7826a3d134b9b3d6d774729429cc4b4988872"
+    },
+    {
+      "bytes": 361,
+      "path": "relocated/missing-model-audit.json.gz",
+      "sha256": "dd7e604b9a5c383a6c503a2deba8b772d3b78b21e6aa2917576b48f5c51c0403"
+    },
+    {
+      "bytes": 149,
+      "path": "relocated/missing-model.log.gz",
+      "sha256": "274c0855c49c6a3327523280188a8b537a3a9cbb03baee18c1cc8fb3982f4d78"
+    },
+    {
+      "bytes": 47,
+      "path": "relocated/offline-install.log.gz",
+      "sha256": "11507b714e1eb24a849caf23d4d79ca7be6979f0999a03d2948a74b8f85aa7b3"
+    },
+    {
+      "bytes": 366,
+      "path": "relocated/summary.json.gz",
+      "sha256": "015a714f01764ad4312b914219c8fc0d379d996bf33973f670619c583f3c3cfd"
+    },
+    {
+      "bytes": 905,
+      "path": "results/dawn-control-audit.json.gz",
+      "sha256": "ae8fc2217a9e0502fe3955b444289836f1a0db844cf2dbed27aa57452e9d86ae"
+    },
+    {
+      "bytes": 8955,
+      "path": "results/dawn-control.json.gz",
+      "sha256": "acffe8f2abb02dc0feabbef5a2d97fadfcf819f17f75448be3fc13a97a516746"
+    },
+    {
+      "bytes": 1986,
+      "path": "results/dawn-control.log.gz",
+      "sha256": "925e4423397bc9fea86daea514d8d33f87b2e234654b7ce06cd47637b99acb27"
+    },
+    {
+      "bytes": 919,
+      "path": "results/doe-first-audit.json.gz",
+      "sha256": "294fab3e07c411ce32ec5adcd6b836d35ab747ca8419a25db7981c97783af3fd"
+    },
+    {
+      "bytes": 9264,
+      "path": "results/doe-first.json.gz",
+      "sha256": "eae514172f24ab85326261a1a9ace37826176636b686f41f8e593aec7f2ca143"
+    },
+    {
+      "bytes": 2023,
+      "path": "results/doe-first.log.gz",
+      "sha256": "93aa0855d94d78c76e06d9081c1adda0c7e6e314ddfc20ecdb19063dcfcd3006"
+    },
+    {
+      "bytes": 918,
+      "path": "results/doe-reopen-audit.json.gz",
+      "sha256": "9f25a1b569feaf79aa7a0bdc02945bdf31b7a595ca5a1f74a6e63c59702f52db"
+    },
+    {
+      "bytes": 9255,
+      "path": "results/doe-reopen.json.gz",
+      "sha256": "d6faa583e2d0966aa664dbbd3b14ae02debb47ef039a789104f2639b63fbc0a2"
+    },
+    {
+      "bytes": 2035,
+      "path": "results/doe-reopen.log.gz",
+      "sha256": "019b7894a80b8a21fe44232be811210b0a6b0f091585d59f7482f4ae070ba9b2"
+    },
+    {
+      "bytes": 399,
+      "path": "results/incompatible-package-audit.json.gz",
+      "sha256": "1b6dd266f25cfe66c1e4a02546cf315370069837927e86665524cc989d050317"
+    },
+    {
+      "bytes": 6323,
+      "path": "results/incompatible-package.json.gz",
+      "sha256": "0484f7ac69be3704056d15bd9e48b466f84e017b1934c1fbe8ea6bd3c7400002"
+    },
+    {
+      "bytes": 192,
+      "path": "results/incompatible-package.log.gz",
+      "sha256": "05d8b35d0ee26a3b12967a824683c66379a14fb596ac19a6f80cc3945fea1453"
+    },
+    {
+      "bytes": 44,
+      "path": "results/install.log.gz",
+      "sha256": "27f179c2d3ba8acf52edf6389f9722306564b4aec31f764de60f2de310821c81"
+    },
+    {
+      "bytes": 383,
+      "path": "results/missing-library-audit.json.gz",
+      "sha256": "458daf22dfe7dfcaf2bb1d4703c601c727f20173620a4672c4b4be3102ec4c67"
+    },
+    {
+      "bytes": 170,
+      "path": "results/missing-library.log.gz",
+      "sha256": "45f9c6366cbb75dd2cd5251301c7826a3d134b9b3d6d774729429cc4b4988872"
+    },
+    {
+      "bytes": 361,
+      "path": "results/missing-model-audit.json.gz",
+      "sha256": "dd7e604b9a5c383a6c503a2deba8b772d3b78b21e6aa2917576b48f5c51c0403"
+    },
+    {
+      "bytes": 149,
+      "path": "results/missing-model.log.gz",
+      "sha256": "274c0855c49c6a3327523280188a8b537a3a9cbb03baee18c1cc8fb3982f4d78"
+    },
+    {
+      "bytes": 47,
+      "path": "results/offline-install.log.gz",
+      "sha256": "fb0b8134a66283aaec9ca16de099f4b813c070739e956e45101471196316a12d"
+    },
+    {
+      "bytes": 366,
+      "path": "results/summary.json.gz",
+      "sha256": "015a714f01764ad4312b914219c8fc0d379d996bf33973f670619c583f3c3cfd"
+    },
+    {
+      "bytes": 1117,
+      "path": "summary.json",
+      "sha256": "c6b00ea11bf002979b72061389398d76867afd9d9666cd8c37351628f47d1bc5"
+    }
+  ],
+  "classification": "standalone-installation-evidence",
+  "localBundle": {
+    "bytes": 413501412,
+    "path": "bench/out/doppler-generation/20261005-installed/doe-installed-generation-linux-x64.tar.gz",
+    "sha256": "a5218b1a99855244e73a4a261d8c09e90957f6e353eead0380731292648eae2e"
+  },
+  "schemaVersion": 1,
+  "scope": "Exact retained Linux x64 installation and physical AMD Vulkan execution; no npm publication or performance promotion."
+}

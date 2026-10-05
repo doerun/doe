@@ -1,0 +1,186 @@
+{
+  "cases": [
+    {
+      "argmaxMargins": [
+        7.462039947509766,
+        5.222599029541016,
+        4.990760803222656,
+        0.9729347229003906,
+        2.4038429260253906,
+        1.9327373504638672,
+        1.2206916809082031,
+        0.4650306701660156,
+        3.5074691772460938,
+        2.2488956451416016,
+        1.3990182876586914,
+        0.7342185974121094,
+        0.11754131317138672,
+        0.17308712005615234,
+        1.406332015991211,
+        3.2699527740478516,
+        9.801168441772461
+      ],
+      "id": "full_sentence",
+      "outputText": "Leaves are green because of the chlorophyll present in the leaves's tissues.\n",
+      "promptTokenIds": [
+        2,
+        105,
+        2364,
+        107,
+        155122,
+        3217,
+        6895,
+        659,
+        3826,
+        528,
+        886,
+        13315,
+        236761,
+        106,
+        107,
+        105,
+        4368,
+        107
+      ],
+      "stopReason": "eos",
+      "tokenIds": [
+        179880,
+        659,
+        3826,
+        1547,
+        529,
+        506,
+        112242,
+        1861,
+        528,
+        506,
+        6895,
+        236789,
+        236751,
+        21346,
+        236761,
+        107,
+        106
+      ]
+    },
+    {
+      "argmaxMargins": [
+        0.5496730804443359,
+        3.0645217895507812,
+        3.131349563598633,
+        6.42655611038208
+      ],
+      "id": "short_reply",
+      "outputText": "Hello!\n",
+      "promptTokenIds": [
+        2,
+        105,
+        2364,
+        107,
+        40654,
+        607,
+        1164,
+        506,
+        3658,
+        29104,
+        236761,
+        106,
+        107,
+        105,
+        4368,
+        107
+      ],
+      "stopReason": "eos",
+      "tokenIds": [
+        9259,
+        236888,
+        107,
+        106
+      ]
+    },
+    {
+      "argmaxMargins": [
+        7.462039947509766,
+        5.222599029541016,
+        4.990760803222656,
+        0.9729347229003906
+      ],
+      "id": "length_limit",
+      "outputText": "Leaves are green because",
+      "promptTokenIds": [
+        2,
+        105,
+        2364,
+        107,
+        155122,
+        3217,
+        6895,
+        659,
+        3826,
+        528,
+        886,
+        13315,
+        236761,
+        106,
+        107,
+        105,
+        4368,
+        107
+      ],
+      "stopReason": "max_tokens",
+      "tokenIds": [
+        179880,
+        659,
+        3826,
+        1547
+      ]
+    },
+    {
+      "argmaxMargins": [
+        7.462039947509766,
+        5.222599029541016,
+        4.990760803222656
+      ],
+      "id": "sequence_stop",
+      "outputText": "Leaves are green",
+      "promptTokenIds": [
+        2,
+        105,
+        2364,
+        107,
+        155122,
+        3217,
+        6895,
+        659,
+        3826,
+        528,
+        886,
+        13315,
+        236761,
+        106,
+        107,
+        105,
+        4368,
+        107
+      ],
+      "stopReason": "stop_sequence",
+      "tokenIds": [
+        179880,
+        659,
+        3826
+      ]
+    }
+  ],
+  "classification": "independent-cpu-reference",
+  "contractSha256": "cbbabc1979812c10e08eb07ae66e8f0d68c82563fc331b61504baba7921d13a2",
+  "implementation": "CPU Transformers Gemma3 eager attention, full-prefix recomputation; GGUF Q4_K dequantization; F32 state without F16 cache rounding. Exact streamed token/text/stopping is the gate, not bitwise logits.",
+  "libraries": {
+    "gguf": "0.19.0",
+    "numpy": "2.4.4",
+    "tokenizers": "0.22.2",
+    "torch": "2.11.0",
+    "transformers": "5.6.2"
+  },
+  "schemaVersion": 1,
+  "sourceSha256": "fd7a11bc03cdf536a971bdcaec6dd4ee228d14d502998fd0387d5dcfee5a39b3"
+}

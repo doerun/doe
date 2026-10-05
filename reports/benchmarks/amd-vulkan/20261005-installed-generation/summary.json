@@ -1,0 +1,51 @@
+{
+  "checks": [
+    {
+      "exitCode": 0,
+      "expectedFailure": null,
+      "label": "doe-first",
+      "lane": "doe",
+      "passed": true
+    },
+    {
+      "exitCode": 0,
+      "expectedFailure": null,
+      "label": "doe-reopen",
+      "lane": "doe",
+      "passed": true
+    },
+    {
+      "exitCode": 0,
+      "expectedFailure": null,
+      "label": "dawn-control",
+      "lane": "dawn",
+      "passed": true
+    },
+    {
+      "exitCode": 1,
+      "expectedFailure": "MISSING_LIBRARY",
+      "label": "missing-library",
+      "lane": "doe",
+      "passed": true
+    },
+    {
+      "exitCode": 1,
+      "expectedFailure": "INCOMPATIBLE_PACKAGE",
+      "label": "incompatible-package",
+      "lane": "doe",
+      "passed": true
+    },
+    {
+      "exitCode": 1,
+      "expectedFailure": "MISSING_MODEL",
+      "label": "missing-model",
+      "lane": "doe",
+      "passed": true
+    }
+  ],
+  "classification": "standalone-installation",
+  "installationSha256": "09840397988afe4c56c78bc8cbd12caa096337f9dc14dbb3c980347dcea6c76d",
+  "offlineReinstallationPassed": true,
+  "passed": true,
+  "schemaVersion": 1
+}

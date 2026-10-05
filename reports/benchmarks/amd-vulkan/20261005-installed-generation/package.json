@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "doe-gpu": "file:archives/doe-source-bound-provider.tgz",
+    "doppler-gpu": "file:archives/doppler-gpu-0.6.3-dev.split.10.tgz",
+    "webgpu": "file:archives/webgpu-0.4.0.tgz"
+  },
+  "name": "doe-installed-generation",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0"
+}

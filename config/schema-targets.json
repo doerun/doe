@@ -1548,6 +1548,18 @@
     {
       "schema": "config/doppler-generation.schema.json",
       "data": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/manifest.json"
+    },
+    {
+      "schema": "config/doppler-installed-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-installed-generation/installation.json"
+    },
+    {
+      "schema": "config/doppler-installed-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-installed-generation/summary.json"
+    },
+    {
+      "schema": "config/doppler-installed-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-installed-generation/manifest.json"
     }
   ],
   "globTargets": [

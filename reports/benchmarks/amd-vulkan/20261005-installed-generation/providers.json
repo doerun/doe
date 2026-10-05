@@ -1,0 +1,47 @@
+{
+  "archives": [
+    {
+      "path": "/application/archives/doppler-gpu-0.6.3-dev.split.10.tgz",
+      "sha256": "f4d75e2b34b54b534ce59e036a0bc64792639f47472b2890f182ca1e68458fd1"
+    },
+    {
+      "path": "/application/archives/webgpu-0.4.0.tgz",
+      "sha256": "d8835c95790d7d34299283619568f4cce97b4358581d9e2b56e7f63e3a86e062"
+    },
+    {
+      "path": "/application/archives/doe-source-bound-provider.tgz",
+      "sha256": "f9eca989472d84db9b35c7d3f2cabe7e3749e831e18a81c4ffdc67fa2b6530e4"
+    }
+  ],
+  "dawnModule": "/application/node_modules/webgpu/index.js",
+  "doeLibrary": "/application/node_modules/doe-gpu/native/libwebgpu_doe.so",
+  "doeModule": "/application/node_modules/doe-gpu/src/compute.js",
+  "dopplerArchive": "/application/archives/doppler-gpu-0.6.3-dev.split.10.tgz",
+  "dopplerDependencyClosure": "Independent npm install; required dependencies retained in npm cache; optional auto-provider packages omitted; explicit archived natives used.",
+  "dopplerDependencyLockSha256": "7cb0e06b3819d6a8fbf945ae46c250884e93b052f18e84519f67a5aa9d3a62ec",
+  "dopplerModule": "/application/node_modules/doppler-gpu/src/index.js",
+  "files": [
+    {
+      "path": "/application/node_modules/doe-gpu/native/libwebgpu_doe.so",
+      "sha256": "811d4dba9d5cd165060a5aeade705b4c91bb5d1a6d30cdd9528068e9f290c239"
+    },
+    {
+      "path": "/application/node_modules/doe-gpu/build/Release/doe_napi.node",
+      "sha256": "4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66"
+    },
+    {
+      "path": "/application/node_modules/webgpu/dist/linux-x64.dawn.node",
+      "sha256": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1"
+    }
+  ],
+  "nativeBuildMetadata": {
+    "artifact": "libwebgpu_doe",
+    "leanVerifiedBuild": false,
+    "pipelineCacheSourceSha256": "eb10699a0de97452d281dc6629eda1fa8b0b7b0b9dc42f5a09e14a43553378df",
+    "proofArtifactSha256": null,
+    "schemaVersion": 1,
+    "shaderTranslationCacheSourceSha256": "098a68f68fea41c9cb3f15495ba0a3c23c35ca0bed7c793f155011b9a3c05bd4",
+    "wgslCompilerSourceSha256": "5f23413ed51fbdfe65404233407b2328566127ec7e3bcc9ffcc01df01290572b"
+  },
+  "schemaVersion": 1
+}

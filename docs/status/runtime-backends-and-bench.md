@@ -1,5 +1,19 @@
 # Doe status: runtime backends and benchmarks
 
+## Independent installation
+
+The [standalone generation installation](../../reports/benchmarks/amd-vulkan/20261005-installed-generation/README.md)
+uses the accepted retained Vulkan library, independently installed packages,
+verified local Gemma assets, and the unchanged CPU output/stopping oracle.
+Its isolated consumer performs offline dependency reconstruction, fresh generation,
+cancellation/reuse, actual native-loading observation, and named installation
+failure checks. Checkouts and external networking are inaccessible during
+execution. This qualifies the retained Linux snapshot on the tested host; registry
+release, another operator's reproduction, performance superiority, and leak-free
+native teardown remain separate. The previous generation experiment remains
+closed and unchanged. ONNX Runtime's existing WebGPU provider remains the next
+independent integration investigation.
+
 ## Application selection after submission attribution
 
 The [native full-generation campaign](../../reports/benchmarks/amd-vulkan/20261004-doppler-generation/README.md)

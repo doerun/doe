@@ -113,7 +113,8 @@
         "bench/external-projects/doppler-generation/analyze.py",
         "bench/external-projects/doppler-generation/compare.py",
         "bench/external-projects/doppler-generation/attribute.py",
-        "bench/external-projects/doppler-generation/validate.py"
+        "bench/external-projects/doppler-generation/validate.py",
+        "bench/external-projects/doppler-generation/installed-generation.py"
       ],
       "docs": [
         "bench/README.md",

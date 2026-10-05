@@ -85,3 +85,50 @@ first-token criteria. `attribute.py` computes interval unions for profiles;
 
 The existing public tooling manifest classifies these entrypoints as internal.
 They do not publish packages, deploy a browser, or reopen retired comparisons.
+
+## Standalone installed execution
+
+The separate installation check reuses the unchanged generation runner and CPU
+oracle. It relocates only model custody and the contract identity into a new
+consumer directory. It preserves the original experiment and grants no
+performance credit. See the [installation report](../../../reports/benchmarks/amd-vulkan/20261005-installed-generation/README.md).
+
+Prepare on the artifact custodian's Linux x64 Vulkan host:
+
+```bash
+python3 bench/external-projects/doppler-generation/installed-generation.py prepare \
+  --destination "$CONSUMER" \
+  --contract bench/external-projects/doppler-generation/contract.json \
+  --providers reports/benchmarks/amd-vulkan/20261004-doppler-generation/providers.json \
+  --reference reports/benchmarks/amd-vulkan/20261004-doppler-generation/reference.json
+```
+
+`CONSUMER` is a new directory outside the checkouts. Preparation authenticates
+the existing archives, installs their declared required dependencies through npm,
+checks every shipped file, copies verified model files, and retains a lockfile,
+dependency inventory and private npm cache. Optional automatic provider packages
+and installation scripts are omitted: these retained provider archives already
+contain the exact native library and addon. This is an explicit source-bound
+snapshot installation, not qualification of registry platform packages.
+
+Once prepared, the directory can be transferred intact. Run its copied tool:
+
+```bash
+python3 "$CONSUMER/harness/installed-generation.py" run --destination "$CONSUMER"
+python3 "$CONSUMER/harness/installed-generation.py" verify --destination "$CONSUMER"
+```
+
+Execution requires Bubblewrap, Python, Node/npm under `/usr/bin`, and the physical
+AMD Vulkan driver/device. The namespace exposes read-only `/usr`, `/lib`,
+`/lib64` where present, `/etc`, and `/sys`, plus host `/dev` and private `/proc`.
+It hides the workspace and host temporary directories, clears the environment,
+and disables external networking. The consumer directory is writable. This is
+dependency-isolation evidence, not a hardened sandbox for hostile programs.
+
+Offline `npm ci` first reconstructs the dependency tree from its retained cache.
+Fresh Doe runs exercise complete outputs, stopping, cancellation and reuse;
+the pinned Dawn control uses the same workload. Native paths are confirmed from
+the running process's shared objects. Missing-library, incompatible-package and
+missing-model checks must fail at their named boundaries. Original oracle values
+are unchanged and rechecked during evidence verification. Timings are incidental
+observations, not a renewed optimization experiment.
