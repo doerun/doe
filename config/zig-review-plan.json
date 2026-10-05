@@ -2,37 +2,5 @@
   "schemaVersion": 1,
   "maxActiveBatches": 1,
   "maxReadyBatches": 2,
-  "batches": [
-    {
-      "batchId": "vulkan_doppler_generation_contract",
-      "state": "active",
-      "objective": "Freeze a new full Doppler text-generation application contract and attribute a recoverable Vulkan execution cost.",
-      "rationale": "The UMAP binding-cache pass finds effective lower-level reuse and only a small descriptor preparation interval; no substantial recoverable binding cost is established. Close that line and retain UMAP as regression coverage. Select actual full Gemma generation instead of another isolated kernel statistic or a retired provider-comparison family. The independent Three.js graphics screen identifies no worthwhile automatic WGSL transformation; native family capture shows no redundant uniform or scratch traffic, and A/A application control is unstable. Close browser discovery and activate only this native application campaign.",
-      "scopes": [
-        {
-          "level": "cross_directory",
-          "targets": [
-            "src/backend/vulkan",
-            "src/native/vulkan"
-          ]
-        }
-      ],
-      "findingReviewIds": [
-        "vulkan_binding_attribution_20261004",
-        "browser_three_screen_20261004"
-      ],
-      "nextAction": "Stop the UMAP binding optimization line. Freeze a separate full Doppler Gemma text-generation contract on Node/Vulkan, then profile model load, prefill, first streamed token, decode and final completion before choosing one correction. Preserve cancellation and resource lifetimes; do not inherit retired or Electron performance credit.",
-      "acceptance": [
-        "Freeze the supported Doppler revision, real Gemma model/shards/tokenizer, prompt, generation settings, exact provider archives, physical adapter and independent numerical/stopping oracle before candidate timing. The new Node application contract is separate from retired comparisons and Electron acceptance.",
-        "Predeclare first streamed token and complete requested generation latency, loading versus retained-device scopes, median/tail material-gain bounds, memory/regression limits, sample order and failure policy. Confirm any candidate without instrumentation under matched Doe and pinned Dawn application work.",
-        "Preserve streaming, cancellation, resource release and output correctness. Measure compiler/preparation costs separately; keep unchanged UMAP and independent rendering as regression workloads."
-      ],
-      "stopCondition": "Retain or reject one application-backed Vulkan correction under the frozen new criteria; do not resume the closed UMAP binding or -O3 hypotheses.",
-      "requiredEnvironment": [
-        "Pinned supported Doppler public generation API and real Gemma 3 270M artifacts",
-        "Physical AMD Vulkan provider and source-bound Doe/Dawn archives",
-        "Fresh independently reviewed Node generation oracle and workload contract"
-      ]
-    }
-  ]
+  "batches": []
 }

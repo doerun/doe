@@ -1,0 +1,850 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Native Doppler generation experiment contracts and retained evidence",
+  "oneOf": [
+    {"$ref": "#/$defs/contract"},
+    {"$ref": "#/$defs/analysis"},
+    {"$ref": "#/$defs/candidate"},
+    {"$ref": "#/$defs/providers"},
+    {"$ref": "#/$defs/reference"},
+    {"$ref": "#/$defs/summary"},
+    {"$ref": "#/$defs/decision"},
+    {"$ref": "#/$defs/attribution"},
+    {"$ref": "#/$defs/manifest"},
+    {"$ref": "#/$defs/receipt"},
+    {"$ref": "#/$defs/cohort"}
+  ],
+  "$defs": {
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "workloadId",
+        "classification",
+        "dopplerSourceCommit",
+        "doeSourceCommit",
+        "publicApi",
+        "model",
+        "generation",
+        "cases",
+        "oracle",
+        "performance",
+        "cancellation",
+        "scope"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "workloadId": {"const": "doppler_full_generation_native_vulkan_v1"},
+        "classification": {"type": "string"},
+        "dopplerSourceCommit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "doeSourceCommit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "publicApi": {"type": "string"},
+        "model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "files"],
+          "properties": {
+            "path": {"type": "string"},
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "sha256", "bytes"],
+                "properties": {"path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "bytes": {"type": "integer"}}
+              }
+            }
+          }
+        },
+        "generation": {
+          "const": {
+            "temperature": 0,
+            "topK": 1,
+            "topP": 1,
+            "repetitionPenalty": 1,
+            "presencePenalty": 0,
+            "useChatTemplate": true,
+            "eosTokenIds": [1, 106]
+          }
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "prompt", "maxTokens", "stopSequences"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "prompt": {"type": "string", "minLength": 1},
+              "maxTokens": {"type": "integer", "minimum": 1},
+              "stopSequences": {"type": "array", "items": {"type": "string", "minLength": 1}}
+            }
+          }
+        },
+        "oracle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cpuThreads", "modelConfig", "acceptance"],
+          "properties": {
+            "cpuThreads": {"type": "integer"},
+            "modelConfig": {
+              "const": {
+                "vocab_size": 262144,
+                "hidden_size": 640,
+                "intermediate_size": 2048,
+                "num_hidden_layers": 18,
+                "num_attention_heads": 4,
+                "num_key_value_heads": 1,
+                "head_dim": 256,
+                "max_position_embeddings": 32768,
+                "sliding_window": 512,
+                "query_pre_attn_scalar": 256,
+                "rms_norm_eps": 1e-06,
+                "hidden_activation": "gelu_pytorch_tanh",
+                "tie_word_embeddings": true,
+                "bos_token_id": 2,
+                "eos_token_id": 1
+              }
+            },
+            "acceptance": {"type": "string"}
+          }
+        },
+        "performance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "processes",
+            "warmupResidentRuns",
+            "residentRuns",
+            "minimumLatencyGainRatio",
+            "maximumTailRegressionRatio",
+            "maximumMemoryRegressionRatio",
+            "maximumControlRatio",
+            "sampleOrder",
+            "cacheScope",
+            "failurePolicy",
+            "timingAdmission"
+          ],
+          "properties": {
+            "processes": {"type": "integer", "minimum": 1},
+            "warmupResidentRuns": {"type": "integer", "minimum": 1},
+            "residentRuns": {"type": "integer", "minimum": 1},
+            "minimumLatencyGainRatio": {"type": "number", "minimum": 1},
+            "maximumTailRegressionRatio": {"type": "number", "minimum": 1},
+            "maximumMemoryRegressionRatio": {"type": "number", "minimum": 1},
+            "maximumControlRatio": {"type": "number", "minimum": 1},
+            "sampleOrder": {"type": "array", "items": {"type": "string"}},
+            "cacheScope": {"type": "string"},
+            "failurePolicy": {"type": "string"},
+            "timingAdmission": {"type": "string"}
+          }
+        },
+        "cancellation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["abortAfterStreamChunks", "requireFollowingGenerationCorrect"],
+          "properties": {"abortAfterStreamChunks": {"type": "integer"}, "requireFollowingGenerationCorrect": {"type": "boolean"}}
+        },
+        "scope": {"type": "string"}
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "seed", "bootstrapSamples", "confidence", "controlEstimator", "applicationEstimator", "admission"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "seed": {"type": "integer"},
+        "bootstrapSamples": {"type": "integer"},
+        "confidence": {"type": "number"},
+        "controlEstimator": {"type": "string"},
+        "applicationEstimator": {"type": "string"},
+        "admission": {"type": "string"}
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "candidateId",
+        "owner",
+        "hypothesis",
+        "minimumRetainedBufferBytes",
+        "maximumEntriesPerSize",
+        "maximumRetainedBytes",
+        "primaryMetric",
+        "acceptance",
+        "ownership"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "candidateId": {"type": "string"},
+        "owner": {"type": "string"},
+        "hypothesis": {"type": "string"},
+        "minimumRetainedBufferBytes": {"type": "integer", "minimum": 1},
+        "maximumEntriesPerSize": {"type": "integer", "minimum": 1},
+        "maximumRetainedBytes": {"type": "integer", "minimum": 1},
+        "primaryMetric": {"type": "string"},
+        "acceptance": {"type": "string"},
+        "ownership": {"type": "string"}
+      }
+    },
+    "providers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "dopplerModule",
+        "dopplerArchive",
+        "doeModule",
+        "doeLibrary",
+        "dawnModule",
+        "archives",
+        "dopplerDependencyClosure",
+        "dopplerDependencyLockSha256",
+        "nativeBuildMetadata",
+        "files"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "dopplerModule": {"type": "string"},
+        "dopplerArchive": {"type": "string"},
+        "doeModule": {"type": "string"},
+        "doeLibrary": {"type": "string"},
+        "dawnModule": {"type": "string"},
+        "archives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {"path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+          }
+        },
+        "dopplerDependencyClosure": {"type": "string"},
+        "dopplerDependencyLockSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "nativeBuildMetadata": {"type": "object", "description": "Opaque adjacent native build metadata; native build contract owns its extensible fields."},
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {"path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+          }
+        },
+        "candidatePatchSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "classification", "contractSha256", "sourceSha256", "libraries", "implementation", "cases"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "classification": {"type": "string"},
+        "contractSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "sourceSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "libraries": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["torch", "transformers", "gguf", "tokenizers", "numpy"],
+          "properties": {
+            "torch": {"type": "string"},
+            "transformers": {"type": "string"},
+            "gguf": {"type": "string"},
+            "tokenizers": {"type": "string"},
+            "numpy": {"type": "string"}
+          }
+        },
+        "implementation": {"type": "string"},
+        "cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "promptTokenIds", "tokenIds", "outputText", "stopReason", "argmaxMargins"],
+            "properties": {
+              "id": {"type": "string"},
+              "promptTokenIds": {"type": "array", "items": {"type": "integer"}},
+              "tokenIds": {"type": "array", "items": {"type": "integer"}},
+              "outputText": {"type": "string"},
+              "stopReason": {"type": "string"},
+              "argmaxMargins": {"type": "array", "items": {"type": "number"}}
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "classification", "cohort", "providers", "performancePromoted"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "classification": {"type": "string"},
+        "cohort": {"type": "string"},
+        "providers": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dawn", "doe"],
+          "properties": {
+            "dawn": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["controls", "timingsMs", "loadMs", "peakProcessRssBytes"],
+              "properties": {
+                "controls": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["firstTokenMs", "completeMs"],
+                  "properties": {
+                    "firstTokenMs": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["ratio", "lower", "upper", "stable", "pairedLogRatios"],
+                      "properties": {
+                        "ratio": {"type": "number"},
+                        "lower": {"type": "number"},
+                        "upper": {"type": "number"},
+                        "stable": {"type": "boolean"},
+                        "pairedLogRatios": {"type": "array", "items": {"type": "number"}}
+                      }
+                    },
+                    "completeMs": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["ratio", "lower", "upper", "stable", "pairedLogRatios"],
+                      "properties": {
+                        "ratio": {"type": "number"},
+                        "lower": {"type": "number"},
+                        "upper": {"type": "number"},
+                        "stable": {"type": "boolean"},
+                        "pairedLogRatios": {"type": "array", "items": {"type": "number"}}
+                      }
+                    }
+                  }
+                },
+                "timingsMs": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["initial", "resident"],
+                  "properties": {
+                    "initial": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["firstTokenMs", "completeMs"],
+                      "properties": {
+                        "firstTokenMs": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["p50", "p95"],
+                          "properties": {"p50": {"type": "number"}, "p95": {"type": "number"}}
+                        },
+                        "completeMs": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["p50", "p95"],
+                          "properties": {"p50": {"type": "number"}, "p95": {"type": "number"}}
+                        }
+                      }
+                    },
+                    "resident": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["firstTokenMs", "completeMs"],
+                      "properties": {
+                        "firstTokenMs": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["p50", "p95"],
+                          "properties": {"p50": {"type": "number"}, "p95": {"type": "number"}}
+                        },
+                        "completeMs": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["p50", "p95"],
+                          "properties": {"p50": {"type": "number"}, "p95": {"type": "number"}}
+                        }
+                      }
+                    }
+                  }
+                },
+                "loadMs": {"type": "array", "items": {"type": "number"}},
+                "peakProcessRssBytes": {"type": "array", "items": {"type": "integer"}}
+              }
+            },
+            "doe": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["controls", "timingsMs", "loadMs", "peakProcessRssBytes"],
+              "properties": {
+                "controls": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["firstTokenMs", "completeMs"],
+                  "properties": {
+                    "firstTokenMs": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["ratio", "lower", "upper", "stable", "pairedLogRatios"],
+                      "properties": {
+                        "ratio": {"type": "number"},
+                        "lower": {"type": "number"},
+                        "upper": {"type": "number"},
+                        "stable": {"type": "boolean"},
+                        "pairedLogRatios": {"type": "array", "items": {"type": "number"}}
+                      }
+                    },
+                    "completeMs": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["ratio", "lower", "upper", "stable", "pairedLogRatios"],
+                      "properties": {
+                        "ratio": {"type": "number"},
+                        "lower": {"type": "number"},
+                        "upper": {"type": "number"},
+                        "stable": {"type": "boolean"},
+                        "pairedLogRatios": {"type": "array", "items": {"type": "number"}}
+                      }
+                    }
+                  }
+                },
+                "timingsMs": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["initial", "resident"],
+                  "properties": {
+                    "initial": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["firstTokenMs", "completeMs"],
+                      "properties": {
+                        "firstTokenMs": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["p50", "p95"],
+                          "properties": {"p50": {"type": "number"}, "p95": {"type": "number"}}
+                        },
+                        "completeMs": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["p50", "p95"],
+                          "properties": {"p50": {"type": "number"}, "p95": {"type": "number"}}
+                        }
+                      }
+                    },
+                    "resident": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["firstTokenMs", "completeMs"],
+                      "properties": {
+                        "firstTokenMs": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["p50", "p95"],
+                          "properties": {"p50": {"type": "number"}, "p95": {"type": "number"}}
+                        },
+                        "completeMs": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["p50", "p95"],
+                          "properties": {"p50": {"type": "number"}, "p95": {"type": "number"}}
+                        }
+                      }
+                    }
+                  }
+                },
+                "loadMs": {"type": "array", "items": {"type": "number"}},
+                "peakProcessRssBytes": {"type": "array", "items": {"type": "integer"}}
+              }
+            }
+          }
+        },
+        "performancePromoted": {"type": "boolean"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "classification",
+        "candidateId",
+        "contractSha256",
+        "baselineSummarySha256",
+        "candidateSummarySha256",
+        "primaryGainRatio",
+        "ratios",
+        "checks",
+        "timingAdmissionPassed",
+        "performancePromoted",
+        "disposition",
+        "completeLatencyClaimAllowed",
+        "scope"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "classification": {"type": "string"},
+        "candidateId": {"type": "string"},
+        "contractSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "baselineSummarySha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "candidateSummarySha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "primaryGainRatio": {"type": "number"},
+        "ratios": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["lane", "scope", "metric", "p95CandidateOverBaseline"],
+            "properties": {
+              "lane": {"enum": ["doe", "dawn"]},
+              "scope": {"enum": ["initial", "resident", "process"]},
+              "metric": {"enum": ["firstTokenMs", "completeMs", "peakProcessRssBytes"]},
+              "p50CandidateOverBaseline": {"type": "number", "exclusiveMinimum": 0},
+              "p95CandidateOverBaseline": {"type": "number", "exclusiveMinimum": 0}
+            }
+          }
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "passed"],
+            "properties": {"id": {"type": "string"}, "passed": {"type": "boolean"}}
+          }
+        },
+        "timingAdmissionPassed": {"type": "boolean"},
+        "performancePromoted": {"type": "boolean"},
+        "disposition": {"type": "string"},
+        "completeLatencyClaimAllowed": {"type": "boolean"},
+        "scope": {"type": "string"}
+      }
+    },
+    "attribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "classification", "scope", "profiles"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "classification": {"type": "string"},
+        "scope": {"type": "string"},
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256", "lane", "loadMs", "cleanup", "phases"],
+            "properties": {
+              "path": {"type": "string"},
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "lane": {"type": "string"},
+              "loadMs": {"type": "number"},
+              "cleanup": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["unloaded", "devicesDestroyed", "elapsedMs"],
+                "properties": {"unloaded": {"type": "boolean"}, "devicesDestroyed": {"type": "integer"}, "elapsedMs": {"type": "number"}}
+              },
+              "phases": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["phase", "allObservedApiIntervalUnionMs", "methods", "bufferSizes"],
+                      "properties": {
+                        "phase": {"type": "string"},
+                        "allObservedApiIntervalUnionMs": {"type": "number"},
+                        "methods": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["method", "calls", "intervalUnionMs"],
+                            "properties": {"method": {"type": "string"}, "calls": {"type": "integer"}, "intervalUnionMs": {"type": "number"}}
+                          }
+                        },
+                        "bufferSizes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["bytes", "calls", "intervalUnionMs"],
+                            "properties": {"bytes": {"type": "integer"}, "calls": {"type": "integer"}, "intervalUnionMs": {"type": "number"}}
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["phase", "allObservedApiIntervalUnionMs", "methods", "bufferSizes"],
+                      "properties": {
+                        "phase": {"type": "string"},
+                        "allObservedApiIntervalUnionMs": {"type": "number"},
+                        "methods": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["method", "calls", "intervalUnionMs"],
+                            "properties": {"method": {"type": "string"}, "calls": {"type": "integer"}, "intervalUnionMs": {"type": "number"}}
+                          }
+                        },
+                        "bufferSizes": {"type": "array", "items": {}}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "classification",
+        "doeSourceCommit",
+        "dopplerSourceCommit",
+        "dawnNpmGitHead",
+        "dawnNpmIntegrity",
+        "dawnBuildScope",
+        "hardware",
+        "archives",
+        "artifacts",
+        "runtimeCandidateRetained",
+        "sourcePatchSha256",
+        "scope"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "classification": {"type": "string"},
+        "doeSourceCommit": {"type": "string"},
+        "dopplerSourceCommit": {"type": "string"},
+        "dawnNpmGitHead": {"type": "string"},
+        "dawnNpmIntegrity": {"type": "string"},
+        "dawnBuildScope": {"type": "string"},
+        "hardware": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["gpu", "driver", "backend", "node", "zig"],
+          "properties": {
+            "gpu": {"type": "string"},
+            "driver": {"type": "string"},
+            "backend": {"type": "string"},
+            "node": {"type": "string"},
+            "zig": {"type": "string"}
+          }
+        },
+        "archives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256", "bytes", "custody"],
+            "properties": {
+              "path": {"type": "string"},
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "bytes": {"type": "integer"},
+              "custody": {"type": "string"}
+            }
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "sha256", "bytes", "sourcePath", "schemaDefinition"],
+                "properties": {
+                  "path": {"type": "string"},
+                  "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                  "bytes": {"type": "integer"},
+                  "sourcePath": {"type": "string"},
+                  "schemaDefinition": {"type": "string"}
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "sha256", "bytes", "sourcePath", "schemaDefinition"],
+                "properties": {
+                  "path": {"type": "string"},
+                  "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                  "bytes": {"type": "integer"},
+                  "sourcePath": {"type": "string"},
+                  "schemaDefinition": {"type": "null"}
+                }
+              }
+            ]
+          }
+        },
+        "runtimeCandidateRetained": {"type": "boolean"},
+        "sourcePatchSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "scope": {"type": "string"}
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "classification",
+        "lane",
+        "mode",
+        "processIndex",
+        "phaseEvents",
+        "runnerSha256",
+        "completeProcessWorkMs",
+        "contractSha256",
+        "providerManifestSha256",
+        "referenceSha256",
+        "providerInfo",
+        "rows",
+        "cleanup",
+        "passed",
+        "failure"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "classification": {"enum": ["qualification", "timing", "profile"]},
+        "lane": {"enum": ["doe", "dawn"]},
+        "mode": {"enum": ["qualification", "timing", "profile"]},
+        "processIndex": {"type": "integer", "minimum": 0},
+        "loadMs": {"type": "number", "minimum": 0},
+        "phaseEvents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["phase", "method", "startedMs", "endedMs", "durationMs"],
+            "properties": {
+              "phase": {"type": "string"},
+              "method": {"type": "string"},
+              "startedMs": {"type": "number"},
+              "endedMs": {"type": "number"},
+              "durationMs": {"type": "number", "minimum": 0},
+              "label": {"type": "string"},
+              "bytes": {"type": "integer", "minimum": 0},
+              "failure": {"type": "string"}
+            }
+          }
+        },
+        "runnerSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "completeProcessWorkMs": {"type": "number", "minimum": 0},
+        "peakProcessRssBytes": {"type": "integer", "minimum": 0},
+        "contractSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "providerManifestSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "referenceSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "providerInfo": {"type": ["object", "null"], "description": "Provider package owns its extensible diagnostic fields."},
+        "rows": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "label", "tokenIds", "outputText", "stream", "stats", "firstTokenMs", "completeMs", "rssBytes"],
+                "properties": {
+                  "id": {"type": "string"},
+                  "label": {"type": "string"},
+                  "tokenIds": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+                  "outputText": {"type": "string"},
+                  "stream": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["elapsedMs", "chunk"],
+                      "properties": {"elapsedMs": {"type": "number", "minimum": 0}, "chunk": {"type": "string"}}
+                    }
+                  },
+                  "stats": {"type": "object", "description": "Doppler advanced stats snapshot; Doppler owns these extensible diagnostics."},
+                  "firstTokenMs": {"type": ["number", "null"]},
+                  "completeMs": {"type": "number", "minimum": 0},
+                  "rssBytes": {"type": "integer", "minimum": 0}
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "chunks", "cancelledText", "aborted", "followingOutputText"],
+                "properties": {
+                  "id": {"const": "cancellation"},
+                  "chunks": {"type": "integer", "minimum": 0},
+                  "cancelledText": {"type": "string"},
+                  "aborted": {
+                    "anyOf": [
+                      {"type": "null"},
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["name", "message"],
+                        "properties": {"name": {"type": "string"}, "message": {"type": "string"}}
+                      }
+                    ]
+                  },
+                  "followingOutputText": {"type": "string"}
+                }
+              }
+            ]
+          }
+        },
+        "cleanup": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["unloaded", "devicesDestroyed", "elapsedMs"],
+              "properties": {
+                "unloaded": {"type": ["boolean", "null"]},
+                "devicesDestroyed": {"type": "integer", "minimum": 0},
+                "elapsedMs": {"type": "number", "minimum": 0}
+              }
+            },
+            {"type": "object", "additionalProperties": false, "required": ["error"], "properties": {"error": {"type": "string"}}}
+          ]
+        },
+        "passed": {"type": "boolean"},
+        "failure": {
+          "anyOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "message"],
+              "properties": {"name": {"type": "string"}, "message": {"type": "string"}, "stack": {"type": "string"}}
+            }
+          ]
+        }
+      },
+      "allOf": [{"if": {"properties": {"mode": {"enum": ["timing", "profile"]}}}, "then": {"required": ["peakProcessRssBytes"]}}]
+    },
+    "cohort": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lane", "processIndex", "output", "code", "signal"],
+        "properties": {
+          "lane": {"enum": ["doe", "dawn"]},
+          "processIndex": {"type": "integer", "minimum": 0},
+          "output": {"type": "string"},
+          "code": {"type": ["integer", "null"]},
+          "signal": {"type": ["string", "null"]}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "dopplerModule": "/home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/index.js",
+  "dopplerArchive": "/home/x/deco/doe/bench/out/doppler-generation/20261004/doppler-gpu-0.6.3-dev.split.10.tgz",
+  "doeModule": "/home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doe/src/compute.js",
+  "doeLibrary": "/home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doe/native/libwebgpu_doe.so",
+  "dawnModule": "/home/x/deco/doe/bench/out/doppler-generation/20261004/installed/dawn/index.js",
+  "archives": [
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261004/doppler-gpu-0.6.3-dev.split.10.tgz",
+      "sha256": "f4d75e2b34b54b534ce59e036a0bc64792639f47472b2890f182ca1e68458fd1"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261004/webgpu-0.4.0.tgz",
+      "sha256": "d8835c95790d7d34299283619568f4cce97b4358581d9e2b56e7f63e3a86e062"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261004/doe-source-bound-provider.tgz",
+      "sha256": "f9eca989472d84db9b35c7d3f2cabe7e3749e831e18a81c4ffdc67fa2b6530e4"
+    }
+  ],
+  "dopplerDependencyClosure": "Installed Doppler archive uses the source checkout node_modules via explicit symlink; not isolated dependency closure. package-lock digest is bound below.",
+  "dopplerDependencyLockSha256": "2f91b144117a7319fb05d07a31382f0432f0b4d682d1f9ef73abfca1f39d2b68",
+  "nativeBuildMetadata": {
+    "schemaVersion": 1,
+    "artifact": "libwebgpu_doe",
+    "leanVerifiedBuild": false,
+    "proofArtifactSha256": null,
+    "wgslCompilerSourceSha256": "5f23413ed51fbdfe65404233407b2328566127ec7e3bcc9ffcc01df01290572b",
+    "shaderTranslationCacheSourceSha256": "098a68f68fea41c9cb3f15495ba0a3c23c35ca0bed7c793f155011b9a3c05bd4",
+    "pipelineCacheSourceSha256": "eb10699a0de97452d281dc6629eda1fa8b0b7b0b9dc42f5a09e14a43553378df"
+  },
+  "files": [
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doe/native/libwebgpu_doe.so",
+      "sha256": "811d4dba9d5cd165060a5aeade705b4c91bb5d1a6d30cdd9528068e9f290c239"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doe/build/Release/doe_napi.node",
+      "sha256": "4c8f5a4e00103e709da5893ba7336723c635bad6a37490f2a8a1631e0315af66"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261004/installed/dawn/dist/linux-x64.dawn.node",
+      "sha256": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1"
+    }
+  ]
+}

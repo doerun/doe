@@ -27833,6 +27833,132 @@
         "src/compiler/wgsl/emit",
         "src/compiler/wgsl/runtime"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/external-projects/doppler-generation/analysis.json",
+          "sha256": "b52114a7e7124a737835c954cd3ece5883e2313535d97c6ea7400407d394317d"
+        },
+        {
+          "path": "bench/external-projects/doppler-generation/candidate.json",
+          "sha256": "7fc3ab9bd2e77e87e1db461ca1337fef1010ba3e419c8dbf2ba73c514e6a3ee2"
+        },
+        {
+          "path": "bench/external-projects/doppler-generation/contract.json",
+          "sha256": "e77adf8a73e872efda6b3fb13ac1810477b1f7d6adc7a73cea1b2ba9a87c8936"
+        },
+        {
+          "path": "bench/external-projects/doppler-generation/run-generation.mjs",
+          "sha256": "0d3e05e8f5c2d23e9cbab9ffe00f8eb206173b2ddc556ccd752fb1370ce25e7b"
+        },
+        {
+          "path": "bench/external-projects/doppler-generation/validate.py",
+          "sha256": "30f25cdbe899ded59742e8f5f20b8bb108d8e90bd72a722a67eb3b6a8c5fde7a"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/README.md",
+          "sha256": "5b001a5ca5efec71067836952136e13aa96c60655958b220d44045979d2a4883"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/disposition.json",
+          "sha256": "d908467b0d171f108b754d5a75becda1ab41b94fccc56fffe2fdbb96924bdd22"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/manifest.json",
+          "sha256": "4fd15e6ec6d9c288326d34e87fcfdd7eaef0a72e10ffc21cec9ffbc4ee7bb22e"
+        }
+      ],
+      "findings": [
+        "The baseline complete-generation control and candidate first-token control fail frozen stability requirements. Lower candidate completion samples do not establish acceleration, equivalence or intrinsic slowdown. No accepted application-performance improvement is established.",
+        "API intervals include overlapping completion promises and downstream work; pure GPU execution, compiler allocations and complete native allocation accounting are unestablished. No further compiler or pooling candidate is selected.",
+        "Published Dawn archive source metadata is not an independently source-built incumbent control. Doppler installation uses a declared source dependency symlink rather than an isolated installed dependency closure. These diagnostic limits prohibit ownership and package-release promotion."
+      ],
+      "inputHash": "2a57c7aaa59df57605180cfc75fc513bb7686a47ef34f1108f7b6acf739b61cb",
+      "level": "cross_directory",
+      "nextAction": "Bounded generation experiment is closed and the work-plan batch is removed. Preserve the reusable full-generation workload and restored production policy. Stop this optimization line unless a newly selected campaign identifies a specific recoverable delivery cost with a causal prediction and stable controls; keep browser discovery closed and do not start scoring or another backend here.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Established a new reusable full-generation public-API integration with real pinned model/tokenizer bytes and independent CPU oracle; retired comparisons grant no credit. Both baseline providers pass complete outputs, stopping, cancellation settlement and following generation.",
+        "Rejected broader admission within the existing cache budget under unchanged criteria. Preserve its patch, candidate-specific library identities, tests, raw cohorts and unfavorable controls; restore all experimental production policy, runtime, tests and ownership metadata to the baseline source. UMAP and rendering candidate correctness checks pass without performance transfer.",
+        "Final retention compresses the exact rejected patch without changing its original digest, validates compressed receipts and immutable joins, and binds final report/manifest hashes. Production source remains restored; rejection and campaign closure are unchanged."
+      ],
+      "reviewId": "vulkan_doppler_generation_20261004",
+      "reviewedAt": "2026-10-05T00:40:11.430237+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "5a4bdd920e8531fe31ad2ca41811a10883a2d798",
+      "status": "in_progress",
+      "summary": "Bounded full-generation native Vulkan experiment closed with rejection. Public Doppler integration matches the independent CPU full token/stream/stopping oracle on baseline Doe, pinned Dawn and the separate candidate. Cancellation settles and following generation is correct. Existing completed-allocation cache admission was profiled, tested, then restored after frozen material-gain, tail and control rejection. This records the application disposition; complete cross-directory code review remains unfinished.",
+      "supersedes": null,
+      "targets": [
+        "src/backend/vulkan",
+        "src/native/vulkan"
+      ]
+    },
+    {
+      "context": [
+        {
+          "path": "bench/external-projects/doppler-generation/analysis.json",
+          "sha256": "b52114a7e7124a737835c954cd3ece5883e2313535d97c6ea7400407d394317d"
+        },
+        {
+          "path": "bench/external-projects/doppler-generation/candidate.json",
+          "sha256": "7fc3ab9bd2e77e87e1db461ca1337fef1010ba3e419c8dbf2ba73c514e6a3ee2"
+        },
+        {
+          "path": "bench/external-projects/doppler-generation/contract.json",
+          "sha256": "e77adf8a73e872efda6b3fb13ac1810477b1f7d6adc7a73cea1b2ba9a87c8936"
+        },
+        {
+          "path": "bench/external-projects/doppler-generation/run-generation.mjs",
+          "sha256": "0d3e05e8f5c2d23e9cbab9ffe00f8eb206173b2ddc556ccd752fb1370ce25e7b"
+        },
+        {
+          "path": "bench/external-projects/doppler-generation/validate.py",
+          "sha256": "fa30e6cbcd033eb3889a92561c545221c3e05d83eea2b3b0801820bda397d7d2"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/README.md",
+          "sha256": "9e992b25d4b199c92d0551d10873fa17b957812e60d3a1ea8b06a78f625d2d74"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/disposition.json",
+          "sha256": "d908467b0d171f108b754d5a75becda1ab41b94fccc56fffe2fdbb96924bdd22"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/manifest.json",
+          "sha256": "0c77fdecefd110ec32875db8a3f722087d835b7634fae00ce494e86063a52f62"
+        }
+      ],
+      "findings": [
+        "The baseline complete-generation control and candidate first-token control fail frozen stability requirements. Lower candidate completion samples do not establish acceleration, equivalence or intrinsic slowdown. No accepted application-performance improvement is established.",
+        "API intervals include overlapping completion promises and downstream work; pure GPU execution, compiler allocations and complete native allocation accounting are unestablished. No further compiler or pooling candidate is selected.",
+        "Published Dawn archive source metadata is not an independently source-built incumbent control. Doppler installation uses a declared source dependency symlink rather than an isolated installed dependency closure. These diagnostic limits prohibit ownership and package-release promotion."
+      ],
+      "inputHash": "2a57c7aaa59df57605180cfc75fc513bb7686a47ef34f1108f7b6acf739b61cb",
+      "level": "cross_directory",
+      "nextAction": "Bounded generation experiment is closed and the work-plan batch is removed. Preserve the reusable full-generation workload and restored production policy. Stop this optimization line unless a newly selected campaign identifies a specific recoverable delivery cost with a causal prediction and stable controls; keep browser discovery closed and do not start scoring or another backend here.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "Established a new reusable full-generation public-API integration with real pinned model/tokenizer bytes and independent CPU oracle; retired comparisons grant no credit. Both baseline providers pass complete outputs, stopping, cancellation settlement and following generation.",
+        "Rejected broader admission within the existing cache budget under unchanged criteria. Preserve its patch, candidate-specific library identities, tests, raw cohorts and unfavorable controls; restore all experimental production policy, runtime, tests and ownership metadata to the baseline source. UMAP and rendering candidate correctness checks pass without performance transfer.",
+        "Final retention compresses the exact rejected patch without changing its original digest, validates compressed receipts and immutable joins, and binds final report/manifest hashes. Production source remains restored; rejection and campaign closure are unchanged."
+      ],
+      "reviewId": "vulkan_doppler_generation_final_20261004",
+      "reviewedAt": "2026-10-05T00:42:06.461363+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "5a4bdd920e8531fe31ad2ca41811a10883a2d798",
+      "status": "in_progress",
+      "summary": "Bounded full-generation native Vulkan experiment closed with rejection. Public Doppler integration matches the independent CPU full token/stream/stopping oracle on baseline Doe, pinned Dawn and the separate candidate. Cancellation settles and following generation is correct. Existing completed-allocation cache admission was profiled, tested, then restored after frozen material-gain, tail and control rejection. This records the application disposition; complete cross-directory code review remains unfinished.",
+      "supersedes": "vulkan_doppler_generation_20261004",
+      "targets": [
+        "src/backend/vulkan",
+        "src/native/vulkan"
+      ]
     }
   ],
   "schemaVersion": 1

@@ -17,6 +17,23 @@ Required rules:
 The normative stage and gate order lives in [`process.md`](process.md).
 Machine-owned tool boundaries live in `config/tool-surfaces.json`.
 
+## Native full-generation experiment introduction
+
+`config/doppler-generation.schema.json` declares the repo-only workload, analysis,
+candidate, provider manifest, independent CPU reference, raw application receipt,
+control summary, rejection and retained-artifact manifest. The schema gate registers
+current uncompressed contracts and summaries. The experiment's `validate.py`
+authenticates compressed receipts and validates their named schema definitions,
+complete-output oracle and reference/provider joins.
+
+Doppler statistics and provider/build metadata remain extensible snapshots owned
+by their original implementations, rather than a duplicate Doe runtime contract.
+Qualification receipts can omit the host peak-memory field; timing and profile
+receipts require it. Archived failed harness attempts are retained separately and
+grant no acceptance credit. Schema parseability does not establish measurement
+stability or performance admission. No production runtime policy migration remains
+after the candidate rejection; experimental changes are retained only as a patch.
+
 ## Package comparability branch integration
 
 The comparability contract adds package readback-mode, actual readback-scope,

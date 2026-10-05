@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "candidateId": "completed-small-buffer-reuse-v1",
+  "owner": "runtime/zig/src/backend/vulkan/vk_resources.zig:CompletedComputeBufferCache",
+  "hypothesis": "Admit completed mapped allocations used by small temporary tensors and retain more same-sized allocations within the existing byte budget, removing repeated native allocation calls from resident prompt processing and decoding.",
+  "minimumRetainedBufferBytes": 4096,
+  "maximumEntriesPerSize": 128,
+  "maximumRetainedBytes": 67108864,
+  "primaryMetric": "resident firstTokenMs p50",
+  "acceptance": "Contract material-gain bound on primary metric, first-token control stability in both cohorts/providers, complete-generation and initial latency p95 regression bounds, host peak memory bound, exact stream/stopping/cancellation and UMAP/rendering regressions. Unstable complete-generation control forbids a complete-latency improvement claim.",
+  "ownership": "Reuse only completed host-visible coherent device-local allocations; renew allocation generations and zero newly exposed contents. Preserve admission rejection and caller ownership on metadata allocation failure. No new cache or change to the retained byte budget."
+}

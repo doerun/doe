@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "workloadId": "doppler_full_generation_native_vulkan_v1",
+  "classification": "qualification-before-performance",
+  "dopplerSourceCommit": "3e31ce60fbab709e9f7d9bb2eaa9c33e5ce6f196",
+  "doeSourceCommit": "5a4bdd920e8531fe31ad2ca41811a10883a2d798",
+  "publicApi": "doppler-gpu/compat: load, model.generate, model.advanced tokenization/stats, model.unload",
+  "model": {
+    "path": "/home/x/deco/doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+    "files": [
+      {
+        "path": "manifest.json",
+        "sha256": "afecba81640288d0849838c8d4d8c763af80edc1fc22051853ce6700dda4b315",
+        "bytes": 112143
+      },
+      {
+        "path": "origin.json",
+        "sha256": "4e1d26c6502080a66c14169f5b289d43b67991bc3096d4f230e2aa82d44a1bcc",
+        "bytes": 261
+      },
+      {
+        "path": "tokenizer.json",
+        "sha256": "be6955513a2509d69d18e82180c2a477ad99358d15212fb81d957566d8186075",
+        "bytes": 14386247
+      },
+      {
+        "path": "tokenizer.model",
+        "sha256": "1299c11d7cf632ef3b4e11937501358ada021bbdf7c47638d13c0ee982f2e79c",
+        "bytes": 4689074
+      },
+      {
+        "path": "shard_00000.bin",
+        "sha256": "93d8ad2033e7ec42376dafb41c1e89753d0ca40896835c6f012efe47dbdda6d1",
+        "bytes": 67108864
+      },
+      {
+        "path": "shard_00001.bin",
+        "sha256": "7896aa344a3da4539cdb76bdbfec3a5f665da5e23d15d15ef9a3b0536ebcf3c5",
+        "bytes": 67108864
+      },
+      {
+        "path": "shard_00002.bin",
+        "sha256": "ff2fc36d9b0008d734f0a82923d47db2383e5a5bae055172630e8ad93ad23ca5",
+        "bytes": 67108864
+      },
+      {
+        "path": "shard_00003.bin",
+        "sha256": "6170b5f1376dbfe33a58de2603987abde826c0eb7318d6c0a1baa78cdf42f77b",
+        "bytes": 67108864
+      },
+      {
+        "path": "shard_00004.bin",
+        "sha256": "5c8767e71c920596247b7ea3d0d55b45d6af4255757758dda6aedd907cfa3e2c",
+        "bytes": 67108864
+      },
+      {
+        "path": "shard_00005.bin",
+        "sha256": "81ff27711b246ec27e3396871547e77f5e4d5d3d029357a66a8f547b6f32c015",
+        "bytes": 63812864
+      }
+    ]
+  },
+  "generation": {
+    "temperature": 0,
+    "topK": 1,
+    "topP": 1,
+    "repetitionPenalty": 1,
+    "presencePenalty": 0,
+    "useChatTemplate": true,
+    "eosTokenIds": [
+      1,
+      106
+    ]
+  },
+  "cases": [
+    {
+      "id": "full_sentence",
+      "prompt": "Explain why leaves are green in one sentence.",
+      "maxTokens": 32,
+      "stopSequences": []
+    },
+    {
+      "id": "short_reply",
+      "prompt": "Reply with just the word hello.",
+      "maxTokens": 32,
+      "stopSequences": []
+    },
+    {
+      "id": "length_limit",
+      "prompt": "Explain why leaves are green in one sentence.",
+      "maxTokens": 4,
+      "stopSequences": []
+    },
+    {
+      "id": "sequence_stop",
+      "prompt": "Explain why leaves are green in one sentence.",
+      "maxTokens": 32,
+      "stopSequences": [
+        "green"
+      ]
+    }
+  ],
+  "oracle": {
+    "cpuThreads": 4,
+    "modelConfig": {
+      "vocab_size": 262144,
+      "hidden_size": 640,
+      "intermediate_size": 2048,
+      "num_hidden_layers": 18,
+      "num_attention_heads": 4,
+      "num_key_value_heads": 1,
+      "head_dim": 256,
+      "max_position_embeddings": 32768,
+      "sliding_window": 512,
+      "query_pre_attn_scalar": 256,
+      "rms_norm_eps": 1e-06,
+      "hidden_activation": "gelu_pytorch_tanh",
+      "tie_word_embeddings": true,
+      "bos_token_id": 2,
+      "eos_token_id": 1
+    },
+    "acceptance": "Exact prompt IDs, generated IDs, complete decoded stream and stop reason against independent CPU reference; fail before performance on any mismatch."
+  },
+  "performance": {
+    "processes": 8,
+    "warmupResidentRuns": 1,
+    "residentRuns": 2,
+    "minimumLatencyGainRatio": 1.1,
+    "maximumTailRegressionRatio": 1.05,
+    "maximumMemoryRegressionRatio": 1.05,
+    "maximumControlRatio": 1.05,
+    "sampleOrder": [
+      "dawn",
+      "doe",
+      "doe",
+      "dawn"
+    ],
+    "cacheScope": "Fresh process cold shader cache; OS file cache explicitly uncontrolled. Resident model reuse in each process. No origin acquisition claim.",
+    "failurePolicy": "No outcome-selected retry or promotion; retain all failures and unfavorable cohorts.",
+    "timingAdmission": "No candidate timing until all qualification outputs and cancellation settlement pass. Initial A/A stability gates any attribution."
+  },
+  "cancellation": {
+    "abortAfterStreamChunks": 2,
+    "requireFollowingGenerationCorrect": true
+  },
+  "scope": "New full application contract, no retired provider/Electron credit; same model semantics, no rewriting-quality claim."
+}

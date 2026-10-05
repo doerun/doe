@@ -1504,6 +1504,50 @@
     {
       "schema": "config/three-webgpu-screen-summary.schema.json",
       "data": "reports/browser-compiler/20261004/three-screen/summary.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "bench/external-projects/doppler-generation/contract.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "bench/external-projects/doppler-generation/analysis.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "bench/external-projects/doppler-generation/candidate.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/providers.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/candidate-providers.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/reference.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/baseline-summary.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/candidate-summary.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/disposition.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/attribution.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/manifest.json"
     }
   ],
   "globTargets": [

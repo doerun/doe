@@ -2,6 +2,18 @@
 
 ## Application selection after submission attribution
 
+The [native full-generation campaign](../../reports/benchmarks/amd-vulkan/20261004-doppler-generation/README.md)
+now closes with a rejected completed-small-buffer reuse candidate. Public Doppler
+generation matches the independent CPU token, complete-stream and stopping oracle
+on Doe and pinned Dawn; cancellation settles and subsequent generation succeeds.
+The candidate reduces observed buffer-creation overhead but fails frozen
+first-token gain, initial tail and control requirements. Experimental production
+policy and ownership metadata are restored. Complete-generation control instability
+prevents attribution of lower completion samples. No new runtime superiority is
+established. Raw cohorts, the patch, failed checks and passing UMAP/rendering
+correctness regressions remain retained. Vulkan is the permitted backend; Metal
+follows and D3D12 stays deferred. Browser discovery remains closed.
+
 The [binding-cache pass](../../reports/benchmarks/amd-vulkan/20261004-binding-attribution/README.md)
 closes the UMAP binding-optimization line without a production candidate.
 Lower-level owned descriptors already reuse unchanged resources across public
@@ -10,13 +22,12 @@ state restoration on Doe and pinned Dawn. UMAP remains a regression workload.
 The [addon experiment](../../reports/benchmarks/amd-vulkan/20261004-operation-timeline/README.md)
 stays rejected. No new application-performance advantage is established.
 
-The existing review plan selects a fresh full Doppler Gemma generation contract
-on Node/Vulkan. Model, prompt, provider, oracle and performance criteria must be
-frozen before execution; retired comparisons and earlier Electron qualification
-grant no acceptance credit. This new workload has not executed here. Doppler's
-product work remains independent of Doe. The earlier compiler timing discrepancy
-remains open; identifier admission and hoisting/subgroup rejections are preserved.
-Vulkan remains active; Metal follows a closed campaign and D3D12 is deferred.
+The frozen full-generation contract is distinct from retired comparisons and
+earlier Electron qualification. The existing review plan closes its bounded batch
+after the recorded candidate rejection; complete Vulkan review remains unfinished.
+Doppler's product work remains independent of Doe. The earlier compiler timing
+discrepancy remains open; identifier admission and hoisting/subgroup rejections
+are preserved.
 
 ## Current boundary
 

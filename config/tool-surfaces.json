@@ -106,12 +106,20 @@
         "bench/gates/tint_compiler_evidence_gate.py",
         "bench/tools/render_implementation_peers.py",
         "bench/executors/run-browser-wgsl-output.mjs",
-        "bench/browser/wgsl_output_statistics.py"
+        "bench/browser/wgsl_output_statistics.py",
+        "bench/external-projects/doppler-generation/run-generation.mjs",
+        "bench/external-projects/doppler-generation/run-cohort.mjs",
+        "bench/external-projects/doppler-generation/reference.py",
+        "bench/external-projects/doppler-generation/analyze.py",
+        "bench/external-projects/doppler-generation/compare.py",
+        "bench/external-projects/doppler-generation/attribute.py",
+        "bench/external-projects/doppler-generation/validate.py"
       ],
       "docs": [
         "bench/README.md",
         "docs/internal-tooling.md",
-        "docs/implementation-peers.md"
+        "docs/implementation-peers.md",
+        "bench/external-projects/doppler-generation/README.md"
       ]
     },
     {

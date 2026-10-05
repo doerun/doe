@@ -1,0 +1,1075 @@
+{
+  "schemaVersion": 1,
+  "classification": "diagnostic",
+  "doeSourceCommit": "5a4bdd920e8531fe31ad2ca41811a10883a2d798",
+  "dopplerSourceCommit": "3e31ce60fbab709e9f7d9bb2eaa9c33e5ce6f196",
+  "dawnNpmGitHead": "2f5fb632d9d9db9bcb3705bd868de69a6a2ae4e2",
+  "dawnNpmIntegrity": "sha512-F5pimn3Aoi0zWjuRdiVs5TnrUwSzD2lESBohsIUsqyitWkGRQlXU2fhV6ycXlQTa1bvAf3sjqiUpBEpmSQ5ptA==",
+  "dawnBuildScope": "Pinned published npm native binary bound to npm gitHead and binary digest; not independently source-built. No runtime-ownership or performance promotion.",
+  "hardware": {
+    "gpu": "AMD Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "driver": "Mesa 26.0.3-1ubuntu1",
+    "backend": "vulkan",
+    "node": "v22.22.1",
+    "zig": "0.15.2"
+  },
+  "archives": [
+    {
+      "path": "bench/out/doppler-generation/20261004/doppler-gpu-0.6.3-dev.split.10.tgz",
+      "sha256": "f4d75e2b34b54b534ce59e036a0bc64792639f47472b2890f182ca1e68458fd1",
+      "bytes": 2189959,
+      "custody": "local-ignored-not-published"
+    },
+    {
+      "path": "bench/out/doppler-generation/20261004/webgpu-0.4.0.tgz",
+      "sha256": "d8835c95790d7d34299283619568f4cce97b4358581d9e2b56e7f63e3a86e062",
+      "bytes": 24756122,
+      "custody": "local-ignored-not-published"
+    },
+    {
+      "path": "bench/out/doppler-generation/20261004/doe-source-bound-provider.tgz",
+      "sha256": "f9eca989472d84db9b35c7d3f2cabe7e3749e831e18a81c4ffdc67fa2b6530e4",
+      "bytes": 3599070,
+      "custody": "local-ignored-not-published"
+    },
+    {
+      "path": "bench/out/doppler-generation/20261004/doe-candidate-provider.tgz",
+      "sha256": "9678c9d02a982b45d1e041bf3e52502f4a6dbea1067f0c367879e321aab9e494",
+      "bytes": 3599226,
+      "custody": "local-ignored-not-published"
+    },
+    {
+      "path": "bench/out/doppler-generation/20261004/oracle-wheels/gguf-0.19.0-py3-none-any.whl",
+      "sha256": "70bcd10edfe697fb2dad6e40af2234b9d8ece9a41a99761405121ebda1c3c1cd",
+      "bytes": 118475,
+      "custody": "local-ignored-not-published"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "providers.json",
+      "sha256": "2dcec26a80656b9654f8e0ca7fa9570c9802dfe7c5500ea6e97066e9a58715a1",
+      "bytes": 2558,
+      "sourcePath": "bench/out/doppler-generation/20261004/providers.json",
+      "schemaDefinition": "providers"
+    },
+    {
+      "path": "candidate-providers.json",
+      "sha256": "b41e3be1c1e2894492e230e4808b23b3a86b709041b40e3d9cc311076d4f266e",
+      "bytes": 2689,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate-providers.json",
+      "schemaDefinition": "providers"
+    },
+    {
+      "path": "reference.json",
+      "sha256": "c71da2db7a01a87f714446b68eb5eb1550b478f97784e9cba580f05b287dc546",
+      "bytes": 3643,
+      "sourcePath": "bench/out/doppler-generation/20261004/reference.json",
+      "schemaDefinition": "reference"
+    },
+    {
+      "path": "baseline-summary.json",
+      "sha256": "0d75ad59d0ec0c51ba715b193f6fa021388a7133f23f9f504654c873ad1876e6",
+      "bytes": 4086,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-summary.json",
+      "schemaDefinition": "summary"
+    },
+    {
+      "path": "disposition.json",
+      "sha256": "d908467b0d171f108b754d5a75becda1ab41b94fccc56fffe2fdbb96924bdd22",
+      "bytes": 3661,
+      "sourcePath": "bench/out/doppler-generation/20261004/disposition.json",
+      "schemaDefinition": "decision"
+    },
+    {
+      "path": "attribution.json",
+      "sha256": "14986854442681d17947157efcebc98b4336848f1d205cbcef56a96cb1ec434a",
+      "bytes": 60218,
+      "sourcePath": "bench/out/doppler-generation/20261004/attribution.json",
+      "schemaDefinition": "attribution"
+    },
+    {
+      "path": "candidate-summary.json",
+      "sha256": "23596910e734c32b793107e6c90d2f1fe51b2d743871e06b25b04eee0a69ffd6",
+      "bytes": 4104,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/summary.json",
+      "schemaDefinition": "summary"
+    },
+    {
+      "path": "candidate.patch.gz",
+      "sha256": "3060bb1bb1e21e245ed27308d61f2f3bf46f89616715577915ef644230b4061b",
+      "bytes": 3359,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate.patch",
+      "schemaDefinition": null
+    },
+    {
+      "path": "qualification/baseline/dawn-qualification.log.gz",
+      "sha256": "fcc40f5aba2ff21483235d9b0dff7a8191c08aaec24c4bca79f925423865b628",
+      "bytes": 1961,
+      "sourcePath": "bench/out/doppler-generation/20261004/dawn-qualification.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "qualification/baseline/doe-qualification.json.gz",
+      "sha256": "53718bcdeb0c9624177dd7a6ed485b8035b0f5614d74122cd98034cf371cbe9b",
+      "bytes": 9279,
+      "sourcePath": "bench/out/doppler-generation/20261004/doe-qualification.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "qualification/baseline/dawn-qualification.json.gz",
+      "sha256": "e88ce1958b40953cafb0cfdc100f72e53775cc29f1bd7323c5cb98e50c560de8",
+      "bytes": 8928,
+      "sourcePath": "bench/out/doppler-generation/20261004/dawn-qualification.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "qualification/baseline/doe-qualification.log.gz",
+      "sha256": "33593964ee0dc2835e65957bb18874f538af2fe61cc4b077a36ae40d0d9d0ef3",
+      "bytes": 1995,
+      "sourcePath": "bench/out/doppler-generation/20261004/doe-qualification.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "qualification/candidate/dawn-qualification.log.gz",
+      "sha256": "5b7b05c5bfa5c7e4c82bc8e1364c50ef90d1364d669aab9f2efeca1475839039",
+      "bytes": 1948,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/dawn-qualification.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "qualification/candidate/doe-qualification.json.gz",
+      "sha256": "12f295d4f5a78d1cbb3c1113d113e41151b3d1ae54cf78e347442ccf1c9a2925",
+      "bytes": 9321,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/doe-qualification.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "qualification/candidate/dawn-qualification.json.gz",
+      "sha256": "f1647395e5687289ab4794a4a0247771fd37bfd758f97e1d01ecf067c5581c86",
+      "bytes": 8943,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/dawn-qualification.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "qualification/candidate/doe-qualification.log.gz",
+      "sha256": "4a4018653f4f561dcda0026f9afd41aad76fd5dac5360053757087c91e86b84b",
+      "bytes": 1992,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/doe-qualification.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-0.stdout.log.gz",
+      "sha256": "5918d8c9864be23f0a11b4206a5a98a53d4fd2598d68eab3f182a59a7abea942",
+      "bytes": 1818,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-0.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-2.stdout.log.gz",
+      "sha256": "6d06014d1de14ae39c4793fe73914439df13cf6eee381efd7194b2afa41ef9f2",
+      "bytes": 1758,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-2.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-6.stdout.log.gz",
+      "sha256": "2888d9c53a173dd0cb56f8fd754ee371592fb536c0e2d4fd975c6f9aa54a6e87",
+      "bytes": 1757,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-6.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-1.stdout.log.gz",
+      "sha256": "1986daabc0b42f027c29177ee1b4aee02a607f092a889e3bcea8fc69413517e6",
+      "bytes": 1745,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-1.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-6.stderr.log.gz",
+      "sha256": "ac8e48dda28fa3e1837d510bb633913b7b875598ac358a54b8101a45a3cd50c6",
+      "bytes": 213,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-6.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-1.stdout.log.gz",
+      "sha256": "f2075757d0e0f1f6b49876a67dd6f81aece0068eafa63642a41855caa81ea657",
+      "bytes": 1821,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-1.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-7.json.gz",
+      "sha256": "cfe34bab632079878a1969d146851da099f03101fed55f43e56e440ae57aeef3",
+      "bytes": 9868,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-7.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-7.json.gz",
+      "sha256": "33a1e9f7565f9cd78fe541c2efe5c0953dd2b0a01d4d12c68a025d7991a6debf",
+      "bytes": 10199,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-7.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-0.stderr.log.gz",
+      "sha256": "e7d9f4a426fdd37176af3acc628134348d7f693737339622e675a93a102a7804",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-0.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-cohort.log.gz",
+      "sha256": "0e85cf10da12686be66420a035243aff91f9331670b61f4a5891f538d110eb4f",
+      "bytes": 143,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-cohort.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-4.json.gz",
+      "sha256": "bccb54e36a86f31464388c183ff72bae4fc1287f81d9f6bd553e9bfadb4e5df4",
+      "bytes": 9822,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-4.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-5.stderr.log.gz",
+      "sha256": "ce7e314e0d292e1b5391a3fa72a675b9fbaa0ef8bfe729a71d2cb878674f8d0b",
+      "bytes": 241,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-5.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-4.stdout.log.gz",
+      "sha256": "812a8cb12f9c850bc6590f70746e4de799e0dfeb7f762b8ec1669977ed65a93d",
+      "bytes": 1736,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-4.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-4.json.gz",
+      "sha256": "2772ac42cb50cac98abb186d7db58883da08293840ea8431d45f5206d8e2c043",
+      "bytes": 10182,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-4.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-3.stderr.log.gz",
+      "sha256": "b81a48b60dc951e79bd1a1f9b4ef09a96d0218b3ce4f4afa447045ee8175982a",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-3.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-3.json.gz",
+      "sha256": "6c68883af35d735bb0fb6161e218c3089e95d92fc898e34fbbaaf1b799bb1264",
+      "bytes": 10187,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-3.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-2.stderr.log.gz",
+      "sha256": "b7d25403ecfb1349377f2e4406ed142a890a8fa954dc0d4391d8d12c0b86bce0",
+      "bytes": 210,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-2.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-6.stderr.log.gz",
+      "sha256": "697d73f124f156b4d8035de6c82a3ee99c3dfa16168eff9b688c32014bda4b3e",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-6.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-4.stderr.log.gz",
+      "sha256": "65fa5ac6bcd60a236cf650eab981a4e57ca5abd57ce83fdcbff1e29cbca1f65d",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-4.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-5.stdout.log.gz",
+      "sha256": "465062fdea31f68506aee96a3a8975641059997ca6796fd027c11b4733f37889",
+      "bytes": 1746,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-5.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-0.json.gz",
+      "sha256": "14cd747d51c140e86f4f1af15a7c92c2a8a56e71794dae9e3c7537f4924cbf3b",
+      "bytes": 9849,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-0.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-5.stdout.log.gz",
+      "sha256": "d928b5fc1fcf36792083be10622cfe261d5d16103446412cf4a797a8d91a1225",
+      "bytes": 1812,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-5.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-6.json.gz",
+      "sha256": "0452b0e14468d837995c8a1108b06c75e432570ab6fdaee45df71ebd5e256199",
+      "bytes": 9812,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-6.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-0.stdout.log.gz",
+      "sha256": "1fe877382b966790d976b3e2e5e6f6ea71865754ac9e8519c100be7502a08a46",
+      "bytes": 1769,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-0.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-4.stderr.log.gz",
+      "sha256": "d1c1014822972acc0823375b7badd6722c87a14bbbf1f53f7465256749f1caf3",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-4.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-5.json.gz",
+      "sha256": "f9c805b991f42f6e0881a306be8f8f5f50ceefac8bfd275b4d5217db318eb02d",
+      "bytes": 10179,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-5.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-5.json.gz",
+      "sha256": "e8e3d6f7c7791e53eeb8ddc28e3f0031338d905416797d505916495d9f946a2d",
+      "bytes": 9836,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-5.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-2.stdout.log.gz",
+      "sha256": "fbefb9fb485c7b3ef8884e8623411ea7a675b6ebae55e925b2243eb7792e9951",
+      "bytes": 1810,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-2.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-1.json.gz",
+      "sha256": "787dca7fb2c11f0f7cf34181acda19eddf261f12d1df85d70e384114e6084fe2",
+      "bytes": 9862,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-1.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-3.stdout.log.gz",
+      "sha256": "4e798bdf443cbb956fc7a935eca80e444022dfe3d490f8922129cf584d451c37",
+      "bytes": 1740,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-3.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-3.json.gz",
+      "sha256": "e567eb570afe8df3a5299d467392e2443f78c18532e65fdf09fa954eda9457cc",
+      "bytes": 9850,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-3.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-2.stderr.log.gz",
+      "sha256": "4cac6ff3e08f05abd119f0e6ab084009cb060a997da142d957df7309c7b0b889",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-2.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-2.json.gz",
+      "sha256": "3aa7837dbb8066beea8dc43370f3e2ba915e8453f02d25fd0f3452bfa0c7ac3e",
+      "bytes": 9830,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-2.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-processes.json.gz",
+      "sha256": "9405d7e46564912c39b11a8da2abc890bb3b6ca8a92d566e58627cac06973fec",
+      "bytes": 254,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-processes.json",
+      "schemaDefinition": "cohort"
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-0.json.gz",
+      "sha256": "5d5800226c54c2791739081736800431d0d515a823a1751026099dba607d8cbd",
+      "bytes": 10174,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-0.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-0.stderr.log.gz",
+      "sha256": "164d603c1ca34799182e19ed300e82c4ba7a9a45231f34690613098eae3f8ddd",
+      "bytes": 211,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-0.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-1.stderr.log.gz",
+      "sha256": "bc5aac08bcedbac3b79ec5cb44b58e3d39e1731ce6031417b2be8ed4500ee6a1",
+      "bytes": 239,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-1.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-7.stderr.log.gz",
+      "sha256": "9fe09a96939ed2b285c8a31648fd8cbabde4ee58212324b4f9c57c102abd4428",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-7.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-1.stderr.log.gz",
+      "sha256": "eec992bbcd01c59521f106e44fe2c7b364ac0cee61b51a7156b40ca2af6b4e44",
+      "bytes": 211,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-1.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-6.stdout.log.gz",
+      "sha256": "c19ec5bd910a14ca897b6f8e7d0448a0242fbb24db3953cde31acd2f56183ca1",
+      "bytes": 1822,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-6.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-5.stderr.log.gz",
+      "sha256": "5f2afa6e9beae85d76222f6d09638fb058bb1c6cd30bc1280637695749807d64",
+      "bytes": 209,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-5.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-7.stdout.log.gz",
+      "sha256": "7ac62bfbc99cdc1b42689b4e966ffc43304844f8b464e4ccde34c3e1c2f64762",
+      "bytes": 1767,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-7.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-3.stderr.log.gz",
+      "sha256": "bf7abb6b08a872dbc7a591594e16d196362462552ea571962192788a08de8503",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-3.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-7.stdout.log.gz",
+      "sha256": "c419c6152bf06d95735b0d7fc0c3c3c63ab812b054432274530bb672fef415cf",
+      "bytes": 1820,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-7.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-dawn-7.stderr.log.gz",
+      "sha256": "47b1ce484828a87a1be7ed524c02c1986f96425d85e030dd5692202433193b79",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-dawn-7.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-2.json.gz",
+      "sha256": "093493fff9eccc04048ccaca6c5adcb09d6911cbafa8036c7156739344840776",
+      "bytes": 10199,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-2.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-6.json.gz",
+      "sha256": "d483d9acd7584d1738f6a03c71ace3b1ef45a94dbe97b67f7d75e3bc3392bb21",
+      "bytes": 10205,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-6.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-1.json.gz",
+      "sha256": "07c6ed4d400785a88bfa37d98edaca1a12e416b210b551e9d64ebc94bccb7239",
+      "bytes": 10171,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-1.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-3.stdout.log.gz",
+      "sha256": "36406563d76f7b9aa8ee9ba8c06320df2b29cd4fd3169311e8630990807c0280",
+      "bytes": 1812,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-3.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/baseline/baseline-doe-4.stdout.log.gz",
+      "sha256": "3de64c44a928d681d67a5641b35d234788b0650c280414def0e8bd3d47f9d003",
+      "bytes": 1811,
+      "sourcePath": "bench/out/doppler-generation/20261004/baseline-doe-4.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-6.stderr.log.gz",
+      "sha256": "e1186324d6b194291589dd39a3127d8f623cef2a834f123bb83293fead76ca7d",
+      "bytes": 207,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-6.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-7.json.gz",
+      "sha256": "3fd456527ac0a8d5055d7bb17cdb1afbadb1ccf8bbb98117141f6395570b7822",
+      "bytes": 10212,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-7.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-6.stdout.log.gz",
+      "sha256": "3289f331424f7a841db82e45bcaf798131850578f08d707ccb1058fd375795f2",
+      "bytes": 1824,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-6.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-3.stderr.log.gz",
+      "sha256": "e2bd6b30edb71c95eb214b38bf3366ed2ecf73173870630d363b6f89ef44b5f4",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-3.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-0.json.gz",
+      "sha256": "c75fed766ad0ccdb1a009380fc1dfb9cf49c6323d3235a2d53962940b5823f54",
+      "bytes": 9852,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-0.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-1.stdout.log.gz",
+      "sha256": "3be515b0c624095f8920999c6fbef5ba1c5f5747a2501a8fee8a783a136855a0",
+      "bytes": 1800,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-1.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-1.stdout.log.gz",
+      "sha256": "4b9c37529eff0dab4710334039b3d00a1bc5e9f671fcc08b7698997c580a3f9d",
+      "bytes": 1743,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-1.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-5.json.gz",
+      "sha256": "699b8567faaa4991afeb55dfa583795431768eb45a258ed565bc538423793468",
+      "bytes": 10202,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-5.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-4.stderr.log.gz",
+      "sha256": "dd6263a5c08246ae7921fe40f03056ff9de653c3d4cd32c4e39fb7f81c974229",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-4.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-5.json.gz",
+      "sha256": "88b3b63e2dd0c4b600097a44ed1d0e34edba4ce4fb9f359d0b61b0d21070d336",
+      "bytes": 9847,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-5.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-4.stdout.log.gz",
+      "sha256": "274de5e27eec2fa9a3a691c4dc8232143ed25272582924dd56476ac5bf71516b",
+      "bytes": 1752,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-4.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-3.stderr.log.gz",
+      "sha256": "70ddb333b1e782126c92b516df88d3ad43f1f26098baa2cf8886e5c43547e28b",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-3.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-7.stdout.log.gz",
+      "sha256": "5592345b991515531152d60011cb61fed952d5873e24f46168c961ee98b39a06",
+      "bytes": 1806,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-7.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-0.stdout.log.gz",
+      "sha256": "73323646b36a4a362f00ad46166828e77210f4ee7b97537c0fd6165c4a00068e",
+      "bytes": 1769,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-0.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-2.stdout.log.gz",
+      "sha256": "291ce676c8912cde6f1404fab946a350508c325d275b56c456f30c8c8ffd97b5",
+      "bytes": 1756,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-2.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-6.stdout.log.gz",
+      "sha256": "efc5159b40ed55d308cd97d9eef212564cee07fc318c82dfd5542c9bac17fab9",
+      "bytes": 1753,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-6.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-6.stderr.log.gz",
+      "sha256": "eb37560cfc692f167a3af19d75a9bb827de5d88bc2203036a294b61d3681660d",
+      "bytes": 238,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-6.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-0.stdout.log.gz",
+      "sha256": "49c3d50fc675bf2d543bbc534881bef83b8b98bdbfa75091d3d65b482cc8b7b2",
+      "bytes": 1817,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-0.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-2.stdout.log.gz",
+      "sha256": "3730e769080b7ec90cb15488f3f07cc4dddfd9b78b49338f529ccb9ed586d419",
+      "bytes": 1813,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-2.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-1.json.gz",
+      "sha256": "077938e0e8c00b15237fc83de4dfd84d9be08be50fb53a5c9e88f0e13d9e45de",
+      "bytes": 9836,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-1.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-1.json.gz",
+      "sha256": "de33e1a96813e9b5b3aecdb9ae4dfc3d69d03f7e1c32fead95e890e798c7b653",
+      "bytes": 10202,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-1.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-7.stdout.log.gz",
+      "sha256": "73644681597285c638c7dc5fa882ead0649157fd0354dac5f17690440b4d5e41",
+      "bytes": 1744,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-7.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-processes.json.gz",
+      "sha256": "1e4039eb9fd304fc0a6ebbb95156d28522c171abda47b9bed2bc891b4c111e55",
+      "bytes": 258,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-processes.json",
+      "schemaDefinition": "cohort"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-2.stderr.log.gz",
+      "sha256": "dc087c26157a01c01e735ae9fbf7a1a6bb7597b2283d2ddd88f5394eb2fc65d7",
+      "bytes": 207,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-2.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-1.stderr.log.gz",
+      "sha256": "51b19fc7a9e917cb88b344166ced7d910d4de13ffdd8d00826044630ca97221c",
+      "bytes": 209,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-1.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-0.json.gz",
+      "sha256": "ead3da51f503c393997a41f2b69d32a333d707c20544d50ff493bf1c474577e9",
+      "bytes": 10213,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-0.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-5.stdout.log.gz",
+      "sha256": "6b1330964f4b2d94a4519b82e242f975e3f0cc9620a180824c7e96f9090820ab",
+      "bytes": 1814,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-5.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-7.json.gz",
+      "sha256": "003235b33f31b4d9f87d9eeb636d32fdd448c00af3e1500997a3679dc353737e",
+      "bytes": 9835,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-7.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-4.json.gz",
+      "sha256": "d9503eb6d4b851e05f5c1b039b9ab9101e35f3b89cb8b06f8e89bde7b91d236c",
+      "bytes": 10188,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-4.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-2.json.gz",
+      "sha256": "2381ace7135d31fa9cadecb02d42e83284157e3198bb32bc6ec47246f8cbf2d4",
+      "bytes": 10190,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-2.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-5.stderr.log.gz",
+      "sha256": "89b47d4facd3963fefa6b8340a1811d6be06963138f012220ef9c10fb774d8c3",
+      "bytes": 241,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-5.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-4.stderr.log.gz",
+      "sha256": "753e749bc189ab5c0b9cd3305de835c49bfb05d221376cff2a899705621203fb",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-4.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-5.stdout.log.gz",
+      "sha256": "d87f6ba62199bc006d9d2d1642c0a029dc8e31f31fa4ea4fb8d5d0a3c1b85e46",
+      "bytes": 1757,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-5.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-0.stderr.log.gz",
+      "sha256": "332a43107c9373828386c010a7296bcd91a2101995fbe369c43c89ccf5282ada",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-0.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-7.stderr.log.gz",
+      "sha256": "f36b812943d3bf6c363753ab6e063f64c06f0881f012b5f5e53640f11dd100bf",
+      "bytes": 238,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-7.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-7.stderr.log.gz",
+      "sha256": "21377782433e575de43c6f67d07f9a6234307a921ce0fc015d8aedbc15f232bc",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-7.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-1.stderr.log.gz",
+      "sha256": "116522bdb1f9c2772a116800110f4a47bf411cc8b063c6244fd97e28d489f29f",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-1.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-6.json.gz",
+      "sha256": "7dcd563556425fd3b2c1b8206d9b347237c84fd6360891da69c9e77c99aa9880",
+      "bytes": 9855,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-6.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-3.json.gz",
+      "sha256": "074af82f736d46e069473e1435c7b7357ca08b0a102771d694bfc856d45fddc3",
+      "bytes": 10195,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-3.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-5.stderr.log.gz",
+      "sha256": "571266028304786994626265b4d1d652465c07adbd20bcc66151595f37112c6a",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-5.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-3.stdout.log.gz",
+      "sha256": "f5e337ad1b935fb934887dd9e110b49331dfbf64ea92fa1e0400a152d116aaa8",
+      "bytes": 1808,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-3.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-4.stdout.log.gz",
+      "sha256": "48083846e31e76b41473645ade695f9db30431565af2275fb34b9e2905e77856",
+      "bytes": 1812,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-4.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-2.stderr.log.gz",
+      "sha256": "f8b20cee4e6aa3794981ac2f61d0847434f67282ed36dd375532d1d626ef9ba1",
+      "bytes": 239,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-2.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-4.json.gz",
+      "sha256": "bf500d76c1c5ccecb590a77937971a879ec77cd4935f9b642e99427eec2152c5",
+      "bytes": 9822,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-4.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-2.json.gz",
+      "sha256": "8e067dfb897864c93367eb7d8613dcdb092c82b1290d689c15b483e94940f274",
+      "bytes": 9834,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-2.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-0.stderr.log.gz",
+      "sha256": "17d180e68c692641bee6271217e952291d5ff4db998519c5b4848ffae52010d9",
+      "bytes": 209,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-0.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-3.json.gz",
+      "sha256": "004b6b7403a422a77b72dad82bca3085a0fc8589122be0df7cf8fe38486f0dbe",
+      "bytes": 9840,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-3.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "cohorts/candidate/candidate-dawn-3.stdout.log.gz",
+      "sha256": "d998455f68436048f33352712a9636e513128ef572cbe04b090862cc75eb3843",
+      "bytes": 1753,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-dawn-3.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "cohorts/candidate/candidate-doe-6.json.gz",
+      "sha256": "7b4067843411b0fab5912f0eb5fd947b890ed09941557fb40e714bca6f552e23",
+      "bytes": 10181,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/candidate-doe-6.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "profiles/doe-profile.json.gz",
+      "sha256": "ee5e0004e7807d1a7772fe6fbae5a1a2b8843dfb0c05874850d124950d3a96a0",
+      "bytes": 982439,
+      "sourcePath": "bench/out/doppler-generation/20261004/doe-profile.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "profiles/dawn-profile.json.gz",
+      "sha256": "9bbaf04642d5c5deaa00baf2801d60c013f9f4fbeeb58b66d8e1ded212fd1e1a",
+      "bytes": 955627,
+      "sourcePath": "bench/out/doppler-generation/20261004/dawn-profile.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "profiles/candidate-doe-profile.json.gz",
+      "sha256": "b98648cb97a170d6d0337346123cf814b165e9ad777129172d42341acc1509cd",
+      "bytes": 962164,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/doe-profile.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "failures/string-model-url.json.gz",
+      "sha256": "aca1a46aacd0786d9f23f920cb50da077c9845c8b496840c6e7a13c8b6a3b294",
+      "bytes": 757,
+      "sourcePath": "bench/out/doppler-generation/20261004/failures/string-model-url.json",
+      "schemaDefinition": null
+    },
+    {
+      "path": "failures/profile-before-intervals-dawn.json.gz",
+      "sha256": "dc5dd8cd169e3a0b781c28fe496347b5230b7ab6f196089a3ea4713cbf5ae3b1",
+      "bytes": 416353,
+      "sourcePath": "bench/out/doppler-generation/20261004/failures/profile-before-intervals-dawn.json",
+      "schemaDefinition": null
+    },
+    {
+      "path": "failures/destroyed-probe-settlement.log.gz",
+      "sha256": "bee91c9afbaf00f9bbb8d74c662384102f782f16fb44bb49efc6dbd56fdfa9bb",
+      "bytes": 2230,
+      "sourcePath": "bench/out/doppler-generation/20261004/failures/destroyed-probe-settlement.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "failures/profile-before-intervals-doe.json.gz",
+      "sha256": "dc01e6a1f7c27d6b81e0f4afdbf86f3f3e1dca41b833c8665e9628c95d7b2326",
+      "bytes": 433059,
+      "sourcePath": "bench/out/doppler-generation/20261004/failures/profile-before-intervals-doe.json",
+      "schemaDefinition": null
+    },
+    {
+      "path": "failures/destroyed-probe-settlement.json.gz",
+      "sha256": "39fcdb255069dddbb0b788ff67af196bf2758062131a93e5758961cc8ad495b6",
+      "bytes": 8697,
+      "sourcePath": "bench/out/doppler-generation/20261004/failures/destroyed-probe-settlement.json",
+      "schemaDefinition": null
+    },
+    {
+      "path": "failures/stop-taxonomy.json.gz",
+      "sha256": "ba006fcfbb23385b5d7dba5728ca29d31d3866a6572bc38d497999c5ecef87d3",
+      "bytes": 2781,
+      "sourcePath": "bench/out/doppler-generation/20261004/failures/stop-taxonomy.json",
+      "schemaDefinition": null
+    },
+    {
+      "path": "failures/string-model-url.log.gz",
+      "sha256": "7b19e40a7872cedb2f279d1cc8167d8f716ad7757de027a91f956aa433fdd1e8",
+      "bytes": 476,
+      "sourcePath": "bench/out/doppler-generation/20261004/failures/string-model-url.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "failures/stop-taxonomy.log.gz",
+      "sha256": "5c229f380fb3d97cdab61c0706e0841db392e2247e95db70967dec83bc4cd9bb",
+      "bytes": 1979,
+      "sourcePath": "bench/out/doppler-generation/20261004/failures/stop-taxonomy.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/build.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "sourcePath": "bench/out/doppler-generation/20261004/build.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/candidate-build.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate-build.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/candidate-build-final.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate-build-final.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/candidate-unit.log.gz",
+      "sha256": "85d46a16f8b463677d3c77f69dbdb451fae7a4cf267cd906483a0f66faaa45d2",
+      "bytes": 1241,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate-unit.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/candidate-unit-final.log.gz",
+      "sha256": "e62ae07bf637f81e93cf7a03346912246c66549d1d24c393d341ae3142c35bc0",
+      "bytes": 745,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate-unit-final.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/candidate-unit-boundaries.log.gz",
+      "sha256": "09119f6c95341249f89080b677713e3b3e4b04544b22102659f7b4976a60deb5",
+      "bytes": 747,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate-unit-boundaries.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/candidate-layout.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate-layout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/addon-build.log.gz",
+      "sha256": "695cc3a7bebf806dd5b11c8b701949c21d69a80fb5fab4d84c90552b6d5fb8c5",
+      "bytes": 98,
+      "sourcePath": "bench/out/doppler-generation/20261004/addon-build.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/reference.log.gz",
+      "sha256": "187d434190c6a980efdb882a4bd4cbefd71b6179fb9c2113e962d945764decf0",
+      "bytes": 138,
+      "sourcePath": "bench/out/doppler-generation/20261004/reference.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/render.log.gz",
+      "sha256": "e303335977c8159fd86775ff101b125589329c9823344f24638d8c68d7ab7b97",
+      "bytes": 136,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/render.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/umap.log.gz",
+      "sha256": "f9c0c9b1fcf6fdee6c5c9fbc6e9a275340768de83488009e3516c955ef5a9428",
+      "bytes": 180,
+      "sourcePath": "bench/out/doppler-generation/20261004/candidate/umap.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/umap-receipt-summary.json.gz",
+      "sha256": "b91ea54ba0b47999d8c3f533096dbd2cbfddab81023771d654f821af9c716bef",
+      "bytes": 2871,
+      "sourcePath": "bench/out/external-projects/umap-gpu/20261004-doppler-generation-rejected-cache-regression/receipt-summary.json",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/umap-raw-benchmark.json.gz",
+      "sha256": "39531fe2e669b8fb6345d5c746e97786bb67f162c65bbf48e40c3947e661a90e",
+      "bytes": 6670,
+      "sourcePath": "bench/out/external-projects/umap-gpu/20261004-doppler-generation-rejected-cache-regression/raw-benchmark.json",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/schema-gate-final.log.gz",
+      "sha256": "70f47af569c54daa56a5defb987e89a5732ad8dd4aa2380169c3aa94dfd1a1b6",
+      "bytes": 25,
+      "sourcePath": "bench/out/doppler-generation/20261004/schema-gate-final.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/tool-surface-gate.log.gz",
+      "sha256": "a888d69eb0e87024b7741e749d41ef19cecad3ce2a7fb5ebbb8779faa42ff842",
+      "bytes": 64,
+      "sourcePath": "bench/out/doppler-generation/20261004/tool-surface-gate.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/catscan-gate.log.gz",
+      "sha256": "51de57509544e2892c788b3fd8acbe6b6ce45cebe827d76361523e344cb284a0",
+      "bytes": 74,
+      "sourcePath": "bench/out/doppler-generation/20261004/catscan-gate.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/doc-links.log.gz",
+      "sha256": "f3fe4639d00181eea1118160232efdde304d19485cf6781c9c13283b2e166f58",
+      "bytes": 51,
+      "sourcePath": "bench/out/doppler-generation/20261004/doc-links.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/restored-layout.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "sourcePath": "bench/out/doppler-generation/20261004/restored-layout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/evidence-validation.log.gz",
+      "sha256": "946a58df6f06c2bbd920aed951fe6400888d4ed60fb8ab2b9d938f8965ae5d98",
+      "bytes": 11922,
+      "sourcePath": "bench/out/doppler-generation/20261004/evidence-validation.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "checks/evidence-validation-final.log.gz",
+      "sha256": "1f909cec3ad9f2f6d91a1462c21c0c5ef39025157051aa6de7860017b064fc8d",
+      "bytes": 77,
+      "sourcePath": "bench/out/doppler-generation/20261004/evidence-validation-final.log",
+      "schemaDefinition": null
+    }
+  ],
+  "runtimeCandidateRetained": false,
+  "sourcePatchSha256": "49c4f5ab55e26cd811ffb37c3b62549aec149dede0d9823a040bb329f150a17d",
+  "scope": "Exact local model and archive custody; large bytes are intentionally not duplicated in Git. Dependency closure uses the explicit Doppler source node_modules symlink. CPU oracle uses independently implemented Gemma and GGUF math; selected token/text/stopping agreement is not complete numerical equivalence. Rejection grants no package release, rewritten-text quality, browser or universal performance credit."
+}

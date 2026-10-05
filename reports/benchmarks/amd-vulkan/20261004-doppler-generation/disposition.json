@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "classification": "diagnostic",
+  "candidateId": "completed-small-buffer-reuse-v1",
+  "contractSha256": "e77adf8a73e872efda6b3fb13ac1810477b1f7d6adc7a73cea1b2ba9a87c8936",
+  "baselineSummarySha256": "0d75ad59d0ec0c51ba715b193f6fa021388a7133f23f9f504654c873ad1876e6",
+  "candidateSummarySha256": "23596910e734c32b793107e6c90d2f1fe51b2d743871e06b25b04eee0a69ffd6",
+  "primaryGainRatio": 0.9808095739473132,
+  "ratios": [
+    {
+      "lane": "doe",
+      "scope": "initial",
+      "metric": "firstTokenMs",
+      "p50CandidateOverBaseline": 1.1521074024648934,
+      "p95CandidateOverBaseline": 1.1444352447727701
+    },
+    {
+      "lane": "doe",
+      "scope": "initial",
+      "metric": "completeMs",
+      "p50CandidateOverBaseline": 0.9621196854552843,
+      "p95CandidateOverBaseline": 1.003793141370311
+    },
+    {
+      "lane": "doe",
+      "scope": "resident",
+      "metric": "firstTokenMs",
+      "p50CandidateOverBaseline": 1.0195659040882463,
+      "p95CandidateOverBaseline": 1.014846537675867
+    },
+    {
+      "lane": "doe",
+      "scope": "resident",
+      "metric": "completeMs",
+      "p50CandidateOverBaseline": 0.8929774569141179,
+      "p95CandidateOverBaseline": 0.9153416839448085
+    },
+    {
+      "lane": "doe",
+      "scope": "process",
+      "metric": "peakProcessRssBytes",
+      "p95CandidateOverBaseline": 0.9806250317100349
+    },
+    {
+      "lane": "dawn",
+      "scope": "initial",
+      "metric": "firstTokenMs",
+      "p50CandidateOverBaseline": 1.0355180579748635,
+      "p95CandidateOverBaseline": 1.058374731351467
+    },
+    {
+      "lane": "dawn",
+      "scope": "initial",
+      "metric": "completeMs",
+      "p50CandidateOverBaseline": 1.021856234034013,
+      "p95CandidateOverBaseline": 1.0433082846815445
+    },
+    {
+      "lane": "dawn",
+      "scope": "resident",
+      "metric": "firstTokenMs",
+      "p50CandidateOverBaseline": 1.0100974608669602,
+      "p95CandidateOverBaseline": 1.032299083198145
+    },
+    {
+      "lane": "dawn",
+      "scope": "resident",
+      "metric": "completeMs",
+      "p50CandidateOverBaseline": 1.0165276060352222,
+      "p95CandidateOverBaseline": 1.0359289467536832
+    },
+    {
+      "lane": "dawn",
+      "scope": "process",
+      "metric": "peakProcessRssBytes",
+      "p95CandidateOverBaseline": 1.0151197600392492
+    }
+  ],
+  "checks": [
+    {
+      "id": "baseline_doe_first_token_control",
+      "passed": true
+    },
+    {
+      "id": "candidate_doe_first_token_control",
+      "passed": false
+    },
+    {
+      "id": "initial_firstTokenMs_tail",
+      "passed": false
+    },
+    {
+      "id": "initial_completeMs_tail",
+      "passed": true
+    },
+    {
+      "id": "resident_firstTokenMs_tail",
+      "passed": true
+    },
+    {
+      "id": "resident_completeMs_tail",
+      "passed": true
+    },
+    {
+      "id": "doe_host_peak_rss",
+      "passed": true
+    },
+    {
+      "id": "baseline_dawn_first_token_control",
+      "passed": true
+    },
+    {
+      "id": "candidate_dawn_first_token_control",
+      "passed": true
+    },
+    {
+      "id": "unchanged_dawn_resident_first_token_drift",
+      "passed": true
+    },
+    {
+      "id": "dawn_host_peak_rss",
+      "passed": true
+    },
+    {
+      "id": "material_resident_first_token_gain",
+      "passed": false
+    }
+  ],
+  "timingAdmissionPassed": false,
+  "performancePromoted": false,
+  "disposition": "rejected",
+  "completeLatencyClaimAllowed": false,
+  "scope": "Independent sequential cohorts with balanced provider order; no candidate/baseline process pairing. API observer disabled. Failed controls and regressions are retained; no complete-latency gain is attributed."
+}
