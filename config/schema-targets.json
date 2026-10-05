@@ -1588,6 +1588,82 @@
     {
       "schema": "config/onnx-webgpu-substitution.schema.json",
       "data": "reports/benchmarks/amd-vulkan/20261005-onnx-webgpu-substitution/option-control.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/bridge-build.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/source-build.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/failed-observations.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/doe.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/dawn-control.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/future-original.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/future-corrected.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/offline-first.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/offline-reopen.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/offline-installation.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/disposition.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/manifest.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/doppler-final-transfer.json"
+    },
+    {
+      "schema": "config/doppler-installed-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/doppler-final-transfer-audit.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/doppler-transfer-providers.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/doppler-transfer-contract.json"
+    },
+    {
+      "schema": "config/doppler-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/doppler-transfer-reference.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/archive-execution.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/archive-installation.json"
     }
   ],
   "globTargets": [

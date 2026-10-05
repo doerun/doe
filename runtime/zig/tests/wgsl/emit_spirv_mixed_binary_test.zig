@@ -402,3 +402,62 @@ test "runtime array structs are direct blocks across bindings" {
     try testing.expectEqual(@as(usize, 1), runtime_blocks);
     try testing.expect(count_spirv_opcode(binary, spirv.Opcode.ArrayLength) >= 1);
 }
+
+test "abstract assignment values have the SPIR-V destination type" {
+    const source =
+        \\struct State { count: u32, value: f32, }
+        \\@group(0) @binding(0) var<storage, read_write> output: array<f32>;
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\    var indices: vec2<u32>;
+        \\    indices[0] = 0;
+        \\    indices[1] = 3;
+        \\    var state: State;
+        \\    let pointer = &state.count;
+        \\    *pointer = 7;
+        \\    state.value = 2.0;
+        \\    output[0] = state.value;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+    const bound = read_u32_le(binary, 12);
+    const value_types = try allocator.alloc(u32, bound);
+    defer allocator.free(value_types);
+    @memset(value_types, 0);
+    const pointee_types = try allocator.alloc(u32, bound);
+    defer allocator.free(pointee_types);
+    @memset(pointee_types, 0);
+    var i: usize = 5;
+    var assignments: usize = 0;
+    while (i < len / 4) {
+        const word = read_u32_le(binary, i * 4);
+        const opcode: u16 = @truncate(word);
+        switch (opcode) {
+            spirv.Opcode.TypePointer => pointee_types[read_u32_le(binary, (i + 1) * 4)] = read_u32_le(binary, (i + 3) * 4),
+            spirv.Opcode.Constant,
+            spirv.Opcode.ConstantNull,
+            spirv.Opcode.ConstantComposite,
+            spirv.Opcode.Variable,
+            spirv.Opcode.AccessChain,
+            spirv.Opcode.Load,
+            spirv.Opcode.Bitcast,
+            spirv.Opcode.ConvertSToF,
+            spirv.Opcode.ConvertUToF,
+            spirv.Opcode.CompositeConstruct,
+            spirv.Opcode.CompositeExtract,
+            => value_types[read_u32_le(binary, (i + 2) * 4)] = read_u32_le(binary, (i + 1) * 4),
+            spirv.Opcode.Store => {
+                const pointer = read_u32_le(binary, (i + 1) * 4);
+                const value = read_u32_le(binary, (i + 2) * 4);
+                try testing.expect(value_types[value] != 0);
+                try testing.expectEqual(pointee_types[value_types[pointer]], value_types[value]);
+                assignments += 1;
+            },
+            else => {},
+        }
+        i += word >> 16;
+    }
+    try testing.expect(assignments >= 5);
+}

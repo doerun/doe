@@ -35,7 +35,7 @@
       ],
       "properties": {
         "schemaVersion": {"const": 1},
-        "workloadId": {"const": "doppler_full_generation_native_vulkan_v1"},
+        "workloadId": {"enum": ["doppler_full_generation_native_vulkan_v1", "doppler_installed_generation_native_vulkan_v1"]},
         "classification": {"type": "string"},
         "dopplerSourceCommit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
         "doeSourceCommit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},

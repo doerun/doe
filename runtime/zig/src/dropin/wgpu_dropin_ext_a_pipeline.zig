@@ -6,6 +6,7 @@ const p0 = core.p0;
 const async_procs = core.async_procs;
 const native = core.native;
 const singleflight = core.singleflight;
+const future_ids = @import("../native/support/doe_future_ids.zig");
 
 pub const SnapshotError = error{ OutOfMemory, InvalidDescriptor, UnsupportedDescriptor };
 
@@ -199,6 +200,7 @@ pub const ComputePipelineAsyncRequest = struct {
     pub const matches = same_compute_request;
     allocator: std.mem.Allocator = std.heap.c_allocator,
     next: ?*ComputePipelineAsyncRequest = null,
+    future_completion: future_ids.Completion = .{},
     device: types.WGPUDevice,
     descriptor: types.WGPUComputePipelineDescriptor,
     callback_info: p0.CreateComputePipelineAsyncCallbackInfo,
@@ -216,6 +218,7 @@ pub const RenderPipelineAsyncRequest = struct {
     pub const matches = same_render_request;
     allocator: std.mem.Allocator = std.heap.c_allocator,
     next: ?*RenderPipelineAsyncRequest = null,
+    future_completion: future_ids.Completion = .{},
     device: types.WGPUDevice,
     descriptor: RenderPipelineDesc,
     callback_info: async_procs.CreateRenderPipelineAsyncCallbackInfo,
@@ -329,6 +332,7 @@ fn copy_constants(allocator: std.mem.Allocator, source: []const types.WGPUConsta
 }
 
 pub fn free_compute_pipeline_request(req: *ComputePipelineAsyncRequest) void {
+    req.future_completion.finish();
     const allocator = req.allocator;
     if (req.label_bytes) |bytes| allocator.free(bytes);
     if (req.entry_point_bytes) |bytes| allocator.free(bytes);
@@ -498,6 +502,7 @@ fn copy_render_request(
 }
 
 pub fn free_render_pipeline_request(req: *RenderPipelineAsyncRequest) void {
+    req.future_completion.finish();
     if (req.descriptor.layout != null) native.doeNativePipelineLayoutRelease(req.descriptor.layout);
     if (req.descriptor.vertex.module != null) native.doeNativeShaderModuleRelease(req.descriptor.vertex.module);
     if (req.descriptor.fragment) |frag| {
@@ -571,12 +576,21 @@ fn deliver_pipeline_requests(
         const next = current.next;
         if (current.callback_info.callback) |cb| {
             // Each callback receives its own lease; earlier callbacks may release or reenter.
+            if (comptime @hasField(Request, "future_completion")) current.future_completion.beginDelivery();
             if (head.pipeline != null) native.object_add_ref(Pipeline, head.pipeline);
             cb(head.status, head.pipeline, .{ .data = head.message.ptr, .length = head.message.len }, current.callback_info.userdata1, current.callback_info.userdata2);
         }
+        if (comptime @hasField(Request, "future_completion")) current.future_completion.finish();
         if (current != head) free_request(current);
         req = next;
     }
+}
+
+pub fn register_pipeline_future(device_raw: types.WGPUDevice, completion: *future_ids.Completion, id: u64) void {
+    const device = native.cast(native.DoeDevice, device_raw) orelse return;
+    const adapter = device.adapter orelse return;
+    const instance = adapter.instance orelse return;
+    instance.pending_completions.register(completion, id);
 }
 
 test "async render cleanup releases shader leases before owned fragment storage" {

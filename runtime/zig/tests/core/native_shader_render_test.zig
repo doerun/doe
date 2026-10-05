@@ -1167,17 +1167,19 @@ test "multiple instances can coexist" {
 }
 
 // ============================================================
-// InstanceWaitAny (synchronous — marks all completed)
+// InstanceWaitAny completion and admission
 // ============================================================
 
-test "doeNativeInstanceWaitAny marks all infos as completed" {
+test "doeNativeInstanceWaitAny observes settled infos on a valid instance" {
+    const instance = instance_device.doeNativeCreateInstance(null) orelse return error.TestUnexpectedResult;
+    defer instance_device.doeNativeInstanceRelease(instance);
     var infos = [_]types.WGPUFutureWaitInfo{
         .{ .future = .{ .id = 100 }, .completed = 0 },
         .{ .future = .{ .id = 200 }, .completed = 0 },
         .{ .future = .{ .id = 300 }, .completed = 0 },
     };
 
-    const status = instance_device.doeNativeInstanceWaitAny(null, infos.len, &infos, 0);
+    const status = instance_device.doeNativeInstanceWaitAny(instance, infos.len, &infos, 0);
     // Should return WGPU_WAIT_STATUS_SUCCESS = 1.
     try std.testing.expectEqual(@as(u32, 1), status);
 
@@ -1185,6 +1187,12 @@ test "doeNativeInstanceWaitAny marks all infos as completed" {
     for (infos) |info| {
         try std.testing.expectEqual(@as(u32, 1), info.completed);
     }
+}
+
+test "doeNativeInstanceWaitAny rejects a missing instance without fabricating completion" {
+    var info = types.WGPUFutureWaitInfo{ .future = .{ .id = 100 }, .completed = 0 };
+    try std.testing.expectEqual(@as(u32, 3), instance_device.doeNativeInstanceWaitAny(null, 1, @ptrCast(&info), 0));
+    try std.testing.expectEqual(@as(u32, 0), info.completed);
 }
 
 test "doeNativeInstanceWaitAny with count 0 returns success" {

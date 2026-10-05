@@ -1,0 +1,30 @@
+{
+  "browserSwitchEstablished": false,
+  "checks": {
+    "cancellationBeforeExecutionAndReuse": true,
+    "combinedRuntimeCompilerGates": true,
+    "correctedCallbackControl": true,
+    "exactArchiveInstalledExecution": true,
+    "generationTransfer": true,
+    "independentOutputs": true,
+    "isolatedOfflineInstallation": true,
+    "nativeDrmCleanup": true,
+    "observedDoeCalls": true,
+    "originalCallbackFailureRetained": true,
+    "shaderRenderTransfer": true,
+    "unsupportedChainsRejected": true
+  },
+  "classification": "bounded-framework-integration",
+  "limitations": [
+    "Cancellation is before execution; submitted GPU termination is not qualified.",
+    "Proc table, native library and supplied GPU contexts are process-owned, with no live object migration.",
+    "Unsupported Dawn procs/chains abort this internal consumer prototype.",
+    "General callback-mode and future validation conformance is not established.",
+    "Source-built consumer patch is not an unmodified published plugin.",
+    "Doppler deferred destruction warning persists; no leak-free lifecycle claim.",
+    "Local archive custody; no independent host reproduction or upstream adoption.",
+    "No source-built Dawn native control; published incumbent and independent numerical controls establish the scoped prototype, not an ownership/performance decision."
+  ],
+  "performanceClaim": false,
+  "schemaVersion": 1
+}

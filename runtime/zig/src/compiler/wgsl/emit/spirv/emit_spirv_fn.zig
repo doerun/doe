@@ -120,14 +120,16 @@ pub fn FunctionState(comptime EmitterT: type) type {
                     return false;
                 },
                 .local_decl => |decl| {
-                    if (decl.initializer) |expr_id| {
-                        const value_id = try self.emit_value_expr(expr_id);
-                        if (self.local_ptr_ids[decl.local] != 0) {
-                            try self.emitter.emit_store(self.local_ptr_ids[decl.local], value_id);
-                            self.instruction_cache.invalidateLocal(decl.local);
-                        } else {
-                            self.local_value_ids[decl.local] = value_id;
-                        }
+                    const local_ty = self.function.locals.items[decl.local].ty;
+                    const value_id = if (decl.initializer) |expr_id|
+                        try self.coerce_value_type(try self.emit_value_expr(expr_id), self.function.exprs.items[expr_id].ty, local_ty)
+                    else
+                        try self.emitter.builder.const_zero(try self.emitter.lower_type(local_ty));
+                    if (self.local_ptr_ids[decl.local] != 0) {
+                        try self.emitter.emit_store(self.local_ptr_ids[decl.local], value_id);
+                        self.instruction_cache.invalidateLocal(decl.local);
+                    } else {
+                        self.local_value_ids[decl.local] = value_id;
                     }
                     return false;
                 },
@@ -149,6 +151,12 @@ pub fn FunctionState(comptime EmitterT: type) type {
                             self.function.exprs.items[assign.lhs].ty,
                             self.function.exprs.items[assign.rhs].ty,
                             self.function.exprs.items[assign.lhs].ty,
+                            self.function.exprs.items[assign.lhs].ty,
+                        );
+                    } else {
+                        value_id = try self.coerce_value_type(
+                            value_id,
+                            self.function.exprs.items[assign.rhs].ty,
                             self.function.exprs.items[assign.lhs].ty,
                         );
                     }
@@ -602,8 +610,8 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 if (try self.emit_matrix_multiply(lhs_id, rhs_id, lhs_ty, rhs_ty, result_ty)) |result_id| return result_id;
             }
             if (try emit_spirv_matrix.emit_matrix_elementwise(self, op, lhs_id, rhs_id, lhs_ty, rhs_ty, result_ty)) |result_id| return result_id;
-            const coerced_lhs = try self.coerce_binary_operand(lhs_id, lhs_ty, operand_ty);
-            const coerced_rhs = try self.coerce_binary_operand(rhs_id, rhs_ty, operand_ty);
+            const coerced_lhs = try self.coerce_value_type(lhs_id, lhs_ty, operand_ty);
+            const coerced_rhs = try self.coerce_value_type(rhs_id, rhs_ty, operand_ty);
             const opcode: u16 = switch (op) {
                 .add => switch (self.scalar_kind(operand_ty)) {
                     .float => spirv.Opcode.FAdd,
@@ -798,7 +806,7 @@ pub fn FunctionState(comptime EmitterT: type) type {
             return try self.emit_scalar_construct_from_type(target_ty, self.function.exprs.items[source_expr_id].ty, source_id);
         }
 
-        fn coerce_binary_operand(self: *@This(), value_id: u32, source_ty: ir.TypeId, target_ty: ir.TypeId) EmitError!u32 {
+        fn coerce_value_type(self: *@This(), value_id: u32, source_ty: ir.TypeId, target_ty: ir.TypeId) EmitError!u32 {
             if (source_ty == target_ty or try self.emitter.lower_type(source_ty) == try self.emitter.lower_type(target_ty)) {
                 return value_id;
             }

@@ -2308,9 +2308,9 @@
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
         "decision": "Keep",
-        "moduleSha256": "c7842392b55bfb5f90a0cce522823bfe567d9abb7f9f9b218420460c5e62a979",
-        "reviewer": "codex-doe-pointer-reference-20260928",
-        "reason": "Keep: SPIR-V function and control-flow lowering owns address and dereference expression emission while cache ownership remains separate."
+        "moduleSha256": "e12d83fdeb0c97135158c6395dccc5c26478b86596d380ea7821b33719a0cefe",
+        "reviewer": "codex-onnx-store-materialization/2026-10-05",
+        "reason": "Keep: SPIR-V function lowering materializes admitted assignment and initializer values to destination types and applies WGSL default initialization at declaration execution; instruction and reference ownership remain unchanged."
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn_helpers.zig": {
         "decision": "Keep",
@@ -3214,15 +3214,15 @@
       },
       "src/dropin/wgpu_dropin_ext_a_exports.zig": {
         "decision": "Keep",
-        "moduleSha256": "16db811baa8cfb49bd490e2afffd5f28c39db06809cd28751b3813deec4df22c",
-        "reason": "Keep: WebGPU reference-count adapters now retain real render-bundle and encoder references rather than accepting ineffective calls.",
-        "reviewer": "codex-render-ownership/2026-09-06"
+        "moduleSha256": "d0db189371e49fed4357223d727f47b72decc950c9e01dd81956cce62e298e14",
+        "reason": "Keep: existing async pipeline ABI owner registers each retained request before worker publication; unchanged snapshot and single-flight failures retain their original callback path.",
+        "reviewer": "codex-onnx-future-completion/2026-10-05"
       },
       "src/dropin/wgpu_dropin_ext_a_pipeline.zig": {
         "decision": "Keep",
-        "moduleSha256": "c15eddc7a4f540455d8a916d0c382a7475d2499dac5e462bc12f99457fac982e",
-        "reason": "Keep: reachable dropin implementation shared by 3 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "53fa274b16434e1ec6f410e644018df62082c8b31ce86836179fbece4e482326",
+        "reason": "Keep: existing snapshot and delivery owner embeds an instance completion obligation in each request and settles it after callback return, before releasing retained device ownership.",
+        "reviewer": "codex-onnx-future-completion/2026-10-05"
       },
       "src/dropin/wgpu_dropin_ext_b.zig": {
         "decision": "Keep",
@@ -3562,9 +3562,9 @@
       },
       "src/native/lifecycle/doe_instance_device_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "2db055700e10854c994011b02d30c8a7b07b3493c7e0b5c89215027eba2f33b6",
-        "reason": "Keep: native adapter owns selected Vulkan state; each device retains its adapter so the shared instance survives device teardown and external adapter release.",
-        "reviewer": "codex-vulkan-selection/2026-10-02"
+        "moduleSha256": "8999da41b5436d9d3fa75bc509aa62fabcb252e1022a8c5a7ee14d06bb07f6d0",
+        "reason": "Keep: instance lifecycle owner waits on its own real pending completions; elapsed-clock failures remain explicit and completion is not fabricated for asynchronous pipelines.",
+        "reviewer": "codex-onnx-future-completion/2026-10-05"
       },
       "src/native/mod.zig": {
         "decision": "Keep",
@@ -3730,9 +3730,9 @@
       },
       "src/native/support/doe_future_ids.zig": {
         "decision": "Keep",
-        "moduleSha256": "13f8564f7770717745b94aa9323d7d2883ac39778f0212fbd1713ad53c29f152",
-        "reason": "Keep: reachable native implementation shared by 2 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "c54b82af6fac09537bdc9d493409f5f92069214c34baa17231c1c93edac071a5",
+        "reason": "Keep: native future identities and instance-owned completion obligations share one owner. Intrusive records borrow retained requests; settled records are removed without tombstones or extra allocation.",
+        "reviewer": "codex-onnx-future-completion/2026-10-05"
       },
       "src/native/support/doe_label_store.zig": {
         "decision": "Keep",
@@ -3760,9 +3760,9 @@
       },
       "src/native/support/doe_native_object_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "2268f760877848562f49df13f1ae52615adfeb4e1cd8454f4e406d3401e6cb2e",
-        "reason": "Keep: native adapter type carries the opaque, adapter-owned Vulkan selection as well as shader-owned entry-point metadata.",
-        "reviewer": "codex-vulkan-preparation/2026-10-02"
+        "moduleSha256": "f823274077b2d4e3413dc0323d40daad59bcc21955b8039d64466df3f40be7a1",
+        "reason": "Keep: native object owner assigns pending completion state to the instance, whose lifetime is retained through each async request device and adapter.",
+        "reviewer": "codex-onnx-future-completion/2026-10-05"
       },
       "src/native/support/doe_native_runtime_helpers.zig": {
         "decision": "Keep",

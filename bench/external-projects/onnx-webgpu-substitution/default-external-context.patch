@@ -1,0 +1,28 @@
+--- a/onnxruntime/core/providers/webgpu/webgpu_context.cc
++++ b/onnxruntime/core/providers/webgpu/webgpu_context.cc
+@@ -986,11 +986,11 @@
+   }
+ 
+   if (context_id == 0) {
+-    // context ID is preserved for the default context. User cannot use context ID 0 as a custom context.
+-    ORT_ENFORCE(instance == nullptr && device == nullptr,
+-                "WebGPU EP default context (contextId=0) must not have custom WebGPU instance or device.");
+-
+-    instance = default_instance_;
++    // Shared allocators and transfers use context zero. Admit an explicitly supplied
++    // device here instead of creating a second provider-owned device.
++    ORT_ENFORCE((instance == nullptr) == (device == nullptr),
++                "WebGPU EP default external context requires both instance and device.");
++    if (instance == nullptr) instance = default_instance_;
+   } else {
+     // for context ID > 0, user must provide custom WebGPU instance and device.
+     ORT_ENFORCE(instance != nullptr && device != nullptr,
+@@ -1011,7 +1011,7 @@
+                                                                     config.preserve_device,
+                                                                     config.max_storage_buffer_binding_size));
+     it = contexts_->emplace(context_id, WebGpuContextFactory::WebGpuContextInfo{std::move(context), 0}).first;
+-  } else if (context_id != 0) {
++  } else if (context_id != 0 || device != nullptr) {
+     ORT_ENFORCE(it->second.context->instance_.Get() == instance &&
+                     it->second.context->device_.Get() == device,
+                 "WebGPU EP context ID ", context_id, " is already created with different WebGPU instance or device.");

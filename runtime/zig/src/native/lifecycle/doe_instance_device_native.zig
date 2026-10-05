@@ -19,7 +19,6 @@ const package_metal_pipeline_cache = @import("../cache/doe_package_metal_pipelin
 const device_caps = @import("../support/doe_device_caps.zig");
 const command_storage = @import("../command/doe_command_storage.zig");
 const build_options = @import("build_options");
-const future_ids = @import("../support/doe_future_ids.zig");
 
 const alloc = native_helpers.alloc;
 const make = native_helpers.make;
@@ -48,6 +47,7 @@ const metal_bridge_release = backend_lifecycle.metal_bridge_release;
 
 const WGPU_WAIT_STATUS_SUCCESS: u32 = 1;
 const WGPU_WAIT_STATUS_TIMED_OUT: u32 = 2;
+const WGPU_WAIT_STATUS_ERROR: u32 = 3;
 const WGPU_REQUEST_STATUS_SUCCESS: u32 = 1;
 const WGPU_REQUEST_STATUS_UNAVAILABLE: u32 = 3;
 const WGPU_REQUEST_STATUS_ERROR: u32 = 4;
@@ -484,19 +484,11 @@ pub export fn doeNativeInstanceRelease(raw: ?*anyopaque) callconv(.c) void {
 }
 
 pub export fn doeNativeInstanceWaitAny(inst: ?*anyopaque, count: usize, infos: [*]abi_callback.WGPUFutureWaitInfo, timeout_ns: u64) callconv(.c) u32 {
-    _ = inst;
-    _ = timeout_ns;
     if (count == 0) return WGPU_WAIT_STATUS_SUCCESS;
-    var any_completed = false;
-    for (infos[0..count]) |*info| {
-        if (future_ids.is_device_lost_future_id(info.future.id)) {
-            info.completed = 0;
-        } else {
-            info.completed = 1;
-            any_completed = true;
-        }
-    }
-    return if (any_completed) WGPU_WAIT_STATUS_SUCCESS else WGPU_WAIT_STATUS_TIMED_OUT;
+    const instance = cast(DoeInstance, inst) orelse return WGPU_WAIT_STATUS_ERROR;
+    const completed = instance.pending_completions.waitAny(infos[0..count], timeout_ns) catch
+        return WGPU_WAIT_STATUS_ERROR;
+    return if (completed) WGPU_WAIT_STATUS_SUCCESS else WGPU_WAIT_STATUS_TIMED_OUT;
 }
 
 // ============================================================

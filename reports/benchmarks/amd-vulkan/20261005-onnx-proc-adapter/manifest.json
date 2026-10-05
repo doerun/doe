@@ -1,0 +1,313 @@
+{
+  "classification": "onnx-proc-adapter-retention",
+  "custody": {
+    "bytes": 417631319,
+    "path": "bench/out/onnx-webgpu-substitution/20261005/adapter/onnx-proc-adapter-linux-x64.tar.gz",
+    "sha256": "e970b48b952c9af2d0b5ef25627b76eb052cf93161e84144439823fb2ed42375"
+  },
+  "custodyContents": [
+    "Exact source-built external-Dawn provider, typed proc table and context fixture",
+    "Qualified and original native libraries",
+    "Pinned wheels, independent oracle/model and offline consumer",
+    "ABI headers/audit, source archives, native and consumer patches, licenses",
+    "Physical outputs, profiles, failed observations, runtime/compiler and transfer checks"
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "716582abd7013bcf3bbf675c017a613e493d5e78eb825c155532457f9b6980fc"
+    },
+    {
+      "path": "archive-execution.json",
+      "sha256": "82af3876e57ba4afa3905d784195502d61145371265196ff3aa7b083e566752c"
+    },
+    {
+      "path": "archive-execution.log",
+      "sha256": "531171d77c591e9d5ff0d0eaad824fd5345b674e77f15f9613e4ebdeef4903fa"
+    },
+    {
+      "path": "archive-execution_2026-10-05_12-42-13.json",
+      "sha256": "2c4b811054a3043ee2a61a0a3a128ecb49be318c24479e4f203bacd8a51fc6bb"
+    },
+    {
+      "path": "archive-installation.json",
+      "sha256": "f389ced06ca16bf49080857838d12901ef57814376b7851767ba6e9e0370c7e0"
+    },
+    {
+      "path": "bridge-build.json",
+      "sha256": "6d1ee258b5b3a3a0eeaa65d688c1a6d7d45bbc077fbbb316a19eb9e146e54af5"
+    },
+    {
+      "path": "bridge-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build.log.gz",
+      "sha256": "77f462b1e865bc6ca9f6d094daa55795b71ce52bc36d82a07adf0146fdca8c75"
+    },
+    {
+      "path": "candidate-gdb.log.gz",
+      "sha256": "f4d3ad63805c19ee668f60f0db10edc31fde48dba0dae57b170fbd3cd37aa29e"
+    },
+    {
+      "path": "configure.log.gz",
+      "sha256": "5b6ca58f19544ac719fa68e5f0cbef29463b2bc486d943e9e1f457d0488c40eb"
+    },
+    {
+      "path": "consumer-patch-build.log",
+      "sha256": "8cd2182cea6a6059dde67ac1521e2209892764d1211f23ceefe62a97ef611008"
+    },
+    {
+      "path": "dawn-control.json",
+      "sha256": "fb5b632928268bffb1ba0a87429984d0c9590ced5cd911f56e3b46908713a835"
+    },
+    {
+      "path": "dawn-control.log",
+      "sha256": "b074be875b4f43b07f0f797088a3b1d8adfcc697edb9f174fe1ae0fb645d7aca"
+    },
+    {
+      "path": "dawn-control_2026-10-05_12-28-37.json",
+      "sha256": "5ba497a3f8fb832f3691f4eba8d9fa52954408831c5b20a1f0553cc93c642904"
+    },
+    {
+      "path": "disposition.json",
+      "sha256": "a43c4d348d222388e1333b48f37f6c6d4f686e17d3e3538c8a45fda908d439f2"
+    },
+    {
+      "path": "doe.json",
+      "sha256": "0b0a6eb450fa657230dc49d42330a3a05d44b753381f47454893fbcffa71acd9"
+    },
+    {
+      "path": "doe.log",
+      "sha256": "531171d77c591e9d5ff0d0eaad824fd5345b674e77f15f9613e4ebdeef4903fa"
+    },
+    {
+      "path": "doe_2026-10-05_12-28-36.json",
+      "sha256": "d0e265cb84fc38cc4611f546aaf7b794ea187db9ad7517045ef350f90b116257"
+    },
+    {
+      "path": "doppler-final-run.log",
+      "sha256": "ffd5ed78c12e5c604b38cc54bb68916e90f9c7bbc3e159829d3344830dc99c86"
+    },
+    {
+      "path": "doppler-final-transfer-audit.json",
+      "sha256": "30ebd44477048385eed1cbd3e49564cc7cdb102308567bc3cf0aa647b92e4764"
+    },
+    {
+      "path": "doppler-final-transfer.json",
+      "sha256": "46e5b09055a7375bab2ce3b5883081a1d2eda90e3018c89ebf7f73ae5879ab44"
+    },
+    {
+      "path": "doppler-transfer-contract.json",
+      "sha256": "cbbabc1979812c10e08eb07ae66e8f0d68c82563fc331b61504baba7921d13a2"
+    },
+    {
+      "path": "doppler-transfer-providers.json",
+      "sha256": "511d349e2d7a73481d8588b1730b94f52cc97dd0526222c57027ee679e60cd57"
+    },
+    {
+      "path": "doppler-transfer-reference.json",
+      "sha256": "8d5f7a3421b84340bee0e044663c02e499075b4b890d6abc2ef43dc9e7c0a88b"
+    },
+    {
+      "path": "external-gdb2.log.gz",
+      "sha256": "f13c232bc2cb886d8644c929c8757155a9cb796c9de27f253794735edbe42f26"
+    },
+    {
+      "path": "failed-observations.json",
+      "sha256": "8165f579babc0365715cee154b6ef7d26f37ddcb603bd2c249ccf3db67a84dfc"
+    },
+    {
+      "path": "first_2026-10-05_12-34-55.json",
+      "sha256": "e879946e30e4d07e7583e60a9a5eb9c2e2552737d7d932c10294caaa0e929cff"
+    },
+    {
+      "path": "future-corrected.json",
+      "sha256": "a78d9d4a6ce9fa5ae9585f0ff78db786b2769120336125ce2ca41e4c6eded159"
+    },
+    {
+      "path": "future-corrected.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "future-original.json",
+      "sha256": "04f2ac7fc32c45ccf9373e8a51b22e430052505c2776f321d3f1b429b3964d89"
+    },
+    {
+      "path": "future-original.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lifecycle-result.log.gz",
+      "sha256": "3fbb87e72548774293d442c28991f2fd4e60fb155d5324d4b2db5b189adef8dc"
+    },
+    {
+      "path": "model.onnx",
+      "sha256": "f17b444b3b068c83af921d88e3a9922acf85fa2c70a8dee79742315c193bdfde"
+    },
+    {
+      "path": "native-correction.patch",
+      "sha256": "38e9ba9d226d88b95c102e78a75cf5bc09bbc690c6585a090590933727b096de"
+    },
+    {
+      "path": "offline-first.json",
+      "sha256": "3c05cdb6b985ee77dd52c5723b7e839873531ea57350fb265c11f68cf5ebeb55"
+    },
+    {
+      "path": "offline-first.log",
+      "sha256": "531171d77c591e9d5ff0d0eaad824fd5345b674e77f15f9613e4ebdeef4903fa"
+    },
+    {
+      "path": "offline-installation.json",
+      "sha256": "6c22b1f289030bc33a1940d4322654c3ab7b745afd0855ad7915c7cd207c38da"
+    },
+    {
+      "path": "offline-reopen.json",
+      "sha256": "59b5be07055c3e9b631f7494ba0e47dff0a776c98a7a798b155daa7686ac0880"
+    },
+    {
+      "path": "offline-reopen.log",
+      "sha256": "531171d77c591e9d5ff0d0eaad824fd5345b674e77f15f9613e4ebdeef4903fa"
+    },
+    {
+      "path": "rejected-0.wgsl",
+      "sha256": "50e7096c02f47cdf2824fe906e4502806502ef79ed3ac8acfc9d3f541ed30e67"
+    },
+    {
+      "path": "rejected-1.spv",
+      "sha256": "02f2deb179e2b2bde09eed83d2e22b378423de44fdd60d6f96cb960b00b46ae1"
+    },
+    {
+      "path": "rejected-1.wgsl",
+      "sha256": "d6f8ae51cf131547738dba722db7f27aaba9146c958fe83fd77d7b32d3ae0fca"
+    },
+    {
+      "path": "reopen_2026-10-05_12-34-55.json",
+      "sha256": "92863a8e9f75debcc5708fec4a8dc504889bfa87380b66c895fbd07235ab0741"
+    },
+    {
+      "path": "requirements.lock",
+      "sha256": "9a6f50dacc62dbf6c72b514e1b7af5f68167b3031b5182b92297547d755464a3"
+    },
+    {
+      "path": "shader-render-transfer.log",
+      "sha256": "5e9515178e4fd2dcdbe2d6ad330434fa1f9abc11a77c45e0bc6a64acf362ed70"
+    },
+    {
+      "path": "source-build.json",
+      "sha256": "e4e4285f3511cb256befb8cfc059cb7c66ffabba5d03524d35dd073ae930a1e2"
+    },
+    {
+      "path": "source-configure.log",
+      "sha256": "52fc1fdb2589315b94af88ce7d62b6cf82a254a9a87eb9fea59cc5090f764a89"
+    },
+    {
+      "path": "unsupported-auto.log",
+      "sha256": "41dc4442c6fdd9f53560f2e7a7a4fbd06e6c6b0a9653e1dbe48985d8bf7e0d25"
+    },
+    {
+      "path": "zig-focused.log.gz",
+      "sha256": "6e019cacb3086248211ae0c882023ce2a027295a2236cb90be42a7b0d2578122"
+    },
+    {
+      "path": "zig-full-final.log.gz",
+      "sha256": "3ec19111db36c34c3b826489abb299ad6119c9e32d1e976a986ae15831d17b79"
+    },
+    {
+      "path": "zig-store-qualified.log.gz",
+      "sha256": "10f893ce0545dbfa37b44f35b24591554d9cfcf2d26d77901d20653c2164ac63"
+    },
+    {
+      "path": "zig-validation.log",
+      "sha256": "40f43325e6dd9d7774b6ed075148896764fc532c4e0be723bf3288d108e3cbfb"
+    }
+  ],
+  "schemaVersion": 1,
+  "sourceBaseline": "ebc2538fd",
+  "sources": [
+    {
+      "path": "bench/external-projects/onnx-webgpu-substitution/build_adapter.py",
+      "sha256": "27944a6dd2c130ecaa2e8e5216a400b7647e4b52fc653ba81746a6293565af2d"
+    },
+    {
+      "path": "bench/external-projects/onnx-webgpu-substitution/run_adapter.py",
+      "sha256": "f98d6ad2c60de629da23a47e322742e12eed5717fe732f8851160335122f5a57"
+    },
+    {
+      "path": "bench/external-projects/onnx-webgpu-substitution/verify_adapter.py",
+      "sha256": "2abfaf0399a89ca6bd8a31ca56e8c7e4401d98f988d2fe20aad671a31139f8c7"
+    },
+    {
+      "path": "bench/external-projects/onnx-webgpu-substitution/external-context.c",
+      "sha256": "66dab5774258ee32fb1f154aa5d8c283c2c7e648d3bcae65b9081407b8f7a75f"
+    },
+    {
+      "path": "bench/external-projects/onnx-webgpu-substitution/default-external-context.patch",
+      "sha256": "4b29f27ed212b970535722ce5903380b989a26e1520a5aff1f11248a68f223d6"
+    },
+    {
+      "path": "bench/external-projects/onnx-webgpu-substitution/README.md",
+      "sha256": "748dfc780ba9d8eeb259d2b9bd95a4ad4a504d891d82e412b4d34ee7e09eeefc"
+    },
+    {
+      "path": "runtime/bridge/dawn-proc-table/adapter.zig",
+      "sha256": "7a94badc7bccb1344ca38f35e8eb7f23b3c73c5aebc9df9769018035e520f0bf"
+    },
+    {
+      "path": "runtime/bridge/dawn-proc-table/CATSCAN.md",
+      "sha256": "c16c1a370a038ef3f7d0de236a372f42fea9515e6edf3fdcbc052a2e222173a5"
+    },
+    {
+      "path": "runtime/zig/vendor/webgpu-headers/webgpu.h",
+      "sha256": "7691d76ceb67056f89e97b9ff0b62163eacf19a8e0e09a8fa7dbb32069b7978c"
+    },
+    {
+      "path": "runtime/zig/source-layout.json",
+      "sha256": "c81b0b166ed20fc7469c5b5ca548ee172e6582609c16535016fcbcfc08c1b9dd"
+    },
+    {
+      "path": "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig",
+      "sha256": "e12d83fdeb0c97135158c6395dccc5c26478b86596d380ea7821b33719a0cefe"
+    },
+    {
+      "path": "runtime/zig/src/native/support/doe_future_ids.zig",
+      "sha256": "c54b82af6fac09537bdc9d493409f5f92069214c34baa17231c1c93edac071a5"
+    },
+    {
+      "path": "runtime/zig/src/native/support/doe_native_object_types.zig",
+      "sha256": "f823274077b2d4e3413dc0323d40daad59bcc21955b8039d64466df3f40be7a1"
+    },
+    {
+      "path": "runtime/zig/src/native/lifecycle/doe_instance_device_native.zig",
+      "sha256": "8999da41b5436d9d3fa75bc509aa62fabcb252e1022a8c5a7ee14d06bb07f6d0"
+    },
+    {
+      "path": "runtime/zig/src/dropin/wgpu_dropin_ext_a_pipeline.zig",
+      "sha256": "53fa274b16434e1ec6f410e644018df62082c8b31ce86836179fbece4e482326"
+    },
+    {
+      "path": "runtime/zig/src/dropin/wgpu_dropin_ext_a_exports.zig",
+      "sha256": "d0db189371e49fed4357223d727f47b72decc950c9e01dd81956cce62e298e14"
+    },
+    {
+      "path": "runtime/zig/tests/core/native_shader_render_test.zig",
+      "sha256": "a20cae282daed1a8274ea4952e1d82598ff87861e60003a2559ebf8b24ce2429"
+    },
+    {
+      "path": "runtime/zig/tests/wgsl/emit_spirv_mixed_binary_test.zig",
+      "sha256": "d1d0c5572ae400bb112be3e8effb8dac29cbd07c0d73ba3bd5d210bd8f6ecf1a"
+    },
+    {
+      "path": "config/onnx-proc-adapter.schema.json",
+      "sha256": "6902e4750409d2d0360d5cbea947aba2f263799f8570d1faa8990c79de582e65"
+    },
+    {
+      "path": "config/doppler-generation.schema.json",
+      "sha256": "c8f819ed39695075e4937af98200dc95141ca2ce0dd4179f39e138cdfb71ad1c"
+    },
+    {
+      "path": "config/doppler-installed-generation.schema.json",
+      "sha256": "fd24e214aa346ddd6b871d36b741b0c3062a11185e356680c71524bd3f4ac378"
+    }
+  ]
+}

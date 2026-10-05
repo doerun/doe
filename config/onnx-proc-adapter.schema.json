@@ -1,0 +1,758 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pinned ONNX proc-table integration evidence",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/result"
+    },
+    {
+      "$ref": "#/$defs/build"
+    },
+    {
+      "$ref": "#/$defs/source"
+    },
+    {
+      "$ref": "#/$defs/failures"
+    },
+    {
+      "$ref": "#/$defs/installation"
+    },
+    {
+      "$ref": "#/$defs/disposition"
+    },
+    {
+      "$ref": "#/$defs/manifest"
+    }
+  ],
+  "$defs": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "classification": {
+          "enum": [
+            "framework-adapter-diagnostic",
+            "pipeline-future-control",
+            "published-dawn-control"
+          ]
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "message"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context": {
+          "enum": [
+            "automatic",
+            "external"
+          ]
+        },
+        "contextId": {
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "doeExecutionEstablished": {
+          "type": "boolean"
+        },
+        "executionOptions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "graphOptimization": {
+              "const": "disabled"
+            },
+            "cpuFallback": {
+              "const": "disabled"
+            },
+            "backend": {
+              "const": "Vulkan"
+            },
+            "validation": {
+              "const": "full"
+            }
+          },
+          "required": [
+            "graphOptimization",
+            "cpuFallback",
+            "backend",
+            "validation"
+          ]
+        },
+        "runner": {
+          "$ref": "#/$defs/identity"
+        },
+        "provider": {
+          "$ref": "#/$defs/identity"
+        },
+        "doeLibrary": {
+          "$ref": "#/$defs/identity"
+        },
+        "bridgeBuild": {
+          "$ref": "#/$defs/identity"
+        },
+        "packages": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "expected": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              },
+              "observed": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "required": [
+              "expected",
+              "observed"
+            ]
+          }
+        },
+        "callCounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "initialDrmClients": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "finalDrmClients": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contextIdentity": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "backend": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "vendor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "device": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "adapterType": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "backend",
+                "vendor",
+                "device",
+                "adapterType"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cancellation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "phase": {
+                  "const": "before-execution"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "reused": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "phase",
+                "message",
+                "reused"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "futureControl": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "status": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "passed": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "status",
+                "passed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "model": {
+          "$ref": "#/$defs/identity"
+        },
+        "profile": {
+          "$ref": "#/$defs/identity"
+        },
+        "operatorProviders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "operatorNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "passed",
+        "failure",
+        "context",
+        "contextId",
+        "doeExecutionEstablished",
+        "executionOptions",
+        "runner",
+        "provider",
+        "doeLibrary",
+        "bridgeBuild",
+        "packages",
+        "runs",
+        "callCounts",
+        "initialDrmClients",
+        "finalDrmClients",
+        "contextIdentity",
+        "cancellation",
+        "futureControl"
+      ]
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "dawnCommit": {
+          "const": "ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38"
+        },
+        "builder": {
+          "$ref": "#/$defs/identity"
+        },
+        "generatorDependencies": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "Jinja2": {
+              "const": "3.1.6"
+            }
+          },
+          "required": [
+            "Jinja2"
+          ]
+        },
+        "generatorTreeHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "generator": {
+          "$ref": "#/$defs/identity"
+        },
+        "dawnJson": {
+          "$ref": "#/$defs/identity"
+        },
+        "doeHeader": {
+          "$ref": "#/$defs/identity"
+        },
+        "dawnHeader": {
+          "$ref": "#/$defs/identity"
+        },
+        "procHeader": {
+          "$ref": "#/$defs/identity"
+        },
+        "adapterSource": {
+          "$ref": "#/$defs/identity"
+        },
+        "wrapperSource": {
+          "$ref": "#/$defs/identity"
+        },
+        "library": {
+          "$ref": "#/$defs/identity"
+        },
+        "contextSource": {
+          "$ref": "#/$defs/identity"
+        },
+        "contextLibrary": {
+          "$ref": "#/$defs/identity"
+        },
+        "procNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "abi": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "sharedStructures": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "differentExtensionValues": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "auditSource": {
+              "$ref": "#/$defs/identity"
+            },
+            "sharedFunctionSignatures": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "sharedStructures",
+            "differentExtensionValues",
+            "auditSource",
+            "sharedFunctionSignatures"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "dawnCommit",
+        "builder",
+        "generatorDependencies",
+        "generatorTreeHash",
+        "generator",
+        "dawnJson",
+        "doeHeader",
+        "dawnHeader",
+        "procHeader",
+        "adapterSource",
+        "wrapperSource",
+        "library",
+        "contextSource",
+        "contextLibrary",
+        "procNames",
+        "abi"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "classification": {
+          "const": "source-built-external-dawn-provider"
+        },
+        "sourceBaseline": {
+          "type": "string"
+        },
+        "onnxCommit": {
+          "type": "string"
+        },
+        "onnxRelease": {
+          "type": "string"
+        },
+        "dawnCommit": {
+          "type": "string"
+        },
+        "ortRuntimeVersion": {
+          "const": "1.24.4"
+        },
+        "onnxArchive": {
+          "$ref": "#/$defs/identity"
+        },
+        "dawnArchive": {
+          "$ref": "#/$defs/identity"
+        },
+        "doeHeader": {
+          "$ref": "#/$defs/identity"
+        },
+        "patchedContext": {
+          "$ref": "#/$defs/identity"
+        },
+        "consumerPatch": {
+          "$ref": "#/$defs/identity"
+        },
+        "nativePatch": {
+          "$ref": "#/$defs/identity"
+        },
+        "originalProvider": {
+          "$ref": "#/$defs/identity"
+        },
+        "patchedProvider": {
+          "$ref": "#/$defs/identity"
+        },
+        "qualifiedNative": {
+          "$ref": "#/$defs/identity"
+        },
+        "pristineContextSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "cmakeOptions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "toolchains": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "providerDependencies": {
+          "type": "string"
+        },
+        "compatibilityNote": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "sourceBaseline",
+        "onnxCommit",
+        "onnxRelease",
+        "dawnCommit",
+        "ortRuntimeVersion",
+        "onnxArchive",
+        "dawnArchive",
+        "doeHeader",
+        "patchedContext",
+        "consumerPatch",
+        "nativePatch",
+        "originalProvider",
+        "patchedProvider",
+        "qualifiedNative",
+        "pristineContextSha256",
+        "cmakeOptions",
+        "toolchains",
+        "providerDependencies",
+        "compatibilityNote"
+      ]
+    },
+    "failures": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "classification": {
+          "const": "retained-failure-boundaries"
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "outcome": {
+                "type": "string"
+              },
+              "nativeSha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "providerSha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "resolution": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label",
+              "outcome",
+              "nativeSha256",
+              "providerSha256",
+              "resolution"
+            ]
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "observations"
+      ]
+    },
+    "installation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "classification": {
+          "const": "isolated-offline-consumer"
+        },
+        "networkNamespace": {
+          "const": "unshared"
+        },
+        "checkoutMounts": {
+          "const": false
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "exitCode": {
+                "type": "integer"
+              },
+              "passed": {
+                "type": "boolean"
+              },
+              "argv": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "label",
+              "exitCode",
+              "passed",
+              "argv"
+            ]
+          }
+        },
+        "passed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "networkNamespace",
+        "checkoutMounts",
+        "checks",
+        "passed"
+      ]
+    },
+    "disposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "classification": {
+          "const": "bounded-framework-integration"
+        },
+        "checks": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "performanceClaim": {
+          "const": false
+        },
+        "browserSwitchEstablished": {
+          "const": false
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "checks",
+        "performanceClaim",
+        "browserSwitchEstablished",
+        "limitations"
+      ]
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "classification": {
+          "const": "onnx-proc-adapter-retention"
+        },
+        "sourceBaseline": {
+          "type": "string"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identity"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identity"
+          }
+        },
+        "custody": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "path",
+            "sha256",
+            "bytes"
+          ]
+        },
+        "custodyContents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "sourceBaseline",
+        "files",
+        "sources",
+        "custody",
+        "custodyContents"
+      ]
+    }
+  }
+}

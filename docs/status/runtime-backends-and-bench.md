@@ -1,18 +1,22 @@
 # Doe status: runtime backends and benchmarks
 
-## Independent ONNX integration boundary
+## Independent ONNX integration
 
-The [existing native ONNX WebGPU provider diagnostic](../../reports/benchmarks/amd-vulkan/20261005-onnx-webgpu-substitution/README.md)
-executes original operators with CPU fallback disabled and exact independent
-outputs. Preloading the accepted Doe library does not redirect this published
-provider's internal execution. The forwarding probe's positive control passes;
-the ONNX arm reaches none of its observed external entry points. A separately
-pinned upstream source offers a static/external-Dawn proc-table boundary, and a
-safe published-package control confirms option parsing. Doe's proc table has a
-different ordering; a matched adapter needs ABI, extensions, and lifecycle
-qualification. A source build can pin that boundary; its necessity is not proved.
-That integration remains unqualified. The separate custom operator plugin is
-unchanged; no Doe-backed ONNX inference or performance advantage is established.
+The [pinned proc-table integration](../../reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/README.md)
+runs the existing ONNX WebGPU operators through Doe with independent outputs,
+repeated inputs and cancellation before execution followed by reuse. A source-built
+consumer admits a paired external device at its shared default context; the
+published plugin remains a separate supported incumbent control. The adapter
+qualifies one exact Dawn ABI and rejects unsupported chains explicitly. Native
+pending pipeline settlement, typed assignment stores and local default
+initialization corrections remain in their owning components. The final native
+also passes runtime/compiler gates and shader/render and Doppler transfer checks.
+The older preload diagnostic and its unsupported runtime/plugin pairing remain
+retained without promotion. Binary custody is local, and offline installed
+execution is scoped to the tested host. General future/callback conformance,
+termination during submitted GPU work, other operators/hosts, performance,
+Chromium switching and upstream adoption remain unqualified. The separate custom
+operator plugin is unchanged; no replacement optimization campaign is opened.
 
 ## Independent installation
 

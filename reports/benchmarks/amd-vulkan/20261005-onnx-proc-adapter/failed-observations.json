@@ -1,0 +1,41 @@
+{
+  "classification": "retained-failure-boundaries",
+  "observations": [
+    {
+      "label": "unpatched external context",
+      "nativeSha256": "811d4dba9d5cd165060a5aeade705b4c91bb5d1a6d30cdd9528068e9f290c239",
+      "outcome": "UnsupportedDawnDescriptorChain: instanceRequestAdapter",
+      "providerSha256": "e5726e45d94fb62b96d810e9c7255b3389b62b5814ed7ace2e982fe59ae7e713",
+      "resolution": "Shared transfer/allocator context zero required paired externally supplied instance and device."
+    },
+    {
+      "label": "patched consumer with original native",
+      "nativeSha256": "811d4dba9d5cd165060a5aeade705b4c91bb5d1a6d30cdd9528068e9f290c239",
+      "outcome": "SIGSEGV in asynchronous pipeline callback after premature WaitAny completion",
+      "providerSha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d",
+      "resolution": "Instance-owned pending pipeline obligations retain callback lifetime through completion."
+    },
+    {
+      "label": "completion-only correction",
+      "nativeSha256": "51e16dd5a8381bddae2a812e420745b77ec16c0626198b22db848de3b163ff43",
+      "outcome": "SIGSEGV during vkCreateComputePipelines; captured SPIR-V fails OpStore type validation",
+      "providerSha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d",
+      "resolution": "Materialize admitted abstract assignment values to destination types."
+    },
+    {
+      "label": "typed stores without local default initialization",
+      "nativeSha256": "c830514408afd0e919a87635cc8ef739ded38161bc687075a55f11be1d725e82",
+      "outcome": "Independent MatMul output oracle failed, including NaNs",
+      "providerSha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d",
+      "resolution": "Initialize function-local WGSL variables at declaration execution."
+    },
+    {
+      "label": "initial cancellation harness",
+      "nativeSha256": "c892cecb83514df313977056d33158dbdb6576070e6bedc2a526c880f9ab6a33",
+      "outcome": "Python ORT Fail escaped its mismatched exception handler; exception traceback retained session through provider teardown",
+      "providerSha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d",
+      "resolution": "Handle the actual ORT Fail class before unregistering the consumer."
+    }
+  ],
+  "schemaVersion": 1
+}

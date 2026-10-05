@@ -162,6 +162,7 @@ pub export fn wgpuDeviceCreateComputePipelineAsync(a0: types.WGPUDevice, a1: *co
         }
         return future;
     };
+    pipeline.register_pipeline_future(a0, &req.future_completion, future.id);
     const joined = pipeline.g_compute_inflight.join_or_create(compute_pipeline_request_key(req), req) catch {
         free_compute_pipeline_request(req);
         if (a2.callback) |cb| {
@@ -194,6 +195,7 @@ pub export fn wgpuDeviceCreateRenderPipelineAsync(a0: types.WGPUDevice, a1: *con
         }
         return future;
     };
+    pipeline.register_pipeline_future(a0, &req.future_completion, future.id);
     const joined = pipeline.g_render_inflight.join_or_create(render_pipeline_request_key(req), req) catch {
         free_render_pipeline_request(req);
         if (a2.callback) |cb| {
