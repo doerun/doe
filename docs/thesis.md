@@ -292,17 +292,6 @@ GPU capability does not imply Hexagon NPU support.
 [Qualcomm's Vulkan memory discussion](https://www.qualcomm.com/developer/blog/2026/05/high-performance-memory-extension-optimize-memory)
 is technical context, not Doe qualification.
 
-## Acquisition hypothesis
-
-An acquirer would buy an execution advantage, its engineering team, development
-momentum, and an ecosystem that depends on it. Open code can be licensed;
-ownership must add difficult implementation knowledge and maintained integration
-capacity that licensing or sponsorship does not supply.
-
-AMD's Nod.ai acquisition is a precedent for interest in compiler expertise and
-optimized deployment, not evidence of Doe's valuation. Buyer interest and
-valuation remain hypotheses requiring independent evidence.
-
 ## Strategy execution map
 
 - [GOALS.md](../GOALS.md) owns mission and durable goals.
