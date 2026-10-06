@@ -16,14 +16,16 @@ backend in Settings. The preview has no search/address field.
 The main page is the public demo entry point. Settings and the README no longer
 send visitors to standalone demos. Particle Trails, Magnetic Fluids, Prismatic
 Fluids, and Image Lab remain in `browser/chromium/resources/` for benchmarks and
-diagnostics. Existing hosted fixture URLs remain available; Image Lab remains
-repository-only. Lifecycle probes navigate directly to the fluid fixture rather
+diagnostics. Magnetic Fluids and Prismatic Fluids remain public fixtures;
+Particle Trails and Image Lab are repository-only. Lifecycle probes navigate
+directly to the fluid fixture rather
 than requiring a public navigation link.
 
 The hosted main page and benchmark pages have a compact Demos disclosure.
 It marks the current page and switches between the particle
-cycle, Particle Trails, Magnetic Fluids, and Prismatic Fluids. Image Lab is
-excluded from the menu and retained as a repository-only benchmark. The
+cycle, Magnetic Fluids, and Prismatic Fluids. Particle Trails and Image Lab are
+excluded from the menu and hosting package, and retained as repository-only
+benchmarks. The
 main page continues cycling its own particle fields; choosing another simulator
 navigates to that separate implementation. Escape restores focus and outside
 interaction closes the disclosure.
@@ -31,8 +33,8 @@ interaction closes the disclosure.
 The benchmark pages align Particle Trails, Magnetic
 Fluids, Prismatic Fluids, and Image Lab with the main page's fullscreen canvas,
 Fawn branding, Settings panel, GitHub link, and compact footer. It has no address
-field. The packaged simulators are published on CanvasContext; Image Lab remains
-repository-only. Simulation
+field. The packaged simulators are published on CanvasContext; Particle Trails
+and Image Lab remain repository-only. Simulation
 shaders, default workloads, and image-processing resolution remain unchanged.
 Pause freezes simulation and shader time; reset and resize can redraw while
 paused. Image Lab renders on demand and reports completed-update latency.
