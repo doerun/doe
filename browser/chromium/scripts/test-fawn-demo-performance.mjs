@@ -251,18 +251,18 @@ try {
         await page.waitForTimeout(300);
         assert.equal(await page.locator('#frame').textContent(), 'Paused');
         await page.locator('#pause').click();
-        await page.locator('details summary').click();
+        await page.locator('.details > summary').click();
         await page.locator('#count-select').selectOption('131072');
         await page.locator('#steps-select').selectOption('8');
-        await page.locator('details summary').click();
+        await page.locator('.details > summary').click();
       } else if (name === 'heavy-particles') {
-        const settings = page.locator('details summary');
+        const settings = page.locator('.details > summary');
         if (await settings.count()) await settings.click();
         await page.locator('#count-select').selectOption('131072');
         await page.locator('#steps-select').selectOption('8');
         if (await settings.count()) await settings.click();
       } else {
-        const settings = page.locator('details summary');
+        const settings = page.locator('.details > summary');
         if (await settings.count()) await settings.click();
         await page.locator('#grid-select').selectOption('256');
         await page.locator(name === 'magnetic-fluids' ? '#steps-select' : '#pressure-select')
@@ -323,9 +323,9 @@ try {
         for (const variant of cohort ? ['candidate', 'baseline'] : ['baseline', 'candidate']) {
           const { context, page } = await open(variant, scenario.name, scenario);
           if (scenario.count) {
-            await page.locator('details summary').click();
+            await page.locator('.details > summary').click();
             await page.locator('#count-select').selectOption(scenario.count);
-            await page.locator('details summary').click();
+            await page.locator('.details > summary').click();
           }
           await page.waitForTimeout(1500);
           await page.evaluate(() => { window.__fawnTest.active = true; });

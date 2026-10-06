@@ -1,0 +1,57 @@
+{
+  "classification": "Unpublished stock Chrome application diagnostics",
+  "component": "Fawn Chromium application resources",
+  "intent": "Demo navigation changed at user direction; runtime ownership unchanged",
+  "boundaryEffects": "No native runtime or live hosting change",
+  "baselineRef": "b599d2e3a8ad09fa3aff66a2d08d3fa1515647fb",
+  "sourceHashes": {
+    "start": {
+      "candidate": "dfbbc8493c019871c02b1b0077df6a5759ccef9624fcc9a9eb5c1b3ee38697b0",
+      "baseline": "76cbcd389581864e8c407fc06360425db75792aef955001b96b316092cc03aba"
+    },
+    "heavy-particles": {
+      "candidate": "11b2e258757bd6f2b950dec753f9c6610ded9f46243136c8869a6f32af79a44f",
+      "baseline": "b56e02b5b96fb45d08acaae31de7ef2400dea0944eb6a3dcc995daecd82bb9ac"
+    },
+    "magnetic-fluids": {
+      "candidate": "664d9247261c18f00c2d2e103983cca2fbad6421b2207dc3fd41f926bc1f72c1",
+      "baseline": "573f32ffaf3e666ce468137081e62110e90b9707476d66ecbe0b29e7ae54dee8"
+    },
+    "prismatic-fluids": {
+      "candidate": "ee902a48e49af147a3b4fbb072ca01a636622e8a70162b359e68cf75b7abd54d",
+      "baseline": "aa62de53be413b5156fb2a3f9e74593ad05a896017260a061410fc0515791c33"
+    },
+    "image-lab": {
+      "candidate": "1f6e98455ad4b9e96683ad68e252783c8e46a6bb7a5d4f8f5f3f7c42b2d39348",
+      "baseline": "f98054cb19bcf6b7b349d04dc19e6877bb54d2c082e09313ba6a47ace7041209"
+    }
+  },
+  "files": {
+    "browser/chromium/scripts/test-fawn-demo-pages.mjs": "1f7a6a4afd45656f6e5d48771bfc8d529c86fa5a8615e409d41882d0a4b96618",
+    "browser/chromium/scripts/test-fawn-demo-performance.mjs": "2fbf6b1f9a614e0d2ad20c1ec2a12fbf32713b16a7a0b268178a5c9cf91516cc",
+    "browser/chromium/scripts/test-fawn-demo-switcher.mjs": "43a0d9297807d28877a5560061647144422c3291fbc72b8212b654f890be78c0",
+    "browser/chromium/scripts/test-fawn-prismatic-controls.mjs": "39530b167d98a117a09956439664f5ca8a078b3752d54cd109fd644b4c00da26",
+    "browser/chromium/scripts/test-fawn-start-cycle.mjs": "3c49892070058c0ff4be71bc06524884bebbd8b6bec82207a203ae5143b72bae",
+    "reports/maintenance/20261005-fawn-demo-switcher/README.md": "d2bec28f414b3b4d76c252bff7d887d2761e3b1617ff80606f88e5dd54d1f0c5",
+    "reports/maintenance/20261005-fawn-demo-switcher/mobile.png": "b5dfcfea7184ec8bb84eb8c604c6af003cbe8fee9710edcd5fbe3d85b899069e",
+    "reports/maintenance/20261005-fawn-demo-switcher/pages.json": "bd555cbfa7055fa0cd9a879d503b84af228c91c604b026f3098bb0ba0667cbc2",
+    "reports/maintenance/20261005-fawn-demo-switcher/prismatic-controls.json": "9e3029099b7b526855712dfa1d1974b5567422aa0d2289e650cf4c466957c795",
+    "reports/maintenance/20261005-fawn-demo-switcher/results.json": "01cbeeec7ccc6b90b2314659c0095094330e72d7ffabaf532c7a533d271d2711"
+  },
+  "checks": [
+    "Negative baseline frame and phase reproduced; current values nonnegative",
+    "Real particle cycle observed",
+    "Navigation and GPU startup through demo links",
+    "Desktop/mobile/small-screen menu bounds",
+    "Keyboard, Escape and outside dismissal",
+    "Standalone GPU state and exact pixels preserved",
+    "Existing controls and lifecycle checks passed",
+    "Main scene-phase cycle test",
+    "CATSCAN",
+    "JavaScript syntax",
+    "Scoped doc links",
+    "git diff --check"
+  ],
+  "localPreview": "http://127.0.0.1:8765/fawn-start.html",
+  "deployment": "none"
+}

@@ -160,7 +160,7 @@ async function layout(page) {
       return { x: r.x, y: r.y, width: r.width, height: r.height };
     };
     return { canvas: box('#view'), header: box('header'), footer: box('.bottom'),
-      panel: document.querySelector('details').open ? box('.details-panel') : null,
+      panel: document.querySelector('.details').open ? box('.details-panel') : null,
       width: innerWidth, height: innerHeight, overflow: document.documentElement.scrollWidth > innerWidth };
   });
   assert.equal(boxes.overflow, false);
@@ -266,11 +266,11 @@ try {
       await page.waitForFunction(() => /\d/.test(document.querySelector('#frame').textContent));
       await layout(page);
       await page.screenshot({ path: `${output}/${name}-${screen}.png` });
-      await page.locator('summary').click();
+      await page.locator('.details > summary').click();
       const boxes = await layout(page);
       await page.screenshot({ path: `${output}/${name}-${screen}-settings.png` });
       if (name !== 'image-lab') {
-        await page.locator('summary').click();
+        await page.locator('.details > summary').click();
         await page.mouse.move(viewport.width * .3, viewport.height * .35);
         await page.mouse.down();
         await page.mouse.move(viewport.width * .6, viewport.height * .45, { steps: 8 });
@@ -280,12 +280,12 @@ try {
         await page.waitForTimeout(200);
         const idle = await activity(page);
         assert.equal(idle.submissions, frozen.submissions, 'Paused GPU work stops');
-        await page.locator('summary').click();
+        await page.locator('.details > summary').click();
         await page.locator(name === 'heavy-particles' ? '#count-select' : '#grid-select')
           .selectOption(name === 'heavy-particles' ? '32768' : name === 'magnetic-fluids' ? '256' : '192');
         await page.locator(name === 'prismatic-fluids' ? '#pressure-select' : '#steps-select')
           .selectOption(name === 'prismatic-fluids' ? '48' : name === 'heavy-particles' ? '8' : '10');
-        await page.locator('summary').click();
+        await page.locator('.details > summary').click();
         await page.locator('#restart').click();
         const reset = await settled(page);
         assert.ok(reset.submissions > frozen.submissions);
@@ -319,7 +319,7 @@ try {
         assert.equal(await page.locator('#strength-value').textContent(), '99%');
         await page.waitForTimeout(200);
         assert.equal((await activity(page)).submissions, burst.submissions, 'Static image consumes no idle frames');
-        await page.locator('summary').click();
+        await page.locator('.details > summary').click();
         await page.locator('#restart').click();
         assert.equal(await page.locator('#strength').inputValue(), '70');
         assert.equal(await page.locator('#split').inputValue(), '50');

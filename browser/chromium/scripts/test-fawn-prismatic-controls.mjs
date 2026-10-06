@@ -95,7 +95,7 @@ try {
     await page.waitForTimeout(200);
     assert.deepEqual(await settledActivity(page), frozen, 'paused GPU work must stop');
     await page.screenshot({ path: `${output}/${name}.png` });
-    await page.locator('summary').click();
+    await page.locator('.details > summary').click();
     const panel = await page.locator('.details-panel').boundingBox();
     assert.ok(panel.x >= 0 && panel.y >= 0);
     assert.ok(panel.x + panel.width <= viewport.width);
@@ -107,7 +107,7 @@ try {
     assert.equal(rebuilt.computePasses, frozen.computePasses, 'paused grid rebuild skips simulation');
     assert.equal(rebuilt.simulationTime, frozen.simulationTime, 'paused redraw freezes shader time');
     await page.screenshot({ path: `${output}/${name}-settings.png` });
-    await page.locator('summary').click();
+    await page.locator('.details > summary').click();
     await page.locator('#restart').click();
     const reset = await settledActivity(page);
     assert.ok(reset.submissions > rebuilt.submissions, 'paused reset redraws');
