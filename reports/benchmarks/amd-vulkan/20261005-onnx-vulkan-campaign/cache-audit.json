@@ -1,0 +1,15 @@
+{
+  "applicationUnchanged": true,
+  "cacheResolver": {
+    "path": "runtime/zig/src/native/shader/doe_shader_translation_cache.zig",
+    "sha256": "098a68f68fea41c9cb3f15495ba0a3c23c35ca0bed7c793f155011b9a3c05bd4"
+  },
+  "classification": "cache-control-audit",
+  "nativeUnchanged": true,
+  "originalDisposition": "diagnostic-invalid-cold-cache",
+  "originalMeasurementSha256": "8de192652045df6c3036151a90bf0fcc879629dda285677baa00fcd407e8a649",
+  "policyUnchanged": true,
+  "qualifiedMeasurementSha256": "410e612c11b68f1181319f908b3c6d31f48aad7f8162c6440434a64400571191",
+  "reason": "Doe shader translation cache resolves through HOME and ignores XDG_CACHE_HOME; original cold requests did not isolate it. Version 2 scopes HOME and records actual persistent cache state.",
+  "schemaVersion": 1
+}

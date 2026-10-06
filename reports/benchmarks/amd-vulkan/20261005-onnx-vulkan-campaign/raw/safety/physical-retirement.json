@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "destructionCalls": [
+    1,
+    1
+  ],
+  "completionRequests": 2,
+  "resources": {
+    "retainedModel": {
+      "bytes": 0,
+      "count": 0
+    },
+    "active": {
+      "bytes": 0,
+      "count": 0
+    },
+    "reusable": {
+      "bytes": 0,
+      "count": 0
+    },
+    "deferredCleanup": {
+      "bytes": 0,
+      "count": 0
+    }
+  },
+  "poolSha256": "c738caea56fe89d3f670eeb68d4cc7c1df7eee56f36a0a5b945b79c622ad24ad",
+  "nativeSha256": "1c59e7ec261f69c2e12e41530e3a135e57656b8ff448188cff275863ed5294ee"
+}

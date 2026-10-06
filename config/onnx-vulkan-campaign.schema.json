@@ -1,0 +1,322 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "classification",
+    "application",
+    "consumer",
+    "correctness",
+    "measurement",
+    "stopping"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "classification": {
+      "type": "string",
+      "const": "bounded-source-matched-vulkan-campaign"
+    },
+    "application": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit",
+        "path",
+        "sha256",
+        "modelRepository",
+        "modelCommit",
+        "modelPath",
+        "modelSha256",
+        "input",
+        "optimization",
+        "intraOpThreads",
+        "validation",
+        "cpuFallback"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "const": "https://github.com/microsoft/onnxruntime-inference-examples"
+        },
+        "commit": {
+          "type": "string",
+          "const": "16e32e87c81648773b8da2a80434a672e3b9dad6"
+        },
+        "path": {
+          "type": "string",
+          "const": "c_cxx/squeezenet/main.cpp"
+        },
+        "sha256": {
+          "type": "string",
+          "const": "e0f216b4e5356f2a33eb9151ccda9dd3407b48735d6591ab4ab2232c8b6ab6aa"
+        },
+        "modelRepository": {
+          "type": "string",
+          "const": "https://github.com/onnx/models"
+        },
+        "modelCommit": {
+          "type": "string",
+          "const": "c5cae0f1942c8d7727372c7b1f6b485aa39e4421"
+        },
+        "modelPath": {
+          "type": "string",
+          "const": "validated/vision/classification/squeezenet/model/squeezenet1.0-12.onnx"
+        },
+        "modelSha256": {
+          "type": "string",
+          "const": "dec81a8684617770b3cf13fadc1d92565d1d453d23935fc6388b792d99c992bd"
+        },
+        "input": {
+          "type": "string",
+          "const": "original-ramp-i-over-element-count-plus-one"
+        },
+        "optimization": {
+          "type": "string",
+          "const": "extended"
+        },
+        "intraOpThreads": {
+          "type": "integer",
+          "const": 1
+        },
+        "validation": {
+          "type": "string",
+          "const": "full"
+        },
+        "cpuFallback": {
+          "type": "string",
+          "const": "disabled"
+        }
+      }
+    },
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "onnxCommit",
+        "dawnCommit",
+        "buildType",
+        "backend",
+        "vendorId",
+        "contextId"
+      ],
+      "properties": {
+        "onnxCommit": {
+          "type": "string",
+          "const": "d2ede0adeb300958cfb5a256c09d27c66c3a6d71"
+        },
+        "dawnCommit": {
+          "type": "string",
+          "const": "ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38"
+        },
+        "buildType": {
+          "type": "string",
+          "const": "Release"
+        },
+        "backend": {
+          "type": "string",
+          "const": "Vulkan"
+        },
+        "vendorId": {
+          "type": "integer",
+          "const": 4098
+        },
+        "contextId": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    "correctness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "oracle",
+        "absoluteTolerance",
+        "relativeTolerance",
+        "requireSameTop1",
+        "requireEveryRun"
+      ],
+      "properties": {
+        "oracle": {
+          "type": "string",
+          "const": "onnx-reference-evaluator"
+        },
+        "absoluteTolerance": {
+          "type": "number",
+          "const": 1e-06
+        },
+        "relativeTolerance": {
+          "type": "number",
+          "const": 0.0001
+        },
+        "requireSameTop1": {
+          "type": "boolean",
+          "const": true
+        },
+        "requireEveryRun": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primaryMetric",
+        "materialGainRatio",
+        "minimumLowerConfidenceRatio",
+        "processPairs",
+        "runsPerProcess",
+        "warmupRuns",
+        "aaPairs",
+        "maximumAaMedianRatio",
+        "confidence",
+        "bootstrapResamples",
+        "bootstrapSeed",
+        "diskCache",
+        "coldProcessesPerArm",
+        "regressionMaximumRatios"
+      ],
+      "properties": {
+        "primaryMetric": {
+          "type": "string",
+          "const": "independent-process-median-complete-session-run-wall-ns"
+        },
+        "materialGainRatio": {
+          "type": "number",
+          "const": 1.1
+        },
+        "minimumLowerConfidenceRatio": {
+          "type": "number",
+          "const": 1.1
+        },
+        "processPairs": {
+          "type": "integer",
+          "const": 8
+        },
+        "runsPerProcess": {
+          "type": "integer",
+          "const": 100
+        },
+        "warmupRuns": {
+          "type": "integer",
+          "const": 10
+        },
+        "aaPairs": {
+          "type": "integer",
+          "const": 4
+        },
+        "maximumAaMedianRatio": {
+          "type": "number",
+          "const": 1.05
+        },
+        "confidence": {
+          "type": "number",
+          "const": 0.95
+        },
+        "bootstrapResamples": {
+          "type": "integer",
+          "const": 10000
+        },
+        "bootstrapSeed": {
+          "type": "integer",
+          "const": 31005
+        },
+        "diskCache": {
+          "type": "string",
+          "const": "fresh-per-cold-process; separately-preconditioned-per-arm-for-warm"
+        },
+        "coldProcessesPerArm": {
+          "type": "integer",
+          "const": 4
+        },
+        "regressionMaximumRatios": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "warmP95",
+            "coldProcessWall",
+            "processCpu",
+            "peakRss"
+          ],
+          "properties": {
+            "warmP95": {
+              "type": "number",
+              "const": 1.05
+            },
+            "coldProcessWall": {
+              "type": "number",
+              "const": 1.1
+            },
+            "processCpu": {
+              "type": "number",
+              "const": 1.05
+            },
+            "peakRss": {
+              "type": "number",
+              "const": 1.1
+            }
+          }
+        }
+      }
+    },
+    "stopping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stopBeforeTimingOnSafetyOrCorrectnessFailure",
+        "stopOnAaFailure",
+        "maximumPerformanceCorrections",
+        "minimumProfileOwnerShare",
+        "minimumPredictedGainRatio",
+        "retainUnfavorableResults",
+        "compilerCampaign",
+        "deferred"
+      ],
+      "properties": {
+        "stopBeforeTimingOnSafetyOrCorrectnessFailure": {
+          "type": "boolean",
+          "const": true
+        },
+        "stopOnAaFailure": {
+          "type": "boolean",
+          "const": true
+        },
+        "maximumPerformanceCorrections": {
+          "type": "integer",
+          "const": 1
+        },
+        "minimumProfileOwnerShare": {
+          "type": "number",
+          "const": 0.15
+        },
+        "minimumPredictedGainRatio": {
+          "type": "number",
+          "const": 1.1
+        },
+        "retainUnfavorableResults": {
+          "type": "boolean",
+          "const": true
+        },
+        "compilerCampaign": {
+          "type": "string",
+          "const": "new-concrete-reproduction-required"
+        },
+        "deferred": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe.dev/config/onnx-vulkan-campaign.schema.json",
+  "title": "Frozen ONNX Vulkan campaign v1"
+}

@@ -15,6 +15,34 @@ const allocator = testing.allocator;
 const MAX_SPIRV_OUTPUT = mod.MAX_SPIRV_OUTPUT;
 const translateToSpirv = mod.translateToSpirv;
 
+test "SPIR-V integer dot keeps signed and unsigned products and reductions in integer arithmetic" {
+    inline for (.{ "i32", "u32" }) |element| {
+        inline for (.{ "2", "3", "4" }) |lanes| {
+            const source = "@group(0) @binding(0) var<storage, read> input: array<vec" ++ lanes ++ "<" ++ element ++ ">>;" ++
+                "@group(0) @binding(1) var<storage, read_write> output: array<" ++ element ++ ">;" ++
+                "@compute @workgroup_size(1) fn main() { output[0] = dot(input[0], input[1]); }";
+            var binary: [MAX_SPIRV_OUTPUT]u8 = undefined;
+            const len = try translateToSpirv(allocator, source, &binary);
+            var offset: usize = 5;
+            var multiplies: usize = 0;
+            var adds: usize = 0;
+            while (offset < len / 4) {
+                const instruction = read_u32_le(&binary, offset * 4);
+                const words = instruction >> 16;
+                try testing.expect(words > 0);
+                const opcode: u16 = @truncate(instruction);
+                if (opcode == spirv.Opcode.IMul) multiplies += 1;
+                if (opcode == spirv.Opcode.IAdd) adds += 1;
+                try testing.expect(opcode != spirv.Opcode.Dot);
+                try testing.expect(opcode != spirv.Opcode.ConvertSToF and opcode != spirv.Opcode.ConvertUToF);
+                offset += words;
+            }
+            try testing.expectEqual(@as(usize, 1), multiplies);
+            try testing.expectEqual(@as(usize, lanes[0] - '0' - 1), adds);
+        }
+    }
+}
+
 test "named and direct pointers preserve mutation through calls and branches" {
     const prefix =
         \\@group(0) @binding(0) var<storage, read_write> output: array<u32>;

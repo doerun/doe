@@ -1,0 +1,6 @@
+function(add_doe_source_matched_control)
+  add_library(doe_dawn_control SHARED /home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-control.cc)
+  target_link_libraries(doe_dawn_control PRIVATE dawn::dawn_native)
+  set_target_properties(doe_dawn_control PROPERTIES LIBRARY_OUTPUT_DIRECTORY /home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005)
+endfunction()
+cmake_language(DEFER CALL add_doe_source_matched_control)

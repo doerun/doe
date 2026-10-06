@@ -1,0 +1,36 @@
+{
+  "aaMedianRatio": 1.006352359432375,
+  "classification": "source-matched-application-measurement",
+  "disposition": "no-material-advantage",
+  "dopplerSafety": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-safety-final.json",
+    "sha256": "32a4cc835bac1c06b0cf0531104e48864162e679f1f6ad7b763d847a597580e2"
+  },
+  "failure": null,
+  "lowerConfidenceRatio": 1.0012324537205535,
+  "passed": false,
+  "performanceCorrections": 0,
+  "policy": {
+    "path": "/home/x/deco/doe/config/onnx-vulkan-campaign.json",
+    "sha256": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669"
+  },
+  "primaryRatio": 1.040019193078663,
+  "qualification": {
+    "dawn": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-matched.json",
+      "sha256": "95ce844f5badfa657f3055da173816dc87864ee79b35cbb514681aa706b99964"
+    },
+    "doe": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-matched.json",
+      "sha256": "9e992ae66a34d9406d601814ba06151319eef16b2908214cd94cac6cf5d678ec"
+    }
+  },
+  "rawMeasurementSha256": "410e612c11b68f1181319f908b3c6d31f48aad7f8162c6440434a64400571191",
+  "regressionRatios": {
+    "coldProcessWall": 0.9054443672467039,
+    "peakRss": 1.0357207615593835,
+    "processCpu": 1.362338545207342,
+    "warmP95": 0.9779826416574883
+  },
+  "schemaVersion": 2
+}

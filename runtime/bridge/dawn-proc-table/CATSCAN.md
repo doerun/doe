@@ -23,6 +23,9 @@ WebGPU entrypoints for external consumer integration.
 - Inputs: generated headers from the consumer's pinned Dawn revision and Doe's
   [pinned WebGPU header](../../zig/vendor/webgpu-headers/webgpu.h).
 - Outputs: an explicitly initialized, process-owned table and call observations.
+- Additive error query: nullable, consumed thread-local diagnostics. Failed
+  initialization releases partial state and permits retry.
+- The explicit source-Dawn control shares bridge guards and observations.
 
 ## Invariants
 
@@ -31,12 +34,16 @@ WebGPU entrypoints for external consumer integration.
 - Rebinding a live table is rejected. The library remains loaded until the
   process exits; no borrowed GPU objects are transferred between providers.
 - Unsupported procs and descriptor chains fail explicitly, without fallback.
+- Descriptor rejection returns null or error status where the contract permits;
+  void/future rejection remains fail-fast pending callback conformance.
 
 ## Acceptance
 
 - The [external consumer harness](../../../bench/external-projects/onnx-webgpu-substitution/README.md)
   retains library, generated ABI, source, output and failure identities.
 - Evidence: [`verify_adapter.py`](../../../bench/external-projects/onnx-webgpu-substitution/verify_adapter.py).
+- Safety and matched application evidence:
+  [`campaign verifier`](../../../bench/external-projects/onnx-vulkan-campaign/verify.py).
 
 ## Non-goals
 

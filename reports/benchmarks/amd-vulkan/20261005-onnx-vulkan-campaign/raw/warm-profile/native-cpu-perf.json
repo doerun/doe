@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "classification": "native-cpu-attribution-attempt",
+  "command": [
+    "perf",
+    "record",
+    "--freq",
+    "999",
+    "--call-graph",
+    "dwarf",
+    "--output",
+    "bench/out/onnx-vulkan-campaign/20261005/warm-profile/native-cpu.data",
+    "--",
+    "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-matched/application"
+  ],
+  "exitCode": 255,
+  "perfEventParanoid": 4,
+  "passed": false
+}

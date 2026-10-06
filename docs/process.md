@@ -5,6 +5,16 @@ live in `docs/operator-runbook.md`, `bench/README.md`, topical runbooks, and
 executable `--help`. Checked-in schemas and policy assets remain authoritative
 for their fields and values.
 
+## ONNX Vulkan campaign migration
+
+The [campaign contract](onnx-vulkan-campaign-contract.md) governs the additive
+proc-bridge error query and explicit source-Dawn control, typed campaign evidence,
+and preserved historical receipts. Its semantic verifier is required alongside
+schema, compiler/runtime, safety, numerical and isolated deployment checks.
+Rejected material advantage remains a completed evidence decision, not a release
+speed claim. Both native implementations keep their own preparation and
+synchronization under equivalent application conditions.
+
 ## Canonical intent contract
 
 Doe does not add a second free-form run-intent field. Executable intent is the

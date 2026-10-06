@@ -1,0 +1,144 @@
+{
+  "classification": "standalone-installation",
+  "files": [
+    {
+      "path": "archives/doe-source-bound-retirement.tgz",
+      "sha256": "4a4178141c82b670a7d2f063232af5d63928e11a0bcea18dc7230713c6bfade5"
+    },
+    {
+      "path": "archives/doppler-retirement-final.tgz",
+      "sha256": "bc9298ef4bf4fc3b5bfdcff6d24104059af2cd643c16604ae1aab2ef9ecf29ae"
+    },
+    {
+      "path": "archives/webgpu-0.4.0.tgz",
+      "sha256": "d8835c95790d7d34299283619568f4cce97b4358581d9e2b56e7f63e3a86e062"
+    },
+    {
+      "path": "contract.json",
+      "sha256": "cbbabc1979812c10e08eb07ae66e8f0d68c82563fc331b61504baba7921d13a2"
+    },
+    {
+      "path": "harness/installed-audit.mjs",
+      "sha256": "ed5bd9be44a7fdad9f260bbd66d7ac33ba9113d55be6ea95eb667ca6402038f3"
+    },
+    {
+      "path": "harness/installed-generation.py",
+      "sha256": "6447c4bf4f9460255cba3d83858c605fff4d1da7ac77589842cbd2f8b6859a4d"
+    },
+    {
+      "path": "harness/observe-phases.mjs",
+      "sha256": "f0116ab1bcd2755412a8db1d3e972174e6aa884b931a3984580f27dd8d53430e"
+    },
+    {
+      "path": "harness/run-generation.mjs",
+      "sha256": "0d3e05e8f5c2d23e9cbab9ffe00f8eb206173b2ddc556ccd752fb1370ce25e7b"
+    },
+    {
+      "path": "inputs/contract.json",
+      "sha256": "e77adf8a73e872efda6b3fb13ac1810477b1f7d6adc7a73cea1b2ba9a87c8936"
+    },
+    {
+      "path": "inputs/providers.json",
+      "sha256": "2dcec26a80656b9654f8e0ca7fa9570c9802dfe7c5500ea6e97066e9a58715a1"
+    },
+    {
+      "path": "inputs/reference.json",
+      "sha256": "c71da2db7a01a87f714446b68eb5eb1550b478f97784e9cba580f05b287dc546"
+    },
+    {
+      "path": "model/manifest.json",
+      "sha256": "afecba81640288d0849838c8d4d8c763af80edc1fc22051853ce6700dda4b315"
+    },
+    {
+      "path": "model/origin.json",
+      "sha256": "4e1d26c6502080a66c14169f5b289d43b67991bc3096d4f230e2aa82d44a1bcc"
+    },
+    {
+      "path": "model/shard_00000.bin",
+      "sha256": "93d8ad2033e7ec42376dafb41c1e89753d0ca40896835c6f012efe47dbdda6d1"
+    },
+    {
+      "path": "model/shard_00001.bin",
+      "sha256": "7896aa344a3da4539cdb76bdbfec3a5f665da5e23d15d15ef9a3b0536ebcf3c5"
+    },
+    {
+      "path": "model/shard_00002.bin",
+      "sha256": "ff2fc36d9b0008d734f0a82923d47db2383e5a5bae055172630e8ad93ad23ca5"
+    },
+    {
+      "path": "model/shard_00003.bin",
+      "sha256": "6170b5f1376dbfe33a58de2603987abde826c0eb7318d6c0a1baa78cdf42f77b"
+    },
+    {
+      "path": "model/shard_00004.bin",
+      "sha256": "5c8767e71c920596247b7ea3d0d55b45d6af4255757758dda6aedd907cfa3e2c"
+    },
+    {
+      "path": "model/shard_00005.bin",
+      "sha256": "81ff27711b246ec27e3396871547e77f5e4d5d3d029357a66a8f547b6f32c015"
+    },
+    {
+      "path": "model/tokenizer.json",
+      "sha256": "be6955513a2509d69d18e82180c2a477ad99358d15212fb81d957566d8186075"
+    },
+    {
+      "path": "model/tokenizer.model",
+      "sha256": "1299c11d7cf632ef3b4e11937501358ada021bbdf7c47638d13c0ee982f2e79c"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "5bfa7c12218689d6dac1de6348e171c1088781f3f5c3c0226154f78d905cb1ad"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c03652232a880a58f241c42c15c391c19a255bf10de4d18b8dd817520bb9d91f"
+    },
+    {
+      "path": "providers.json",
+      "sha256": "2fe7962d993959ffd995ba8ed0c432fbf5311ae59c7049e8975d2fb715e008d7"
+    },
+    {
+      "path": "reference.json",
+      "sha256": "8d5f7a3421b84340bee0e044663c02e499075b4b890d6abc2ef43dc9e7c0a88b"
+    }
+  ],
+  "packages": [
+    {
+      "archive": "archives/doppler-retirement-final.tgz",
+      "name": "doppler-gpu",
+      "sha256": "bc9298ef4bf4fc3b5bfdcff6d24104059af2cd643c16604ae1aab2ef9ecf29ae",
+      "version": "0.6.10"
+    },
+    {
+      "archive": "archives/webgpu-0.4.0.tgz",
+      "name": "webgpu",
+      "sha256": "d8835c95790d7d34299283619568f4cce97b4358581d9e2b56e7f63e3a86e062",
+      "version": "0.4.0"
+    },
+    {
+      "archive": "archives/doe-source-bound-retirement.tgz",
+      "name": "doe-gpu",
+      "sha256": "4a4178141c82b670a7d2f063232af5d63928e11a0bcea18dc7230713c6bfade5",
+      "version": "0.5.0"
+    }
+  ],
+  "schemaVersion": 1,
+  "scope": "Retained Linux x64 provider snapshots, not an npm release; system drivers, /sys and /dev remain host dependencies.",
+  "sources": {
+    "contract": {
+      "path": "/home/x/deco/doe/bench/external-projects/doppler-generation/contract.json",
+      "sha256": "e77adf8a73e872efda6b3fb13ac1810477b1f7d6adc7a73cea1b2ba9a87c8936"
+    },
+    "providers": {
+      "path": "/home/x/deco/doe/reports/benchmarks/amd-vulkan/20261004-doppler-generation/providers.json",
+      "sha256": "2dcec26a80656b9654f8e0ca7fa9570c9802dfe7c5500ea6e97066e9a58715a1"
+    },
+    "reference": {
+      "path": "/home/x/deco/doe/reports/benchmarks/amd-vulkan/20261004-doppler-generation/reference.json",
+      "sha256": "c71da2db7a01a87f714446b68eb5eb1550b478f97784e9cba580f05b287dc546"
+    }
+  },
+  "workspaceRoots": [
+    "/home/x/deco"
+  ]
+}

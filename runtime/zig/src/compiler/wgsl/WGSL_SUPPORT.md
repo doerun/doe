@@ -6,6 +6,13 @@ The machine-generated qualification verdict for the admitted Gemma 270M AMD
 Vulkan compute corpus is in [`WGSL_COVERAGE.md`](WGSL_COVERAGE.md). A `Full`
 label below is not promotable when that generated view is partial or failing.
 
+Integer `dot` now lowers to typed integer vector multiplication and scalar
+addition in SPIR-V, evaluating each argument once. The [ONNX Vulkan campaign](../../../../../reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/README.md)
+retains the unchanged Conv shader failure, corrected full shader, SPIR-V
+validation and physical signed/unsigned wraparound checks. Floating-point dot
+keeps its existing lowering. This evidence does not qualify another backend or
+full WGSL conformance.
+
 ## Backend targets
 
 | Backend | Status              | Notes                                              |

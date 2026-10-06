@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "lane": "doe",
+  "label": "incompatible-package",
+  "passed": false,
+  "failure": {
+    "code": "INCOMPATIBLE_PACKAGE",
+    "message": "node_modules/doppler-gpu/package.json: expected doppler-gpu@0.6.10, received doppler-gpu@0.0.0-incompatible"
+  },
+  "workspaceProbes": [
+    {
+      "path": "/home/x/deco",
+      "accessible": false
+    }
+  ],
+  "networkInterfaces": {
+    "lo": [
+      {
+        "address": "127.0.0.1",
+        "netmask": "255.0.0.0",
+        "family": "IPv4",
+        "mac": "00:00:00:00:00:00",
+        "internal": true,
+        "cidr": "127.0.0.1/8"
+      },
+      {
+        "address": "::1",
+        "netmask": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+        "family": "IPv6",
+        "mac": "00:00:00:00:00:00",
+        "internal": true,
+        "cidr": "::1/128",
+        "scopeid": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    {
+      "arm": "dawn",
+      "classification": "warm-operator-profile-not-timing-evidence",
+      "exitCode": 0,
+      "warmupRuns": 10,
+      "retainedModelRuns": 100,
+      "nodes": 4100,
+      "operatorDurationsUs": {
+        "Transpose": 2123,
+        "Conv": 20256,
+        "MaxPool": 1548,
+        "Concat": 8314,
+        "GlobalAveragePool": 520,
+        "Softmax": 507
+      },
+      "nativeCpuOwnerIdentified": false,
+      "opportunity": "Operator-inclusive timings do not separate native CPU work from GPU wait or common ONNX orchestration; no general correction has a demonstrated material benefit."
+    },
+    {
+      "arm": "doe",
+      "classification": "warm-operator-profile-not-timing-evidence",
+      "exitCode": 0,
+      "warmupRuns": 10,
+      "retainedModelRuns": 100,
+      "nodes": 4100,
+      "operatorDurationsUs": {
+        "Transpose": 1957,
+        "Conv": 24206,
+        "MaxPool": 2312,
+        "Concat": 9706,
+        "GlobalAveragePool": 1022,
+        "Softmax": 620
+      },
+      "nativeCpuOwnerIdentified": false,
+      "opportunity": "Operator-inclusive timings do not separate native CPU work from GPU wait or common ONNX orchestration; no general correction has a demonstrated material benefit."
+    }
+  ],
+  "performanceCorrection": "none",
+  "reason": "No native CPU attribution proves a correction satisfying the frozen material-gain and regression requirements."
+}

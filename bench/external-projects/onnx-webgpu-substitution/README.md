@@ -1,5 +1,13 @@
 # Native ONNX WebGPU substitution diagnostic
 
+The [source-matched Vulkan campaign](../onnx-vulkan-campaign/README.md) extends
+safety and qualifies the existing upstream application with a retained negative
+performance result. Its additive bridge diagnostics permit recovery where the
+return contract supports it; general future/callback conformance remains open.
+The original report and source/native identities are preserved. Replay historical
+verification against the retained original-source snapshot instead of replacing
+its hashes with current implementation hashes.
+
 Current executable integration: [pinned proc-table prototype](#explicit-proc-table-integration).
 The preload experiment below remains its original historical diagnostic.
 

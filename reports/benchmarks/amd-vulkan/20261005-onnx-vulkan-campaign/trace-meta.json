@@ -1,0 +1,10 @@
+{
+  "hash": "410e612c11b68f1181319f908b3c6d31f48aad7f8162c6440434a64400571191",
+  "module": "onnx-vulkan/squeezenet-session-run",
+  "previousHash": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669",
+  "rowCount": 34,
+  "seqMax": 34,
+  "timingClass": "independent-process-median-complete-session-run-wall-ns",
+  "timingSource": "steady-clock-complete-session-run-wall-ns",
+  "traceVersion": 1
+}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/microsoft/onnxruntime",
+  "commit": "2d924974ef147392ced8409d36bd6d2e7fcc8a74",
+  "tag": "v1.24.4",
+  "files": [
+    {
+      "path": "onnxruntime_cxx_api.h",
+      "sha256": "5eb8809db561261210ffcafcf9823873f0603fd799542797b6b728bb3f75e5f6"
+    },
+    {
+      "path": "onnxruntime_cxx_inline.h",
+      "sha256": "022f4559009a35b157bc05a1aae9a59a2603a17e535d9410a49d0f9187f18039"
+    },
+    {
+      "path": "onnxruntime_c_api.h",
+      "sha256": "9ed0d7054a4e74249467365b25b415d36f51a44a6349e2a994a1812e4723d1e2"
+    },
+    {
+      "path": "onnxruntime_float16.h",
+      "sha256": "88b242845d25981633a0bbd1c148e273cf8bfb016ea3f57c4af41a06530f72b0"
+    },
+    {
+      "path": "onnxruntime_ep_c_api.h",
+      "sha256": "e94ac3490697bdb107844fa9d403952ee7136134132a057eae5c1207b57ce352"
+    }
+  ]
+}

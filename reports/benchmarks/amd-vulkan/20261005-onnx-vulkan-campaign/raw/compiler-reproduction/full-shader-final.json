@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "classification": "unchanged-full-shader-compilation",
+  "compilerSha256": "1794136a1fddcb9a41fb7d3818fe5fe4d4a8488822deb32474baea8959dac6b9",
+  "shaderSha256": "41b4180de11634c78a397a435513162266f99b8d3e7675ae1f84973df98210ba",
+  "rows": [
+    {
+      "mode": "default",
+      "command": [
+        "/home/x/deco/doe/runtime/zig/zig-out/bin/doe-emit-spirv",
+        "--shader-path",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/04-Conv2dMM.wgsl",
+        "--out",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/final-default.spv",
+        "--mode",
+        "default"
+      ],
+      "exitCode": 0,
+      "validationExitCode": 0,
+      "outputSha256": "bdd3dcfc2b96fc96943fdf284383043575c2505b9567255efcad06b900c04a45"
+    },
+    {
+      "mode": "vulkan-compute-runtime",
+      "command": [
+        "/home/x/deco/doe/runtime/zig/zig-out/bin/doe-emit-spirv",
+        "--shader-path",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/04-Conv2dMM.wgsl",
+        "--out",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/final-vulkan-compute-runtime.spv",
+        "--mode",
+        "vulkan-compute-runtime"
+      ],
+      "exitCode": 0,
+      "validationExitCode": 0,
+      "outputSha256": "118f61e8f7ca40c8f70c408d37edf11bed821da626739cbbbed24ad2660f31c7"
+    }
+  ]
+}

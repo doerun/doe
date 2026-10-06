@@ -1,0 +1,24 @@
+{
+  "classification": "host-local-qualified-application-bundle",
+  "files": {
+    "application": "a4c4416a7a7c076b72d1a375526113e3e42311f54f1f18ddcbf06cef3234b748",
+    "bridge-build.json": "04c43bf979281ff067641e86a98550938c89b341df44a2922d9ae75007212be8",
+    "bridge.so": "7805b787d716df337f3b499e1217773d4ed826cbf43634da41789a51f14d907f",
+    "context.so": "5a9b546a2f2c8372885840690bf3394868437e0b6f095ce5d616e605c6cab180",
+    "corrupted.f32": "fc19b1997119425765295aeab72d76faa6927d4f83985d328c26f20468d6cc76",
+    "dawn.so": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2",
+    "doe.so": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2",
+    "libonnxruntime.so.1": "2d518e11c7767f9fdc4413bdbeb45acf30db504ff76a82fc19d9238a3f9f6c24",
+    "libonnxruntime_providers_shared.so": "086ec1d5388f64153d9c63470d126693db9a182c8ce236d3a1119068471b8a0d",
+    "policy.json": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669",
+    "provider.so": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d",
+    "reference.f32": "b85805bff755867ec86e9b0ec8ac368e5fc6af7247a42145db0bcff061fe1bd1",
+    "squeezenet.onnx": "dec81a8684617770b3cf13fadc1d92565d1d453d23935fc6388b792d99c992bd"
+  },
+  "qualifiedNativeHashes": {
+    "dawn": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2",
+    "doe": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2"
+  },
+  "schemaVersion": 1,
+  "scope": "Linux AMD Vulkan on the tested host; system loader, drivers and libraries required"
+}

@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "arm": "dawn",
+  "passed": true,
+  "failure": null,
+  "libraries": {
+    "native": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+      "sha256": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2"
+    },
+    "bridge": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-final/libdoe_dawn_bridge.so",
+      "sha256": "eb6584aa2677478c26f5ffde684b3e05e4375feaf517090c9d3c3857e11b5e0f"
+    },
+    "context": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-final/libexternal_context.so",
+      "sha256": "5a9b546a2f2c8372885840690bf3394868437e0b6f095ce5d616e605c6cab180"
+    },
+    "recovery": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/librecovery_control.so",
+      "sha256": "32cd630d92306a434cb317182e8cc0f935e2f8c39b8d297a6dd280dc21b08178"
+    },
+    "provider": {
+      "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/libonnxruntime_providers_webgpu.so",
+      "sha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d"
+    }
+  },
+  "initialDrmClients": [],
+  "finalDrmClients": [],
+  "initializationRecovery": null,
+  "descriptorRecovery": null,
+  "failedSessionRecovery": {
+    "message": "[ONNXRuntimeError] : 1 : FAIL : This session contains graph nodes that are assigned to the default CPU EP, but fallback to CPU EP has been explicitly disabled by the user.",
+    "reused": true
+  },
+  "preexecutionCancellationReuse": {
+    "phase": "before-execution",
+    "reused": true,
+    "message": "[ONNXRuntimeError] : 1 : FAIL : Exiting due to terminate flag being set to true."
+  },
+  "runs": [
+    {
+      "expected": [
+        [
+          15.0,
+          39.0,
+          63.0,
+          87.0
+        ],
+        [
+          39.0,
+          127.0,
+          215.0,
+          303.0
+        ],
+        [
+          63.0,
+          215.0,
+          367.0,
+          519.0
+        ],
+        [
+          87.0,
+          303.0,
+          519.0,
+          735.0
+        ]
+      ],
+      "observed": [
+        [
+          15.0,
+          39.0,
+          63.0,
+          87.0
+        ],
+        [
+          39.0,
+          127.0,
+          215.0,
+          303.0
+        ],
+        [
+          63.0,
+          215.0,
+          367.0,
+          519.0
+        ],
+        [
+          87.0,
+          303.0,
+          519.0,
+          735.0
+        ]
+      ]
+    },
+    {
+      "expected": [
+        [
+          12.0,
+          52.0,
+          92.0,
+          132.0
+        ],
+        [
+          20.0,
+          124.0,
+          228.0,
+          332.0
+        ],
+        [
+          28.0,
+          196.0,
+          364.0,
+          532.0
+        ],
+        [
+          36.0,
+          268.0,
+          500.0,
+          732.0
+        ]
+      ],
+      "observed": [
+        [
+          12.0,
+          52.0,
+          92.0,
+          132.0
+        ],
+        [
+          20.0,
+          124.0,
+          228.0,
+          332.0
+        ],
+        [
+          28.0,
+          196.0,
+          364.0,
+          532.0
+        ],
+        [
+          36.0,
+          268.0,
+          500.0,
+          732.0
+        ]
+      ]
+    },
+    {
+      "expected": [
+        [
+          1.0,
+          57.0,
+          113.0,
+          169.0
+        ],
+        [
+          -7.0,
+          113.0,
+          233.0,
+          353.0
+        ],
+        [
+          -15.0,
+          169.0,
+          353.0,
+          537.0
+        ],
+        [
+          -23.0,
+          225.0,
+          473.0,
+          721.0
+        ]
+      ],
+      "observed": [
+        [
+          1.0,
+          57.0,
+          113.0,
+          169.0
+        ],
+        [
+          -7.0,
+          113.0,
+          233.0,
+          353.0
+        ],
+        [
+          -15.0,
+          169.0,
+          353.0,
+          537.0
+        ],
+        [
+          -23.0,
+          225.0,
+          473.0,
+          721.0
+        ]
+      ]
+    }
+  ],
+  "operatorNames": [
+    "MatMul",
+    "Add",
+    "MatMul",
+    "Add",
+    "MatMul",
+    "Add"
+  ],
+  "operatorProviders": [
+    "WebGpuExecutionProvider",
+    "WebGpuExecutionProvider",
+    "WebGpuExecutionProvider",
+    "WebGpuExecutionProvider",
+    "WebGpuExecutionProvider",
+    "WebGpuExecutionProvider"
+  ],
+  "callCounts": {},
+  "contextIdentity": {
+    "backend": 6,
+    "vendor": 4098,
+    "device": 5510,
+    "adapterType": 2
+  },
+  "profile": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/dawn_2026-10-05_19-01-47.json",
+    "sha256": "8e8837a2a1d4e9335f89f3ed560657c7924ff3c838c6664cedbeabb6b8ecd5f7"
+  }
+}

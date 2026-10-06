@@ -123,6 +123,8 @@ def check_signatures(doe: str, dawn: str) -> list[str]:
 def generate_wrappers(header: str, table: str, standard: str) -> tuple[str, list[str]]:
     """Emit signatures from C-imported types, preserving Dawn table order."""
     prototypes = {name: params for _, name, params in PROTO_PATTERN.findall(header)}
+    status_procs = {name for result, name, _ in PROTO_PATTERN.findall(header)
+                    if result.strip() == 'WGPUStatus'}
     lines = ['const bridge = @import("adapter.zig");', 'const c = bridge.c;']
     names = []
     standard_names = []
@@ -146,6 +148,12 @@ def generate_wrappers(header: str, table: str, standard: str) -> tuple[str, list
     lines.append('    const std = @import("std");')
     for field in standard_names:
         lines.append(f'    if (std.mem.eql(u8, field, "{field}")) return true;')
+    lines.extend(['    return false;', '}'])
+    lines.append('pub fn isStatus(comptime field: []const u8) bool {')
+    lines.append('    const std = @import("std");')
+    for suffix, field in PROC_PATTERN.findall(table):
+        if suffix in status_procs:
+            lines.append(f'    if (std.mem.eql(u8, field, "{field}")) return true;')
     lines.extend(['    return false;', '}'])
     return '\n'.join(lines) + '\n', names
 

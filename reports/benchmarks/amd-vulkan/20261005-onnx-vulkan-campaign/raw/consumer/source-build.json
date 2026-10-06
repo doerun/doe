@@ -1,0 +1,66 @@
+{
+  "classification": "source-built-external-dawn-provider",
+  "cmakeOptions": {
+    "CMAKE_BUILD_TYPE": "Release",
+    "CMAKE_CXX_FLAGS": "-Wno-error=maybe-uninitialized",
+    "onnxruntime_BUILD_SHARED_LIB": "OFF",
+    "onnxruntime_BUILD_UNIT_TESTS": "OFF",
+    "onnxruntime_PLUGIN_EP_VERSION": "0.1.0-doe-abi",
+    "onnxruntime_USE_EP_API_ADAPTERS": "ON",
+    "onnxruntime_USE_EXTERNAL_DAWN": "ON",
+    "onnxruntime_USE_WEBGPU": "ON",
+    "onnxruntime_WGSL_TEMPLATE": "static"
+  },
+  "compatibilityNote": "The earlier wheel diagnostic used ORT 1.24.1; the plugin metadata requires ORT >=1.24.4. Preserve the prior physical result without treating that unsupported pairing as qualification.",
+  "consumerPatch": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-webgpu-substitution/default-external-context.patch",
+    "sha256": "4b29f27ed212b970535722ce5903380b989a26e1520a5aff1f11248a68f223d6"
+  },
+  "dawnArchive": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/dawn.zip",
+    "sha256": "4046fc60d9956fd9621ae6ce9148fb81a36b9b54e69952e735c4315909dc56dd"
+  },
+  "dawnCommit": "ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38",
+  "doeHeader": {
+    "path": "/home/x/deco/doe/runtime/zig/vendor/webgpu-headers/webgpu.h",
+    "sha256": "7691d76ceb67056f89e97b9ff0b62163eacf19a8e0e09a8fa7dbb32069b7978c"
+  },
+  "nativePatch": {
+    "path": "/home/x/deco/doe/reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/native-correction.patch",
+    "sha256": "38e9ba9d226d88b95c102e78a75cf5bc09bbc690c6585a090590933727b096de"
+  },
+  "onnxArchive": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/onnxruntime.zip",
+    "sha256": "7bca836229eb2f93079655f4ac0a97bed63d77b0407f938fc2dc89780917362a"
+  },
+  "onnxCommit": "d2ede0adeb300958cfb5a256c09d27c66c3a6d71",
+  "onnxRelease": "plugin-ep-webgpu/v0.1.0",
+  "originalProvider": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/provider-original.so",
+    "sha256": "e5726e45d94fb62b96d810e9c7255b3389b62b5814ed7ace2e982fe59ae7e713"
+  },
+  "ortRuntimeVersion": "1.24.4",
+  "patchedContext": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/onnxruntime-d2ede0adeb300958cfb5a256c09d27c66c3a6d71/onnxruntime/core/providers/webgpu/webgpu_context.cc",
+    "sha256": "52b37b97bb927c42b8b55c4880f83f1a2d66e12e96e4968913dca80f4a59bd1f"
+  },
+  "patchedProvider": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/libonnxruntime_providers_webgpu.so",
+    "sha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d"
+  },
+  "pristineContextSha256": "1bb52415433d75602da5759de5603a825a8cece49f6516751847accc4cb4766c",
+  "providerDependencies": "\nDynamic section at offset 0x58f5c8 contains 31 entries:\n  Tag        Type                         Name/Value\n 0x0000000000000001 (NEEDED)             Shared library: [libstdc++.so.6]\n 0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]\n 0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]\n 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]\n 0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]\n 0x000000000000001d (RUNPATH)            Library runpath: [$ORIGIN]\n 0x000000000000000c (INIT)               0x19000\n 0x000000000000000d (FINI)               0x4c2498\n 0x0000000000000019 (INIT_ARRAY)         0x584e00\n 0x000000000000001b (INIT_ARRAYSZ)       80 (bytes)\n 0x000000000000001a (FINI_ARRAY)         0x584e50\n 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)\n 0x000000006ffffef5 (GNU_HASH)           0x298\n 0x0000000000000005 (STRTAB)             0x1630\n 0x0000000000000006 (SYMTAB)             0x2c8\n 0x000000000000000a (STRSZ)              5639 (bytes)\n 0x000000000000000b (SYMENT)             24 (bytes)\n 0x0000000000000003 (PLTGOT)             0x58ffe8\n 0x0000000000000002 (PLTRELSZ)           3984 (bytes)\n 0x0000000000000014 (PLTREL)             RELA\n 0x0000000000000017 (JMPREL)             0x17fc0\n 0x0000000000000007 (RELA)               0x3080\n 0x0000000000000008 (RELASZ)             85824 (bytes)\n 0x0000000000000009 (RELAENT)            24 (bytes)\n 0x000000006ffffffc (VERDEF)             0x2dd8\n 0x000000006ffffffd (VERDEFNUM)          2\n 0x000000006ffffffe (VERNEED)            0x2e10\n 0x000000006fffffff (VERNEEDNUM)         5\n 0x000000006ffffff0 (VERSYM)             0x2c38\n 0x000000006ffffff9 (RELACOUNT)          3479\n 0x0000000000000000 (NULL)               0x0\n",
+  "qualifiedNative": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/qualified/libwebgpu_doe.so",
+    "sha256": "1c59e7ec261f69c2e12e41530e3a135e57656b8ff448188cff275863ed5294ee"
+  },
+  "schemaVersion": 1,
+  "sourceBaseline": "ebc2538fd",
+  "toolchains": {
+    "cmake": "cmake version 4.2.3",
+    "gcc": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "node": "v22.22.1",
+    "npm": "10.9.4",
+    "zig": "0.15.2"
+  }
+}

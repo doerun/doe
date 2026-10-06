@@ -1,0 +1,27 @@
+[
+  {
+    "path": "00-Transpose.wgsl",
+    "sha256": "d12ee2b15ee9e0a5b6c645b288dd700bd76defc780c11678846fb8a22e2c608e",
+    "program": "Transpose"
+  },
+  {
+    "path": "01-Transpose.wgsl",
+    "sha256": "0f6650fc6656121b9452409cabd34d5388a74d548ea443a034549d0c24ddb144",
+    "program": "Transpose"
+  },
+  {
+    "path": "02-Transpose.wgsl",
+    "sha256": "b0ea754dcbc273d3241a96edf4e51599d354e0c9c4caa873351566758525dff0",
+    "program": "Transpose"
+  },
+  {
+    "path": "03-Transpose.wgsl",
+    "sha256": "0f6650fc6656121b9452409cabd34d5388a74d548ea443a034549d0c24ddb144",
+    "program": "Transpose"
+  },
+  {
+    "path": "04-Conv2dMM.wgsl",
+    "sha256": "41b4180de11634c78a397a435513162266f99b8d3e7675ae1f84973df98210ba",
+    "program": "Conv2dMM"
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "classification": "independent-oracle-crosscheck-not-application-fallback",
+  "passed": true,
+  "onnxRuntimeVersion": "1.24.4",
+  "maximumAbsoluteError": 2.4586915969848633e-07,
+  "referenceTop1": 111,
+  "cpuTop1": 111,
+  "modelSha256": "dec81a8684617770b3cf13fadc1d92565d1d453d23935fc6388b792d99c992bd",
+  "inputSha256": "9bee4e2b7406926bddb55fe266e2230114036493be81c036e5574ce584af5bae",
+  "outputSha256": "b85805bff755867ec86e9b0ec8ac368e5fc6af7247a42145db0bcff061fe1bd1"
+}

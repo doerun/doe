@@ -1,0 +1,2586 @@
+{
+  "$defs": {
+    "application": {
+      "additionalProperties": false,
+      "properties": {
+        "arm": {
+          "enum": [
+            "doe",
+            "dawn"
+          ],
+          "type": "string"
+        },
+        "callCounts": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "classification": {
+          "const": "application-qualification",
+          "type": "string"
+        },
+        "exitCode": {
+          "type": "integer"
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "type": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "message"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "inputs": {
+          "additionalProperties": false,
+          "properties": {
+            "application": {
+              "$ref": "#/$defs/identity"
+            },
+            "bridge": {
+              "$ref": "#/$defs/identity"
+            },
+            "context": {
+              "$ref": "#/$defs/identity"
+            },
+            "native": {
+              "$ref": "#/$defs/identity"
+            },
+            "provider": {
+              "$ref": "#/$defs/identity"
+            },
+            "reference": {
+              "$ref": "#/$defs/identity"
+            }
+          },
+          "required": [
+            "application",
+            "provider",
+            "native",
+            "bridge",
+            "context",
+            "reference"
+          ],
+          "type": "object"
+        },
+        "log": {
+          "$ref": "#/$defs/identity"
+        },
+        "negativeControl": {
+          "type": "boolean"
+        },
+        "operatorNames": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "items": {},
+              "type": "array"
+            }
+          ]
+        },
+        "operatorProviders": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "items": {},
+              "type": "array"
+            }
+          ]
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "policy": {
+          "$ref": "#/$defs/identity"
+        },
+        "profile": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/identity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "safety": {
+          "$ref": "#/$defs/identity"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "timingSamples": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 0,
+          "type": "array"
+        }
+      },
+      "required": [
+        "arm",
+        "classification",
+        "exitCode",
+        "failure",
+        "inputs",
+        "log",
+        "negativeControl",
+        "operatorNames",
+        "operatorProviders",
+        "passed",
+        "policy",
+        "profile",
+        "safety",
+        "schemaVersion",
+        "timingSamples"
+      ],
+      "type": "object"
+    },
+    "bundle": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "host-local-qualified-application-bundle",
+          "type": "string"
+        },
+        "files": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "qualifiedNativeHashes": {
+          "additionalProperties": false,
+          "properties": {
+            "dawn": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "doe": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "dawn",
+            "doe"
+          ],
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "scope": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "classification",
+        "files",
+        "qualifiedNativeHashes",
+        "schemaVersion",
+        "scope"
+      ],
+      "type": "object"
+    },
+    "cacheAudit": {
+      "additionalProperties": false,
+      "properties": {
+        "applicationUnchanged": {
+          "type": "boolean"
+        },
+        "cacheResolver": {
+          "$ref": "#/$defs/identity"
+        },
+        "classification": {
+          "type": "string"
+        },
+        "nativeUnchanged": {
+          "type": "boolean"
+        },
+        "originalDisposition": {
+          "type": "string"
+        },
+        "originalMeasurementSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "policyUnchanged": {
+          "type": "boolean"
+        },
+        "qualifiedMeasurementSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "originalDisposition",
+        "originalMeasurementSha256",
+        "qualifiedMeasurementSha256",
+        "cacheResolver",
+        "reason",
+        "nativeUnchanged",
+        "applicationUnchanged",
+        "policyUnchanged"
+      ],
+      "type": "object"
+    },
+    "controlBuild": {
+      "additionalProperties": false,
+      "properties": {
+        "builder": {
+          "$ref": "#/$defs/identity"
+        },
+        "cmakeCache": {
+          "$ref": "#/$defs/identity"
+        },
+        "cmakeHook": {
+          "$ref": "#/$defs/identity"
+        },
+        "commands": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "controlSource": {
+          "$ref": "#/$defs/identity"
+        },
+        "library": {
+          "$ref": "#/$defs/identity"
+        },
+        "policy": {
+          "$ref": "#/$defs/identity"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "policy",
+        "builder",
+        "commands",
+        "controlSource",
+        "cmakeHook",
+        "cmakeCache",
+        "library"
+      ],
+      "type": "object"
+    },
+    "cpuProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "native-cpu-attribution-attempt",
+          "type": "string"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "exitCode": {
+          "type": "integer"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "perfEventParanoid": {
+          "type": "integer"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "command",
+        "exitCode",
+        "perfEventParanoid",
+        "passed"
+      ],
+      "type": "object"
+    },
+    "custodyEntries": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "bytes": {
+                "type": "integer"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "originalPath": {
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "bytes",
+              "kind",
+              "originalPath",
+              "sha256"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "target"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "minProperties": 1,
+      "type": "object"
+    },
+    "delivery": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "offline-native-archive-reconstruction",
+          "type": "string"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "derivedProviderArchiveSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "dopplerArchiveSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "nativeSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "originalProviderArchiveSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "preparationNetwork": {
+          "type": "string"
+        },
+        "replacements": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "afterSha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "beforeSha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "afterSha256",
+              "beforeSha256",
+              "path"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "scope": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "classification",
+        "command",
+        "derivedProviderArchiveSha256",
+        "dopplerArchiveSha256",
+        "nativeSha256",
+        "originalProviderArchiveSha256",
+        "preparationNetwork",
+        "replacements",
+        "schemaVersion",
+        "scope"
+      ],
+      "type": "object"
+    },
+    "dopplerSafety": {
+      "additionalProperties": false,
+      "properties": {
+        "archiveSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "greenCheckLogSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "installedChecks": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "passed": {
+                "type": "boolean"
+              },
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "warningAbsent": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "path",
+              "sha256",
+              "passed",
+              "warningAbsent"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "physical": {
+          "additionalProperties": false,
+          "properties": {
+            "completionRequests": {
+              "type": "integer"
+            },
+            "destructionCalls": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "nativeSha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "passed": {
+              "type": "boolean"
+            },
+            "poolSha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "resources": {
+              "additionalProperties": false,
+              "properties": {
+                "active": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bytes": {
+                      "type": "integer"
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "bytes",
+                    "count"
+                  ],
+                  "type": "object"
+                },
+                "deferredCleanup": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bytes": {
+                      "type": "integer"
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "bytes",
+                    "count"
+                  ],
+                  "type": "object"
+                },
+                "retainedModel": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bytes": {
+                      "type": "integer"
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "bytes",
+                    "count"
+                  ],
+                  "type": "object"
+                },
+                "reusable": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bytes": {
+                      "type": "integer"
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "bytes",
+                    "count"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "retainedModel",
+                "active",
+                "reusable",
+                "deferredCleanup"
+              ],
+              "type": "object"
+            },
+            "schemaVersion": {
+              "const": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "passed",
+            "destructionCalls",
+            "completionRequests",
+            "resources",
+            "poolSha256",
+            "nativeSha256"
+          ],
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "sourceSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "passed",
+        "physical",
+        "installedChecks",
+        "archiveSha256",
+        "sourceSha256",
+        "greenCheckLogSha256"
+      ],
+      "type": "object"
+    },
+    "fullShader": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "unchanged-full-shader-compilation"
+        },
+        "compilerSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "rows": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "command": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "exitCode": {
+                "type": "integer"
+              },
+              "mode": {
+                "enum": [
+                  "default",
+                  "vulkan-compute-runtime"
+                ]
+              },
+              "outputSha256": {
+                "anyOf": [
+                  {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "validationExitCode": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "mode",
+              "command",
+              "exitCode",
+              "validationExitCode",
+              "outputSha256"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "shaderSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "compilerSha256",
+        "shaderSha256",
+        "rows"
+      ],
+      "type": "object"
+    },
+    "identity": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "integerDot": {
+      "additionalProperties": false,
+      "properties": {
+        "expected": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "nativeSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "observed": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "shaderSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "passed",
+        "observed",
+        "expected",
+        "shaderSha256",
+        "nativeSha256"
+      ],
+      "type": "object"
+    },
+    "manifest": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "bounded-vulkan-campaign-custody",
+          "type": "string"
+        },
+        "custody": {
+          "additionalProperties": false,
+          "properties": {
+            "archivePath": {
+              "type": "string"
+            },
+            "archiveSha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "availability": {
+              "type": "string"
+            },
+            "entriesPath": {
+              "type": "string"
+            },
+            "entryCount": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "archivePath",
+            "archiveSha256",
+            "availability",
+            "entriesPath",
+            "entryCount"
+          ],
+          "type": "object"
+        },
+        "dopplerCommit": {
+          "type": "string"
+        },
+        "files": {
+          "additionalProperties": {
+            "additionalProperties": false,
+            "properties": {
+              "compression": {
+                "enum": [
+                  "gzip",
+                  "none"
+                ]
+              },
+              "contentSha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "originalPath": {
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "compression",
+              "contentSha256",
+              "originalPath",
+              "sha256"
+            ],
+            "type": "object"
+          },
+          "type": "object"
+        },
+        "historicalReport": {
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "sourceSnapshotCommit": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "sha256",
+            "sourceSnapshotCommit"
+          ],
+          "type": "object"
+        },
+        "performanceCorrections": {
+          "type": "integer"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "sources": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "classification",
+        "custody",
+        "dopplerCommit",
+        "files",
+        "historicalReport",
+        "performanceCorrections",
+        "schemaVersion",
+        "sources"
+      ],
+      "type": "object"
+    },
+    "measurement": {
+      "additionalProperties": false,
+      "properties": {
+        "aaMedianRatio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "classification": {
+          "const": "source-matched-application-measurement",
+          "type": "string"
+        },
+        "disposition": {
+          "enum": [
+            "no-material-advantage",
+            "material-advantage-qualified",
+            "stopped-aa-control",
+            "stopped-measurement-failure",
+            null
+          ]
+        },
+        "dopplerSafety": {
+          "$ref": "#/$defs/identity"
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "type": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "message"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "lowerConfidenceRatio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "performanceCorrections": {
+          "type": "integer"
+        },
+        "policy": {
+          "$ref": "#/$defs/identity"
+        },
+        "primaryRatio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "qualification": {
+          "additionalProperties": false,
+          "properties": {
+            "dawn": {
+              "$ref": "#/$defs/identity"
+            },
+            "doe": {
+              "$ref": "#/$defs/identity"
+            }
+          },
+          "required": [
+            "doe",
+            "dawn"
+          ],
+          "type": "object"
+        },
+        "regressionRatios": {
+          "additionalProperties": false,
+          "properties": {
+            "coldProcessWall": {
+              "type": "number"
+            },
+            "peakRss": {
+              "type": "number"
+            },
+            "processCpu": {
+              "type": "number"
+            },
+            "warmP95": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "warmP95",
+            "coldProcessWall",
+            "processCpu",
+            "peakRss"
+          ],
+          "type": "object"
+        },
+        "rows": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "arm": {
+                "enum": [
+                  "doe",
+                  "dawn"
+                ],
+                "type": "string"
+              },
+              "cache": {
+                "type": "string"
+              },
+              "exitCode": {
+                "type": "integer"
+              },
+              "index": {
+                "type": "integer"
+              },
+              "loadAverage": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "log": {
+                "$ref": "#/$defs/identity"
+              },
+              "observations": {
+                "$ref": "#/$defs/identity"
+              },
+              "peakRssBytes": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "processWallNs": {
+                "type": "integer"
+              },
+              "runCpuNs": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "runWallNs": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "stage": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "arm",
+              "stage",
+              "index",
+              "exitCode",
+              "cache",
+              "log",
+              "processWallNs",
+              "runWallNs",
+              "runCpuNs",
+              "peakRssBytes"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "policy",
+        "qualification",
+        "dopplerSafety",
+        "passed",
+        "disposition",
+        "failure",
+        "aaMedianRatio",
+        "primaryRatio",
+        "lowerConfidenceRatio",
+        "regressionRatios",
+        "performanceCorrections",
+        "rows"
+      ],
+      "type": "object"
+    },
+    "measurementSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "aaMedianRatio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "classification": {
+          "const": "source-matched-application-measurement",
+          "type": "string"
+        },
+        "disposition": {
+          "enum": [
+            "no-material-advantage",
+            "material-advantage-qualified",
+            "stopped-aa-control",
+            "stopped-measurement-failure",
+            null
+          ]
+        },
+        "dopplerSafety": {
+          "$ref": "#/$defs/identity"
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "type": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "message"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "lowerConfidenceRatio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "performanceCorrections": {
+          "type": "integer"
+        },
+        "policy": {
+          "$ref": "#/$defs/identity"
+        },
+        "primaryRatio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "qualification": {
+          "additionalProperties": false,
+          "properties": {
+            "dawn": {
+              "$ref": "#/$defs/identity"
+            },
+            "doe": {
+              "$ref": "#/$defs/identity"
+            }
+          },
+          "required": [
+            "doe",
+            "dawn"
+          ],
+          "type": "object"
+        },
+        "rawMeasurementSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "regressionRatios": {
+          "additionalProperties": false,
+          "properties": {
+            "coldProcessWall": {
+              "type": "number"
+            },
+            "peakRss": {
+              "type": "number"
+            },
+            "processCpu": {
+              "type": "number"
+            },
+            "warmP95": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "warmP95",
+            "coldProcessWall",
+            "processCpu",
+            "peakRss"
+          ],
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": 2
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "policy",
+        "qualification",
+        "dopplerSafety",
+        "passed",
+        "disposition",
+        "failure",
+        "aaMedianRatio",
+        "primaryRatio",
+        "lowerConfidenceRatio",
+        "regressionRatios",
+        "performanceCorrections",
+        "rawMeasurementSha256"
+      ],
+      "type": "object"
+    },
+    "measurementWithCacheState": {
+      "additionalProperties": false,
+      "properties": {
+        "aaMedianRatio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "classification": {
+          "const": "source-matched-application-measurement",
+          "type": "string"
+        },
+        "disposition": {
+          "enum": [
+            "no-material-advantage",
+            "material-advantage-qualified",
+            "stopped-aa-control",
+            "stopped-measurement-failure",
+            null
+          ]
+        },
+        "dopplerSafety": {
+          "$ref": "#/$defs/identity"
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "type": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "message"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "lowerConfidenceRatio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "performanceCorrections": {
+          "type": "integer"
+        },
+        "policy": {
+          "$ref": "#/$defs/identity"
+        },
+        "primaryRatio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "qualification": {
+          "additionalProperties": false,
+          "properties": {
+            "dawn": {
+              "$ref": "#/$defs/identity"
+            },
+            "doe": {
+              "$ref": "#/$defs/identity"
+            }
+          },
+          "required": [
+            "doe",
+            "dawn"
+          ],
+          "type": "object"
+        },
+        "regressionRatios": {
+          "additionalProperties": false,
+          "properties": {
+            "coldProcessWall": {
+              "type": "number"
+            },
+            "peakRss": {
+              "type": "number"
+            },
+            "processCpu": {
+              "type": "number"
+            },
+            "warmP95": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "warmP95",
+            "coldProcessWall",
+            "processCpu",
+            "peakRss"
+          ],
+          "type": "object"
+        },
+        "rows": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "arm": {
+                "enum": [
+                  "doe",
+                  "dawn"
+                ],
+                "type": "string"
+              },
+              "cache": {
+                "type": "string"
+              },
+              "cacheHome": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "cacheStateAfter": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bytes": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "path": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "sha256": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "sha256",
+                    "bytes"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "cacheStateBefore": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bytes": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "path": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "sha256": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "sha256",
+                    "bytes"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "exitCode": {
+                "type": "integer"
+              },
+              "index": {
+                "type": "integer"
+              },
+              "loadAverage": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "log": {
+                "$ref": "#/$defs/identity"
+              },
+              "observations": {
+                "$ref": "#/$defs/identity"
+              },
+              "peakRssBytes": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "processWallNs": {
+                "type": "integer"
+              },
+              "runCpuNs": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "runWallNs": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "stage": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "arm",
+              "stage",
+              "index",
+              "exitCode",
+              "cache",
+              "log",
+              "processWallNs",
+              "runWallNs",
+              "runCpuNs",
+              "peakRssBytes",
+              "cacheHome",
+              "cacheStateBefore",
+              "cacheStateAfter"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": 2
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "policy",
+        "qualification",
+        "dopplerSafety",
+        "passed",
+        "disposition",
+        "failure",
+        "aaMedianRatio",
+        "primaryRatio",
+        "lowerConfidenceRatio",
+        "regressionRatios",
+        "performanceCorrections",
+        "rows"
+      ],
+      "type": "object"
+    },
+    "nativeBuild": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "type": "string"
+        },
+        "leanVerifiedBuild": {
+          "type": "boolean"
+        },
+        "pipelineCacheSourceSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "proofArtifactSha256": {
+          "type": "null"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "shaderTranslationCacheSourceSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "wgslCompilerSourceSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "artifact",
+        "leanVerifiedBuild",
+        "proofArtifactSha256",
+        "wgslCompilerSourceSha256",
+        "shaderTranslationCacheSourceSha256",
+        "pipelineCacheSourceSha256"
+      ],
+      "type": "object"
+    },
+    "oracle": {
+      "additionalProperties": false,
+      "properties": {
+        "inputName": {
+          "type": "string"
+        },
+        "inputSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "inputShape": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "modelSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "onnxVersion": {
+          "type": "string"
+        },
+        "operators": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "oracle": {
+          "type": "string"
+        },
+        "output": {
+          "items": {
+            "items": {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "outputSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "outputShape": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "policySha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "sourceSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "top1": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "oracle",
+        "modelSha256",
+        "policySha256",
+        "sourceSha256",
+        "onnxVersion",
+        "inputName",
+        "inputShape",
+        "inputSha256",
+        "outputShape",
+        "outputSha256",
+        "top1",
+        "output",
+        "operators"
+      ],
+      "type": "object"
+    },
+    "oracleCrosscheck": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "independent-oracle-crosscheck-not-application-fallback",
+          "type": "string"
+        },
+        "cpuTop1": {
+          "type": "integer"
+        },
+        "inputSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "maximumAbsoluteError": {
+          "type": "number"
+        },
+        "modelSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "onnxRuntimeVersion": {
+          "type": "string"
+        },
+        "outputSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "referenceTop1": {
+          "type": "integer"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "passed",
+        "onnxRuntimeVersion",
+        "maximumAbsoluteError",
+        "referenceTop1",
+        "cpuTop1",
+        "modelSha256",
+        "inputSha256",
+        "outputSha256"
+      ],
+      "type": "object"
+    },
+    "preparation": {
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "$ref": "#/$defs/identity"
+        },
+        "applicationHeaders": {
+          "additionalProperties": false,
+          "properties": {
+            "commit": {
+              "type": "string"
+            },
+            "files": {
+              "items": {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "repository": {
+              "type": "string"
+            },
+            "schemaVersion": {
+              "const": 1,
+              "type": "integer"
+            },
+            "tag": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "repository",
+            "commit",
+            "tag",
+            "files"
+          ],
+          "type": "object"
+        },
+        "builder": {
+          "$ref": "#/$defs/identity"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "model": {
+          "$ref": "#/$defs/identity"
+        },
+        "onnxCore": {
+          "$ref": "#/$defs/identity"
+        },
+        "patch": {
+          "$ref": "#/$defs/identity"
+        },
+        "policy": {
+          "$ref": "#/$defs/identity"
+        },
+        "preparedSource": {
+          "$ref": "#/$defs/identity"
+        },
+        "providerIntegration": {
+          "$ref": "#/$defs/identity"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "upstreamSource": {
+          "$ref": "#/$defs/identity"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "policy",
+        "upstreamSource",
+        "preparedSource",
+        "patch",
+        "providerIntegration",
+        "model",
+        "onnxCore",
+        "applicationHeaders",
+        "application",
+        "command",
+        "builder"
+      ],
+      "type": "object"
+    },
+    "replay": {
+      "additionalProperties": false,
+      "properties": {
+        "bundleSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "checkoutExposure": {
+          "type": "string"
+        },
+        "classification": {
+          "const": "isolated-application-replay",
+          "type": "string"
+        },
+        "hostDevices": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "rows": {
+          "items": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "arm": {
+                    "enum": [
+                      "doe",
+                      "dawn"
+                    ],
+                    "type": "string"
+                  },
+                  "callCounts": {
+                    "additionalProperties": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "type": "object"
+                  },
+                  "command": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "control": {
+                    "type": "string"
+                  },
+                  "exitCode": {
+                    "type": "integer"
+                  },
+                  "log": {
+                    "type": "string"
+                  },
+                  "logSha256": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "operatorNames": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "passed": {
+                    "type": "boolean"
+                  },
+                  "profile": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "arm",
+                  "callCounts",
+                  "command",
+                  "control",
+                  "exitCode",
+                  "log",
+                  "logSha256",
+                  "operatorNames",
+                  "passed",
+                  "profile"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "arm": {
+                    "enum": [
+                      "doe",
+                      "dawn"
+                    ],
+                    "type": "string"
+                  },
+                  "callCounts": {
+                    "additionalProperties": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "type": "object"
+                  },
+                  "command": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "control": {
+                    "type": "string"
+                  },
+                  "exitCode": {
+                    "type": "integer"
+                  },
+                  "log": {
+                    "type": "string"
+                  },
+                  "logSha256": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "operatorNames": {
+                    "items": {},
+                    "type": "array"
+                  },
+                  "passed": {
+                    "type": "boolean"
+                  },
+                  "profile": {
+                    "type": "null"
+                  }
+                },
+                "required": [
+                  "arm",
+                  "callCounts",
+                  "command",
+                  "control",
+                  "exitCode",
+                  "log",
+                  "logSha256",
+                  "operatorNames",
+                  "passed",
+                  "profile"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "systemReadOnlyRoots": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "writableRoots": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "bundleSha256",
+        "checkoutExposure",
+        "classification",
+        "hostDevices",
+        "network",
+        "passed",
+        "rows",
+        "schemaVersion",
+        "systemReadOnlyRoots",
+        "writableRoots"
+      ],
+      "type": "object"
+    },
+    "retirement": {
+      "additionalProperties": false,
+      "properties": {
+        "completionRequests": {
+          "type": "integer"
+        },
+        "destructionCalls": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "nativeSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "poolSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "resources": {
+          "additionalProperties": false,
+          "properties": {
+            "active": {
+              "additionalProperties": false,
+              "properties": {
+                "bytes": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "bytes",
+                "count"
+              ],
+              "type": "object"
+            },
+            "deferredCleanup": {
+              "additionalProperties": false,
+              "properties": {
+                "bytes": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "bytes",
+                "count"
+              ],
+              "type": "object"
+            },
+            "retainedModel": {
+              "additionalProperties": false,
+              "properties": {
+                "bytes": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "bytes",
+                "count"
+              ],
+              "type": "object"
+            },
+            "reusable": {
+              "additionalProperties": false,
+              "properties": {
+                "bytes": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "bytes",
+                "count"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "retainedModel",
+            "active",
+            "reusable",
+            "deferredCleanup"
+          ],
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "passed",
+        "destructionCalls",
+        "completionRequests",
+        "resources",
+        "poolSha256",
+        "nativeSha256"
+      ],
+      "type": "object"
+    },
+    "safety": {
+      "additionalProperties": false,
+      "properties": {
+        "arm": {
+          "enum": [
+            "doe",
+            "dawn"
+          ],
+          "type": "string"
+        },
+        "callCounts": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "contextIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "adapterType": {
+              "type": "integer"
+            },
+            "backend": {
+              "type": "integer"
+            },
+            "device": {
+              "type": "integer"
+            },
+            "vendor": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "backend",
+            "vendor",
+            "device",
+            "adapterType"
+          ],
+          "type": "object"
+        },
+        "descriptorRecovery": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "reused": {
+                  "type": "boolean"
+                },
+                "status": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "status",
+                "reused"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "failedSessionRecovery": {
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "type": "string"
+            },
+            "reused": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "message",
+            "reused"
+          ],
+          "type": "object"
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "type": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "message"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "finalDrmClients": {
+          "items": {},
+          "type": "array"
+        },
+        "initialDrmClients": {
+          "items": {},
+          "type": "array"
+        },
+        "initializationRecovery": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "incomplete": {
+                  "type": "string"
+                },
+                "missing": {
+                  "type": "string"
+                },
+                "rebind": {
+                  "type": "string"
+                },
+                "reused": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "missing",
+                "incomplete",
+                "rebind",
+                "reused"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "libraries": {
+          "additionalProperties": false,
+          "properties": {
+            "bridge": {
+              "$ref": "#/$defs/identity"
+            },
+            "context": {
+              "$ref": "#/$defs/identity"
+            },
+            "native": {
+              "$ref": "#/$defs/identity"
+            },
+            "provider": {
+              "$ref": "#/$defs/identity"
+            },
+            "recovery": {
+              "$ref": "#/$defs/identity"
+            }
+          },
+          "required": [
+            "native",
+            "bridge",
+            "context",
+            "recovery",
+            "provider"
+          ],
+          "type": "object"
+        },
+        "operatorNames": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "operatorProviders": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "preexecutionCancellationReuse": {
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "type": "string"
+            },
+            "phase": {
+              "type": "string"
+            },
+            "reused": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "phase",
+            "reused",
+            "message"
+          ],
+          "type": "object"
+        },
+        "profile": {
+          "$ref": "#/$defs/identity"
+        },
+        "runs": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "expected": {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              "observed": {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "expected",
+              "observed"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "arm",
+        "callCounts",
+        "contextIdentity",
+        "descriptorRecovery",
+        "failedSessionRecovery",
+        "failure",
+        "finalDrmClients",
+        "initialDrmClients",
+        "initializationRecovery",
+        "libraries",
+        "operatorNames",
+        "operatorProviders",
+        "passed",
+        "preexecutionCancellationReuse",
+        "profile",
+        "runs",
+        "schemaVersion"
+      ],
+      "type": "object"
+    },
+    "shaders": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "program": {
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "program"
+      ],
+      "type": "object"
+    },
+    "toolchains": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "campaign-toolchains"
+        },
+        "commands": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "command": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "exitCode": {
+                "type": "integer"
+              },
+              "output": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "command",
+              "exitCode",
+              "output"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "classification",
+        "commands"
+      ],
+      "type": "object"
+    },
+    "warmProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "performanceCorrection": {
+          "type": "string"
+        },
+        "profiles": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "arm": {
+                "enum": [
+                  "doe",
+                  "dawn"
+                ],
+                "type": "string"
+              },
+              "classification": {
+                "const": "warm-operator-profile-not-timing-evidence",
+                "type": "string"
+              },
+              "exitCode": {
+                "type": "integer"
+              },
+              "nativeCpuOwnerIdentified": {
+                "type": "boolean"
+              },
+              "nodes": {
+                "type": "integer"
+              },
+              "operatorDurationsUs": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              "opportunity": {
+                "type": "string"
+              },
+              "retainedModelRuns": {
+                "type": "integer"
+              },
+              "warmupRuns": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "arm",
+              "classification",
+              "exitCode",
+              "warmupRuns",
+              "retainedModelRuns",
+              "nodes",
+              "operatorDurationsUs",
+              "nativeCpuOwnerIdentified",
+              "opportunity"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "profiles",
+        "performanceCorrection",
+        "reason"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "anyOf": [
+    {
+      "$ref": "#/$defs/manifest"
+    },
+    {
+      "$ref": "#/$defs/safety"
+    },
+    {
+      "$ref": "#/$defs/application"
+    },
+    {
+      "$ref": "#/$defs/preparation"
+    },
+    {
+      "$ref": "#/$defs/oracle"
+    },
+    {
+      "$ref": "#/$defs/oracleCrosscheck"
+    },
+    {
+      "$ref": "#/$defs/integerDot"
+    },
+    {
+      "$ref": "#/$defs/retirement"
+    },
+    {
+      "$ref": "#/$defs/dopplerSafety"
+    },
+    {
+      "$ref": "#/$defs/measurement"
+    },
+    {
+      "$ref": "#/$defs/bundle"
+    },
+    {
+      "$ref": "#/$defs/replay"
+    },
+    {
+      "$ref": "#/$defs/controlBuild"
+    },
+    {
+      "$ref": "#/$defs/warmProfile"
+    },
+    {
+      "$ref": "#/$defs/cpuProfile"
+    },
+    {
+      "$ref": "#/$defs/shaders"
+    },
+    {
+      "$ref": "#/$defs/nativeBuild"
+    },
+    {
+      "$ref": "#/$defs/delivery"
+    },
+    {
+      "$ref": "#/$defs/custodyEntries"
+    },
+    {
+      "$ref": "#/$defs/fullShader"
+    },
+    {
+      "$ref": "#/$defs/toolchains"
+    },
+    {
+      "$ref": "#/$defs/measurementWithCacheState"
+    },
+    {
+      "$ref": "#/$defs/measurementSummary"
+    },
+    {
+      "$ref": "#/$defs/cacheAudit"
+    }
+  ],
+  "description": "Mixed named record families; each branch rejects undeclared fields. Only path-keyed immutable custody and observation maps permit declared typed entries.",
+  "required": [],
+  "title": "Bounded ONNX Vulkan campaign evidence",
+  "type": "object"
+}

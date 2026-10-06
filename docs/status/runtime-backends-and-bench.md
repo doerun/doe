@@ -2,29 +2,36 @@
 
 ## Independent ONNX integration
 
-Active integration work returns to ONNX's procedure-table boundary under the
-[selected milestone order](../../config/doe-product-strategy.json). Preserve the
-existing operators and application interfaces. The retained disposition names
-the remaining callback, lifecycle, operator and host qualification gaps; a matched
-source-built Dawn control is required before an ownership or performance decision.
-Browser loading does not reopen rejected shader transformations or establish
-repeatable material advantage for unchanged applications.
+The [completed Vulkan campaign](../../reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/README.md)
+qualifies the pinned procedure-table integration and the existing upstream
+SqueezeNet application on the tested AMD host. Recoverable descriptor and failed
+initialization controls, successful reuse, complete WebGPU operator placement,
+native disabling controls, the independent numerical oracle, and isolated
+application replay pass. Doppler's retirement repair retains ownership through
+its own completion boundary or confirmed loss and releases buffers exactly once;
+installed generation and reopening no longer emit the reproduced warning.
 
-The [pinned proc-table integration](../../reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/README.md)
-runs the existing ONNX WebGPU operators through Doe with independent outputs,
-repeated inputs and cancellation before execution followed by reuse. A source-built
-consumer admits a paired external device at its shared default context; the
-published plugin remains a separate supported incumbent control. The adapter
-qualifies one exact Dawn ABI and rejects unsupported chains explicitly. Native
-pending pipeline settlement, typed assignment stores and local default
-initialization corrections remain in their owning components. The final native
-also passes runtime/compiler gates and shader/render and Doppler transfer checks.
-The older preload diagnostic and its unsupported runtime/plugin pairing remain
-retained without promotion. Binary custody is local, and offline installed
-execution is scoped to the tested host. General future/callback conformance,
-termination during submitted GPU work, other operators/hosts, performance,
-Chromium switching and upstream adoption remain unqualified. The separate custom
-operator plugin is unchanged; no replacement optimization campaign is opened.
+The matched source-built Dawn comparison completes with rejected material advantage.
+The primary gain and CPU regression fail the frozen acceptance rule. Raw warm and
+cold processes, A/A controls and unfavorable results are retained. The corrected
+cache-scoped cohort drives the decision; the earlier HOME-cache mismatch remains
+retained diagnostic evidence. Operator-inclusive
+profiles do not justify a general performance correction; native CPU profiling is
+blocked by host permissions. No performance patch or speed claim is promoted.
+
+The application supplied a new concrete unchanged-WGSL integer-dot reproduction.
+The general SPIR-V lowering correction passes compiler/runtime and physical
+checks before measurement. Browser transformations remain closed. Callback/future
+conformance beyond the tested paths, submitted-work interruption, other hosts,
+registry delivery and upstream adoption remain unqualified. Metal, D3D12 and
+browser switching stay deferred; no successor campaign is automatically selected.
+
+The [original proc-table report](../../reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/README.md)
+retains its exact source/native hashes and historical verdict. Its original
+verifier passes against the retained source snapshot and custody; current source
+changes do not rewrite that evidence. See the [campaign contract](../onnx-vulkan-campaign-contract.md)
+for the additive diagnostic/status migration and the published-core versus
+source-built-provider boundary.
 
 ## Retained stock Chrome native investigation
 
@@ -59,8 +66,8 @@ failure checks. Checkouts and external networking are inaccessible during
 execution. This qualifies the retained Linux snapshot on the tested host; registry
 release, another operator's reproduction, performance superiority, and leak-free
 native teardown remain separate. The previous generation experiment remains
-closed and unchanged. The independent ONNX investigation's current disposition is
-recorded above; no replacement optimization campaign is active.
+closed and unchanged. The completed ONNX Vulkan campaign's disposition is recorded above; no
+replacement optimization campaign is active.
 
 ## Application selection after submission attribution
 

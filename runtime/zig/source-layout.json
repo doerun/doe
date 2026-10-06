@@ -2302,9 +2302,9 @@
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig": {
         "decision": "Keep",
-        "moduleSha256": "c42c13184d62811aaf480a9f3f7b884a00947862c5716aa8d4b65826b390f3a3",
-        "reason": "Keep: authoritative SPIR-V builtin lowering family independent from function and texture lowering.",
-        "reviewer": "codex-doe-compiler-correctness/2026-09-01"
+        "moduleSha256": "7089329d46e786d4e19ba875d710e201d2e6d037198c44103645e89883e48d1d",
+        "reason": "Keep: the shared SPIR-V builtin family owns signature checks and typed instruction emission; texture and function storage stay delegated. Integer dot evaluates each vector once and emits integer multiplication and scalar reduction; floating dot keeps its existing opcode. No source rewriting, scheduling, policy selection, or new imports enter this owner.",
+        "reviewer": "codex-onnx-integer-dot/2026-10-05"
       },
       "src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig": {
         "decision": "Keep",

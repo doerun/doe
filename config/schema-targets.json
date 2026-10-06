@@ -2,6 +2,134 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/cache-audit.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/measurement-summary.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/toolchains.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/compiler-reproduction/full-shader-final.json"
+    },
+    {
+      "schema": "config/doppler-installed-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/doppler-offline-final/results/summary.json"
+    },
+    {
+      "schema": "config/doppler-installed-generation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/doppler-offline-final/installation.json"
+    },
+    {
+      "schema": "config/onnx-proc-adapter.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/bridge-matched/build.json"
+    },
+    {
+      "schema": "config/trace-meta.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/trace-meta.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/doppler-offline-final/delivery.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/native-build-metadata.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/compiler-reproduction/shaders.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/warm-profile/native-cpu-permission.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/warm-profile/profile-disposition.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/control-reproduction/build.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/deployment-final/results/replay.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/bundle.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/measurement/measurement.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/safety/doppler-safety-final.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/safety/physical-retirement-final.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/compiler-reproduction/integer-dot-physical.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/reference/cpu-crosscheck.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/reference/reference.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/application-matched/preparation.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/doe-application-qualified.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/doe-matched-disabled.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/dawn-matched.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/doe-matched.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/safety/dawn-additional-controls.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/safety/dawn-matched.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/raw/safety/doe-matched.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/manifest.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-campaign.schema.json",
+      "data": "config/onnx-vulkan-campaign.json"
+    },
+    {
       "schema": "config/vulkan-submission-evaluation.schema.json",
       "data": "config/vulkan-submission-evaluation.json"
     },

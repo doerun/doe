@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "arm": "doe",
+  "classification": "application-qualification",
+  "passed": false,
+  "failure": {
+    "type": "ApplicationFailure",
+    "message": "CampaignContext 6 4098 5510 4\nNumber of inputs = 1\nInput 0 : name =data_0\nInput 0 : type = 1\nInput 0 : num_dims = 4\nInput 0 : dim[0] =1\nInput 0 : dim[1] =3\nInput 0 : dim[2] =224\nInput 0 : dim[3] =224\n\u001b[1;31m2026-10-05 19:07:07.351663683 [E:onnxruntime:, sequential_executor.cc:572 ExecuteKernel] Non-zero status code returned while running Conv node. Name:'_token_2' Status Message: Failed to create a WebGPU compute pipeline: pipeline creation failed\u001b[m\nterminate called after throwing an instance of 'Ort::Exception'\n  what():  Non-zero status code returned while running Conv node. Name:'_token_2' Status Message: Failed to create a WebGPU compute pipeline: pipeline creation failed\n"
+  },
+  "negativeControl": false,
+  "exitCode": -6,
+  "policy": {
+    "path": "/home/x/deco/doe/config/onnx-vulkan-campaign.json",
+    "sha256": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669"
+  },
+  "safety": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doe.json",
+    "sha256": "14290d6ede239153038c15d7e7ab9a868d46a9055eced293cba8e8413fbfed35"
+  },
+  "inputs": {
+    "application": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-qualified/application",
+      "sha256": "051698d157f7d9f7a4347f1df34037f7ac113857e4eb4309e96380ab848275c4"
+    },
+    "provider": {
+      "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/libonnxruntime_providers_webgpu.so",
+      "sha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d"
+    },
+    "native": {
+      "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/qualified/libwebgpu_doe.so",
+      "sha256": "1c59e7ec261f69c2e12e41530e3a135e57656b8ff448188cff275863ed5294ee"
+    },
+    "bridge": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-final/libdoe_dawn_bridge.so",
+      "sha256": "eb6584aa2677478c26f5ffde684b3e05e4375feaf517090c9d3c3857e11b5e0f"
+    },
+    "context": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-final/libexternal_context.so",
+      "sha256": "5a9b546a2f2c8372885840690bf3394868437e0b6f095ce5d616e605c6cab180"
+    },
+    "reference": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/reference/reference.f32",
+      "sha256": "b85805bff755867ec86e9b0ec8ac368e5fc6af7247a42145db0bcff061fe1bd1"
+    }
+  },
+  "log": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-application-qualified.log",
+    "sha256": "41ab8a4e12cf856e4939eb400a10b6e5913e15972bdd2d771a290ba7d52a3579"
+  },
+  "profile": null,
+  "operatorNames": [],
+  "operatorProviders": [],
+  "timingSamples": []
+}

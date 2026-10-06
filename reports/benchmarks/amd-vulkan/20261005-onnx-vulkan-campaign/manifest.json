@@ -1,0 +1,2399 @@
+{
+  "classification": "bounded-vulkan-campaign-custody",
+  "custody": {
+    "archivePath": "/home/x/deco/doe/bench/out/evidence-custody/onnx-vulkan-campaign-20261005.tar.gz",
+    "archiveSha256": "fcb980d4ebe2cb4537ba575f497a71cfe9d05083b10cb56a050e3951832f1d2c",
+    "availability": "local-only",
+    "entriesPath": "custody-entries.json.gz",
+    "entryCount": 2166
+  },
+  "dopplerCommit": "5a50a0e1",
+  "files": {
+    "bundle.json": {
+      "compression": "none",
+      "contentSha256": "5ffedb5d5763cc018c98401487b88f3c7e92954d7e83723ebf0e788391705d60",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/application/bundle.json",
+      "sha256": "5ffedb5d5763cc018c98401487b88f3c7e92954d7e83723ebf0e788391705d60"
+    },
+    "cache-audit.json": {
+      "compression": "none",
+      "contentSha256": "98b7e9ca96e2a7153c74676e9ad7f528fd12d86e740594ec6b9c55e3e44f4b3e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/cache-audit.json",
+      "sha256": "98b7e9ca96e2a7153c74676e9ad7f528fd12d86e740594ec6b9c55e3e44f4b3e"
+    },
+    "custody-entries.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "a48a5209330df1454893f99d1b399fcb1e1ba146bf060170eeb789a906fb568c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/custody-entries.json",
+      "sha256": "2ab771886291ba48bf60664b596a558c91527d275ceace0e353112e050c95c14"
+    },
+    "measurement-summary.json": {
+      "compression": "none",
+      "contentSha256": "19b32b004087b6a211f97b4362375f91341e21fd900473e251cf30a21fc16117",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-summary.json",
+      "sha256": "19b32b004087b6a211f97b4362375f91341e21fd900473e251cf30a21fc16117"
+    },
+    "native-build-metadata.json": {
+      "compression": "none",
+      "contentSha256": "5a97d46a4940b78f010443dc6cb9eb1e69496bb18fe66f42370dc85eeecb995e",
+      "originalPath": "/home/x/deco/doe/runtime/zig/zig-out/share/doe-build-metadata.json",
+      "sha256": "5a97d46a4940b78f010443dc6cb9eb1e69496bb18fe66f42370dc85eeecb995e"
+    },
+    "policy.json": {
+      "compression": "none",
+      "contentSha256": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669",
+      "originalPath": "/home/x/deco/doe/config/onnx-vulkan-campaign.json",
+      "sha256": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669"
+    },
+    "raw/application-api24-build.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "0762a4c757930bcc40e18b20a8b83434b51562af1b8756d5bb59193bf61f8f0c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-api24-build.log",
+      "sha256": "5ed4be0b1037883cb524917cfc934e41fd421ea3e006864d0d88cf2dab913000"
+    },
+    "raw/application-final-build.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-final-build.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/application-matched-build.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-matched-build.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/application-matched/application.patch": {
+      "compression": "none",
+      "contentSha256": "84cd994eb9968c1a1a0f3cb665830563be37f37ccd8ce3b00a312c36af476a0c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-matched/application.patch",
+      "sha256": "84cd994eb9968c1a1a0f3cb665830563be37f37ccd8ce3b00a312c36af476a0c"
+    },
+    "raw/application-matched/main.cpp": {
+      "compression": "none",
+      "contentSha256": "00c9888fdb08a1191fff4ae7f28430e9f4c9ee93b8346dda4cbec65c4b9a819f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-matched/main.cpp",
+      "sha256": "00c9888fdb08a1191fff4ae7f28430e9f4c9ee93b8346dda4cbec65c4b9a819f"
+    },
+    "raw/application-matched/preparation.json": {
+      "compression": "none",
+      "contentSha256": "4553e150c8032a25ac9c78ecb7b5c61258467a6edbbe2d9f2addb0dab1cff5da",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-matched/preparation.json",
+      "sha256": "4553e150c8032a25ac9c78ecb7b5c61258467a6edbbe2d9f2addb0dab1cff5da"
+    },
+    "raw/application-owned-build.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-owned-build.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/application-qualified-build.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-qualified-build.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/application-safety-final-build.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-safety-final-build.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/bridge-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-final.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/bridge-matched.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/bridge-matched/abi.cpp": {
+      "compression": "none",
+      "contentSha256": "fd2ee783acaadb4f0c64aef13a0311bddc8c424704fc93cd821116af555d9081",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/abi.cpp",
+      "sha256": "fd2ee783acaadb4f0c64aef13a0311bddc8c424704fc93cd821116af555d9081"
+    },
+    "raw/bridge-matched/adapter.zig": {
+      "compression": "none",
+      "contentSha256": "97c29f03515ce774df07f828af912e94496604841781fe1a0a0b2ae29209f754",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/adapter.zig",
+      "sha256": "97c29f03515ce774df07f828af912e94496604841781fe1a0a0b2ae29209f754"
+    },
+    "raw/bridge-matched/build.json": {
+      "compression": "none",
+      "contentSha256": "04c43bf979281ff067641e86a98550938c89b341df44a2922d9ae75007212be8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/build.json",
+      "sha256": "04c43bf979281ff067641e86a98550938c89b341df44a2922d9ae75007212be8"
+    },
+    "raw/bridge-matched/doe_webgpu.h.gz": {
+      "compression": "gzip",
+      "contentSha256": "ff5a5f07311f7439492e22fd2a9fb9185bb50bcc8b7124376af77f7dcf2e88c7",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/doe_webgpu.h",
+      "sha256": "45b5c0de4b900ad8d0dfdf4db7b2bb26e4445f1bec9e913c0e3967bfafe4e0d9"
+    },
+    "raw/bridge-matched/generated/include/dawn/dawn_proc_table.h": {
+      "compression": "none",
+      "contentSha256": "e6a01f14e95d1c020a05f7ac0bc76bfb7d5d6bea79245cf12a41d88ab4f6f3b2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/generated/include/dawn/dawn_proc_table.h",
+      "sha256": "e6a01f14e95d1c020a05f7ac0bc76bfb7d5d6bea79245cf12a41d88ab4f6f3b2"
+    },
+    "raw/bridge-matched/generated/include/dawn/webgpu.h.gz": {
+      "compression": "gzip",
+      "contentSha256": "3f74ce2470db6a9ba158b849c9f3192d88c08731458246123cf582a7d4d74717",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/generated/include/dawn/webgpu.h",
+      "sha256": "bea3c3d64685bf3b9201ccd55a70110290f0bb4e31290b3aa27d8a85ed2d6575"
+    },
+    "raw/bridge-matched/generated/include/dawn/wire/client/webgpu.h.gz": {
+      "compression": "gzip",
+      "contentSha256": "e77636535cc9574f59b8cb518306af2616ee10ed8ce7dc5a003e8f26d7ee3817",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/generated/include/dawn/wire/client/webgpu.h",
+      "sha256": "b3c1cec6ba65913d3928db0aab64a2df44e3b0ae07dfcf0d840bbf8f203d65ae"
+    },
+    "raw/bridge-matched/proc_wrappers.zig.gz": {
+      "compression": "gzip",
+      "contentSha256": "57413386a0742f2e04f750fdd0225e3dcb6f893580ac5eb46800e25ff4c9ff62",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/proc_wrappers.zig",
+      "sha256": "0316c1e98b6da77c75d90161943a142c7c22ff09b7eb37cc3a51b41536c26226"
+    },
+    "raw/compiler-reproduction/00-Transpose.wgsl": {
+      "compression": "none",
+      "contentSha256": "d12ee2b15ee9e0a5b6c645b288dd700bd76defc780c11678846fb8a22e2c608e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/00-Transpose.wgsl",
+      "sha256": "d12ee2b15ee9e0a5b6c645b288dd700bd76defc780c11678846fb8a22e2c608e"
+    },
+    "raw/compiler-reproduction/01-Transpose.wgsl": {
+      "compression": "none",
+      "contentSha256": "0f6650fc6656121b9452409cabd34d5388a74d548ea443a034549d0c24ddb144",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/01-Transpose.wgsl",
+      "sha256": "0f6650fc6656121b9452409cabd34d5388a74d548ea443a034549d0c24ddb144"
+    },
+    "raw/compiler-reproduction/02-Transpose.wgsl": {
+      "compression": "none",
+      "contentSha256": "b0ea754dcbc273d3241a96edf4e51599d354e0c9c4caa873351566758525dff0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/02-Transpose.wgsl",
+      "sha256": "b0ea754dcbc273d3241a96edf4e51599d354e0c9c4caa873351566758525dff0"
+    },
+    "raw/compiler-reproduction/03-Transpose.wgsl": {
+      "compression": "none",
+      "contentSha256": "0f6650fc6656121b9452409cabd34d5388a74d548ea443a034549d0c24ddb144",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/03-Transpose.wgsl",
+      "sha256": "0f6650fc6656121b9452409cabd34d5388a74d548ea443a034549d0c24ddb144"
+    },
+    "raw/compiler-reproduction/04-Conv2dMM.wgsl": {
+      "compression": "none",
+      "contentSha256": "41b4180de11634c78a397a435513162266f99b8d3e7675ae1f84973df98210ba",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/04-Conv2dMM.wgsl",
+      "sha256": "41b4180de11634c78a397a435513162266f99b8d3e7675ae1f84973df98210ba"
+    },
+    "raw/compiler-reproduction/compile.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e7b42a7923765f5ad635fc323c5396f0f37fdfc1a96b51bda4a7e1a4919825b8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/compile.log",
+      "sha256": "bc1b135f851f68a79492f0bd56437f536a42fee3f3986115e8c854638edf704c"
+    },
+    "raw/compiler-reproduction/compiler-gates-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "86a64bbfcd2f99490b93456891a7089d9da277d13b2e391e933de20bb8c0fb0d",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/compiler-gates-final.log",
+      "sha256": "604ae10c297a04de73c8a7c5f478c2f444bb497c2106cb882f75f6145b02f9f1"
+    },
+    "raw/compiler-reproduction/corrected-compile.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/corrected-compile.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/compiler-reproduction/corrected-spirv-val.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/corrected-spirv-val.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/compiler-reproduction/correction-tests.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "c335687db58e17f7dca79c8285fff633004d78cf4dccd34fc04b0e6e27ab82c6",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/correction-tests.log",
+      "sha256": "d6f3133ae35f2a199cbb5ae3cbbf9f1ca6e7220d541c560cded754a7be74d583"
+    },
+    "raw/compiler-reproduction/debug-build.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/debug-build.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/compiler-reproduction/debug-compile.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e27fa9d87ec7bbe9cee6081422c202be9a4a07034ec9486ed9e830925f469213",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/debug-compile.log",
+      "sha256": "b88150ad38e4afb7470f3f5543a610f77926b800fc167ccf50d645ce09d002c5"
+    },
+    "raw/compiler-reproduction/emit-cli-final-build.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/emit-cli-final-build.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/compiler-reproduction/final-build-tests.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "3217a737d7edc8c8eb29580532bc677112da3c4ca4979a4c64ea939cfea776f8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/final-build-tests.log",
+      "sha256": "2846c1cb4cb8f708536dd0f9140164e8520ad06a6273937aef86a2d5921470eb"
+    },
+    "raw/compiler-reproduction/final-default-validation.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/final-default-validation.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/compiler-reproduction/final-default.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/final-default.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/compiler-reproduction/final-default.spv": {
+      "compression": "none",
+      "contentSha256": "bdd3dcfc2b96fc96943fdf284383043575c2505b9567255efcad06b900c04a45",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/final-default.spv",
+      "sha256": "bdd3dcfc2b96fc96943fdf284383043575c2505b9567255efcad06b900c04a45"
+    },
+    "raw/compiler-reproduction/final-vulkan-compute-runtime-validation.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/final-vulkan-compute-runtime-validation.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/compiler-reproduction/final-vulkan-compute-runtime.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/final-vulkan-compute-runtime.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/compiler-reproduction/final-vulkan-compute-runtime.spv": {
+      "compression": "none",
+      "contentSha256": "118f61e8f7ca40c8f70c408d37edf11bed821da626739cbbbed24ad2660f31c7",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/final-vulkan-compute-runtime.spv",
+      "sha256": "118f61e8f7ca40c8f70c408d37edf11bed821da626739cbbbed24ad2660f31c7"
+    },
+    "raw/compiler-reproduction/full-shader-final.json": {
+      "compression": "none",
+      "contentSha256": "2562fa352a9c21e10609e984e920ab1ed77c323662a250d807d194a1c121d095",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/full-shader-final.json",
+      "sha256": "2562fa352a9c21e10609e984e920ab1ed77c323662a250d807d194a1c121d095"
+    },
+    "raw/compiler-reproduction/integer-dot-physical.json": {
+      "compression": "none",
+      "contentSha256": "33c574b3fcbe3c1d479bb6752f01565ff3374d5e000fde694941a70d113dfa08",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/integer-dot-physical.json",
+      "sha256": "33c574b3fcbe3c1d479bb6752f01565ff3374d5e000fde694941a70d113dfa08"
+    },
+    "raw/compiler-reproduction/integer-dot-physical.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/integer-dot-physical.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/compiler-reproduction/layout-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/layout-final.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/compiler-reproduction/runtime-gates-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "4a6ce8f22caef29ce3fbe25dd885da29dca316ec38f2d74cd225a7ab23a36cba",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/runtime-gates-final.log",
+      "sha256": "5f3c48d97fa9c16dd8ffc818af9de3b8c1b47f6efb0022fb8f01cc933c4f4539"
+    },
+    "raw/compiler-reproduction/shaders.json": {
+      "compression": "none",
+      "contentSha256": "21c30981fcc0ee7a16a2b95fc4d73f668aa517113dddff266ad5fd49c0dd225a",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/compiler-reproduction/shaders.json",
+      "sha256": "21c30981fcc0ee7a16a2b95fc4d73f668aa517113dddff266ad5fd49c0dd225a"
+    },
+    "raw/consumer/CMakeCache.txt": {
+      "compression": "none",
+      "contentSha256": "1e28a0afc578a056e34ab424c554be9f81a96acb59c22c9d117f547521641d4a",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/CMakeCache.txt",
+      "sha256": "1e28a0afc578a056e34ab424c554be9f81a96acb59c22c9d117f547521641d4a"
+    },
+    "raw/consumer/build.ninja.gz": {
+      "compression": "gzip",
+      "contentSha256": "549db0b677a3787d6f6f511b5786843a7d4fe932cc5cdc99a04caaaabc542a18",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/build.ninja",
+      "sha256": "c593e21e497b8a6c6a4b619dfa5398ad8b14ac51d942ce1cca2ee4f7b07fc68b"
+    },
+    "raw/consumer/source-build.json": {
+      "compression": "none",
+      "contentSha256": "e4e4285f3511cb256befb8cfc059cb7c66ffabba5d03524d35dd073ae930a1e2",
+      "originalPath": "/home/x/deco/doe/reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/source-build.json",
+      "sha256": "e4e4285f3511cb256befb8cfc059cb7c66ffabba5d03524d35dd073ae930a1e2"
+    },
+    "raw/control-reproduction/build-0.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "49a79d7dd4534f35e21a0264347ad65d0f14e4453a858e3896c70dfa59993194",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/control-reproduction/build-0.log",
+      "sha256": "f5ac059dbc45f139014a6db82c683e6119485f491d27aa7da47da23d047733c7"
+    },
+    "raw/control-reproduction/build-1.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "4fd469da1fbcd28b2f767154043e262c68478c18befc293460a7bcd99f2b4926",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/control-reproduction/build-1.log",
+      "sha256": "9888f6ff67d78ac347a725c74fff8db532638c8e57019bcbff8fb2cc722c0b04"
+    },
+    "raw/control-reproduction/build.json": {
+      "compression": "none",
+      "contentSha256": "0d22ed3785fa20950d2c3338952c1e5d2ba07af06d7372546f709c5649523c15",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/control-reproduction/build.json",
+      "sha256": "0d22ed3785fa20950d2c3338952c1e5d2ba07af06d7372546f709c5649523c15"
+    },
+    "raw/control-reproduction/control-target.cmake": {
+      "compression": "none",
+      "contentSha256": "88d700ae8389584cdbd4e9b514752747606f036d95b064ebd60bca5f22431b52",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/control-reproduction/control-target.cmake",
+      "sha256": "88d700ae8389584cdbd4e9b514752747606f036d95b064ebd60bca5f22431b52"
+    },
+    "raw/control-reproduction/dawn-control.cc": {
+      "compression": "none",
+      "contentSha256": "9a33f3a5170507269b37e8363b99bb2a94fa02bff4c00dc4d2648488133df436",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/control-reproduction/dawn-control.cc",
+      "sha256": "9a33f3a5170507269b37e8363b99bb2a94fa02bff4c00dc4d2648488133df436"
+    },
+    "raw/control-target.cmake": {
+      "compression": "none",
+      "contentSha256": "e633f58fced3f4206fa2e9127f3eae12d53d878849358011c5ae3317db94428c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/control-target.cmake",
+      "sha256": "e633f58fced3f4206fa2e9127f3eae12d53d878849358011c5ae3317db94428c"
+    },
+    "raw/custody-verification.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "d42885c3540b6dcf3a842790010b0e97af42e25635a71cd267b11d9c7565427d",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/custody-verification.log",
+      "sha256": "2dad5141f7fa9c2e8476f5c180f02d4217021d0a56ba1542adf51c95ba14bb6d"
+    },
+    "raw/dawn-application-final.json": {
+      "compression": "none",
+      "contentSha256": "ad62ab98cb7c2d0c9cab647d76b1e218cd662e7a48989ef2e2bcbd6aa1811ef3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-application-final.json",
+      "sha256": "ad62ab98cb7c2d0c9cab647d76b1e218cd662e7a48989ef2e2bcbd6aa1811ef3"
+    },
+    "raw/dawn-application-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "49be9439aad8dcd611b8cc4b97f3b68fd7ce07ef40c5251ebcae2a90f4d09476",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-application-final.log",
+      "sha256": "5affd5147e87ba296cdc6f3f60323bfe60a81f9de45a540cb35b68316f546c66"
+    },
+    "raw/dawn-application-qualified.json": {
+      "compression": "none",
+      "contentSha256": "c2055e2887882b5b63c1aed8bbfc5981e8aa30e0d1583460cd2457aa34174e53",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-application-qualified.json",
+      "sha256": "c2055e2887882b5b63c1aed8bbfc5981e8aa30e0d1583460cd2457aa34174e53"
+    },
+    "raw/dawn-application-qualified.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "3fbdca80713d936e0325f8b8163851112e42d65ce3b64e3534a5efef8457e31e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-application-qualified.log",
+      "sha256": "e7d07bff7a294638201410d11cd00e49ec93af7aa29b588396ae04509669010b"
+    },
+    "raw/dawn-application-qualified.profile_2026-10-05_19-07-07.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "727b9a8b3c5dfd6f4a7cd41482b2ff4e4e045eb15d02086f9a59a61cd5435edb",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-application-qualified.profile_2026-10-05_19-07-07.json",
+      "sha256": "ee348d919ad0bfe07c4e8be0323b05e539e4efd44cd2ff10f383329cfce25b65"
+    },
+    "raw/dawn-application.json": {
+      "compression": "none",
+      "contentSha256": "b322c04d8b6feaa9efe56c25851af56cd4d4512ca2738fbaeb66542f44aba2fe",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-application.json",
+      "sha256": "b322c04d8b6feaa9efe56c25851af56cd4d4512ca2738fbaeb66542f44aba2fe"
+    },
+    "raw/dawn-application.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "c3bb2fef59c6f2c60070f3f1c80d5246b8d2cef3e0a3a6e0ccce3558698ff1e0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-application.log",
+      "sha256": "68a3a356351eb75d7bcc304ea3e5e63e2a20bc114038da0ebb0c965b94003093"
+    },
+    "raw/dawn-build.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "ea75a325f77927ffff470d11e477137d9d8afd88a8abb7522118f4f5ba9ad3d9",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-build.log",
+      "sha256": "8c1921d0a25bec5ef39c62f2736131c141090205828551ee2d666e066c8bc68c"
+    },
+    "raw/dawn-configure.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "a12ad0611d035352cc10e44074190e828bafce294b7ccd8e8cdde8f9dd169b05",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-configure.log",
+      "sha256": "8cd86c134bb07d1ae01cc69ce6c7caf1729a7828a70cb3ee2acc24e7cff8c424"
+    },
+    "raw/dawn-control.cc": {
+      "compression": "none",
+      "contentSha256": "bab8291e07a44095efedd046f5dd78ca1366477e7e3e400b2f5ebf14e0fd30d3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-control.cc",
+      "sha256": "bab8291e07a44095efedd046f5dd78ca1366477e7e3e400b2f5ebf14e0fd30d3"
+    },
+    "raw/dawn-disabled.json": {
+      "compression": "none",
+      "contentSha256": "1aebb679dd7f9c6905ad84f0793c545849f1abd45af15703e0a1a1d80582ffc1",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-disabled.json",
+      "sha256": "1aebb679dd7f9c6905ad84f0793c545849f1abd45af15703e0a1a1d80582ffc1"
+    },
+    "raw/dawn-disabled.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "7d5846298d56cfc833925edc1f82547c73c95d6f19d3d382de911d21e620138e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-disabled.log",
+      "sha256": "ad8ccd43e7289fb2964317e0bc5faa9038ba6fd38a073a17259db5879c039093"
+    },
+    "raw/dawn-matched-disabled.json": {
+      "compression": "none",
+      "contentSha256": "4da3b419909d1fbc7a22ac5ed192f6d3de94b0f05ac30b78992800137c913ac2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-matched-disabled.json",
+      "sha256": "4da3b419909d1fbc7a22ac5ed192f6d3de94b0f05ac30b78992800137c913ac2"
+    },
+    "raw/dawn-matched-disabled.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "f4e190a3c647180d404dde258c328bc47d5a145123d16a739d6f024622da92a3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-matched-disabled.log",
+      "sha256": "47da190893f135aeb0cfbb3092053ff5703347dc78b60a1ad7ef36658fa7b5df"
+    },
+    "raw/dawn-matched.json": {
+      "compression": "none",
+      "contentSha256": "95ce844f5badfa657f3055da173816dc87864ee79b35cbb514681aa706b99964",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-matched.json",
+      "sha256": "95ce844f5badfa657f3055da173816dc87864ee79b35cbb514681aa706b99964"
+    },
+    "raw/dawn-matched.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e25f9df46c346e7b29defdcc77e0d4141f07add7064d0288b1e990e41050616c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-matched.log",
+      "sha256": "d6d528f4014284e0b977699b744d10752c6667644ec9367d6a368ce67fe4626f"
+    },
+    "raw/dawn-matched.profile_2026-10-05_19-18-54.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "7517ce4110d55922c76ef67334111eb74426b5acaa4ce35a08298ae34de88c91",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-matched.profile_2026-10-05_19-18-54.json",
+      "sha256": "b2e48ceb5f050c6dcb536515433691caca378164ad8f291736f5d97e758f1d71"
+    },
+    "raw/dawn-owned.json": {
+      "compression": "none",
+      "contentSha256": "0049353ef260885aacac5690ba03c52bd49a579e2fe1bcbbc3b0b4d07f01af88",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-owned.json",
+      "sha256": "0049353ef260885aacac5690ba03c52bd49a579e2fe1bcbbc3b0b4d07f01af88"
+    },
+    "raw/dawn-owned.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "d9735fe97be09702be5fd812f72208f2b76f3cd3024bfec190c1642d40416838",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-owned.log",
+      "sha256": "3f836526efc96a8952a75ea1c0c21aeb084071dcc0789e329f3b22381b9c3476"
+    },
+    "raw/dawn-owned.profile_2026-10-05_19-15-45.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "9183aa49dc292775706ddcc913c1ffd746185e0d4fc3aaa6610f7007e11f1e91",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-owned.profile_2026-10-05_19-15-45.json",
+      "sha256": "335c8ca22237b8c2418bae1b8b6de5a7bf4b28648454bd6ff2df4264cd72290a"
+    },
+    "raw/deployment-final/results/dawn-native-disabled.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "f4e190a3c647180d404dde258c328bc47d5a145123d16a739d6f024622da92a3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/dawn-native-disabled.log",
+      "sha256": "47da190893f135aeb0cfbb3092053ff5703347dc78b60a1ad7ef36658fa7b5df"
+    },
+    "raw/deployment-final/results/dawn-oracle-corrupted.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "ec288f9fe5db78b41f7507679bcf939ac0ed372a0e1ad31033007dc27b3dbc13",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/dawn-oracle-corrupted.log",
+      "sha256": "38b22fd5611d7578eca7ccec099bd9dffa2410435a756fbe1109597180df492b"
+    },
+    "raw/deployment-final/results/dawn-oracle-corrupted.observations": {
+      "compression": "none",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/dawn-oracle-corrupted.observations",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw/deployment-final/results/dawn-oracle-corrupted.profile_2026-10-05_19-31-12.json": {
+      "compression": "none",
+      "contentSha256": "e8133649f3b34813deeafea8da46f7caf54409f7fb4b5fc1e5c94ddb09885307",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/dawn-oracle-corrupted.profile_2026-10-05_19-31-12.json",
+      "sha256": "e8133649f3b34813deeafea8da46f7caf54409f7fb4b5fc1e5c94ddb09885307"
+    },
+    "raw/deployment-final/results/dawn-positive.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "60cad7970900c171c265a44c232f39e91785a29d0a9184e208b861b498be98eb",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/dawn-positive.log",
+      "sha256": "61765ecc2b30ee2f023e643d392d331a8d8d6022208a21cabae23b9d4253b3b1"
+    },
+    "raw/deployment-final/results/dawn-positive.observations": {
+      "compression": "none",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/dawn-positive.observations",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw/deployment-final/results/dawn-positive.profile_2026-10-05_19-31-12.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "36f220a089d9225614bec0e4f1b8ea4b6734ac124f3a50724499282122ec4b06",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/dawn-positive.profile_2026-10-05_19-31-12.json",
+      "sha256": "3f4dfd46be4ec3c541cdb84bd4281213ef0740441f7dc40faec8d2950d217118"
+    },
+    "raw/deployment-final/results/doe-native-disabled.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "f4e190a3c647180d404dde258c328bc47d5a145123d16a739d6f024622da92a3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/doe-native-disabled.log",
+      "sha256": "47da190893f135aeb0cfbb3092053ff5703347dc78b60a1ad7ef36658fa7b5df"
+    },
+    "raw/deployment-final/results/doe-oracle-corrupted.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "321362ef65d71ade5b3b2caa23946d929218d786604dbfd8fa84fbfda9fcfdae",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/doe-oracle-corrupted.log",
+      "sha256": "7b532d750c1edc96cc6b8656f162bca724a2675cdae807cc004d3b41a474af62"
+    },
+    "raw/deployment-final/results/doe-oracle-corrupted.observations": {
+      "compression": "none",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/doe-oracle-corrupted.observations",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw/deployment-final/results/doe-oracle-corrupted.profile_2026-10-05_19-31-12.json": {
+      "compression": "none",
+      "contentSha256": "752f2d39bbe2466cc2caa2ea075db94db51e65ebcee66ab21458da276b5b36da",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/doe-oracle-corrupted.profile_2026-10-05_19-31-12.json",
+      "sha256": "752f2d39bbe2466cc2caa2ea075db94db51e65ebcee66ab21458da276b5b36da"
+    },
+    "raw/deployment-final/results/doe-positive.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "760308e21b98e5f7f2a5b9df5b3158078ab565b609753943a5c312b95eeac7c3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/doe-positive.log",
+      "sha256": "942ec1c0b85df74eeff10449d49ae443488577b606fb9968c6844282fc7c64ce"
+    },
+    "raw/deployment-final/results/doe-positive.observations": {
+      "compression": "none",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/doe-positive.observations",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw/deployment-final/results/doe-positive.profile_2026-10-05_19-31-12.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "2d5ffed67d20fea91f5e6a5bb7d119ae080ae3c2d271f806d4002a9c2d88d38e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/doe-positive.profile_2026-10-05_19-31-12.json",
+      "sha256": "e2ef47f42b0894b8b29b306d893d0a9221226ec01979787910b158c5a0a99958"
+    },
+    "raw/deployment-final/results/replay.json": {
+      "compression": "none",
+      "contentSha256": "8ce369aace8559f03d4bec3a5855c9ab9353f1881f377050ab4cb223bcafe4d6",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/deployment-final/results/replay.json",
+      "sha256": "8ce369aace8559f03d4bec3a5855c9ab9353f1881f377050ab4cb223bcafe4d6"
+    },
+    "raw/doc-links.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "6fb836ff09dd03dfee8cf2e46eaaa899995d6f2bae645563568232c2ec053015",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doc-links.log",
+      "sha256": "712fbcae37fa2406fb2df176ae6883046d9a5ebc372d5ecce8cafbca7f539ca9"
+    },
+    "raw/doe-application-diagnostic.json": {
+      "compression": "none",
+      "contentSha256": "92a777c77a64f7bf812f3b208bb997e67f41c4c91f0eb59709e42a59bf07d4be",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-application-diagnostic.json",
+      "sha256": "92a777c77a64f7bf812f3b208bb997e67f41c4c91f0eb59709e42a59bf07d4be"
+    },
+    "raw/doe-application-diagnostic.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "6e89fc5b1c2e60bb5669aecc802f971a33218be19316f8c063b387e9500d76d1",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-application-diagnostic.log",
+      "sha256": "fc571e9e738295a114220941534a5e7351040d9342b56e0a92726ec0de630896"
+    },
+    "raw/doe-application-diagnostic.profile_2026-10-05_19-09-29.json": {
+      "compression": "none",
+      "contentSha256": "5e58ca457a1baaf01521e22ce0b24889458fd3bd46b382ce5bff34a9ff4ef4bd",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-application-diagnostic.profile_2026-10-05_19-09-29.json",
+      "sha256": "5e58ca457a1baaf01521e22ce0b24889458fd3bd46b382ce5bff34a9ff4ef4bd"
+    },
+    "raw/doe-application-qualified.json": {
+      "compression": "none",
+      "contentSha256": "4ee5712ee88488ce277e4761f7788c3b01f3c1ff144b8e45b4b7095a8dedf463",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-application-qualified.json",
+      "sha256": "4ee5712ee88488ce277e4761f7788c3b01f3c1ff144b8e45b4b7095a8dedf463"
+    },
+    "raw/doe-application-qualified.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "41ab8a4e12cf856e4939eb400a10b6e5913e15972bdd2d771a290ba7d52a3579",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-application-qualified.log",
+      "sha256": "4f9d9bd37e8397928fa6b2a1d05cbcf76d701344732f5045b0d00c3e4538d4a9"
+    },
+    "raw/doe-application-qualified.profile_2026-10-05_19-07-07.json": {
+      "compression": "none",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-application-qualified.profile_2026-10-05_19-07-07.json",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw/doe-corrected-application.json": {
+      "compression": "none",
+      "contentSha256": "cbbb518fb23db3cca341e655b31a60b0859666f44eaf22571074f0e18d5cc9e2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-corrected-application.json",
+      "sha256": "cbbb518fb23db3cca341e655b31a60b0859666f44eaf22571074f0e18d5cc9e2"
+    },
+    "raw/doe-corrected-application.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "103447e7cb660feecc043a903ecb6d405d35dbc27f5134a1d7a03357579f1386",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-corrected-application.log",
+      "sha256": "41cf13b9445fe27fa6e920b593abd04d7d22f38695463790df73560bdb1319fa"
+    },
+    "raw/doe-corrected-application.profile_2026-10-05_19-13-55.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "9565e61133b3ec7ffdff3a1b1286e7bae1eb0117ebdf252f46a0b3718cd136fc",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-corrected-application.profile_2026-10-05_19-13-55.json",
+      "sha256": "f2a33dcbf6bc0d6af9f5d2352a9465672bac657f75649ccc709c28814733e148"
+    },
+    "raw/doe-disabled.json": {
+      "compression": "none",
+      "contentSha256": "ccc95433258d3823494ef8c6d03cf1ecf7e0dacea31672c3785408665bd988eb",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-disabled.json",
+      "sha256": "ccc95433258d3823494ef8c6d03cf1ecf7e0dacea31672c3785408665bd988eb"
+    },
+    "raw/doe-disabled.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "f4e190a3c647180d404dde258c328bc47d5a145123d16a739d6f024622da92a3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-disabled.log",
+      "sha256": "47da190893f135aeb0cfbb3092053ff5703347dc78b60a1ad7ef36658fa7b5df"
+    },
+    "raw/doe-matched-disabled.json": {
+      "compression": "none",
+      "contentSha256": "445d147fe6d48c0279b625e756395d96144b63c130b0305c89fd1e2c98967825",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-matched-disabled.json",
+      "sha256": "445d147fe6d48c0279b625e756395d96144b63c130b0305c89fd1e2c98967825"
+    },
+    "raw/doe-matched-disabled.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "f4e190a3c647180d404dde258c328bc47d5a145123d16a739d6f024622da92a3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-matched-disabled.log",
+      "sha256": "47da190893f135aeb0cfbb3092053ff5703347dc78b60a1ad7ef36658fa7b5df"
+    },
+    "raw/doe-matched.json": {
+      "compression": "none",
+      "contentSha256": "9e992ae66a34d9406d601814ba06151319eef16b2908214cd94cac6cf5d678ec",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-matched.json",
+      "sha256": "9e992ae66a34d9406d601814ba06151319eef16b2908214cd94cac6cf5d678ec"
+    },
+    "raw/doe-matched.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "dfcd4388ec350a7bfd1ea8553179d9e177e116590c37c159475c44d36b7b01fe",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-matched.log",
+      "sha256": "60420463b8251c6010c9f6e8561df9f5c3cf9410543219b6a062c02c56ee743a"
+    },
+    "raw/doe-matched.profile_2026-10-05_19-18-54.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "a35dd41da9f881595d4b6112a1b09f19525b2940b73b0d158c62e960f4a68f6a",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-matched.profile_2026-10-05_19-18-54.json",
+      "sha256": "0a0c9711c6d5c0bbc12d948803d8a98e05a4e3be806a2e9affd9477977e9d50c"
+    },
+    "raw/doe-owned.json": {
+      "compression": "none",
+      "contentSha256": "6291c59866a5b25536cb41513259b60716ed1ea88c811975153681ce6b1fd719",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-owned.json",
+      "sha256": "6291c59866a5b25536cb41513259b60716ed1ea88c811975153681ce6b1fd719"
+    },
+    "raw/doe-owned.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "638acfe5453e9a36b529d383786e0ead1bedc354b34f765c7a67a6afc8a6ca8e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-owned.log",
+      "sha256": "33f2163c2d77a558a175836d301085726ca34ee6aaf1aa0af05afaa5fc1b71d0"
+    },
+    "raw/doe-owned.profile_2026-10-05_19-15-45.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "4ddcb156ad992208a65306c9f4105b70daae0836e04298e63d7b0bcd8786d423",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doe-owned.profile_2026-10-05_19-15-45.json",
+      "sha256": "57d6cfd121f76096649427f444d73f832b49a8b118cb15284c69abc9e1eb74ba"
+    },
+    "raw/doppler-delivery.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "323ce256f86351da3f97647f50badbeec6c3ea0e1e4b7dd6c2f8320c19114afc",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-delivery.log",
+      "sha256": "d99b4e3ca3c1b2a831b7a38244bbd86bb31623ff0af4b080de75924b8a8e13e1"
+    },
+    "raw/doppler-offline-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "36185e11453ddd6e961cd984494b2ff63e2e9eb57ce80a021b23dd98c7ae910f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final.log",
+      "sha256": "db8ae0c4f16b1606ac001c4542055a43b94e0c2a1db3d726eeb8be149c341ca6"
+    },
+    "raw/doppler-offline-final/contract.json": {
+      "compression": "none",
+      "contentSha256": "cbbabc1979812c10e08eb07ae66e8f0d68c82563fc331b61504baba7921d13a2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/contract.json",
+      "sha256": "cbbabc1979812c10e08eb07ae66e8f0d68c82563fc331b61504baba7921d13a2"
+    },
+    "raw/doppler-offline-final/delivery.json": {
+      "compression": "none",
+      "contentSha256": "6de335554daa6960d58c85a81c98cd0e05d70b1e74135bb4a9382b8e1fb09072",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/delivery.json",
+      "sha256": "6de335554daa6960d58c85a81c98cd0e05d70b1e74135bb4a9382b8e1fb09072"
+    },
+    "raw/doppler-offline-final/installation.json": {
+      "compression": "none",
+      "contentSha256": "4d74d3fba5203ff7bd1110f76df25d62871309e3c362e08bf3ff51809fe835b8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/installation.json",
+      "sha256": "4d74d3fba5203ff7bd1110f76df25d62871309e3c362e08bf3ff51809fe835b8"
+    },
+    "raw/doppler-offline-final/inventory.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "79e9d7a55a044ee93dbafb935723a39b49863970659a5cfcd74b9b1be210bc5f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/inventory.json",
+      "sha256": "fdafd6cfb7ae59b2130118e8284aaf3e32b9dee8d910037d106d5dad555335eb"
+    },
+    "raw/doppler-offline-final/package-lock.json": {
+      "compression": "none",
+      "contentSha256": "5bfa7c12218689d6dac1de6348e171c1088781f3f5c3c0226154f78d905cb1ad",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/package-lock.json",
+      "sha256": "5bfa7c12218689d6dac1de6348e171c1088781f3f5c3c0226154f78d905cb1ad"
+    },
+    "raw/doppler-offline-final/package.json": {
+      "compression": "none",
+      "contentSha256": "c03652232a880a58f241c42c15c391c19a255bf10de4d18b8dd817520bb9d91f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/package.json",
+      "sha256": "c03652232a880a58f241c42c15c391c19a255bf10de4d18b8dd817520bb9d91f"
+    },
+    "raw/doppler-offline-final/providers.json": {
+      "compression": "none",
+      "contentSha256": "2fe7962d993959ffd995ba8ed0c432fbf5311ae59c7049e8975d2fb715e008d7",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/providers.json",
+      "sha256": "2fe7962d993959ffd995ba8ed0c432fbf5311ae59c7049e8975d2fb715e008d7"
+    },
+    "raw/doppler-offline-final/reference.json": {
+      "compression": "none",
+      "contentSha256": "8d5f7a3421b84340bee0e044663c02e499075b4b890d6abc2ef43dc9e7c0a88b",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/reference.json",
+      "sha256": "8d5f7a3421b84340bee0e044663c02e499075b4b890d6abc2ef43dc9e7c0a88b"
+    },
+    "raw/doppler-offline-final/results/dawn-control-audit.json": {
+      "compression": "none",
+      "contentSha256": "4a1d046f942592287680f593bc25d152ec5fe235819ba43d50e8fa71ebc01af9",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/dawn-control-audit.json",
+      "sha256": "4a1d046f942592287680f593bc25d152ec5fe235819ba43d50e8fa71ebc01af9"
+    },
+    "raw/doppler-offline-final/results/dawn-control.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "39098323dedfcb0e276e199e311ee37d4518889ec3f1a7e815ceafda07c0a26d",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/dawn-control.json",
+      "sha256": "12cbb448e3f5d2dd7b5cec0a159d3e7a0f5441b93008f8c6a2fb63084b95845f"
+    },
+    "raw/doppler-offline-final/results/dawn-control.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "203f08bfa62ab7c2c05a804bf57c3fcf5fcd238f8d2a587f034935425f7cefd5",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/dawn-control.log",
+      "sha256": "d4ef2094107485090bcbd8171c020b0590299f798ae56ad595abc9c966a670dc"
+    },
+    "raw/doppler-offline-final/results/doe-first-audit.json": {
+      "compression": "none",
+      "contentSha256": "b29edc96d61219bb09a896d9d0d0ab96afd7ef8c29cbb7ed4a131914a0d15e56",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/doe-first-audit.json",
+      "sha256": "b29edc96d61219bb09a896d9d0d0ab96afd7ef8c29cbb7ed4a131914a0d15e56"
+    },
+    "raw/doppler-offline-final/results/doe-first.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "710526241911f7acfa936009233b6cc5261746ef3e84b2aa670568f08e121ee9",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/doe-first.json",
+      "sha256": "41f6cbf20c6cdf5424075ab5a58786435347d7fbc6af463ed2d2484810c72371"
+    },
+    "raw/doppler-offline-final/results/doe-first.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "b655a04b71513f0474bce52320627ca30028f2f7561cee47d47d34d066caa925",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/doe-first.log",
+      "sha256": "aae9b221e6f0a0b34386d92eee9315733773411077a533a138d651e7fdbf36ef"
+    },
+    "raw/doppler-offline-final/results/doe-reopen-audit.json": {
+      "compression": "none",
+      "contentSha256": "edded20c61bcb26643f27a1e04b09273ef5069c21617239610821d5bd99ceef2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/doe-reopen-audit.json",
+      "sha256": "edded20c61bcb26643f27a1e04b09273ef5069c21617239610821d5bd99ceef2"
+    },
+    "raw/doppler-offline-final/results/doe-reopen.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "854d623bd6879676e2b931d2832ab387764e9ad633d32d724efe5bb6b71eb137",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/doe-reopen.json",
+      "sha256": "6a921821a33c28d8649bf154eb58c356a1b2321ea8834bdeb7af71ba9a571318"
+    },
+    "raw/doppler-offline-final/results/doe-reopen.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "b3526ee60cfbfb4bea68fe8015741a004880091a885dafef919580bfe1b6adca",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/doe-reopen.log",
+      "sha256": "d284ad34f3cdc87acb4c894173fc5f75e6d18bd0fb17246f7def831609e8b6cd"
+    },
+    "raw/doppler-offline-final/results/incompatible-package-audit.json": {
+      "compression": "none",
+      "contentSha256": "09aa2debb4a1b91771becec2e3d6be8f8f5e42140f305ff2eaaa8e20f559ba61",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/incompatible-package-audit.json",
+      "sha256": "09aa2debb4a1b91771becec2e3d6be8f8f5e42140f305ff2eaaa8e20f559ba61"
+    },
+    "raw/doppler-offline-final/results/incompatible-package.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "0055eac0e9188ff759e246359e0dcc3507825e2c8ebb2acec63662dbc9688ec0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/incompatible-package.json",
+      "sha256": "098e8e79771fee7b287353e45ee451d4ece48e2c8b6b00e8050bddd9a65c09aa"
+    },
+    "raw/doppler-offline-final/results/incompatible-package.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "eb78e5145d88f7369089dba09fa9e78528f593090baf25d379cad707c6adc6a2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/incompatible-package.log",
+      "sha256": "42c907a78337611845eeef0fb5942c725e9bcaac0b09adcc0e6fbc64795e1ce3"
+    },
+    "raw/doppler-offline-final/results/missing-library-audit.json": {
+      "compression": "none",
+      "contentSha256": "a446360e3a4663cb8fc1365fced9f4e2b265e2a98b7cb254a05af7e2ed74c30f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/missing-library-audit.json",
+      "sha256": "a446360e3a4663cb8fc1365fced9f4e2b265e2a98b7cb254a05af7e2ed74c30f"
+    },
+    "raw/doppler-offline-final/results/missing-library.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "883f3aee0b3104df17e8f84cfbc5fa35b8542e1e63ef5ff368d080799333e90c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/missing-library.log",
+      "sha256": "45f9c6366cbb75dd2cd5251301c7826a3d134b9b3d6d774729429cc4b4988872"
+    },
+    "raw/doppler-offline-final/results/missing-model-audit.json": {
+      "compression": "none",
+      "contentSha256": "b1593336ddcf691c6ac03cb47727b7d941f00019ee94176ba46bbd641c0250d5",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/missing-model-audit.json",
+      "sha256": "b1593336ddcf691c6ac03cb47727b7d941f00019ee94176ba46bbd641c0250d5"
+    },
+    "raw/doppler-offline-final/results/missing-model.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "262265b0e0cd8a3d8522a29e4631d09eb31f8e1f8a26f8f3fda98b19950a9294",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/missing-model.log",
+      "sha256": "274c0855c49c6a3327523280188a8b537a3a9cbb03baee18c1cc8fb3982f4d78"
+    },
+    "raw/doppler-offline-final/results/offline-install.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "b53f412f1debb653c61b31bdb347bc5c0315117101c2932e7febc3186dd16049",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/offline-install.log",
+      "sha256": "11507b714e1eb24a849caf23d4d79ca7be6979f0999a03d2948a74b8f85aa7b3"
+    },
+    "raw/doppler-offline-final/results/prepare-offline.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "a62bbf9caaae55d4f882027007d239347caf6e03073c7ee47290ccddee7461ca",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/prepare-offline.log",
+      "sha256": "1eba6e3afac0a148a3feea6926ddbbddfce2351bebb772b8c6fdf4c48f8b20ec"
+    },
+    "raw/doppler-offline-final/results/summary.json": {
+      "compression": "none",
+      "contentSha256": "c747e64d59fba1161cf1cc7e282a0b1d324315566be505b9bb9025e9b7e9b83d",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/results/summary.json",
+      "sha256": "c747e64d59fba1161cf1cc7e282a0b1d324315566be505b9bb9025e9b7e9b83d"
+    },
+    "raw/doppler-offline-qualified.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "be930036ff7f7de3ec5c5e45aad28574ba2f2c7b756adfef27042ffdee988853",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-qualified.log",
+      "sha256": "28f39dd5eec49ead53377a99f9b59605b4749631afab880fed2882fd36c0a126"
+    },
+    "raw/evidence-tests-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "fe7648fc21ac591de5d68e0294cea7392fbff6521d52d4916d1c84ce6859e387",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/evidence-tests-final.log",
+      "sha256": "01729dfe376147d44f389ef77543c2fc4a6da3ba7e1253f41e58f145bf9f4821"
+    },
+    "raw/execution-harness/application-provider.h": {
+      "compression": "none",
+      "contentSha256": "e0efd795836f6b2941b31e5ef91799455c7f7d32d720e32e4f191763da619943",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/application-provider.h",
+      "sha256": "e0efd795836f6b2941b31e5ef91799455c7f7d32d720e32e4f191763da619943"
+    },
+    "raw/execution-harness/buffer-retirement.mjs": {
+      "compression": "none",
+      "contentSha256": "74c990b2a837eea8ce6d2046dbd1bc8748922c61f643e873d89dccebe346f226",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/buffer-retirement.mjs",
+      "sha256": "74c990b2a837eea8ce6d2046dbd1bc8748922c61f643e873d89dccebe346f226"
+    },
+    "raw/execution-harness/build_control.py": {
+      "compression": "none",
+      "contentSha256": "d93fa16e0df4cee94c936d8e58742845da4f8202dd2b8b3add0130ff6430f5b2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/build_control.py",
+      "sha256": "d93fa16e0df4cee94c936d8e58742845da4f8202dd2b8b3add0130ff6430f5b2"
+    },
+    "raw/execution-harness/bundle.py": {
+      "compression": "none",
+      "contentSha256": "dca16bba12eb600a569cde7b087b24bece3c7e6bfd07a225ac56840e676a96ba",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/bundle.py",
+      "sha256": "dca16bba12eb600a569cde7b087b24bece3c7e6bfd07a225ac56840e676a96ba"
+    },
+    "raw/execution-harness/integer-dot.mjs": {
+      "compression": "none",
+      "contentSha256": "36ac29aab92302487ba871919f13f2f8255b3436df4777075e4e5cfdf05b8de3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/integer-dot.mjs",
+      "sha256": "36ac29aab92302487ba871919f13f2f8255b3436df4777075e4e5cfdf05b8de3"
+    },
+    "raw/execution-harness/measure.py": {
+      "compression": "none",
+      "contentSha256": "ffd7a3cbdd72ae004373b0195d36d12a774409ca5ce449f20185ffd34b14dc2e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/measure.py",
+      "sha256": "ffd7a3cbdd72ae004373b0195d36d12a774409ca5ce449f20185ffd34b14dc2e"
+    },
+    "raw/execution-harness/prepare.py": {
+      "compression": "none",
+      "contentSha256": "03ae3c933a72af9ef898a184e3b0a0d8486af54b0be766822652a56d857ae994",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/prepare.py",
+      "sha256": "03ae3c933a72af9ef898a184e3b0a0d8486af54b0be766822652a56d857ae994"
+    },
+    "raw/execution-harness/recovery-control.c": {
+      "compression": "none",
+      "contentSha256": "05129f86495e0cc5245b1f2740953c08166ec581ab8b3794edbb10950bba42ee",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/recovery-control.c",
+      "sha256": "05129f86495e0cc5245b1f2740953c08166ec581ab8b3794edbb10950bba42ee"
+    },
+    "raw/execution-harness/reference.py": {
+      "compression": "none",
+      "contentSha256": "8bf1835a35778e5df6c6525b44113e5210659c3206e5d4c09a31cd8c9b2b88db",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/reference.py",
+      "sha256": "8bf1835a35778e5df6c6525b44113e5210659c3206e5d4c09a31cd8c9b2b88db"
+    },
+    "raw/execution-harness/reference_softmax.py": {
+      "compression": "none",
+      "contentSha256": "6763f506b8dc97c506d845fb47dd738fbb4454df19918ec7f78fa94c23b0f1f4",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/reference_softmax.py",
+      "sha256": "6763f506b8dc97c506d845fb47dd738fbb4454df19918ec7f78fa94c23b0f1f4"
+    },
+    "raw/execution-harness/run_application.py": {
+      "compression": "none",
+      "contentSha256": "17161d8a3d90e075fef11802f90e32d784714e235e0a384c9f62c48489d9f5a3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/run_application.py",
+      "sha256": "17161d8a3d90e075fef11802f90e32d784714e235e0a384c9f62c48489d9f5a3"
+    },
+    "raw/execution-harness/safety.py": {
+      "compression": "none",
+      "contentSha256": "729c279e56d2a7ecca9efc4a4b81f4c51588d06acf4faafa3731f18985af625f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/execution-harness/safety.py",
+      "sha256": "729c279e56d2a7ecca9efc4a4b81f4c51588d06acf4faafa3731f18985af625f"
+    },
+    "raw/historical-source/bench/external-projects/onnx-webgpu-substitution/build_adapter.py": {
+      "compression": "none",
+      "contentSha256": "27944a6dd2c130ecaa2e8e5216a400b7647e4b52fc653ba81746a6293565af2d",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/bench/external-projects/onnx-webgpu-substitution/build_adapter.py",
+      "sha256": "27944a6dd2c130ecaa2e8e5216a400b7647e4b52fc653ba81746a6293565af2d"
+    },
+    "raw/historical-source/bench/external-projects/onnx-webgpu-substitution/default-external-context.patch": {
+      "compression": "none",
+      "contentSha256": "4b29f27ed212b970535722ce5903380b989a26e1520a5aff1f11248a68f223d6",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/bench/external-projects/onnx-webgpu-substitution/default-external-context.patch",
+      "sha256": "4b29f27ed212b970535722ce5903380b989a26e1520a5aff1f11248a68f223d6"
+    },
+    "raw/historical-source/bench/external-projects/onnx-webgpu-substitution/external-context.c": {
+      "compression": "none",
+      "contentSha256": "66dab5774258ee32fb1f154aa5d8c283c2c7e648d3bcae65b9081407b8f7a75f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/bench/external-projects/onnx-webgpu-substitution/external-context.c",
+      "sha256": "66dab5774258ee32fb1f154aa5d8c283c2c7e648d3bcae65b9081407b8f7a75f"
+    },
+    "raw/historical-source/bench/external-projects/onnx-webgpu-substitution/run_adapter.py": {
+      "compression": "none",
+      "contentSha256": "f98d6ad2c60de629da23a47e322742e12eed5717fe732f8851160335122f5a57",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/bench/external-projects/onnx-webgpu-substitution/run_adapter.py",
+      "sha256": "f98d6ad2c60de629da23a47e322742e12eed5717fe732f8851160335122f5a57"
+    },
+    "raw/historical-source/bench/external-projects/onnx-webgpu-substitution/verify_adapter.py": {
+      "compression": "none",
+      "contentSha256": "2abfaf0399a89ca6bd8a31ca56e8c7e4401d98f988d2fe20aad671a31139f8c7",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/bench/external-projects/onnx-webgpu-substitution/verify_adapter.py",
+      "sha256": "2abfaf0399a89ca6bd8a31ca56e8c7e4401d98f988d2fe20aad671a31139f8c7"
+    },
+    "raw/historical-source/config/doppler-generation.schema.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "c8f819ed39695075e4937af98200dc95141ca2ce0dd4179f39e138cdfb71ad1c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/config/doppler-generation.schema.json",
+      "sha256": "a418ec27609e4379f2284bda312f89e1fbc57a45044b373536f5eab7c850b4c2"
+    },
+    "raw/historical-source/config/doppler-installed-generation.schema.json": {
+      "compression": "none",
+      "contentSha256": "fd24e214aa346ddd6b871d36b741b0c3062a11185e356680c71524bd3f4ac378",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/config/doppler-installed-generation.schema.json",
+      "sha256": "fd24e214aa346ddd6b871d36b741b0c3062a11185e356680c71524bd3f4ac378"
+    },
+    "raw/historical-source/config/onnx-proc-adapter.schema.json": {
+      "compression": "none",
+      "contentSha256": "6902e4750409d2d0360d5cbea947aba2f263799f8570d1faa8990c79de582e65",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/config/onnx-proc-adapter.schema.json",
+      "sha256": "6902e4750409d2d0360d5cbea947aba2f263799f8570d1faa8990c79de582e65"
+    },
+    "raw/historical-source/runtime/bridge/dawn-proc-table/adapter.zig": {
+      "compression": "none",
+      "contentSha256": "7a94badc7bccb1344ca38f35e8eb7f23b3c73c5aebc9df9769018035e520f0bf",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/bridge/dawn-proc-table/adapter.zig",
+      "sha256": "7a94badc7bccb1344ca38f35e8eb7f23b3c73c5aebc9df9769018035e520f0bf"
+    },
+    "raw/historical-source/runtime/zig/source-layout.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "c81b0b166ed20fc7469c5b5ca548ee172e6582609c16535016fcbcfc08c1b9dd",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/zig/source-layout.json",
+      "sha256": "d12ed3ab9600f9420f3d27af46832b7ed624c35773cebccbe2180b2dc755404c"
+    },
+    "raw/historical-source/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig.gz": {
+      "compression": "gzip",
+      "contentSha256": "e12d83fdeb0c97135158c6395dccc5c26478b86596d380ea7821b33719a0cefe",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_fn.zig",
+      "sha256": "99c8c5258a26c953c5fef34d067c4aa5ee6906a6dc74f1914725bb8b13c60830"
+    },
+    "raw/historical-source/runtime/zig/src/dropin/wgpu_dropin_ext_a_exports.zig": {
+      "compression": "none",
+      "contentSha256": "d0db189371e49fed4357223d727f47b72decc950c9e01dd81956cce62e298e14",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/zig/src/dropin/wgpu_dropin_ext_a_exports.zig",
+      "sha256": "d0db189371e49fed4357223d727f47b72decc950c9e01dd81956cce62e298e14"
+    },
+    "raw/historical-source/runtime/zig/src/dropin/wgpu_dropin_ext_a_pipeline.zig.gz": {
+      "compression": "gzip",
+      "contentSha256": "53fa274b16434e1ec6f410e644018df62082c8b31ce86836179fbece4e482326",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/zig/src/dropin/wgpu_dropin_ext_a_pipeline.zig",
+      "sha256": "41aef5124d78f5e3f613eb87b03c09463c840a71d2cf38141ad3c9d4c013017b"
+    },
+    "raw/historical-source/runtime/zig/src/native/lifecycle/doe_instance_device_native.zig.gz": {
+      "compression": "gzip",
+      "contentSha256": "8999da41b5436d9d3fa75bc509aa62fabcb252e1022a8c5a7ee14d06bb07f6d0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/zig/src/native/lifecycle/doe_instance_device_native.zig",
+      "sha256": "8257dde3cef4057f3444ae5b8e53bbd26de64198c038486e7026bc009bb2777b"
+    },
+    "raw/historical-source/runtime/zig/src/native/support/doe_future_ids.zig": {
+      "compression": "none",
+      "contentSha256": "c54b82af6fac09537bdc9d493409f5f92069214c34baa17231c1c93edac071a5",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/zig/src/native/support/doe_future_ids.zig",
+      "sha256": "c54b82af6fac09537bdc9d493409f5f92069214c34baa17231c1c93edac071a5"
+    },
+    "raw/historical-source/runtime/zig/src/native/support/doe_native_object_types.zig.gz": {
+      "compression": "gzip",
+      "contentSha256": "f823274077b2d4e3413dc0323d40daad59bcc21955b8039d64466df3f40be7a1",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/zig/src/native/support/doe_native_object_types.zig",
+      "sha256": "c4de310a3db4926d9152cceed1fa524c3c21eeb84e738ea47cd7eadb17ab3405"
+    },
+    "raw/historical-source/runtime/zig/tests/core/native_shader_render_test.zig.gz": {
+      "compression": "gzip",
+      "contentSha256": "a20cae282daed1a8274ea4952e1d82598ff87861e60003a2559ebf8b24ce2429",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/zig/tests/core/native_shader_render_test.zig",
+      "sha256": "e5ee7d9878a04160e9cb5dd1ac670f1114a0370f86742a178201bcc58031a999"
+    },
+    "raw/historical-source/runtime/zig/tests/wgsl/emit_spirv_mixed_binary_test.zig": {
+      "compression": "none",
+      "contentSha256": "d1d0c5572ae400bb112be3e8effb8dac29cbd07c0d73ba3bd5d210bd8f6ecf1a",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/zig/tests/wgsl/emit_spirv_mixed_binary_test.zig",
+      "sha256": "d1d0c5572ae400bb112be3e8effb8dac29cbd07c0d73ba3bd5d210bd8f6ecf1a"
+    },
+    "raw/historical-source/runtime/zig/vendor/webgpu-headers/webgpu.h.gz": {
+      "compression": "gzip",
+      "contentSha256": "7691d76ceb67056f89e97b9ff0b62163eacf19a8e0e09a8fa7dbb32069b7978c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/runtime/zig/vendor/webgpu-headers/webgpu.h",
+      "sha256": "c4e7d35ebf274f02c31f666edbc41fb3626ac5d76bb8532a322ea624ef9f5dfc"
+    },
+    "raw/historical-source/verification.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "2967d98e44c3c4c88184ea6b1d87ed8dc6fc890c9c135de626c91cf52f4f36ca",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/historical-source/verification.log",
+      "sha256": "cb1e90dff4db77f6111784aee7ce0565ee52022f25ed88c4f4c7a3459f3cd035"
+    },
+    "raw/measurement-qualified/aa-first-00-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "3aa234f248dc5b43f2d21345c6dae61794a0d335ef2681c5fed08c49ed49b094",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-first-00-dawn.log",
+      "sha256": "5df9c846957fe98a8c6bfe8d3bc9e0d8c73063100e05d7f1ad9e5ccf98a5a85a"
+    },
+    "raw/measurement-qualified/aa-first-00-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "dea0a6ff2b2db029e3b41a5e66de386f4c6ecb988c96f31255ba9312581409f8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-first-00-dawn.observations",
+      "sha256": "dea0a6ff2b2db029e3b41a5e66de386f4c6ecb988c96f31255ba9312581409f8"
+    },
+    "raw/measurement-qualified/aa-first-01-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "57d52bdf39dfb768f8ef5efca120f85b2f360619bc46283435ec532ff3cd43dc",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-first-01-dawn.log",
+      "sha256": "e66a911caeed7f85f72201ee4470f71087bb424113934c49135af9a25f4ca399"
+    },
+    "raw/measurement-qualified/aa-first-01-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "faf1b63b9c46469e7f07476e415c57fd86988a3185f39e72a04e612f3e2b132f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-first-01-dawn.observations",
+      "sha256": "faf1b63b9c46469e7f07476e415c57fd86988a3185f39e72a04e612f3e2b132f"
+    },
+    "raw/measurement-qualified/aa-first-02-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3630db52be9c1480f7d7d8974e9859471508288e46147a289ad90fe841a1bdd",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-first-02-dawn.log",
+      "sha256": "b54518318ca251f64ee5518ce683ae697450f8ba44b62acb42f561db004d64b8"
+    },
+    "raw/measurement-qualified/aa-first-02-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "201f458e53455b6f807b47ba2b0807eeb9260480d6edac92b1c038dd61159196",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-first-02-dawn.observations",
+      "sha256": "201f458e53455b6f807b47ba2b0807eeb9260480d6edac92b1c038dd61159196"
+    },
+    "raw/measurement-qualified/aa-first-03-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "93f53e60b77a6ff77aef7dd315b3c0b78161da8d283ad92d6b6cf61580a3683c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-first-03-dawn.log",
+      "sha256": "e28b29a02a5abfb7adaf8a8df8e5e64438dbecc91e09b96800e39defd83ba5f6"
+    },
+    "raw/measurement-qualified/aa-first-03-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "3c7c8b6735ac31e1ecb002665ab8291d4aa92fd614a6c2f425a1aff180038777",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-first-03-dawn.observations",
+      "sha256": "3c7c8b6735ac31e1ecb002665ab8291d4aa92fd614a6c2f425a1aff180038777"
+    },
+    "raw/measurement-qualified/aa-second-00-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "4adccc7a4ee14d17f492be37019887d18659e2b42c6e70cd750f38f14b4ce17d",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-second-00-dawn.log",
+      "sha256": "23a66c879e9601ba2e4ff0c52c9f09bd536c9c43bcd6efa27eacaedde4f15b4e"
+    },
+    "raw/measurement-qualified/aa-second-00-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "90d5e0dbaf230b3ad35ba01167bc653fb62b872658a84fe78d2dabc7cfcb681f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-second-00-dawn.observations",
+      "sha256": "90d5e0dbaf230b3ad35ba01167bc653fb62b872658a84fe78d2dabc7cfcb681f"
+    },
+    "raw/measurement-qualified/aa-second-01-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "58beffeecb470fb6d646501f91f3a63a79eab8fac0b86718019a844601594bb7",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-second-01-dawn.log",
+      "sha256": "ebc2fe117dbd2b92cd7f5ef6a162f1d8e0caed54d9b2ca5307c557ac67886fab"
+    },
+    "raw/measurement-qualified/aa-second-01-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "ea2e8afa8095b4a141ba50af11a33cab59c25516c2c0c6ac5d9cb120dc289a72",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-second-01-dawn.observations",
+      "sha256": "ea2e8afa8095b4a141ba50af11a33cab59c25516c2c0c6ac5d9cb120dc289a72"
+    },
+    "raw/measurement-qualified/aa-second-02-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "89878f134f519b1a5764b404ad2b9e6e828aacaa241528f15c3788f87029d2b6",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-second-02-dawn.log",
+      "sha256": "7f65484fddc7aa294b738aa9ee4470d71c49864052b2bdba3856f58b94c1b51d"
+    },
+    "raw/measurement-qualified/aa-second-02-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "872eb9a010895ee4971a0aca1167f5b44a5b3a24c85f6f7b3b6e92dbc1085bdc",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-second-02-dawn.observations",
+      "sha256": "872eb9a010895ee4971a0aca1167f5b44a5b3a24c85f6f7b3b6e92dbc1085bdc"
+    },
+    "raw/measurement-qualified/aa-second-03-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "052659ddbe67ac4a7493cd99533fdd766d71792f9d4c98fbe12d92448976c57d",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-second-03-dawn.log",
+      "sha256": "000b46fae82bcf02c5472df39fb88e771f483c2b18b11ae07478ac21fb1c5993"
+    },
+    "raw/measurement-qualified/aa-second-03-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "de09dfcf0af218b95423f9c4f3a7f13a11b58513fde446b661078e8f699e96c7",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/aa-second-03-dawn.observations",
+      "sha256": "de09dfcf0af218b95423f9c4f3a7f13a11b58513fde446b661078e8f699e96c7"
+    },
+    "raw/measurement-qualified/cache-precondition-00-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "36994e8d4e30e7e4b88f5cce816b6060b66f547713cb86e0968809143973cef8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cache-precondition-00-dawn.log",
+      "sha256": "1de2290ba5e40d6d8c920a5c72ccebea9b28dcfb678b6703ba420793084c4599"
+    },
+    "raw/measurement-qualified/cache-precondition-00-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "65ef6ce253456ea5e56e2c8c5fc0a48dbb5e7177e1883d7350e9c5f25b6e9150",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cache-precondition-00-dawn.observations",
+      "sha256": "65ef6ce253456ea5e56e2c8c5fc0a48dbb5e7177e1883d7350e9c5f25b6e9150"
+    },
+    "raw/measurement-qualified/cache-precondition-00-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "167a85d74583373ac6ce330ef7f70ceb7f5f44d449ad02448d6fe54440e199c5",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cache-precondition-00-doe.log",
+      "sha256": "3ff6314e34304268c1387f0b570e70694eb4556df12599c05b26e643e59216ff"
+    },
+    "raw/measurement-qualified/cache-precondition-00-doe.observations": {
+      "compression": "none",
+      "contentSha256": "f7baa06d2fb640372f5833fbadcd32539b8372df94b0d301a0dd2b8863831ca0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cache-precondition-00-doe.observations",
+      "sha256": "f7baa06d2fb640372f5833fbadcd32539b8372df94b0d301a0dd2b8863831ca0"
+    },
+    "raw/measurement-qualified/cold-00-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "2d184b6c08053d39b9d4bdf8dbf877c49f535cbac774f078fd1b671851e03726",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-00-dawn.log",
+      "sha256": "ebd638c3a6dfb47c774f51306f45212db2e78fe836dd02bd2a48970e611d654d"
+    },
+    "raw/measurement-qualified/cold-00-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "1f901f57d4914c3a8917905f7a420cdf135dd06e2daa7a0ebf4fb01710cbed13",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-00-dawn.observations",
+      "sha256": "1f901f57d4914c3a8917905f7a420cdf135dd06e2daa7a0ebf4fb01710cbed13"
+    },
+    "raw/measurement-qualified/cold-00-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "a9fe78dd3b25a87ce1c5ba56bb546f56b83e418016bf46f6b245cff738913282",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-00-doe.log",
+      "sha256": "1aaca606028d377a24ed3abb4e6a67751339903e597b6903af01f1728206814a"
+    },
+    "raw/measurement-qualified/cold-00-doe.observations": {
+      "compression": "none",
+      "contentSha256": "cdf62b6bdda88fff632d5139aefbb567d6869c0e4cabce3793ef851028256793",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-00-doe.observations",
+      "sha256": "cdf62b6bdda88fff632d5139aefbb567d6869c0e4cabce3793ef851028256793"
+    },
+    "raw/measurement-qualified/cold-01-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "46100fddf24b3ee25398f9d7d32579cc5501acfba9a29ffd3c726e59f56691ff",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-01-dawn.log",
+      "sha256": "79a0c1f96123debb2104b1f028e423deb3226832dff2c560c80cf7a22be0cb50"
+    },
+    "raw/measurement-qualified/cold-01-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "37313f5655cc3ee1997c159f6dd99730c730f7301015f3c7709cbebf1dec2787",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-01-dawn.observations",
+      "sha256": "37313f5655cc3ee1997c159f6dd99730c730f7301015f3c7709cbebf1dec2787"
+    },
+    "raw/measurement-qualified/cold-01-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "bc0a67f3988314af045d35d7631541618298b505b7e39ff1999b71caf5dc2223",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-01-doe.log",
+      "sha256": "ee4538197479f8e5e616a48eed13958a726c3fb3fc3e560edb942a33368e3faf"
+    },
+    "raw/measurement-qualified/cold-01-doe.observations": {
+      "compression": "none",
+      "contentSha256": "2446477e2ad35b7572d48976491e031d78b62ff52b3e1ce5600da25e1bf72948",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-01-doe.observations",
+      "sha256": "2446477e2ad35b7572d48976491e031d78b62ff52b3e1ce5600da25e1bf72948"
+    },
+    "raw/measurement-qualified/cold-02-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "cddfa8a00e001caa8a0fd34d586b6962e623ff0bf161a412dad5498052891c2a",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-02-dawn.log",
+      "sha256": "41233d97d41ac42b5e87544a602767364b598965681127d75d919cf56e2a1847"
+    },
+    "raw/measurement-qualified/cold-02-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "1ccd8f946e57e5c5525ba0ecf44f692eb5abaee2c8c21e78642e25854c243eed",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-02-dawn.observations",
+      "sha256": "1ccd8f946e57e5c5525ba0ecf44f692eb5abaee2c8c21e78642e25854c243eed"
+    },
+    "raw/measurement-qualified/cold-02-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "593d9c3e37268b411840985e4001bc60165bc655deccf71c116f5cfc05a3092e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-02-doe.log",
+      "sha256": "8c3ac7af2834296b5ec49ca415109e547c70d7128c1ad645aa558422da01d928"
+    },
+    "raw/measurement-qualified/cold-02-doe.observations": {
+      "compression": "none",
+      "contentSha256": "4d37b7ccf1a01396b5790716920744d63460da25a14e9240d8ba9af1871eda6a",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-02-doe.observations",
+      "sha256": "4d37b7ccf1a01396b5790716920744d63460da25a14e9240d8ba9af1871eda6a"
+    },
+    "raw/measurement-qualified/cold-03-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "8b60b261ad390b410448559a3b2f07a30f2ab3b1d39229305b77b6c2c02dacff",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-03-dawn.log",
+      "sha256": "d869c4d73429d5e31ef04efe30125a922404a998064b76c1152ab8f5566c89ce"
+    },
+    "raw/measurement-qualified/cold-03-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "a17408518a0ffc252df2ce7553f6103f11185df05cb5eb6375d072b1b718a51c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-03-dawn.observations",
+      "sha256": "a17408518a0ffc252df2ce7553f6103f11185df05cb5eb6375d072b1b718a51c"
+    },
+    "raw/measurement-qualified/cold-03-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "807d68b86c9b1014252da6f6e10b412150386ebee7eea0a0905c5e2e15ad8230",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-03-doe.log",
+      "sha256": "f27ce74afbe4ee6a59871f251332f89913e2c43607c84b280c3224e983bdc3d7"
+    },
+    "raw/measurement-qualified/cold-03-doe.observations": {
+      "compression": "none",
+      "contentSha256": "43dc6b565ae1981b444151c391b0922eeb180e95b41506c43ac427ecf6c8595e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/cold-03-doe.observations",
+      "sha256": "43dc6b565ae1981b444151c391b0922eeb180e95b41506c43ac427ecf6c8595e"
+    },
+    "raw/measurement-qualified/measurement.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "410e612c11b68f1181319f908b3c6d31f48aad7f8162c6440434a64400571191",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/measurement.json",
+      "sha256": "4457ef4360b6529e57f55d8f183600e34cc625862f20bed5635ffba2bb7abced"
+    },
+    "raw/measurement-qualified/warm-00-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "38b40dc2cebd6f83ac23dca6efc73b9e318e0a5774ea2dc75633adf6737f5eca",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-00-dawn.log",
+      "sha256": "68c87eaf497da1e8085851f58fe6a03f1f49047d4bfcf6a0c1e516297daa3592"
+    },
+    "raw/measurement-qualified/warm-00-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "6714aa59273f9c7ef869fef4388681c4b7f6404141e079e6a7089fa62cc5b4ca",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-00-dawn.observations",
+      "sha256": "6714aa59273f9c7ef869fef4388681c4b7f6404141e079e6a7089fa62cc5b4ca"
+    },
+    "raw/measurement-qualified/warm-00-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "0cb6dd9b93672123c7581e2be2692b81cba803825a0796e8171953818509bd73",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-00-doe.log",
+      "sha256": "26063b8fd5a42cb0a01f04329f591b502761ef14f3bcb1e9b78cdac12b4763ba"
+    },
+    "raw/measurement-qualified/warm-00-doe.observations": {
+      "compression": "none",
+      "contentSha256": "819e1b9546d39db59b04cf6dbe32cfcbb581c54919cbed2d3f3ec8f32dc7d311",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-00-doe.observations",
+      "sha256": "819e1b9546d39db59b04cf6dbe32cfcbb581c54919cbed2d3f3ec8f32dc7d311"
+    },
+    "raw/measurement-qualified/warm-01-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "a405deec4f77421c942bfe9d6315549cf7ef0d4219e4eb626e4396ed7494e829",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-01-dawn.log",
+      "sha256": "c427b9161ab710ed55d6aca03717a00c12ce755eb1ce5d9de6c2d8b085954a05"
+    },
+    "raw/measurement-qualified/warm-01-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "5f180b97c52599d147eef26954aad39f757c9e8227ab6c50d9cd26d73fc150a5",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-01-dawn.observations",
+      "sha256": "5f180b97c52599d147eef26954aad39f757c9e8227ab6c50d9cd26d73fc150a5"
+    },
+    "raw/measurement-qualified/warm-01-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "305d598fd9ff526f555ec57e37e4b8723b396257df0f7958c595ac238d1ddfb0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-01-doe.log",
+      "sha256": "f7eef15e4fb76e121df9d7e569612a84f8e5f05909e4175c85b0409f5a70aae4"
+    },
+    "raw/measurement-qualified/warm-01-doe.observations": {
+      "compression": "none",
+      "contentSha256": "714cdbbc76e6023699a7f153efabcae07e0b2c56311478ef3b6317465ed251e0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-01-doe.observations",
+      "sha256": "714cdbbc76e6023699a7f153efabcae07e0b2c56311478ef3b6317465ed251e0"
+    },
+    "raw/measurement-qualified/warm-02-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "ca5b933091d7363829f8a40a5b77de973c9b681646a4c15edca59c9f743fe3cc",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-02-dawn.log",
+      "sha256": "8ef3b5bc5e376adfd61b469c97669b6da44abfc16d818fb4f06c1bbbb0f914a8"
+    },
+    "raw/measurement-qualified/warm-02-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "6021b3024f2f9115199762f0f93e01d4d987b4b37cb966f25060a9f84cd5f9c5",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-02-dawn.observations",
+      "sha256": "6021b3024f2f9115199762f0f93e01d4d987b4b37cb966f25060a9f84cd5f9c5"
+    },
+    "raw/measurement-qualified/warm-02-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "89a746884cfa25f447addc31e2680eb8bede6f1329b3ae252050461bfad47fd6",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-02-doe.log",
+      "sha256": "6f238527ede05924fe28b14dcff8f512c3e56772a08894794d44fa5f3bb57181"
+    },
+    "raw/measurement-qualified/warm-02-doe.observations": {
+      "compression": "none",
+      "contentSha256": "e82360aafb5b7942de1dd748d8192193fbae893027017c0a8ceb98a260be4322",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-02-doe.observations",
+      "sha256": "e82360aafb5b7942de1dd748d8192193fbae893027017c0a8ceb98a260be4322"
+    },
+    "raw/measurement-qualified/warm-03-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "8218d0e1a7340e2a7331fea4b560d27b19f58fe98d58d0af19131c8a4601880b",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-03-dawn.log",
+      "sha256": "8608552c11132515b00f5d092c4fa76e39513445b31a404dce1937272b877784"
+    },
+    "raw/measurement-qualified/warm-03-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "69bbe08e1aef9d6326d7a0d9ffd09c5a3f2850a0992795cae6a6ce3b45585146",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-03-dawn.observations",
+      "sha256": "69bbe08e1aef9d6326d7a0d9ffd09c5a3f2850a0992795cae6a6ce3b45585146"
+    },
+    "raw/measurement-qualified/warm-03-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "189740b7674e13674c60f0038b2bf83b2a4b2c5897b28246d172e6c01ec3e4a1",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-03-doe.log",
+      "sha256": "e68ded2f5ca6c8b49fb35dd9922a2af277664225c79ffba385f927b94f26d821"
+    },
+    "raw/measurement-qualified/warm-03-doe.observations": {
+      "compression": "none",
+      "contentSha256": "d4434525c32c01aa468c18ae7fdb124374e686537da2a8aa3702c81ac75fdc19",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-03-doe.observations",
+      "sha256": "d4434525c32c01aa468c18ae7fdb124374e686537da2a8aa3702c81ac75fdc19"
+    },
+    "raw/measurement-qualified/warm-04-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "d046fd88e9d2d478f90fc27d1f078c3111e51ebe501199649f138be817c67ec8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-04-dawn.log",
+      "sha256": "747aa9fbe25a8dc82df33fa3bb34b161c88653ff856d6f88d4853da8999ba1bd"
+    },
+    "raw/measurement-qualified/warm-04-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "68eefaa38333cc6061d50a07656503af9734acf143faff14d2b8522b48e12afe",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-04-dawn.observations",
+      "sha256": "68eefaa38333cc6061d50a07656503af9734acf143faff14d2b8522b48e12afe"
+    },
+    "raw/measurement-qualified/warm-04-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "17cf6de25d7cf5568c1789bc50912d1175839e6b55af664c8e3c5c3ecb4776d3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-04-doe.log",
+      "sha256": "d7e27a99111497f41fdcb3615034690614c8cea89b9617394ce071cf3b5ce500"
+    },
+    "raw/measurement-qualified/warm-04-doe.observations": {
+      "compression": "none",
+      "contentSha256": "c56431db5c7523a29d6607362084e59d7eb212c398963189859bc35c6ac5f724",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-04-doe.observations",
+      "sha256": "c56431db5c7523a29d6607362084e59d7eb212c398963189859bc35c6ac5f724"
+    },
+    "raw/measurement-qualified/warm-05-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "882e5384d53d3a68d58a2566a3239af082ecd9e78886ce35ce4a0ba60567e61e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-05-dawn.log",
+      "sha256": "0f6ede2eff37a8313caea7d3e87b3ab307b2b40d8fb18c625bee5188792f8e7d"
+    },
+    "raw/measurement-qualified/warm-05-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "263d22137dc57366dc6dd2e6264a2aa7b35211cf71bace74bcf5dab5e0aaa562",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-05-dawn.observations",
+      "sha256": "263d22137dc57366dc6dd2e6264a2aa7b35211cf71bace74bcf5dab5e0aaa562"
+    },
+    "raw/measurement-qualified/warm-05-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "70c2d42661df7616fb5bd6daeb8434d70f0ab448a5a393611e9a632bc2afd50e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-05-doe.log",
+      "sha256": "f74ccbc4f26762078eb659b40e56ab3f6177b238848612b58b45154b89dcbb08"
+    },
+    "raw/measurement-qualified/warm-05-doe.observations": {
+      "compression": "none",
+      "contentSha256": "399cf4c6b7949afea450be525dba5b40e4bc10d07766dda94d0eb0529a2b9152",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-05-doe.observations",
+      "sha256": "399cf4c6b7949afea450be525dba5b40e4bc10d07766dda94d0eb0529a2b9152"
+    },
+    "raw/measurement-qualified/warm-06-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "3a174537616b3d9cbc895be75e4be537ec41cb032c0f63dd9fb62e2ef88a947f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-06-dawn.log",
+      "sha256": "93a31bf09c1f0bbdeda8787d4b5d9fb9a950403e4698c7308d9ee74e99b0467c"
+    },
+    "raw/measurement-qualified/warm-06-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "73e1760500efe9d83f05ed90b3260dafc85834d78b84b11c199e0aabb15d9953",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-06-dawn.observations",
+      "sha256": "73e1760500efe9d83f05ed90b3260dafc85834d78b84b11c199e0aabb15d9953"
+    },
+    "raw/measurement-qualified/warm-06-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "28d43ecb81a921c8811937fe53735b56ecf5a2ea60f41132196e736db0826bf8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-06-doe.log",
+      "sha256": "ccc79352b5dd8b8bf3c0b7b9da203a3a9f69a95bbe08afa2c64996f5d295f1c2"
+    },
+    "raw/measurement-qualified/warm-06-doe.observations": {
+      "compression": "none",
+      "contentSha256": "2c2f7491411901e4eba1b36951ffa7091042ad1ff15a033e0e8ab9b7b7880084",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-06-doe.observations",
+      "sha256": "2c2f7491411901e4eba1b36951ffa7091042ad1ff15a033e0e8ab9b7b7880084"
+    },
+    "raw/measurement-qualified/warm-07-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "6a6d4d28e9ca4b719c370783c8f29e10e10f39e2bdde8627bd4d7b382d44b695",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-07-dawn.log",
+      "sha256": "4e5c041823ffe03efdfc00ec9d1e34c38ffcc84feec337e7f87f66e00969ae80"
+    },
+    "raw/measurement-qualified/warm-07-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "2b70432edf707948202b9cd0291d5ffd013641dc7aea12dae3bb863d51a87284",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-07-dawn.observations",
+      "sha256": "2b70432edf707948202b9cd0291d5ffd013641dc7aea12dae3bb863d51a87284"
+    },
+    "raw/measurement-qualified/warm-07-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "b1e1d5d4cc86197327d65becd53daafa88524816a9cd10490ac005a5fddad92e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-07-doe.log",
+      "sha256": "fa7f178c7355e7e179b36eefd2159477558fec327b9904cdfb63db11aaee1672"
+    },
+    "raw/measurement-qualified/warm-07-doe.observations": {
+      "compression": "none",
+      "contentSha256": "512ec9a929216d8634b0f730a0691eab011d8403a318f1177e933aa6e7bbdf51",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-qualified/warm-07-doe.observations",
+      "sha256": "512ec9a929216d8634b0f730a0691eab011d8403a318f1177e933aa6e7bbdf51"
+    },
+    "raw/measurement-run.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement-run.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/measurement/aa-first-00-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b7d30732b3363de8d79ce6b159a7433adf5932fff153a84555e1a60d862053",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-first-00-dawn.log",
+      "sha256": "10999fa0c91e83d21b24ac8616426508ca37487265ecf4e4fee765fb937c8cff"
+    },
+    "raw/measurement/aa-first-00-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "fa778474c0da0264e63378c847879d4d37679ddc114946f74817af5b620184b4",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-first-00-dawn.observations",
+      "sha256": "fa778474c0da0264e63378c847879d4d37679ddc114946f74817af5b620184b4"
+    },
+    "raw/measurement/aa-first-01-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "fd5e79a552881ee77ce150860c4fb53d8161d334913505b0fa068ac9ce9d76a0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-first-01-dawn.log",
+      "sha256": "80c5565be69f22e05ca2b865ae2aa14f8501e465c82106f005a8d5f1b420d0cb"
+    },
+    "raw/measurement/aa-first-01-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "ce4126920514ce48b990f14e9ade6ab9fbf95c1643373421055a17f89f346150",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-first-01-dawn.observations",
+      "sha256": "ce4126920514ce48b990f14e9ade6ab9fbf95c1643373421055a17f89f346150"
+    },
+    "raw/measurement/aa-first-02-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "f8e089297a31f8415ce4512d63e46276f11f0511ec35252c7db090c18b9c9fc1",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-first-02-dawn.log",
+      "sha256": "73074a6dbf990dca37e4d8051f1b83779989298ee8914207ade0d507efd737bc"
+    },
+    "raw/measurement/aa-first-02-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "4e79bb7235ca77e9f9936a2ac33685d9c82c1ca401976f9f82cf106ec5f0d438",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-first-02-dawn.observations",
+      "sha256": "4e79bb7235ca77e9f9936a2ac33685d9c82c1ca401976f9f82cf106ec5f0d438"
+    },
+    "raw/measurement/aa-first-03-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "f2b0994b821069da6172f5bbea31fddc048b756ff19727a467ad1aeb2cfba5f5",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-first-03-dawn.log",
+      "sha256": "e3918bff62c39fa7b4580b9e459abdc06604a2a25862c7e83dbe0e89384f003d"
+    },
+    "raw/measurement/aa-first-03-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "d9096f19e6c50e7176ebed30206f8bb8dd0c5746ecff4b8b4c19f834166a0391",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-first-03-dawn.observations",
+      "sha256": "d9096f19e6c50e7176ebed30206f8bb8dd0c5746ecff4b8b4c19f834166a0391"
+    },
+    "raw/measurement/aa-second-00-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "64212c0c4f686ec0777c43da93c5a1c08e2df42ca955055991027d1432d45c06",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-second-00-dawn.log",
+      "sha256": "99362f748a85230eb8421a7803d05eab95bee0bf4c8cc66fcb26141b4e947e78"
+    },
+    "raw/measurement/aa-second-00-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "65d20bf6b4303c94ef7a07c7d5b664e21be1ebf839e5df5c6dcd66339ce639d0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-second-00-dawn.observations",
+      "sha256": "65d20bf6b4303c94ef7a07c7d5b664e21be1ebf839e5df5c6dcd66339ce639d0"
+    },
+    "raw/measurement/aa-second-01-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "a8f11ea526b35c7569ee0400ba4711aa55fdc8a01c3389844cf37404497ba090",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-second-01-dawn.log",
+      "sha256": "bedf880da3fa201a1fcfdd601a7d5f1398f5fb098174fd70807f8e97c2ac9701"
+    },
+    "raw/measurement/aa-second-01-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "4b8fe40494baa52aebce3c80f053a86d73c6fcfb8b06e3c176cf7bc242da045a",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-second-01-dawn.observations",
+      "sha256": "4b8fe40494baa52aebce3c80f053a86d73c6fcfb8b06e3c176cf7bc242da045a"
+    },
+    "raw/measurement/aa-second-02-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "050ea5aba9cdbd4bd4a7860def985fc9c2043753a9e1418dc4a8ff85c6b47b8c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-second-02-dawn.log",
+      "sha256": "449f441c4fd9df6f9593d49cecd06f1e6a1b9b6cefb8250ad3a446d1fe8c1a01"
+    },
+    "raw/measurement/aa-second-02-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "20c8891770abff3376e7ff7336b980749d99a616f9495dfc7eb4a5c14e9644ac",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-second-02-dawn.observations",
+      "sha256": "20c8891770abff3376e7ff7336b980749d99a616f9495dfc7eb4a5c14e9644ac"
+    },
+    "raw/measurement/aa-second-03-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "d2a836d293fa334462f701a88437fc7769468ae8809680d00ebcc01c318c3eda",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-second-03-dawn.log",
+      "sha256": "9ad7b788cef2f3b55098fbbdd812abf8e2f1ec8c25aff7e1d2ca0eed5f8f50a9"
+    },
+    "raw/measurement/aa-second-03-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "d9ab21ab092d0055024846ade47c9aeac906bebc15f2cd4a986c4ba20b0d34c3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/aa-second-03-dawn.observations",
+      "sha256": "d9ab21ab092d0055024846ade47c9aeac906bebc15f2cd4a986c4ba20b0d34c3"
+    },
+    "raw/measurement/cache-precondition-00-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "1d1581d3e9e0778e2fbdd31ef06b5a7666eb7ee1f04507905ee286b12e74d2a9",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cache-precondition-00-dawn.log",
+      "sha256": "bccc160dab2c4acaa817c1679002c47b75707dc7996fc352cb2ff59be1ecb4ca"
+    },
+    "raw/measurement/cache-precondition-00-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "2744aefee49e5c569bf6f22cdbfa25d51a9d05248ee8a2ceb0ea4aa58b68fec4",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cache-precondition-00-dawn.observations",
+      "sha256": "2744aefee49e5c569bf6f22cdbfa25d51a9d05248ee8a2ceb0ea4aa58b68fec4"
+    },
+    "raw/measurement/cache-precondition-00-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "9b50d79acc540772102ac9501e5d8cac0e316ae559a8264aa74f06a068c4275b",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cache-precondition-00-doe.log",
+      "sha256": "07a471e905d9bd3300180cf5b6b6403b2d5087793cba15478767244832bdfb3a"
+    },
+    "raw/measurement/cache-precondition-00-doe.observations": {
+      "compression": "none",
+      "contentSha256": "4b1cf163b3423ab62b0f07b802e554a4876492c6888548851af6499d3314111e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cache-precondition-00-doe.observations",
+      "sha256": "4b1cf163b3423ab62b0f07b802e554a4876492c6888548851af6499d3314111e"
+    },
+    "raw/measurement/cold-00-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "156b26828d1dd49742d91725da61993a7e9f6f4b25c0108cfa7b7d2c224117ae",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-00-dawn.log",
+      "sha256": "534e0827d06828dd5184b708d2a59d3e520897283178026f5a30ee0a7e5629c4"
+    },
+    "raw/measurement/cold-00-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "b32a8e5c981908326612219dcdd8b9def9935342e44369f498cd79528344218a",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-00-dawn.observations",
+      "sha256": "b32a8e5c981908326612219dcdd8b9def9935342e44369f498cd79528344218a"
+    },
+    "raw/measurement/cold-00-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "4d7df45752308a169a761fcaa28cba072b92a772ec0b3e00e6d19deb419db456",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-00-doe.log",
+      "sha256": "968da98538b3522ab138c22a2aece4b3acc2c9646ff1b14b00bd9917ff6f4963"
+    },
+    "raw/measurement/cold-00-doe.observations": {
+      "compression": "none",
+      "contentSha256": "6732ccbb0fc0546f80f4b20eabd6be1c18bf98e1e30ecf3766a930cdfc34a51b",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-00-doe.observations",
+      "sha256": "6732ccbb0fc0546f80f4b20eabd6be1c18bf98e1e30ecf3766a930cdfc34a51b"
+    },
+    "raw/measurement/cold-01-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "5309a4b12bae15154f7708c2dbef9927cc301247a320768cecd81692bb086bd1",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-01-dawn.log",
+      "sha256": "0527a5f29d41db8bfad5a66089850b59897b50ada8d07983a72d5868708709b7"
+    },
+    "raw/measurement/cold-01-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "a9b7e7ef6743c85fbba6f9131c1dbff8496ab6eb3542977853db7cc463b94cb8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-01-dawn.observations",
+      "sha256": "a9b7e7ef6743c85fbba6f9131c1dbff8496ab6eb3542977853db7cc463b94cb8"
+    },
+    "raw/measurement/cold-01-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "d363beaad1819e31cbbbadecf1ee31917b4ad396558ff880ec643dd36b03b23e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-01-doe.log",
+      "sha256": "bcf0cf3625245c82d3960427dd15c1baf42b74a0d27369688d77d108c781a7ec"
+    },
+    "raw/measurement/cold-01-doe.observations": {
+      "compression": "none",
+      "contentSha256": "d1812be1635d24150b2f5b90841f349294af90ddab0a32f384e01ed79060ceb2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-01-doe.observations",
+      "sha256": "d1812be1635d24150b2f5b90841f349294af90ddab0a32f384e01ed79060ceb2"
+    },
+    "raw/measurement/cold-02-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "9e8feab552635adaeb7ba684c5676bca0a3191c3a39ccef41bd2935fbaf6b982",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-02-dawn.log",
+      "sha256": "38d26474d53d78bae350b4028409d0d463b55a0c9f4027ea32e42d61d1ef7a2d"
+    },
+    "raw/measurement/cold-02-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "ccca3f7d9698e6cb857cb92520f6278f6d11f282c2cc0bbbb991c3fda18c6ff8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-02-dawn.observations",
+      "sha256": "ccca3f7d9698e6cb857cb92520f6278f6d11f282c2cc0bbbb991c3fda18c6ff8"
+    },
+    "raw/measurement/cold-02-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "c63b251ad8b6960d7675ecada2032796c3818a21f94837f0080eb987917d7085",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-02-doe.log",
+      "sha256": "45c53d82da69eb9e6b1ae5351843130be72be02a00bb8af0989cad4b23935ed2"
+    },
+    "raw/measurement/cold-02-doe.observations": {
+      "compression": "none",
+      "contentSha256": "78361dc5ef869ee585e6d7d1974aa333bc2d19f412a9381a2815657f0223e868",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-02-doe.observations",
+      "sha256": "78361dc5ef869ee585e6d7d1974aa333bc2d19f412a9381a2815657f0223e868"
+    },
+    "raw/measurement/cold-03-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "4cabe7a12c89f6c44b639d766d8203f353855fac5b6c96bade303bad72382525",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-03-dawn.log",
+      "sha256": "ec2904e9378fdea28e8e5da34effade1e23de4bb6bd5b6cf6ef48c7ddcb98d9d"
+    },
+    "raw/measurement/cold-03-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "e688afed288cda82fc738cb868a4e7f62a66b958fb0c8586832b9867b8a5b61d",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-03-dawn.observations",
+      "sha256": "e688afed288cda82fc738cb868a4e7f62a66b958fb0c8586832b9867b8a5b61d"
+    },
+    "raw/measurement/cold-03-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "b4513852611b32f7c98bc07292686cca61951881bb0e14f9c21ed7d7cbf19361",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-03-doe.log",
+      "sha256": "2654aa974237c4fb8cebcd865209379904c2099a674d6989db5fd07267640cd8"
+    },
+    "raw/measurement/cold-03-doe.observations": {
+      "compression": "none",
+      "contentSha256": "1034d522adb6be5b108f2c243bf525b62b0a672040cc95d2b814f3fc92c2441c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/cold-03-doe.observations",
+      "sha256": "1034d522adb6be5b108f2c243bf525b62b0a672040cc95d2b814f3fc92c2441c"
+    },
+    "raw/measurement/measurement.json": {
+      "compression": "none",
+      "contentSha256": "8de192652045df6c3036151a90bf0fcc879629dda285677baa00fcd407e8a649",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/measurement.json",
+      "sha256": "8de192652045df6c3036151a90bf0fcc879629dda285677baa00fcd407e8a649"
+    },
+    "raw/measurement/warm-00-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "9da3be52b9a0a03aa752d193d23cd591b8bffb54ee1fd88323fb2f268abe75e0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-00-dawn.log",
+      "sha256": "f0e1fe6bd6db056b3da338abc0154b51ed7d519f20b7ca04a62588e3b71d6027"
+    },
+    "raw/measurement/warm-00-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "57fa9914a9fb2cce1235e91d53016665eb15b226a93fe1da265df64267f34c22",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-00-dawn.observations",
+      "sha256": "57fa9914a9fb2cce1235e91d53016665eb15b226a93fe1da265df64267f34c22"
+    },
+    "raw/measurement/warm-00-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "9397892c4ffaccfb559350f1028596a4370e49298d3c8b80fb340178010c7cb9",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-00-doe.log",
+      "sha256": "d65d77418224796cf7db9edbafb1dea6f6bfeb887733e05ea417eb82e88575f7"
+    },
+    "raw/measurement/warm-00-doe.observations": {
+      "compression": "none",
+      "contentSha256": "fcf007ac0fd5cc4878230e9dabdd8e62514a3532e454d389adc1b392c0eb6f3e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-00-doe.observations",
+      "sha256": "fcf007ac0fd5cc4878230e9dabdd8e62514a3532e454d389adc1b392c0eb6f3e"
+    },
+    "raw/measurement/warm-01-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "56a8bfd79a4a755323e664db6acbd2ce891bb6fc92e02079ef43a4c60ca8ab6c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-01-dawn.log",
+      "sha256": "d40f2d62a110f36b101b1792aacb64e3a6afcd39e24072ef617e7817dfb12cd0"
+    },
+    "raw/measurement/warm-01-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "b1f5fa1e1d62aed0213f92c2a0791a037ae2967282e129ff1303626b704233f1",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-01-dawn.observations",
+      "sha256": "b1f5fa1e1d62aed0213f92c2a0791a037ae2967282e129ff1303626b704233f1"
+    },
+    "raw/measurement/warm-01-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "374817ae04c429c20bad695fbf5dbaa8a9f949f5712df0d532c3bbd83c15b270",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-01-doe.log",
+      "sha256": "741fec72aa7b0c063aee2d99707f39384258874c9c8e90a913b7c8acac9f7ebf"
+    },
+    "raw/measurement/warm-01-doe.observations": {
+      "compression": "none",
+      "contentSha256": "83369db4bd65acf1491a7b4cbd15a183d23ddb1896403908f35db67887e29062",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-01-doe.observations",
+      "sha256": "83369db4bd65acf1491a7b4cbd15a183d23ddb1896403908f35db67887e29062"
+    },
+    "raw/measurement/warm-02-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "093b23ca88093f9013835eca03301ce224f08d86aba8b789e80aad3c2fcf8773",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-02-dawn.log",
+      "sha256": "056d84400be585bdba63aefe0c80285104665a777d1fdcaf8cc3d0cf2a872021"
+    },
+    "raw/measurement/warm-02-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "3c6d59fca6aee733cb485c79a88d66056cc44d2c5e045f08d53a4aa50a435976",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-02-dawn.observations",
+      "sha256": "3c6d59fca6aee733cb485c79a88d66056cc44d2c5e045f08d53a4aa50a435976"
+    },
+    "raw/measurement/warm-02-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "3ba897416a0a70851075d02ddd48271ade96b153e7f4d25186a1429e0f25ee43",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-02-doe.log",
+      "sha256": "3e71ad8713c313166afc953e82dc927639614101ee264e4755ec257afea41435"
+    },
+    "raw/measurement/warm-02-doe.observations": {
+      "compression": "none",
+      "contentSha256": "b8592a70e54e9e23b8f7672843cdf70b8707ae46f33e2dc72d7698667ecb0f23",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-02-doe.observations",
+      "sha256": "b8592a70e54e9e23b8f7672843cdf70b8707ae46f33e2dc72d7698667ecb0f23"
+    },
+    "raw/measurement/warm-03-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "dd1a995d2c245af09a945261c68440256aca8c4dc7a4dafeffe2096d97b31a28",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-03-dawn.log",
+      "sha256": "7a0d93ee17a1e8af802a2a8dd796a77c380442ce599758e18d70becdd43113fe"
+    },
+    "raw/measurement/warm-03-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "ef6a14ddd237eb36ac14b99f1a020a75efbf172c142e25b5c42281cfec92f6fb",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-03-dawn.observations",
+      "sha256": "ef6a14ddd237eb36ac14b99f1a020a75efbf172c142e25b5c42281cfec92f6fb"
+    },
+    "raw/measurement/warm-03-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "9598f2b923a5936512210b73ceffb17d68e0f401c5c244e3ca67dd3535eaa867",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-03-doe.log",
+      "sha256": "91f312815de31260b06c848c87001904f63ed4cdc85d12891d81c003f48ea2ee"
+    },
+    "raw/measurement/warm-03-doe.observations": {
+      "compression": "none",
+      "contentSha256": "998c89fd28541b962abd67af659d59757b320c292a215ef9df064af5604cbbef",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-03-doe.observations",
+      "sha256": "998c89fd28541b962abd67af659d59757b320c292a215ef9df064af5604cbbef"
+    },
+    "raw/measurement/warm-04-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "89494494c5e32eba9dbac24fcbc5fe743307cd09e0a75fd7983d7681429e0cef",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-04-dawn.log",
+      "sha256": "3938bbfb6ffb4a9adf3abe0d271f9cadcd383e7bf0588692143fd33e0956d1e7"
+    },
+    "raw/measurement/warm-04-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "68750b6fe3dcd523a41c1a80956256b0b1baea6bb7bb031c4d850b7f36da8c5a",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-04-dawn.observations",
+      "sha256": "68750b6fe3dcd523a41c1a80956256b0b1baea6bb7bb031c4d850b7f36da8c5a"
+    },
+    "raw/measurement/warm-04-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "70e4694145fae93dbe4f628b28e8794314e8975705a86f4985a84f179820df21",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-04-doe.log",
+      "sha256": "4efc5ee5fa4d51c2cc58caf184015b3cffecc311a0b6c731202a042630150524"
+    },
+    "raw/measurement/warm-04-doe.observations": {
+      "compression": "none",
+      "contentSha256": "adde6593d28991dd298af94d47c83b268d7980c0f18536b64381237a26fd1193",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-04-doe.observations",
+      "sha256": "adde6593d28991dd298af94d47c83b268d7980c0f18536b64381237a26fd1193"
+    },
+    "raw/measurement/warm-05-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "4a2b780027afc48683c3a79a44a0d10ddac8d4236393e59390515f911f798c3c",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-05-dawn.log",
+      "sha256": "4243594f91e6e2452b01352008471014f5154bf4b5e5bc3c316f5c7fad3c7e40"
+    },
+    "raw/measurement/warm-05-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "55192c4a5c8adc03a6f14d0a53244e6078533b6c5f40c7ecdbea813206de5645",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-05-dawn.observations",
+      "sha256": "55192c4a5c8adc03a6f14d0a53244e6078533b6c5f40c7ecdbea813206de5645"
+    },
+    "raw/measurement/warm-05-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "3158b3d8c99658e9b688ef011b6a952fd79adfbfea19921e03d99577ae3a3759",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-05-doe.log",
+      "sha256": "bdb03e5271685f677cac03a688c1541800cbd7e97c7a9a3d413ac758a044cc11"
+    },
+    "raw/measurement/warm-05-doe.observations": {
+      "compression": "none",
+      "contentSha256": "bdc313f4cec3ddae3d63f9ca2dd13e4c8f910abd962e5e3412645beca4b17a31",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-05-doe.observations",
+      "sha256": "bdc313f4cec3ddae3d63f9ca2dd13e4c8f910abd962e5e3412645beca4b17a31"
+    },
+    "raw/measurement/warm-06-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "6d2f07b5cbf747140d2a19a9fda8e5f74ac2a67ba8bbe6a746a6a56f88f9098f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-06-dawn.log",
+      "sha256": "f3e0a9b5b4cac2c984181005600978eb355648ffb3ec1bf728ef7c43da28aa26"
+    },
+    "raw/measurement/warm-06-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "688be60e9a7054f327affaea631879289470555e0af08795435a2919f4f4ce54",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-06-dawn.observations",
+      "sha256": "688be60e9a7054f327affaea631879289470555e0af08795435a2919f4f4ce54"
+    },
+    "raw/measurement/warm-06-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "a6d8c1f5b29b1c6b7edc7e6d9d49fd1e39b5a7d58fbc3f52b89ee3ee6a46e6fd",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-06-doe.log",
+      "sha256": "1b1e7a660cac3d8707a4cd4ea4a95fb2880afd56fd4dec6baf2b4d209934d74a"
+    },
+    "raw/measurement/warm-06-doe.observations": {
+      "compression": "none",
+      "contentSha256": "62b395a552edbf623d90cd12f7f14c4d41753510d15ab09b80c064c8e40e97f3",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-06-doe.observations",
+      "sha256": "62b395a552edbf623d90cd12f7f14c4d41753510d15ab09b80c064c8e40e97f3"
+    },
+    "raw/measurement/warm-07-dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "3a174537616b3d9cbc895be75e4be537ec41cb032c0f63dd9fb62e2ef88a947f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-07-dawn.log",
+      "sha256": "93a31bf09c1f0bbdeda8787d4b5d9fb9a950403e4698c7308d9ee74e99b0467c"
+    },
+    "raw/measurement/warm-07-dawn.observations": {
+      "compression": "none",
+      "contentSha256": "fd73973156e79144b27e3b897e3c29ce8a1c45d29a50b0d1884376d79133e097",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-07-dawn.observations",
+      "sha256": "fd73973156e79144b27e3b897e3c29ce8a1c45d29a50b0d1884376d79133e097"
+    },
+    "raw/measurement/warm-07-doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "5a06d533874b9f651b9a51657ac57bcb6fe0f0163cc6049330dcc2d66e8ccee0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-07-doe.log",
+      "sha256": "b72e03c6d85604f98b4d4b846f61939d1c3b290c786f8efa0296723a43432bdf"
+    },
+    "raw/measurement/warm-07-doe.observations": {
+      "compression": "none",
+      "contentSha256": "af50453cab30d4af32d8222d0a9a0af321470432df36901941b80c39f2ab77dd",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/measurement/warm-07-doe.observations",
+      "sha256": "af50453cab30d4af32d8222d0a9a0af321470432df36901941b80c39f2ab77dd"
+    },
+    "raw/qualified-custody-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "d42885c3540b6dcf3a842790010b0e97af42e25635a71cd267b11d9c7565427d",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/qualified-custody-final.log",
+      "sha256": "2dad5141f7fa9c2e8476f5c180f02d4217021d0a56ba1542adf51c95ba14bb6d"
+    },
+    "raw/qualified-evidence-tests-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "00428865fcf8e3675973c24d90d0b0e1468e0f8c2978e1cc61b4d49a3f144016",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/qualified-evidence-tests-final.log",
+      "sha256": "c585dd601b1b79646f42369ab653de5ea1bb91b67a735f6accd741feab7b7d0b"
+    },
+    "raw/reference-corrected.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/reference-corrected.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/reference.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "91f042ec298f2d121cba927fdd2c44a406ccbeca16ed92a7f08f231fb81e4305",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/reference.log",
+      "sha256": "66f8270aac3eacd82cb2cd83255951990b9b95107e593e75e9100a4a2de3b1c0"
+    },
+    "raw/reference/cpu-crosscheck.json": {
+      "compression": "none",
+      "contentSha256": "3b043f752819d30f51ec23a4c4d69764d65da1a089980fc534da091d5f63b262",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/reference/cpu-crosscheck.json",
+      "sha256": "3b043f752819d30f51ec23a4c4d69764d65da1a089980fc534da091d5f63b262"
+    },
+    "raw/reference/reference.json": {
+      "compression": "none",
+      "contentSha256": "808666d38d1c9189d548c2c6fb6eeb1f11455b3f32da614a819bb1fbc048ce85",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/reference/reference.json",
+      "sha256": "808666d38d1c9189d548c2c6fb6eeb1f11455b3f32da614a819bb1fbc048ce85"
+    },
+    "raw/safety/dawn-additional-controls.json": {
+      "compression": "none",
+      "contentSha256": "773d81b37b75e7bb740cd92bda280d2ecd1e2445712347cccfd5f1b64c773ee0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/dawn-additional-controls.json",
+      "sha256": "773d81b37b75e7bb740cd92bda280d2ecd1e2445712347cccfd5f1b64c773ee0"
+    },
+    "raw/safety/dawn-additional-controls.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "7dd76a57fcdfabc9ef40fd77c37b6ac99e194d0a0a941921f965195937b033cd",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/dawn-additional-controls.log",
+      "sha256": "ac6b4c968afbcd3b6cef01d952ef6ce9380c87c4c25ad78bdd6dc7eddf759caa"
+    },
+    "raw/safety/dawn-matched.json": {
+      "compression": "none",
+      "contentSha256": "51307398c583da65c3e869df078505ae162bbce291420d96f4c812dd9ef001b2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/dawn-matched.json",
+      "sha256": "51307398c583da65c3e869df078505ae162bbce291420d96f4c812dd9ef001b2"
+    },
+    "raw/safety/dawn-matched.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "95a2cf2b6ce811b3737777ee458e141985a5160d939da7cd625e1575fc581f72",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/dawn-matched.log",
+      "sha256": "f5fe48a1dea3fdfc766e28bcb13e471dd1831c0737642e3a2366fea2b6386fe9"
+    },
+    "raw/safety/dawn-matched_2026-10-05_19-18-54.json": {
+      "compression": "none",
+      "contentSha256": "0d2feca4fd5a3ce6bc2a197cdc7a205643c872a2e9a8a3675d565e649dfdfe44",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/dawn-matched_2026-10-05_19-18-54.json",
+      "sha256": "0d2feca4fd5a3ce6bc2a197cdc7a205643c872a2e9a8a3675d565e649dfdfe44"
+    },
+    "raw/safety/dawn.json": {
+      "compression": "none",
+      "contentSha256": "9370bc18ac32c49083bc77a2633f926041e8ec6205f09d4c3d409986b11c4b15",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/dawn.json",
+      "sha256": "9370bc18ac32c49083bc77a2633f926041e8ec6205f09d4c3d409986b11c4b15"
+    },
+    "raw/safety/dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "f0700bf3fd6845218ffb160a9fe2ed92cdc247de25209347aed873a73f5528ef",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/dawn.log",
+      "sha256": "1be820d731cd147fcf990eeb69c93725baa2f6a392a67106a4d2060b3be27fc9"
+    },
+    "raw/safety/dawn_2026-10-05_19-01-47.json": {
+      "compression": "none",
+      "contentSha256": "8e8837a2a1d4e9335f89f3ed560657c7924ff3c838c6664cedbeabb6b8ecd5f7",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/dawn_2026-10-05_19-01-47.json",
+      "sha256": "8e8837a2a1d4e9335f89f3ed560657c7924ff3c838c6664cedbeabb6b8ecd5f7"
+    },
+    "raw/safety/doe-corrected.json": {
+      "compression": "none",
+      "contentSha256": "2a552250a90a973865009e6a26cabba76171adbf28c8ff27ec4b26488d34e331",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doe-corrected.json",
+      "sha256": "2a552250a90a973865009e6a26cabba76171adbf28c8ff27ec4b26488d34e331"
+    },
+    "raw/safety/doe-corrected.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "6ddef7e7798d8091cf1d43749e9682f9f463dc9fa715a11cdb0b0a5c9d8e21dd",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doe-corrected.log",
+      "sha256": "d7dfbf6ba224fbf4d3cf172ced6adab5b9bbc7dd673478d6a440dc0da2a9e255"
+    },
+    "raw/safety/doe-corrected_2026-10-05_19-14-36.json": {
+      "compression": "none",
+      "contentSha256": "c36a251ce476ceb805f99a9b3f45b2c824dca9518c4fbe70ecae0d64db3b245f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doe-corrected_2026-10-05_19-14-36.json",
+      "sha256": "c36a251ce476ceb805f99a9b3f45b2c824dca9518c4fbe70ecae0d64db3b245f"
+    },
+    "raw/safety/doe-matched.json": {
+      "compression": "none",
+      "contentSha256": "0f930ae6e57a878fcf2df9053204605318be0331c12bd9a7d31810fb8093c118",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doe-matched.json",
+      "sha256": "0f930ae6e57a878fcf2df9053204605318be0331c12bd9a7d31810fb8093c118"
+    },
+    "raw/safety/doe-matched.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "ed67c022104156a0ba8e1ab19357c241e2acb45e565882e63275678398eaca9f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doe-matched.log",
+      "sha256": "9cbcbfd62adf615130f2def2b2e3570a7256e1fcb90a46be5365b713730ae00d"
+    },
+    "raw/safety/doe-matched_2026-10-05_19-18-54.json": {
+      "compression": "none",
+      "contentSha256": "9ecd9d9537c7f48c5b196b108af468bb19d59178945dba2b70f13f630a4dcfb0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doe-matched_2026-10-05_19-18-54.json",
+      "sha256": "9ecd9d9537c7f48c5b196b108af468bb19d59178945dba2b70f13f630a4dcfb0"
+    },
+    "raw/safety/doe.json": {
+      "compression": "none",
+      "contentSha256": "14290d6ede239153038c15d7e7ab9a868d46a9055eced293cba8e8413fbfed35",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doe.json",
+      "sha256": "14290d6ede239153038c15d7e7ab9a868d46a9055eced293cba8e8413fbfed35"
+    },
+    "raw/safety/doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "ad3a061b042a84fc0936274ec94227c39e3ce2bb8e44644ec8524c38f9c49242",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doe.log",
+      "sha256": "1c8d400e32d8a862d7474cfe2d2a18dcde57eedb0ec350027c23880219e3d4c2"
+    },
+    "raw/safety/doe_2026-10-05_19-01-37.json": {
+      "compression": "none",
+      "contentSha256": "5c26d53ab9ef7e479ef4b3d6c25ec3659a207bfd62e5cff43c96fc62c69b31d8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doe_2026-10-05_19-01-37.json",
+      "sha256": "5c26d53ab9ef7e479ef4b3d6c25ec3659a207bfd62e5cff43c96fc62c69b31d8"
+    },
+    "raw/safety/doppler-baseline-pack.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "cb8945d3ebbd207f73ee1e9a17c3045aaa57f39aa21e0b61ed9055d7215bbea7",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-baseline-pack.json",
+      "sha256": "af4a42f9374a5cee349f272e2da688a5dd51bc66076ba37f27174e33ae3d67e8"
+    },
+    "raw/safety/doppler-current-pack.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "f793bf5e230711b27bf15ffed23be36fb57f82d25d1859067b18d9897bda1aae",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-current-pack.json",
+      "sha256": "a3949bb58381bc8ec950474f89991802a48311e301e400eedc802429f8826ab3"
+    },
+    "raw/safety/doppler-delivered-pack.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "950bc238d3d08ff2a48fff6df8e41edee8761e323812c309164122ce249b8a62",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered-pack.json",
+      "sha256": "efa15b8c824b436cd2176bfe4ee4a0f3ff27932f6d2ecfb238387f296ca9322b"
+    },
+    "raw/safety/doppler-delivered/installation.json": {
+      "compression": "none",
+      "contentSha256": "63e7783eaed547096b9180bedf66a841815663981c88f72b80430fc95ea068ad",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered/installation.json",
+      "sha256": "63e7783eaed547096b9180bedf66a841815663981c88f72b80430fc95ea068ad"
+    },
+    "raw/safety/doppler-delivered/package-lock.json": {
+      "compression": "none",
+      "contentSha256": "bc9aaabe4570c873bf0f2ac075e8bacf5d543fe2458ac83accaaf1e5fe21fd20",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered/package-lock.json",
+      "sha256": "bc9aaabe4570c873bf0f2ac075e8bacf5d543fe2458ac83accaaf1e5fe21fd20"
+    },
+    "raw/safety/doppler-delivered/package.json": {
+      "compression": "none",
+      "contentSha256": "976e569f27f30ebbaab567ce0d61a59b2e78764c8010cfd3571f62ac785c58dc",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered/package.json",
+      "sha256": "976e569f27f30ebbaab567ce0d61a59b2e78764c8010cfd3571f62ac785c58dc"
+    },
+    "raw/safety/doppler-delivered/providers.json": {
+      "compression": "none",
+      "contentSha256": "00915883813364dd281b93d431b8f04655e7d9306a35120324ce38aeac5da0fb",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered/providers.json",
+      "sha256": "00915883813364dd281b93d431b8f04655e7d9306a35120324ce38aeac5da0fb"
+    },
+    "raw/safety/doppler-delivered/results/delivered-final-first-audit.json": {
+      "compression": "none",
+      "contentSha256": "4dd7d4ae2d0ba405653bb48ce7cacdaf47a56e17f8d7172e7063246a40a4459f",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered/results/delivered-final-first-audit.json",
+      "sha256": "4dd7d4ae2d0ba405653bb48ce7cacdaf47a56e17f8d7172e7063246a40a4459f"
+    },
+    "raw/safety/doppler-delivered/results/delivered-final-first.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "d456ac21e96aa2e5d489f12e1bd536ebbb50cc5c342f6c91e171e5b244140291",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered/results/delivered-final-first.json",
+      "sha256": "1bc9f805ba57b5bd3cb88980b7430ef1c554676f8b593f2280cbad35da7f5dae"
+    },
+    "raw/safety/doppler-delivered/results/delivered-final-first.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "a76834a48a41e88a0799e94c0bb97a617b21461cd95372dc39a3888eea72e2d8",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered/results/delivered-final-first.log",
+      "sha256": "991062fb33c0b451068c103f892af6426ecfb2008d778badafa4592c098719dd"
+    },
+    "raw/safety/doppler-delivered/results/delivered-final-reopen-audit.json": {
+      "compression": "none",
+      "contentSha256": "75a9731cd521ef66f1c047d099c770ce8ad581dcc13b8d55faf5a3af91fe6801",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered/results/delivered-final-reopen-audit.json",
+      "sha256": "75a9731cd521ef66f1c047d099c770ce8ad581dcc13b8d55faf5a3af91fe6801"
+    },
+    "raw/safety/doppler-delivered/results/delivered-final-reopen.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "ca7c155591284d91c9347b8cc4787ec10e5757003047bed9c0c0282dd79723c9",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered/results/delivered-final-reopen.json",
+      "sha256": "4f84ac69dc862b50edaf6e4afc92591763f5a66e9d0537e6a5136a29e79be1d2"
+    },
+    "raw/safety/doppler-delivered/results/delivered-final-reopen.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "4e4d437a4e5924bd7151b43e5ccc0939a7e4318f0e71be6b00c48457c9e88d7b",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-delivered/results/delivered-final-reopen.log",
+      "sha256": "7b94505b9405f0c138b281e4a335bc7b36112ff6fd17e08a6171437297f9ea52"
+    },
+    "raw/safety/doppler-final-pack.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "3137a045a10c58ac83b51b71f9c54dd2debf3681627b81f9d5d3a47cd955d8e2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-final-pack.json",
+      "sha256": "7f1d2fca62e5230bba52c90177b5086c78a0de60cfefa00bf960fb16a4036f11"
+    },
+    "raw/safety/doppler-green-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "1933fcff1d486263e82c7c2bc37dd7d4099d0cf6965d12c054ceeb4a54709779",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-green-final.log",
+      "sha256": "d088ceea97b30778defd7bf1fa5c92c94d794ddd4a289f48621c9538cdd9505d"
+    },
+    "raw/safety/doppler-green.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "c2d939fe63a44d4e283bba9361a8938081bd0f58edac08fd38abb34b12b55e46",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-green.log",
+      "sha256": "a03e962fcdefa83b3593dba505b50340fd0e7d0106c9c2a08c7451fe452883dd"
+    },
+    "raw/safety/doppler-pack.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "3137a045a10c58ac83b51b71f9c54dd2debf3681627b81f9d5d3a47cd955d8e2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-pack.json",
+      "sha256": "7f1d2fca62e5230bba52c90177b5086c78a0de60cfefa00bf960fb16a4036f11"
+    },
+    "raw/safety/doppler-replay/results/retirement-original-audit.json": {
+      "compression": "none",
+      "contentSha256": "812244ae131b231f1a9d233eea546736e805c390dcebc33dd518815adba0011e",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-replay/results/retirement-original-audit.json",
+      "sha256": "812244ae131b231f1a9d233eea546736e805c390dcebc33dd518815adba0011e"
+    },
+    "raw/safety/doppler-replay/results/retirement-original.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "54d9ab73fb6e4d1cd724e49f38806b6cecc774fb614b4d1b83b766a1759c24dd",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-replay/results/retirement-original.json",
+      "sha256": "94634149810ecc722943892820b32236edf9891ac279469bd492636553f4bf3e"
+    },
+    "raw/safety/doppler-replay/results/retirement-original.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "533d4a67eaa9df6166abf5dc4401e78cd5205ca861008c09d02a1f50d8d7335b",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-replay/results/retirement-original.log",
+      "sha256": "1f8e2a40efe4da3e1fda9fc4b68e613bc7c6ceceb1d8caeebf5789e8302b2bfd"
+    },
+    "raw/safety/doppler-safety-final.json": {
+      "compression": "none",
+      "contentSha256": "32a4cc835bac1c06b0cf0531104e48864162e679f1f6ad7b763d847a597580e2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/doppler-safety-final.json",
+      "sha256": "32a4cc835bac1c06b0cf0531104e48864162e679f1f6ad7b763d847a597580e2"
+    },
+    "raw/safety/package-boundaries-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "8f1fdc33e2a24b41e8a99320c922e56279b6b1e9381e875e0a9225c9f69d855b",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/package-boundaries-final.log",
+      "sha256": "51bd3ecdbd7f3d1f1fcd291c9e069e1134aee69968df4a36130f5549f7752615"
+    },
+    "raw/safety/physical-retirement-final.json": {
+      "compression": "none",
+      "contentSha256": "6c56cc16a6b1bd3e58e522f6809c7efe3fe96bb7265b42ef3519d30a4138dd79",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/physical-retirement-final.json",
+      "sha256": "6c56cc16a6b1bd3e58e522f6809c7efe3fe96bb7265b42ef3519d30a4138dd79"
+    },
+    "raw/safety/physical-retirement-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/physical-retirement-final.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/safety/physical-retirement.json": {
+      "compression": "none",
+      "contentSha256": "c6b3dfbbe65c541f7d5e8499139d2b3be3075e50ec760529e1cf4f3ecc15e532",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/physical-retirement.json",
+      "sha256": "c6b3dfbbe65c541f7d5e8499139d2b3be3075e50ec760529e1cf4f3ecc15e532"
+    },
+    "raw/safety/physical-retirement.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/physical-retirement.log",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "raw/schema-complete.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/schema-complete.log",
+      "sha256": "70f47af569c54daa56a5defb987e89a5732ad8dd4aa2380169c3aa94dfd1a1b6"
+    },
+    "raw/schema-gate-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/schema-gate-final.log",
+      "sha256": "70f47af569c54daa56a5defb987e89a5732ad8dd4aa2380169c3aa94dfd1a1b6"
+    },
+    "raw/schema-gate.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "77a72c3a6f66d252adcb7fea502167998d03afd96cd482373739a48194b8dedd",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/schema-gate.log",
+      "sha256": "647a4a472625cce068c5db77a4684447db8ca946bbd990234235b411f375e1f7"
+    },
+    "raw/schema-qualified-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/schema-qualified-final.log",
+      "sha256": "70f47af569c54daa56a5defb987e89a5732ad8dd4aa2380169c3aa94dfd1a1b6"
+    },
+    "raw/toolchains.json": {
+      "compression": "none",
+      "contentSha256": "3409a016561e0cf2025f232c4222d603cf0dbcdfa52325eaed9317fc26c61c54",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/toolchains.json",
+      "sha256": "3409a016561e0cf2025f232c4222d603cf0dbcdfa52325eaed9317fc26c61c54"
+    },
+    "raw/upstream/LICENSE": {
+      "compression": "none",
+      "contentSha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/upstream/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    "raw/upstream/main.cpp": {
+      "compression": "none",
+      "contentSha256": "e0f216b4e5356f2a33eb9151ccda9dd3407b48735d6591ab4ab2232c8b6ab6aa",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/upstream/c_cxx/squeezenet/main.cpp",
+      "sha256": "e0f216b4e5356f2a33eb9151ccda9dd3407b48735d6591ab4ab2232c8b6ab6aa"
+    },
+    "raw/upstream/onnx-headers/onnxruntime_c_api.h.gz": {
+      "compression": "gzip",
+      "contentSha256": "9ed0d7054a4e74249467365b25b415d36f51a44a6349e2a994a1812e4723d1e2",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/upstream/onnx-headers/onnxruntime_c_api.h",
+      "sha256": "36c489aa1483956cba35a3df8fe74f6fac384a1f36eb72c09bfd64dd5a72abac"
+    },
+    "raw/upstream/onnx-headers/onnxruntime_cxx_api.h.gz": {
+      "compression": "gzip",
+      "contentSha256": "5eb8809db561261210ffcafcf9823873f0603fd799542797b6b728bb3f75e5f6",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/upstream/onnx-headers/onnxruntime_cxx_api.h",
+      "sha256": "d3d0241399a266ab141feb15d3709b947087a27de12e3a85782be6788fb95939"
+    },
+    "raw/upstream/onnx-headers/onnxruntime_cxx_inline.h.gz": {
+      "compression": "gzip",
+      "contentSha256": "022f4559009a35b157bc05a1aae9a59a2603a17e535d9410a49d0f9187f18039",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/upstream/onnx-headers/onnxruntime_cxx_inline.h",
+      "sha256": "da0e589d74958a6b827f06238a8718512c0bb827efbe395f160a3a044438183d"
+    },
+    "raw/upstream/onnx-headers/onnxruntime_ep_c_api.h.gz": {
+      "compression": "gzip",
+      "contentSha256": "e94ac3490697bdb107844fa9d403952ee7136134132a057eae5c1207b57ce352",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/upstream/onnx-headers/onnxruntime_ep_c_api.h",
+      "sha256": "5a4b89db5d9e5780def268116742b71a0afe2c1282c9dbef0d24824084b93105"
+    },
+    "raw/upstream/onnx-headers/onnxruntime_float16.h": {
+      "compression": "none",
+      "contentSha256": "88b242845d25981633a0bbd1c148e273cf8bfb016ea3f57c4af41a06530f72b0",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/upstream/onnx-headers/onnxruntime_float16.h",
+      "sha256": "88b242845d25981633a0bbd1c148e273cf8bfb016ea3f57c4af41a06530f72b0"
+    },
+    "raw/upstream/onnx-headers/source.json": {
+      "compression": "none",
+      "contentSha256": "d2272603c873980c47ae61c1a3069a7a878c7559e6ba54ae305e50ccc24d46de",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/upstream/onnx-headers/source.json",
+      "sha256": "d2272603c873980c47ae61c1a3069a7a878c7559e6ba54ae305e50ccc24d46de"
+    },
+    "raw/verification-final.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "d42885c3540b6dcf3a842790010b0e97af42e25635a71cd267b11d9c7565427d",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/verification-final.log",
+      "sha256": "2dad5141f7fa9c2e8476f5c180f02d4217021d0a56ba1542adf51c95ba14bb6d"
+    },
+    "raw/warm-profile/dawn-profile_2026-10-05_19-24-24.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "8a38cfde58e221002aa990e86fdd25fac79c9580a8ff65428cbb80549fb003a6",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/dawn-profile_2026-10-05_19-24-24.json",
+      "sha256": "23a1b90110b80dde4fe5ca3d45e7e059f53500a4a24658104d6b29f02a233788"
+    },
+    "raw/warm-profile/dawn.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "f5ee54c3011857bf9ff9d9f116c0870493cc0c2d74b15f2beadd6bf1b0b77d08",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/dawn.log",
+      "sha256": "29de93786539848997938416eac5e187a22ef94c355998c35fac2057f9072e6a"
+    },
+    "raw/warm-profile/dawn.observations": {
+      "compression": "none",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/dawn.observations",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw/warm-profile/doe-profile_2026-10-05_19-24-24.json.gz": {
+      "compression": "gzip",
+      "contentSha256": "17b97e40a9f055c8a2b50aeef9785d3fe50937fbc3070da0c332896d6979c642",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/doe-profile_2026-10-05_19-24-24.json",
+      "sha256": "f329da9dcc508c464d85065d19ca642a26dd7e4b4aff8052c7c7bff8aa3cb158"
+    },
+    "raw/warm-profile/doe.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "58956a64f97db2b7f507870ca46570a05bd7b89620a10d2639b88dd47e2df903",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/doe.log",
+      "sha256": "7695cd5d0c8402fc6e2a95b4f64a9ed8a73c58092c9f5756f3168bd9ac0195af"
+    },
+    "raw/warm-profile/doe.observations": {
+      "compression": "none",
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/doe.observations",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw/warm-profile/native-cpu-perf.json": {
+      "compression": "none",
+      "contentSha256": "dea643c4d80d137f306219b3add023a35e545d6645d863594a06da053a35ae47",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/native-cpu-perf.json",
+      "sha256": "dea643c4d80d137f306219b3add023a35e545d6645d863594a06da053a35ae47"
+    },
+    "raw/warm-profile/native-cpu-perf.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "0b0a283ed5399ae32d9fe09cdec0657e51e457b2c86e66688683aa9620d95f39",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/native-cpu-perf.log",
+      "sha256": "c6a89efdc712ff40c7ebb9555293b9a313dd03781fbfdf63be8e3220d70e5e7f"
+    },
+    "raw/warm-profile/native-cpu-permission.json": {
+      "compression": "none",
+      "contentSha256": "0d02c3a5aceb4b05737ade5523e0f9b280a6311028d6b5d4ddfcdc3316a73fa4",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/native-cpu-permission.json",
+      "sha256": "0d02c3a5aceb4b05737ade5523e0f9b280a6311028d6b5d4ddfcdc3316a73fa4"
+    },
+    "raw/warm-profile/native-cpu-permission.log.gz": {
+      "compression": "gzip",
+      "contentSha256": "3b875364531fb011c58a90062b7facf2a2b424b12a660285c299762895a7584a",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/native-cpu-permission.log",
+      "sha256": "66a62ec581c9f3fed6d2e8218890fc1789f95810ef6f9781527f869d280d1ab0"
+    },
+    "raw/warm-profile/profile-disposition.json": {
+      "compression": "none",
+      "contentSha256": "9d3f2fca472c8d1b347faaf4dc4dc007acdaa3d3e8cc79028ba28be2507935dd",
+      "originalPath": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/warm-profile/profile-disposition.json",
+      "sha256": "9d3f2fca472c8d1b347faaf4dc4dc007acdaa3d3e8cc79028ba28be2507935dd"
+    }
+  },
+  "historicalReport": {
+    "path": "reports/benchmarks/amd-vulkan/20261005-onnx-proc-adapter/manifest.json",
+    "sha256": "1e05652abc6ae452333836c3cb127da79cc56899986cb9d38442511dfdfed9cb",
+    "sourceSnapshotCommit": "b599d2e3a"
+  },
+  "performanceCorrections": 0,
+  "schemaVersion": 1,
+  "sources": {
+    "bench/external-projects/onnx-vulkan-campaign/README.md": "d53ff9455a8e870ca7553841dacc83bf0c4466d1bbb9ee75b38f1b73527f800e",
+    "bench/external-projects/onnx-vulkan-campaign/application-provider.h": "e0efd795836f6b2941b31e5ef91799455c7f7d32d720e32e4f191763da619943",
+    "bench/external-projects/onnx-vulkan-campaign/buffer-retirement.mjs": "74c990b2a837eea8ce6d2046dbd1bc8748922c61f643e873d89dccebe346f226",
+    "bench/external-projects/onnx-vulkan-campaign/build_control.py": "e029dfa2fd6629e2155ee9d6b77cb870a20df73aaacf10dff6e12b09daf4fb62",
+    "bench/external-projects/onnx-vulkan-campaign/bundle.py": "087a8fcec9500f7d2858c6db19cffc5d3080aeae186dfc9b12e3717bee9abda0",
+    "bench/external-projects/onnx-vulkan-campaign/deliver_doppler.py": "5c2873f964fe871e9c5e7cab4e18736e71ae556cf9dd4cb13cd4fec797e7ffc5",
+    "bench/external-projects/onnx-vulkan-campaign/integer-dot.mjs": "36ac29aab92302487ba871919f13f2f8255b3436df4777075e4e5cfdf05b8de3",
+    "bench/external-projects/onnx-vulkan-campaign/measure.py": "fa4bb1baca2f1deaad96be2be84956329ecf3953452e689bf9f03928d355b311",
+    "bench/external-projects/onnx-vulkan-campaign/prepare.py": "c38b2fa09820d1d526796d0157dd77bd6eddc3c55e6d0d5054f74a866b36c927",
+    "bench/external-projects/onnx-vulkan-campaign/recovery-control.c": "05129f86495e0cc5245b1f2740953c08166ec581ab8b3794edbb10950bba42ee",
+    "bench/external-projects/onnx-vulkan-campaign/reference.py": "0e4f2e1c29cec02e8209f7a4bda562d252fa5c89eb857c63d2f6d4ab5174a8ea",
+    "bench/external-projects/onnx-vulkan-campaign/reference_softmax.py": "d4572960662da0adff5adc980f28b130afdd685bf95b808b6982c17dd8da8861",
+    "bench/external-projects/onnx-vulkan-campaign/retain.py": "a316e79b898167771f8931098750d29a568a5cce853632574977ddf0b8e9eb32",
+    "bench/external-projects/onnx-vulkan-campaign/run_application.py": "a2e3daa2ce9825769b8ea13e84b35fa9b96485894fb8127f35d159d1e8d6252e",
+    "bench/external-projects/onnx-vulkan-campaign/safety.py": "3eca44f992ce1620c073c94905a406f35334530dd3791c5387eca8c8c34e001b",
+    "bench/external-projects/onnx-vulkan-campaign/verify.py": "264263c80677ffaa1fbeb4da05c1a4a28827a439b357efb4c8584f58c61afbba",
+    "bench/external-projects/onnx-webgpu-substitution/build_adapter.py": "d3dd343522735b4901c6421bb4b037b7ca55089bac2c7fccbc47a9216d7c9a18",
+    "bench/tests/test_onnx_vulkan_campaign.py": "aa91ba6bf0f24fc44905c50a2cd00b61cf0670d8adf4857cb2880fd29aee90ce",
+    "config/onnx-vulkan-campaign.json": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669",
+    "config/onnx-vulkan-campaign.schema.json": "1cb2f6e655f2d1f68f1990f8aefb970dbe91a64ac42167d5fa8f52e237a00edd",
+    "config/onnx-vulkan-evidence.schema.json": "7b4957e09529a20b96cc4b0ec00d4ffae14191bac51c349c060ba67840c48c2c",
+    "docs/onnx-vulkan-campaign-contract.md": "c9e0f20fc4158ad6b7a12f7e0ee5f6f853889f9671850dff6e6cc8ffea67ee98",
+    "runtime/bridge/dawn-proc-table/adapter.zig": "97c29f03515ce774df07f828af912e94496604841781fe1a0a0b2ae29209f754",
+    "runtime/zig/src/compiler/wgsl/emit/spirv/emit_spirv_builtins.zig": "7089329d46e786d4e19ba875d710e201d2e6d037198c44103645e89883e48d1d",
+    "runtime/zig/tests/wgsl/emit_spirv_builtin_test.zig": "4771a39bf5d3ff3d2c29bae94c194ab4777e99a4baa6f8c7902a2032660e733e"
+  }
+}

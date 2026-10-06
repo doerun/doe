@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "classification": "bounded-source-matched-vulkan-campaign",
+  "application": {
+    "repository": "https://github.com/microsoft/onnxruntime-inference-examples",
+    "commit": "16e32e87c81648773b8da2a80434a672e3b9dad6",
+    "path": "c_cxx/squeezenet/main.cpp",
+    "sha256": "e0f216b4e5356f2a33eb9151ccda9dd3407b48735d6591ab4ab2232c8b6ab6aa",
+    "modelRepository": "https://github.com/onnx/models",
+    "modelCommit": "c5cae0f1942c8d7727372c7b1f6b485aa39e4421",
+    "modelPath": "validated/vision/classification/squeezenet/model/squeezenet1.0-12.onnx",
+    "modelSha256": "dec81a8684617770b3cf13fadc1d92565d1d453d23935fc6388b792d99c992bd",
+    "input": "original-ramp-i-over-element-count-plus-one",
+    "optimization": "extended",
+    "intraOpThreads": 1,
+    "validation": "full",
+    "cpuFallback": "disabled"
+  },
+  "consumer": {
+    "onnxCommit": "d2ede0adeb300958cfb5a256c09d27c66c3a6d71",
+    "dawnCommit": "ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38",
+    "buildType": "Release",
+    "backend": "Vulkan",
+    "vendorId": 4098,
+    "contextId": 0
+  },
+  "correctness": {
+    "oracle": "onnx-reference-evaluator",
+    "absoluteTolerance": 1e-06,
+    "relativeTolerance": 0.0001,
+    "requireSameTop1": true,
+    "requireEveryRun": true
+  },
+  "measurement": {
+    "primaryMetric": "independent-process-median-complete-session-run-wall-ns",
+    "materialGainRatio": 1.1,
+    "minimumLowerConfidenceRatio": 1.1,
+    "processPairs": 8,
+    "runsPerProcess": 100,
+    "warmupRuns": 10,
+    "aaPairs": 4,
+    "maximumAaMedianRatio": 1.05,
+    "confidence": 0.95,
+    "bootstrapResamples": 10000,
+    "bootstrapSeed": 31005,
+    "diskCache": "fresh-per-cold-process; separately-preconditioned-per-arm-for-warm",
+    "coldProcessesPerArm": 4,
+    "regressionMaximumRatios": {
+      "warmP95": 1.05,
+      "coldProcessWall": 1.1,
+      "processCpu": 1.05,
+      "peakRss": 1.1
+    }
+  },
+  "stopping": {
+    "stopBeforeTimingOnSafetyOrCorrectnessFailure": true,
+    "stopOnAaFailure": true,
+    "maximumPerformanceCorrections": 1,
+    "minimumProfileOwnerShare": 0.15,
+    "minimumPredictedGainRatio": 1.1,
+    "retainUnfavorableResults": true,
+    "compilerCampaign": "new-concrete-reproduction-required",
+    "deferred": [
+      "Metal",
+      "D3D12",
+      "browser-switching"
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "policy": {
+    "path": "/home/x/deco/doe/config/onnx-vulkan-campaign.json",
+    "sha256": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669"
+  },
+  "builder": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-vulkan-campaign/build_control.py",
+    "sha256": "d93fa16e0df4cee94c936d8e58742845da4f8202dd2b8b3add0130ff6430f5b2"
+  },
+  "commands": [
+    [
+      "cmake",
+      "-S",
+      "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/onnxruntime-d2ede0adeb300958cfb5a256c09d27c66c3a6d71/cmake",
+      "-B",
+      "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build",
+      "-DCMAKE_PROJECT_onnxruntime_INCLUDE=/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/control-reproduction/control-target.cmake"
+    ],
+    [
+      "cmake",
+      "--build",
+      "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build",
+      "--target",
+      "doe_dawn_control",
+      "-j4"
+    ]
+  ],
+  "controlSource": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/control-reproduction/dawn-control.cc",
+    "sha256": "9a33f3a5170507269b37e8363b99bb2a94fa02bff4c00dc4d2648488133df436"
+  },
+  "cmakeHook": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/control-reproduction/control-target.cmake",
+    "sha256": "88d700ae8389584cdbd4e9b514752747606f036d95b064ebd60bca5f22431b52"
+  },
+  "cmakeCache": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/CMakeCache.txt",
+    "sha256": "1e28a0afc578a056e34ab424c554be9f81a96acb59c22c9d117f547521641d4a"
+  },
+  "library": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/control-reproduction/libdoe_dawn_control.so",
+    "sha256": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2"
+  }
+}

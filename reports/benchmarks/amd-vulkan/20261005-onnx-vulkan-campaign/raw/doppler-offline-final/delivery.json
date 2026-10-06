@@ -1,0 +1,32 @@
+{
+  "classification": "offline-native-archive-reconstruction",
+  "command": [
+    "npm",
+    "install",
+    "--ignore-scripts",
+    "--omit=optional",
+    "--no-audit",
+    "--no-fund",
+    "--cache",
+    "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/doppler-offline-final/npm-cache"
+  ],
+  "derivedProviderArchiveSha256": "4a4178141c82b670a7d2f063232af5d63928e11a0bcea18dc7230713c6bfade5",
+  "dopplerArchiveSha256": "bc9298ef4bf4fc3b5bfdcff6d24104059af2cd643c16604ae1aab2ef9ecf29ae",
+  "nativeSha256": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2",
+  "originalProviderArchiveSha256": "f9eca989472d84db9b35c7d3f2cabe7e3749e831e18a81c4ffdc67fa2b6530e4",
+  "preparationNetwork": "enabled",
+  "replacements": [
+    {
+      "afterSha256": "5a97d46a4940b78f010443dc6cb9eb1e69496bb18fe66f42370dc85eeecb995e",
+      "beforeSha256": "d93c1ad15563da828cccbb1e5ddc8f77f1fc6c0fa1476ae844423751f6032656",
+      "path": "doe/native/doe-build-metadata.json"
+    },
+    {
+      "afterSha256": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2",
+      "beforeSha256": "811d4dba9d5cd165060a5aeade705b4c91bb5d1a6d30cdd9528068e9f290c239",
+      "path": "doe/native/libwebgpu_doe.so"
+    }
+  ],
+  "schemaVersion": 1,
+  "scope": "Local Linux package snapshot; no registry publication"
+}

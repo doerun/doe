@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "arm": "dawn",
+  "classification": "application-qualification",
+  "passed": false,
+  "failure": {
+    "type": "ApplicationFailure",
+    "message": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application/application: error while loading shared libraries: libonnxruntime.so.1: cannot open shared object file: No such file or directory\n"
+  },
+  "negativeControl": false,
+  "exitCode": 127,
+  "policy": {
+    "path": "/home/x/deco/doe/config/onnx-vulkan-campaign.json",
+    "sha256": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669"
+  },
+  "safety": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/safety/dawn.json",
+    "sha256": "9370bc18ac32c49083bc77a2633f926041e8ec6205f09d4c3d409986b11c4b15"
+  },
+  "inputs": {
+    "application": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application/application",
+      "sha256": "011f4f9d6a470bab271df81a539442410976ed65bdf70ae1872077a51356672f"
+    },
+    "provider": {
+      "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/libonnxruntime_providers_webgpu.so",
+      "sha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d"
+    },
+    "native": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+      "sha256": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2"
+    },
+    "bridge": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-final/libdoe_dawn_bridge.so",
+      "sha256": "eb6584aa2677478c26f5ffde684b3e05e4375feaf517090c9d3c3857e11b5e0f"
+    },
+    "context": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-final/libexternal_context.so",
+      "sha256": "5a9b546a2f2c8372885840690bf3394868437e0b6f095ce5d616e605c6cab180"
+    },
+    "reference": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/reference/reference.f32",
+      "sha256": "b85805bff755867ec86e9b0ec8ac368e5fc6af7247a42145db0bcff061fe1bd1"
+    }
+  },
+  "log": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/dawn-application.log",
+    "sha256": "c3bb2fef59c6f2c60070f3f1c80d5246b8d2cef3e0a3a6e0ccce3558698ff1e0"
+  },
+  "profile": null,
+  "operatorNames": [],
+  "operatorProviders": [],
+  "timingSamples": []
+}

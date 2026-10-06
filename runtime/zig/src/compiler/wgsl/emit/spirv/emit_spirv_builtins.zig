@@ -727,7 +727,11 @@ fn emit_dot(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
             if (lhs_vec.len != rhs_vec.len) return error.UnsupportedConstruct;
             if (lhs_vec.elem != rhs_vec.elem) return error.UnsupportedConstruct;
             switch (self.emitter.module.types.get(lhs_vec.elem)) {
-                .scalar => |scalar| if (scalar != .f32 and scalar != .f16 and scalar != .abstract_float) return error.UnsupportedConstruct,
+                .scalar => |scalar| switch (scalar) {
+                    .i32, .u32, .abstract_int => return emit_integer_dot(self, lhs_expr, rhs_expr, lhs_ty, result_ty, lhs_vec.len),
+                    .f32, .f16, .abstract_float => {},
+                    else => return error.UnsupportedConstruct,
+                },
                 else => return error.UnsupportedConstruct,
             }
         },
@@ -743,6 +747,19 @@ fn emit_dot(self: anytype, call: anytype, result_ty: ir.TypeId) !u32 {
             try self.emit_value_expr(rhs_expr),
         },
     );
+}
+
+fn emit_integer_dot(self: anytype, lhs: ir.ExprId, rhs: ir.ExprId, vector_ty: ir.TypeId, result_ty: ir.TypeId, lanes: u8) !u32 {
+    const products = try emit_result_inst(self, spirv.Opcode.IMul, try self.emitter.lower_type(vector_ty), &.{
+        try self.emit_value_expr(lhs), try self.emit_value_expr(rhs),
+    });
+    const scalar_type = try self.emitter.lower_type(result_ty);
+    var sum = try emit_result_inst(self, spirv.Opcode.CompositeExtract, scalar_type, &.{ products, 0 });
+    for (1..lanes) |lane| {
+        const component = try emit_result_inst(self, spirv.Opcode.CompositeExtract, scalar_type, &.{ products, @intCast(lane) });
+        sum = try emit_result_inst(self, spirv.Opcode.IAdd, scalar_type, &.{ sum, component });
+    }
+    return sum;
 }
 
 fn emit_bool_vector_reduce(self: anytype, call: anytype, result_ty: ir.TypeId, opcode: u16) !u32 {
