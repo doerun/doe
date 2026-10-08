@@ -36,6 +36,7 @@ const DoeTexture = native_types.DoeTexture;
 
 pub export fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUCommandEncoderDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
+    if (!dev.requireAlive()) return null;
     const enc = createEncoder(alloc, dev) catch {
         dev.error_scopes.deliver(@import("../../runtime/diagnostics/error_scope.zig").ERROR_TYPE_OUT_OF_MEMORY, "command encoder allocation failed");
         return null;
@@ -69,7 +70,7 @@ pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void
         label_store.remove(raw);
         @import("../../contracts/resource_lease.zig").releaseAll(e.allocator, &e.references);
         releaseCommandStorage(e.allocator, e.device_ref, &e.cmds);
-        if (e.device_ref) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
+        if (e.device_ref) |dev| native_exports.doeNativeDeviceReleaseInternal(toOpaque(dev));
         const allocator = e.allocator;
         allocator.destroy(e);
     }
@@ -215,7 +216,7 @@ pub export fn doeNativeCommandBufferRelease(raw: ?*anyopaque) callconv(.c) void 
         label_store.remove(raw);
         @import("../../contracts/resource_lease.zig").releaseAll(cb.allocator, &cb.references);
         releaseCommandStorage(cb.allocator, cb.device_ref, &cb.cmds);
-        if (cb.device_ref) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
+        if (cb.device_ref) |dev| native_exports.doeNativeDeviceReleaseInternal(toOpaque(dev));
         const allocator = cb.allocator;
         allocator.destroy(cb);
     }

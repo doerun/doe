@@ -228,6 +228,7 @@ fn stageEntryName(sv: RenderStringView, fallback: [*:0]const u8) [*:0]const u8 {
 
 fn createRenderPipeline(dev_raw: ?*anyopaque, desc_raw: ?*anyopaque) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
+    if (!dev.requireAlive()) return null;
     const d = @as(*const RenderPipelineDesc, @ptrCast(@alignCast(desc_raw orelse return null)));
     const shader_handles = [_]?*anyopaque{ d.vertex.module, if (d.fragment) |fragment| fragment.module else null };
     for (shader_handles) |handle| {
@@ -581,7 +582,7 @@ pub export fn doeNativeRenderPipelineRelease(raw: ?*anyopaque) callconv(.c) void
         if (p.layout) |layout| @import("../support/doe_native_exports.zig").doeNativePipelineLayoutRelease(toOpaque(layout));
         const device = p.device_ref;
         alloc.destroy(p);
-        if (device) |owner| @import("../support/doe_native_exports.zig").doeNativeDeviceRelease(toOpaque(owner));
+        if (device) |owner| @import("../support/doe_native_exports.zig").doeNativeDeviceReleaseInternal(toOpaque(owner));
     }
 }
 
@@ -593,4 +594,11 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
     pipeline.device_ref = device;
     if (pipeline.layout) |layout| native_helpers.object_add_ref(DoePipelineLayout, toOpaque(layout));
     return raw;
+}
+
+pub fn createLostRenderPipeline(device: *DoeDevice) ?*anyopaque {
+    const pipeline = make(DoeRenderPipeline) orelse return null;
+    native_helpers.object_add_ref(DoeDevice, toOpaque(device));
+    pipeline.* = .{ .error_object = true, .device_ref = device };
+    return toOpaque(pipeline);
 }

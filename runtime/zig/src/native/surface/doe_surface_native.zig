@@ -495,7 +495,7 @@ pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
             };
         }
     }
-    if (surf.device_ref) |dev| device_native.doeNativeDeviceRelease(toOpaque(dev));
+    if (surf.device_ref) |dev| device_native.doeNativeDeviceReleaseInternal(toOpaque(dev));
     release_surface_instance(surf);
     alloc.destroy(surf);
 }

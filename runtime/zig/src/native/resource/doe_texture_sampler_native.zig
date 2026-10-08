@@ -397,6 +397,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const a
 
 fn createTexture(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUTextureDescriptor) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
+    if (!dev.requireAlive()) return null;
     const d = desc orelse {
         dev.error_scopes.deliver(error_scope.ERROR_TYPE_VALIDATION, "texture descriptor is null");
         return null;
@@ -688,7 +689,7 @@ pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeTexture, raw)) |t| {
         if (!native_helpers.object_should_destroy(t)) return;
         const device = t.device_ref;
-        defer if (device) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
+        defer if (device) |dev| native_exports.doeNativeDeviceReleaseInternal(toOpaque(dev));
         texture_registry.remove(raw);
         label_store.remove(raw);
         if (d3d12_texture_registry.contains(raw)) {
@@ -751,6 +752,7 @@ pub export fn doeNativeDeviceCreateSampler(dev_raw: ?*anyopaque, desc: ?*const a
 
 fn createSampler(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUSamplerDescriptor) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
+    if (!dev.requireAlive()) return null;
     const d = desc orelse return null;
     const s = make(DoeSampler) orelse return null;
     s.* = .{};
@@ -806,7 +808,7 @@ pub export fn doeNativeSamplerRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeSampler, raw)) |s| {
         if (!native_helpers.object_should_destroy(s)) return;
         const device = s.device_ref;
-        defer if (device) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
+        defer if (device) |dev| native_exports.doeNativeDeviceReleaseInternal(toOpaque(dev));
         label_store.remove(raw);
         if (d3d12_sampler_registry.contains(raw)) {
             d3d12_sampler_registry.remove(raw);

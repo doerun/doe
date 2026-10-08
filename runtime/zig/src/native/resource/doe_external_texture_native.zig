@@ -199,6 +199,8 @@ pub export fn doeNativeDeviceCreateExternalTexture(
     dev_raw: ?*anyopaque,
     descriptor: ?*const anyopaque,
 ) callconv(.c) ?*anyopaque {
+    const owner = native_helpers.cast(native_types.DoeDevice, dev_raw) orelse return null;
+    if (!owner.requireAlive()) return null;
     const desc = descriptor orelse return null;
     const desc_ptr: [*]const u8 = @ptrCast(desc);
     const instance_ref = resolve_device_instance(dev_raw);

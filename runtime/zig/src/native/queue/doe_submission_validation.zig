@@ -14,6 +14,7 @@ pub const ValidationError = error{
     ExternalTextureExpired,
     QueryDestroyed,
     InvalidBundle,
+    PipelineUnavailable,
 };
 
 pub fn message(err: ValidationError) []const u8 {
@@ -25,6 +26,7 @@ pub fn message(err: ValidationError) []const u8 {
         error.ExternalTextureExpired => "queue submission uses an expired external texture",
         error.QueryDestroyed => "queue submission uses a destroyed query set",
         error.InvalidBundle => "queue submission uses an invalid render bundle",
+        error.PipelineUnavailable => "queue submission uses a pipeline from a lost device",
     };
 }
 
@@ -43,8 +45,12 @@ pub fn validate(references: []const leases.ResourceLease) ValidationError!void {
             const query = try object(queries.DoeQuerySet, reference.handle);
             if (query.destroyed) return error.QueryDestroyed;
         },
-        .compute_pipeline => _ = try object(objects.DoeComputePipeline, reference.handle),
-        .render_pipeline => _ = try object(objects.DoeRenderPipeline, reference.handle),
+        .compute_pipeline => {
+            if ((try object(objects.DoeComputePipeline, reference.handle)).error_object) return error.PipelineUnavailable;
+        },
+        .render_pipeline => {
+            if ((try object(objects.DoeRenderPipeline, reference.handle)).error_object) return error.PipelineUnavailable;
+        },
         .device => _ = try object(objects.DoeDevice, reference.handle),
         .untyped => return error.InvalidReference,
     };
@@ -144,4 +150,13 @@ test "submission validates direct leases and rejects destroyed queries and untyp
     try std.testing.expectError(error.BufferMapped, validate(&.{testReference(.buffer, &buffer)}));
     var texture: objects.DoeTexture = .{ .destroyed = true };
     try std.testing.expectError(error.TextureUnavailable, validate(&.{testReference(.texture, &texture)}));
+}
+
+test "lost pipeline objects cannot enter command submission" {
+    var compute = objects.DoeComputePipeline{ .error_object = true };
+    var render = objects.DoeRenderPipeline{ .error_object = true };
+    const compute_references = [_]leases.ResourceLease{testReference(.compute_pipeline, &compute)};
+    const render_references = [_]leases.ResourceLease{testReference(.render_pipeline, &render)};
+    try std.testing.expectError(error.PipelineUnavailable, validate(&compute_references));
+    try std.testing.expectError(error.PipelineUnavailable, validate(&render_references));
 }

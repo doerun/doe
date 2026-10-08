@@ -1,22 +1,10 @@
 const std = @import("std");
 const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
 
-pub const DEVICE_LOST_FUTURE_ID_BASE: u64 = 0xD0E1_0000_0000_0000;
-const FUTURE_ID_KIND_MASK: u64 = 0xFFFF_0000_0000_0000;
-const FUTURE_ID_PAYLOAD_MASK: u64 = 0x0000_FFFF_FFFF_FFFF;
 const FUTURE_SEQUENCE_BITS = 32;
 const MAX_INSTANCE_ID = 0x7FFF_FFFF;
 var next_instance_id: std.atomic.Value(u32) = .init(1);
 var next_legacy_id: std.atomic.Value(u64) = .init(0x8000_0000_0000_0000);
-
-pub fn device_lost_future_id(raw: ?*anyopaque) u64 {
-    const payload = if (raw) |ptr| @intFromPtr(ptr) & FUTURE_ID_PAYLOAD_MASK else 0;
-    return DEVICE_LOST_FUTURE_ID_BASE | payload;
-}
-
-pub fn is_device_lost_future_id(id: u64) bool {
-    return (id & FUTURE_ID_KIND_MASK) == DEVICE_LOST_FUTURE_ID_BASE;
-}
 
 /// Flat native calls without an instance retain their immediate-delivery contract.
 pub fn legacyFuture() u64 {
@@ -140,14 +128,14 @@ pub const PendingCompletions = struct {
         defer self.mutex.unlock();
         for (infos) |*info| {
             info.completed = 0;
-            if (!self.issued(info.future.id) and !is_device_lost_future_id(info.future.id)) return error.UnknownFuture;
+            if (!self.issued(info.future.id)) return error.UnknownFuture;
         }
         while (true) {
             var completed = false;
             var tracked_pending = false;
             var selected: ?*Completion = null;
             for (infos) |*info| {
-                var pending = is_device_lost_future_id(info.future.id);
+                var pending = false;
                 var entry = self.head;
                 while (entry) |completion| : (entry = completion.next) {
                     if (completion.id == info.future.id) {
@@ -245,11 +233,10 @@ test "pipeline delivery can inspect its own completion without retiring another 
     completion.finish();
 }
 
-test "untracked device-loss waits fail explicitly instead of waiting on an unwakeable condition" {
+test "manufactured device loss identities are not instance-issued futures" {
     var pending: PendingCompletions = .{};
-    var infos = [_]abi_callback.WGPUFutureWaitInfo{.{ .future = .{ .id = device_lost_future_id(null) }, .completed = 0 }};
-    try std.testing.expect(!try pending.waitAny(&infos, 0));
-    try std.testing.expectError(error.UnsupportedFutureWait, pending.waitAny(&infos, std.math.maxInt(u64)));
+    var infos = [_]abi_callback.WGPUFutureWaitInfo{.{ .future = .{ .id = 0xD0E1_0000_0000_0000 }, .completed = 0 }};
+    try std.testing.expectError(error.UnknownFuture, pending.waitAny(&infos, 0));
 }
 
 test "deferred callbacks obey mode and instance identity and do not fire twice" {

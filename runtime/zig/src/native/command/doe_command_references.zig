@@ -36,7 +36,7 @@ pub fn retainRenderBundleAssumeCapacity(list: *List, bundle: *@import("../../run
 }
 
 pub fn retainDeviceAssumeCapacity(list: *List, device: *objects.DoeDevice) void {
-    retain(list, device, .device, exports.doeNativeDeviceRelease);
+    retain(list, device, .device, exports.doeNativeDeviceReleaseInternal);
 }
 
 pub fn retainPipelineAssumeCapacity(list: *List, pipeline: *objects.DoeComputePipeline) void {

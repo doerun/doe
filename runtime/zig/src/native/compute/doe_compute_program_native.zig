@@ -181,7 +181,7 @@ const Program = struct {
         for (self.buffers.items) |reference| exports.doeNativeBufferRelease(helpers.toOpaque(reference.object));
         self.buffers.deinit(alloc);
         exports.doeNativeCommandBufferRelease(helpers.toOpaque(self.commands));
-        exports.doeNativeDeviceRelease(helpers.toOpaque(self.device));
+        exports.doeNativeDeviceReleaseInternal(helpers.toOpaque(self.device));
         alloc.destroy(self);
     }
 };
@@ -189,6 +189,7 @@ const Program = struct {
 pub export fn doeNativeComputeProgramPrepare(queue_raw: ?*anyopaque, commands_raw: ?*anyopaque) callconv(.c) ?*anyopaque {
     if (comptime builtin.os.tag != .linux) return null;
     const queue = helpers.cast(objects.DoeQueue, queue_raw) orelse return null;
+    if (!queue.dev.requireAlive()) return null;
     const commands = helpers.cast(objects.DoeCommandBuffer, commands_raw) orelse return null;
     if (commands.error_object) return null;
     if (commands.dev != queue.dev or queue.dev.backend != .vulkan) {
@@ -211,6 +212,7 @@ pub export fn doeNativeComputeProgramPrepare(queue_raw: ?*anyopaque, commands_ra
 pub export fn doeNativeComputeProgramSubmit(raw: ?*anyopaque) callconv(.c) u32 {
     if (comptime builtin.os.tag != .linux) return 0;
     const program: *Program = @ptrCast(@alignCast(raw orelse return 0));
+    if (!program.device.requireAlive()) return 0;
     program.validate() catch |err| {
         errors.deliverInternalError(program.device, "compute program invalidated: {s}", .{@errorName(err)});
         return 0;

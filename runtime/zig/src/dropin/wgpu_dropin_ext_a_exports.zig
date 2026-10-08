@@ -160,13 +160,13 @@ fn pipeline_error(comptime Info: type, device: types.WGPUDevice, info: Info, sta
         message: []const u8,
         fn deliver(self: *@This()) void {
             if (self.info.callback) |cb| cb(self.status, null, .{ .data = self.message.ptr, .length = self.message.len }, self.info.userdata1, self.info.userdata2);
-            native.doeNativeDeviceRelease(self.device);
+            native.doeNativeDeviceReleaseInternal(self.device);
         }
     };
     const dev = native.cast(native.DoeDevice, device);
-    native.doeNativeDeviceAddRef(device);
+    native.doeNativeDeviceRetainInternal(device);
     return callback_delivery.ready(Reply, std.heap.c_allocator, if (dev) |d| callback_delivery.instanceForDevice(d) else null, info.mode, .{ .device = device, .info = info, .status = status, .message = message }, Reply.deliver) catch |err| {
-        native.doeNativeDeviceRelease(device);
+        native.doeNativeDeviceReleaseInternal(device);
         @panic(@errorName(err));
     };
 }
@@ -227,7 +227,7 @@ pub export fn wgpuDeviceCreateResourceTable(a0: types.WGPUDevice, a1: *const p1r
 }
 
 pub export fn wgpuDeviceDestroy(a0: types.WGPUDevice) callconv(.c) void {
-    _ = a0;
+    native.doeNativeDeviceDestroy(a0);
 }
 
 pub export fn wgpuDeviceGetAdapter(a0: types.WGPUDevice) callconv(.c) types.WGPUAdapter {
@@ -264,14 +264,14 @@ const ScopeReply = struct {
     }
     fn deliver(self: *ScopeReply) void {
         if (self.info.callback) |cb| cb(self.status, self.error_type, .{ .data = &self.message, .length = self.length }, self.info.userdata1, self.info.userdata2);
-        native.doeNativeDeviceRelease(self.device);
+        native.doeNativeDeviceReleaseInternal(self.device);
     }
 };
 
 pub export fn wgpuDevicePopErrorScope(a0: types.WGPUDevice, a1: async_procs.PopErrorScopeCallbackInfo) callconv(.c) types.WGPUFuture {
     const device = native.cast(native.DoeDevice, a0);
     var reply = ScopeReply{ .device = a0, .info = a1 };
-    native.doeNativeDeviceAddRef(a0);
+    native.doeNativeDeviceRetainInternal(a0);
     const popped = if (device) |dev| dev.error_scopes.pop(.{ .callback = ScopeReply.capture, .userdata1 = &reply }) else false;
     if (!popped) {
         reply.status = 3; // Error: no scope exists; errorType remains NoError.
@@ -280,7 +280,7 @@ pub export fn wgpuDevicePopErrorScope(a0: types.WGPUDevice, a1: async_procs.PopE
         @memcpy(reply.message[0..message.len], message);
     }
     return callback_delivery.ready(ScopeReply, std.heap.c_allocator, if (device) |dev| callback_delivery.instanceForDevice(dev) else null, a1.mode, reply, ScopeReply.deliver) catch |err| {
-        native.doeNativeDeviceRelease(a0);
+        native.doeNativeDeviceReleaseInternal(a0);
         @panic(@errorName(err));
     };
 }

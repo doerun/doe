@@ -1,5 +1,20 @@
 # Doe status: runtime backends and benchmarks
 
+## Bounded ONNX Vulkan device lifecycle qualification
+
+The [device lifecycle campaign](../../reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-device-lifecycle/README.md)
+extends the callback evidence with descriptor-based destruction notifications,
+issued loss futures, external-reference teardown and release-safe error pipelines.
+Native resource leases retain backend cleanup while logical destruction blocks
+new work. Pinned Dawn controls, canonical runtime checks, callback regressions and
+unchanged SqueezeNet/MatMul/Add pass against the same immutable Vulkan build.
+
+The [contract migration](../native-device-lifecycle-contract.md) preserves earlier
+reports and unfavorable experiments. No material application advantage or general
+conformance is promoted. Failed-creation WaitAnyOnly delivery, instance abandonment,
+real driver loss, submitted-work interruption and other backends remain open.
+Metal, D3D12, browser switching and closed browser transformations stay deferred.
+
 ## Bounded ONNX Vulkan callback qualification
 
 The [callback campaign](../../reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-callbacks/README.md)
@@ -11,8 +26,9 @@ fallback disabled. Native disabling and oracle controls remain sensitive.
 
 The [contract migration](../native-callback-contract.md) preserves earlier reports
 and their rejected/no-candidate performance decisions. No speed claim is promoted.
-General callback conformance remains open, including descriptor-based device loss,
-DeviceDestroy semantics, instance abandonment and submitted-work interruption.
+The successor above qualifies its bounded descriptor-loss and destruction paths.
+General callback conformance, instance abandonment and submitted-work interruption
+remain open.
 Metal, D3D12, browser switching and closed browser transformations remain deferred.
 No successor performance or compiler campaign is automatically selected.
 

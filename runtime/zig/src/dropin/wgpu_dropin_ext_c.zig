@@ -4,7 +4,6 @@ const abi_copy = @import("../core/abi/wgpu_copy_descriptor_types.zig");
 const p2life = @import("../core/abi/procs/wgpu_p2_lifecycle_procs.zig");
 const surface = @import("../full/surface/wgpu_surface_procs.zig");
 const native = @import("../native/mod.zig");
-const future_ids = @import("../native/support/doe_future_ids.zig");
 
 extern fn doeNativeBufferGetMapState(raw: ?*anyopaque) callconv(.c) u32;
 
@@ -106,7 +105,7 @@ pub export fn wgpuComputePipelineSetLabel(a0: abi_core.WGPUComputePipeline, a1: 
 }
 
 pub export fn wgpuDeviceGetLostFuture(a0: abi_core.WGPUDevice) callconv(.c) abi_core.WGPUFuture {
-    return .{ .id = future_ids.device_lost_future_id(a0) };
+    return native.doeNativeDeviceGetLostFuture(a0);
 }
 
 pub export fn wgpuDeviceSetDeviceLostCallback(
@@ -115,10 +114,7 @@ pub export fn wgpuDeviceSetDeviceLostCallback(
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void {
-    const dev = native.cast(native.DoeDevice, dev_raw) orelse return;
-    dev.device_lost_callback = callback;
-    dev.device_lost_userdata1 = userdata1;
-    dev.device_lost_userdata2 = userdata2;
+    native.doeNativeDeviceSetLostCallback(dev_raw, callback, userdata1, userdata2);
 }
 
 pub export fn wgpuDeviceSetLabel(a0: abi_core.WGPUDevice, a1: abi_core.WGPUStringView) callconv(.c) void {

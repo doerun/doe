@@ -272,6 +272,7 @@ test "C ABI null safety: bind group lifecycle" {
 test "bind group retains its layout and releases partial resources on rejection" {
     const groups = @import("../../src/native/resource/doe_bind_group_native.zig");
     const abi = @import("../../src/core/abi/wgpu_pipeline_descriptor_types.zig");
+    var device = native.DoeDevice{};
     var layout = native.DoeBindGroupLayout{};
     var buffer = native.DoeBuffer{ .size = 16 };
     var entries = [_]abi.WGPUBindGroupEntry{
@@ -288,12 +289,12 @@ test "bind group retains its layout and releases partial resources on rejection"
     descriptor.layout = @ptrCast(&layout);
     descriptor.entries = &entries;
     descriptor.entryCount = entries.len;
-    try std.testing.expect(groups.doeNativeDeviceCreateBindGroup(null, &descriptor) == null);
+    try std.testing.expect(groups.doeNativeDeviceCreateBindGroup(@ptrCast(&device), &descriptor) == null);
     try std.testing.expectEqual(@as(u32, 1), layout.ref_count);
     try std.testing.expectEqual(@as(u32, 1), buffer.ref_count);
 
     descriptor.entryCount = 1;
-    const raw = groups.doeNativeDeviceCreateBindGroup(null, &descriptor) orelse return error.TestUnexpectedResult;
+    const raw = groups.doeNativeDeviceCreateBindGroup(@ptrCast(&device), &descriptor) orelse return error.TestUnexpectedResult;
     try std.testing.expectEqual(@as(u32, 2), layout.ref_count);
     try std.testing.expectEqual(@as(u32, 2), buffer.ref_count);
     groups.doeNativeBindGroupRelease(raw);
@@ -303,9 +304,10 @@ test "bind group retains its layout and releases partial resources on rejection"
 
 test "flat bind group retains layout through successful and rejected construction" {
     const groups = @import("../../src/native/resource/doe_bind_group_native.zig");
+    var device = native.DoeDevice{};
     var layout = native.DoeBindGroupLayout{};
     const raw = groups.doeNativeDeviceCreateBufferBindGroupFlat4(
-        null,
+        @ptrCast(&device),
         @ptrCast(&layout),
         0,
         0,
@@ -325,7 +327,7 @@ test "flat bind group retains layout through successful and rejected constructio
     groups.doeNativeBindGroupRelease(raw);
     try std.testing.expectEqual(@as(u32, 1), layout.ref_count);
     try std.testing.expect(groups.doeNativeDeviceCreateBufferBindGroupFlat4(
-        null,
+        @ptrCast(&device),
         @ptrCast(&layout),
         1,
         0,

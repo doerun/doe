@@ -37,6 +37,7 @@ pub export fn doeNativeDeviceCreateRenderBundleEncoder(
     desc: ?*const RenderBundleEncoderDescriptor,
 ) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
+    if (!dev.requireAlive()) return null;
     const d = desc orelse return null;
 
     const color_fmt: abi_texture.WGPUTextureFormat = if (d.colorFormatCount > 0)
@@ -57,7 +58,7 @@ pub export fn doeNativeDeviceCreateRenderBundleEncoder(
     };
     enc.backend = dev.backend;
     native_helpers.object_add_ref(DoeDevice, dev_raw);
-    enc.device_lease = .{ .handle = dev_raw, .release = @import("../support/doe_native_exports.zig").doeNativeDeviceRelease };
+    enc.device_lease = .{ .handle = dev_raw, .release = @import("../support/doe_native_exports.zig").doeNativeDeviceReleaseInternal };
     return @ptrCast(enc);
 }
 
@@ -304,7 +305,7 @@ fn bundleAllocationScenario(allocator: std.mem.Allocator) !void {
     }
     const encoder = bundle.make_bundle_encoder(allocator, 0, 0, 1, false, false) orelse return error.OutOfMemory;
     native_helpers.object_add_ref(DoeDevice, toOpaque(&device));
-    encoder.device_lease = .{ .handle = toOpaque(&device), .release = @import("../support/doe_native_exports.zig").doeNativeDeviceRelease };
+    encoder.device_lease = .{ .handle = toOpaque(&device), .release = @import("../support/doe_native_exports.zig").doeNativeDeviceReleaseInternal };
     defer doeNativeRenderBundleEncoderRelease(toOpaque(encoder));
     const repetitions = 17;
     for (0..repetitions) |_| {

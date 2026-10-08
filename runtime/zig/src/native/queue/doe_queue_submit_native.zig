@@ -40,6 +40,7 @@ pub export fn doeNativeQueueSubmit(
     cmd_bufs: [*]const ?*anyopaque,
 ) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
+    if (!q.dev.requireAlive()) return;
     for (cmd_bufs[0..count]) |raw| {
         const buffer = cast(native_types.DoeCommandBuffer, raw) orelse {
             q.dev.error_scopes.deliver(@import("../../runtime/diagnostics/error_scope.zig").ERROR_TYPE_VALIDATION, "queue submission requires valid command buffers");

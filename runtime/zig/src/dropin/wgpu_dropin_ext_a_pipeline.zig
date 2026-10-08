@@ -351,7 +351,7 @@ pub fn free_compute_pipeline_request(req: *ComputePipelineAsyncRequest) void {
     free_constants(allocator, req.constants);
     if (req.descriptor.layout != null) native.doeNativePipelineLayoutRelease(req.descriptor.layout);
     if (req.descriptor.compute.module != null) native.doeNativeShaderModuleRelease(req.descriptor.compute.module);
-    native.doeNativeDeviceRelease(req.device);
+    native.doeNativeDeviceReleaseInternal(req.device);
     finish_pipeline_request(ComputePipelineAsyncRequest, req);
 }
 
@@ -373,7 +373,7 @@ fn copy_compute_request(
     if (desc.compute.constantCount > 0 and desc.compute.constants == null) return error.InvalidDescriptor;
     const req = try allocator.create(ComputePipelineAsyncRequest);
     req.* = .{ .allocator = allocator, .device = device, .descriptor = desc.*, .callback_info = callback_info };
-    native.doeNativeDeviceAddRef(device);
+    native.doeNativeDeviceRetainInternal(device);
     if (desc.compute.module != null) native.object_add_ref(native.DoeShaderModule, desc.compute.module);
     if (desc.layout != null) native.object_add_ref(native.DoePipelineLayout, desc.layout);
     errdefer free_compute_pipeline_request(req);
@@ -418,7 +418,7 @@ fn copy_render_request(
     }
     const req = try allocator.create(RenderPipelineAsyncRequest);
     req.* = .{ .allocator = allocator, .device = device, .descriptor = src.*, .callback_info = callback_info };
-    native.doeNativeDeviceAddRef(device);
+    native.doeNativeDeviceRetainInternal(device);
     if (src.layout != null) native.object_add_ref(native.DoePipelineLayout, src.layout);
     if (src.vertex.module != null) native.object_add_ref(native.DoeShaderModule, src.vertex.module);
     if (src.fragment) |frag| {
@@ -530,7 +530,7 @@ pub fn free_render_pipeline_request(req: *RenderPipelineAsyncRequest) void {
     if (req.fragment_targets) |targets| req.allocator.free(targets);
     if (req.fragment_state) |frag| req.allocator.destroy(frag);
     if (req.depth_stencil) |depth| req.allocator.destroy(depth);
-    native.doeNativeDeviceRelease(req.device);
+    native.doeNativeDeviceReleaseInternal(req.device);
     finish_pipeline_request(RenderPipelineAsyncRequest, req);
 }
 
@@ -588,6 +588,17 @@ fn deliver_pipeline_requests(
         const Delivery = struct {
             fn dispatch(completion: *future_ids.Completion) void {
                 const current: *Request = @fieldParentPtr("future_completion", completion);
+                if (native.cast(native.DoeDevice, current.device)) |device| {
+                    if (device.isDestroyed()) {
+                        if (current.pipeline != null) release_pipeline(current.pipeline);
+                        current.pipeline = @ptrCast(if (Pipeline == native.DoeComputePipeline)
+                            @import("../native/shader/doe_shader_native.zig").createLostComputePipeline(device)
+                        else
+                            @import("../native/render/doe_render_pipeline_native.zig").createLostRenderPipeline(device));
+                        current.status = if (current.pipeline != null) async_procs.CREATE_PIPELINE_ASYNC_STATUS_SUCCESS else async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR;
+                        current.message = if (current.pipeline != null) "" else "lost pipeline object allocation failed";
+                    }
+                }
                 if (current.callback_info.callback) |cb| {
                     cb(current.status, current.pipeline, .{ .data = current.message.ptr, .length = current.message.len }, current.callback_info.userdata1, current.callback_info.userdata2);
                 } else if (current.pipeline != null) release_pipeline(current.pipeline);

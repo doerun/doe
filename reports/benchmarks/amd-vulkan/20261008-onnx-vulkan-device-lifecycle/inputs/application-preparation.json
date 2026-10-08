@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "policy": {
+    "path": "/home/x/deco/doe/config/onnx-vulkan-campaign.json",
+    "sha256": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669"
+  },
+  "upstreamSource": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/upstream/c_cxx/squeezenet/main.cpp",
+    "sha256": "e0f216b4e5356f2a33eb9151ccda9dd3407b48735d6591ab4ab2232c8b6ab6aa"
+  },
+  "preparedSource": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-matched/main.cpp",
+    "sha256": "00c9888fdb08a1191fff4ae7f28430e9f4c9ee93b8346dda4cbec65c4b9a819f"
+  },
+  "patch": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-matched/application.patch",
+    "sha256": "84cd994eb9968c1a1a0f3cb665830563be37f37ccd8ce3b00a312c36af476a0c"
+  },
+  "providerIntegration": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-vulkan-campaign/application-provider.h",
+    "sha256": "e0efd795836f6b2941b31e5ef91799455c7f7d32d720e32e4f191763da619943"
+  },
+  "model": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/upstream/squeezenet.onnx",
+    "sha256": "dec81a8684617770b3cf13fadc1d92565d1d453d23935fc6388b792d99c992bd"
+  },
+  "onnxCore": {
+    "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/venv/lib/python3.14/site-packages/onnxruntime/capi/libonnxruntime.so.1.24.4",
+    "sha256": "2d518e11c7767f9fdc4413bdbeb45acf30db504ff76a82fc19d9238a3f9f6c24"
+  },
+  "applicationHeaders": {
+    "schemaVersion": 1,
+    "repository": "https://github.com/microsoft/onnxruntime",
+    "commit": "2d924974ef147392ced8409d36bd6d2e7fcc8a74",
+    "tag": "v1.24.4",
+    "files": [
+      {
+        "path": "onnxruntime_cxx_api.h",
+        "sha256": "5eb8809db561261210ffcafcf9823873f0603fd799542797b6b728bb3f75e5f6"
+      },
+      {
+        "path": "onnxruntime_cxx_inline.h",
+        "sha256": "022f4559009a35b157bc05a1aae9a59a2603a17e535d9410a49d0f9187f18039"
+      },
+      {
+        "path": "onnxruntime_c_api.h",
+        "sha256": "9ed0d7054a4e74249467365b25b415d36f51a44a6349e2a994a1812e4723d1e2"
+      },
+      {
+        "path": "onnxruntime_float16.h",
+        "sha256": "88b242845d25981633a0bbd1c148e273cf8bfb016ea3f57c4af41a06530f72b0"
+      },
+      {
+        "path": "onnxruntime_ep_c_api.h",
+        "sha256": "e94ac3490697bdb107844fa9d403952ee7136134132a057eae5c1207b57ce352"
+      }
+    ]
+  },
+  "application": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-matched/application",
+    "sha256": "a4c4416a7a7c076b72d1a375526113e3e42311f54f1f18ddcbf06cef3234b748"
+  },
+  "command": [
+    "g++",
+    "-std=c++17",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-Ibench/out/onnx-vulkan-campaign/20261005/upstream/onnx-headers",
+    "-Ibench/out/onnx-webgpu-substitution/20261005/adapter/build/_deps/dawn-build/gen/include",
+    "-I/home/x/deco/doe/bench/external-projects/onnx-vulkan-campaign",
+    "bench/out/onnx-vulkan-campaign/20261005/application-matched/main.cpp",
+    "bench/out/onnx-webgpu-substitution/20261005/adapter/venv/lib/python3.14/site-packages/onnxruntime/capi/libonnxruntime.so.1.24.4",
+    "-ldl",
+    "-Wl,-rpath,$ORIGIN",
+    "-o",
+    "bench/out/onnx-vulkan-campaign/20261005/application-matched/application"
+  ],
+  "builder": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-vulkan-campaign/prepare.py",
+    "sha256": "03ae3c933a72af9ef898a184e3b0a0d8486af54b0be766822652a56d857ae994"
+  }
+}

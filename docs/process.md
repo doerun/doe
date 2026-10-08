@@ -745,3 +745,17 @@ overlapping a rebuild remain diagnostic. Historical reports retain their origina
 source base and verdicts. The [semantic verifier](../bench/external-projects/onnx-vulkan-callbacks/verify.py)
 replays the retained qualification; the schema gate registers its manifest. No
 performance campaign or backend expansion is implied by this correctness evidence.
+
+## Bounded native device lifecycle qualification
+
+The [device lifecycle contract](native-device-lifecycle-contract.md) requires a
+preceding-native reproduction and pinned Dawn control for logical destruction,
+external/internal leases, descriptor loss and issued futures. Preserve callback
+reentry restrictions, loss reason and borrowed-handle semantics, submitted-work
+completion and inert async pipeline objects. Native submission must reject error
+objects. Requalify existing callbacks, unchanged application output and recoverable
+initialization against immutable final bytes before publication. Semantic replay,
+source/binary custody, schema, architecture and ownership regressions are blocking.
+Intermediate failures remain diagnostics; prior reports keep their original
+source bases and verdicts. This correctness campaign selects no performance patch,
+compiler campaign, browser route or additional backend.

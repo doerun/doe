@@ -2,6 +2,10 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/native-device-lifecycle-contract.schema.json",
+      "data": "config/native-device-lifecycle-contract.json"
+    },
+    {
       "schema": "config/native-callback-evidence.schema.json",
       "data": "reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-callbacks/manifest.json"
     },
@@ -1819,6 +1823,11 @@
     }
   ],
   "globTargets": [
+    {
+      "schema": "config/native-device-lifecycle-evidence.schema.json",
+      "glob": "reports/benchmarks/amd-vulkan/*-onnx-vulkan-device-lifecycle/manifest.json",
+      "allowEmpty": true
+    },
     {
       "schema": "config/compute-program-resolution-report.schema.json",
       "glob": "bench/out/compute-program/*runtime-resolution*/report.json",

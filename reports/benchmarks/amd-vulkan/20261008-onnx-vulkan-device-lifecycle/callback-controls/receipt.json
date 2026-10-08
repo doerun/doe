@@ -1,0 +1,380 @@
+{
+  "schemaVersion": 1,
+  "classification": "bounded-native-vulkan-callback-qualification",
+  "performanceClaim": false,
+  "policy": {
+    "path": "/home/x/deco/doe/config/native-callback-contract.json",
+    "sha256": "ca091e8407b2d61f744cd3d96e4b03199ed0299d8e123142c9cbbaf3c9ec00cd"
+  },
+  "fixture": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-vulkan-callbacks/callbacks.cpp",
+    "sha256": "870739538e6f3f1fea5be2b77f9aad0d9cb34ea393356f95f8eb95f22ee1c354"
+  },
+  "producer": {
+    "path": "/home/x/deco/doe/bench/external-projects/onnx-vulkan-callbacks/run.py",
+    "sha256": "2f46767d0fbf5f6069a5c421afd9cd6dc97641955f121f350913c07656b9a9f7"
+  },
+  "buildCommand": [
+    "c++",
+    "-std=c++17",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-pthread",
+    "-I/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/generated/include",
+    "/home/x/deco/doe/bench/external-projects/onnx-vulkan-callbacks/callbacks.cpp",
+    "-ldl",
+    "-o",
+    "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks"
+  ],
+  "executable": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks",
+    "sha256": "0b593da660d1ebdbda9333092b00774b6340a0cebdd7d0ffbe0174a0681db631"
+  },
+  "inputs": {
+    "native": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+      "sha256": "5df419827ac98599ba4ad640d3bd28b14038f4e458ccd2c4e0ffe507cd9f82c7"
+    },
+    "before": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/native-corrected/libwebgpu_doe.so",
+      "sha256": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2"
+    },
+    "dawn": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+      "sha256": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2"
+    },
+    "bridge": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+      "sha256": "7805b787d716df337f3b499e1217773d4ed826cbf43634da41789a51f14d907f"
+    }
+  },
+  "headers": {
+    "webgpu.h": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/generated/include/dawn/webgpu.h",
+      "sha256": "3f74ce2470db6a9ba158b849c9f3192d88c08731458246123cf582a7d4d74717"
+    },
+    "dawn_proc_table.h": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/generated/include/dawn/dawn_proc_table.h",
+      "sha256": "e6a01f14e95d1c020a05f7ac0bc76bfb7d5d6bea79245cf12a41d88ab4f6f3b2"
+    }
+  },
+  "runs": [
+    {
+      "arm": "before",
+      "nativeBefore": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/native-corrected/libwebgpu_doe.so",
+        "sha256": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2"
+      },
+      "nativeAfter": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/native-corrected/libwebgpu_doe.so",
+        "sha256": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2"
+      },
+      "index": 0,
+      "command": [
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/native-corrected/libwebgpu_doe.so",
+        "doe",
+        "10000000000"
+      ],
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "stdout": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/before-00.jsonl",
+        "sha256": "92ec3b934420771b0f336b097857d154186d4af08df8154272540a87e678a880"
+      },
+      "stderr": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/before-00.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "failedObservations": 35,
+      "summary": {
+        "kind": "summary",
+        "failures": 35,
+        "passed": false
+      }
+    },
+    {
+      "arm": "before",
+      "nativeBefore": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/native-corrected/libwebgpu_doe.so",
+        "sha256": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2"
+      },
+      "nativeAfter": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/native-corrected/libwebgpu_doe.so",
+        "sha256": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2"
+      },
+      "index": 1,
+      "command": [
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/native-corrected/libwebgpu_doe.so",
+        "doe",
+        "10000000000"
+      ],
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "stdout": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/before-01.jsonl",
+        "sha256": "92ec3b934420771b0f336b097857d154186d4af08df8154272540a87e678a880"
+      },
+      "stderr": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/before-01.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "failedObservations": 35,
+      "summary": {
+        "kind": "summary",
+        "failures": 35,
+        "passed": false
+      }
+    },
+    {
+      "arm": "before",
+      "nativeBefore": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/native-corrected/libwebgpu_doe.so",
+        "sha256": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2"
+      },
+      "nativeAfter": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/native-corrected/libwebgpu_doe.so",
+        "sha256": "3f06ac3e4f024a64955707a94b90d3b160b0571872c4ba1e57a028b007c449c2"
+      },
+      "index": 2,
+      "command": [
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/native-corrected/libwebgpu_doe.so",
+        "doe",
+        "10000000000"
+      ],
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "stdout": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/before-02.jsonl",
+        "sha256": "92ec3b934420771b0f336b097857d154186d4af08df8154272540a87e678a880"
+      },
+      "stderr": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/before-02.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "failedObservations": 35,
+      "summary": {
+        "kind": "summary",
+        "failures": 35,
+        "passed": false
+      }
+    },
+    {
+      "arm": "dawn",
+      "nativeBefore": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+        "sha256": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2"
+      },
+      "nativeAfter": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+        "sha256": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2"
+      },
+      "index": 0,
+      "command": [
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+        "dawn",
+        "10000000000"
+      ],
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "stdout": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/dawn-00.jsonl",
+        "sha256": "5739d429d8c342bab64a39674e55b693930b934880c6bec375fa0202aec9f2b9"
+      },
+      "stderr": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/dawn-00.stderr",
+        "sha256": "dff03ffb976b09056b30ff197406138b8e89cda55effc9a9077193a46867f29c"
+      },
+      "failedObservations": 0,
+      "summary": {
+        "kind": "summary",
+        "failures": 0,
+        "passed": true
+      }
+    },
+    {
+      "arm": "dawn",
+      "nativeBefore": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+        "sha256": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2"
+      },
+      "nativeAfter": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+        "sha256": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2"
+      },
+      "index": 1,
+      "command": [
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+        "dawn",
+        "10000000000"
+      ],
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "stdout": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/dawn-01.jsonl",
+        "sha256": "5739d429d8c342bab64a39674e55b693930b934880c6bec375fa0202aec9f2b9"
+      },
+      "stderr": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/dawn-01.stderr",
+        "sha256": "dff03ffb976b09056b30ff197406138b8e89cda55effc9a9077193a46867f29c"
+      },
+      "failedObservations": 0,
+      "summary": {
+        "kind": "summary",
+        "failures": 0,
+        "passed": true
+      }
+    },
+    {
+      "arm": "dawn",
+      "nativeBefore": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+        "sha256": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2"
+      },
+      "nativeAfter": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+        "sha256": "c710f0ab7c966f9ab0be5a410aed31b3b7f7ea046869c101ff6be501760841c2"
+      },
+      "index": 2,
+      "command": [
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/libdoe_dawn_control.so",
+        "dawn",
+        "10000000000"
+      ],
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "stdout": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/dawn-02.jsonl",
+        "sha256": "5739d429d8c342bab64a39674e55b693930b934880c6bec375fa0202aec9f2b9"
+      },
+      "stderr": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/dawn-02.stderr",
+        "sha256": "dff03ffb976b09056b30ff197406138b8e89cda55effc9a9077193a46867f29c"
+      },
+      "failedObservations": 0,
+      "summary": {
+        "kind": "summary",
+        "failures": 0,
+        "passed": true
+      }
+    },
+    {
+      "arm": "native",
+      "nativeBefore": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+        "sha256": "5df419827ac98599ba4ad640d3bd28b14038f4e458ccd2c4e0ffe507cd9f82c7"
+      },
+      "nativeAfter": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+        "sha256": "5df419827ac98599ba4ad640d3bd28b14038f4e458ccd2c4e0ffe507cd9f82c7"
+      },
+      "index": 0,
+      "command": [
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+        "doe",
+        "10000000000"
+      ],
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "stdout": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/native-00.jsonl",
+        "sha256": "138520ecb1cbc2f645161b92e07f5db6f28834fc88a422699628b6aacb1793ae"
+      },
+      "stderr": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/native-00.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "failedObservations": 0,
+      "summary": {
+        "kind": "summary",
+        "failures": 0,
+        "passed": true
+      }
+    },
+    {
+      "arm": "native",
+      "nativeBefore": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+        "sha256": "5df419827ac98599ba4ad640d3bd28b14038f4e458ccd2c4e0ffe507cd9f82c7"
+      },
+      "nativeAfter": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+        "sha256": "5df419827ac98599ba4ad640d3bd28b14038f4e458ccd2c4e0ffe507cd9f82c7"
+      },
+      "index": 1,
+      "command": [
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+        "doe",
+        "10000000000"
+      ],
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "stdout": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/native-01.jsonl",
+        "sha256": "138520ecb1cbc2f645161b92e07f5db6f28834fc88a422699628b6aacb1793ae"
+      },
+      "stderr": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/native-01.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "failedObservations": 0,
+      "summary": {
+        "kind": "summary",
+        "failures": 0,
+        "passed": true
+      }
+    },
+    {
+      "arm": "native",
+      "nativeBefore": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+        "sha256": "5df419827ac98599ba4ad640d3bd28b14038f4e458ccd2c4e0ffe507cd9f82c7"
+      },
+      "nativeAfter": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+        "sha256": "5df419827ac98599ba4ad640d3bd28b14038f4e458ccd2c4e0ffe507cd9f82c7"
+      },
+      "index": 2,
+      "command": [
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/callbacks",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+        "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+        "doe",
+        "10000000000"
+      ],
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "stdout": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/native-02.jsonl",
+        "sha256": "138520ecb1cbc2f645161b92e07f5db6f28834fc88a422699628b6aacb1793ae"
+      },
+      "stderr": {
+        "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/callback-controls/native-02.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "failedObservations": 0,
+      "summary": {
+        "kind": "summary",
+        "failures": 0,
+        "passed": true
+      }
+    }
+  ]
+}

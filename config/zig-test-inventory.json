@@ -235,6 +235,10 @@
           "kind": "integration"
         },
         {
+          "path": "tests/core/native_device_lifecycle_test.zig",
+          "kind": "integration"
+        },
+        {
           "path": "tests/core/precompiled_shader_test.zig",
           "kind": "integration"
         },
@@ -528,6 +532,10 @@
         {
           "path": "src/native/support/doe_future_ids.zig",
           "kind": "inline"
+        },
+        {
+          "path": "src/native/support/doe_device_loss.zig",
+          "kind": "inline"
         }
       ]
     },
@@ -636,6 +644,10 @@
         },
         {
           "path": "tests/core/handle_safety_test.zig",
+          "kind": "integration"
+        },
+        {
+          "path": "tests/core/native_device_lifecycle_test.zig",
           "kind": "integration"
         },
         {
@@ -1029,6 +1041,10 @@
         },
         {
           "path": "src/native/support/doe_future_ids.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/native/support/doe_device_loss.zig",
           "kind": "inline"
         }
       ],

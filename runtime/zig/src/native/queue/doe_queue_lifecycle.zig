@@ -265,7 +265,7 @@ pub fn doeNativeQueueRelease(raw: ?*anyopaque) void {
     }
     const dev = q.dev;
     alloc.destroy(q);
-    native_exports.doeNativeDeviceRelease(toOpaque(dev));
+    native_exports.doeNativeDeviceReleaseInternal(toOpaque(dev));
 }
 
 pub fn doeNativeQueueAddRef(raw: ?*anyopaque) void {

@@ -117,6 +117,7 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ab
 
 fn createBuffer(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUBufferDescriptor) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
+    if (!dev.requireAlive()) return null;
     const d = desc orelse return null;
     const buf = make(DoeBuffer) orelse return null;
     buf.* = .{ .backend = dev.backend, .dev = dev, .size = d.size, .usage = d.usage };
@@ -227,7 +228,7 @@ pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
         if (!object_should_destroy(b)) return;
         label_store.remove(raw);
         doeNativeBufferDestroy(raw);
-        if (b.device_ref) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
+        if (b.device_ref) |dev| native_exports.doeNativeDeviceReleaseInternal(toOpaque(dev));
         alloc.destroy(b);
     }
 }
@@ -286,6 +287,7 @@ const DOE_BUFFER_MAP_STATE_MAPPED: u32 = 3;
 
 pub export fn doeNativeBufferGetMapState(raw: ?*anyopaque) callconv(.c) u32 {
     const b = cast(DoeBuffer, raw) orelse return DOE_BUFFER_MAP_STATE_UNMAPPED;
+    if (b.device_ref) |device| if (device.isDestroyed()) return DOE_BUFFER_MAP_STATE_UNMAPPED;
     if (b.error_object or b.destroyed) return DOE_BUFFER_MAP_STATE_UNMAPPED;
     if (b.map_pending) return 2;
     return if (b.mapped) DOE_BUFFER_MAP_STATE_MAPPED else DOE_BUFFER_MAP_STATE_UNMAPPED;
@@ -300,6 +302,13 @@ const MapReply = struct {
         var status = self.status;
         if (self.buffer) |buffer| {
             if (status == WGPU_MAP_ASYNC_STATUS_SUCCESS) {
+                if (buffer.device_ref) |device| {
+                    if (device.isDestroyed()) {
+                        status = WGPU_MAP_ASYNC_STATUS_ABORTED;
+                        buffer.map_pending = false;
+                        buffer.mapped = false;
+                    }
+                }
                 if (buffer.destroyed or buffer.map_generation != self.generation) {
                     status = WGPU_MAP_ASYNC_STATUS_ABORTED; // Aborted by unmap or destruction before delivery.
                 } else buffer.map_pending = false;
@@ -321,7 +330,9 @@ pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: u
         const resolved = resolve_buffer_map_range(b, offset, size);
         const permitted = (mode == abi_core.WGPUMapMode_Read and (b.usage & abi_core.WGPUBufferUsage_MapRead) != 0) or
             (mode == abi_core.WGPUMapMode_Write and (b.usage & abi_core.WGPUBufferUsage_MapWrite) != 0);
-        if (!b.error_object and !b.destroyed and !b.mapped and permitted and offset % 8 == 0 and resolved != null and resolved.? % 4 == 0) {
+        const device_alive = if (b.device_ref orelse b.dev) |device| !device.isDestroyed() else true;
+        if (!device_alive) reply.status = WGPU_MAP_ASYNC_STATUS_ABORTED;
+        if (device_alive and !b.error_object and !b.destroyed and !b.mapped and permitted and offset % 8 == 0 and resolved != null and resolved.? % 4 == 0) {
             reply.status = performBufferMap(b, mode);
             if (reply.status == WGPU_MAP_ASYNC_STATUS_SUCCESS) {
                 b.map_generation +%= 1;
@@ -377,6 +388,7 @@ fn performBufferMap(b: *DoeBuffer, mode: u64) u32 {
 
 pub export fn doeNativeBufferGetConstMappedRange(buf_raw: ?*anyopaque, offset: usize, size: usize) callconv(.c) ?*anyopaque {
     const buf = cast(DoeBuffer, buf_raw) orelse return null;
+    if (buf.device_ref) |device| if (device.isDestroyed()) return null;
     if (buf.error_object or buf.destroyed) return null;
     if (!buf.mapped or buf.map_pending) return null;
     const range_size = resolve_buffer_map_range(buf, offset, size) orelse return null;

@@ -54,6 +54,7 @@ const test_tests_core_native_api_core_test_zig_4b172f9a = @import("tests/core/na
 const test_src_native_queue_doe_queue_lifecycle_zig_64c9b9b8 = @import("src/native/queue/doe_queue_lifecycle.zig");
 const test_tests_core_capability_runtime_test_zig_1306a014 = @import("tests/core/capability_runtime_test.zig");
 const test_tests_core_handle_safety_test_zig_ceff19e9 = @import("tests/core/handle_safety_test.zig");
+const test_tests_core_native_device_lifecycle_test_zig_6b4d870f = @import("tests/core/native_device_lifecycle_test.zig");
 const test_tests_core_precompiled_shader_test_zig_b774eaad = @import("tests/core/precompiled_shader_test.zig");
 const test_tests_core_command_json_test_zig_64a4dfd4 = @import("tests/core/command_json_test.zig");
 const test_tests_core_trace_test_zig_bedd1081 = @import("tests/core/trace_test.zig");
@@ -124,6 +125,7 @@ const test_tests_vulkan_vulkan_surface_admission_test_zig_04325ee6 = if (builtin
 const test_src_native_surface_doe_surface_native_zig_3bda77f3 = if (builtin.os.tag == .linux) @import("src/native/surface/doe_surface_native.zig") else struct {};
 const test_src_native_support_doe_callback_delivery_zig_24ee01a5 = @import("src/native/support/doe_callback_delivery.zig");
 const test_src_native_support_doe_future_ids_zig_46c77022 = @import("src/native/support/doe_future_ids.zig");
+const test_src_native_support_doe_device_loss_zig_09817a3f = @import("src/native/support/doe_device_loss.zig");
 
 comptime {
     _ = test_tests_metal_metal_mod_integration_test_zig_6f53b3ec;
@@ -179,6 +181,7 @@ comptime {
     _ = test_src_native_queue_doe_queue_lifecycle_zig_64c9b9b8;
     _ = test_tests_core_capability_runtime_test_zig_1306a014;
     _ = test_tests_core_handle_safety_test_zig_ceff19e9;
+    _ = test_tests_core_native_device_lifecycle_test_zig_6b4d870f;
     _ = test_tests_core_precompiled_shader_test_zig_b774eaad;
     _ = test_tests_core_command_json_test_zig_64a4dfd4;
     _ = test_tests_core_trace_test_zig_bedd1081;
@@ -249,4 +252,5 @@ comptime {
     _ = test_src_native_surface_doe_surface_native_zig_3bda77f3;
     _ = test_src_native_support_doe_callback_delivery_zig_24ee01a5;
     _ = test_src_native_support_doe_future_ids_zig_46c77022;
+    _ = test_src_native_support_doe_device_loss_zig_09817a3f;
 }

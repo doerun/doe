@@ -27,6 +27,7 @@ const test_tests_core_native_api_core_test_zig_4b172f9a = @import("tests/core/na
 const test_src_native_queue_doe_queue_lifecycle_zig_64c9b9b8 = @import("src/native/queue/doe_queue_lifecycle.zig");
 const test_tests_core_capability_runtime_test_zig_1306a014 = @import("tests/core/capability_runtime_test.zig");
 const test_tests_core_handle_safety_test_zig_ceff19e9 = @import("tests/core/handle_safety_test.zig");
+const test_tests_core_native_device_lifecycle_test_zig_6b4d870f = @import("tests/core/native_device_lifecycle_test.zig");
 const test_tests_core_precompiled_shader_test_zig_b774eaad = @import("tests/core/precompiled_shader_test.zig");
 const test_tests_core_command_json_test_zig_64a4dfd4 = @import("tests/core/command_json_test.zig");
 const test_tests_core_webgpu_ffi_test_zig_773a474d = @import("tests/core/webgpu_ffi_test.zig");
@@ -113,6 +114,7 @@ comptime {
     _ = test_src_native_queue_doe_queue_lifecycle_zig_64c9b9b8;
     _ = test_tests_core_capability_runtime_test_zig_1306a014;
     _ = test_tests_core_handle_safety_test_zig_ceff19e9;
+    _ = test_tests_core_native_device_lifecycle_test_zig_6b4d870f;
     _ = test_tests_core_precompiled_shader_test_zig_b774eaad;
     _ = test_tests_core_command_json_test_zig_64a4dfd4;
     _ = test_tests_core_webgpu_ffi_test_zig_773a474d;

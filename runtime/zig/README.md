@@ -129,5 +129,7 @@ The [bounded callback contract](../../docs/native-callback-contract.md) specifie
 instance-owned futures, requested delivery modes, pending mapping state and resource
 leases through foreign callbacks. The [ONNX Vulkan fixture and replay](../../bench/external-projects/onnx-vulkan-callbacks/README.md)
 qualify the named paths with pinned Dawn controls and unchanged applications.
-Descriptor-based device loss, DeviceDestroy semantics and abandoned-instance cleanup
-remain open; this evidence does not qualify every WebGPU callback or a speed advantage.
+The [device lifecycle successor](../../docs/native-device-lifecycle-contract.md)
+extends the bounded Vulkan evidence to descriptor loss and DeviceDestroy. Abandoned
+instances, actual driver loss and generic callback conformance remain open; neither
+report establishes a speed advantage.

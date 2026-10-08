@@ -258,7 +258,11 @@ reentrant caller releases. The process-wide work-done registry remains for legac
 calls without an instance. Callback userdata stays caller-owned through delivery;
 callback readiness does not substitute for native GPU completion. See the
 [bounded callback contract](native-callback-contract.md) for the qualified Vulkan
-paths and unresolved abandonment/device-loss boundaries.
+paths and the [device lifecycle successor](native-device-lifecycle-contract.md).
+Application device references and internal cleanup leases are distinct. Explicit
+destruction and last external release invalidate GPU admission; an instance-owned
+loss event borrows a scoped device lease only during delivery. Abandonment and real
+driver loss remain separately qualified boundaries.
 
 Resolve build configuration, device discovery, and invocation-dependent checks
 at their respective lifetimes. Toggle classifications are compiled from the

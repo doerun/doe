@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "classification": "bounded-native-vulkan-device-lifecycle-contract",
+  "backend": "Vulkan",
+  "consumerCommit": "d2ede0adeb300958cfb5a256c09d27c66c3a6d71",
+  "dawnCommit": "ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38",
+  "priorContractPath": "config/native-callback-contract.json",
+  "lossFuture": "instance-issued-stable-pending-until-delivery",
+  "destroy": "idempotent-invalidate-admission-drain-native-work",
+  "lastExternalRelease": "destroy-with-null-borrowed-callback-device",
+  "internalLeases": "retain-backend-cleanup-without-delaying-logical-loss",
+  "callbackModes": [
+    1,
+    2,
+    3
+  ],
+  "exactlyOnce": true,
+  "failedCreationReason": 4,
+  "destroyedReason": 2,
+  "unknownCompletion": "retain-until-completion-or-confirmed-loss",
+  "qualificationDeadlineNs": 10000000000,
+  "independentProcesses": 3,
+  "performanceClaim": false,
+  "excluded": [
+    "instance-abandonment",
+    "real-driver-loss",
+    "submitted-work-interruption",
+    "all-API-conformance",
+    "Metal",
+    "D3D12",
+    "browser-switching"
+  ],
+  "instanceFeatures": [
+    "TimedWaitAny",
+    "MultipleDevicesPerAdapter"
+  ],
+  "postLossMapStatus": 4,
+  "lostAsyncPipeline": "success-with-inert-error-object"
+}

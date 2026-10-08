@@ -19,6 +19,8 @@ const package_metal_pipeline_cache = @import("../cache/doe_package_metal_pipelin
 const device_caps = @import("../support/doe_device_caps.zig");
 const command_storage = @import("../command/doe_command_storage.zig");
 const build_options = @import("build_options");
+const device_loss = @import("../support/doe_device_loss.zig");
+const resource_leases = @import("../../contracts/resource_lease.zig");
 const callback_delivery = @import("../support/doe_callback_delivery.zig");
 
 const alloc = native_helpers.alloc;
@@ -331,7 +333,7 @@ fn copy_enabled_features(
     return owned;
 }
 
-fn create_device_for_adapter(
+fn create_device_object(
     adapter: *DoeAdapter,
     adapter_raw: ?*anyopaque,
     desc: ?*const abi_callback.WGPUDeviceDescriptor,
@@ -446,6 +448,31 @@ fn create_device_for_adapter(
         .command_storage = command_storage.Pool.init(alloc, build_options.native_command_storage_max_retained_bytes),
     };
     return dev;
+}
+
+fn create_device_for_adapter(adapter: *DoeAdapter, adapter_raw: ?*anyopaque, desc: ?*const abi_callback.WGPUDeviceDescriptor) CreateDeviceError!*DoeDevice {
+    const info: abi_callback.WGPUDeviceLostCallbackInfo = if (desc) |descriptor| .{
+        .nextInChain = @ptrCast(@constCast(descriptor.deviceLostCallbackInfo.nextInChain)),
+        .mode = descriptor.deviceLostCallbackInfo.mode,
+        .callback = @ptrCast(descriptor.deviceLostCallbackInfo.callback),
+        .userdata1 = descriptor.deviceLostCallbackInfo.userdata1,
+        .userdata2 = descriptor.deviceLostCallbackInfo.userdata2,
+    } else std.mem.zeroes(abi_callback.WGPUDeviceLostCallbackInfo);
+    const instance = adapter.instance;
+    const event = device_loss.Event.create(alloc, if (instance) |owner| &owner.pending_completions else null, toOpaque(instance), info, .{
+        .retain_device = doeNativeDeviceRetainInternal,
+        .release_device = doeNativeDeviceReleaseInternal,
+        .retain_instance = doeNativeInstanceAddRef,
+        .release_instance = doeNativeInstanceRelease,
+    }) catch return error.DeviceAllocationFailed;
+    const device = create_device_object(adapter, adapter_raw, desc) catch |err| {
+        event.lose(.failedCreation, "device initialization failed");
+        event.release();
+        return err;
+    };
+    device.loss = event;
+    event.setDevice(toOpaque(device));
+    return device;
 }
 
 // ============================================================
@@ -658,6 +685,7 @@ pub export fn doeNativeRequestDeviceFlat(
 
 pub export fn doeNativeDeviceAddRef(raw: ?*anyopaque) callconv(.c) void {
     const device = cast(DoeDevice, raw) orelse return;
+    resource_leases.retainCount(&device.external_ref_count);
     device_add_ref(device);
 }
 
@@ -668,9 +696,50 @@ pub export fn doeNativeDeviceGetAdapter(raw: ?*anyopaque) callconv(.c) ?*anyopaq
     return toOpaque(adapter);
 }
 
+pub export fn doeNativeDeviceRetainInternal(raw: ?*anyopaque) callconv(.c) void {
+    native_helpers.object_add_ref(DoeDevice, raw);
+}
+
 pub export fn doeNativeDeviceRelease(raw: ?*anyopaque) callconv(.c) void {
+    const device = cast(DoeDevice, raw) orelse return;
+    if (resource_leases.releaseCount(&device.external_ref_count)) {
+        if (device.loss) |event| event.setDevice(null);
+        doeNativeDeviceDestroy(raw);
+    }
+    doeNativeDeviceReleaseInternal(raw);
+}
+
+pub export fn doeNativeDeviceDestroy(raw: ?*anyopaque) callconv(.c) void {
+    const device = cast(DoeDevice, raw) orelse return;
+    if (@cmpxchgStrong(bool, &device.destroyed, false, true, .acq_rel, .acquire) != null) return;
+    // A spontaneous foreign callback may drop the last external device reference.
+    device_add_ref(device);
+    defer doeNativeDeviceReleaseInternal(raw);
+    if (comptime has_vulkan) {
+        if (device.backend == .vulkan) @import("../vulkan/vulkan_lifetime.zig").flushBeforeDestroy(device.vk_runtime);
+    }
+    if (device.queue) |queue| @import("../queue/doe_queue_lifecycle.zig").doeNativeQueueFlush(toOpaque(queue));
+    device.error_scopes.set_uncaptured_handler(null, null, null);
+    if (device.loss) |event| event.lose(.destroyed, "device destroyed");
+}
+
+pub export fn doeNativeDeviceGetLostFuture(raw: ?*anyopaque) callconv(.c) abi_base.WGPUFuture {
+    const device = cast(DoeDevice, raw) orelse return .{ .id = 0 };
+    return if (device.loss) |event| event.future else .{ .id = 0 };
+}
+
+pub export fn doeNativeDeviceSetLostCallback(raw: ?*anyopaque, callback: ?abi_callback.WGPUDeviceLostCallback, userdata1: ?*anyopaque, userdata2: ?*anyopaque) callconv(.c) void {
+    const device = cast(DoeDevice, raw) orelse return;
+    if (device.loss) |event| event.setCallback(callback, userdata1, userdata2);
+}
+
+pub export fn doeNativeDeviceReleaseInternal(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeDevice, raw)) |d| {
         if (!native_helpers.object_should_destroy(d)) return;
+        if (d.loss) |event| {
+            event.setDevice(null);
+            event.release();
+        }
         label_store.remove(raw);
         if (d.command_storage) |*pool| {
             const observation = pool.snapshot();

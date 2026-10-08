@@ -214,6 +214,7 @@ pub const ensureShaderBindings = shader_binding_reflection.ensureShaderBindings;
 fn doeNativeDeviceCreateShaderModuleOwned(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUShaderModuleDescriptor, diagnostic: *ShaderDiagnostic) ?*anyopaque {
     diagnostic.clear_last_error();
     const dev = cast(DoeDevice, dev_raw) orelse return null;
+    if (!dev.requireAlive()) return null;
     const d = desc orelse return null;
     if (d.nextInChain == null) return null;
     const chain: *const abi_callback.WGPUChainedStruct = @ptrCast(d.nextInChain);
@@ -550,7 +551,7 @@ pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
         if (sm.wgsl_source) |w| alloc.free(w);
         const device = sm.device;
         alloc.destroy(sm);
-        if (device) |owner| device_lifecycle.doeNativeDeviceRelease(toOpaque(owner));
+        if (device) |owner| device_lifecycle.doeNativeDeviceReleaseInternal(toOpaque(owner));
     }
 }
 
@@ -699,6 +700,7 @@ fn recompileWithOverridesOwned(dev: *DoeDevice, sm: *DoeShaderModule, constants:
 fn doeNativeDeviceCreateComputePipelineOwned(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUComputePipelineDescriptor, diagnostic: *ShaderDiagnostic) ?*anyopaque {
     diagnostic.clear_last_error();
     const dev = cast(DoeDevice, dev_raw) orelse return null;
+    if (!dev.requireAlive()) return null;
     const d = desc orelse return null;
     const sm = cast(DoeShaderModule, d.compute.module) orelse {
         diagnostic.set_last_error_stage_name("native_compile");
@@ -873,7 +875,9 @@ pub export fn doeNativeComputePipelineRelease(raw: ?*anyopaque) callconv(.c) voi
         if (p.shader_module) |shader_module| doeNativeShaderModuleRelease(toOpaque(shader_module));
         const vk_compute = @import("../vulkan/vulkan_compute_native.zig");
         vk_compute.vulkan_release_compute_pipeline(p);
+        const device = p.device_ref;
         alloc.destroy(p);
+        if (device) |owner| device_lifecycle.doeNativeDeviceReleaseInternal(toOpaque(owner));
     }
 }
 
@@ -954,4 +958,11 @@ fn sourceRetentionFailure(allocator: std.mem.Allocator) !void {
 
 test "required shader source retention propagates allocation failure" {
     try std.testing.checkAllAllocationFailures(std.testing.allocator, sourceRetentionFailure, .{});
+}
+
+pub fn createLostComputePipeline(device: *DoeDevice) ?*anyopaque {
+    const pipeline = make(DoeComputePipeline) orelse return null;
+    native_helpers.object_add_ref(DoeDevice, toOpaque(device));
+    pipeline.* = .{ .error_object = true, .device_ref = device };
+    return toOpaque(pipeline);
 }

@@ -1248,12 +1248,14 @@ test "doeNativeBindGroupLayoutRelease: null input is safe" {
     native.doeNativeBindGroupLayoutRelease(null);
 }
 
-test "doeNativeDeviceCreatePipelineLayout: null device still allocates" {
-    // Current implementation ignores device (stub) and always allocates.
-    const result = native.doeNativeDeviceCreatePipelineLayout(null, null);
+test "pipeline layout requires a live device and rejects loss without allocation" {
+    try std.testing.expect(native.doeNativeDeviceCreatePipelineLayout(null, null) == null);
+    var device = native.DoeDevice{};
+    const result = native.doeNativeDeviceCreatePipelineLayout(@ptrCast(&device), null);
     try std.testing.expect(result != null);
-    // Clean up.
     native.doeNativePipelineLayoutRelease(result);
+    device.destroyed = true;
+    try std.testing.expect(native.doeNativeDeviceCreatePipelineLayout(@ptrCast(&device), null) == null);
 }
 
 test "doeNativePipelineLayoutRelease: null input is safe" {

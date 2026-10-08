@@ -230,7 +230,8 @@ fn resolve_external_texture(entry: abi_pipeline.WGPUBindGroupEntry) ?abi_core.WG
 // ============================================================
 
 pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUBindGroupLayoutDescriptor) callconv(.c) ?*anyopaque {
-    _ = dev_raw;
+    const owner = cast(DoeDevice, dev_raw) orelse return null;
+    if (!owner.requireAlive()) return null;
     const d = desc orelse return null;
     if (d.entryCount > 0 and d.entries == null) {
         return null;
@@ -256,7 +257,8 @@ pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?
 }
 
 pub export fn doeNativeDeviceCreateBufferBindGroupLayoutFlat4(dev_raw: ?*anyopaque, entry_count: u32, b0: u32, b1: u32, b2: u32, b3: u32) callconv(.c) ?*anyopaque {
-    _ = dev_raw;
+    const owner = cast(DoeDevice, dev_raw) orelse return null;
+    if (!owner.requireAlive()) return null;
     if (entry_count > FLAT_BUFFER_BIND_GROUP_ENTRY_LIMIT) return null;
     const bgl = make(DoeBindGroupLayout) orelse return null;
     bgl.* = .{
@@ -289,6 +291,8 @@ pub export fn doeNativeBindGroupLayoutRelease(raw: ?*anyopaque) callconv(.c) voi
 }
 
 pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUBindGroupDescriptor) callconv(.c) ?*anyopaque {
+    const owner = cast(DoeDevice, dev_raw) orelse return null;
+    if (!owner.requireAlive()) return null;
     const d = desc orelse return null;
     const bg = make(DoeBindGroup) orelse return null;
     bg.* = .{};
@@ -469,6 +473,8 @@ pub export fn doeNativeDeviceCreateBufferBindGroupFlat4(
     buffer3_raw: ?*anyopaque,
     offset3: u64,
 ) callconv(.c) ?*anyopaque {
+    const owner = cast(DoeDevice, dev_raw) orelse return null;
+    if (!owner.requireAlive()) return null;
     if (entry_count > FLAT_BUFFER_BIND_GROUP_ENTRY_LIMIT) return null;
     const bg = make(DoeBindGroup) orelse return null;
     bg.* = .{};
@@ -537,6 +543,8 @@ fn rejectImmediateLayout(device_raw: ?*anyopaque, immediate_size: u32) bool {
 }
 
 pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUPipelineLayoutDescriptor) callconv(.c) ?*anyopaque {
+    const owner = cast(DoeDevice, dev_raw) orelse return null;
+    if (!owner.requireAlive()) return null;
     if (desc) |pd| if (rejectImmediateLayout(dev_raw, pd.immediateSize)) return null;
     const pl = make(DoePipelineLayout) orelse return null;
     pl.* = .{};
@@ -562,6 +570,8 @@ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*
 }
 
 pub export fn doeNativeDeviceCreatePipelineLayoutOne(dev_raw: ?*anyopaque, layout_raw: ?*anyopaque, immediate_size: u32) callconv(.c) ?*anyopaque {
+    const owner = cast(DoeDevice, dev_raw) orelse return null;
+    if (!owner.requireAlive()) return null;
     if (rejectImmediateLayout(dev_raw, immediate_size)) return null;
     const layout = cast(DoeBindGroupLayout, layout_raw) orelse return null;
     const pl = make(DoePipelineLayout) orelse return null;

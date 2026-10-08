@@ -140,6 +140,7 @@ fn writeMetalBufferThroughStaging(q: *DoeQueue, buf: *DoeBuffer, offset: u64, da
 }
 
 fn writeBufferValidated(q: *DoeQueue, buf: *DoeBuffer, offset: u64, data: [*]const u8, size: usize) bool {
+    if (!q.dev.requireAlive()) return false;
     if (buf.error_object or buf.destroyed) {
         q.dev.error_scopes.deliver(error_scope.ERROR_TYPE_VALIDATION, "wgpuQueueWriteBuffer cannot write an error buffer");
         return false;
@@ -328,6 +329,7 @@ pub fn doeNativeQueueCopyTextureForBrowser(
     options_raw: ?*const abi_copy.WGPUCopyTextureForBrowserOptions,
 ) void {
     const queue = cast(DoeQueue, queue_raw) orelse return;
+    if (!queue.dev.requireAlive()) return;
     const source = source_raw orelse return;
     const destination = destination_raw orelse return;
     const copy_size = copy_size_raw orelse return;
@@ -398,6 +400,7 @@ pub fn doeNativeQueueCopyExternalImageToTexture(
     const ext = ext_texture_mod.cast(source.externalTexture) orelse return;
     if (ext.expired) return;
     const queue = cast(DoeQueue, queue_raw) orelse return;
+    if (!queue.dev.requireAlive()) return;
     copy_external_texture_to_dst(queue, ext, source.origin, destination, copy_size, null);
 }
 
@@ -414,5 +417,6 @@ pub fn doeNativeQueueCopyExternalTextureForBrowser(
     const ext = ext_texture_mod.cast(source.externalTexture) orelse return;
     if (ext.expired) return;
     const queue = cast(DoeQueue, queue_raw) orelse return;
+    if (!queue.dev.requireAlive()) return;
     copy_external_texture_to_dst(queue, ext, source.origin, destination, copy_size, options_raw);
 }

@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bounded native device lifecycle contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "classification",
+    "backend",
+    "consumerCommit",
+    "dawnCommit",
+    "priorContractPath",
+    "lossFuture",
+    "destroy",
+    "lastExternalRelease",
+    "internalLeases",
+    "callbackModes",
+    "exactlyOnce",
+    "failedCreationReason",
+    "destroyedReason",
+    "unknownCompletion",
+    "qualificationDeadlineNs",
+    "independentProcesses",
+    "performanceClaim",
+    "excluded",
+    "instanceFeatures",
+    "postLossMapStatus",
+    "lostAsyncPipeline"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "classification": {
+      "const": "bounded-native-vulkan-device-lifecycle-contract"
+    },
+    "backend": {
+      "const": "Vulkan"
+    },
+    "consumerCommit": {
+      "const": "d2ede0adeb300958cfb5a256c09d27c66c3a6d71"
+    },
+    "dawnCommit": {
+      "const": "ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38"
+    },
+    "priorContractPath": {
+      "const": "config/native-callback-contract.json"
+    },
+    "lossFuture": {
+      "const": "instance-issued-stable-pending-until-delivery"
+    },
+    "destroy": {
+      "const": "idempotent-invalidate-admission-drain-native-work"
+    },
+    "lastExternalRelease": {
+      "const": "destroy-with-null-borrowed-callback-device"
+    },
+    "internalLeases": {
+      "const": "retain-backend-cleanup-without-delaying-logical-loss"
+    },
+    "callbackModes": {
+      "const": [
+        1,
+        2,
+        3
+      ]
+    },
+    "exactlyOnce": {
+      "const": true
+    },
+    "failedCreationReason": {
+      "const": 4
+    },
+    "destroyedReason": {
+      "const": 2
+    },
+    "unknownCompletion": {
+      "const": "retain-until-completion-or-confirmed-loss"
+    },
+    "qualificationDeadlineNs": {
+      "const": 10000000000
+    },
+    "independentProcesses": {
+      "const": 3
+    },
+    "performanceClaim": {
+      "const": false
+    },
+    "excluded": {
+      "const": [
+        "instance-abandonment",
+        "real-driver-loss",
+        "submitted-work-interruption",
+        "all-API-conformance",
+        "Metal",
+        "D3D12",
+        "browser-switching"
+      ]
+    },
+    "instanceFeatures": {
+      "const": [
+        "TimedWaitAny",
+        "MultipleDevicesPerAdapter"
+      ]
+    },
+    "postLossMapStatus": {
+      "const": 4
+    },
+    "lostAsyncPipeline": {
+      "const": "success-with-inert-error-object"
+    }
+  }
+}

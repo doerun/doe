@@ -4,7 +4,6 @@ const model_compute_types = @import("../../contracts/model/model_compute_types.z
 const model_render_types = @import("../../contracts/model/model_render_types.zig");
 const abi_core = @import("../../core/abi/wgpu_core_base_types.zig");
 const abi_binding = @import("../../core/abi/wgpu_binding_base_types.zig");
-const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
 const abi_feature = @import("../../core/abi/wgpu_feature_base_types.zig");
 const wgsl_ir = @import("../../compiler/wgsl/ir/ir.zig");
 const error_scope = @import("../../runtime/diagnostics/error_scope.zig");
@@ -72,13 +71,23 @@ pub const DoeDevice = struct {
     mtl_queue: ?*anyopaque = null,
     queue: ?*DoeQueue = null,
     error_scopes: error_scope.ErrorScopeStack = error_scope.ErrorScopeStack.init(),
-    device_lost_callback: ?abi_callback.WGPUDeviceLostCallback = null,
-    device_lost_userdata1: ?*anyopaque = null,
-    device_lost_userdata2: ?*anyopaque = null,
+    external_ref_count: u32 = 1,
+    destroyed: bool = false,
+    loss: ?*@import("doe_device_loss.zig").Event = null,
     backend: backend_contract.NativeBackendKind = .metal,
     vk_runtime: ?*anyopaque = null,
     d3d12_runtime: ?*anyopaque = null,
     enabled_features: []abi_feature.WGPUFeatureName = &.{},
+
+    pub fn requireAlive(self: *DoeDevice) bool {
+        if (!self.isDestroyed()) return true;
+        self.error_scopes.deliver(error_scope.ERROR_TYPE_VALIDATION, "device destroyed; create a new device before GPU work");
+        return false;
+    }
+
+    pub fn isDestroyed(self: *const DoeDevice) bool {
+        return @atomicLoad(bool, &self.destroyed, .acquire);
+    }
 };
 
 pub const DoeQueue = struct {
@@ -165,6 +174,8 @@ pub const DoeShaderModule = struct {
 
 pub const DoeComputePipeline = struct {
     pub const TYPE_MAGIC = MAGIC_COMPUTE_PIPE;
+    error_object: bool = false,
+    device_ref: ?*DoeDevice = null,
     magic: u32 = TYPE_MAGIC,
     ref_count: u32 = 1,
     mtl_pso: ?*anyopaque = null,
@@ -361,6 +372,7 @@ pub const DoeSampler = struct {
 
 pub const DoeRenderPipeline = struct {
     pub const TYPE_MAGIC = MAGIC_RENDER_PIPE;
+    error_object: bool = false,
     magic: u32 = TYPE_MAGIC,
     ref_count: u32 = 1,
     color_target_format: u32 = 0,

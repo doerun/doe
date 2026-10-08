@@ -77,6 +77,7 @@ fn createQuerySet(dev_raw: ?*anyopaque, query_type: u32, count: u32) ?*anyopaque
     if (count == 0) return null;
 
     const dev = native_helpers.cast(native_types.DoeDevice, dev_raw) orelse return null;
+    if (!dev.requireAlive()) return null;
 
     if (comptime has_vulkan) {
         if (dev.backend == .vulkan) {
@@ -295,7 +296,7 @@ pub export fn doeNativeQuerySetRelease(qs_raw: ?*anyopaque) callconv(.c) void {
     const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return;
     if (!native_helpers.object_should_destroy(qs)) return;
     const device = qs.device_ref;
-    defer if (device) |dev| native_exports.doeNativeDeviceRelease(native_helpers.toOpaque(dev));
+    defer if (device) |dev| native_exports.doeNativeDeviceReleaseInternal(native_helpers.toOpaque(dev));
     releaseQuerySetResources(qs);
     native_helpers.label_store.remove(qs_raw);
     native_helpers.alloc.destroy(qs);

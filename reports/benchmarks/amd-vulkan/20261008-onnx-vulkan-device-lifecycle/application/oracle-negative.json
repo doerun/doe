@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "arm": "doe",
+  "classification": "application-qualification",
+  "passed": false,
+  "failure": {
+    "type": "ApplicationFailure",
+    "message": "CampaignContext 6 4098 5510 4\nNumber of inputs = 1\nInput 0 : name =data_0\nInput 0 : type = 1\nInput 0 : num_dims = 4\nInput 0 : dim[0] =1\nInput 0 : dim[1] =3\nInput 0 : dim[2] =224\nInput 0 : dim[3] =224\nCampaignCallCount 0 2\nCampaignCallCount 8 1\nCampaignCallCount 11 3\nCampaignCallCount 12 1\nCampaignCallCount 14 1\nCampaignCallCount 15 2\nCampaignCallCount 20 67\nCampaignCallCount 23 67\nCampaignCallCount 26 1\nCampaignCallCount 27 106\nCampaignCallCount 28 169\nCampaignCallCount 29 90\nCampaignCallCount 30 168\nCampaignCallCount 31 1\nCampaignCallCount 34 54\nCampaignCallCount 36 121\nCampaignCallCount 37 312\nCampaignCallCount 40 82\nCampaignCallCount 41 29\nCampaignCallCount 44 54\nCampaignCallCount 48 82\nCampaignCallCount 59 82\nCampaignCallCount 60 67\nCampaignCallCount 62 29\nCampaignCallCount 66 67\nCampaignCallCount 69 67\nCampaignCallCount 72 29\nCampaignCallCount 73 67\nCampaignCallCount 75 26\nCampaignCallCount 76 39\nCampaignCallCount 78 67\nCampaignCallCount 80 191\nCampaignCallCount 81 82\nCampaignCallCount 83 13\nCampaignCallCount 96 13\nCampaignCallCount 98 1\nCampaignCallCount 101 1\nCampaignCallCount 103 1\nCampaignCallCount 104 1\nCampaignCallCount 106 1\nCampaignCallCount 112 94\nCampaignCallCount 113 94\nCampaignCallCount 118 1\nCampaignCallCount 119 2\nCampaignCallCount 130 1\nCampaignCallCount 131 110\nCampaignCallCount 132 1\nCampaignCallCount 133 3\nCampaignCallCount 147 82\nCampaignCallCount 148 67\nCampaignCallCount 151 1\nCampaignCallCount 214 26\nCampaignCallCount 215 39\nCampaignCallCount 237 1\nIndependent oracle mismatch at class 0\n"
+  },
+  "negativeControl": false,
+  "exitCode": 1,
+  "policy": {
+    "path": "/home/x/deco/doe/config/onnx-vulkan-campaign.json",
+    "sha256": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669"
+  },
+  "safety": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/safety-doe.json",
+    "sha256": "b71226a89488a87c2bc135953181c47c83a44caace9a8a27d1cde39c353f9e61"
+  },
+  "inputs": {
+    "application": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-matched/application",
+      "sha256": "a4c4416a7a7c076b72d1a375526113e3e42311f54f1f18ddcbf06cef3234b748"
+    },
+    "provider": {
+      "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/libonnxruntime_providers_webgpu.so",
+      "sha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d"
+    },
+    "native": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/native/lib/libwebgpu_doe.so",
+      "sha256": "5df419827ac98599ba4ad640d3bd28b14038f4e458ccd2c4e0ffe507cd9f82c7"
+    },
+    "bridge": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+      "sha256": "7805b787d716df337f3b499e1217773d4ed826cbf43634da41789a51f14d907f"
+    },
+    "context": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libexternal_context.so",
+      "sha256": "5a9b546a2f2c8372885840690bf3394868437e0b6f095ce5d616e605c6cab180"
+    },
+    "reference": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/altered-reference.f32",
+      "sha256": "12420db1895abcd3ed6b4aa06a58d80568ae137f5a645c946edce319433a6af2"
+    }
+  },
+  "log": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-device-lifecycle/20261008/final/application-doe-oracle-negative.log",
+    "sha256": "321362ef65d71ade5b3b2caa23946d929218d786604dbfd8fa84fbfda9fcfdae"
+  },
+  "profile": null,
+  "operatorNames": [],
+  "operatorProviders": [],
+  "callCounts": {},
+  "timingSamples": []
+}
