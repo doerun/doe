@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "classification": "bounded-native-vulkan-callback-contract",
+  "backend": "Vulkan",
+  "consumerCommit": "d2ede0adeb300958cfb5a256c09d27c66c3a6d71",
+  "dawnCommit": "ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38",
+  "operations": [
+    "RequestAdapter",
+    "RequestDevice",
+    "CreateComputePipelineAsync",
+    "BufferMapAsync",
+    "PopErrorScope",
+    "QueueOnSubmittedWorkDone",
+    "ShaderModuleGetCompilationInfo"
+  ],
+  "waitAnyOnly": "matching-wait-any-call",
+  "allowProcessEvents": "owning-instance-pump-or-matching-wait",
+  "allowSpontaneous": "arbitrary-thread-permitted",
+  "exactlyOnce": true,
+  "callbackLifetime": "resource-leases-until-callback-returns",
+  "pendingMap": "unmap-or-buffer-destroy-aborts-undelivered-success",
+  "unknownFuture": "explicit-error",
+  "legacyZeroMode": "immediate-native-compatibility-only",
+  "qualificationDeadlineNs": 10000000000,
+  "performanceClaim": false,
+  "excluded": [
+    "instance-abandonment",
+    "device-lost-descriptor-conformance",
+    "submitted-work-interruption",
+    "Metal",
+    "D3D12",
+    "browser-switching"
+  ],
+  "independentProcesses": 3
+}

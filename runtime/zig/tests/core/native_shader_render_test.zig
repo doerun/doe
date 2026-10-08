@@ -1173,11 +1173,16 @@ test "multiple instances can coexist" {
 test "doeNativeInstanceWaitAny observes settled infos on a valid instance" {
     const instance = instance_device.doeNativeCreateInstance(null) orelse return error.TestUnexpectedResult;
     defer instance_device.doeNativeInstanceRelease(instance);
-    var infos = [_]types.WGPUFutureWaitInfo{
-        .{ .future = .{ .id = 100 }, .completed = 0 },
-        .{ .future = .{ .id = 200 }, .completed = 0 },
-        .{ .future = .{ .id = 300 }, .completed = 0 },
-    };
+    const owner = native.cast(native.DoeInstance, instance).?;
+    const FutureCompletion = @import("../../src/native/support/doe_future_ids.zig").Completion;
+    var completions: [3]FutureCompletion = @splat(.{});
+    var infos: [3]types.WGPUFutureWaitInfo = undefined;
+    for (&completions, &infos) |*completion, *info| {
+        const id = owner.pending_completions.newFuture();
+        owner.pending_completions.register(completion, id);
+        completion.finish();
+        info.* = .{ .future = .{ .id = id }, .completed = 0 };
+    }
 
     const status = instance_device.doeNativeInstanceWaitAny(instance, infos.len, &infos, 0);
     // Should return WGPU_WAIT_STATUS_SUCCESS = 1.
@@ -1187,6 +1192,14 @@ test "doeNativeInstanceWaitAny observes settled infos on a valid instance" {
     for (infos) |info| {
         try std.testing.expectEqual(@as(u32, 1), info.completed);
     }
+}
+
+test "doeNativeInstanceWaitAny rejects an unissued identity" {
+    const instance = instance_device.doeNativeCreateInstance(null) orelse return error.TestUnexpectedResult;
+    defer instance_device.doeNativeInstanceRelease(instance);
+    var info = types.WGPUFutureWaitInfo{ .future = .{ .id = 100 }, .completed = 0 };
+    try std.testing.expectEqual(@as(u32, 3), instance_device.doeNativeInstanceWaitAny(instance, 1, @ptrCast(&info), 0));
+    try std.testing.expectEqual(@as(u32, 0), info.completed);
 }
 
 test "doeNativeInstanceWaitAny rejects a missing instance without fabricating completion" {

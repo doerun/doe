@@ -123,12 +123,14 @@ pub const RenderPipelineDesc = extern struct {
     fragment: ?*const RenderFragmentState,
 };
 
-pub var g_next_async_future_id = std.atomic.Value(u64).init(32);
 pub var g_compute_inflight = singleflight.Registry(ComputePipelineAsyncRequest).init(process_roots.dropinAsyncPipelineAllocator());
 pub var g_render_inflight = singleflight.Registry(RenderPipelineAsyncRequest).init(process_roots.dropinAsyncPipelineAllocator());
 
-pub fn next_async_future_id() u64 {
-    return g_next_async_future_id.fetchAdd(1, .monotonic);
+pub fn next_async_future_id(device_raw: types.WGPUDevice) u64 {
+    if (native.cast(native.DoeDevice, device_raw)) |device| {
+        if (device.adapter) |adapter| if (adapter.instance) |instance| return instance.pending_completions.newFuture();
+    }
+    return future_ids.legacyFuture();
 }
 
 pub fn render_string_view_slice(view: RenderStringView) []const u8 {
@@ -201,6 +203,7 @@ pub const ComputePipelineAsyncRequest = struct {
     allocator: std.mem.Allocator = std.heap.c_allocator,
     next: ?*ComputePipelineAsyncRequest = null,
     future_completion: future_ids.Completion = .{},
+    instance_ref: ?*native.DoeInstance = null,
     device: types.WGPUDevice,
     descriptor: types.WGPUComputePipelineDescriptor,
     callback_info: p0.CreateComputePipelineAsyncCallbackInfo,
@@ -219,6 +222,7 @@ pub const RenderPipelineAsyncRequest = struct {
     allocator: std.mem.Allocator = std.heap.c_allocator,
     next: ?*RenderPipelineAsyncRequest = null,
     future_completion: future_ids.Completion = .{},
+    instance_ref: ?*native.DoeInstance = null,
     device: types.WGPUDevice,
     descriptor: RenderPipelineDesc,
     callback_info: async_procs.CreateRenderPipelineAsyncCallbackInfo,
@@ -331,8 +335,16 @@ fn copy_constants(allocator: std.mem.Allocator, source: []const types.WGPUConsta
     return entries;
 }
 
-pub fn free_compute_pipeline_request(req: *ComputePipelineAsyncRequest) void {
+fn finish_pipeline_request(comptime Request: type, req: *Request) void {
+    const instance = req.instance_ref;
+    const allocator = req.allocator;
+    // Backend/resource leases are already released before publishing settlement.
     req.future_completion.finish();
+    allocator.destroy(req);
+    if (instance) |owner| native.doeNativeInstanceRelease(native.toOpaque(owner));
+}
+
+pub fn free_compute_pipeline_request(req: *ComputePipelineAsyncRequest) void {
     const allocator = req.allocator;
     if (req.label_bytes) |bytes| allocator.free(bytes);
     if (req.entry_point_bytes) |bytes| allocator.free(bytes);
@@ -340,7 +352,7 @@ pub fn free_compute_pipeline_request(req: *ComputePipelineAsyncRequest) void {
     if (req.descriptor.layout != null) native.doeNativePipelineLayoutRelease(req.descriptor.layout);
     if (req.descriptor.compute.module != null) native.doeNativeShaderModuleRelease(req.descriptor.compute.module);
     native.doeNativeDeviceRelease(req.device);
-    allocator.destroy(req);
+    finish_pipeline_request(ComputePipelineAsyncRequest, req);
 }
 
 pub fn copy_compute_pipeline_request(
@@ -502,7 +514,6 @@ fn copy_render_request(
 }
 
 pub fn free_render_pipeline_request(req: *RenderPipelineAsyncRequest) void {
-    req.future_completion.finish();
     if (req.descriptor.layout != null) native.doeNativePipelineLayoutRelease(req.descriptor.layout);
     if (req.descriptor.vertex.module != null) native.doeNativeShaderModuleRelease(req.descriptor.vertex.module);
     if (req.descriptor.fragment) |frag| {
@@ -520,7 +531,7 @@ pub fn free_render_pipeline_request(req: *RenderPipelineAsyncRequest) void {
     if (req.fragment_state) |frag| req.allocator.destroy(frag);
     if (req.depth_stencil) |depth| req.allocator.destroy(depth);
     native.doeNativeDeviceRelease(req.device);
-    req.allocator.destroy(req);
+    finish_pipeline_request(RenderPipelineAsyncRequest, req);
 }
 
 pub fn set_render_pipeline_request_error(req: *RenderPipelineAsyncRequest, comptime message: []const u8) void {
@@ -569,28 +580,63 @@ fn deliver_pipeline_requests(
     comptime free_request: fn (*Request) void,
     head: *Request,
 ) void {
-    defer free_request(head);
-    defer if (head.pipeline != null) release_pipeline(head.pipeline);
-    var req: ?*Request = head;
-    while (req) |current| {
-        const next = current.next;
-        if (current.callback_info.callback) |cb| {
-            // Each callback receives its own lease; earlier callbacks may release or reenter.
-            if (comptime @hasField(Request, "future_completion")) current.future_completion.beginDelivery();
-            if (head.pipeline != null) native.object_add_ref(Pipeline, head.pipeline);
-            cb(head.status, head.pipeline, .{ .data = head.message.ptr, .length = head.message.len }, current.callback_info.userdata1, current.callback_info.userdata2);
+    // Preserve the producer result while callbacks release their independent leases.
+    const result = head.pipeline;
+    const status = head.status;
+    const message = head.message;
+    if (comptime @hasField(Request, "future_completion")) {
+        const Delivery = struct {
+            fn dispatch(completion: *future_ids.Completion) void {
+                const current: *Request = @fieldParentPtr("future_completion", completion);
+                if (current.callback_info.callback) |cb| {
+                    cb(current.status, current.pipeline, .{ .data = current.message.ptr, .length = current.message.len }, current.callback_info.userdata1, current.callback_info.userdata2);
+                } else if (current.pipeline != null) release_pipeline(current.pipeline);
+                free_request(current);
+            }
+        };
+        var req: ?*Request = head;
+        while (req) |current| {
+            const next = current.next;
+            current.pipeline = result;
+            current.status = status;
+            current.message = message;
+            if (result != null) native.object_add_ref(Pipeline, result);
+            current.future_completion.dispatch = Delivery.dispatch;
+            req = next;
         }
-        if (comptime @hasField(Request, "future_completion")) current.future_completion.finish();
-        if (current != head) free_request(current);
-        req = next;
+        if (result != null) release_pipeline(result);
+        req = head;
+        while (req) |current| {
+            const next = current.next;
+            current.future_completion.markReady();
+            req = next;
+        }
+    } else {
+        // Characterization fixtures own their message storage on the leader.
+        defer free_request(head);
+        defer if (result != null) release_pipeline(result);
+        var req: ?*Request = head;
+        while (req) |current| {
+            const next = current.next;
+            if (current.callback_info.callback) |cb| {
+                if (result != null) native.object_add_ref(Pipeline, result);
+                cb(status, result, .{ .data = message.ptr, .length = message.len }, current.callback_info.userdata1, current.callback_info.userdata2);
+            }
+            if (current != head) free_request(current);
+            req = next;
+        }
     }
 }
 
-pub fn register_pipeline_future(device_raw: types.WGPUDevice, completion: *future_ids.Completion, id: u64) void {
+pub fn register_pipeline_future(comptime Request: type, device_raw: types.WGPUDevice, req: *Request, id: u64, mode: u32) void {
+    if (mode > 3) @panic("UnsupportedCallbackMode");
+    req.future_completion.mode = mode;
     const device = native.cast(native.DoeDevice, device_raw) orelse return;
     const adapter = device.adapter orelse return;
     const instance = adapter.instance orelse return;
-    instance.pending_completions.register(completion, id);
+    native.object_add_ref(native.DoeInstance, native.toOpaque(instance));
+    req.instance_ref = instance;
+    instance.pending_completions.register(&req.future_completion, id);
 }
 
 test "async render cleanup releases shader leases before owned fragment storage" {

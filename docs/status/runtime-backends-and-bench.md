@@ -1,5 +1,21 @@
 # Doe status: runtime backends and benchmarks
 
+## Bounded ONNX Vulkan callback qualification
+
+The [callback campaign](../../reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-callbacks/README.md)
+qualifies the named adapter/device, compute-pipeline, mapping, error-scope, queue
+and compilation-information delivery paths on the tested AMD host. Instance-owned
+future routing, requested callback modes, error recovery and callback resource
+cleanup pass pinned Dawn controls and unchanged SqueezeNet/MatMul/Add with CPU
+fallback disabled. Native disabling and oracle controls remain sensitive.
+
+The [contract migration](../native-callback-contract.md) preserves earlier reports
+and their rejected/no-candidate performance decisions. No speed claim is promoted.
+General callback conformance remains open, including descriptor-based device loss,
+DeviceDestroy semantics, instance abandonment and submitted-work interruption.
+Metal, D3D12, browser switching and closed browser transformations remain deferred.
+No successor performance or compiler campaign is automatically selected.
+
 ## Completed ONNX CPU attribution
 
 The [bounded CPU investigation](../../reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-cpu-attribution/README.md)

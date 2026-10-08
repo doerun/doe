@@ -122,6 +122,8 @@ const test_src_backend_vulkan_vk_descriptors_zig_424d8d65 = @import("src/backend
 const test_src_backend_vulkan_vk_surface_sync_zig_ba693c96 = if (builtin.os.tag == .linux) @import("src/backend/vulkan/vk_surface_sync.zig") else struct {};
 const test_tests_vulkan_vulkan_surface_admission_test_zig_04325ee6 = if (builtin.os.tag == .linux) @import("tests/vulkan/vulkan_surface_admission_test.zig") else struct {};
 const test_src_native_surface_doe_surface_native_zig_3bda77f3 = if (builtin.os.tag == .linux) @import("src/native/surface/doe_surface_native.zig") else struct {};
+const test_src_native_support_doe_callback_delivery_zig_24ee01a5 = @import("src/native/support/doe_callback_delivery.zig");
+const test_src_native_support_doe_future_ids_zig_46c77022 = @import("src/native/support/doe_future_ids.zig");
 
 comptime {
     _ = test_tests_metal_metal_mod_integration_test_zig_6f53b3ec;
@@ -245,4 +247,6 @@ comptime {
     _ = test_src_backend_vulkan_vk_surface_sync_zig_ba693c96;
     _ = test_tests_vulkan_vulkan_surface_admission_test_zig_04325ee6;
     _ = test_src_native_surface_doe_surface_native_zig_3bda77f3;
+    _ = test_src_native_support_doe_callback_delivery_zig_24ee01a5;
+    _ = test_src_native_support_doe_future_ids_zig_46c77022;
 }

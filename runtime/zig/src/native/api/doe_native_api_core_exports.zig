@@ -68,6 +68,7 @@ const instance_device = @import("../lifecycle/doe_instance_device_native.zig");
 pub const doeNativeCreateInstance = instance_device.doeNativeCreateInstance;
 pub const doeNativeInstanceAddRef = instance_device.doeNativeInstanceAddRef;
 pub const doeNativeInstanceRelease = instance_device.doeNativeInstanceRelease;
+pub const doeNativeInstanceProcessEvents = instance_device.doeNativeInstanceProcessEvents;
 pub const doeNativeInstanceWaitAny = instance_device.doeNativeInstanceWaitAny;
 pub const doeNativeRequestAdapterFlat = instance_device.doeNativeRequestAdapterFlat;
 pub const doeNativeInstanceCreateAdapter = instance_device.doeNativeInstanceCreateAdapter;

@@ -2,6 +2,14 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/native-callback-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-callbacks/manifest.json"
+    },
+    {
+      "schema": "config/native-callback-contract.schema.json",
+      "data": "config/native-callback-contract.json"
+    },
+    {
       "schema": "config/onnx-vulkan-cpu-evidence.schema.json",
       "data": "reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-cpu-attribution/manifest.json"
     },

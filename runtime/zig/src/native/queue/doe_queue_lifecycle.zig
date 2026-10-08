@@ -11,6 +11,9 @@ const native_rt_helpers = @import("../support/doe_native_runtime_helpers.zig");
 const native_exports = @import("../support/doe_native_exports.zig");
 const queue_flush_breakdown = @import("doe_queue_flush_breakdown.zig");
 const shared = @import("doe_queue_submit_shared.zig");
+const future_ids = @import("../support/doe_future_ids.zig");
+const task_pool = @import("../../runtime/task_pool.zig");
+const callback_delivery = @import("../support/doe_callback_delivery.zig");
 const callback_dispatch = @import("../../runtime/callback_dispatch.zig");
 
 const has_vulkan = (builtin.os.tag == .linux);
@@ -333,7 +336,52 @@ pub fn drain_global_work_done() void {
     }
 }
 
+const QueueReply = struct {
+    queue: *DoeQueue,
+    info: abi_callback.WGPUQueueWorkDoneCallbackInfo,
+    status: abi_callback.WGPUQueueWorkDoneStatus,
+    fn deliver(self: *QueueReply) void {
+        const message = if (self.status == .success) "" else "native queue completion failed";
+        if (self.info.callback) |cb| cb(self.status, .{ .data = message.ptr, .length = message.len }, self.info.userdata1, self.info.userdata2);
+        doeNativeQueueRelease(toOpaque(self.queue));
+    }
+};
+
+fn publishMetalWorkDone(completion: *future_ids.Completion) void {
+    task_pool.submitWithAllocator(alloc, .{ .run = struct {
+        fn publish(raw: ?*anyopaque) void {
+            const entry: *future_ids.Completion = @ptrCast(@alignCast(raw.?));
+            entry.markReady();
+        }
+    }.publish, .ctx = completion }) catch completion.markReady();
+}
+
 pub fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: abi_callback.WGPUQueueWorkDoneCallbackInfo) abi_core.WGPUFuture {
+    if (cast(DoeQueue, q_raw)) |q| {
+        if (callback_delivery.instanceForDevice(q.dev)) |instance| {
+            var status: abi_callback.WGPUQueueWorkDoneStatus = .success;
+            if (comptime has_vulkan) {
+                if (q.dev.backend == .vulkan) {
+                    if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
+                        _ = rt.flush_queue() catch |err| {
+                            shared.deliverInternalError(q.dev, "queue completion: {s}", .{@errorName(err)});
+                            status = .@"error";
+                        };
+                    } else status = .@"error";
+                } else shared.flush_pending_work_dropin_sync(q);
+            } else shared.flush_pending_work_dropin_sync(q);
+            native_helpers.object_add_ref(DoeQueue, q_raw);
+            const reply = QueueReply{ .queue = q, .info = info, .status = status };
+            const future = if (shouldDispatchSpontaneousMetalWorkDone(q, info))
+                callback_delivery.publish(QueueReply, alloc, instance, info.mode, reply, QueueReply.deliver, publishMetalWorkDone)
+            else
+                callback_delivery.ready(QueueReply, alloc, instance, info.mode, reply, QueueReply.deliver);
+            return future catch |err| {
+                doeNativeQueueRelease(q_raw);
+                @panic(@errorName(err));
+            };
+        }
+    }
     const future = next_work_done_future();
     if (cast(DoeQueue, q_raw)) |q| {
         if (shouldDispatchSpontaneousMetalWorkDone(q, info)) {

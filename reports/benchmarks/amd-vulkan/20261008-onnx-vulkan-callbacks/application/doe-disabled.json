@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "arm": "doe",
+  "classification": "application-qualification",
+  "passed": true,
+  "failure": null,
+  "negativeControl": true,
+  "exitCode": 1,
+  "policy": {
+    "path": "/home/x/deco/doe/config/onnx-vulkan-campaign.json",
+    "sha256": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669"
+  },
+  "safety": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-callbacks/20261008/safety-doe-settled.json",
+    "sha256": "eb088e79fe43d912f0b8d5888a448163344c9af96c323e418990dcdcd1453214"
+  },
+  "inputs": {
+    "application": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/application-matched/application",
+      "sha256": "a4c4416a7a7c076b72d1a375526113e3e42311f54f1f18ddcbf06cef3234b748"
+    },
+    "provider": {
+      "path": "/home/x/deco/doe/bench/out/onnx-webgpu-substitution/20261005/adapter/build/libonnxruntime_providers_webgpu.so",
+      "sha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d"
+    },
+    "native": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-callbacks/20261008/native/lib/libwebgpu_doe.so",
+      "sha256": "af66973e3b8fde7d8f9977cd4c94493bab4b92449e82eb56fd9428f7f3c386a5"
+    },
+    "bridge": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libdoe_dawn_bridge.so",
+      "sha256": "7805b787d716df337f3b499e1217773d4ed826cbf43634da41789a51f14d907f"
+    },
+    "context": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/bridge-matched/libexternal_context.so",
+      "sha256": "5a9b546a2f2c8372885840690bf3394868437e0b6f095ce5d616e605c6cab180"
+    },
+    "reference": {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-campaign/20261005/reference/reference.f32",
+      "sha256": "b85805bff755867ec86e9b0ec8ac368e5fc6af7247a42145db0bcff061fe1bd1"
+    }
+  },
+  "log": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-callbacks/20261008/application-doe-disabled.log",
+    "sha256": "f4e190a3c647180d404dde258c328bc47d5a145123d16a739d6f024622da92a3"
+  },
+  "profile": null,
+  "operatorNames": [],
+  "operatorProviders": [],
+  "callCounts": {},
+  "timingSamples": []
+}

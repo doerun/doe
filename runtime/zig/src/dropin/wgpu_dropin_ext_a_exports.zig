@@ -21,8 +21,7 @@ const fill_adapter_info_struct = core.fill_adapter_info_struct;
 const fill_supported_features_from_adapter = core.fill_supported_features_from_adapter;
 const fill_supported_features_from_device = core.fill_supported_features_from_device;
 const LoggingCallbackInfo = core.LoggingCallbackInfo;
-const PopErrorScopeBridgeState = core.PopErrorScopeBridgeState;
-const bridge_pop_error_scope_callback = core.bridge_pop_error_scope_callback;
+const callback_delivery = @import("../native/support/doe_callback_delivery.zig");
 const doeNativeComputePassSetImmediates = core.doeNativeComputePassSetImmediates;
 const doeNativeQuerySetDestroy = core.doeNativeQuerySetDestroy;
 const doeNativeQuerySetGetCount = core.doeNativeQuerySetGetCount;
@@ -153,23 +152,34 @@ pub export fn wgpuDeviceAddRef(a0: types.WGPUDevice) callconv(.c) void {
     native.doeNativeDeviceAddRef(a0);
 }
 
-pub export fn wgpuDeviceCreateComputePipelineAsync(a0: types.WGPUDevice, a1: *const types.WGPUComputePipelineDescriptor, a2: p0.CreateComputePipelineAsyncCallbackInfo) callconv(.c) types.WGPUFuture {
-    const future = types.WGPUFuture{ .id = next_async_future_id() };
-    const req = copy_compute_pipeline_request(a0, a1, a2) catch |err| {
-        if (a2.callback) |cb| {
-            const msg = @errorName(err);
-            cb(if (err == error.OutOfMemory) async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR else async_procs.CREATE_PIPELINE_ASYNC_STATUS_VALIDATION_ERROR, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
+fn pipeline_error(comptime Info: type, device: types.WGPUDevice, info: Info, status: u32, message: []const u8) types.WGPUFuture {
+    const Reply = struct {
+        device: types.WGPUDevice,
+        info: Info,
+        status: u32,
+        message: []const u8,
+        fn deliver(self: *@This()) void {
+            if (self.info.callback) |cb| cb(self.status, null, .{ .data = self.message.ptr, .length = self.message.len }, self.info.userdata1, self.info.userdata2);
+            native.doeNativeDeviceRelease(self.device);
         }
-        return future;
     };
-    pipeline.register_pipeline_future(a0, &req.future_completion, future.id);
+    const dev = native.cast(native.DoeDevice, device);
+    native.doeNativeDeviceAddRef(device);
+    return callback_delivery.ready(Reply, std.heap.c_allocator, if (dev) |d| callback_delivery.instanceForDevice(d) else null, info.mode, .{ .device = device, .info = info, .status = status, .message = message }, Reply.deliver) catch |err| {
+        native.doeNativeDeviceRelease(device);
+        @panic(@errorName(err));
+    };
+}
+
+pub export fn wgpuDeviceCreateComputePipelineAsync(a0: types.WGPUDevice, a1: *const types.WGPUComputePipelineDescriptor, a2: p0.CreateComputePipelineAsyncCallbackInfo) callconv(.c) types.WGPUFuture {
+    const req = copy_compute_pipeline_request(a0, a1, a2) catch |err| {
+        return pipeline_error(p0.CreateComputePipelineAsyncCallbackInfo, a0, a2, if (err == error.OutOfMemory) async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR else async_procs.CREATE_PIPELINE_ASYNC_STATUS_VALIDATION_ERROR, @errorName(err));
+    };
+    const future = types.WGPUFuture{ .id = next_async_future_id(a0) };
+    pipeline.register_pipeline_future(pipeline.ComputePipelineAsyncRequest, a0, req, future.id, a2.mode);
     const joined = pipeline.g_compute_inflight.join_or_create(compute_pipeline_request_key(req), req) catch {
         free_compute_pipeline_request(req);
-        if (a2.callback) |cb| {
-            const msg = "async pipeline single-flight allocation failed";
-            cb(async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
-        }
-        return future;
+        return pipeline_error(p0.CreateComputePipelineAsyncCallbackInfo, a0, a2, async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR, "async pipeline single-flight allocation failed");
     };
     if (joined.leader) {
         task_pool.submitWithAllocator(process_roots.dropinAsyncPipelineAllocator(), .{
@@ -187,22 +197,14 @@ pub export fn wgpuDeviceCreateRenderBundleEncoder(a0: types.WGPUDevice, a1: *con
 }
 
 pub export fn wgpuDeviceCreateRenderPipelineAsync(a0: types.WGPUDevice, a1: *const anyopaque, a2: async_procs.CreateRenderPipelineAsyncCallbackInfo) callconv(.c) types.WGPUFuture {
-    const future = types.WGPUFuture{ .id = next_async_future_id() };
     const req = copy_render_pipeline_request(a0, a1, a2) catch |err| {
-        if (a2.callback) |cb| {
-            const msg = @errorName(err);
-            cb(if (err == error.OutOfMemory) async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR else async_procs.CREATE_PIPELINE_ASYNC_STATUS_VALIDATION_ERROR, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
-        }
-        return future;
+        return pipeline_error(async_procs.CreateRenderPipelineAsyncCallbackInfo, a0, a2, if (err == error.OutOfMemory) async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR else async_procs.CREATE_PIPELINE_ASYNC_STATUS_VALIDATION_ERROR, @errorName(err));
     };
-    pipeline.register_pipeline_future(a0, &req.future_completion, future.id);
+    const future = types.WGPUFuture{ .id = next_async_future_id(a0) };
+    pipeline.register_pipeline_future(pipeline.RenderPipelineAsyncRequest, a0, req, future.id, a2.mode);
     const joined = pipeline.g_render_inflight.join_or_create(render_pipeline_request_key(req), req) catch {
         free_render_pipeline_request(req);
-        if (a2.callback) |cb| {
-            const msg = "async render single-flight allocation failed";
-            cb(async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR, null, .{ .data = msg.ptr, .length = msg.len }, a2.userdata1, a2.userdata2);
-        }
-        return future;
+        return pipeline_error(async_procs.CreateRenderPipelineAsyncCallbackInfo, a0, a2, async_procs.CREATE_PIPELINE_ASYNC_STATUS_INTERNAL_ERROR, "async pipeline single-flight allocation failed");
     };
     if (joined.leader) {
         task_pool.submitWithAllocator(process_roots.dropinAsyncPipelineAllocator(), .{
@@ -246,42 +248,41 @@ pub export fn wgpuDeviceGetLimits(a0: types.WGPUDevice, a1: *p1cap.Limits) callc
     return native.doeNativeDeviceGetLimits(a0, a1);
 }
 
-pub export fn wgpuDevicePopErrorScope(a0: types.WGPUDevice, a1: async_procs.PopErrorScopeCallbackInfo) callconv(.c) types.WGPUFuture {
-    const dev = native.cast(native.DoeDevice, a0) orelse {
-        if (a1.callback) |callback| {
-            callback(
-                async_procs.POP_ERROR_SCOPE_STATUS_SUCCESS,
-                error_scope.ERROR_TYPE_INTERNAL,
-                .{ .data = null, .length = 0 },
-                a1.userdata1,
-                a1.userdata2,
-            );
-        }
-        return .{ .id = 5 };
-    };
-    var state = PopErrorScopeBridgeState{
-        .callback = a1.callback,
-        .userdata1 = a1.userdata1,
-        .userdata2 = a1.userdata2,
-    };
-    if (!dev.error_scopes.pop(.{
-        .next_in_chain = null,
-        .mode = 0,
-        .callback = bridge_pop_error_scope_callback,
-        .userdata1 = &state,
-        .userdata2 = null,
-    })) {
-        if (a1.callback) |callback| {
-            callback(
-                async_procs.POP_ERROR_SCOPE_STATUS_SUCCESS,
-                error_scope.ERROR_TYPE_INTERNAL,
-                .{ .data = null, .length = 0 },
-                a1.userdata1,
-                a1.userdata2,
-            );
-        }
+const ScopeReply = struct {
+    device: types.WGPUDevice,
+    info: async_procs.PopErrorScopeCallbackInfo,
+    status: u32 = 1,
+    error_type: u32 = error_scope.ERROR_TYPE_NO_ERROR,
+    message: [@sizeOf(error_scope.ScopedError)]u8 = undefined,
+    length: usize = 0,
+    fn capture(error_type: u32, message: types.WGPUStringView, data: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
+        const self: *ScopeReply = @ptrCast(@alignCast(data.?));
+        self.error_type = error_type;
+        const bytes = core.string_view_slice(message);
+        self.length = @min(bytes.len, self.message.len);
+        @memcpy(self.message[0..self.length], bytes[0..self.length]);
     }
-    return .{ .id = 5 };
+    fn deliver(self: *ScopeReply) void {
+        if (self.info.callback) |cb| cb(self.status, self.error_type, .{ .data = &self.message, .length = self.length }, self.info.userdata1, self.info.userdata2);
+        native.doeNativeDeviceRelease(self.device);
+    }
+};
+
+pub export fn wgpuDevicePopErrorScope(a0: types.WGPUDevice, a1: async_procs.PopErrorScopeCallbackInfo) callconv(.c) types.WGPUFuture {
+    const device = native.cast(native.DoeDevice, a0);
+    var reply = ScopeReply{ .device = a0, .info = a1 };
+    native.doeNativeDeviceAddRef(a0);
+    const popped = if (device) |dev| dev.error_scopes.pop(.{ .callback = ScopeReply.capture, .userdata1 = &reply }) else false;
+    if (!popped) {
+        reply.status = 3; // Error: no scope exists; errorType remains NoError.
+        const message = "no error scope to pop";
+        reply.length = message.len;
+        @memcpy(reply.message[0..message.len], message);
+    }
+    return callback_delivery.ready(ScopeReply, std.heap.c_allocator, if (device) |dev| callback_delivery.instanceForDevice(dev) else null, a1.mode, reply, ScopeReply.deliver) catch |err| {
+        native.doeNativeDeviceRelease(a0);
+        @panic(@errorName(err));
+    };
 }
 
 pub export fn wgpuDevicePushErrorScope(a0: types.WGPUDevice, a1: u32) callconv(.c) void {

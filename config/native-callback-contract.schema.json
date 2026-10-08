@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "classification",
+    "backend",
+    "consumerCommit",
+    "dawnCommit",
+    "operations",
+    "waitAnyOnly",
+    "allowProcessEvents",
+    "allowSpontaneous",
+    "exactlyOnce",
+    "callbackLifetime",
+    "pendingMap",
+    "unknownFuture",
+    "legacyZeroMode",
+    "qualificationDeadlineNs",
+    "performanceClaim",
+    "excluded",
+    "independentProcesses"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "classification": {
+      "const": "bounded-native-vulkan-callback-contract"
+    },
+    "backend": {
+      "const": "Vulkan"
+    },
+    "consumerCommit": {
+      "const": "d2ede0adeb300958cfb5a256c09d27c66c3a6d71"
+    },
+    "dawnCommit": {
+      "const": "ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38"
+    },
+    "operations": {
+      "const": [
+        "RequestAdapter",
+        "RequestDevice",
+        "CreateComputePipelineAsync",
+        "BufferMapAsync",
+        "PopErrorScope",
+        "QueueOnSubmittedWorkDone",
+        "ShaderModuleGetCompilationInfo"
+      ]
+    },
+    "waitAnyOnly": {
+      "const": "matching-wait-any-call"
+    },
+    "allowProcessEvents": {
+      "const": "owning-instance-pump-or-matching-wait"
+    },
+    "allowSpontaneous": {
+      "const": "arbitrary-thread-permitted"
+    },
+    "exactlyOnce": {
+      "const": true
+    },
+    "callbackLifetime": {
+      "const": "resource-leases-until-callback-returns"
+    },
+    "pendingMap": {
+      "const": "unmap-or-buffer-destroy-aborts-undelivered-success"
+    },
+    "unknownFuture": {
+      "const": "explicit-error"
+    },
+    "legacyZeroMode": {
+      "const": "immediate-native-compatibility-only"
+    },
+    "qualificationDeadlineNs": {
+      "const": 10000000000
+    },
+    "performanceClaim": {
+      "const": false
+    },
+    "excluded": {
+      "const": [
+        "instance-abandonment",
+        "device-lost-descriptor-conformance",
+        "submitted-work-interruption",
+        "Metal",
+        "D3D12",
+        "browser-switching"
+      ]
+    },
+    "independentProcesses": {
+      "const": 3
+    }
+  },
+  "title": "Bounded native Vulkan callback contract"
+}

@@ -12,6 +12,7 @@ const native_shared = @import("../support/doe_native_shared_types.zig");
 const native_types = @import("../support/doe_native_object_types.zig");
 const native_helpers = @import("../support/doe_native_object_helpers.zig");
 const native_exports = @import("../support/doe_native_exports.zig");
+const callback_delivery = @import("../support/doe_callback_delivery.zig");
 const runtime_helpers = @import("../support/doe_native_runtime_helpers.zig");
 const vulkan_lifetime = @import("../vulkan/vulkan_lifetime.zig");
 const queue_submit_shared = @import("../queue/doe_queue_submit_shared.zig");
@@ -34,7 +35,8 @@ const DoeBuffer = native_types.DoeBuffer;
 const NativeVulkanRuntime = native_shared.NativeVulkanRuntime;
 
 const WGPU_MAP_ASYNC_STATUS_SUCCESS: u32 = 1;
-const WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR: u32 = 4;
+const WGPU_MAP_ASYNC_STATUS_ERROR: u32 = 3;
+const WGPU_MAP_ASYNC_STATUS_ABORTED: u32 = 4;
 const D3D12_HEAP_TYPE_DEFAULT: c_int = 1;
 const WHOLE_MAP_SIZE = std.math.maxInt(usize);
 const WGPU_BUFFER_USAGE_INDIRECT: u64 = 0x0000000000000100;
@@ -150,7 +152,10 @@ fn createBuffer(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUBufferDescr
             };
             // Cache host-visible mapped pointer to skip HashMap lookup on writeBuffer.
             if (cb.mapped) |m| buf.vk_mapped_ptr = @ptrCast(m);
-            if (d.mappedAtCreation != 0) buf.mapped = true;
+            if (d.mappedAtCreation != 0) {
+                buf.mapped = true;
+                buf.map_size = @intCast(d.size);
+            }
             const result = toOpaque(buf);
             label_store.set(result, d.label.data, d.label.length);
             return result;
@@ -178,6 +183,7 @@ fn createBuffer(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUBufferDescr
                 return null;
             };
             buf.mapped = true;
+            buf.map_size = @intCast(d.size);
         }
         const result = toOpaque(buf);
         label_store.set(result, d.label.data, d.label.length);
@@ -196,7 +202,10 @@ fn createBuffer(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUBufferDescr
     if (!use_private_storage) {
         buf.metal_mapped_ptr = metal_bridge_buffer_contents(buf.mtl);
     }
-    if (d.mappedAtCreation != 0) buf.mapped = true;
+    if (d.mappedAtCreation != 0) {
+        buf.mapped = true;
+        buf.map_size = @intCast(d.size);
+    }
     const result = toOpaque(buf);
     label_store.set(result, d.label.data, d.label.length);
     return result;
@@ -218,6 +227,7 @@ pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
         if (!object_should_destroy(b)) return;
         label_store.remove(raw);
         doeNativeBufferDestroy(raw);
+        if (b.device_ref) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
         alloc.destroy(b);
     }
 }
@@ -254,10 +264,9 @@ pub export fn doeNativeBufferDestroy(raw: ?*anyopaque) callconv(.c) void {
     b.mtl = null;
     b.mapped = false;
     b.destroyed = true;
-    const device = b.device_ref;
-    b.device_ref = null;
+    b.map_pending = false;
+    b.map_generation +%= 1;
     b.dev = null;
-    if (device) |dev| native_exports.doeNativeDeviceRelease(toOpaque(dev));
 }
 
 pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
@@ -267,6 +276,8 @@ pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
             b.d3d12_mapped_ptr = null;
         }
         b.mapped = false;
+        b.map_pending = false;
+        b.map_generation +%= 1;
     }
 }
 
@@ -276,38 +287,74 @@ const DOE_BUFFER_MAP_STATE_MAPPED: u32 = 3;
 pub export fn doeNativeBufferGetMapState(raw: ?*anyopaque) callconv(.c) u32 {
     const b = cast(DoeBuffer, raw) orelse return DOE_BUFFER_MAP_STATE_UNMAPPED;
     if (b.error_object or b.destroyed) return DOE_BUFFER_MAP_STATE_UNMAPPED;
+    if (b.map_pending) return 2;
     return if (b.mapped) DOE_BUFFER_MAP_STATE_MAPPED else DOE_BUFFER_MAP_STATE_UNMAPPED;
 }
 
+const MapReply = struct {
+    buffer: ?*DoeBuffer,
+    info: abi_callback.WGPUBufferMapCallbackInfo,
+    status: u32,
+    generation: u64 = 0,
+    fn deliver(self: *MapReply) void {
+        var status = self.status;
+        if (self.buffer) |buffer| {
+            if (status == WGPU_MAP_ASYNC_STATUS_SUCCESS) {
+                if (buffer.destroyed or buffer.map_generation != self.generation) {
+                    status = WGPU_MAP_ASYNC_STATUS_ABORTED; // Aborted by unmap or destruction before delivery.
+                } else buffer.map_pending = false;
+            }
+        }
+        const message = if (status == WGPU_MAP_ASYNC_STATUS_SUCCESS) "" else if (status == WGPU_MAP_ASYNC_STATUS_ABORTED) "mapping aborted" else "invalid buffer mapping";
+        if (self.info.callback) |cb| cb(status, .{ .data = message.ptr, .length = message.len }, self.info.userdata1, self.info.userdata2);
+        if (self.buffer) |buffer| doeNativeBufferRelease(toOpaque(buffer));
+    }
+};
+
 pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: usize, size: usize, cb_info: abi_callback.WGPUBufferMapCallbackInfo) callconv(.c) abi_core.WGPUFuture {
-    const b = cast(DoeBuffer, buf_raw) orelse {
-        if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
-        return .{ .id = 3 };
+    const buffer = cast(DoeBuffer, buf_raw);
+    var reply = MapReply{ .buffer = buffer, .info = cb_info, .status = WGPU_MAP_ASYNC_STATUS_ERROR };
+    var instance: ?*native_types.DoeInstance = null;
+    if (buffer) |b| {
+        native_helpers.object_add_ref(DoeBuffer, buf_raw);
+        if (b.device_ref orelse b.dev) |device| instance = callback_delivery.instanceForDevice(device);
+        const resolved = resolve_buffer_map_range(b, offset, size);
+        const permitted = (mode == abi_core.WGPUMapMode_Read and (b.usage & abi_core.WGPUBufferUsage_MapRead) != 0) or
+            (mode == abi_core.WGPUMapMode_Write and (b.usage & abi_core.WGPUBufferUsage_MapWrite) != 0);
+        if (!b.error_object and !b.destroyed and !b.mapped and permitted and offset % 8 == 0 and resolved != null and resolved.? % 4 == 0) {
+            reply.status = performBufferMap(b, mode);
+            if (reply.status == WGPU_MAP_ASYNC_STATUS_SUCCESS) {
+                b.map_generation +%= 1;
+                reply.generation = b.map_generation;
+                b.map_pending = true;
+                b.mapped = true; // Queue admission rejects both pending and mapped buffers.
+                b.map_offset = offset;
+                b.map_size = resolved.?;
+            }
+        }
+    }
+    if (reply.status == WGPU_MAP_ASYNC_STATUS_ERROR) {
+        if (buffer) |b| if (b.device_ref orelse b.dev) |device| device.error_scopes.deliver(2, "invalid buffer mapping");
+    }
+    return callback_delivery.ready(MapReply, alloc, instance, cb_info.mode, reply, MapReply.deliver) catch |err| {
+        if (buffer) |b| doeNativeBufferRelease(toOpaque(b));
+        @panic(@errorName(err));
     };
-    if (b.error_object or b.destroyed) {
-        if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
-        return .{ .id = 3 };
-    }
-    if (!buffer_map_range_ok(b, offset, size)) {
-        if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
-        return .{ .id = 3 };
-    }
+}
+
+fn performBufferMap(b: *DoeBuffer, mode: u64) u32 {
     if (b.backend == .d3d12) {
         const wants_read = (mode & abi_core.WGPUMapMode_Read) != 0;
         const wants_write = (mode & abi_core.WGPUMapMode_Write) != 0;
         const expect_heap: c_int = if (wants_read and !wants_write) d3d12_constants.HEAP_TYPE_READBACK else if (wants_write and !wants_read) d3d12_constants.HEAP_TYPE_UPLOAD else 0;
         if (expect_heap == 0 or b.d3d12_heap_type != expect_heap or b.mtl == null) {
-            if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
-            return .{ .id = 3 };
+            return WGPU_MAP_ASYNC_STATUS_ERROR;
         }
         if (b.d3d12_mapped_ptr == null) b.d3d12_mapped_ptr = d3d12_bridge_resource_map(b.mtl);
         if (b.d3d12_mapped_ptr == null) {
-            if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
-            return .{ .id = 3 };
+            return WGPU_MAP_ASYNC_STATUS_ERROR;
         }
-        b.mapped = true;
-        if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_SUCCESS, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
-        return .{ .id = 3 };
+        return WGPU_MAP_ASYNC_STATUS_SUCCESS;
     }
     if (comptime has_vulkan) {
         // A writable mapping must also wait for earlier GPU reads of the buffer.
@@ -315,8 +362,7 @@ pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: u
             if (b.vk_runtime_ref) |rt_ptr| {
                 const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
                 _ = rt.flush_queue() catch {
-                    if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
-                    return .{ .id = 3 };
+                    return WGPU_MAP_ASYNC_STATUS_ERROR;
                 };
             }
         }
@@ -326,17 +372,15 @@ pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: u
             if (dev.queue) |queue| queue_submit_shared.flush_pending_work(queue);
         }
     }
-    b.mapped = true;
-    if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_SUCCESS, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
-    return .{ .id = 3 };
+    return WGPU_MAP_ASYNC_STATUS_SUCCESS;
 }
 
 pub export fn doeNativeBufferGetConstMappedRange(buf_raw: ?*anyopaque, offset: usize, size: usize) callconv(.c) ?*anyopaque {
     const buf = cast(DoeBuffer, buf_raw) orelse return null;
     if (buf.error_object or buf.destroyed) return null;
-    if (!buf.mapped) return null;
+    if (!buf.mapped or buf.map_pending) return null;
     const range_size = resolve_buffer_map_range(buf, offset, size) orelse return null;
-    _ = range_size;
+    if (offset % 8 != 0 or range_size % 4 != 0 or offset < buf.map_offset or offset - buf.map_offset > buf.map_size or range_size > buf.map_size - (offset - buf.map_offset)) return null;
     if (comptime has_vulkan) {
         if (buf.backend == .vulkan) {
             // Fast path: use cached mapped pointer to avoid HashMap lookup.
@@ -392,7 +436,7 @@ test "buffer destroy invalidates mapping without consuming retained handles" {
         }.mapped,
         .userdata1 = &status,
     });
-    try std.testing.expectEqual(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, status);
+    try std.testing.expectEqual(WGPU_MAP_ASYNC_STATUS_ERROR, status);
 }
 
 test "resolve_buffer_map_range rejects overflow past buffer size" {

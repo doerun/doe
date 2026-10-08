@@ -12,7 +12,8 @@ const vk = @import("../../src/backend/vulkan/vk_constants.zig");
 const adapter_probe = @import("../../src/backend/vulkan/vk_adapter_probe.zig");
 
 fn probe_with_allocator(allocator: std.mem.Allocator) !void {
-    _ = try adapter_probe.probe_selected_adapter(allocator, .prefer_graphics_compute);
+    var probe = try adapter_probe.probe_selected_adapter(allocator, .prefer_graphics_compute);
+    defer probe.deinit(allocator);
 }
 
 test "Vulkan adapter selection preserves allocation failures" {

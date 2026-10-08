@@ -9,7 +9,7 @@ const surface = @import("../full/surface/wgpu_surface_procs.zig");
 const texture = @import("../core/abi/procs/wgpu_texture_procs.zig");
 const render = @import("../full/render/wgpu_render_api.zig");
 const async_procs = @import("../core/abi/procs/wgpu_async_procs.zig");
-const async_pipeline = @import("wgpu_dropin_ext_a_pipeline.zig");
+const callback_delivery = @import("../native/support/doe_callback_delivery.zig");
 const native = @import("../native/mod.zig");
 
 extern fn wgpuGetProcAddress(name: abi_core.WGPUStringView) callconv(.c) p1cap.WGPUProc;
@@ -181,17 +181,15 @@ pub export fn wgpuShaderModuleAddRef(a0: abi_core.WGPUShaderModule) callconv(.c)
     native.object_add_ref(native.DoeShaderModule, a0);
 }
 
-pub export fn wgpuShaderModuleGetCompilationInfo(a0: abi_core.WGPUShaderModule, a1: async_procs.CompilationInfoCallbackInfo) callconv(.c) abi_core.WGPUFuture {
-    const future = abi_core.WGPUFuture{ .id = async_pipeline.next_async_future_id() };
-    if (a1.callback) |cb| {
-        const module = native.cast(native.DoeShaderModule, a0) orelse {
-            cb(
-                async_procs.COMPILATION_INFO_STATUS_CALLBACK_CANCELLED,
-                null,
-                a1.userdata1,
-                a1.userdata2,
-            );
-            return future;
+const CompilationReply = struct {
+    module: ?*native.DoeShaderModule,
+    info: async_procs.CompilationInfoCallbackInfo,
+    fn deliver(self: *CompilationReply) void {
+        defer if (self.module) |module| native.doeNativeShaderModuleRelease(native.toOpaque(module));
+        const cb = self.info.callback orelse return;
+        const module = self.module orelse {
+            cb(async_procs.COMPILATION_INFO_STATUS_CALLBACK_CANCELLED, null, self.info.userdata1, self.info.userdata2);
+            return;
         };
         var message_storage: async_procs.CompilationMessageABI = undefined;
         var info = async_procs.CompilationInfoABI{
@@ -223,11 +221,20 @@ pub export fn wgpuShaderModuleGetCompilationInfo(a0: abi_core.WGPUShaderModule, 
         cb(
             async_procs.COMPILATION_INFO_STATUS_SUCCESS,
             &info,
-            a1.userdata1,
-            a1.userdata2,
+            self.info.userdata1,
+            self.info.userdata2,
         );
     }
-    return future;
+};
+
+pub export fn wgpuShaderModuleGetCompilationInfo(a0: abi_core.WGPUShaderModule, a1: async_procs.CompilationInfoCallbackInfo) callconv(.c) abi_core.WGPUFuture {
+    const module = native.cast(native.DoeShaderModule, a0);
+    native.object_add_ref(native.DoeShaderModule, a0);
+    const instance = if (module) |m| if (m.device) |d| callback_delivery.instanceForDevice(d) else null else null;
+    return callback_delivery.ready(CompilationReply, std.heap.c_allocator, instance, a1.mode, .{ .module = module, .info = a1 }, CompilationReply.deliver) catch |err| {
+        native.doeNativeShaderModuleRelease(a0);
+        @panic(@errorName(err));
+    };
 }
 
 const CompilationInfoCapture = struct {

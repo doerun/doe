@@ -19,6 +19,7 @@ const package_metal_pipeline_cache = @import("../cache/doe_package_metal_pipelin
 const device_caps = @import("../support/doe_device_caps.zig");
 const command_storage = @import("../command/doe_command_storage.zig");
 const build_options = @import("build_options");
+const callback_delivery = @import("../support/doe_callback_delivery.zig");
 
 const alloc = native_helpers.alloc;
 const make = native_helpers.make;
@@ -486,9 +487,21 @@ pub export fn doeNativeInstanceRelease(raw: ?*anyopaque) callconv(.c) void {
 pub export fn doeNativeInstanceWaitAny(inst: ?*anyopaque, count: usize, infos: [*]abi_callback.WGPUFutureWaitInfo, timeout_ns: u64) callconv(.c) u32 {
     if (count == 0) return WGPU_WAIT_STATUS_SUCCESS;
     const instance = cast(DoeInstance, inst) orelse return WGPU_WAIT_STATUS_ERROR;
+    instance_add_ref(instance);
+    defer doeNativeInstanceRelease(toOpaque(instance));
     const completed = instance.pending_completions.waitAny(infos[0..count], timeout_ns) catch
         return WGPU_WAIT_STATUS_ERROR;
     return if (completed) WGPU_WAIT_STATUS_SUCCESS else WGPU_WAIT_STATUS_TIMED_OUT;
+}
+
+pub export fn doeNativeInstanceProcessEvents(raw: ?*anyopaque) callconv(.c) void {
+    const instance = cast(DoeInstance, raw) orelse {
+        @import("../queue/doe_queue_lifecycle.zig").drain_global_work_done();
+        return;
+    };
+    instance_add_ref(instance);
+    defer doeNativeInstanceRelease(toOpaque(instance));
+    instance.pending_completions.processEvents();
 }
 
 // ============================================================
@@ -498,22 +511,19 @@ pub export fn doeNativeInstanceWaitAny(inst: ?*anyopaque, count: usize, infos: [
 // Flat adapter request: callback(status, adapter, message, userdata1, userdata2)
 pub export fn doeNativeRequestAdapterFlat(
     inst: ?*anyopaque,
-    _: ?*anyopaque, // options
-    _: u32, // callback mode
+    options: ?*anyopaque,
+    mode: u32,
     callback: ?*const fn (u32, ?*anyopaque, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) abi_base.WGPUFuture {
-    const adapter = create_adapter_for_instance(inst) catch |err| {
-        const status: u32 = switch (err) {
-            error.AdapterUnavailable => WGPU_REQUEST_STATUS_UNAVAILABLE,
-            error.AdapterAllocationFailed, error.VkAdapterProbeFailed => WGPU_REQUEST_STATUS_ERROR,
-        };
-        if (callback) |cb| cb(status, null, create_adapter_error_message(err), userdata1, userdata2);
-        return .{ .id = 1 };
-    };
-    if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), stringView(""), userdata1, userdata2);
-    return .{ .id = 1 };
+    return doeNativeInstanceRequestAdapter(inst, @ptrCast(@alignCast(options)), .{
+        .nextInChain = null,
+        .mode = mode,
+        .callback = @ptrCast(callback),
+        .userdata1 = userdata1,
+        .userdata2 = userdata2,
+    });
 }
 
 pub export fn doeNativeInstanceCreateAdapter(
@@ -526,22 +536,31 @@ pub export fn doeNativeInstanceCreateAdapter(
 }
 
 // Standard-signature wrapper for routing layer compatibility.
+const AdapterReply = struct {
+    info: abi_callback.WGPURequestAdapterCallbackInfo,
+    status: abi_callback.WGPURequestAdapterStatus,
+    adapter: ?*anyopaque,
+    message: abi_base.WGPUStringView,
+    fn deliver(self: *@This()) void {
+        if (self.info.callback != null) call_request_adapter_callback(self.info, self.status, self.adapter, self.message) else if (self.adapter) |adapter| doeNativeAdapterRelease(adapter);
+    }
+};
+
 pub export fn doeNativeInstanceRequestAdapter(
     inst: ?*anyopaque,
     options: ?*const abi_callback.WGPURequestAdapterOptions,
     info: abi_callback.WGPURequestAdapterCallbackInfo,
 ) callconv(.c) abi_base.WGPUFuture {
     _ = options;
-    const adapter = create_adapter_for_instance(inst) catch |err| {
-        const status: abi_callback.WGPURequestAdapterStatus = switch (err) {
-            error.AdapterUnavailable => .unavailable,
-            error.AdapterAllocationFailed, error.VkAdapterProbeFailed => .@"error",
-        };
-        call_request_adapter_callback(info, status, null, create_adapter_error_message(err));
-        return .{ .id = 1 };
+    var reply = AdapterReply{ .info = info, .status = .success, .adapter = null, .message = stringView("") };
+    if (create_adapter_for_instance(inst)) |adapter| reply.adapter = toOpaque(adapter) else |err| {
+        reply.status = if (err == error.AdapterUnavailable) .unavailable else .@"error";
+        reply.message = create_adapter_error_message(err);
+    }
+    return callback_delivery.ready(AdapterReply, alloc, cast(DoeInstance, inst), info.mode, reply, AdapterReply.deliver) catch |err| {
+        if (reply.adapter) |adapter| doeNativeAdapterRelease(adapter);
+        @panic(@errorName(err));
     };
-    call_request_adapter_callback(info, .success, toOpaque(adapter), stringView(""));
-    return .{ .id = 1 };
 }
 
 pub export fn doeNativeAdapterAddRef(raw: ?*anyopaque) callconv(.c) void {
@@ -578,21 +597,36 @@ pub export fn doeNativeAdapterRelease(raw: ?*anyopaque) callconv(.c) void {
 // Device
 // ============================================================
 
+const DeviceReply = struct {
+    info: abi_callback.WGPURequestDeviceCallbackInfo,
+    status: abi_callback.WGPURequestDeviceStatus,
+    device: ?*anyopaque,
+    message: abi_base.WGPUStringView,
+    fn deliver(self: *@This()) void {
+        if (self.info.callback != null) call_request_device_callback(self.info, self.status, self.device, self.message) else if (self.device) |device| doeNativeDeviceRelease(device);
+    }
+};
+
 pub export fn doeNativeAdapterRequestDevice(
     adapter_raw: ?*anyopaque,
     desc: ?*const abi_callback.WGPUDeviceDescriptor,
     info: abi_callback.WGPURequestDeviceCallbackInfo,
 ) callconv(.c) abi_base.WGPUFuture {
-    const adapter = cast(DoeAdapter, adapter_raw) orelse {
-        call_request_device_callback(info, .@"error", null, stringView(MSG_INVALID_ADAPTER));
-        return .{ .id = 2 };
+    const adapter = cast(DoeAdapter, adapter_raw);
+    var reply = DeviceReply{ .info = info, .status = .success, .device = null, .message = stringView("") };
+    if (adapter) |source| {
+        if (create_device_for_adapter(source, adapter_raw, desc)) |device| reply.device = toOpaque(device) else |err| {
+            reply.status = .@"error";
+            reply.message = create_device_error_message(err);
+        }
+    } else {
+        reply.status = .@"error";
+        reply.message = stringView(MSG_INVALID_ADAPTER);
+    }
+    return callback_delivery.ready(DeviceReply, alloc, if (adapter) |source| source.instance else null, info.mode, reply, DeviceReply.deliver) catch |err| {
+        if (reply.device) |device| doeNativeDeviceRelease(device);
+        @panic(@errorName(err));
     };
-    const dev = create_device_for_adapter(adapter, adapter_raw, desc) catch |err| {
-        call_request_device_callback(info, .@"error", null, create_device_error_message(err));
-        return .{ .id = 2 };
-    };
-    call_request_device_callback(info, .success, toOpaque(dev), stringView(""));
-    return .{ .id = 2 };
 }
 
 pub export fn doeNativeAdapterCreateDevice(
@@ -608,25 +642,18 @@ pub export fn doeNativeAdapterCreateDevice(
 pub export fn doeNativeRequestDeviceFlat(
     adapter_raw: ?*anyopaque,
     descriptor_raw: ?*anyopaque,
-    _: u32,
+    mode: u32,
     callback: ?*const fn (u32, ?*anyopaque, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) abi_base.WGPUFuture {
-    const adapter = cast(DoeAdapter, adapter_raw) orelse {
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_INVALID_ADAPTER), userdata1, userdata2);
-        return .{ .id = 2 };
-    };
-    const desc: ?*const abi_callback.WGPUDeviceDescriptor = if (descriptor_raw) |ptr|
-        @ptrCast(@alignCast(ptr))
-    else
-        null;
-    const dev = create_device_for_adapter(adapter, adapter_raw, desc) catch |err| {
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, create_device_error_message(err), userdata1, userdata2);
-        return .{ .id = 2 };
-    };
-    if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(dev), stringView(""), userdata1, userdata2);
-    return .{ .id = 2 };
+    return doeNativeAdapterRequestDevice(adapter_raw, @ptrCast(@alignCast(descriptor_raw)), .{
+        .nextInChain = null,
+        .mode = mode,
+        .callback = @ptrCast(callback),
+        .userdata1 = userdata1,
+        .userdata2 = userdata2,
+    });
 }
 
 pub export fn doeNativeDeviceAddRef(raw: ?*anyopaque) callconv(.c) void {

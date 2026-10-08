@@ -122,3 +122,12 @@ cache. Every edit starts from a restored baseline. The report separates elapsed
 time, per-build process RSS, and artifact size; it does not modify active work.
 See the [architecture audit](../../docs/status/runtime-architecture-audit.md)
 for the current recipe disposition and scoped evidence.
+
+## Native callback delivery
+
+The [bounded callback contract](../../docs/native-callback-contract.md) specifies
+instance-owned futures, requested delivery modes, pending mapping state and resource
+leases through foreign callbacks. The [ONNX Vulkan fixture and replay](../../bench/external-projects/onnx-vulkan-callbacks/README.md)
+qualify the named paths with pinned Dawn controls and unchanged applications.
+Descriptor-based device loss, DeviceDestroy semantics and abandoned-instance cleanup
+remain open; this evidence does not qualify every WebGPU callback or a speed advantage.

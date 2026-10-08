@@ -253,10 +253,4 @@ comptime {
     _ = @import("compute/doe_compute_fast.zig");
 }
 
-// Instance process events — drain deferred work-done callbacks.
-// Chromium expects onSubmittedWorkDone callbacks to fire here, not inline
-// during the queueOnSubmittedWorkDone C proc call.
-pub export fn doeNativeInstanceProcessEvents(raw: ?*anyopaque) callconv(.c) void {
-    _ = raw;
-    m0.drain_global_work_done();
-}
+pub const doeNativeInstanceProcessEvents = m0.doeNativeInstanceProcessEvents;

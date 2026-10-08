@@ -520,6 +520,14 @@
           "platforms": [
             "linux"
           ]
+        },
+        {
+          "path": "src/native/support/doe_callback_delivery.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/native/support/doe_future_ids.zig",
+          "kind": "inline"
         }
       ]
     },
@@ -1014,6 +1022,14 @@
         {
           "path": "tests/full/surface_api_test.zig",
           "kind": "integration"
+        },
+        {
+          "path": "src/native/support/doe_callback_delivery.zig",
+          "kind": "inline"
+        },
+        {
+          "path": "src/native/support/doe_future_ids.zig",
+          "kind": "inline"
         }
       ],
       "includes": [

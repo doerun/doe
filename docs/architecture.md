@@ -249,12 +249,16 @@ locations and operation identity; diagnostics belong to the compilation that
 produced them. Neither evidence collection nor workaround selection may become
 a competing execution implementation.
 
-The native compatibility work-done registry owns pending callback records
-process-wide. Registration, future identity, and batch transfer are serialized;
-event processing owns its transferred batch and invokes foreign callbacks after
-unlocking. Reentrant registration therefore cannot overwrite pending delivery.
-Callback userdata remains caller-owned through delivery. This registry does not
-provide instance-local event routing or establish asynchronous GPU completion.
+The native instance owns callback obligations and unique issued future identities.
+Producers publish readiness; requested callback modes determine whether matching
+WaitAny, the owning ProcessEvents pump, or a spontaneous producer/worker may deliver.
+Callbacks run outside the owner mutex with retained payload/resource leases. Request
+cleanup precedes settlement, and active wait/pump calls retain their instance through
+reentrant caller releases. The process-wide work-done registry remains for legacy
+calls without an instance. Callback userdata stays caller-owned through delivery;
+callback readiness does not substitute for native GPU completion. See the
+[bounded callback contract](native-callback-contract.md) for the qualified Vulkan
+paths and unresolved abandonment/device-loss boundaries.
 
 Resolve build configuration, device discovery, and invocation-dependent checks
 at their respective lifetimes. Toggle classifications are compiled from the

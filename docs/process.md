@@ -732,3 +732,16 @@ remain only while an exercised consumer requires them.
   this process law.
 - Toolchain upgrades follow `docs/upgrade-policy.md` and must regenerate and
   revalidate affected provenance-bound artifacts.
+
+## Bounded native callback qualification
+
+The [native callback contract](native-callback-contract.md) requires a source-bound
+pre-correction reproduction and pinned Dawn control before promotion of the named
+Vulkan paths. Retain callback phase, status, unique identity, exact readback, resource
+cleanup, independent processes and unchanged application/recovery controls. A successful
+foreign callback does not establish GPU completion, abandonment cleanup or device-loss
+conformance. Final processes require immutable native bytes; intermediate cohorts
+overlapping a rebuild remain diagnostic. Historical reports retain their original
+source base and verdicts. The [semantic verifier](../bench/external-projects/onnx-vulkan-callbacks/verify.py)
+replays the retained qualification; the schema gate registers its manifest. No
+performance campaign or backend expansion is implied by this correctness evidence.

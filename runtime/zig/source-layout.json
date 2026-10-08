@@ -3214,21 +3214,21 @@
       },
       "src/dropin/wgpu_dropin_ext_a_exports.zig": {
         "decision": "Keep",
-        "moduleSha256": "d0db189371e49fed4357223d727f47b72decc950c9e01dd81956cce62e298e14",
-        "reason": "Keep: existing async pipeline ABI owner registers each retained request before worker publication; unchanged snapshot and single-flight failures retain their original callback path.",
-        "reviewer": "codex-onnx-future-completion/2026-10-05"
+        "moduleSha256": "e488e4596e25850ed95a65c9d13fb540837cbad4b0986894b125740a4d9aad01",
+        "reason": "Keep: C ABI callback adaptation and asynchronous pipeline snapshots; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       },
       "src/dropin/wgpu_dropin_ext_a_pipeline.zig": {
         "decision": "Keep",
-        "moduleSha256": "53fa274b16434e1ec6f410e644018df62082c8b31ce86836179fbece4e482326",
-        "reason": "Keep: existing snapshot and delivery owner embeds an instance completion obligation in each request and settles it after callback return, before releasing retained device ownership.",
-        "reviewer": "codex-onnx-future-completion/2026-10-05"
+        "moduleSha256": "da6a772ab49be29c86aca4f04bdb58b77dbc66cdb9ecc1e4e3929e3e136bfb49",
+        "reason": "Keep: C ABI callback adaptation and asynchronous pipeline snapshots; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       },
       "src/dropin/wgpu_dropin_ext_b.zig": {
         "decision": "Keep",
-        "moduleSha256": "51e38894c683faa1785f5b884ea4697419bc998887a8945235f22413f5c3e87e",
-        "reason": "Keep: buffer-texture copies use one neutral region/format contract and preserve validated origins, aspects and resource ownership through native execution.",
-        "reviewer": "codex-texture-copy-regions/2026-09-07"
+        "moduleSha256": "730808836e87036d5c27f015245bfa5fe90ebd5cfca637cd7865a597a5fcce57",
+        "reason": "Keep: C ABI callback adaptation and asynchronous pipeline snapshots; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       },
       "src/dropin/wgpu_dropin_ext_c.zig": {
         "decision": "Keep",
@@ -3466,9 +3466,9 @@
       },
       "src/native/api/doe_native_api_core_exports.zig": {
         "decision": "Keep",
-        "moduleSha256": "15cdab24aef811e2a9b526c015cb3c302fa6f5fdbc937d2f64a7b7bdb6bdc8b3",
-        "reason": "Keep: reachable native implementation with a distinct named responsibility and no merge, elevation, recomposition, or deletion signal.",
-        "reviewer": "codex-resource-lifetime/2026-09-06"
+        "moduleSha256": "d11c3c9f8b67fc5f2b22c4968617554b21f6c795e2cd811384a3377181514f99",
+        "reason": "Keep: Native request/resource ownership; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       },
       "src/native/api/doe_native_api_misc_exports.zig": {
         "decision": "Keep",
@@ -3562,15 +3562,15 @@
       },
       "src/native/lifecycle/doe_instance_device_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "8999da41b5436d9d3fa75bc509aa62fabcb252e1022a8c5a7ee14d06bb07f6d0",
-        "reason": "Keep: instance lifecycle owner waits on its own real pending completions; elapsed-clock failures remain explicit and completion is not fabricated for asynchronous pipelines.",
-        "reviewer": "codex-onnx-future-completion/2026-10-05"
+        "moduleSha256": "9dc572705d5f0a29dc8e9b9134cd944b47a6c0bb0706ab8ee3a9865589275728",
+        "reason": "Keep: Native request/resource ownership; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       },
       "src/native/mod.zig": {
         "decision": "Keep",
-        "moduleSha256": "a55ef64596b0ab9923dfad70e8930406b0ee7b84afc69672df0e0d3bf9370018",
-        "reason": "Keep: reachable native implementation shared by 7 production consumers with no conflicting ownership signal.",
-        "reviewer": "codex-resource-lifetime/2026-09-06"
+        "moduleSha256": "f7a0c273320b85e8caf6e7511e6361a0031bedf628f30128f3c1e63ed3e6ab40",
+        "reason": "Keep: Native request/resource ownership; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       },
       "src/native/queue/doe_queue_copy_native.zig": {
         "decision": "Keep",
@@ -3586,9 +3586,9 @@
       },
       "src/native/queue/doe_queue_lifecycle.zig": {
         "decision": "Keep",
-        "moduleSha256": "4874d2a1679adb36f3f4633ebf1355eb8c4e0b128f31c7a73e69cda7f083c95f",
-        "reason": "Keep: the native completion registry transfers pending callback batches before foreign callbacks run and synchronizes registration and future identity.",
-        "reviewer": "codex-completion-ownership/2026-09-12"
+        "moduleSha256": "da967a384dfdb8d744e82e808080262e27b804517e26200171e28baec8b9d103",
+        "reason": "Keep: Native request/resource ownership; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       },
       "src/native/queue/doe_queue_submit_d3d12.zig": {
         "decision": "Keep",
@@ -3658,9 +3658,9 @@
       },
       "src/native/resource/doe_buffer_ops_native.zig": {
         "decision": "Keep",
-        "moduleSha256": "da8d02e7945eeba896c698eb41e407186e73d011433c04ca0bf697920fea9a87",
-        "reason": "Keep: explicit resource ownership and prepared execution preserve ordinary provider semantics; validated by program and queue-ordering regressions.",
-        "reviewer": "codex-resource-lifetime/2026-09-06"
+        "moduleSha256": "4c955f4d40f7294a34c5bec5b06e0844169c0bb46a5bb9e7a26d9228ecf7e08a",
+        "reason": "Keep: Native request/resource ownership; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       },
       "src/native/resource/doe_command_texture_native.zig": {
         "decision": "Keep",
@@ -3730,9 +3730,9 @@
       },
       "src/native/support/doe_future_ids.zig": {
         "decision": "Keep",
-        "moduleSha256": "c54b82af6fac09537bdc9d493409f5f92069214c34baa17231c1c93edac071a5",
-        "reason": "Keep: native future identities and instance-owned completion obligations share one owner. Intrusive records borrow retained requests; settled records are removed without tombstones or extra allocation.",
-        "reviewer": "codex-onnx-future-completion/2026-10-05"
+        "moduleSha256": "bd07459440a55f75d0bf6bc795635a1b2c6f6b9342eb23244c0354f3187dc3df",
+        "reason": "Keep: Instance completion identities and callback delivery; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       },
       "src/native/support/doe_label_store.zig": {
         "decision": "Keep",
@@ -3760,9 +3760,9 @@
       },
       "src/native/support/doe_native_object_types.zig": {
         "decision": "Keep",
-        "moduleSha256": "f823274077b2d4e3413dc0323d40daad59bcc21955b8039d64466df3f40be7a1",
-        "reason": "Keep: native object owner assigns pending completion state to the instance, whose lifetime is retained through each async request device and adapter.",
-        "reviewer": "codex-onnx-future-completion/2026-10-05"
+        "moduleSha256": "4a5bf73d5b11a6384242dc352c9899d2400b17da92d7e60ece573be063b2e5b1",
+        "reason": "Keep: Native request/resource ownership; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       },
       "src/native/support/doe_native_runtime_helpers.zig": {
         "decision": "Keep",
@@ -4399,6 +4399,12 @@
         "moduleSha256": "7652fdf18cfcfae843a3c3ef5985b45863a3e27833123409b61156ab25b0eb87",
         "reviewer": "codex-surface-handoff/2026-09-28",
         "reason": "Keep: swapchain-owned acquisition and presentation completion; the native surface owns WebGPU references and the backend owns Vulkan synchronization."
+      },
+      "src/native/support/doe_callback_delivery.zig": {
+        "decision": "Keep",
+        "moduleSha256": "9d8c865e9139a9cdd56aca06e070b85e2497d3cf0ceee877fab7fb3d2382d31e",
+        "reason": "Keep: Instance completion identities and callback delivery; callback mode controls delivery, resource leases survive foreign callbacks, and native GPU synchronization remains with its backend owner.",
+        "reviewer": "codex-vulkan-callbacks/2026-10-08"
       }
     },
     "linePolicy": {
